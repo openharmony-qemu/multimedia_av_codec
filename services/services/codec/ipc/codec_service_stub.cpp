@@ -29,7 +29,7 @@
 #include "ipc_skeleton.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServiceStub"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
 
 const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_LISTENER_OBJ),
@@ -318,7 +318,13 @@ int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo inf
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index)
 {
     (void)index;
-    return AVCS_ERR_OK;
+    return AVCS_ERR_UNSUPPORT;
+}
+
+int32_t CodecServiceStub::QueueInputParameter(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_UNSUPPORT;
 }
 
 int32_t CodecServiceStub::GetOutputFormat(Format &format)

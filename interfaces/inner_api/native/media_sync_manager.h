@@ -39,6 +39,7 @@ public:
     Status SetPlaybackRate(float rate);
     float GetPlaybackRate();
     void WaitAllPrerolled(bool prerolled = true);
+    Status Stop();
     Status Resume();
     Status Pause();
     Status Seek(int64_t mediaTime);
@@ -97,6 +98,7 @@ public:
     void SetStartingTimeMediaUs(int64_t startingTimeMediaUs);
 
     int64_t GetSeekTime() override;
+    void ResetTimeAnchorNoLock();
 private:
     enum class State {
         RESUMED,
@@ -114,7 +116,6 @@ private:
     void SimpleUpdatePlayRate(float playRate);
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
-    void ResetTimeAnchorNoLock();
 
     int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};

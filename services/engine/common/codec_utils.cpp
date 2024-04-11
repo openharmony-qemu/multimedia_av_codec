@@ -20,7 +20,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FCodec"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 constexpr uint32_t INDEX_ARRAY = 2;
 std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::YUV420P, AV_PIX_FMT_YUV420P},
@@ -152,10 +152,8 @@ int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
 
 int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo, const Format &format)
 {
-    int32_t width;
     int32_t height;
     int32_t fmt;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
@@ -166,13 +164,13 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
     }
 
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % width) {
+        if (surfaceInfo.surfaceStride % surfaceInfo.scaleLineSize[0]) {
             return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
         WriteYuvData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % width) {
+        if (surfaceInfo.surfaceStride % surfaceInfo.scaleLineSize[0]) {
             return WriteRgbDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
@@ -196,13 +194,13 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
 
     if (IsYuvFormat(pixFmt)) {
-        if (scaleLineSize[0] > width) {
+        if (scaleLineSize[0] % width) {
             return WriteYuvDataStride(memory, scaleData, scaleLineSize, width, format);
         }
         WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (scaleLineSize[0] > width) {
-            return WriteRgbDataStride(memory, scaleData, scaleLineSize, width, format);
+        if (scaleLineSize[0] % width) {
+            return WriteRgbDataStride(memory, scaleData, scaleLineSize, width * VIDEO_PIX_DEPTH_RGBA, format);
         }
         WriteRgbData(memory, scaleData, scaleLineSize, height);
     } else {

@@ -59,10 +59,11 @@ public:
     virtual Status Flush() = 0;
 
     void InitTypeFinder();
-    void SetSource(std::shared_ptr<Source>& source);
+    void SetSource(const std::shared_ptr<Source>& source);
 
     virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) = 0;
     void SetDemuxerState(DemuxerState state);
+    void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
 protected:
@@ -73,6 +74,8 @@ protected:
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
     std::atomic<DemuxerState> pluginState_{DemuxerState::DEMUXER_STATE_NULL};
     std::atomic<bool> isIgnoreParse_{false};
+    std::atomic<bool> isIgnoreRead_{false};
+    std::string bundleName_ {};
 };
 } // namespace Media
 } // namespace OHOS

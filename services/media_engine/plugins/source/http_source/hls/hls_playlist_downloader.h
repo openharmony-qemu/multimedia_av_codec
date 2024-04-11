@@ -28,18 +28,24 @@ public:
     HlsPlayListDownloader() = default;
     ~HlsPlayListDownloader() override = default;
 
-    void Open(const std::string& url) override;
+    void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;
-    void ParseManifest() override;
+    void ParseManifest(const std::string& location) override;
     void PlayListUpdateLoop() override;
     void SetPlayListCallback(PlayListChangeCallback* callback) override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
     void SelectBitRate(uint32_t bitRate) override;
     std::vector<uint32_t> GetBitRates() override;
+    uint64_t GetCurrentBitRate() override;
+    int GetVedioHeight() override;
+    int GetVedioWidth() override;
     bool IsBitrateSame(uint32_t bitRate) override;
+    uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
+    int32_t GetVideoWidth() const override;
+    int32_t GetVideoHeight() const override;
 
 private:
     std::string url_ {};

@@ -38,11 +38,15 @@ public:
     Status Resume() override;
     Status Flush() override;
     Status Reset();
+    Status PauseForSeek();
+    Status ResumeForSeek();
+    Status PrepareBeforeStart();
 
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
+    void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
@@ -59,10 +63,13 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+    std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
+    Status PauseTaskByTrackId(int32_t trackId);
 
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
+    bool IsExistVideoTrace();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -78,9 +85,11 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
+    Status PrepareWork();
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     std::string uri_;
+    std::atomic<bool> isLoopStarted{false};
 
     std::shared_ptr<Filter> nextFilter_;
     MediaMetaData mediaMetaData_;

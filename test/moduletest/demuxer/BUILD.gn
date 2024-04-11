@@ -61,6 +61,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/InnerAPI/api_test.cpp",
       "./src/api_test.cpp",
       "./src/func_test.cpp",
+      "./src/proc_test.cpp",
     ]
   }
 
@@ -68,13 +69,20 @@ ohos_unittest("demuxer_native_module_test") {
     "c_utils:utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
 
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",

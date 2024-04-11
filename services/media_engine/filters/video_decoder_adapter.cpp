@@ -108,7 +108,7 @@ Status VideoDecoderAdapter::Configure(const Format &format)
     MEDIA_LOG_I("VideoDecoderAdapter->Configure.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Configure(format);
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK :  Status::ERROR_INVALID_DATA;
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_DATA;
 }
 
 int32_t VideoDecoderAdapter::SetParameter(const Format &format)
@@ -195,15 +195,6 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
         if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
-            MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
-                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
-                tmpBuffer->pts_, tmpBuffer->flag_);
-            Event event {
-                .srcFilter = "VideoSink",
-                .type = EventType::EVENT_COMPLETE,
-            };
-            FALSE_RETURN(eventReceiver_  != nullptr);
-            eventReceiver_ ->OnEvent(event);
             tmpBuffer->memory_->SetSize(0);
         }
         FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr.");
@@ -265,10 +256,14 @@ void VideoDecoderAdapter::OnOutputFormatChanged(const MediaAVCodec::Format &form
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCodecTrace trace("VideoDecoderAdapter::OnOutputBufferAvailable");
+    if (buffer != nullptr) {
+        MEDIA_LOG_D("OnOutputBufferAvailable start. index: %{public}u, bufferid: %{public}" PRIu64
+            ", pts: %{public}" PRIu64 ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
+    } else {
+        MEDIA_LOG_D("OnOutputBufferAvailable start. buffer is nullptr, index: %{public}u", index);
+    }
     FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
-    MEDIA_LOG_D("OnOutputBufferAvailable start. index: %{public}u, bufferid: %{public}" PRIu64 ", pts: %{public}" PRIu64
-        ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
     callback_->OnOutputBufferAvailable(index, buffer);
 }
 

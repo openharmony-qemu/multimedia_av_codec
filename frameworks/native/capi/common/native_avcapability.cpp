@@ -21,9 +21,10 @@
 #include "avcodec_errors.h"
 #include "securec.h"
 #include "native_avcapability.h"
+#include "common/native_mfmagic.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVCapability"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeAVCapability"};
 }
 using namespace OHOS::MediaAVCodec;
 
@@ -517,4 +518,32 @@ bool OH_AVCapability_AreVideoSizeAndFrameRateSupported(OH_AVCapability *capabili
     }
     std::shared_ptr<VideoCaps> videoCap = std::make_shared<VideoCaps>(capability->capabilityData_);
     return videoCap->IsSizeAndRateSupported(width, height, frameRate);
+}
+
+bool OH_AVCapability_IsFeatureSupported(OH_AVCapability *capability, OH_AVCapabilityFeature feature)
+{
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr, false, "Varified feature failed: capability is nullptr");
+    bool isValid = feature >= VIDEO_ENCODER_TEMPORAL_SCALABILITY && feature <= VIDEO_LOW_LATENCY;
+    CHECK_AND_RETURN_RET_LOG(isValid, false, "Varified feature failed: feature %{public}d is invalid", feature);
+    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
+    return codecInfo->IsFeatureSupported(static_cast<AVCapabilityFeature>(feature));
+}
+
+OH_AVFormat *OH_AVCapability_GetFeatureProperties(OH_AVCapability *capability, OH_AVCapabilityFeature feature)
+{
+    CHECK_AND_RETURN_RET_LOG(capability != nullptr, nullptr, "Get feature properties failed: capability is nullptr");
+    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
+    Format format;
+    if (codecInfo->GetFeatureProperties(static_cast<AVCapabilityFeature>(feature), format) != AVCS_ERR_OK) {
+        return nullptr;
+    }
+    Format::FormatDataMap formatMap = format.GetFormatMap();
+    if (formatMap.size() == 0) {
+        AVCODEC_LOGW("Get feature properties successfully, but feature %{public}d does not have a property", feature);
+        return nullptr;
+    }
+    OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Get feature properties failed: create OH_AVFormat failed");
+    avFormat->format_ = format;
+    return avFormat;
 }

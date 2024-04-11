@@ -26,7 +26,7 @@
 #endif
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecXCollie"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecXCollie"};
     constexpr uint32_t DUMP_XCOLLIE_INDEX = 0x01000000;
     constexpr uint8_t DUMP_OFFSET_16 = 16;
     constexpr uint64_t COLLIE_INVALID_INDEX = 0;

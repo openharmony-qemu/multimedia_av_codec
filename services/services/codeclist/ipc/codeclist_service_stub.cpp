@@ -24,7 +24,7 @@
 #include "codeclist_service_stub.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListServiceStub"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListServiceStub"};
 
     const std::map<uint32_t, std::string> CODECLIST_FUNC_NAME = {
         { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::FIND_DECODER),

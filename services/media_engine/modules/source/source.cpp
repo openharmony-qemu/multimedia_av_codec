@@ -102,6 +102,19 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     return Status::OK;
 }
 
+void Source::SetBundleName(const std::string& bundleName)
+{
+    if (plugin_ != nullptr) {
+        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+        plugin_->SetBundleName(bundleName);
+    }
+}
+
+void Source::SetDemuxerState()
+{
+    plugin_->SetDemuxerState();
+}
+
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::InitPlugin");
@@ -168,11 +181,11 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
-Status Source::SeekToTime(int64_t seekTime)
+Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     int64_t timeNs;
     if (Plugins::Ms2HstTime(seekTime, timeNs)) {
-        return plugin_->SeekToTime(timeNs);
+        return plugin_->SeekToTime(timeNs, mode);
     } else {
         return Status::ERROR_INVALID_PARAMETER;
     }
@@ -230,6 +243,16 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_I("Drminfo updates from source");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
+        MEDIA_LOG_I("Gallery read freeze.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::VIDEO_SIZE_CHANGE) {
+        MEDIA_LOG_I("video size change from source.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }

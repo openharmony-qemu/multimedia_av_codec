@@ -39,6 +39,8 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
     static const std::unordered_map<std::string, AVCodecID> table = {
         {MimeType::AUDIO_MPEG, AV_CODEC_ID_MP3},
         {MimeType::AUDIO_AAC, AV_CODEC_ID_AAC},
+        {MimeType::AUDIO_AMR_NB, AV_CODEC_ID_AMR_NB},
+        {MimeType::AUDIO_AMR_WB, AV_CODEC_ID_AMR_WB},
         {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
         {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
         {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
@@ -146,10 +148,12 @@ int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx)
     FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "Track is nullptr.");
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(AV_VERSION_INT)
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 78, 0) // 58 and 78 are avformat version range
+    FALSE_RETURN_V_MSG_E(avformat_index_get_entry(avStream, keyFrameIdx) != nullptr, 0, "Track is nullptr.");
     return avformat_index_get_entry(avStream, keyFrameIdx)->timestamp;
 #elif LIBAVFORMAT_VERSION_INT == AV_VERSION_INT(58, 76, 100) // 58, 76 and 100 are avformat version range
     return avStream->index_entries[keyFrameIdx].timestamp;
 #elif LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(58, 64, 100) // 58, 64 and 100 are avformat version range
+    FALSE_RETURN_V_MSG_E(avStream->internal != nullptr, 0, "Track is nullptr.");
     return avStream->internal->index_entries[keyFrameIdx].timestamp;
 #else
     return avStream->index_entries[keyFrameIdx].timestamp;

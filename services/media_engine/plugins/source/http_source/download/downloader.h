@@ -66,7 +66,12 @@ class Downloader;
 class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
     std::shared_ptr<DownloadRequest>&)>;
-using DownloadDoneCbFunc = std::function<void(const std::string&)>;
+using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
+
+struct MediaSouce {
+    std::string url;
+    std::map<std::string, std::string> httpHeader;
+};
 
 class DownloadRequest {
 public:
@@ -74,6 +79,11 @@ public:
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+                    bool requestWholeFile = false);
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+                    bool requestWholeFile = false);
+
     size_t GetFileContentLength() const;
     void SaveHeader(const HeaderInfo* header);
     bool IsChunked() const;
@@ -106,6 +116,8 @@ private:
     DownloadDoneCbFunc downloadDoneCallback_;
 
     HeaderInfo headerInfo_;
+    std::map<std::string, std::string> httpHeader_;
+    MediaSouce mediaSouce_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
@@ -122,6 +134,7 @@ private:
     int64_t downloadDoneTime_ {0};
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
+    std::string location_;
 };
 
 class Downloader {
@@ -144,6 +157,8 @@ private:
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
+    static void FLVProcess(bool &isTrunck, long &contentLen, std::string url);
+    static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;

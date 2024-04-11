@@ -1,7 +1,0 @@
-[
-    { "name": "OH_AVSource_CreateWithURI" },
-    { "name": "OH_AVSource_CreateWithFD" },
-    { "name": "OH_AVSource_Destroy" },
-    { "name": "OH_AVSource_GetSourceFormat" },
-    { "name": "OH_AVSource_GetTrackFormat" }
-]

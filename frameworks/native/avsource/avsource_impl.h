@@ -29,8 +29,10 @@ public:
 
     int32_t GetSourceFormat(OHOS::Media::Format &format) override;
     int32_t GetTrackFormat(OHOS::Media::Format &format, uint32_t trackIndex) override;
+    int32_t GetUserMeta(OHOS::Media::Format &format) override;
     int32_t InitWithURI(const std::string &uri);
     int32_t InitWithFD(int32_t fd, int64_t offset, int64_t size);
+    int32_t InitWithDataSource(const std::shared_ptr<Media::IMediaDataSource> &dataSource);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

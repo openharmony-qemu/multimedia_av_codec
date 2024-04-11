@@ -44,6 +44,7 @@
       "deps": {
         "components": [
           "netmanager_base",
+          "bounds_checking_function",
           "c_utils",
           "drivers_interface_codec",
           "graphic_2d",
@@ -62,11 +63,11 @@
           "window_manager",
           "media_foundation",
           "audio_framework",
-          "drm_framework"
+          "drm_framework",
+          "ffmpeg"
         ],
         "third_party": [
           "bounds_checking_function",
-          "ffmpeg",
           "curl",
           "openssl"
         ]

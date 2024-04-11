@@ -26,7 +26,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegVorbisDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegVorbisDecoderPlugin"};
 constexpr uint8_t EXTRADATA_FIRST_CHAR = 2;
 constexpr int COMMENT_HEADER_LENGTH = 16;
 constexpr int COMMENT_HEADER_PADDING_LENGTH = 8;

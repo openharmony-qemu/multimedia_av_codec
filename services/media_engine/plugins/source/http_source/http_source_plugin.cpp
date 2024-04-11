@@ -60,16 +60,6 @@ HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
     MEDIA_LOG_D("HttpSourcePlugin enter.");
 }
 
-HttpSourcePlugin::HttpSourcePlugin(const std::string &name, int bufferSize) noexcept
-    : SourcePlugin(std::move(name)),
-      bufferSize_(DEFAULT_BUFFER_SIZE),
-      ringBufferSize_(bufferSize),
-      waterline_(0),
-      downloader_(nullptr)
-{
-    MEDIA_LOG_D("HttpSourcePlugin enter.");
-}
-
 HttpSourcePlugin::~HttpSourcePlugin()
 {
     MEDIA_LOG_D("~HttpSourcePlugin enter.");
@@ -160,18 +150,25 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     uri_ = source->GetSourceUri();
+    httpHeader_ = source->GetSourceHeader();
+    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
+        httpHeader_["Referer"].c_str());
+
+    PlayStrategy* playStrategy = source->GetPlayStrategy();
     if (IsSeekToTimeSupported()) {
-        if (ringBufferSize_==0) {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
+        if (playStrategy != nullptr && playStrategy->duration > 0) {
+            uint32_t expectDuration = playStrategy->duration;
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(ringBufferSize_));
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
-        if (ringBufferSize_==0) {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
+        if (playStrategy != nullptr && playStrategy->duration > 0) {
+            uint32_t expectDuration = playStrategy->duration;
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(expectDuration));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(ringBufferSize_));
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
         }
     }
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -181,7 +178,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     }
 
     MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
-    FALSE_RETURN_V(downloader_->Open(uri_), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
@@ -237,6 +234,7 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
+    MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
@@ -245,14 +243,14 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SeekToTime(int64_t seekTime)
+Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     // Not use mutex to avoid deadlock in continuously multi times in seeking
     std::shared_ptr<MediaDownloader> downloader = downloader_;
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
-    FALSE_RETURN_V(downloader->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(downloader->SeekToTime(seekTime, mode), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
@@ -292,6 +290,15 @@ Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
         return Status::OK;
     }
     return Status::ERROR_UNKNOWN;
+}
+
+void HttpSourcePlugin::SetDemuxerState()
+{
+    downloader_->SetDemuxerState();
+}
+
+void HttpSourcePlugin::SetDownloadErrorState()
+{
 }
 }
 }

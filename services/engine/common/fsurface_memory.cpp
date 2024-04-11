@@ -19,7 +19,7 @@
 #include "avcodec_errors.h"
 #include "fsurface_memory.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FSurfaceMemory"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AvCodec-FSurfaceMemory"};
 }
 namespace OHOS {
 namespace MediaAVCodec {

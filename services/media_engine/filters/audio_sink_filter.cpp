@@ -19,6 +19,7 @@
 #include "osal/utils/util.h"
 #include "osal/utils/dump_buffer.h"
 #include "filter/filter_factory.h"
+#include "media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -61,7 +62,6 @@ AudioSinkFilter::~AudioSinkFilter()
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
                            const std::shared_ptr<FilterCallback> &callback)
 {
-    Filter::ActiveAsyncMode();
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
@@ -70,9 +70,9 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status AudioSinkFilter::DoInit()
 {
+    audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
-    audioSink_->SetParameter(globalMeta_);
     return ret;
 }
 
@@ -116,6 +116,9 @@ Status AudioSinkFilter::DoStart()
     }
     forceUpdateTimeAnchorNextTime_ = true;
     auto err = audioSink_->Start();
+    if (err != Status::OK) {
+        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED});
+    }
     state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return err;
@@ -220,6 +223,7 @@ int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     globalMeta_ = meta;
+    audioSink_->SetParameter(meta);
 }
 
 void AudioSinkFilter::GetParameter(std::shared_ptr<Meta>& meta)

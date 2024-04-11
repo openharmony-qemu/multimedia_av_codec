@@ -27,6 +27,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+const uint32_t MAX_STRING_LENGTH = 512;
 
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
@@ -174,10 +175,68 @@ Status HttpCurlClient::Init()
     return Status::OK;
 }
 
-Status HttpCurlClient::Open(const std::string& url)
+std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
+{
+    if (str.empty()) {
+        return str;
+    }
+    str.erase(0, str.find_first_not_of(" "));
+    str.erase(str.find_last_not_of(" ") + 1);
+    return str;
+}
+
+void HttpCurlClient::CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue)
+{
+    if (setKey == standardKey) {
+        if (!setValue.empty()) {
+            if (isSetUA_) {
+                MEDIA_LOG_I("Set the same " PUBLIC_LOG_S ", use last value : " PUBLIC_LOG_S,
+                    standardKey.c_str(), setValue.c_str());
+            }
+            userAgent_ = setValue;
+            isSetUA_ = true;
+            MEDIA_LOG_I("Set " PUBLIC_LOG_S " success : " PUBLIC_LOG_S, standardKey.c_str(),
+                setValue.c_str());
+        } else {
+            MEDIA_LOG_E("Set " PUBLIC_LOG_S " fail, the value is empty.", standardKey.c_str());
+        }
+    } else {
+        MEDIA_LOG_E("Set invalid key: " PUBLIC_LOG_S, setKey.c_str());
+    }
+}
+
+void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHeader)
+{
+    if (httpHeader.empty()) {
+        MEDIA_LOG_D("Set http header fail, http header is empty.");
+        return;
+    }
+    for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
+        std::string setKey = iter->first;
+        std::string setValue = iter->second;
+        if (setKey.length() <= MAX_STRING_LENGTH && setValue.length() <= MAX_STRING_LENGTH) {
+            ClearHeadTailSpace(setKey);
+            CheckHeaderKey("User-Agent", setKey, setValue);
+        } else {
+            MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
+            MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
+        }
+    }
+
+    if (!isSetUA_) {
+        MEDIA_LOG_I("Use default UA: " PUBLIC_LOG_S, userAgent_.c_str());
+    }
+
+    MEDIA_LOG_D("User-Agent: " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
+        httpHeader["Referer"].c_str());
+}
+
+Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     easyHandle_ = curl_easy_init();
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    std::map<std::string, std::string> header = httpHeader;
+    HttpHeaderParse(header);
     InitCurlEnvironment(url);
     return Status::OK;
 }
@@ -231,18 +290,35 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
 
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    MEDIA_LOG_I("Init http proxy");
+
     std::string host;
     std::string exclusions;
     int32_t port = 0;
     GetHttpProxyInfo(host, port, exclusions);
-    if (!host.empty() && IsHostNameExcluded(url, exclusions, ",")) {
+    if (!host.empty() && !IsHostNameExcluded(url, exclusions, ",")) {
+        MEDIA_LOG_I("InitCurlEnvironment host: " PUBLIC_LOG_S ", port " PUBLIC_LOG_U32 ", exclusions " PUBLIC_LOG_S,
+            host.c_str(), port, exclusions.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_PROXY, host.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYPORT, port);
         auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
         curl_easy_setopt(easyHandle_, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue);
-        auto proxyType = (url.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
+        auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
+    } else {
+        if (host.empty()) {
+            MEDIA_LOG_I("InitCurlEnvironment host is empty.");
+        }
+        if (IsHostNameExcluded(url, exclusions, ",")) {
+            MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
+        }
+    }
+
+    MEDIA_LOG_I("userAgent : " PUBLIC_LOG_S " refer : " PUBLIC_LOG_S,
+        userAgent_.c_str(), referer_.c_str());
+
+    curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, userAgent_.c_str());
+    if (!referer_.empty()) {
+        curl_easy_setopt(easyHandle_, CURLOPT_REFERER, referer_.c_str());
     }
 }
 

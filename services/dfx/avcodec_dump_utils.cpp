@@ -18,7 +18,7 @@
 #include "avcodec_log.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecDumpUtils"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDumpUtils"};
     constexpr uint32_t DUMP_LEVEL_4 = 4;
     constexpr uint32_t DUMP_LEVEL_3 = 3;
     constexpr uint32_t DUMP_LEVEL_2 = 2;

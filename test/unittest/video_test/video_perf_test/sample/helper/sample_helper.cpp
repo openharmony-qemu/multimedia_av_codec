@@ -22,7 +22,7 @@
 #include "av_codec_sample_error.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleHelper"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "SampleHelper"};
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
     {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_DECODER, "Decoder"},

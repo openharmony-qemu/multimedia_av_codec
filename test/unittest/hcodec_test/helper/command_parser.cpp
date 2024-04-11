@@ -17,6 +17,7 @@
 #include <cinttypes>
 #include <getopt.h>
 #include <iostream>
+#include <sstream>
 #include "hcodec_log.h"
 
 namespace OHOS::MediaAVCodec {
@@ -45,16 +46,18 @@ enum ShortOption {
     OPT_COLOR_TRANSFER,
     OPT_COLOR_MATRIX,
     OPT_I_FRAME_INTERVAL,
-    OPT_IDR_FRAME_NO,
     OPT_PROFILE,
     OPT_BITRATE_MODE,
     OPT_BITRATE,
     OPT_QUALITY,
+    OPT_QP_RANGE,
     // decoder only
     OPT_RENDER,
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
-    OPT_FLUSH_CNT
+    OPT_FLUSH_CNT,
+    OPT_SET_PARAMETER,
+    OPT_SET_PER_FRAME
 };
 
 static struct option g_longOptions[] = {
@@ -79,16 +82,18 @@ static struct option g_longOptions[] = {
     {"colorTransfer",   required_argument,  nullptr, OPT_COLOR_TRANSFER},
     {"colorMatrix",     required_argument,  nullptr, OPT_COLOR_MATRIX},
     {"iFrameInterval",  required_argument,  nullptr, OPT_I_FRAME_INTERVAL},
-    {"idrFrameNo",      required_argument,  nullptr, OPT_IDR_FRAME_NO},
     {"profile",         required_argument,  nullptr, OPT_PROFILE},
     {"bitRateMode",     required_argument,  nullptr, OPT_BITRATE_MODE},
     {"bitRate",         required_argument,  nullptr, OPT_BITRATE},
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
+    {"qpRange",         required_argument,  nullptr, OPT_QP_RANGE},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
+    {"setParameter",    required_argument,  nullptr, OPT_SET_PARAMETER},
+    {"setPerFrame",     required_argument,  nullptr, OPT_SET_PER_FRAME},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -117,17 +122,19 @@ void ShowUsage()
     std::cout << " --colorMatrix        color matrix coefficient. see H.273 standard." << std::endl;
     std::cout << " --iFrameInterval     <0 means only one I frame, =0 means all intra" << std::endl;
     std::cout << "                      >0 means I frame interval in milliseconds" << std::endl;
-    std::cout << " --idrFrameNo         which frame will be set to IDR frame." << std::endl;
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
     std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
     std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ)" << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
+    std::cout << " --qpRange            target encode qpRange, eg. 13,42" << std::endl;
     std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
+    std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
+    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -196,9 +203,6 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_I_FRAME_INTERVAL:
                 opt.iFrameInterval = stol(optarg);
                 break;
-            case OPT_IDR_FRAME_NO:
-                opt.idrFrameNo = stol(optarg);
-                break;
             case OPT_PROFILE:
                 opt.profile = stol(optarg);
                 break;
@@ -211,6 +215,14 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_QUALITY:
                 opt.quality = stol(optarg);
                 break;
+            case OPT_QP_RANGE: {
+                istringstream is(optarg);
+                QPRange range;
+                char tmp;
+                is >> range.qpMin >> tmp >> range.qpMax;
+                opt.qpRange = range;
+                break;
+            }
             case OPT_RENDER:
                 opt.render = stol(optarg);
                 break;
@@ -223,11 +235,86 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_FLUSH_CNT:
                 opt.flushCnt = stol(optarg);
                 break;
+            case OPT_SET_PARAMETER:
+                opt.ParseParamFromCmdLine(false, optarg);
+                break;
+            case OPT_SET_PER_FRAME:
+                opt.ParseParamFromCmdLine(true, optarg);
+                break;
             default:
                 break;
         }
     }
     return opt;
+}
+
+void CommandOpt::ParseParamFromCmdLine(bool isPerFrame, const char *cmd)
+{
+    string s(cmd);
+    auto pos = s.find(':');
+    if (pos == string::npos) {
+        return;
+    }
+    auto frameNo = stoul(s.substr(0, pos));
+    string paramList = s.substr(pos + 1);
+    isPerFrame ? ParsePerFrameParam(frameNo, paramList) : ParseSetParameter(frameNo, paramList);
+}
+
+void CommandOpt::ParseSetParameter(uint32_t frameNo, const string &s)
+{
+    auto pos = s.find(',');
+    if (pos == string::npos) {
+        return;
+    }
+    char c;
+    string key = s.substr(0, pos);
+    istringstream value(s.substr(pos + 1));
+    if (key == "requestIdr") {
+        bool requestIdr;
+        value >> requestIdr;
+        setParameterParamsMap[frameNo].requestIdr = requestIdr;
+    }
+    if (key == "bitRate") {
+        uint32_t bitRate;
+        value >> bitRate;
+        setParameterParamsMap[frameNo].bitRate = bitRate;
+    }
+    if (key == "frameRate") {
+        double fr;
+        value >> fr;
+        setParameterParamsMap[frameNo].frameRate = fr;
+    }
+    if (key == "qpRange") {
+        QPRange qpRange;
+        value >> qpRange.qpMin >> c >> qpRange.qpMax;
+        setParameterParamsMap[frameNo].qpRange = qpRange;
+    }
+}
+
+void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
+{
+    auto pos = s.find(',');
+    if (pos == string::npos) {
+        return;
+    }
+    string key = s.substr(0, pos);
+    istringstream value(s.substr(pos + 1));
+    char c;
+    if (key == "requestIdr") {
+        bool requestIdr;
+        value >> requestIdr;
+        perFrameParamsMap[frameNo].requestIdr = requestIdr;
+    }
+    if (key == "qpRange") {
+        QPRange qpRange;
+        value >> qpRange.qpMin >> c >> qpRange.qpMax;
+        perFrameParamsMap[frameNo].qpRange = qpRange;
+    }
+    if (key == "ltr") {
+        LTRParam ltr;
+        value >> ltr.markAsLTR >> c >> ltr.useLTR >> c >> ltr.useLTRPoc;
+        perFrameParamsMap[frameNo].ltrParam = ltr;
+    }
 }
 
 void CommandOpt::Print() const
@@ -260,9 +347,6 @@ void CommandOpt::Print() const
     if (iFrameInterval.has_value()) {
         TLOGI("iFrameInterval %d", iFrameInterval.value());
     }
-    if (idrFrameNo.has_value()) {
-        TLOGI("idrFrameNo %u", idrFrameNo.value());
-    }
     if (profile.has_value()) {
         TLOGI("profile %d", profile.value());
     }
@@ -275,8 +359,39 @@ void CommandOpt::Print() const
     if (quality.has_value()) {
         TLOGI("quality %u", quality.value());
     }
+    if (qpRange.has_value()) {
+        TLOGI("qpRange %u~%u", qpRange->qpMin, qpRange->qpMax);
+    }
     TLOGI("rotation angle %u", rotation);
     TLOGI("flush cnt %d", flushCnt);
+    for (const auto &[frameNo, setparam] : setParameterParamsMap) {
+        TLOGI("frameNo = %u:", frameNo);
+        if (setparam.requestIdr.has_value()) {
+            TLOGI("    requestIdr %d", setparam.requestIdr.value());
+        }
+        if (setparam.qpRange.has_value()) {
+            TLOGI("    qpRange %u~%u", setparam.qpRange->qpMin, setparam.qpRange->qpMax);
+        }
+        if (setparam.bitRate.has_value()) {
+            TLOGI("    bitRate %u", setparam.bitRate.value());
+        }
+        if (setparam.frameRate.has_value()) {
+            TLOGI("    frameRate %f", setparam.frameRate.value());
+        }
+    }
+    for (const auto &[frameNo, perFrame] : perFrameParamsMap) {
+        TLOGI("frameNo = %u:", frameNo);
+        if (perFrame.requestIdr.has_value()) {
+            TLOGI("    requestIdr %d", perFrame.requestIdr.value());
+        }
+        if (perFrame.qpRange.has_value()) {
+            TLOGI("    qpRange %u~%u", perFrame.qpRange->qpMin, perFrame.qpRange->qpMax);
+        }
+        if (perFrame.ltrParam.has_value()) {
+            TLOGI("    LTR, markAsLTR %d, useLTR %d, useLTRPoc %u",
+                  perFrame.ltrParam->markAsLTR, perFrame.ltrParam->useLTR, perFrame.ltrParam->useLTRPoc);
+        }
+    }
     TLOGI("-----------------------------");
 }
 }

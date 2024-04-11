@@ -20,6 +20,8 @@
 #include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
+#include "native_avcapability.h"
+#include "native_avcodec_base.h"
 
 constexpr uint32_t TIME_OUT_MS = 1000;
 
@@ -138,15 +140,13 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
+    ConfigureAboutRGBA(format, meta);
+    ConfigureAboutEnableTemporalScale(format, meta);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->Configure(format);
-    if (ret == 0) {
-        return Status::OK;
-    } else {
-        return Status::ERROR_UNKNOWN;
-    }
+    return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
 }
 
 Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
@@ -249,21 +249,13 @@ Status SurfaceEncoderAdapter::Stop()
 Status SurfaceEncoderAdapter::Pause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
-    struct timespec timestamp = {0, 0};
-    clock_gettime(CLOCK_MONOTONIC, &timestamp);
-    const int64_t SEC_TO_NS = 1000000000;
-    pauseTime_ = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
     return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Resume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
-    struct timespec timestamp = {0, 0};
-    clock_gettime(CLOCK_MONOTONIC, &timestamp);
-    const int64_t SEC_TO_NS = 1000000000;
-    int64_t resumeTime = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
-    totalPauseTime_ = totalPauseTime_ + resumeTime - pauseTime_;
+    isResume_ = true;
     return Status::OK;
 }
 
@@ -290,7 +282,6 @@ Status SurfaceEncoderAdapter::Reset()
     int32_t ret = codecServer_->Reset();
     startBufferTime_ = -1;
     stopTime_ = -1;
-    pauseTime_ = -1;
     totalPauseTime_ = 0;
     isStart_ = false;
     if (ret == 0) {
@@ -351,7 +342,7 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), buffer->pts_);
+    MEDIA_LOG_D(PUBLIC_LOG_S "OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), buffer->pts_);
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);
@@ -379,6 +370,12 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
+    if (isResume_) {
+        const int64_t MS_TO_NS = 1000000;
+        totalPauseTime_ = totalPauseTime_ + buffer->pts_ - lastBufferTime_ - MS_TO_NS;
+        isResume_ = false;
+    }
+    lastBufferTime_ = buffer->pts_;
     emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
@@ -387,7 +384,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnOutputBufferAvailable end", logTag_.c_str());
+    MEDIA_LOG_D(PUBLIC_LOG_S "OnOutputBufferAvailable end", logTag_.c_str());
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()
@@ -410,6 +407,42 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
         }
     }
     MEDIA_LOG_I(PUBLIC_LOG_S "ReleaseBuffer end", logTag_.c_str());
+}
+void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
+{
+    Plugins::VideoPixelFormat pixelFormat = Plugins::VideoPixelFormat::NV12;
+    if (meta->Find(Tag::VIDEO_PIXEL_FORMAT) != meta->end()) {
+        meta->Get<Tag::VIDEO_PIXEL_FORMAT>(pixelFormat);
+    }
+    format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(pixelFormat));
+    
+    if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
+        Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
+        meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
+    }
+}
+
+void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format,
+    const std::shared_ptr<Meta> &meta)
+{
+    if (meta->Find(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) != meta->end()) {
+        bool enableTemporalScale;
+        meta->Get<Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY>(enableTemporalScale);
+        if (!enableTemporalScale) {
+            MEDIA_LOG_I("video encoder enableTemporalScale is false!");
+            return;
+        }
+        OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+        bool isSupported = OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
+        if (isSupported) {
+            MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is supported!");
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY,
+                1);
+        } else {
+            MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is not supported!");
+        }
+    }
 }
 } // namespace MEDIA
 } // namespace OHOS

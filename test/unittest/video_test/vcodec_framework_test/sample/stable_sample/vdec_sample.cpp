@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,12 +20,13 @@
 #include "native_avmagic.h"
 #include "surface/window.h"
 
+#define PRINT_HILOG
 #define TEST_ID sampleId_
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -43,12 +44,8 @@ constexpr uint8_t H265_NALU_TYPE_MASK = 0x7E;
 constexpr uint8_t H265_VPS = 32;
 constexpr uint8_t H265_SPS = 33;
 constexpr uint8_t H265_PPS = 34;
-constexpr uint32_t DEFAULT_WIDTH = 720;
-constexpr uint32_t DEFAULT_HEIGHT = 1280;
 constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 60;
-constexpr size_t MAX_HEAPNUM = 512;
-constexpr uint64_t SAMPLE_TIMEOUT = 1000000;
 
 static inline int64_t GetTimeUs()
 {
@@ -58,47 +55,132 @@ static inline int64_t GetTimeUs()
     return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000));
 }
 } // namespace
+namespace OHOS {
+namespace MediaAVCodec {
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    static sptr<IBufferConsumerListener> GetTestConsumerListener(Surface *cs, sptr<IBufferConsumerListener> &listener)
+    {
+        TestConsumerListener *testListener = reinterpret_cast<TestConsumerListener *>(listener.GetRefPtr());
+        return new TestConsumerListener(cs, testListener->signal_, testListener->sampleId_,
+                                        testListener->frameOutputCount_);
+    }
+
+    TestConsumerListener(Surface *cs, std::shared_ptr<VideoDecSignal> &signal, int32_t id,
+                         std::shared_ptr<std::atomic<uint32_t>> outputCount = nullptr)
+    {
+        sampleId_ = id;
+        TITLE_LOG;
+        cs_ = cs;
+        signal_ = signal;
+        frameOutputCount_ = (outputCount == nullptr) ? std::make_shared<std::atomic<uint32_t>>(0) : outputCount;
+    }
+
+    void OnBufferAvailable() override
+    {
+        UNITTEST_INFO_LOG("surfaceId:%" PRIu64, cs_->GetUniqueId());
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+
+        cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
+
+        if (signal_->outFile_ != nullptr && signal_->outFile_->is_open() &&
+            (*frameOutputCount_) < MAX_OUTPUT_FRMAENUM) {
+            int32_t width = buffer->GetWidth();
+            int32_t height = buffer->GetHeight();
+            int32_t stride = buffer->GetStride();
+            for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
+                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride, width);
+            }
+        }
+        cs_->ReleaseBuffer(buffer, -1);
+        (*frameOutputCount_)++;
+    }
+
+private:
+    Rect damage_ = {};
+    Surface *cs_ = nullptr;
+    int32_t sampleId_ = 0;
+    int64_t timestamp_ = 0;
+    std::shared_ptr<VideoDecSignal> signal_ = nullptr;
+    std::shared_ptr<std::atomic<uint32_t>> frameOutputCount_ = 0;
+};
+
+class VideoDecSample::SurfaceObject {
+public:
+    SurfaceObject(std::shared_ptr<VideoDecSignal> &signal, int32_t id) : sampleId_(id), signal_(signal) {}
+
+    ~SurfaceObject()
+    {
+        while (!queue_.empty()) {
+            DestoryNativeWindow(queue_.front().nativeWindow_);
+            queue_.pop();
+        }
+    }
+
+    OHNativeWindow *GetNativeWindow(const bool isNew = false)
+    {
+        TITLE_LOG;
+        if (isNew || queue_.empty()) {
+            CreateNativeWindow();
+        }
+        return queue_.back().nativeWindow_;
+    }
+
+    void CreateNativeWindow()
+    {
+        TITLE_LOG;
+        WindowObject obj;
+        if (queue_.size() >= OFFSET_8) {
+            obj = queue_.front();
+            queue_.push(obj);
+            queue_.pop();
+            return;
+        }
+        obj.consumer_ = Surface::CreateSurfaceAsConsumer();
+        if (queue_.empty()) {
+            obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
+        } else {
+            obj.listener_ =
+                TestConsumerListener::GetTestConsumerListener(obj.consumer_.GetRefPtr(), queue_.back().listener_);
+        }
+        obj.consumer_->RegisterConsumerListener(obj.listener_);
+
+        auto p = obj.consumer_->GetProducer();
+        obj.producer_ = Surface::CreateSurfaceAsProducer(p);
+
+        obj.nativeWindow_ = CreateNativeWindowFromSurface(&obj.producer_);
+        queue_.push(std::move(obj));
+    }
+
+private:
+    int32_t sampleId_;
+    std::shared_ptr<VideoDecSignal> signal_ = nullptr;
+
+    typedef struct WindowObject {
+        OHNativeWindow *nativeWindow_ = nullptr;
+        sptr<IBufferConsumerListener> listener_ = nullptr;
+        sptr<Surface> consumer_ = nullptr;
+        sptr<Surface> producer_ = nullptr;
+    } WindowObject;
+    std::queue<WindowObject> queue_;
+};
+} // namespace MediaAVCodec
+} // namespace OHOS
 
 namespace OHOS {
 namespace MediaAVCodec {
-TestConsumerListener::TestConsumerListener(Surface *cs, unique_ptr<ofstream> &&outFile, int32_t id)
-{
-    sampleId_ = id;
-    TITLE_LOG;
-    cs_ = cs;
-    outFile_ = move(outFile);
-    frameOutputCount_ = 0;
-}
-
-TestConsumerListener::~TestConsumerListener()
-{
-    TITLE_LOG;
-    if (outFile_ != nullptr && outFile_->is_open()) {
-        outFile_->close();
-    }
-}
-
-void TestConsumerListener::OnBufferAvailable()
-{
-    TITLE_LOG;
-    sptr<SurfaceBuffer> buffer;
-    int32_t flushFence;
-
-    cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
-
-    if (outFile_ != nullptr && outFile_->is_open() && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
-    }
-    cs_->ReleaseBuffer(buffer, -1);
-    frameOutputCount_++;
-}
+bool VideoDecSample::needDump_ = false;
+bool VideoDecSample::isHardware_ = true;
+uint64_t VideoDecSample::sampleTimout_ = 180;
+uint64_t VideoDecSample::threadNum_ = 1;
 
 VideoDecSample::VideoDecSample()
 {
     static atomic<int32_t> sampleId = 0;
     sampleId_ = ++sampleId;
     TITLE_LOG;
-    dyFormat_ = OH_AVFormat_Create();
+    dyFormat_ = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
 }
 
 VideoDecSample::~VideoDecSample()
@@ -108,19 +190,6 @@ VideoDecSample::~VideoDecSample()
         int32_t ret = OH_VideoDecoder_Destroy(codec_);
         UNITTEST_CHECK_AND_INFO_LOG(ret == AV_ERR_OK, "OH_VideoDecoder_Destroy failed");
     }
-    if (dyFormat_ != nullptr) {
-        OH_AVFormat_Destroy(dyFormat_);
-    }
-    if (inFile_ != nullptr && inFile_->is_open()) {
-        inFile_->close();
-    }
-    if (outFile_ != nullptr && outFile_->is_open()) {
-        outFile_->close();
-    }
-    if (nativeWindow_ != nullptr) {
-        DestoryNativeWindow(nativeWindow_);
-        nativeWindow_ = nullptr;
-    }
 }
 
 bool VideoDecSample::Create()
@@ -129,16 +198,7 @@ bool VideoDecSample::Create()
 
     isH264Stream_ = inPath_.substr(inPath_.length() - 4, 4) == "h264"; // 4: "h264" string len
     inPath_ = "/data/test/media/" + inPath_;
-    outPath_ = "/data/test/media/" + outPath_;
-    inFile_ = make_unique<ifstream>();
-    inFile_->open(inPath_, ios::in | ios::binary);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_ != nullptr, false, "create inFile_ failed");
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_->is_open(), false, "can not open inFile_");
-    if (needDump_) {
-        outFile_ = make_unique<ofstream>();
-        outFile_->open(outPath_, ios::out | ios::binary);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr, false, "create outFile_ failed");
-    }
+    outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
     OH_AVCodecCategory category = isHardware_ ? HARDWARE : SOFTWARE;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(mime_.c_str(), false, category);
@@ -152,10 +212,30 @@ bool VideoDecSample::Create()
     return true;
 }
 
+bool VideoDecSample::InitFile()
+{
+    if (signal_->inFile_ == nullptr) {
+        signal_->inFile_ = make_unique<ifstream>();
+        signal_->inFile_->open(inPath_, ios::in | ios::binary);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->inFile_ != nullptr, false, "create signal_->inFile_ failed");
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->inFile_->is_open(), false, "can not open signal_->inFile_");
+    }
+    if (signal_->outFile_ == nullptr && needDump_) {
+        signal_->outFile_ = make_unique<ofstream>();
+        signal_->outFile_->open(outPath_, ios::out | ios::binary);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->outFile_ != nullptr, false, "create signal_->outFile_ failed");
+    }
+    return true;
+}
+
 int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VideoDecSignal> &signal)
 {
     TITLE_LOG;
     signal_ = signal;
+    if (!InitFile()) {
+        return AV_ERR_UNKNOWN;
+    }
+    asyncCallback_ = callback;
     int32_t ret = OH_VideoDecoder_SetCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
     isAVBufferMode_ = ret != AV_ERR_OK;
     return ret;
@@ -165,24 +245,22 @@ int32_t VideoDecSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr
 {
     TITLE_LOG;
     signal_ = signal;
+    if (!InitFile()) {
+        return AV_ERR_UNKNOWN;
+    }
+    callback_ = callback;
     int32_t ret = OH_VideoDecoder_RegisterCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
     isAVBufferMode_ = ret == AV_ERR_OK;
     return ret;
 }
 
-int32_t VideoDecSample::SetOutputSurface()
+int32_t VideoDecSample::SetOutputSurface(const bool isNew)
 {
     TITLE_LOG;
-    consumer_ = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_.GetRefPtr(), move(outFile_), sampleId_);
-    outFile_ = nullptr;
-    consumer_->RegisterConsumerListener(listener);
-
-    auto p = consumer_->GetProducer();
-    producer_ = Surface::CreateSurfaceAsProducer(p);
-
-    nativeWindow_ = CreateNativeWindowFromSurface(&producer_);
-    int32_t ret = OH_VideoDecoder_SetSurface(codec_, nativeWindow_);
+    if (surafaceObj_ == nullptr) {
+        surafaceObj_ = std::make_shared<SurfaceObject>(signal_, sampleId_);
+    }
+    int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(isNew));
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
 }
@@ -192,13 +270,14 @@ int32_t VideoDecSample::Configure()
     TITLE_LOG;
     OH_AVFormat *format = OH_AVFormat_Create();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
-    bool setFormatRet =
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH) &&
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT) &&
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
     int32_t ret = OH_VideoDecoder_Configure(codec_, format);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Configure failed");
+
     OH_AVFormat_Destroy(format);
     return ret;
 }
@@ -209,6 +288,7 @@ int32_t VideoDecSample::Start()
     using namespace chrono;
 
     time_ = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+    needXps_ = true;
     return OH_VideoDecoder_Start(codec_);
 }
 
@@ -218,8 +298,8 @@ bool VideoDecSample::WaitForEos()
     using namespace chrono;
 
     unique_lock<mutex> lock(signal_->eosMutex_);
-    auto lck = [this]() { return signal_->isEos_.load(); };
-    bool isNotTimeout = signal_->eosCond_.wait_for(lock, seconds(SAMPLE_TIMEOUT), lck);
+    auto lck = [this]() { return signal_->isOutEos_.load(); };
+    bool isNotTimeout = signal_->eosCond_.wait_for(lock, seconds(sampleTimout_), lck);
     lock.unlock();
     int64_t tempTime = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     EXPECT_LE(frameOutputCount_, frameInputCount_);
@@ -253,69 +333,61 @@ int32_t VideoDecSample::Prepare()
 int32_t VideoDecSample::Stop()
 {
     TITLE_LOG;
-    signal_->isFlushing_ = true;
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
+    int32_t ret = AV_ERR_OK;
     {
-        scoped_lock lock(signal_->inMutex_, signal_->outMutex_);
-        FlushInQueue();
-        FlushOutQueue();
+        FlushGuard guard(signal_);
+        ret = OH_VideoDecoder_Stop(codec_);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Stop failed");
     }
-    int32_t ret = OH_VideoDecoder_Stop(codec_);
-    signal_->isFlushing_ = false;
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
+    ret = isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
 int32_t VideoDecSample::Flush()
 {
     TITLE_LOG;
-    signal_->isFlushing_ = true;
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
+    int32_t ret = AV_ERR_OK;
     {
-        scoped_lock lock(signal_->inMutex_, signal_->outMutex_);
-        FlushInQueue();
-        FlushOutQueue();
+        FlushGuard guard(signal_);
+        ret = OH_VideoDecoder_Flush(codec_);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Flush failed");
     }
-    int32_t ret = OH_VideoDecoder_Flush(codec_);
-    signal_->isFlushing_ = false;
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
+    ret = isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
 int32_t VideoDecSample::Reset()
 {
     TITLE_LOG;
-    signal_->isFlushing_ = true;
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
+    int32_t ret = AV_ERR_OK;
     {
-        scoped_lock lock(signal_->inMutex_, signal_->outMutex_);
-        FlushInQueue();
-        FlushOutQueue();
+        FlushGuard guard(signal_);
+        ret = OH_VideoDecoder_Reset(codec_);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Reset failed");
     }
-    int32_t ret = OH_VideoDecoder_Reset(codec_);
-    signal_->isFlushing_ = false;
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
+    ret = Configure();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Configure failed");
+    ret = SetOutputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
 int32_t VideoDecSample::Release()
 {
     TITLE_LOG;
+    FlushGuard guard(signal_);
     int32_t ret = OH_VideoDecoder_Destroy(codec_);
     codec_ = nullptr;
     return ret;
 }
 
-OH_AVFormat *VideoDecSample::GetOutputDescription()
+std::shared_ptr<OH_AVFormat> VideoDecSample::GetOutputDescription()
 {
     TITLE_LOG;
-    auto avformat = OH_VideoDecoder_GetOutputDescription(codec_);
+    auto avformat = std::shared_ptr<OH_AVFormat>(OH_VideoDecoder_GetOutputDescription(codec_),
+                                                 [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
     UNITTEST_CHECK_AND_RETURN_RET_LOG(avformat != nullptr, nullptr, "OH_VideoDecoder_GetOutputDescription failed");
     return avformat;
 }
@@ -323,12 +395,19 @@ OH_AVFormat *VideoDecSample::GetOutputDescription()
 int32_t VideoDecSample::SetParameter()
 {
     TITLE_LOG;
-    return OH_VideoDecoder_SetParameter(codec_, dyFormat_);
+    return OH_VideoDecoder_SetParameter(codec_, dyFormat_.get());
 }
 
-int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
+int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
 {
     UNITTEST_INFO_LOG("index:%d", index);
+    if (signal_->isInEos_) {
+        if (!isFirstEos_) {
+            UNITTEST_INFO_LOG("At Eos State");
+            return AV_ERR_OK;
+        }
+        isFirstEos_ = false;
+    }
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoDecoder_PushInputBuffer(codec_, index);
@@ -342,42 +421,22 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
     return AV_ERR_OK;
 }
 
-int32_t VideoDecSample::PushInputData(uint32_t index)
+int32_t VideoDecSample::ReleaseOutputData(uint32_t index)
 {
     UNITTEST_INFO_LOG("index:%d", index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(isAVBufferMode_, AV_ERR_UNKNOWN, "PushInputData is not AVBufferMode");
-    int32_t ret = OH_VideoDecoder_PushInputBuffer(codec_, index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputBuffer failed");
-    frameInputCount_++;
-    usleep(DEFAULT_TIME_INTERVAL);
-    return AV_ERR_OK;
-}
-
-int32_t VideoDecSample::RenderOutputData(uint32_t index)
-{
-    UNITTEST_INFO_LOG("index:%d", index);
-    int32_t ret = AV_ERR_OK;
-    if (isAVBufferMode_) {
-        ret = OH_VideoDecoder_RenderOutputBuffer(codec_, index);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputBuffer failed");
-    } else {
-        ret = OH_VideoDecoder_RenderOutputData(codec_, index);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputData failed");
-    }
-    frameOutputCount_++;
-    return AV_ERR_OK;
-}
-
-int32_t VideoDecSample::FreeOutputData(uint32_t index)
-{
-    UNITTEST_INFO_LOG("index:%d", index);
-    int32_t ret = AV_ERR_OK;
-    if (isAVBufferMode_) {
+    int32_t ret;
+    if (isAVBufferMode_ && !isSurfaceMode_) {
         ret = OH_VideoDecoder_FreeOutputBuffer(codec_, index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_FreeOutputBuffer failed");
-    } else {
+    } else if (isAVBufferMode_ && isSurfaceMode_) {
+        ret = OH_VideoDecoder_RenderOutputBuffer(codec_, index);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputBuffer failed");
+    } else if (!isAVBufferMode_ && !isSurfaceMode_) {
         ret = OH_VideoDecoder_FreeOutputData(codec_, index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_FreeOutputData failed");
+    } else if (!isAVBufferMode_ && isSurfaceMode_) {
+        ret = OH_VideoDecoder_RenderOutputData(codec_, index);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_RenderOutputData failed");
     }
     frameOutputCount_++;
     return AV_ERR_OK;
@@ -387,29 +446,6 @@ int32_t VideoDecSample::IsValid(bool &isValid)
 {
     TITLE_LOG;
     return OH_VideoDecoder_IsValid(codec_, &isValid);
-}
-
-void VideoDecSample::FlushInQueue()
-{
-    queue<uint32_t> tempIndex;
-    swap(tempIndex, signal_->inQueue_);
-    queue<OH_AVMemory *> tempInMemory;
-    swap(tempInMemory, signal_->inMemoryQueue_);
-    queue<OH_AVBuffer *> tempInBuffer;
-    swap(tempInBuffer, signal_->inBufferQueue_);
-    (void)inFile_->seekg(0);
-}
-
-void VideoDecSample::FlushOutQueue()
-{
-    queue<uint32_t> tempIndex;
-    swap(tempIndex, signal_->outQueue_);
-    queue<OH_AVCodecBufferAttr> tempOutAttr;
-    swap(tempOutAttr, signal_->outAttrQueue_);
-    queue<OH_AVMemory *> tempOutMemory;
-    swap(tempOutMemory, signal_->outMemoryQueue_);
-    queue<OH_AVBuffer *> tempOutBuffer;
-    swap(tempOutBuffer, signal_->outBufferQueue_);
 }
 
 bool VideoDecSample::IsCodecData(const uint8_t *const addr)
@@ -445,37 +481,9 @@ int32_t VideoDecSample::HandleInputFrame(uint32_t &index, OH_AVCodecBufferAttr &
         auto avMemory = signal_->inMemoryQueue_.front();
         addr = OH_AVMemory_GetAddr(avMemory);
     }
-    signal_->inQueue_.pop();
-    signal_->inMemoryQueue_.pop();
-    signal_->inBufferQueue_.pop();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr, AV_ERR_UNKNOWN, "in buffer is nullptr, index: %d", index);
-    attr.offset = 0;
-    attr.pts = GetTimeUs();
-    if (frameCount_ <= frameInputCount_) {
-        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        attr.size = 0;
-        return SetAVBufferAttr(avBuffer, attr);
-    }
-
-    if (inFile_->eof()) {
-        (void)inFile_->seekg(0);
-    }
-    char head[FRAME_HEAD_LEN] = {};
-    (void)inFile_->read(head, FRAME_HEAD_LEN);
-    uint32_t bufferSize =
-        static_cast<uint32_t>(((head[3] & 0xFF)) | ((head[2] & 0xFF) << OFFSET_8) | ((head[1] & 0xFF) << OFFSET_16) |
-                              ((head[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
-
-    (void)inFile_->read(reinterpret_cast<char *>(addr + FRAME_HEAD_LEN), bufferSize);
-    addr[0] = 0;
-    addr[1] = 0;
-    addr[2] = 0; // 2: annexB frame head offset 2
-    addr[3] = 1; // 3: annexB frame head offset 3
-
-    attr.flags = IsCodecData(addr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAG_NONE;
-    attr.size = bufferSize + FRAME_HEAD_LEN;
-    uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
-    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIu64, attr.size, (int32_t)(attr.flags), addr64[0]);
+    signal_->PopInQueue();
+    int32_t ret = HandleInputFrameInner(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleInputFrameInner failed");
     return SetAVBufferAttr(avBuffer, attr);
 }
 
@@ -486,78 +494,20 @@ int32_t VideoDecSample::HandleOutputFrame(uint32_t &index, OH_AVCodecBufferAttr 
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         auto avBuffer = signal_->outBufferQueue_.front();
-        addr = OH_AVBuffer_GetAddr(avBuffer);
+        addr = isSurfaceMode_ ? nullptr : OH_AVBuffer_GetAddr(avBuffer);
         ret = OH_AVBuffer_GetBufferAttr(avBuffer, &attr);
     } else {
         auto avMemory = signal_->outMemoryQueue_.front();
-        addr = OH_AVMemory_GetAddr(avMemory);
+        addr = isSurfaceMode_ ? nullptr : OH_AVMemory_GetAddr(avMemory);
         attr = signal_->outAttrQueue_.front();
     }
-    signal_->outQueue_.pop();
-    signal_->outAttrQueue_.pop();
-    signal_->outMemoryQueue_.pop();
-    signal_->outBufferQueue_.pop();
+    signal_->PopOutQueue();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_GetBufferAttr failed, index: %d", index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr || isSurfaceMode_, AV_ERR_UNKNOWN,
                                       "out buffer is nullptr, index: %d", index);
-
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
-        signal_->isEos_ = true;
-        signal_->eosCond_.notify_all();
-    }
-    if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        (void)outFile_->write(reinterpret_cast<char *>(addr), attr.size);
-    }
-    return AV_ERR_OK;
-}
-
-int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
-{
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr, AV_ERR_UNKNOWN, "in buffer is nullptr");
-    attr.offset = 0;
-    attr.pts = GetTimeUs();
-    if (frameCount_ <= frameInputCount_) {
-        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        attr.size = 0;
-        return AV_ERR_OK;
-    }
-
-    if (inFile_->eof()) {
-        (void)inFile_->seekg(0);
-    }
-    char head[FRAME_HEAD_LEN] = {};
-    (void)inFile_->read(head, FRAME_HEAD_LEN);
-    uint32_t bufferSize =
-        static_cast<uint32_t>(((head[3] & 0xFF)) | ((head[2] & 0xFF) << OFFSET_8) | ((head[1] & 0xFF) << OFFSET_16) |
-                              ((head[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
-
-    (void)inFile_->read(reinterpret_cast<char *>(addr + FRAME_HEAD_LEN), bufferSize);
-    addr[0] = 0;
-    addr[1] = 0;
-    addr[2] = 0; // 2: annexB frame head offset 2
-    addr[3] = 1; // 3: annexB frame head offset 3
-
-    attr.flags = IsCodecData(addr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAG_NONE;
-    attr.size = bufferSize + FRAME_HEAD_LEN;
-    uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
-    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIu64, attr.size, (int32_t)(attr.flags), addr64[0]);
-    return AV_ERR_OK;
-}
-
-int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
-{
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr || isSurfaceMode_, AV_ERR_UNKNOWN, "out buffer is nullptr");
-
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
-        signal_->isEos_ = true;
-        signal_->eosCond_.notify_all();
-    }
-    if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        (void)outFile_->write(reinterpret_cast<char *>(addr), attr.size);
-    }
-    return AV_ERR_OK;
+    ret = HandleOutputFrameInner(addr, attr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "HandleOutputFrameInner failed, index: %d", index);
+    return ret;
 }
 
 int32_t VideoDecSample::HandleInputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
@@ -568,7 +518,7 @@ int32_t VideoDecSample::HandleInputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr
 
 int32_t VideoDecSample::HandleOutputFrame(OH_AVMemory *data, OH_AVCodecBufferAttr &attr)
 {
-    uint8_t *addr = OH_AVMemory_GetAddr(data);
+    uint8_t *addr = isSurfaceMode_ ? nullptr : OH_AVMemory_GetAddr(data);
     return HandleOutputFrameInner(addr, attr);
 }
 
@@ -585,49 +535,104 @@ int32_t VideoDecSample::HandleInputFrame(OH_AVBuffer *data)
 
 int32_t VideoDecSample::HandleOutputFrame(OH_AVBuffer *data)
 {
-    uint8_t *addr = OH_AVBuffer_GetAddr(data);
+    uint8_t *addr = isSurfaceMode_ ? nullptr : OH_AVBuffer_GetAddr(data);
     OH_AVCodecBufferAttr attr;
     int32_t ret = OH_AVBuffer_GetBufferAttr(data, &attr);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_AVBuffer_GetBufferAttr failed");
     return HandleOutputFrameInner(addr, attr);
 }
 
-HeapMemoryThread::HeapMemoryThread()
+int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
 {
-    isStopLoop_ = false;
-    heapMemoryLoop_ = make_unique<thread>(&HeapMemoryThread::HeapMemoryLoop, this);
-
-    std::string name = "heap_memory_thread";
-    pthread_setname_np(heapMemoryLoop_->native_handle(), name.substr(0, 15).c_str()); // 15: max thread name
-}
-
-HeapMemoryThread::~HeapMemoryThread()
-{
-    isStopLoop_ = true;
-    if (heapMemoryLoop_ != nullptr && heapMemoryLoop_->joinable()) {
-        heapMemoryLoop_->join();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr, AV_ERR_UNKNOWN, "in buffer is nullptr");
+    attr.offset = 0;
+    attr.pts = GetTimeUs();
+    if (frameCount_ <= frameInputCount_) {
+        signal_->isInEos_ = true;
+        attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        attr.size = 0;
+        UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
+        return AV_ERR_OK;
     }
+
+    if (signal_->inFile_->eof() || needXps_) {
+        needXps_ = false;
+        (void)signal_->inFile_->seekg(0);
+    }
+    char head[FRAME_HEAD_LEN] = {};
+    (void)signal_->inFile_->read(head, FRAME_HEAD_LEN);
+    uint32_t bufferSize =
+        static_cast<uint32_t>(((head[3] & 0xFF)) | ((head[2] & 0xFF) << OFFSET_8) | ((head[1] & 0xFF) << OFFSET_16) |
+                              ((head[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
+
+    (void)signal_->inFile_->read(reinterpret_cast<char *>(addr + FRAME_HEAD_LEN), bufferSize);
+    addr[0] = 0;
+    addr[1] = 0;
+    addr[2] = 0; // 2: annexB frame head offset 2
+    addr[3] = 1; // 3: annexB frame head offset 3
+
+    attr.flags = IsCodecData(addr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
+    attr.size = bufferSize + FRAME_HEAD_LEN;
+
+    uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
+    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
+    return AV_ERR_OK;
 }
 
-void HeapMemoryThread::HeapMemoryLoop()
+int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr)
 {
-    queue<uint8_t *> memoryList;
-    while (!isStopLoop_) {
-        uint8_t *memory = new uint8_t[sizeof(OH_AVMemory)];
-        uint8_t *buffer = new uint8_t[sizeof(OH_AVBuffer)];
-        while (memoryList.size() >= MAX_HEAPNUM) {
-            uint8_t *memoryFront = memoryList.front();
-            delete memoryFront;
-            memoryList.pop();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(addr != nullptr || isSurfaceMode_, AV_ERR_UNKNOWN, "out buffer is nullptr");
+
+    if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
+        UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
+        signal_->isOutEos_ = true;
+        signal_->eosCond_.notify_all();
+        return AV_ERR_OK;
+    }
+    if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
+        if (stride_ == 0) {
+            std::shared_ptr<OH_AVFormat> format = GetOutputDescription();
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_WIDTH, &width_);
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_HEIGHT, &height_);
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &stride_);
         }
-        memoryList.push(memory);
-        memoryList.push(buffer);
+        for (int32_t i = 0; i < height_ * 3 / 2; ++i) { // 3: nom, 2: denom
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
+        }
     }
-    while (!memoryList.empty()) {
-        uint8_t *memoryFront = memoryList.front();
-        delete memoryFront;
-        memoryList.pop();
+    if (addr == nullptr) {
+        UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
+    } else {
+        uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
+        UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags),
+                          addr64[0]);
     }
+    return AV_ERR_OK;
+}
+
+int32_t VideoDecSample::Operate()
+{
+    int32_t ret = AV_ERR_OK;
+    if (operation_ == "Flush") {
+        ret = Flush();
+        return ret == AV_ERR_OK ? Start() : ret;
+    } else if (operation_ == "Stop") {
+        ret = Stop();
+        return ret == AV_ERR_OK ? Start() : ret;
+    } else if (operation_ == "Reset") {
+        ret = Reset();
+        return ret == AV_ERR_OK ? Start() : ret;
+    } else if (operation_ == "GetOutputDescription") {
+        auto format = GetOutputDescription();
+        ret = format == nullptr ? AV_ERR_UNKNOWN : ret;
+        return ret;
+    } else if (operation_ == "SetCallback") {
+        return isAVBufferMode_ ? RegisterCallback(callback_, signal_) : SetCallback(asyncCallback_, signal_);
+    } else if (operation_ == "SetOutputSurface") {
+        return isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
+    }
+    UNITTEST_INFO_LOG("unknown GetParam(): %s", operation_.c_str());
+    return AV_ERR_UNKNOWN;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

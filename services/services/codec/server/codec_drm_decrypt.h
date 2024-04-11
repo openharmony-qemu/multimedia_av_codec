@@ -29,6 +29,7 @@ using namespace Media;
 using MetaDrmSubSample = Plugins::MetaDrmSubSample;
 using MetaDrmCencInfo = Plugins::MetaDrmCencInfo;
 using MetaDrmCencAlgorithm = Plugins::MetaDrmCencAlgorithm;
+using MetaDrmCencInfoMode = Plugins::MetaDrmCencInfoMode;
 using DrmBuffer = DrmStandard::IMediaDecryptModuleService::DrmBuffer;
 
 enum SvpMode : int32_t {
@@ -39,7 +40,7 @@ enum SvpMode : int32_t {
 
 class CodecDrmDecrypt {
 public:
-    void DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+    int32_t DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
         uint32_t &dataSize);
     void SetCodecName(const std::string &codecName);
     void SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
@@ -53,7 +54,23 @@ private:
     uint8_t DrmGetFinalNalTypeAndIndex(const uint8_t *data, uint32_t dataSize, uint32_t &posStartIndex,
         uint32_t &posEndIndex) const;
     static void DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndIndex, uint32_t offset, uint32_t &dataSize);
-    void DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo) const;
+    void DrmModifyCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t &dataSize, uint8_t isAmbiguity,
+        MetaDrmCencInfo *cencInfo) const;
+    static void SetDrmAlgoAndBlocks(uint8_t algo, MetaDrmCencInfo *cencInfo);
+    static int DrmFindAvsCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index);
+    static int DrmFindHevcCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index);
+    static int DrmFindH264CeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index);
+    int DrmFindCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index) const;
+    int DrmFindCeiPos(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t &ceiEndPos) const;
+    static void DrmFindEncryptionFlagPos(uint8_t *data, uint32_t dataSize, uint32_t &pos);
+    static int DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo);
+    static int DrmGetKeyIv(uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo);
+    static int DrmParseDrmDescriptor(uint8_t *data, uint32_t dataSize, uint32_t &pos, uint8_t drmDescriptorFlag,
+        MetaDrmCencInfo *cencInfo);
+    static void DrmSetKeyInfo(uint8_t *data, uint32_t dataSize, uint32_t ceiStartPos, uint8_t &isAmbiguity,
+        MetaDrmCencInfo *cencInfo);
+    void DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t dataSize, uint8_t &isAmbiguity,
+        MetaDrmCencInfo *cencInfo) const;
     int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
         std::shared_ptr<AVBuffer> outBuf);
     int32_t SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, const std::shared_ptr<AVBuffer> &outBuf,

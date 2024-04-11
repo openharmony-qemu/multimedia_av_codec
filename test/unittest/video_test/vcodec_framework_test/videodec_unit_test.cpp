@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,17 @@
  * limitations under the License.
  */
 
-#include "videodec_unit_test.h"
+#include <gtest/gtest.h>
+#include <gtest/hwext/gtest-multithread.h>
+#include "meta/meta_key.h"
+#include "vdec_sample.h"
+#ifdef VIDEODEC_CAPI_UNIT_TEST
+#include "native_avmagic.h"
+#include "videodec_capi_mock.h"
+#define TEST_SUIT VideoDecCapiTest
+#else
+#define TEST_SUIT VideoDecInnerTest
+#endif
 
 using namespace std;
 using namespace OHOS;
@@ -106,9 +116,32 @@ struct OH_AVCodecAsyncCallback GetVoidAsyncCallback()
     return cb;
 }
 #endif
-} // namespace
+class TEST_SUIT : public testing::TestWithParam<int32_t> {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp(void);
+    void TearDown(void);
 
-void VideoDecUnitTest::SetUpTestCase(void)
+    bool CreateVideoCodecByName(const std::string &decName);
+    bool CreateVideoCodecByMime(const std::string &decMime);
+    void CreateByNameWithParam(int32_t param);
+    void SetFormatWithParam(int32_t param);
+    void PrepareSource(int32_t param);
+
+protected:
+    std::shared_ptr<CodecListMock> capability_ = nullptr;
+    std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
+    std::shared_ptr<FormatMock> format_ = nullptr;
+    std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
+    std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
+    bool isAVBufferMode_ = false;
+#ifdef VIDEODEC_CAPI_UNIT_TEST
+    OH_AVCodec *codec_ = nullptr;
+#endif
+};
+
+void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
@@ -116,9 +149,9 @@ void VideoDecUnitTest::SetUpTestCase(void)
     g_vdecName = capability->GetName();
 }
 
-void VideoDecUnitTest::TearDownTestCase(void) {}
+void TEST_SUIT::TearDownTestCase(void) {}
 
-void VideoDecUnitTest::SetUp(void)
+void TEST_SUIT::SetUp(void)
 {
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     vdecCallback_ = std::make_shared<VDecCallbackTest>(vdecSignal);
@@ -134,7 +167,7 @@ void VideoDecUnitTest::SetUp(void)
     ASSERT_NE(nullptr, format_);
 }
 
-void VideoDecUnitTest::TearDown(void)
+void TEST_SUIT::TearDown(void)
 {
     if (format_ != nullptr) {
         format_->Destroy();
@@ -148,7 +181,7 @@ void VideoDecUnitTest::TearDown(void)
 #endif
 }
 
-bool VideoDecUnitTest::CreateVideoCodecByMime(const std::string &decMime)
+bool TEST_SUIT::CreateVideoCodecByMime(const std::string &decMime)
 {
     if (videoDec_->CreateVideoDecMockByMime(decMime) == false || videoDec_->SetCallback(vdecCallback_) != AV_ERR_OK) {
         return false;
@@ -156,7 +189,7 @@ bool VideoDecUnitTest::CreateVideoCodecByMime(const std::string &decMime)
     return true;
 }
 
-bool VideoDecUnitTest::CreateVideoCodecByName(const std::string &decName)
+bool TEST_SUIT::CreateVideoCodecByName(const std::string &decName)
 {
     if (isAVBufferMode_) {
         if (videoDec_->CreateVideoDecMockByName(decName) == false ||
@@ -172,10 +205,10 @@ bool VideoDecUnitTest::CreateVideoCodecByName(const std::string &decName)
     return true;
 }
 
-void VideoDecUnitTest::CreateByNameWithParam(void)
+void TEST_SUIT::CreateByNameWithParam(int32_t param)
 {
     std::string codecName = "";
-    switch (GetParam()) {
+    switch (param) {
         case VCodecTestCode::SW_AVC:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_SOFTWARE);
@@ -185,7 +218,6 @@ void VideoDecUnitTest::CreateByNameWithParam(void)
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
         case VCodecTestCode::HW_HEVC:
-        case VCodecTestCode::HW_HDR:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
@@ -199,11 +231,10 @@ void VideoDecUnitTest::CreateByNameWithParam(void)
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
 }
 
-void VideoDecUnitTest::PrepareSource(void)
+void TEST_SUIT::PrepareSource(int32_t param)
 {
-    VCodecTestCode param = static_cast<VCodecTestCode>(GetParam());
     std::string sourcePath = decSourcePathMap_.at(param);
-    if (param == VCodecTestCode::HW_HEVC || param == VCodecTestCode::HW_HDR) {
+    if (param == VCodecTestCode::HW_HEVC) {
         videoDec_->SetSourceType(false);
     }
     videoDec_->testParam_ = param;
@@ -217,22 +248,22 @@ void VideoDecUnitTest::PrepareSource(void)
     videoDec_->SetOutPath(prefix + fileName);
 }
 
-void VideoDecUnitTest::SetFormatWithParam(void)
+void TEST_SUIT::SetFormatWithParam(int32_t param)
 {
+    (void)param;
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
-namespace {
-INSTANTIATE_TEST_SUITE_P(, VideoDecUnitTest, testing::Values(HW_AVC, HW_HEVC, HW_HDR, SW_AVC));
+INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
 
 /**
- * @tc.name: videoDecoder_multithread_create_001
+ * @tc.name: VideoDecoder_Multithread_Create_001
  * @tc.desc: try create 100 instances
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_multithread_create_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
 {
     SET_THREAD_NUM(100);
     g_vdecCount = 0;
@@ -241,31 +272,31 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_multithread_create_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_createWithNull_001
+ * @tc.name: VideoDecoder_CreateWithNull_001
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_createWithNull_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_CreateWithNull_001, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByName(""));
 }
 
 /**
- * @tc.name: videoDecoder_createWithNull_002
+ * @tc.name: VideoDecoder_CreateWithNull_002
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_createWithNull_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_CreateWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_001
+ * @tc.name: VideoDecoder_SetCallback_001
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_001, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
@@ -273,11 +304,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_002
+ * @tc.name: VideoDecoder_SetCallback_002
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_002, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
@@ -285,11 +316,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_003
+ * @tc.name: VideoDecoder_SetCallback_003
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
@@ -297,11 +328,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_004
+ * @tc.name: VideoDecoder_SetCallback_004
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
@@ -310,11 +341,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_004, TestSize.Level1)
 
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 /**
- * @tc.name: videoDecoder_setcallback_invalid_001
+ * @tc.name: VideoDecoder_SetCallback_Invalid_001
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -323,11 +354,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_001, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_invalid_002
+ * @tc.name: VideoDecoder_SetCallback_Invalid_002
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -337,11 +368,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_002, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_invalid_003
+ * @tc.name: VideoDecoder_SetCallback_Invalid_003
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -351,11 +382,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_003, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_setcallback_invalid_004
+ * @tc.name: VideoDecoder_SetCallback_Invalid_004
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_SetCallback_Invalid_004, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -366,11 +397,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_004, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_push_inputbuffer_invalid_001
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_001
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -381,11 +412,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_001, TestSize.L
 }
 
 /**
- * @tc.name: videoDecoder_push_inputbuffer_invalid_002
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_002
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -395,11 +426,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_002, TestSize.L
 }
 
 /**
- * @tc.name: videoDecoder_push_inputbuffer_invalid_003
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_003
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -407,11 +438,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_003, TestSize.L
 }
 
 /**
- * @tc.name: videoDecoder_push_inputbuffer_invalid_004
+ * @tc.name: VideoDecoder_PushInputBuffer_Invalid_004
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_PushInputBuffer_Invalid_004, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -421,11 +452,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_004, TestSize.L
 }
 
 /**
- * @tc.name: videoDecoder_free_buffer_invalid_001
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_001
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -435,11 +466,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_001, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_free_buffer_invalid_002
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_002
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -449,11 +480,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_002, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_free_buffer_invalid_003
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_003
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -461,11 +492,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_003, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_free_buffer_invalid_004
+ * @tc.name: VideoDecoder_Free_Buffer_Invalid_004
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Free_Buffer_Invalid_004, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -475,11 +506,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_004, TestSize.Level1
 }
 
 /**
- * @tc.name: videoDecoder_render_buffer_invalid_001
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_001
  * @tc.desc: video render buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -489,11 +520,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_001, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_render_buffer_invalid_002
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_002
  * @tc.desc: video render buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -503,11 +534,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_002, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_render_buffer_invalid_003
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_003
  * @tc.desc: video render buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -515,11 +546,11 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_003, TestSize.Leve
 }
 
 /**
- * @tc.name: videoDecoder_render_buffer_invalid_004
+ * @tc.name: VideoDecoder_Render_Buffer_Invalid_004
  * @tc.desc: video render buffer
  * @tc.type: FUNC
  */
-HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_Render_Buffer_Invalid_004, TestSize.Level1)
 {
     codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -530,38 +561,38 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_004, TestSize.Leve
 #endif
 
 /**
- * @tc.name: videoDecoder_create_001
+ * @tc.name: VideoDecoder_Create_001
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_create_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Create_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
+    CreateByNameWithParam(GetParam());
 }
 
 /**
- * @tc.name: videoDecoder_configure_001
+ * @tc.name: VideoDecoder_Configure_001
  * @tc.desc: correct key input.
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_configure_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 0);     // set rotation_angle 0
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 15000); // set max input size 15000
     EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 }
 
 /**
- * @tc.name: videoDecoder_configure_002
+ * @tc.name: VideoDecoder_Configure_002
  * @tc.desc: correct key input with redundancy key input
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_configure_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 0);     // set rotation_angle 0
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 15000); // set max input size 15000
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);        // redundancy key
@@ -569,13 +600,13 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_configure_003
+ * @tc.name: VideoDecoder_Configure_003
  * @tc.desc: correct key input with wrong value type input
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_configure_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
+    CreateByNameWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2); // invalid width size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     if (GetParam() == VCodecTestCode::SW_AVC) {
@@ -586,13 +617,13 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_configure_004
+ * @tc.name: VideoDecoder_Configure_004
  * @tc.desc: correct key input with wrong value type input
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_configure_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_004, TestSize.Level1)
 {
-    CreateByNameWithParam();
+    CreateByNameWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
     if (GetParam() == VCodecTestCode::SW_AVC) {
@@ -603,13 +634,13 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_configure_005
+ * @tc.name: VideoDecoder_Configure_005
  * @tc.desc: empty format input
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_configure_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Configure_005, TestSize.Level1)
 {
-    CreateByNameWithParam();
+    CreateByNameWithParam(GetParam());
     if (GetParam() == VCodecTestCode::SW_AVC) {
         EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     } else {
@@ -618,236 +649,223 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_start_001
+ * @tc.name: VideoDecoder_Start_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_002
+ * @tc.name: VideoDecoder_Start_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_003
+ * @tc.name: VideoDecoder_Start_003
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_004
+ * @tc.name: VideoDecoder_Start_004
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_004, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_005
+ * @tc.name: VideoDecoder_Start_005
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_005, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_buffer_001
+ * @tc.name: VideoDecoder_Start_Buffer_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
-    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoDec_->needCheckSHA_ = true;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_buffer_002
+ * @tc.name: VideoDecoder_Start_Buffer_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
-    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoDec_->needCheckSHA_ = true;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_buffer_003
+ * @tc.name: VideoDecoder_Start_Buffer_003
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
-    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoDec_->needCheckSHA_ = true;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_start_buffer_004
+ * @tc.name: VideoDecoder_Start_Buffer_004
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_004, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    PrepareSource();
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_NE(AV_ERR_OK, videoDec_->StartBuffer());
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
+    EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_stop_001
+ * @tc.name: VideoDecoder_Stop_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_stop_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Stop_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_stop_002
+ * @tc.name: VideoDecoder_Stop_002
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_stop_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Stop_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_stop_003
+ * @tc.name: VideoDecoder_Stop_003
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_stop_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Stop_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_NE(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_flush_001
+ * @tc.name: VideoDecoder_Flush_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_flush_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Flush_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
 }
 
 /**
- * @tc.name: videoDecoder_flush_002
+ * @tc.name: VideoDecoder_Flush_002
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_flush_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Flush_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
@@ -855,113 +873,109 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_flush_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_reset_001
+ * @tc.name: VideoDecoder_Reset_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_reset_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Reset_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
 }
 
 /**
- * @tc.name: videoDecoder_reset_002
+ * @tc.name: VideoDecoder_Reset_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_reset_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Reset_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
 }
 
 /**
- * @tc.name: videoDecoder_reset_003
+ * @tc.name: VideoDecoder_Reset_003
  * @tc.desc: correct flow 3
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_reset_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Reset_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
 }
 
 /**
- * @tc.name: videoDecoder_release_001
+ * @tc.name: VideoDecoder_Release_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_release_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Release_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
 }
 
 /**
- * @tc.name: videoDecoder_release_002
+ * @tc.name: VideoDecoder_Release_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_release_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Release_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
 }
 
 /**
- * @tc.name: videoDecoder_release_003
+ * @tc.name: VideoDecoder_Release_003
  * @tc.desc: correct flow 3
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_release_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Release_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
 }
 
 /**
- * @tc.name: videoDecoder_setsurface_001
+ * @tc.name: VideoDecoder_SetSurface_001
  * @tc.desc: video decodec setsurface
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -969,137 +983,132 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_setsurface_002
+ * @tc.name: VideoDecoder_SetSurface_002
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
 
 /**
- * @tc.name: videoDecoder_setsurface_003
+ * @tc.name: VideoDecoder_SetSurface_003
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
 
 /**
- * @tc.name: videoDecoder_setsurface_buffer_001
+ * @tc.name: VideoDecoder_SetSurface_Buffer_001
  * @tc.desc: video decodec setsurface
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_setsurface_buffer_002
+ * @tc.name: VideoDecoder_SetSurface_Buffer_002
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_002, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
 
 /**
- * @tc.name: videoDecoder_abnormal_001
+ * @tc.name: VideoDecoder_Abnormal_001
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 20); // invalid rotation_angle 20
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, -1); // invalid max input size -1
 
     videoDec_->Configure(format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
     EXPECT_NE(AV_ERR_OK, videoDec_->Flush());
     EXPECT_NE(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_abnormal_002
+ * @tc.name: VideoDecoder_Abnormal_002
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
 /**
- * @tc.name: videoDecoder_abnormal_003
+ * @tc.name: VideoDecoder_Abnormal_003
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoDec_->Flush());
 }
 
 /**
- * @tc.name: videoDecoder_abnormal_004
+ * @tc.name: VideoDecoder_Abnormal_004
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_004, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_setParameter_001
+ * @tc.name: VideoDecoder_SetParameter_001
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     format_ = FormatMockFactory::CreateFormat();
@@ -1109,22 +1118,22 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_001, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_setParameter_002
+ * @tc.name: VideoDecoder_SetParameter_002
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     format_ = FormatMockFactory::CreateFormat();
@@ -1134,28 +1143,138 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_002, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 
 /**
- * @tc.name: videoDecoder_getOutputDescription_001
+ * @tc.name: VideoDecoder_GetOutputDescription_001
  * @tc.desc: video codec GetOutputDescription
  * @tc.type: FUNC
  */
-HWTEST_P(VideoDecUnitTest, videoDecoder_getOutputDescription_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(HW_AVC);
+    SetFormatWithParam(HW_AVC);
+    PrepareSource(HW_AVC);
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     format_ = videoDec_->GetOutputDescription();
+    std::cout << format_->DumpInfo() << std::endl;
     EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_GetOutputDescription_002
+ * @tc.desc: video codec GetOutputDescription
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_002, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_AVC);
+    SetFormatWithParam(HW_AVC);
+    PrepareSource(HW_AVC);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    format_ = videoDec_->GetOutputDescription();
+
+    std::string dumpInfo = format_->DumpInfo();
+    std::cout << "dumpInfo: [" << dumpInfo << "]\n";
+    auto checkFunc = [&dumpInfo](const std::string key) {
+        std::string keyStr = key + " = ";
+        EXPECT_NE(dumpInfo.find(keyStr), string::npos) << "keyStr: [" << keyStr << "]\n"
+                                                       << "dumpInfo: [" << dumpInfo << "]\n";
+    };
+    checkFunc(Media::Tag::VIDEO_CROP_TOP);
+    checkFunc(Media::Tag::VIDEO_CROP_BOTTOM);
+    checkFunc(Media::Tag::VIDEO_CROP_LEFT);
+    checkFunc(Media::Tag::VIDEO_CROP_RIGHT);
+    checkFunc(Media::Tag::VIDEO_STRIDE);
+    checkFunc(Media::Tag::VIDEO_DISPLAY_WIDTH);
+    checkFunc(Media::Tag::VIDEO_DISPLAY_HEIGHT);
+
+    EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_GetOutputDescription_003
+ * @tc.desc: video codec GetOutputDescription
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_003, TestSize.Level1)
+{
+    CreateByNameWithParam(HW_AVC);
+    SetFormatWithParam(HW_AVC);
+    PrepareSource(HW_AVC);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    format_ = videoDec_->GetOutputDescription();
+
+    int32_t cropRight = 0;
+    int32_t stride = 0;
+    int32_t displayWidth = 0;
+    int32_t cropBottom = 0;
+    int32_t displayHeight = 0;
+
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_CROP_RIGHT, cropRight));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_DISPLAY_WIDTH, displayWidth));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_CROP_BOTTOM, cropBottom));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_DISPLAY_HEIGHT, displayHeight));
+
+    EXPECT_GE(cropRight, DEFAULT_WIDTH - 1);
+    EXPECT_GE(stride, DEFAULT_WIDTH);
+    EXPECT_GE(displayWidth, DEFAULT_WIDTH);
+    EXPECT_GE(cropBottom, DEFAULT_HEIGHT - 1);
+    EXPECT_GE(displayHeight, DEFAULT_HEIGHT);
+
+    EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_HDR_Function_001
+ * @tc.desc: video decodec hdr function test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
+                                                                AVCodecCategory::AVCODEC_HARDWARE);
+    std::string codecName = capability_->GetName();
+    if (codecName == "OMX.rk.video_decoder.hevc") {
+        return;
+    }
+    std::cout << "CodecName: " << codecName << "\n";
+    ASSERT_TRUE(CreateVideoCodecByName(codecName));
+
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+
+    VCodecTestCode param = VCodecTestCode::HW_HDR;
+    std::string sourcePath = decSourcePathMap_.at(param);
+    videoDec_->SetSourceType(false);
+    videoDec_->testParam_ = param;
+    std::cout << "SourcePath: " << sourcePath << std::endl;
+    videoDec_->SetSource(sourcePath);
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    string prefix = "/data/test/media/";
+    string fileName = testInfo_->name();
+    auto check = [](char it) { return it == '/'; };
+    (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
+    videoDec_->SetOutPath(prefix + fileName);
+
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 } // namespace

@@ -19,11 +19,15 @@
 #include "avcodec_audio_common.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FfmpegBaseDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_U8,
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE
+};
 } // namespace
 
 namespace OHOS {
@@ -145,6 +149,11 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
     return ReceiveBuffer(outBuffer);
 }
 
+void FfmpegBaseDecoder::DisableNeedResamp()
+{
+    needResample_ = 0;
+}
+
 Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
@@ -236,7 +245,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     }
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
-    return Status::OK;
+    return Status::ERROR_AGAIN;
 }
 
 Status FfmpegBaseDecoder::Reset()
@@ -427,11 +436,22 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
         EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
         return true;
     }
-
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGW("Output sample format not support, change to default S16LE");
-        sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
+        if (avCodecContext_ == nullptr) {
+            AVCODEC_LOGE("avCodecContext_ is nullptr");
+            return false;
+        }
+        auto audioFmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt);
+        if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
+                      audioFmt) == supportedSampleFormats.end()) {
+            AVCODEC_LOGW("Output sample format not support, change to default S16LE");
+            sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
+        } else {
+            AVCODEC_LOGW("Output sample format not support, change to algorithm default sampleFormat:%{public}" PRId32,
+                sampleFormat);
+            sampleFormat = audioFmt;
+        }
     }
     AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {

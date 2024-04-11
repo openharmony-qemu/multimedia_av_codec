@@ -60,7 +60,7 @@ private:
     std::shared_ptr<VDecSignal> signal_ = nullptr;
 };
 
-class VDecCallbackTestExt : public VideoCodecCallbackMock {
+class VDecCallbackTestExt : public MediaCodecCallbackMock {
 public:
     explicit VDecCallbackTestExt(std::shared_ptr<VDecSignal> signal);
     virtual ~VDecCallbackTestExt();
@@ -95,11 +95,10 @@ public:
     bool CreateVideoDecMockByName(const std::string &name);
 
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
-    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb);
     int32_t SetOutputSurface();
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
-    int32_t StartBuffer();
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
@@ -118,7 +117,7 @@ public:
     void SetSource(const std::string &path);
     void SetSourceType(bool isH264Stream);
     bool needCheckSHA_ = false;
-    VCodecTestParam::VCodecTestCode testParam_ = VCodecTestParam::SW_AVC;
+    int32_t testParam_ = VCodecTestParam::SW_AVC;
 
 private:
     void FlushInner();
@@ -151,6 +150,7 @@ private:
     uint32_t datSize_ = 0;
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
+    bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
     int64_t time_ = 0;

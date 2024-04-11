@@ -28,6 +28,7 @@ constexpr int MIN_BIT_RATE_MP3 = 32000;
 constexpr int MAX_BIT_RATE_MP3 = 320000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
 constexpr int MAX_CHANNEL_COUNT_MP3 = 2;
+constexpr int MAX_CHANNEL_COUNT_APE = 2;
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
@@ -41,8 +42,11 @@ const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
 
 const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
                                                      44100, 48000, 64000, 88200, 96000, 192000};
-constexpr int MAX_BIT_RATE_FLAC = 2100000;
 
+const std::vector<int32_t> AUDIO_LBVC_SAMPLE_RATE = {16000};
+
+constexpr int MAX_BIT_RATE_FLAC = 2100000;
+constexpr int MAX_BIT_RATE_APE = 2100000;
 constexpr int MIN_BIT_RATE_VORBIS = 32000;
 constexpr int MAX_BIT_RATE_VORBIS = 500000;
 
@@ -51,6 +55,8 @@ constexpr int MAX_BIT_RATE_AMRNB = 12200;
 
 constexpr int MIN_BIT_RATE_AAC_ENCODER = 8000;
 constexpr int MAX_BIT_RATE_AAC_ENCODER = 448000;
+
+constexpr int MAX_BIT_RATE_LBVC = 6000;
 
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
@@ -159,6 +165,20 @@ CapabilityData AudioCodeclistInfo::GetAmrwbDecoderCapability()
     return audioAmrwbCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetAPEDecoderCapability()
+{
+    CapabilityData audioApeCapability;
+    audioApeCapability.codecName = AVCodecCodecName::AUDIO_DECODER_APE_NAME;
+    audioApeCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioApeCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE;
+    audioApeCapability.isVendor = false;
+    audioApeCapability.bitrate = Range(0, MAX_BIT_RATE_APE);
+    audioApeCapability.channels = Range(1, MAX_CHANNEL_COUNT_APE);
+    audioApeCapability.sampleRate = AUDIO_SAMPLE_RATE;
+    audioApeCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioApeCapability;
+}
+
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
 CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
 {
@@ -246,12 +266,41 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
     return audioG711muEncoderCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetLbvcDecoderCapability()
+{
+    CapabilityData audioLbvcCapability;
+    audioLbvcCapability.codecName = AVCodecCodecName::AUDIO_DECODER_LBVC_NAME;
+    audioLbvcCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioLbvcCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC;
+    audioLbvcCapability.isVendor = true;
+    audioLbvcCapability.bitrate = Range(MAX_BIT_RATE_LBVC, MAX_BIT_RATE_LBVC);
+    audioLbvcCapability.channels = Range(1, 1);
+    audioLbvcCapability.sampleRate = AUDIO_LBVC_SAMPLE_RATE;
+    audioLbvcCapability.maxInstance = 1;
+    return audioLbvcCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetLbvcEncoderCapability()
+{
+    CapabilityData audioLbvcCapability;
+    audioLbvcCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_LBVC_NAME;
+    audioLbvcCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioLbvcCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC;
+    audioLbvcCapability.isVendor = true;
+    audioLbvcCapability.bitrate = Range(MAX_BIT_RATE_LBVC, MAX_BIT_RATE_LBVC);
+    audioLbvcCapability.channels = Range(1, 1);
+    audioLbvcCapability.sampleRate = AUDIO_LBVC_SAMPLE_RATE;
+    audioLbvcCapability.maxInstance = 1;
+    return audioLbvcCapability;
+}
+
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetOpusDecoderCapability(),  GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
                           GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(),  GetOpusEncoderCapability(),   GetG711muEncoderCapability(),
+                          GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetAPEDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability()
 #endif

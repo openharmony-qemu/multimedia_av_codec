@@ -36,7 +36,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 using namespace Media;
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
@@ -173,6 +173,21 @@ int32_t HCodec::GetOutputFormat(Format &format)
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, componentName_);
     format.PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
+}
+
+std::string HCodec::GetHidumperInfo()
+{
+    HLOGI(">>");
+    ParamSP reply;
+    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_HIDUMPER_INFO, nullptr, reply);
+    if (ret != AVCS_ERR_OK) {
+        HLOGW("failed to get hidumper info");
+        return "";
+    }
+    string info;
+    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("hidumper-info", info),
+        "", "hidumper info not replied");
+    return info;
 }
 
 sptr<Surface> HCodec::CreateInputSurface()
@@ -331,6 +346,24 @@ int32_t HCodec::SetProcessName(const Format &format)
         HLOGW("set process name failed");
         return AVCS_ERR_UNKNOWN;
     }
+    return AVCS_ERR_OK;
+}
+
+int32_t HCodec::SetLowLatency(const Format &format)
+{
+    int32_t enableLowLatency;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
+        return AVCS_ERR_OK;
+    }
+
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableLowLatency ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamLowLatency, param)) {
+        HLOGW("set low latency failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set low latency succ %d", enableLowLatency);
     return AVCS_ERR_OK;
 }
 
@@ -713,6 +746,7 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
+        HLOGI("got input codec config data");
     }
     return flags;
 }
@@ -1189,6 +1223,7 @@ const char* HCodec::ToString(MsgWhat what)
         { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
         { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
         { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
+        { PRINT_ALL_BUFFER_OWNER, "PRINT_ALL_BUFFER_OWNER" },
     };
     auto it = m.find(what);
     if (it != m.end()) {

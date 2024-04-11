@@ -47,6 +47,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/codec/include/video",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec",
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/engine/factory",
@@ -70,17 +71,15 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
     "$av_codec_root_dir/interfaces",
     "$drm_framework_root_dir/services/drm_service/ipc",
-    "$media_foundation_root_dir/interface/inner_api",
-    "//third_party/ffmpeg",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_plugin_path = "\"/system/lib64/media/av_codec_plugins\""
   } else {
     av_codec_plugin_path = "\"/system/lib/media/av_codec_plugins\""
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     oh_file_plugin_path = "\"/system/lib64/media/histreamer_plugins\""
   } else {
     oh_file_plugin_path = "\"/system/lib/media/histreamer_plugins\""
@@ -94,12 +93,17 @@ config("av_codec_service_config") {
     "OH_FILE_PLUGIN_PATH=${oh_file_plugin_path}",
   ]
 
+  if (is_emulator) {
+    defines += [ "EMULATOR_ENABLED" ]
+  }
+
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 }
 
 ohos_shared_library("av_codec_service") {
+  stack_protector_ret = true
   install_enable = true
 
   sanitize = av_codec_sanitize
@@ -125,7 +129,9 @@ ohos_shared_library("av_codec_service") {
       "codec/ipc/codec_service_stub.cpp",
       "codec/server/codec_drm_decrypt.cpp",
       "codec/server/codec_factory.cpp",
+      "codec/server/codec_param_checker.cpp",
       "codec/server/codec_server.cpp",
+      "codec/server/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_codeclist) {
@@ -151,6 +157,8 @@ ohos_shared_library("av_codec_service") {
 
   external_deps = [
     "c_utils:utils",
+    "drm_framework:drm_framework",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

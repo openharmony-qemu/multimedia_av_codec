@@ -34,5 +34,20 @@ std::shared_ptr<AVSourceMock> AVSourceMockFactory::CreateSourceWithFD(int32_t fd
     }
     return nullptr;
 }
+
+std::shared_ptr<AVSourceMock> AVSourceMockFactory::CreateWithDataSource(
+    const std::shared_ptr<Media::IMediaDataSource> &dataSource)
+{
+    return nullptr;
+}
+
+std::shared_ptr<AVSourceMock> AVSourceMockFactory::CreateWithDataSource(OH_AVDataSource *dataSource)
+{
+    OH_AVSource *source = OH_AVSource_CreateWithDataSource(dataSource);
+    if (source != nullptr) {
+        return std::make_shared<AVSourceCapiMock>(source);
+    }
+    return nullptr;
+}
 }
 }

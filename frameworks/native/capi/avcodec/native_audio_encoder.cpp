@@ -26,7 +26,7 @@
 #include "native_avmagic.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAudioEncoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioEncoder"};
 }
 
 using namespace OHOS::MediaAVCodec;
@@ -403,6 +403,7 @@ OH_AVFormat *OH_AudioEncoder_GetOutputDescription(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "audioEncoder GetOutputFormat failed!");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "audioCodec OH_AVFormat_Create failed!");
     avFormat->format_ = format;
 
     return avFormat;

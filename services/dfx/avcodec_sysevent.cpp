@@ -22,7 +22,7 @@
 #include "dump_usage.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecDFX"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecDFX"};
 constexpr char HISYSEVENT_DOMAIN_AVCODEC[] = "AV_CODEC";
 
 const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_TO_STRING = {

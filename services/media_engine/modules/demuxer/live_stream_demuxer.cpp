@@ -41,7 +41,8 @@ namespace OHOS {
 namespace Media {
 constexpr size_t DEFAULT_READ_SIZE = 4096;
 const int32_t READ_LOOP_RETRY_TIMES = 15;
-
+const std::string BUNDLE_NAME_FIRST = "com.hua";
+const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
 LiveStreamDemuxer::LiveStreamDemuxer()
     : dataPacker_(std::make_shared<DataPacker>()),
     taskPtr_(nullptr),
@@ -55,10 +56,8 @@ LiveStreamDemuxer::LiveStreamDemuxer()
 LiveStreamDemuxer::~LiveStreamDemuxer()
 {
     MEDIA_LOG_I("~LiveStreamDemuxer called");
+    Stop();
     dataPacker_ = nullptr;
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
     taskPtr_ = nullptr;
 }
 
@@ -96,7 +95,6 @@ Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uin
     if (buffer->flag & BUFFER_FLAG_EOS) {
         dataPacker_->SetEos();
     } else {
-        MEDIA_LOG_I("LiveStreamDemuxer::PushData once");
         dataPacker_->PushData(buffer, offset);
     }
     return Status::OK;
@@ -147,7 +145,7 @@ void LiveStreamDemuxer::ReadLoop()
 
     MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
     PushData(data, (uint64_t)mediaOffset_);
-    mediaOffset_ += size;
+    mediaOffset_ += static_cast<int64_t>(size);
 }
 
 Status LiveStreamDemuxer::Reset()
@@ -197,6 +195,9 @@ Status LiveStreamDemuxer::Stop()
         dataPacker_->Stop();
     }
     mediaOffset_ = 0;
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
     return Status::OK;
 }
 
@@ -236,7 +237,9 @@ Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>
             if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
-                if (isIgnoreParse_.load() && buffer != nullptr && buffer->GetMemory() != nullptr &&
+                if (((bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND) && isIgnoreRead_.load()) ||
+                    isIgnoreParse_.load()) &&
+                    buffer != nullptr && buffer->GetMemory() != nullptr &&
                     buffer->GetMemory()->GetSize() == 0) {
                     MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                                 " Read fail and try again");

@@ -21,7 +21,7 @@
 #include "media_description.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioCodecAdapter"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioCodecAdapter"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 
@@ -327,7 +327,6 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
         AVCODEC_LOGE("output buffer status now is IDLE, could not released");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    bool isEos = outBufferInfo->CheckIsEos();
 
     auto outBuffer = worker_->GetOutputBuffer();
     if (outBuffer == nullptr) {
@@ -338,10 +337,6 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
     if (!result) {
         AVCODEC_LOGE("release buffer failed");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
-
-    if (isEos) {
-        NotifyEos();
     }
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;

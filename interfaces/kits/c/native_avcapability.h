@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include "native_averrors.h"
+#include "native_avformat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +59,21 @@ typedef enum OH_AVCodecCategory {
     HARDWARE = 0,
     SOFTWARE
 } OH_AVCodecCategory;
+
+/**
+ * @brief The enum of optional features that can be used in specific codec seenarios.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+typedef enum OH_AVCapabilityFeature {
+    /** Feature for codec supports temporal scalability. It is only used in video encoder. */
+    VIDEO_ENCODER_TEMPORAL_SCALABILITY = 0,
+    /** Feature for codec supports long-term reference. It is only used in video encoder. */
+    VIDEO_ENCODER_LONG_TERM_REFERENCE = 1,
+    /** Feature for codec supports low latency. It is used in video encoder and video decoder. */
+    VIDEO_LOW_LATENCY = 2,
+} OH_AVCapabilityFeature;
 
 /**
  * @brief Get a system-recommended codec's capability.
@@ -349,6 +365,29 @@ OH_AVErrCode OH_AVCapability_GetSupportedLevelsForProfile(OH_AVCapability *capab
  * @since 10
  */
 bool OH_AVCapability_AreProfileAndLevelSupported(OH_AVCapability *capability, int32_t profile, int32_t level);
+
+/**
+ * @brief Check if the codec supports the specified feature.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Codec capability pointer
+ * @param feature Feature enum, refer to {@link OH_AVCapabilityFeature} for details
+ * @return Returns true if the feature is supported, false if it is not supported
+ * @since 12
+ */
+bool OH_AVCapability_IsFeatureSupported(OH_AVCapability *capability, OH_AVCapabilityFeature feature);
+
+/**
+ * @brief Get the properties of the specified feature. It should be noted that the life cycle of the OH_AVFormat
+ * instance pointed to by the return value * needs to be manually released by the caller.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Codec capability pointer
+ * @param feature Feature enum, refer to {@link OH_AVCapabilityFeature} for details
+ * @return Returns a pointer to an OH_AVFormat instance
+ * @since 12
+ */
+OH_AVFormat *OH_AVCapability_GetFeatureProperties(OH_AVCapability *capability, OH_AVCapabilityFeature feature);
 
 #ifdef __cplusplus
 }

@@ -73,6 +73,8 @@ public:
 
 private:
     void ReleaseBuffer();
+    void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
+    void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
@@ -87,11 +89,12 @@ private:
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};
 
-    int64_t pauseTime_{-1};
     int64_t totalPauseTime_{0};
 
     int64_t startBufferTime_{-1};
+    int64_t lastBufferTime_{-1};
     bool isStart_ = false;
+    bool isResume_ = false;
 
     std::string logTag_ = "";
 };

@@ -35,6 +35,8 @@ vcodec_unittest_cflags = [
   "-Wextra",
   "-Wimplicit-fallthrough",
   "-Wsign-compare",
+  "-Wno-unused-function",
+  "-Wno-unused-parameter",
 ]
 
 group("vcodec_framework_test") {
@@ -48,6 +50,7 @@ group("vcodec_framework_test") {
     deps += [
       ":videoenc_capi_unit_test",
       ":videoenc_inner_unit_test",
+      ":videoenc_stable_unit_test",
     ]
   }
 }
@@ -60,9 +63,9 @@ ohos_unittest("videodec_capi_unit_test") {
     "./capi",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/capi",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample/func_sample",
+    ".",
+    "./capi",
+    "./sample/func_sample",
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
@@ -102,10 +105,12 @@ ohos_unittest("videodec_inner_unit_test") {
     "./",
     "$av_codec_root_dir/test/unittest/codeclist_test/",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/inner",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample/func_sample",
+    "./inner",
+    "./sample/func_sample",
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
+
+  defines = [ "VIDEODEC_INNER_UNIT_TEST" ]
 
   cflags = vcodec_unittest_cflags
 
@@ -140,14 +145,17 @@ ohos_unittest("videoenc_capi_unit_test") {
   include_dirs = [
     "./",
     "./capi",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/capi",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample/func_sample",
+    "./capi",
+    "./sample/func_sample",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/frameworks/native/capi/common",
   ]
 
   defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -183,9 +191,14 @@ ohos_unittest("videoenc_inner_unit_test") {
     "./",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/inner",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample/func_sample",
+    "./inner",
+    "./sample/func_sample",
   ]
+
+  defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -219,15 +232,53 @@ ohos_unittest("videodec_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample/stable_sample",
+    "./common",
+    "./sample/stable_sample",
   ]
 
   cflags = vcodec_unittest_cflags
 
   if (av_codec_support_codec) {
     sources = [
+      "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
+      "./common/heap_memory_thread.cpp",
       "./sample/stable_sample/vdec_sample.cpp",
       "./videodec_stable_unit_test.cpp",
+    ]
+  }
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+#################################################################################################################videoenc
+ohos_unittest("videoenc_stable_unit_test") {
+  module_out_path = module_output_path
+  include_dirs = [
+    "./",
+    "./common",
+    "./sample/stable_sample",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  if (av_codec_support_codec) {
+    sources = [
+      "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
+      "./common/heap_memory_thread.cpp",
+      "./sample/stable_sample/venc_sample.cpp",
+      "./videoenc_stable_unit_test.cpp",
     ]
   }
 

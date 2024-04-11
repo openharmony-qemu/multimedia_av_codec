@@ -15,7 +15,6 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
-THIRD_ROOT_DIR = "//third_party/"
 module_output_path = "av_codec/moduletest"
 
 ohos_unittest("audio_encoder_module_test") {
@@ -45,7 +44,6 @@ ohos_unittest("audio_encoder_module_test") {
     "$MEDIA_ROOT_DIR/services/engine/plugin/common",
     "$MEDIA_ROOT_DIR/services/engine/plugin/core",
     "$MEDIA_ROOT_DIR/services/engine/plugin/interface",
-    "$THIRD_ROOT_DIR/ffmpeg",
     "$MEDIA_ROOT_DIR/frameworks/native/capi/common",
     "$MEDIA_ROOT_DIR/services/dfx/include",
     "$MEDIA_ROOT_DIR/services/engine/base/include",
@@ -84,16 +82,16 @@ ohos_unittest("audio_encoder_module_test") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
-    "$THIRD_ROOT_DIR/bounds_checking_function:libsec_static",
-    "$THIRD_ROOT_DIR/ffmpeg:libohosffmpeg",
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_static",
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

@@ -45,9 +45,6 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
-    "$media_foundation_root_dir/interface/inner_api",
-    "$media_foundation_root_dir/interface/kits/c",
   ]
 }
 
@@ -62,7 +59,6 @@ config("av_codec_client_local_config") {
     "$av_codec_root_dir/services/engine/plugin/interface",
     "$av_codec_root_dir/services/engine/source/hst_releated",
     "$av_codec_root_dir/services/media_engine/modules",
-    "$media_foundation_root_dir/interface/inner_api",
   ]
 }
 
@@ -101,7 +97,7 @@ config("av_codec_client_public_config") {
   defines = []
   defines += av_codec_defines
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_plugin_path = "\"/system/lib64/media/av_codec_plugins\""
   } else {
     av_codec_plugin_path = "\"/system/lib/media/av_codec_plugins\""
@@ -133,7 +129,6 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/services/engine/codec/include/audio/",
     "$av_codec_root_dir/services/engine/common/include/",
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
-    "//third_party/ffmpeg",
   ]
 }
 
@@ -167,6 +162,7 @@ config("av_codec_client_drm_config") {
 }
 
 ohos_shared_library("av_codec_client") {
+  stack_protector_ret = true
   install_enable = true
   public_configs = [
     ":av_codec_client_local_config",
@@ -175,6 +171,13 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_packege_include",
     ":av_codec_client_codec_config",
     ":av_codec_client_drm_config",
+  ]
+
+  public_external_deps = [
+    "drm_framework:drm_framework",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
+    "media_foundation:media_foundation",
   ]
 
   sanitize = {
@@ -231,7 +234,9 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_drm_decrypt.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
+      "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
+      "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_demuxer) {
@@ -240,13 +245,13 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/media_engine/plugins",
     ]
 
-    if (target_cpu == "arm64") {
+    if (target_cpu == "arm64" || is_emulator) {
       av_codec_plugin_path = "\"/system/lib64/media/av_codec_plugins\""
     } else {
       av_codec_plugin_path = "\"/system/lib/media/av_codec_plugins\""
     }
 
-    if (target_cpu == "arm64") {
+    if (target_cpu == "arm64" || is_emulator) {
       oh_file_plugin_path = "\"/system/lib64/media/histreamer_plugins\""
     } else {
       oh_file_plugin_path = "\"/system/lib/media/histreamer_plugins\""
@@ -275,7 +280,6 @@ ohos_shared_library("av_codec_client") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
-    "//third_party/bounds_checking_function:libsec_static",
   ]
 
   if (av_codec_client_support_codec) {
@@ -289,6 +293,7 @@ ohos_shared_library("av_codec_client") {
   deps += [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
   external_deps = [
+    "bounds_checking_function:libsec_static",
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",

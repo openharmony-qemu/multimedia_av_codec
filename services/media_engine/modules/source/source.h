@@ -28,6 +28,7 @@
 #include "plugin/plugin_manager.h"
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
+#include "meta/media_types.h"
 #include "media_demuxer.h"
 
 namespace OHOS {
@@ -57,6 +58,7 @@ public:
     ~Source() override;
 
     virtual Status SetSource(const std::shared_ptr<MediaSource>& source);
+    void SetBundleName(const std::string& bundleName);
     Status Prepare();
     Status Start();
     Status Stop();
@@ -70,12 +72,12 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
     bool IsSeekToTimeSupported();
     int64_t GetDuration();
-    Status SeekToTime(int64_t seekTime);
+    Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
-
+    void SetDemuxerState();
     Status ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);
 private:

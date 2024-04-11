@@ -22,7 +22,7 @@
 #include "securec.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFfmpegDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFfmpegDecoderPlugin"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 
@@ -413,7 +413,7 @@ int32_t AudioFfmpegDecoderPlugin::SetCodecExtradata()
             AVCODEC_LOGE("extradata malloc failed!");
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
         }
-        avCodecContext_->extradata_size = extraSize;
+        avCodecContext_->extradata_size = static_cast<int>(extraSize);
         errno_t rc = memcpy_s(avCodecContext_->extradata, extraSize, extraData, extraSize);
         if (rc != EOK) {
             AVCODEC_LOGE("extradata memcpy_s failed.");

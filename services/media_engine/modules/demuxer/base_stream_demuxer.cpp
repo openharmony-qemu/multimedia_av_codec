@@ -51,7 +51,7 @@ BaseStreamDemuxer::~BaseStreamDemuxer()
     typeFinder_ = nullptr;
 }
 
-void BaseStreamDemuxer::SetSource(std::shared_ptr<Source>& source)
+void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
     source_ = source;
 }
@@ -66,6 +66,15 @@ void BaseStreamDemuxer::InitTypeFinder()
 void BaseStreamDemuxer::SetDemuxerState(DemuxerState state)
 {
     pluginState_ = state;
+    if (state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
+        source_->SetDemuxerState();
+    }
+}
+
+void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
+{
+    MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+    bundleName_ = bundleName;
 }
 
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)

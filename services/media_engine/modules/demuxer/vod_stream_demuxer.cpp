@@ -39,7 +39,8 @@
 
 namespace OHOS {
 namespace Media {
-
+const std::string BUNDLE_NAME_FIRST = "com.hua";
+const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
 VodStreamDemuxer::VodStreamDemuxer()
     : cacheData_(),
     position_(0)
@@ -54,6 +55,40 @@ VodStreamDemuxer::~VodStreamDemuxer()
     cacheData_.offset = 0;
 }
 
+bool VodStreamDemuxer::GetPeekRangeSub(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+{
+    auto ret = PullData(offset, size, bufferPtr);
+    if (bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
+        if (ret == Status::ERROR_AGAIN) {
+            isIgnoreRead_ = true;
+            return true;
+        } else {
+            isIgnoreRead_ = false;
+        }
+    }
+    return Status::OK == ret;
+}
+
+bool VodStreamDemuxer::GetPeekRange(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+{
+    if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
+        if (bufferPtr) {
+            return GetPeekRangeSub(offset, size, bufferPtr);
+        }
+    }
+    MEDIA_LOG_D("PullMode, offset: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
+        ", cache data: " PUBLIC_LOG_D32, offset, cacheData_.offset, (int32_t)(cacheData_.data != nullptr));
+    if (cacheData_.data != nullptr && cacheData_.data->GetMemory() != nullptr &&
+        offset >= cacheData_.offset && offset < (cacheData_.offset + cacheData_.data->GetMemory()->GetSize())) {
+        auto memory = cacheData_.data->GetMemory();
+        if (memory != nullptr && memory->GetSize() > 0) {
+            MEDIA_LOG_I("PullMode, Read data from cache data.");
+            return PullDataWithCache(offset, size, bufferPtr);
+        }
+    }
+    return PullDataWithoutCache(offset, size, bufferPtr);
+}
+
 std::string VodStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
@@ -63,23 +98,7 @@ std::string VodStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
         return true;
     };
     peekRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
-        if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-            if (bufferPtr) {
-                auto ret = PullData(offset, size, bufferPtr);
-                return Status::OK == ret;
-            }
-        }
-        MEDIA_LOG_D("PullMode, offset: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
-            ", cache data: " PUBLIC_LOG_D32, offset, cacheData_.offset, (int32_t)(cacheData_.data != nullptr));
-        if (cacheData_.data != nullptr && cacheData_.data->GetMemory() != nullptr &&
-            offset >= cacheData_.offset && offset < (cacheData_.offset + cacheData_.data->GetMemory()->GetSize())) {
-            auto memory = cacheData_.data->GetMemory();
-            if (memory != nullptr && memory->GetSize() > 0) {
-                MEDIA_LOG_I("PullMode, Read data from cache data.");
-                return PullDataWithCache(offset, size, bufferPtr);
-            }
-        }
-        return PullDataWithoutCache(offset, size, bufferPtr);
+        return GetPeekRange(offset, size, bufferPtr);
     };
     getRange_ = peekRange_;
     typeFinder_->Init(uri, mediaDataSize, checkRange_, peekRange_);

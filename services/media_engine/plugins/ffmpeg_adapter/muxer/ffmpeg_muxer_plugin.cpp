@@ -32,9 +32,13 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr int64_t TIMESTAMP_US = 1000;
+constexpr float LATITUDE_MIN = -90.0f;
+constexpr float LATITUDE_MAX = 90.0f;
+constexpr float LONGITUDE_MIN = -180.0f;
+constexpr float LONGITUDE_MAX = 180.0f;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -59,6 +63,12 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_HEVC:
             cap.SetMime(MimeType::VIDEO_HEVC);
             return true;
+        case AV_CODEC_ID_AMR_NB:
+            cap.SetMime(MimeType::AUDIO_AMR_NB);
+            return true;
+        case AV_CODEC_ID_AMR_WB:
+            cap.SetMime(MimeType::AUDIO_AMR_WB);
+            return true;
         default:
             break;
     }
@@ -73,6 +83,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "ipod") {
         auto cap = Capability(MimeType::MEDIA_M4A);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "amr") {
+        auto cap = Capability(MimeType::MEDIA_AMR);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -216,6 +230,11 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
 Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
+    int32_t dataInt = 0;
+    if (param->GetData("fast_start", dataInt) && dataInt == 1) {
+        isFastStart_ = true;
+        MEDIA_LOG_I("fast start for moov");
+    }
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetLocation(param);
@@ -254,6 +273,10 @@ Status FFmpegMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
         MEDIA_LOG_W("the latitude and longitude are all required");
         return Status::ERROR_INVALID_DATA;
     }
+    FALSE_RETURN_V_MSG_E(latitude >= LATITUDE_MIN && latitude <= LATITUDE_MAX,
+        Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]!");
+    FALSE_RETURN_V_MSG_E(longitude >= LONGITUDE_MIN && longitude <= LONGITUDE_MAX,
+        Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]!");
     std::string location = std::to_string(longitude) + " ";
     location += std::to_string(latitude) + " ";
     location += std::to_string(0.0f);
@@ -285,6 +308,36 @@ Status FFmpegMuxerPlugin::SetMetaData(std::shared_ptr<Meta> param)
         if (param->GetData(key.first, value)) {
             av_dict_set(&formatContext_->metadata, key.second.c_str(), value.c_str(), 0);
         }
+    }
+    return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    FALSE_RETURN_V_MSG_E(keys.size() > 0, Status::ERROR_INVALID_DATA, "user meta is empty!");
+    av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
+    for (auto& k: keys) {
+        std::string key = "moov_level_meta_key_" + k;
+        std::string value = "";
+        int32_t dataInt = 0;
+        float dataFloat = 0.0f;
+        std::string dataStr = "";
+        if (userMeta->GetData(k, dataInt)) {
+            value = "00000043";
+            value += std::to_string(dataInt);
+        } else if (userMeta->GetData(k, dataFloat)) {
+            value = "00000017";
+            value += std::to_string(dataFloat);
+        } else if (userMeta->GetData(k, dataStr)) {
+            value = "00000001";
+            value += dataStr;
+        } else {
+            MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
+            continue;
+        }
+        av_dict_set(&formatContext_->metadata, key.c_str(), value.c_str(), 0);
     }
     return Status::NO_ERROR;
 }
@@ -369,7 +422,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const std::sh
         par->color_primaries = colorPri.second;
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
-        par->color_range = colorRange ? AVCOL_RANGE_MPEG : AVCOL_RANGE_UNSPECIFIED;
+        par->color_range = colorRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
         isColorSet_ = true;
     }
     return Status::NO_ERROR;
@@ -398,7 +451,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
         par->color_primaries = colorPri.second;
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
-        par->color_range = colorRange ? AVCOL_RANGE_MPEG : AVCOL_RANGE_UNSPECIFIED;
+        par->color_range = colorRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
         isColorSet_ = true;
     }
     return Status::NO_ERROR;
@@ -596,7 +649,7 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead()) {
+    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead() && isFastStart_) {
         av_dict_set(&options, "movflags", "faststart", 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
@@ -664,7 +717,15 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->flags = 0;
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) {
         MEDIA_LOG_D("It is key frame");
-        cachePacket_->flags = AV_PKT_FLAG_KEY;
+        cachePacket_->flags |= AV_PKT_FLAG_KEY;
+    }
+    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE)) {
+        MEDIA_LOG_D("It is disposable frame");
+        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE;
+    }
+    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE_EXT)) {
+        MEDIA_LOG_D("It is disposable_ext frame");
+        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE_EXT;
     }
 
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());

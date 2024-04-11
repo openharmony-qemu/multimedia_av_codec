@@ -32,6 +32,7 @@ AudioSink::AudioSink()
     MEDIA_LOG_I("AudioSink ctor");
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
+    plugin_ = CreatePlugin();
 }
 
 AudioSink::~AudioSink()
@@ -42,7 +43,6 @@ AudioSink::~AudioSink()
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     state_ = Pipeline::FilterState::INITIALIZED;
-    plugin_ = CreatePlugin(meta);
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     if (meta != nullptr) {
         meta->SetData(Tag::APP_PID, appPid_);
@@ -160,7 +160,7 @@ Status AudioSink::SetIsTransitent(bool isTransitent)
     return Status::OK;
 }
 
-std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin(std::shared_ptr<Meta> meta)
+std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
 {
     Plugins::PluginType pluginType = Plugins::PluginType::AUDIO_SINK;
     auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
@@ -191,7 +191,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
         plugin_->Drain();
-        plugin_->Pause();
+        plugin_->PauseTransitent();
         return;
     }
 

@@ -20,17 +20,18 @@
 #include <dlfcn.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "audio_codec_adapter.h"
-#include "audio_codec.h"
 #include "codeclist_core.h"
-#include "codeclist_utils.h"
 #include "meta/format.h"
-#ifndef CLIENT_SUPPORT_CODEC
-#include "fcodec.h"
+#ifdef CLIENT_SUPPORT_CODEC
+#include "audio_codec.h"
+#include "audio_codec_adapter.h"
+#else
+#include "fcodec_loader.h"
 #include "hcodec_loader.h"
 #endif
+
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecFactory"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecFactory"};
 }
 
 namespace OHOS {
@@ -46,20 +47,19 @@ CodecFactory::~CodecFactory()
 }
 
 std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder,
-    const std::string &mime, API_VERSION apiVersion)
+    const std::string &mime, API_VERSION apiVersion, std::string &codecName)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
-    std::string codecname;
     Format format;
     format.PutStringValue("codec_mime", mime);
     if (isEncoder) {
-        codecname = codecListCore->FindEncoder(format);
+        codecName = codecListCore->FindEncoder(format);
     } else {
-        codecname = codecListCore->FindDecoder(format);
+        codecName = codecListCore->FindDecoder(format);
     }
-    CHECK_AND_RETURN_RET_LOG(!codecname.empty(), nullptr, "Create codec by mime failed: error mime type");
+    CHECK_AND_RETURN_RET_LOG(!codecName.empty(), nullptr, "Create codec by mime failed: error mime type");
     
-    std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname, apiVersion);
+    std::shared_ptr<CodecBase> codec = CreateCodecByName(codecName, apiVersion);
     EXPECT_AND_LOGI(codec != nullptr, "Succeed");
     return codec;
 }
@@ -75,7 +75,7 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             codec = HCodecLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_CODEC:
-            codec = std::make_shared<Codec::FCodec>(name);
+            codec = FCodecLoader::CreateByName(name);
             break;
 #else
         case CodecType::AVCODEC_AUDIO_CODEC:

@@ -38,6 +38,16 @@ public:
     virtual int32_t SetParameter(const std::shared_ptr<Meta> &param) = 0;
 
     /**
+     * @brief Set the user meta for media.
+     * Note: This interface can only be called before Start.
+     * @param userMeta The meta keys are user-defined, the meta values can only be string, int, float.
+     * @return Returns AVCS_ERR_OK if the execution is successful,
+     * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
+     * @since 12
+     */
+    virtual int32_t SetUserMeta(const std::shared_ptr<Meta> &userMeta) = 0;
+
+    /**
      * @brief Add track format to the muxer.
      * Note: This interface can only be called before Start.
      * @param trackIndex Used to get the track index for this newly added track,

@@ -14,6 +14,7 @@
  */
 
 #include <fstream>
+#include <sstream>
 #include "hcodec.h"
 #include "hcodec_log.h"
 #include "hcodec_utils.h"
@@ -23,16 +24,41 @@ using namespace std;
 
 void HCodec::PrintAllBufferInfo()
 {
-    HLOGI("------------INPUT-----------");
+    PrintAllBufferInfo(true);
+    PrintAllBufferInfo(false);
+}
+
+void HCodec::PrintAllBufferInfo(bool isInput)
+{
+    std::array<uint32_t, OWNER_CNT> arr;
+    arr.fill(0);
+    std::stringstream s;
+    const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
+    for (const BufferInfo& info : pool) {
+        arr[info.owner]++;
+        s << info.bufferId << ":" << ToString(info.owner) << ", ";
+    }
+    HLOGI("%s: %u/%u/%u/%u, %s", (isInput ? " in" : "out"),
+          arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
+          s.str().c_str());
+}
+
+std::string HCodec::OnGetHidumperInfo()
+{
+    std::stringstream s;
+    s << endl;
+    s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
+    s << "        " << "------------INPUT-----------" << endl;
     for (const BufferInfo& info : inputBufferPool_) {
-        HLOGI("inBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
+        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
     }
-    HLOGI("----------------------------");
-    HLOGI("------------OUTPUT----------");
+    s << "        " << "----------------------------" << endl;
+    s << "        " << "------------OUTPUT----------" << endl;
     for (const BufferInfo& info : outputBufferPool_) {
-        HLOGI("outBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
+        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
     }
-    HLOGI("----------------------------");
+    s << "        " << "----------------------------" << endl;
+    return s.str();
 }
 
 std::array<uint32_t, HCodec::OWNER_CNT> HCodec::CountOwner(bool isInput)

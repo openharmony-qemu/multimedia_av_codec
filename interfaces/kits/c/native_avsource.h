@@ -28,6 +28,15 @@ extern "C" {
 typedef struct OH_AVSource OH_AVSource;
 
 /**
+ * @brief Creates an OH_AVSource instance that models the media with data source.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param dataSource User customized media resource.
+ * @return Returns a pointer to an OH_AVSource instance
+ * @since 12
+*/
+OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource);
+
+/**
  * @brief Creates an OH_AVSource instance that models the media at the URI.
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param uri An URI for a remote media resource.

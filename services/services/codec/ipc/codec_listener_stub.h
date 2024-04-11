@@ -38,27 +38,29 @@ public:
 
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
-    void WaitCallbackDone();
+    void SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback);
 
     void ClearListenerCache();
+    bool WriteInputParameterToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputBufferToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
+
+    void SetMutex(std::shared_ptr<std::recursive_mutex> &mutex);
+    void SetNeedListen(const bool needListen);
 
 private:
     void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
     void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
     bool CheckGeneration(uint64_t messageGeneration) const;
-    void Finalize();
 
     class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<AVCodecCallback> callback_;
     std::weak_ptr<MediaCodecCallback> videoCallback_;
-    std::atomic<bool> callbackIsDoing_ { false };
-    std::mutex syncMutex_;
-    std::condition_variable syncCv_;
-    std::thread::id threadId_;
+    std::weak_ptr<MediaCodecParameterCallback> paramCallback_;
+    bool needListen_{false};
+    std::shared_ptr<std::recursive_mutex> syncMutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

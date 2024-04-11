@@ -19,6 +19,7 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
+#include "meta/media_types.h"
 #include "download/http_curl_client.h"
 
 namespace OHOS {
@@ -28,7 +29,6 @@ namespace HttpPlugin {
 class HttpSourcePlugin : public SourcePlugin {
 public:
     explicit HttpSourcePlugin(const std::string &name) noexcept;
-    explicit HttpSourcePlugin(const std::string &name, int bufferSize) noexcept;
     ~HttpSourcePlugin() override;
     Status Init() override;
     Status Deinit() override;
@@ -44,24 +44,26 @@ public:
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
-    Status SeekToTime(int64_t seekTime) override;
+    Status SeekToTime(int64_t seekTime, SeekMode mode) override;
     Status GetDuration(int64_t& duration) override;
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    void SetDemuxerState() override;
+    void SetDownloadErrorState() override;
 
 private:
     void CloseUri();
 
     uint32_t bufferSize_;
-    int ringBufferSize_;
     uint32_t waterline_;
     Callback* callback_ {};
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
     bool delayReady {true};
     std::string uri_ {};
+    std::map<std::string, std::string> httpHeader_ {};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin

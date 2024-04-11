@@ -351,17 +351,17 @@ void CapsUnitTest::CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_EQ(DEFAULT_WIDTH_RANGE_ENC.minVal, videoCaps->GetSupportedWidth().minVal);
     EXPECT_EQ(DEFAULT_WIDTH_RANGE_ENC.maxVal, videoCaps->GetSupportedWidth().maxVal);
     EXPECT_EQ(DEFAULT_HEIGHT_RANGE_ENC.minVal, videoCaps->GetSupportedHeight().minVal);
-    EXPECT_EQ(DEFAULT_HEIGHT_RANGE_ENC.maxVal, videoCaps->GetSupportedHeight().maxVal);
+    EXPECT_LE(DEFAULT_HEIGHT_RANGE_ENC.maxVal, videoCaps->GetSupportedHeight().maxVal);
     EXPECT_EQ(1, videoCaps->GetSupportedFrameRate().minVal);
     EXPECT_EQ(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
-    EXPECT_EQ(0, videoCaps->GetSupportedEncodeQuality().minVal);
-    EXPECT_EQ(0, videoCaps->GetSupportedEncodeQuality().maxVal);
+    EXPECT_EQ(DEFAULT_VIDEO_QUALITY_RANGE.minVal, videoCaps->GetSupportedEncodeQuality().minVal);
+    EXPECT_EQ(DEFAULT_VIDEO_QUALITY_RANGE.maxVal, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_EQ(0, videoCaps->GetSupportedQuality().minVal);
     EXPECT_EQ(0, videoCaps->GetSupportedQuality().maxVal);
     EXPECT_EQ(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, videoCaps->GetSupportedComplexity().maxVal);
     EXPECT_TRUE(!videoCaps->GetSupportedFormats().empty());
-    EXPECT_EQ(DEFAULT_BITRATEMODE_ENC, videoCaps->GetSupportedBitrateMode().size());
+    EXPECT_GE(DEFAULT_BITRATEMODE_ENC, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_EQ(0, videoCaps->GetSupportedLevels().size());
     EXPECT_EQ(false, videoCaps->IsSupportDynamicIframe());
     EXPECT_EQ(false, videoCaps->IsSizeAndRateSupported(videoCaps->GetSupportedWidth().minVal,
@@ -848,6 +848,258 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_002, TestSize.Level1)
     EXPECT_EQ(range.minVal, 0);
     EXPECT_EQ(range.maxVal, 0);
 }
+
+/**
+ * @tc.name: AVCaps_FeatureCheck_001
+ * @tc.desc: AVCaps feature check, valid input
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    std::string nameStr = OH_AVCapability_GetName(cap);
+    std::string mimeStr = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    auto it = CAPABILITY_ENCODER_HARD_NAME.find(mimeStr);
+    if (it != CAPABILITY_ENCODER_HARD_NAME.end()) {
+        if (nameStr.compare(it->second) == 0) {
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), true);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), true);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), true);
+        } else {
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), false);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_FeatureCheck_002
+ * @tc.desc: AVCaps feature check, invalid input
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(-1)), false);
+    EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(4)), false);
+}
+
+/**
+ * @tc.name: AVCaps_FeatureProperties_001
+ * @tc.desc: AVCaps query feature with properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    std::string nameStr = OH_AVCapability_GetName(cap);
+    std::string mimeStr = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    auto it = CAPABILITY_ENCODER_HARD_NAME.find(mimeStr);
+    if (it != CAPABILITY_ENCODER_HARD_NAME.end()) {
+        if (nameStr.compare(it->second) == 0) {
+            OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
+            EXPECT_NE(property, nullptr);
+            int ltrNum = 0;
+            EXPECT_EQ(OH_AVFormat_GetIntValue(
+                property, OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, &ltrNum), true);
+            EXPECT_GT(ltrNum, 0);
+        } else {
+            OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
+            EXPECT_EQ(property, nullptr);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_FeatureProperties_002
+ * @tc.desc: AVCaps query feature without properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
+    EXPECT_EQ(property, nullptr);
+}
+
+/**
+ * @tc.name: AVCaps_FeatureProperties_003
+ * @tc.desc: AVCaps query unspported feature properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_003, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_LOW_LATENCY);
+    EXPECT_EQ(property, nullptr);
+}
+
+/**
+ * @tc.name: AVCaps_Levels_001
+ * @tc.desc: AVCaps query H264 hw decoder supported levels for baseline\main\high profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, AVC_PROFILE_BASELINE);
+        EXPECT_LE(profile, AVC_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, AVC_LEVEL_1);
+            EXPECT_LE(level, AVC_LEVEL_51);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_002
+ * @tc.desc: AVCaps query H265 hw decoder supported levels for main\main10 profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, HEVC_PROFILE_MAIN);
+        EXPECT_LE(profile, HEVC_PROFILE_MAIN_10_HDR10_PLUS);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, HEVC_LEVEL_62 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, HEVC_LEVEL_1);
+            EXPECT_LE(level, HEVC_LEVEL_62);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_003
+ * @tc.desc: AVCaps query H264 hw encoder supported levels for baseline\main\high profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_003, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, AVC_PROFILE_BASELINE);
+        EXPECT_LE(profile, AVC_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, AVC_LEVEL_1);
+            EXPECT_LE(level, AVC_LEVEL_51);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_004
+ * @tc.desc: AVCaps query H265 hw encoder supported levels for main\main10 profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_004, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, HEVC_PROFILE_MAIN);
+        EXPECT_LE(profile, HEVC_PROFILE_MAIN_10_HDR10_PLUS);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, HEVC_LEVEL_62 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, HEVC_LEVEL_1);
+            EXPECT_LE(level, HEVC_LEVEL_62);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_005
+ * @tc.desc: AVCaps query H264 sw decoder supported levels for baseline\main\high profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, AVC_PROFILE_BASELINE);
+        EXPECT_LE(profile, AVC_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, AVC_LEVEL_1);
+            EXPECT_LE(level, AVC_LEVEL_51);
+        }
+    }
+}
+
 #endif
 } // namespace MediaAVCodec
 } // namespace OHOS

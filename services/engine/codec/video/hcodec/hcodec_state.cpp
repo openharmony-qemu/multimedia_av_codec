@@ -21,12 +21,19 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 
 /**************************** BaseState Start ****************************/
 void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
+        case MsgWhat::GET_HIDUMPER_INFO: {
+            ParamSP reply = ParamBundle::Create();
+            reply->SetValue("hidumper-info", codec_->OnGetHidumperInfo());
+            reply->SetValue<int32_t>("err", AVCS_ERR_OK);
+            codec_->PostReply(info.id, reply);
+            return;
+        }
         case MsgWhat::CODEC_EVENT: {
             OnCodecEvent(info);
             return;
@@ -453,6 +460,7 @@ void HCodec::StartingState::OnStateExited()
             codec_->ClearBufferPool(OMX_DirOutput);
         }
     }
+    codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
     BaseState::OnStateExited();
 }
 
@@ -498,6 +506,11 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             sptr<Surface> surface;
             (void)info.param->GetValue("surface", surface);
             ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->PrintAllBufferInfo();
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
             return;
         }
         default:
@@ -596,9 +609,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::START:
-        case MsgWhat::SET_PARAMETERS:
-        case MsgWhat::GET_INPUT_FORMAT:
-        case MsgWhat::GET_OUTPUT_FORMAT: {
+        case MsgWhat::SET_PARAMETERS: {
             codec_->DeferMessage(info);
             return;
         }
@@ -624,6 +635,11 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::CHECK_IF_STUCK: {
             OnCheckIfStuck(info);
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->PrintAllBufferInfo();
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
             return;
         }
         default: {
@@ -747,6 +763,11 @@ void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::CHECK_IF_STUCK: {
             OnCheckIfStuck(info);
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->PrintAllBufferInfo();
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
             return;
         }
         default: {

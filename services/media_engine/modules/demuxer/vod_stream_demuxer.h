@@ -56,6 +56,8 @@ private:
     Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     bool PullDataWithoutCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
     bool PullDataWithCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool GetPeekRange(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool GetPeekRangeSub(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
 private:
     struct CacheData {
         std::shared_ptr<Buffer> data = nullptr;

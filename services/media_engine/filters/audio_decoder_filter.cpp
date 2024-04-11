@@ -198,8 +198,7 @@ Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioDecoderFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, meta_, filterLinkCallback);
-    return Status::OK;
+    return nextFilter->OnLinked(outType, meta_, filterLinkCallback);
 }
 
 Status AudioDecoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -236,7 +235,9 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     auto ret = mediaCodec_->Configure(meta);
     if (ret != (int32_t)Status::OK && ret != (int32_t)Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I("AudioDecoderFilter unsupport format");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;

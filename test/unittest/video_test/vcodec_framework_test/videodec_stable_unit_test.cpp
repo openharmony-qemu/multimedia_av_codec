@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,11 +14,16 @@
  */
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "heap_memory_thread.h"
+#include "unittest_utils.h"
 #include "vdec_sample.h"
+
+#define PRINT_HILOG
 #define TEST_ID vdec->sampleId_
+#define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
-#define CALLBACK_LOG(index, signal)                                                                                    \
+#define CALLBACK_CHECK_LOG(index, signal)                                                                              \
     do {                                                                                                               \
                                                                                                                        \
         UNITTEST_INFO_LOG("index:%d", index);                                                                          \
@@ -28,7 +33,7 @@
     } while (0)
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -37,8 +42,6 @@ using namespace testing::ext;
 using namespace testing::mt;
 
 namespace {
-constexpr uint64_t TEST_RANGE = 20;
-constexpr uint64_t TEST_THREAD_COUNT = 4;
 constexpr uint64_t TEST_FREQUENCY = 29;
 
 void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -47,14 +50,12 @@ void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
     (void)errorCode;
     (void)userData;
 }
-
 void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     (void)codec;
     (void)format;
     (void)userData;
 }
-
 void InDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     (void)codec;
@@ -62,7 +63,6 @@ void InDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *user
     (void)data;
     (void)userData;
 }
-
 void OutDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
 {
     (void)codec;
@@ -71,7 +71,6 @@ void OutDataVoid(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCode
     (void)attr;
     (void)userData;
 }
-
 void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     (void)codec;
@@ -79,7 +78,6 @@ void InBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *
     (void)buffer;
     (void)userData;
 }
-
 void OutBufferVoid(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     (void)codec;
@@ -92,9 +90,8 @@ void InDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *us
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     OH_AVCodecBufferAttr attr;
     vdec->HandleInputFrame(data, attr);
     vdec->PushInputData(index, attr);
@@ -104,101 +101,49 @@ void OutDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCo
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     vdec->HandleOutputFrame(data, *attr);
-    vdec->FreeOutputData(index);
+    vdec->ReleaseOutputData(index);
 }
 
-void OutDataRender(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
+void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
-    vdec->HandleOutputFrame(data, *attr);
-    vdec->RenderOutputData(index);
-}
-
-void InDataFlush(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     OH_AVCodecBufferAttr attr;
     vdec->HandleInputFrame(data, attr);
     vdec->PushInputData(index, attr);
 }
 
-void OutDataFlush(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
+void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     vdec->HandleOutputFrame(data, *attr);
-    vdec->FreeOutputData(index);
-}
-
-void InDataStop(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
-    OH_AVCodecBufferAttr attr;
-    vdec->HandleInputFrame(data, attr);
-    vdec->PushInputData(index, attr);
-}
-
-void OutDataStop(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
-    vdec->HandleOutputFrame(data, *attr);
-    vdec->FreeOutputData(index);
+    vdec->ReleaseOutputData(index);
 }
 
 void InDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     signal->inQueue_.push(index);
     signal->inMemoryQueue_.push(data);
     signal->inCond_.notify_all();
@@ -208,9 +153,8 @@ void OutDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCod
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     signal->outQueue_.push(index);
     signal->outMemoryQueue_.push(data);
     signal->outAttrQueue_.push(*attr);
@@ -221,9 +165,8 @@ void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     vdec->HandleInputFrame(buffer);
     vdec->PushInputData(index);
 }
@@ -232,102 +175,49 @@ void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     vdec->HandleOutputFrame(buffer);
-    vdec->FreeOutputData(index);
+    vdec->ReleaseOutputData(index);
 }
 
-void OutBufferRender(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
-    vdec->HandleOutputFrame(buffer);
-    vdec->RenderOutputData(index);
-}
-
-void InBufferFlush(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     vdec->HandleInputFrame(buffer);
     vdec->PushInputData(index);
 }
 
-void OutBufferFlush(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
-    vdec->HandleOutputFrame(buffer);
-    vdec->FreeOutputData(index);
-}
-
-void InBufferStop(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_LOG(index, signal);
-    vdec->HandleInputFrame(buffer);
-    vdec->PushInputData(index);
-}
-
-void OutBufferStop(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
-{
-    auto signal = reinterpret_cast<VideoDecSignal *>(userData);
-    auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
-    ++signal->controlNum_;
-    if (signal->controlNum_ == TEST_FREQUENCY) {
-        EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-        return;
-    }
-    lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_LOG(index, signal);
+    CALLBACK_CHECK_LOG(index, signal);
     vdec->HandleOutputFrame(buffer);
-    vdec->FreeOutputData(index);
+    vdec->ReleaseOutputData(index);
 }
 
 void InBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->inMutex_);
-    if (signal->isFlushing_ || !signal->isRunning_) {
-        return;
-    }
-    CALLBACK_LOG(index, signal);
+    EXPECT_NO_THROW((void)OH_AVBuffer_GetAddr(buffer));
+    CALLBACK_CHECK_LOG(index, signal);
     signal->inQueue_.push(index);
     signal->inBufferQueue_.push(buffer);
     signal->inCond_.notify_all();
@@ -337,12 +227,9 @@ void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void
 {
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
-    EXPECT_TRUE(vdec->codec_ == codec);
     lock_guard<mutex> lock(signal->outMutex_);
-    if (signal->isFlushing_ || !signal->isRunning_) {
-        return;
-    }
-    CALLBACK_LOG(index, signal);
+    EXPECT_NO_THROW((void)OH_AVBuffer_GetAddr(buffer));
+    CALLBACK_CHECK_LOG(index, signal);
     signal->outQueue_.push(index);
     signal->outBufferQueue_.push(buffer);
     signal->outCond_.notify_all();
@@ -386,7 +273,7 @@ void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
             return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
         });
         if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
+            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
             continue;
         }
         if (!signal->isRunning_.load()) {
@@ -396,53 +283,22 @@ void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
         uint32_t index = 0;
         OH_AVCodecBufferAttr attr;
         vdec->HandleOutputFrame(index, attr);
-        vdec->FreeOutputData(index);
+        vdec->ReleaseOutputData(index);
     }
 }
 
-void OutputSurfaceLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "outloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->outMutex_);
-        signal->outCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleOutputFrame(index, attr);
-        vdec->RenderOutputData(index);
-        UNITTEST_INFO_LOG("end ");
-    }
-}
-
-class VideoDecUnitTest : public testing::TestWithParam<int32_t> {
+class VideoDecStableTest : public testing::TestWithParam<std::string> {
 public:
-    // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
-    // TearDownTestCase: Called after all test case
     static void TearDownTestCase(void);
-    // SetUp: Called before each test cases
     void SetUp(void);
-    // TearDown: Called after each test cases
     void TearDown(void);
 
 private:
     shared_ptr<HeapMemoryThread> heapThread_ = nullptr;
 };
 
-void VideoDecUnitTest::SetUpTestCase(void)
+void VideoDecStableTest::SetUpTestCase(void)
 {
     (void)InDataVoid;
     (void)OutDataVoid;
@@ -450,40 +306,37 @@ void VideoDecUnitTest::SetUpTestCase(void)
     (void)OutBufferVoid;
 }
 
-void VideoDecUnitTest::TearDownTestCase(void) {}
+void VideoDecStableTest::TearDownTestCase(void) {}
 
-void VideoDecUnitTest::SetUp(void)
+void VideoDecStableTest::SetUp(void)
 {
     heapThread_ = make_shared<HeapMemoryThread>();
 }
 
-void VideoDecUnitTest::TearDown(void)
+void VideoDecStableTest::TearDown(void)
 {
     heapThread_ = nullptr;
 }
 
 string GetTestName()
 {
-    static atomic<int32_t> testid = 0;
     const ::testing::TestInfo *testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
-    string fileName = testInfo->name() + std::to_string(testid = (testid + 1) % TEST_RANGE) + ".yuv";
+    string fileName = testInfo->name();
+    fileName = fileName + (VideoDecSample::isHardware_ ? "_H" : "_F");
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     return fileName;
 }
 
-/**
- * @tc.name: video_decoder_multithread_release_001
+/**.
+ * @tc.name: VideoDecoder_Multithread_Release_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_release_001, TestSize.Level1, TEST_THREAD_COUNT)
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -495,25 +348,24 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_release_001, TestSize.Leve
     cb.onNeedInputData = InDataHandle;
     cb.onNeedOutputData = OutDataHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_release_buffer_001
+ * @tc.name: VideoDecoder_Multithread_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_release_buffer_001, TestSize.Level1, TEST_THREAD_COUNT)
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, TestSize.Level1,
+          VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -525,561 +377,26 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_release_buffer_001, TestSi
     cb.onNeedInputBuffer = InBufferHandle;
     cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("Flush", "Stop", "Reset", "SetOutputSurface"));
+
 /**
- * @tc.name: video_decoder_multithread_flush_001
+ * @tc.name: VideoDecoder_Multithread_001
  * @tc.desc: 1. push/free buffer in callback;
- *           2. flush not in callback;
- * @tc.type: FUNC
+ *           2. operate not in callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_001, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 30; // 30: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataHandle;
-    cb.onNeedOutputData = OutDataHandle;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_002
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush in callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_002, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataFlush;
-    cb.onNeedOutputData = OutDataHandle;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_003
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush in output callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_003, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataHandle;
-    cb.onNeedOutputData = OutDataFlush;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_004
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush in callback;
- *           3. set surface;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_004, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataFlush;
-    cb.onNeedOutputData = OutDataRender;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_001
- * @tc.desc: 1. push/free buffer in queue;
- *           2. flush not in output callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_001, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataQueue;
-    cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_002
- * @tc.desc: 1. push/free buffer in queue;
- *           2. flush not in output callback;
- *           3. set surface.
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_002, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataQueue;
-    cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_003
- * @tc.desc: 1. push buffer in callback;
- *           2. flush in input callback;
- *           3. free buffer in queue;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_003, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataFlush;
-    cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_004
- * @tc.desc: 1. push buffer in callback;
- *           2. flush in input callback;
- *           3. render buffer in queue;
- *           4. set surface;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_004, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecAsyncCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataFlush;
-    cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_buffer_001
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush not in callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_buffer_001, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 30; // 30: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferHandle;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_buffer_002
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush in input callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_buffer_002, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferFlush;
-    cb.onNewOutputBuffer = OutBufferHandle;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_buffer_003
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush in output callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_buffer_003, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferHandle;
-    cb.onNewOutputBuffer = OutBufferFlush;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_buffer_004
- * @tc.desc: 1. push/free buffer in callback;
- *           2. flush in callback;
- *           3. set surface;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_buffer_004, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferFlush;
-    cb.onNewOutputBuffer = OutBufferRender;
-    signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_buffer_001
- * @tc.desc: 1. push/free buffer in queue;
- *           2. flush not in output callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_buffer_001, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferQueue;
-    cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_buffer_002
- * @tc.desc: 1. push/free buffer in queue;
- *           2. flush not in output callback;
- *           3. set surface.
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_buffer_002, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferQueue;
-    cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Flush(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_buffer_003
- * @tc.desc: 1. push buffer in callback;
- *           2. flush in input callback;
- *           3. free buffer in queue;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_buffer_003, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferFlush;
-    cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_flush_with_queue_buffer_004
- * @tc.desc: 1. push buffer in callback;
- *           2. flush in input callback;
- *           3. render buffer in queue;
- *           4. set surface;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_flush_with_queue_buffer_004, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
-    vdec->frameCount_ = 60; // 60: input frame num
-    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    vdec->inPath_ = "720_1280_25_avcc.h264";
-    vdec->outPath_ = GetTestName();
-    EXPECT_EQ(vdec->Create(), true);
-    struct OH_AVCodecCallback cb;
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferFlush;
-    cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
-    vdec->WaitForEos();
-    vdec->Release();
-}
-
-/**
- * @tc.name: video_decoder_multithread_stop_001
- * @tc.desc: 1. push/free buffer in callback;
- *           2. stop not in callback;
- * @tc.type: FUNC
- */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_001, TestSize.Level1, TEST_THREAD_COUNT)
-{
-    auto vdec = make_shared<VideoDecSample>();
-    auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1091,27 +408,25 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_001, TestSize.Level1,
     cb.onNeedInputData = InDataHandle;
     cb.onNeedOutputData = OutDataHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_002
+ * @tc.name: VideoDecoder_Multithread_002
  * @tc.desc: 1. push/free buffer in callback;
- *           2. stop in callback;
- * @tc.type: FUNC
+ *           2. operate in input callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_002, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1120,28 +435,27 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_002, TestSize.Level1,
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataStop;
+    cb.onNeedInputData = InDataOperate;
     cb.onNeedOutputData = OutDataHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_003
+ * @tc.name: VideoDecoder_Multithread_003
  * @tc.desc: 1. push/free buffer in callback;
- *           2. stop in output callback;
- * @tc.type: FUNC
+ *           2. operate in output callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_003, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1151,28 +465,27 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_003, TestSize.Level1,
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
     cb.onNeedInputData = InDataHandle;
-    cb.onNeedOutputData = OutDataStop;
+    cb.onNeedOutputData = OutDataOperate;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_004
+ * @tc.name: VideoDecoder_Multithread_004
  * @tc.desc: 1. push/free buffer in callback;
- *           2. stop in callback;
+ *           2. operate not in callback;
  *           3. set surface;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_004, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1181,29 +494,61 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_004, TestSize.Level1,
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataStop;
-    cb.onNeedOutputData = OutDataRender;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_001
- * @tc.desc: 1. push/free buffer in queue;
- *           2. stop not in output callback;
- * @tc.type: FUNC
+ * @tc.name: VideoDecoder_Multithread_005
+ * @tc.desc: 1. push/free buffer in callback;
+ *           2. operate in input callback;
+ *           3. set surface;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_001, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    vdec->inPath_ = "720_1280_25_avcc.h264";
+    vdec->outPath_ = GetTestName();
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_Multithread_With_Queue_001
+ * @tc.desc: 1. push/free buffer in queue;
+ *           2. operate not in callback;
+ */
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_001, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VideoDecSignal>(vdec);
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1214,33 +559,29 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_001, TestS
     cb.onStreamChanged = OnStreamChangedVoid;
     cb.onNeedInputData = InDataQueue;
     cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
     vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
     vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_002
+ * @tc.name: VideoDecoder_Multithread_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
- *           2. stop not in output callback;
- *           3. set surface.
- * @tc.type: FUNC
+ *           2. operate in input callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_002, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_002, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1249,36 +590,30 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_002, TestS
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataQueue;
+    cb.onNeedInputData = InDataOperate;
     cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_003
+ * @tc.name: VideoDecoder_Multithread_With_Queue_003
  * @tc.desc: 1. push buffer in callback;
- *           2. stop in input callback;
+ *           2. operate in output callback;
  *           3. free buffer in queue;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_003, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_003, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1287,33 +622,31 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_003, TestS
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataStop;
-    cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    cb.onNeedInputData = InDataQueue;
+    cb.onNeedOutputData = OutDataOperate;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_004
+ * @tc.name: VideoDecoder_Multithread_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
- *           2. stop in input callback;
+ *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_004, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_004, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1322,32 +655,64 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_004, TestS
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputData = InDataStop;
+    cb.onNeedInputData = InDataHandle;
     cb.onNeedOutputData = OutDataQueue;
-    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_buffer_001
- * @tc.desc: 1. push/free buffer in callback;
- *           2. stop not in callback;
- * @tc.type: FUNC
+ * @tc.name: VideoDecoder_Multithread_With_Queue_005
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ *           3. render buffer in queue;
+ *           4. set surface;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_001, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_005, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    vdec->inPath_ = "720_1280_25_avcc.h264";
+    vdec->outPath_ = GetTestName();
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_001
+ * @tc.desc: 1. push/free buffer in callback;
+ *           2. operate not in callback;
+ */
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VideoDecSignal>(vdec);
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 30; // 30: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1359,27 +724,25 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_001, TestSize.
     cb.onNeedInputBuffer = InBufferHandle;
     cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_buffer_002
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_002
  * @tc.desc: 1. push/free buffer in callback;
- *           2. stop in input callback;
- * @tc.type: FUNC
+ *           2. operate in input callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_002, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1388,28 +751,27 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_002, TestSize.
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferStop;
+    cb.onNeedInputBuffer = InBufferOperate;
     cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_buffer_003
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_003
  * @tc.desc: 1. push/free buffer in callback;
- *           2. stop in output callback;
- * @tc.type: FUNC
+ *           2. operate in output callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_003, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1419,28 +781,27 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_003, TestSize.
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
     cb.onNeedInputBuffer = InBufferHandle;
-    cb.onNewOutputBuffer = OutBufferStop;
+    cb.onNewOutputBuffer = OutBufferOperate;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_buffer_004
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_004
  * @tc.desc: 1. push/free buffer in callback;
- *           2. stop in callback;
+ *           2. operate not in callback;
  *           3. set surface;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_004, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1449,29 +810,61 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_buffer_004, TestSize.
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferStop;
-    cb.onNewOutputBuffer = OutBufferRender;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
     signal->isRunning_ = true;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_buffer_001
- * @tc.desc: 1. push/free buffer in queue;
- *           2. stop not in output callback;
- * @tc.type: FUNC
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_005
+ * @tc.desc: 1. push/free buffer in callback;
+ *           2. operate in input callback;
+ *           3. set surface;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_001, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    vdec->inPath_ = "720_1280_25_avcc.h264";
+    vdec->outPath_ = GetTestName();
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_001
+ * @tc.desc: 1. push/free buffer in queue;
+ *           2. operate not in callback;
+ */
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_001, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VideoDecSignal>(vdec);
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1482,33 +875,29 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_001
     cb.onStreamChanged = OnStreamChangedVoid;
     cb.onNeedInputBuffer = InBufferQueue;
     cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
     vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
     vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_buffer_002
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
- *           2. stop not in output callback;
- *           3. set surface.
- * @tc.type: FUNC
+ *           2. operate in input callback;
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_002, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_002, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1517,36 +906,30 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_002
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferQueue;
+    cb.onNeedInputBuffer = InBufferOperate;
     cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Stop(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_buffer_003
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_003
  * @tc.desc: 1. push buffer in callback;
- *           2. stop in input callback;
+ *           2. operate in output callback;
  *           3. free buffer in queue;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_003, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_003, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1555,33 +938,31 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_003
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferStop;
-    cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    cb.onNeedInputBuffer = InBufferQueue;
+    cb.onNewOutputBuffer = OutBufferOperate;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_stop_with_queue_buffer_004
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
- *           2. stop in input callback;
+ *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
- * @tc.type: FUNC
  */
-HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_004, TestSize.Level1, TEST_THREAD_COUNT)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_004, TestSize.Level1,
+                VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
-    vdec->needDump_ = true;
-    vdec->isHardware_ = true;
+    vdec->operation_ = VideoDecStableTest::GetParam();
     vdec->frameCount_ = 60; // 60: input frame num
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     vdec->inPath_ = "720_1280_25_avcc.h264";
@@ -1590,17 +971,78 @@ HWMTEST_F(VideoDecUnitTest, video_decoder_multithread_stop_with_queue_buffer_004
     struct OH_AVCodecCallback cb;
     cb.onError = OnErrorVoid;
     cb.onStreamChanged = OnStreamChangedVoid;
-    cb.onNeedInputBuffer = InBufferStop;
+    cb.onNeedInputBuffer = InBufferHandle;
     cb.onNewOutputBuffer = OutBufferQueue;
-    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
-
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << "[SAMPLE_ID]:" << TEST_ID;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-    vdec->WaitForEos();
-    vdec->Release();
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_005
+ * @tc.desc: 1. push buffer in callback;
+ *           2. operate in input callback;
+ *           3. render buffer in queue;
+ *           4. set surface;
+ */
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_005, TestSize.Level1,
+                VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VideoDecSignal>(vdec);
+    vdec->operation_ = VideoDecStableTest::GetParam();
+    vdec->frameCount_ = 60; // 60: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    vdec->inPath_ = "720_1280_25_avcc.h264";
+    vdec->outPath_ = GetTestName();
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 } // namespace
+
+int main(int argc, char **argv)
+{
+    uint64_t threadNum = 0;
+    uint64_t timeout = 0;
+    testing::GTEST_FLAG(output) = "xml:./";
+    for (int i = 0; i < argc; ++i) {
+        cout << argv[i] << endl;
+        threadNum = GetNum(argv[i], "--thread_num");
+        timeout = GetNum(argv[i], "--timeout");
+        if (strcmp(argv[i], "--need_dump") == 0) {
+            VideoDecSample::needDump_ = true;
+            DecArgv(i, argc, argv);
+        } else if (strcmp(argv[i], "--fcodec") == 0) {
+            VideoDecSample::isHardware_ = false;
+            DecArgv(i, argc, argv);
+        } else if (timeout > 0) {
+            VideoDecSample::sampleTimout_ = timeout;
+            DecArgv(i, argc, argv);
+        } else if (threadNum > 0) {
+            VideoDecSample::threadNum_ = threadNum;
+            DecArgv(i, argc, argv);
+        }
+    }
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

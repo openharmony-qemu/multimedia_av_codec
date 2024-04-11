@@ -114,8 +114,6 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
         MEDIA_LOG_E(PUBLIC_LOG_S "Init audioCaptureModule fail", logTag_.c_str());
-    } else {
-        state_ = FilterState::INITIALIZED;
     }
 }
 
@@ -127,8 +125,6 @@ void AudioCaptureFilter::SetLogTag(std::string logTag)
 Status AudioCaptureFilter::PrepareAudioCapture()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "PrepareAudioCapture", logTag_.c_str());
-    FALSE_RETURN_V_MSG_W(state_ == FilterState::INITIALIZED, Status::ERROR_INVALID_OPERATION,
-        PUBLIC_LOG_S "filter is not in init state", logTag_.c_str());
     if (!taskPtr_) {
         taskPtr_ = std::make_shared<Task>("DataReader");
         taskPtr_->RegisterJob([this] { ReadLoop(); });
@@ -137,8 +133,6 @@ Status AudioCaptureFilter::PrepareAudioCapture()
     Status err = audioCaptureModule_->Prepare();
     if (err != Status::OK) {
         MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule prepare fail", logTag_.c_str());
-    } else {
-        state_ = FilterState::PREPARING;
     }
     return err;
 }
@@ -179,7 +173,6 @@ Status AudioCaptureFilter::Start()
     if (taskPtr_) {
         taskPtr_->Start();
     }
-    state_ = FilterState::RUNNING;
     return res;
 }
 
@@ -193,10 +186,8 @@ Status AudioCaptureFilter::Pause()
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Stop();
     }
-    if (ret == Status::OK) {
-        state_ = FilterState::PAUSED;
-    } else {
-        MEDIA_LOG_I(PUBLIC_LOG_S "audioCaptureModule stop fail", logTag_.c_str());
+    if (ret != Status::OK) {
+        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule stop fail", logTag_.c_str());
     }
     return ret;
 }
@@ -211,9 +202,7 @@ Status AudioCaptureFilter::Resume()
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Start();
     }
-    if (ret == Status::OK) {
-        state_ = FilterState::RUNNING;
-    } else {
+    if (ret != Status::OK) {
         MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule start fail", logTag_.c_str());
     }
     return ret;
@@ -231,9 +220,7 @@ Status AudioCaptureFilter::Stop()
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Stop();
     }
-    if (ret == Status::OK) {
-        state_ = FilterState::INITIALIZED;
-    } else {
+    if (ret != Status::OK) {
         MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule stop fail", logTag_.c_str());
     }
     if (nextFilter_) {
@@ -323,7 +310,7 @@ Status AudioCaptureFilter::SendEos()
 
 void AudioCaptureFilter::ReadLoop()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
+    MEDIA_LOG_D(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
     if (eos_.load()) {
         return;
     }

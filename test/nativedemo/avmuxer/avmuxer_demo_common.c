@@ -33,6 +33,22 @@ struct AudioTrackParam g_audioAacPar = {
     .frameSize = 1024,
 };
 
+struct AudioTrackParam g_audioAmrNbPar = {
+    .fileName = "amrnb_8000_1.dat",
+    .mimeType = "audio/3gpp",
+    .sampleRate = 8000,
+    .channels = 1,
+    .frameSize = 1024,
+};
+
+struct AudioTrackParam g_audioAmrWbPar = {
+    .fileName = "amrwb_16000_1.dat",
+    .mimeType = "audio/amr-wb",
+    .sampleRate = 16000,
+    .channels = 1,
+    .frameSize = 1024,
+};
+
 struct VideoTrackParam g_videoH264Par = {
     .fileName = "h264_720_480.dat",
     .mimeType = "video/avc",

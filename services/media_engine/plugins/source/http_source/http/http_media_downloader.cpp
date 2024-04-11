@@ -26,8 +26,11 @@ constexpr int RING_BUFFER_SIZE = 5 * 48 * 1024;
 constexpr int WATER_LINE = RING_BUFFER_SIZE / 30; // 30 WATER_LINE:8192
 #else
 constexpr int RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
+constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
+constexpr int32_t TIME_OUT = 5 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -37,9 +40,23 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     downloader_ = std::make_shared<Downloader>("http");
 }
 
-HttpMediaDownloader::HttpMediaDownloader(int bufferSize) noexcept
+HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
 {
-    buffer_ = std::make_shared<RingBuffer>(bufferSize);
+    int totalBufferSize = CURRENT_BIT_RATE * expectBufferDuration;
+    if (totalBufferSize < RING_BUFFER_SIZE) {
+        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
+        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
+        buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+    } else if (totalBufferSize > MAX_BUFFER_SIZE) {
+        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
+        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+        totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
+        buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
+    } else {
+        buffer_ = std::make_shared<RingBuffer>(totalBufferSize);
+        MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_D32, totalBufferSize);
+    }
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
 }
@@ -50,7 +67,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
     Close(false);
 }
 
-bool HttpMediaDownloader::Open(const std::string& url)
+bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
@@ -61,7 +78,10 @@ bool HttpMediaDownloader::Open(const std::string& url)
                                   std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
-    downloadRequest_ = std::make_shared<DownloadRequest>(url, saveData, realStatusCallback);
+    MediaSouce mediaSouce;
+    mediaSouce.url = url;
+    mediaSouce.httpHeader = httpHeader;
+    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
     downloader_->Download(downloadRequest_, -1); // -1
     buffer_->SetMediaOffset(0);
     downloader_->Start();
@@ -95,26 +115,37 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
-    while (buffer_->GetSize() == 0) {
+    readTime_ = 0;
+    while (buffer_->GetSize() <= wantReadLength) {
         isEos = downloadRequest_->IsEos();
+        if (isEos) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
+            realReadLength = 0;
+            return false;
+        }
+        if (readTime_ >= TIME_OUT || downloadErrorState_) {
+            if (downloader_ != nullptr) {
+                downloader_->Pause();
+            }
+            if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
+                downloadRequest_->Close();
+            }
+            if (callback_ != nullptr) {
+                MEDIA_LOG_I("Read time out, OnEvent");
+                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            }
+            return false;
+        }
         bool isClosed = downloadRequest_->IsClosed();
-        if (isEos || isClosed) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32 ", isClosed: "
-                PUBLIC_LOG_D32, isEos, isClosed);
+        if (isClosed) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             realReadLength = 0;
             return false;
         }
         OSAL::SleepFor(5); // 5
+        readTime_ += 5;    // 5
     }
-    if (buffer_->GetMediaOffset() + wantReadLength <= downloadRequest_->GetFileContentLength() &&
-        (buffer_->GetSize() < wantReadLength)) {
-        MEDIA_LOG_D("wantReadLength larger than available, wait for write");
-        AutoLock lock(mutex_);
-        cvReadWrite_.Wait(lock, [this, wantReadLength] {
-            return buffer_->GetSize() >= wantReadLength || downloadRequest_->IsEos() || downloadRequest_->IsClosed();
-        });
-    }
-    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
+    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
     return true;
@@ -201,6 +232,18 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         }
     }
     return true;
+}
+
+void HttpMediaDownloader::SetDemuxerState()
+{
+    MEDIA_LOG_I("SetDemuxerState");
+    isReadFrame_ = true;
+}
+
+void HttpMediaDownloader::SetDownloadErrorState()
+{
+    MEDIA_LOG_I("SetDownloadErrorState");
+    downloadErrorState_ = true;
 }
 }
 }

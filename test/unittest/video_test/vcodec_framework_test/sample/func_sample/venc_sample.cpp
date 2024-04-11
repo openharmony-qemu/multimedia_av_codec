@@ -16,6 +16,7 @@
 #include "venc_sample.h"
 #include <gtest/gtest.h>
 #include "iconsumer_surface.h"
+#include "meta/meta_key.h"
 #include "native_buffer_inner.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
@@ -28,7 +29,9 @@
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 namespace {
-constexpr bool NEED_DUMP = true;
+constexpr bool NEED_DUMP = false;
+constexpr int32_t REQUEST_I_FRAME = 1;
+constexpr int32_t REQUEST_I_FRAME_NUM = 13;
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -48,8 +51,7 @@ void VEncCallbackTest::OnError(int32_t errorCode)
 
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
-    (void)format;
-    cout << "VEnc Format Changed" << endl;
+    UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
 }
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -97,8 +99,7 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
-    (void)format;
-    cout << "VEnc Format Changed" << endl;
+    UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
 }
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -127,6 +128,24 @@ void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->outIndexQueue_.push(index);
     signal_->outBufferQueue_.push(data);
     signal_->outCond_.notify_all();
+}
+
+VEncParamCallbackTest::VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
+
+VEncParamCallbackTest::~VEncParamCallbackTest() {}
+
+void VEncParamCallbackTest::OnInputParameterAvailable(uint32_t index, std::shared_ptr<FormatMock> parameter)
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+    unique_lock<mutex> lock(signal_->inMutex_);
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
+        return;
+    }
+    signal_->inIndexQueue_.push(index);
+    signal_->inFormatQueue_.push(parameter);
+    signal_->inCond_.notify_all();
 }
 
 VideoEncSample::VideoEncSample(std::shared_ptr<VEncSignal> signal)
@@ -173,23 +192,37 @@ bool VideoEncSample::CreateVideoEncMockByName(const std::string &name)
 int32_t VideoEncSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
-    return videoEnc_->SetCallback(cb);
+    int32_t ret = videoEnc_->SetCallback(cb);
+    isAVBufferMode_ = ret != AV_ERR_OK;
+    return ret;
 }
 
-int32_t VideoEncSample::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
+int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
-    return videoEnc_->SetCallback(cb);
+    int32_t ret = videoEnc_->SetCallback(cb);
+    isAVBufferMode_ = ret == AV_ERR_OK;
+    return ret;
+}
+
+int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb)
+{
+    if (videoEnc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    int32_t ret = videoEnc_->SetCallback(cb);
+    isSetParamCallback_ = ret == AV_ERR_OK;
+    return ret;
 }
 
 int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->Configure(format);
 }
@@ -197,25 +230,16 @@ int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
 int32_t VideoEncSample::Start()
 {
     if (signal_ == nullptr || videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     PrepareInner();
     int32_t ret = videoEnc_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-    RunInner();
-    WaitForEos();
-    return ret;
-}
-
-int32_t VideoEncSample::StartBuffer()
-{
-    if (signal_ == nullptr || videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+    if (isAVBufferMode_) {
+        RunInnerExt();
+    } else {
+        RunInner();
     }
-    PrepareInner();
-    int32_t ret = videoEnc_->Start();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-    RunInnerExt();
     WaitForEos();
     return ret;
 }
@@ -223,7 +247,7 @@ int32_t VideoEncSample::StartBuffer()
 int32_t VideoEncSample::Stop()
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->Stop();
 }
@@ -231,7 +255,7 @@ int32_t VideoEncSample::Stop()
 int32_t VideoEncSample::Flush()
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->Flush();
 }
@@ -239,7 +263,7 @@ int32_t VideoEncSample::Flush()
 int32_t VideoEncSample::Reset()
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->Reset();
 }
@@ -247,7 +271,7 @@ int32_t VideoEncSample::Reset()
 int32_t VideoEncSample::Release()
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->Release();
 }
@@ -260,10 +284,18 @@ std::shared_ptr<FormatMock> VideoEncSample::GetOutputDescription()
     return videoEnc_->GetOutputDescription();
 }
 
+std::shared_ptr<FormatMock> VideoEncSample::GetInputDescription()
+{
+    if (videoEnc_ == nullptr) {
+        return nullptr;
+    }
+    return videoEnc_->GetInputDescription();
+}
+
 int32_t VideoEncSample::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->SetParameter(format);
 }
@@ -271,7 +303,7 @@ int32_t VideoEncSample::SetParameter(std::shared_ptr<FormatMock> format)
 int32_t VideoEncSample::NotifyEos()
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->NotifyEos();
 }
@@ -279,7 +311,7 @@ int32_t VideoEncSample::NotifyEos()
 int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     frameInputCount_++;
     return videoEnc_->PushInputData(index, attr);
@@ -288,7 +320,7 @@ int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
 int32_t VideoEncSample::FreeOutputData(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->FreeOutputData(index);
 }
@@ -296,16 +328,24 @@ int32_t VideoEncSample::FreeOutputData(uint32_t index)
 int32_t VideoEncSample::PushInputBuffer(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     frameInputCount_++;
     return videoEnc_->PushInputBuffer(index);
 }
 
+int32_t VideoEncSample::PushInputParameter(uint32_t index)
+{
+    if (videoEnc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return videoEnc_->PushInputParameter(index);
+}
+
 int32_t VideoEncSample::FreeOutputBuffer(uint32_t index)
 {
     if (videoEnc_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoEnc_->FreeOutputBuffer(index);
 }
@@ -402,6 +442,9 @@ void VideoEncSample::FlushInner()
             ASSERT_TRUE(inFile_->is_open());
         }
     }
+    if (inputSurfaceLoop_ != nullptr && inputSurfaceLoop_->joinable()) {
+        inputSurfaceLoop_->join();
+    }
     if (outputLoop_ != nullptr && outputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         std::queue<uint32_t> tempIndex;
@@ -434,11 +477,13 @@ void VideoEncSample::RunInner()
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
-        inputLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
+        inputSurfaceLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
+        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncSample::InputParamLoopFunc, this) : nullptr;
+        ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
         inputLoop_ = make_unique<thread>(&VideoEncSample::InputLoopFunc, this);
+        ASSERT_NE(inputLoop_, nullptr);
     }
-    ASSERT_NE(inputLoop_, nullptr);
     signal_->inCond_.notify_all();
 
     outputLoop_ = make_unique<thread>(&VideoEncSample::OutputLoopFunc, this);
@@ -454,11 +499,13 @@ void VideoEncSample::RunInnerExt()
     signal_->isPreparing_.store(false);
     signal_->isRunning_.store(true);
     if (isSurfaceMode_) {
-        inputLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
+        inputSurfaceLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
+        inputLoop_ = isSetParamCallback_ ? make_unique<thread>(&VideoEncSample::InputParamLoopFunc, this) : nullptr;
+        ASSERT_NE(inputSurfaceLoop_, nullptr);
     } else {
         inputLoop_ = make_unique<thread>(&VideoEncSample::InputLoopFuncExt, this);
+        ASSERT_NE(inputLoop_, nullptr);
     }
-    ASSERT_NE(inputLoop_, nullptr);
     signal_->inCond_.notify_all();
 
     outputLoop_ = make_unique<thread>(&VideoEncSample::OutputLoopFuncExt, this);
@@ -500,6 +547,39 @@ void VideoEncSample::PrepareInner()
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
+void VideoEncSample::InputParamLoopFunc()
+{
+    ASSERT_NE(signal_, nullptr);
+    ASSERT_NE(videoEnc_, nullptr);
+    frameInputCount_ = 0;
+    isFirstFrame_ = true;
+    while (signal_->isRunning_.load()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.wait(
+            lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
+        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
+
+        int32_t index = signal_->inIndexQueue_.front();
+        auto format = signal_->inFormatQueue_.front();
+        UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
+
+        format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+        format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+        format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+        if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
+            format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
+            UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
+        }
+
+        int32_t ret = PushInputParameter(index);
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+
+        signal_->inIndexQueue_.pop();
+        signal_->inFormatQueue_.pop();
+    }
+}
+
 void VideoEncSample::InputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
@@ -511,11 +591,9 @@ void VideoEncSample::InputLoopFunc()
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
-        UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInner();
-        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
 
         signal_->inIndexQueue_.pop();
         signal_->inMemoryQueue_.pop();
@@ -529,20 +607,21 @@ int32_t VideoEncSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    uint64_t bufferSize = ReadOneFrame();
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    attr.size = bufferSize;
-
-    char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail. index: %d",
-                                      index);
-    (void)inFile_->read(fileBuffer, bufferSize);
-    if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetSize(), fileBuffer, bufferSize) != EOK) {
+    if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    } else {
+        int32_t stride = 0;
+        auto format = GetInputDescription();
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        }
     }
-    free(fileBuffer);
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         int32_t ret = PushInputData(index, attr);
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         if (inFile_ != nullptr && inFile_->is_open()) {
@@ -599,19 +678,23 @@ int32_t VideoEncSample::OutputLoopInner()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
+    if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        frameOutputCount_--;
+    }
+
     if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
-        if (!outFile_->is_open()) {
-            cout << "output data fail" << endl;
-        } else {
+        if (outFile_->is_open()) {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                               "Fatal: GetOutputBuffer fail, exit");
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+        } else {
+            UNITTEST_INFO_LOG("output data fail");
         }
     }
     ret = FreeOutputData(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         if (NEED_DUMP && outFile_ != nullptr && outFile_->is_open()) {
             outFile_->close();
         }
@@ -667,17 +750,22 @@ int32_t VideoEncSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
+
+    if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        frameOutputCount_--;
+    }
+
     if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
-        if (!outFile_->is_open()) {
-            cout << "output data fail" << endl;
-        } else {
+        if (outFile_->is_open()) {
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+        } else {
+            UNITTEST_INFO_LOG("output data fail");
         }
     }
     ret = FreeOutputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail. index: %d", index);
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         if (NEED_DUMP && outFile_->is_open()) {
             outFile_->close();
         }
@@ -706,8 +794,7 @@ void VideoEncSample::InputLoopFuncExt()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInnerExt();
-        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
 
         signal_->inBufferQueue_.pop();
         signal_->inIndexQueue_.pop();
@@ -721,20 +808,29 @@ int32_t VideoEncSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    uint64_t bufferSize = ReadOneFrame(); // yuv frame size
-    struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    attr.size = bufferSize;
-
-    char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail. index: %d",
-                                      index);
-    (void)inFile_->read(fileBuffer, bufferSize);
-    if (inFile_->eof() || memcpy_s(buffer->GetAddr(), bufferSize, fileBuffer, bufferSize) != EOK) {
-        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
+        buffer->SetParameter(format);
+        UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
+        format->Destroy();
     }
-    free(fileBuffer);
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
+    if (inFile_->eof()) {
+        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    } else {
+        int32_t stride = 0;
+        auto format = GetInputDescription();
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        }
+    }
+
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
         int32_t ret = PushInputBuffer(index);
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
@@ -776,15 +872,17 @@ void VideoEncSample::InputFuncSurface()
         char *dst = static_cast<char *>(virAddr);
         const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
         int32_t stride = sbuffer->GetStride();
-        if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH_VENC) {
+        if (dst == nullptr || stride < static_cast<int32_t>(DEFAULT_WIDTH_VENC)) {
             cout << "invalid va or stride=" << stride << endl;
             err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
             UNITTEST_CHECK_AND_INFO_LOG(err == 0, "NativeWindowCancelBuffer failed");
             signal_->isRunning_.store(false);
             break;
         }
-        uint64_t bufferSize = ReadOneFrame(); // yuv frame size
-        (void)inFile_->read(dst, bufferSize);
+        uint64_t bufferSize = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < bufferSize; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
+        }
         if (inFile_->eof()) {
             frameInputCount_++;
             err = videoEnc_->NotifyEos();

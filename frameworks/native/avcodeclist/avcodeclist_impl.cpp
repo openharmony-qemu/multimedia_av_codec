@@ -19,7 +19,7 @@
 #include "i_avcodec_service.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecListImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -27,6 +27,8 @@ std::shared_ptr<AVCodecList> AVCodecListFactory::CreateAVCodecList()
 {
     static std::shared_ptr<AVCodecListImpl> impl = std::make_shared<AVCodecListImpl>();
     static bool initialized = false;
+    static std::mutex initMutex;
+    std::lock_guard lock(initMutex);
     if (!initialized) {
         int32_t ret = impl->Init();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVCodecListImpl failed");
