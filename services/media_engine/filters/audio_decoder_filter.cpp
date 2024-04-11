@@ -137,7 +137,8 @@ Status AudioDecoderFilter::Prepare()
 Status AudioDecoderFilter::Start()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Start.");
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start filter failed.");
     return (Status)mediaCodec_->Start();
 }
 
