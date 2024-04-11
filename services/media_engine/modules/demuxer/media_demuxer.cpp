@@ -157,7 +157,7 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
     drmCallback_ = callback;
     bool isExisted = IsLocalDrmInfosExisted();
     if (isExisted) {
-        MEDIA_LOG_D("Already received drminfo and report!");
+        MEDIA_LOG_D("SetDrmCallback Already received drminfo and report!");
         ReportDrmInfos(localDrmInfos_);
     }
 }
@@ -230,16 +230,16 @@ Status MediaDemuxer::ProcessDrmInfos()
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     Status ret = plugin_->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
-        MEDIA_LOG_D("demuxer filter get drminfo success");
+        MEDIA_LOG_D("MediaDemuxer get drminfo success");
         bool isUpdated = IsDrmInfosUpdate(drmInfo);
         if (isUpdated) {
             return ReportDrmInfos(drmInfo);
         } else {
-            MEDIA_LOG_D("demuxer filter received drminfo but not update");
+            MEDIA_LOG_D("MediaDemuxer received drminfo but not update");
         }
     } else {
         if (ret != Status::OK) {
-            MEDIA_LOG_D("demuxer filter get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+            MEDIA_LOG_D("MediaDemuxer get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
         }
     }
     return Status::OK;

@@ -927,14 +927,12 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
             MEDIA_LOG_W("GetDrmInfo Get track " PUBLIC_LOG_D32 " info failed due to track is nullptr.", trackIndex);
             continue;
         }
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC || avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
-            MEDIA_LOG_D("GetDrmInfo by stream side data");
-            int drmInfoSize = 0;
-            MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
-                AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
-            if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
-                ParseDrmInfo(tmpDrmInfo, drmInfoSize, drmInfo);
-            }
+        MEDIA_LOG_D("GetDrmInfo by stream side data");
+        int drmInfoSize = 0;
+        MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
+            AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
+        if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
+            ParseDrmInfo(tmpDrmInfo, drmInfoSize, drmInfo);
         }
     }
     return Status::OK;

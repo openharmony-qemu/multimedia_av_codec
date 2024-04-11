@@ -138,6 +138,33 @@ static int RunAudioAVBufferDecoder()
     return 0;
 }
 
+static int RunAudioAVBufferDecoderDrm()
+{
+    cout << "RunAudioAVBufferDecoderDrm" << endl;
+    cout << "Please select number for format (default AAC Decoder): " << endl;
+    cout << "0: AAC" << endl;
+    cout << "1: FLAC" << endl;
+    cout << "2: MP3" << endl;
+
+    string mode;
+    AudioBufferFormatType audioFormatType = AudioBufferFormatType::TYPE_AAC;
+    (void)getline(cin, mode);
+    if (mode == "" || mode == "0") {
+        audioFormatType = AudioBufferFormatType::TYPE_AAC;
+    } else if (mode == "1") {
+        audioFormatType = AudioBufferFormatType::TYPE_FLAC;
+    } else if (mode == "2") {
+        audioFormatType = AudioBufferFormatType::TYPE_MP3;
+    } else {
+        cout << "no that selection" << endl;
+        return 0;
+    }
+    auto audioDec = std::make_unique<ADecBufferDemo>();
+    audioDec->RunDrmCase(audioFormatType);
+    cout << "demo audio decoder end" << endl;
+    return 0;
+}
+
 static int RunAudioEncoder()
 {
     cout << "Please select number for format (default AAC Encoder): " << endl;
@@ -376,9 +403,10 @@ static void OptionPrint()
     cout << "7:Video Decoder" << endl;
     cout << "8:Video Inner Decoder" << endl;
     cout << "9:demuxer demo" << endl;
-    cout << "10:Audio AVBuffer Decoder" << endl;
+    cout << "10:Audio AVBuffer Decoder with DRM" << endl;
     cout << "11:Video Decoder DRM" << endl;
     cout << "12:E2E demo" << endl;
+    cout << "13:Audio AVBuffer Decoder with DRM" << endl;
 }
 
 int main()
@@ -410,6 +438,8 @@ int main()
         (void)RunVideoDecoderDrm();
     } else if (mode == "12") {
         (void)RunE2EDemo();
+    } else if (mode == "13") {
+        (void)RunAudioAVBufferDecoderDrm();
     } else {
         cout << "no that selection" << endl;
     }
