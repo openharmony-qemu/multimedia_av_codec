@@ -60,7 +60,7 @@ private:
 private:
     class AVCodecInnerCallback : public MediaCodecCallback {
     public:
-        AVCodecInnerCallback(AVCodecAudioCodecImpl *impl);
+        explicit AVCodecInnerCallback(AVCodecAudioCodecImpl *impl);
         ~AVCodecInnerCallback() = default;
         void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
         void OnOutputFormatChanged(const Format &format) override;
