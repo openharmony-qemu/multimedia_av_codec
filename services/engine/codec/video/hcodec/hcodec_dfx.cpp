@@ -15,12 +15,34 @@
 
 #include <fstream>
 #include <sstream>
+#include "hitrace_meter.h"
 #include "hcodec.h"
 #include "hcodec_log.h"
+#include "hcodec_dfx.h"
 #include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
+
+ScopedTrace::ScopedTrace(const std::string &value)
+{
+    StartTrace(HITRACE_TAG_ZMEDIA, value);
+}
+
+ScopedTrace::~ScopedTrace()
+{
+    FinishTrace(HITRACE_TAG_ZMEDIA);
+}
+
+FuncTracker::FuncTracker(std::string value) : value_(std::move(value))
+{
+    PLOGI("%s >>", value_.c_str());
+}
+
+FuncTracker::~FuncTracker()
+{
+    PLOGI("%s <<", value_.c_str());
+}
 
 void HCodec::PrintAllBufferInfo()
 {
@@ -72,6 +94,15 @@ std::array<uint32_t, HCodec::OWNER_CNT> HCodec::CountOwner(bool isInput)
     return arr;
 }
 
+void HCodec::TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput)
+{
+    string inOutStr = isInput ? "in" : "out";
+    CountTrace(HITRACE_TAG_ZMEDIA, compUniqueStr_ + inOutStr + "_us", arr[OWNED_BY_US]);
+    CountTrace(HITRACE_TAG_ZMEDIA, compUniqueStr_ + inOutStr + "_user", arr[OWNED_BY_USER]);
+    CountTrace(HITRACE_TAG_ZMEDIA, compUniqueStr_ + inOutStr + "_omx", arr[OWNED_BY_OMX]);
+    CountTrace(HITRACE_TAG_ZMEDIA, compUniqueStr_ + inOutStr + "_surface", arr[OWNED_BY_SURFACE]);
+}
+
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
     if (!debugMode_) {
@@ -97,7 +128,7 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
     info.lastOwnerChangeTime = now;
     info.owner = newOwner;
     std::array<uint32_t, OWNER_CNT> arr = CountOwner(info.isInput);
-    HLOGI("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
+    HLOGD("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
           "%u/%u/%u/%u",
           idStr, info.bufferId, holdMs, aveHoldMs, oldOwnerStr, newOwnerStr,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE]);
@@ -123,11 +154,11 @@ void HCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<s
 
     uint64_t fromFirstInToNow = chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count();
     if (fromFirstInToNow == 0) {
-        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x",
+        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
     } else {
         double inFps = inTotalCnt_ * US_TO_S / fromFirstInToNow;
-        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
+        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag, inFps);
     }
 }
@@ -154,13 +185,13 @@ void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<
 
     uint64_t fromFirstOutToNow = chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count();
     if (fromFirstOutToNow == 0) {
-        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms)",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs);
     } else {
         double outFps = outRecord_.totalCnt * US_TO_S / fromFirstOutToNow;
-        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms), out fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs, outFps);

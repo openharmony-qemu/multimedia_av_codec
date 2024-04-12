@@ -158,6 +158,7 @@ protected:
     void PrintAllBufferInfo(bool isInput);
     std::string OnGetHidumperInfo();
     std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
+    void TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput);
     void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
     void UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
     void UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
@@ -201,6 +202,7 @@ protected:
     virtual void OnGetBufferFromSurface(const ParamSP& param) = 0;
     uint32_t UserFlagToOmxFlag(AVCodecBufferFlag userFlag);
     AVCodecBufferFlag OmxFlagToUserFlag(uint32_t omxFlag);
+    bool WaitFence(const sptr<SyncFence>& fence);
 
     // input buffer circulation
     virtual void NotifyUserToFillThisInBuffer(BufferInfo &info);
@@ -216,6 +218,7 @@ protected:
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
+    virtual void OnReleaseOutputBuffer(const BufferInfo &info) {}
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
 
     // stop/release
@@ -292,6 +295,7 @@ protected:
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
     bool isSecure_ = false;
+    std::string shortName_;
     uint32_t componentId_ = 0;
     std::string componentName_;
     std::string compUniqueStr_;
@@ -328,7 +332,8 @@ protected:
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
     static constexpr char BUFFER_ID[] = "buffer-id";
-    static constexpr uint32_t WAIT_FENCE_MS = 1000;
+    static constexpr uint32_t WAIT_FENCE_MS = 100;
+    static constexpr uint32_t WARN_FENCE_MS = 10;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
@@ -472,6 +477,7 @@ private:
 private:
     static constexpr size_t MAX_HCODEC_BUFFER_SIZE = 8192 * 4096 * 4; // 8K RGBA
     static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
+    static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;
