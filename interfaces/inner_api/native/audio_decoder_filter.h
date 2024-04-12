@@ -20,6 +20,7 @@
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace Media {
@@ -66,6 +67,9 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
 
+    Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+        bool svp);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -90,6 +94,10 @@ private:
 
     std::shared_ptr<MediaCodec> mediaCodec_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+
+    bool isDrmProtected_ = false;
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+    bool svpFlag_ = false;
 
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{HST_TIME_NONE};

@@ -447,7 +447,7 @@ int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
                 return ret;
             }
             drmDecryptor_->SetCodecName(codecName_);
-            ret = drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf,
+            ret = drmDecryptor_->DrmVideoCencDecrypt(decryptVideoBufs_[index].inBuf,
                 decryptVideoBufs_[index].outBuf, dataSize);
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
         }
@@ -532,7 +532,7 @@ int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionSe
         drmDecryptor_ = std::make_shared<CodecDrmDecrypt>();
     }
     CHECK_AND_RETURN_RET_LOG(drmDecryptor_ != nullptr, AVCS_ERR_NO_MEMORY, "drmDecryptor is nullptr");
-    drmDecryptor_->SetDecryptConfig(keySession, svpFlag);
+    drmDecryptor_->SetDecryptionConfig(keySession, svpFlag);
     return AVCS_ERR_OK;
 }
 #endif
@@ -954,6 +954,17 @@ void CodecServer::ProcessInputBuffer()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     return codecBase_->ProcessInputBuffer();
 }
+
+#ifdef SUPPORT_DRM
+int32_t CodecServer::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_LOGI("CodecServer::SetAudioDecryptionConfig");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "codecBase is nullptr");
+    return codecBase_->SetAudioDecryptionConfig(keySession, svpFlag);
+}
+#endif
 
 bool CodecServer::GetStatus()
 {

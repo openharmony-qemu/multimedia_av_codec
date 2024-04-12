@@ -161,6 +161,15 @@ public:
         }
     }
 
+#ifdef SUPPORT_DRM
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+                                     const bool svpFlag) override
+    {
+        return StatusToAVCodecServiceErrCode(
+            static_cast<Media::Status>(mediaCodec_->SetAudioDecryptionConfig(keySession, svpFlag)));
+    }
+#endif
+
 private:
     std::shared_ptr<Media::MediaCodec> mediaCodec_;
     std::shared_ptr<MediaCodecCallback> callback_;

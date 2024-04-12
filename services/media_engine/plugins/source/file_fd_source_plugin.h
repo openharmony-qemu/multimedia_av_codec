@@ -40,10 +40,14 @@ public:
     void SetDemuxerState() override;
     void SetBundleName(const std::string& bundleName) override;
     void SubmitBufferingStart();
+    void SubmitReadFail();
 private:
     Status ParseUriInfo(const std::string& uri);
     void ReadTimer();
     void CacheData();
+    void StartTimerTask();
+    void PauseTimerTask();
+    void CheckIfReadFail(bool isReadFail);
 
     int32_t fd_ {-1};
     int64_t offset_ {0};

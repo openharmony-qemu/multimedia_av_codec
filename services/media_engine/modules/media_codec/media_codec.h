@@ -29,6 +29,8 @@
 #include "plugin/plugin_event.h"
 #include "plugin/codec_plugin.h"
 #include "osal/task/mutex.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "foundation/multimedia/av_codec/services/drm_decryptor/codec_drm_decrypt.h"
 
 namespace OHOS {
 namespace Media {
@@ -116,10 +118,16 @@ public:
 
     void ProcessInputBuffer();
 
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
     Status AttachBufffer();
+    Status AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
+        uint32_t size);
+    Status DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer);
     Status HandleOutputBuffer(uint32_t eosStatus);
 
     int32_t PrepareInputBufferQueue();
@@ -150,7 +158,8 @@ private:
     bool isBufferMode_;
     int32_t outputBufferCapacity_;
 
-    std::atomic<CodecState> state_;
+    std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
+    std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };
 } // namespace Media

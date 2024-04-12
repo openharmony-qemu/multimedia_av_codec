@@ -411,6 +411,65 @@ Status MediaCodec::AttachBufffer()
     return Status::OK;
 }
 
+Status MediaCodec::AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
+    uint32_t size)
+{
+    MEDIA_LOG_D("AttachDrmBufffer");
+    std::shared_ptr<AVAllocator> avAllocator;
+    avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    FALSE_RETURN_V_MSG_E(avAllocator != nullptr, Status::ERROR_UNKNOWN,
+        "avAllocator is nullptr");
+
+    drmInbuf = AVBuffer::CreateAVBuffer(avAllocator, size);
+    FALSE_RETURN_V_MSG_E(drmInbuf != nullptr, Status::ERROR_UNKNOWN,
+        "drmInbuf is nullptr");
+    FALSE_RETURN_V_MSG_E(drmInbuf->memory_ != nullptr, Status::ERROR_UNKNOWN,
+        "drmInbuf->memory_ is nullptr");
+    drmInbuf->memory_->SetSize(size);
+
+    drmOutbuf = AVBuffer::CreateAVBuffer(avAllocator, size);
+    FALSE_RETURN_V_MSG_E(drmOutbuf != nullptr, Status::ERROR_UNKNOWN,
+        "drmOutbuf is nullptr");
+    FALSE_RETURN_V_MSG_E(drmOutbuf->memory_ != nullptr, Status::ERROR_UNKNOWN,
+        "drmOutbuf->memory_ is nullptr");
+    drmOutbuf->memory_->SetSize(size);
+    return Status::OK;
+}
+
+Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer)
+{
+    MEDIA_LOG_D("MediaCodec DrmAudioCencDecrypt");
+    Status ret = Status::OK;
+
+    // 1. allocate drm buffer
+    uint32_t bufSize = filledInputBuffer->memory_->GetSize();
+    if (bufSize == 0) {
+        MEDIA_LOG_D("MediaCodec DrmAudioCencDecrypt input buffer size equal 0");
+        return ret;
+    }
+    std::shared_ptr<AVBuffer> drmInBuf;
+    std::shared_ptr<AVBuffer> drmOutBuf;
+    ret = AttachDrmBufffer(drmInBuf, drmOutBuf, bufSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "AttachDrmBufffer failed");
+
+    // 2. copy data to drm input buffer
+    int32_t drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), bufSize,
+        filledInputBuffer->memory_->GetAddr(), bufSize);
+    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "memcpy_s drmInBuf failed");
+    if (filledInputBuffer->meta_ != nullptr) {
+        *(drmInBuf->meta_) = *(filledInputBuffer->meta_);
+    }
+    // 4. decrypt
+    drmRes = drmDecryptor_->DrmAudioCencDecrypt(drmInBuf, drmOutBuf, bufSize);
+    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "DrmAudioCencDecrypt return error");
+
+    // 5. copy decrypted data from drm output buffer back
+    drmRes = memcpy_s(filledInputBuffer->memory_->GetAddr(), bufSize,
+        drmOutBuf->memory_->GetAddr(), bufSize);
+    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "memcpy_s drmOutBuf failed");
+    return Status::OK;
+}
+
 int32_t MediaCodec::PrepareInputBufferQueue()
 {
     std::vector<std::shared_ptr<AVBuffer>> inputBuffers;
@@ -502,6 +561,14 @@ void MediaCodec::ProcessInputBuffer()
     const int8_t RETRY = 3; // max retry count is 3
     int8_t retryCount = 0;
     do {
+        if (drmDecryptor_ != nullptr) {
+            ret = DrmAudioCencDecrypt(filledInputBuffer);
+            if (ret != Status::OK) {
+                MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+                break;
+            }
+        }
+
         ret = codecPlugin_->QueueInputBuffer(filledInputBuffer);
         if (ret != Status::OK) {
             retryCount++;
@@ -519,6 +586,29 @@ void MediaCodec::ProcessInputBuffer()
         ret = HandleOutputBuffer(eosStatus);
     } while (ret == Status::ERROR_AGAIN);
 }
+
+#ifdef SUPPORT_DRM
+int32_t MediaCodec::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    MEDIA_LOG_I("MediaCodec::SetAudioDecryptionConfig");
+    if (drmDecryptor_ == nullptr) {
+        drmDecryptor_ = std::make_shared<MediaAVCodec::CodecDrmDecrypt>();
+    }
+    FALSE_RETURN_V_MSG_E(drmDecryptor_ != nullptr, (int32_t)Status::ERROR_NO_MEMORY, "drmDecryptor is nullptr");
+    drmDecryptor_->SetDecryptionConfig(keySession, svpFlag);
+    return (int32_t)Status::OK;
+}
+#else
+int32_t MediaCodec::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    MEDIA_LOG_I("MediaCodec::SetAudioDecryptionConfig, Not support");
+    (void)keySession;
+    (void)svpFlag;
+    return (int32_t)Status::OK;
+}
+#endif
 
 Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 {

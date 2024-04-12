@@ -200,6 +200,24 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     return AVCS_ERR_OK;
 }
 
+#ifdef SUPPORT_DRM
+int32_t AVCodecAudioCodecImpl::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
+}
+#else
+int32_t AVCodecAudioCodecImpl::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    (void)keySession;
+    (void)svpFlag;
+    return 0;
+}
+#endif
+
 int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;

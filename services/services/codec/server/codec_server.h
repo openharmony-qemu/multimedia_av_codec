@@ -102,6 +102,12 @@ public:
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     void ProcessInputBuffer() override;
     bool GetStatus() override;
+
+#ifdef SUPPORT_DRM
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+#endif
+
 private:
     int32_t InitServer();
     int32_t ValidateTemporalScalabilityParam(Format &config);

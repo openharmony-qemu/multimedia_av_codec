@@ -167,6 +167,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
                 MEDIA_LOG_I("Send http server error, code " PUBLIC_LOG_D32, serverError);
                 downloader_->SetDownloadErrorState();
             }
+            request->Close();
             return false;
         }
         return true;

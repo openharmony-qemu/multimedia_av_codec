@@ -27,6 +27,10 @@
 #include "native_avbuffer.h"
 #include "native_avmemory.h"
 #include "securec.h"
+#ifdef SUPPORT_DRM
+#include "native_mediakeysession.h"
+#include "native_mediakeysystem.h"
+#endif
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -184,6 +188,33 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
 
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
     DEMO_CHECK_AND_RETURN_LOG(Release() == AVCS_ERR_OK, "Fatal: Release fail");
+}
+
+void ADecBufferDemo::RunDrmCase(AudioBufferFormatType audioType)
+{
+    std::cout << "ADecBufferDemo::RunDrmCase" <<std::endl;
+#ifdef SUPPORT_DRM
+    audioType_ = audioType;
+    DEMO_CHECK_AND_RETURN_LOG(CreateDec() == AVCS_ERR_OK, "Fatal: CreateDec fail");
+
+    // test 1:create mediakeysystem
+    std::cout << "Test OH_MediaKeySystem_Create" << std::endl;
+    MediaKeySystem *system = NULL;
+    uint32_t errNo = OH_MediaKeySystem_Create("com.clearplay.drm", &system);
+    std::cout << "Test OH_MediaKeySystem_Create result" << system <<"and ret" << errNo << std::endl;
+
+    // test 2:create mediakeysystem
+    std::cout << "Test OH_MediaKeySystem_CreateMediaKeySession" <<std::endl;
+    DRM_ContentProtectionLevel contentProtectionLevel = CONTENT_PROTECTION_LEVEL_SW_CRYPTO;
+    MediaKeySession *session = NULL;
+    errNo = OH_MediaKeySystem_CreateMediaKeySession(system, &contentProtectionLevel, &session);
+    std::cout <<"Test OH_MediaKeySystem_CreateMediaKeySession result" << session << "and ret" << errNo << std::endl;
+
+    // test 3:SetDecryptConfigTest
+    std::cout <<"Test OH_AudioCodec_SetDecryptionConfig"<<std::endl;
+    errNo = OH_AudioCodec_SetDecryptionConfig(audioDec_, session, false);
+    std::cout <<"Test OH_AudioCodec_SetDecryptionConfig result"<<session<<"and ret"<<errNo<<std::endl;
+#endif
 }
 
 ADecBufferDemo::ADecBufferDemo() : audioDec_(nullptr), signal_(nullptr), audioType_(AudioBufferFormatType::TYPE_AAC) {}
