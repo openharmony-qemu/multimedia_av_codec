@@ -166,6 +166,7 @@ private:
     };
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
+    bool isStopDone {false};
 };
 }
 }
