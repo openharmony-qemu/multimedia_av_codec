@@ -32,6 +32,7 @@ enum ShortOption {
     OPT_API_TYPE = UINT8_MAX + 1,
     OPT_IS_ENCODER,
     OPT_IS_BUFFER_MODE,
+    OPT_LTR_FRAME_COUNT,
     OPT_REPEAT_CNT,
     OPT_MAX_READ_CNT,
     OPT_PROTOCOL,
@@ -68,6 +69,7 @@ static struct option g_longOptions[] = {
     {"apiType",         required_argument,  nullptr, OPT_API_TYPE},
     {"isEncoder",       required_argument,  nullptr, OPT_IS_ENCODER},
     {"isBufferMode",    required_argument,  nullptr, OPT_IS_BUFFER_MODE},
+    {"ltrFrameCount",   required_argument,  nullptr, OPT_LTR_FRAME_COUNT},
     {"repeatCnt",       required_argument,  nullptr, OPT_REPEAT_CNT},
     {"maxReadFrameCnt", required_argument,  nullptr, OPT_MAX_READ_CNT},
     {"protocol",        required_argument,  nullptr, OPT_PROTOCOL},
@@ -107,6 +109,7 @@ void ShowUsage()
     std::cout << " --apiType            0: codecbase, 1: new capi, 2: old capi." << std::endl;
     std::cout << " --isEncoder          1 is test encoder, 0 is test decoder" << std::endl;
     std::cout << " --isBufferMode       0 is surface mode, 1 is buffer mode." << std::endl;
+    std::cout << " --ltrFrameCount      The number of long-term reference frames." << std::endl;
     std::cout << " --repeatCnt          repeat test, default is 1" << std::endl;
     std::cout << " --maxReadFrameCnt    read up to frame count from input file" << std::endl;
     std::cout << " --protocol           video protocol. 0 is H264, 1 is H265" << std::endl;
@@ -163,6 +166,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_IS_BUFFER_MODE:
                 opt.isBufferMode = stol(optarg);
+                break;
+            case OPT_LTR_FRAME_COUNT:
+                opt.ltrFrameCount = stol(optarg);
                 break;
             case OPT_REPEAT_CNT:
                 opt.repeatCnt = stol(optarg);

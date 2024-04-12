@@ -26,6 +26,7 @@
 #include "hencoder.h"
 #include "hdecoder.h"
 #include "hcodec_log.h"
+#include "hcodec_dfx.h"
 #include "hcodec_utils.h"
 #include "av_hardware_memory.h"
 #include "av_hardware_allocator.h"
@@ -80,6 +81,7 @@ int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 
 int32_t HCodec::Configure(const Format &format)
 {
+    SCOPED_TRACE();
     HLOGI("%s", format.Stringify().c_str());
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
         msg->SetValue("format", format);
@@ -98,25 +100,29 @@ int32_t HCodec::SetOutputSurface(sptr<Surface> surface)
 
 int32_t HCodec::Start()
 {
-    HLOGI(">>");
+    SCOPED_TRACE();
+    FUNC_TRACKER();
     return DoSyncCall(MsgWhat::START, nullptr);
 }
 
 int32_t HCodec::Stop()
 {
-    HLOGI(">>");
+    SCOPED_TRACE();
+    FUNC_TRACKER();
     return DoSyncCall(MsgWhat::STOP, nullptr);
 }
 
 int32_t HCodec::Flush()
 {
-    HLOGI(">>");
+    SCOPED_TRACE();
+    FUNC_TRACKER();
     return DoSyncCall(MsgWhat::FLUSH, nullptr);
 }
 
 int32_t HCodec::Reset()
 {
-    HLOGI(">>");
+    SCOPED_TRACE();
+    FUNC_TRACKER();
     string previouslyConfiguredName = componentName_;
     int32_t ret = Release();
     if (ret == AVCS_ERR_OK) {
@@ -127,7 +133,8 @@ int32_t HCodec::Reset()
 
 int32_t HCodec::Release()
 {
-    HLOGI(">>");
+    SCOPED_TRACE();
+    FUNC_TRACKER();
     return DoSyncCall(MsgWhat::RELEASE, nullptr);
 }
 
@@ -248,11 +255,24 @@ int32_t HCodec::ReleaseOutputBuffer(uint32_t index)
 HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
     : caps_(caps), codingType_(codingType), isEncoder_(isEncoder)
 {
-    debugMode_ = OHOS::system::GetBoolParameter("hcodec.debug", false);
+    debugMode_ = HiLogIsLoggable(0xD002B32, "HCODEC", LOG_DEBUG);
     string dumpModeStr = OHOS::system::GetParameter("hcodec.dump", "0");
     dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
     LOGI(">> debug mode = %d, dump mode = %s(%lu)",
         debugMode_, dumpModeStr.c_str(), dumpMode_);
+
+    string isEncoderStr = isEncoder ? "enc." : "dec.";
+    switch (static_cast<int>(codingType_)) {
+        case OMX_VIDEO_CodingAVC:
+            shortName_ = isEncoderStr + "avc";
+            break;
+        case CODEC_OMX_VIDEO_CodingHEVC:
+            shortName_ = isEncoderStr + "hevc";
+            break;
+        default:
+            shortName_ = isEncoderStr;
+            break;
+    };
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -484,6 +504,7 @@ int32_t HCodec::GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIO
 
 int32_t HCodec::AllocateAvLinearBuffers(OMX_DIRTYPE portIndex)
 {
+    SCOPED_TRACE();
     OMX_PARAM_PORTDEFINITIONTYPE def;
     int32_t ret = GetPortDefinition(portIndex, def);
     if (ret != AVCS_ERR_OK) {
@@ -504,6 +525,7 @@ int32_t HCodec::AllocateAvLinearBuffers(OMX_DIRTYPE portIndex)
 
 int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
+    SCOPED_TRACE();
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     pool.clear();
     for (uint32_t i = 0; i < def.nBufferCountActual; ++i) {
@@ -547,6 +569,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
 
 int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
+    SCOPED_TRACE();
     MemoryFlag memFlag = MEMORY_READ_WRITE;
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(memFlag);
     IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateSharedAllocator failed");
@@ -589,6 +612,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
 
 int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
 {
+    SCOPED_TRACE();
     OMX_PARAM_PORTDEFINITIONTYPE def;
     int32_t ret = GetPortDefinition(portIndex, def);
     if (ret != AVCS_ERR_OK) {
@@ -767,8 +791,29 @@ AVCodecBufferFlag HCodec::OmxFlagToUserFlag(uint32_t omxFlag)
     return static_cast<AVCodecBufferFlag>(flags);
 }
 
+bool HCodec::WaitFence(const sptr<SyncFence>& fence)
+{
+    if (fence == nullptr || !fence->IsValid()) {
+        return true;
+    }
+    SCOPED_TRACE();
+    auto before = chrono::steady_clock::now();
+    int waitRes = fence->Wait(WAIT_FENCE_MS);
+    if (waitRes == 0) {
+        int64_t costMs = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - before).count();
+        if (costMs >= WARN_FENCE_MS) {
+            HLOGW("wait fence succ but cost %" PRId64 " ms", costMs);
+        }
+        return true;
+    } else {
+        HLOGE("wait fence time out, cost more than %" PRId64 " ms", WAIT_FENCE_MS);
+        return false;
+    }
+}
+
 void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 {
+    SCOPED_TRACE_WITH_ID(info.bufferId);
     callback_->OnInputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
@@ -777,6 +822,7 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
     uint32_t bufferId;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
+    SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (bufferInfo == nullptr) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -836,6 +882,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
+    SCOPED_TRACE_WITH_ID(info.bufferId);
     info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
     info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
@@ -849,6 +896,7 @@ int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 
 int32_t HCodec::NotifyOmxToFillThisOutBuffer(BufferInfo& info)
 {
+    SCOPED_TRACE_WITH_ID(info.bufferId);
     info.omxBuffer->flag = 0;
     int32_t ret = compNode_->FillThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
@@ -861,6 +909,7 @@ int32_t HCodec::NotifyOmxToFillThisOutBuffer(BufferInfo& info)
 
 void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperationMode mode)
 {
+    SCOPED_TRACE_WITH_ID(omxBuffer.bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, omxBuffer.bufferId);
     if (!idx.has_value()) {
         return;
@@ -874,6 +923,9 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
+    if (!debugMode_) {
+        HLOGI("outBufId = %u, omx -> us, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+    }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -911,6 +963,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
 
 void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
+    SCOPED_TRACE_WITH_ID(info.bufferId);
     if (!gotFirstOutput_) {
         LOGI("decrease thread priority");
         OHOS::QOS::ResetThreadQos();
@@ -933,6 +986,7 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
     uint32_t bufferId;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
+    SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -944,7 +998,7 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    HLOGD("outBufId = %u", bufferId);
+    OnReleaseOutputBuffer(info);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
