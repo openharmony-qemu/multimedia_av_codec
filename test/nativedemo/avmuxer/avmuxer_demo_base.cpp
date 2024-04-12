@@ -58,7 +58,7 @@ std::shared_ptr<std::ifstream> OpenFile(const std::string &filePath)
 void AVMuxerDemoBase::SelectFormatMode()
 {
     int num;
-    std::cout<<"\nplease select muxer type: 0.mp4 1.m4a 2.amr"<<std::endl;
+    std::cout<<"\nplease select muxer type: 0.mp4 1.m4a 2.amr 3.mp3"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -69,9 +69,13 @@ void AVMuxerDemoBase::SelectFormatMode()
             format_ = "m4a";
             outputFormat_ = Plugins::OutputFormat::M4A;
             break;
-        case MODE_THREE:
+        case MODE_TWO:
             format_ = "amr";
             outputFormat_ = Plugins::OutputFormat::AMR;
+            break;
+        case MODE_THREE:
+            format_ = "mp3";
+            outputFormat_ = Plugins::OutputFormat::MP3;
             break;
         default:
             format_ = "mp4";

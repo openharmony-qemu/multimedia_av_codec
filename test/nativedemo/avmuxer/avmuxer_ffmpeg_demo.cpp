@@ -87,6 +87,7 @@ std::shared_ptr<Plugins::MuxerPlugin> AVMuxerFFmpegDemo::CreatePlugin(Plugins::O
         {Plugins::OutputFormat::DEFAULT, Plugins::MimeType::MEDIA_MP4},
         {Plugins::OutputFormat::MPEG_4, Plugins::MimeType::MEDIA_MP4},
         {Plugins::OutputFormat::M4A, Plugins::MimeType::MEDIA_M4A},
+        {Plugins::OutputFormat::MP3, Plugins::MimeType::MEDIA_MP3},
     };
 
     auto names = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::MUXER);
