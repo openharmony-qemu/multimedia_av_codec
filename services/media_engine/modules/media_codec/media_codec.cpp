@@ -178,7 +178,7 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codec
     return (int32_t)Status::OK;
 }
 
-int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback)
+int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallback> &codecCallback)
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
@@ -575,7 +575,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
 {
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     if (mediaCodecCallback_) {
-        mediaCodecCallback_->OnOutputBufferAvailable(0, outputBuffer);
+        mediaCodecCallback_->OnOutputBufferDone(outputBuffer);
     }
     FALSE_RETURN_MSG(ret == Status::OK, "OnOutputBufferDone fail");
 }

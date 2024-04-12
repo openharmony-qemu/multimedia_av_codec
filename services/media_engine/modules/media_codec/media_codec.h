@@ -18,7 +18,6 @@
 
 #include <cstring>
 #include "surface.h"
-#include "avcodec_common.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avallocator.h"
@@ -66,6 +65,15 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
+class AudioBaseCodecCallback {
+public:
+    virtual ~AudioBaseCodecCallback() = default;
+
+    virtual void OnError(CodecErrorType errorType, int32_t errorCode) = 0;
+
+    virtual void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+};
+
 class MediaCodec : public Plugins::DataCallback {
 public:
     MediaCodec();
@@ -80,7 +88,7 @@ public:
 
     int32_t SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback);
 
-    int32_t SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback);
+    int32_t SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallback> &codecCallback);
 
     int32_t SetOutputSurface(sptr<Surface> surface);
 
@@ -135,7 +143,7 @@ private:
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
     std::shared_ptr<CodecCallback> codecCallback_;
-    std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback_;
+    std::shared_ptr<AudioBaseCodecCallback> mediaCodecCallback_;
     AVBufferConfig outputBufferConfig_;
     bool isEncoder_;
     bool isSurfaceMode_;
