@@ -643,6 +643,9 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 
 void MediaCodec::ClearInputBuffer()
 {
+    if (!inputBufferQueueConsumer_) {
+        return;
+    }
     std::shared_ptr<AVBuffer> filledInputBuffer;
     Status ret = Status::OK;
     while (ret == Status::OK) {
