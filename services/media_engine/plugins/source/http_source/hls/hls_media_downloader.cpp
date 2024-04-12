@@ -142,7 +142,7 @@ void HlsMediaDownloader::Close(bool isAsync)
     playListDownloader_->Close();
     downloader_->Cancel();
     downloader_->Stop(isAsync);
-    isStopDone = true;
+    isStopped = true;
 }
 
 void HlsMediaDownloader::Pause()
@@ -186,7 +186,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     readTime_ = 0;
     while (buffer_->GetSize() < wantReadLength) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
-                               downloadRequest_->IsEos()) || isStopDone;
+                               downloadRequest_->IsEos()) || isStopped;
         if (isFinishedPlay && buffer_->GetSize() > 0) {
             realReadLength = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
             return true;
