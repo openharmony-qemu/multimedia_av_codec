@@ -201,7 +201,8 @@ Status DemuxerFilter::PrepareBeforeStart()
     }
     MEDIA_LOG_I("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareBeforeStart start filter failed.");
     return demuxer_->Start();
 }
 
@@ -214,7 +215,8 @@ Status DemuxerFilter::Start()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     MEDIA_LOG_I("Start called.");
     isLoopStarted = true;
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start filter failed.");
     return demuxer_->Start();
 }
 
