@@ -18,6 +18,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "i_avcodec_service.h"
+#include "meta/meta_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecVideoDecoderImpl"};
@@ -27,28 +28,66 @@ namespace OHOS {
 namespace MediaAVCodec {
 std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByMime(const std::string &mime)
 {
-    AVCODEC_SYNC_TRACE;
+    std::shared_ptr<AVCodecVideoDecoder> impl = nullptr;
+    Format format;
 
-    std::shared_ptr<AVCodecVideoDecoderImpl> impl = std::make_shared<AVCodecVideoDecoderImpl>();
-
-    int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, true, mime);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed, %{public}s",
-                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    int32_t ret = CreateByMime(mime, format, impl);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
+        "AVCodec video decoder impl init failed, %{public}s",
+        AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
 
     return impl;
 }
 
 std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByName(const std::string &name)
 {
-    AVCODEC_SYNC_TRACE;
+    std::shared_ptr<AVCodecVideoDecoder> impl = nullptr;
+    Format format;
 
-    std::shared_ptr<AVCodecVideoDecoderImpl> impl = std::make_shared<AVCodecVideoDecoderImpl>();
-
-    int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, false, name);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed, %{public}s",
-                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+    int32_t ret = CreateByName(name, format, impl);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
+        "AVCodec video decoder impl init failed, %{public}s",
+        AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
 
     return impl;
+}
+
+int32_t VideoDecoderFactory::CreateByMime(const std::string &mime,
+                                          Format &format, std::shared_ptr<AVCodecVideoDecoder> &decoder)
+{
+    AVCODEC_SYNC_TRACE;
+    using namespace OHOS::Media;
+    format.PutIntValue(Tag::AV_CODEC_CALLER_PID, getpid());
+    format.PutStringValue(Tag::AV_CODEC_CALLER_PROCESS_NAME, program_invocation_name);
+
+    (void)format;
+    auto impl = std::make_shared<AVCodecVideoDecoderImpl>();
+
+    int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, true, mime);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "AVCodec video decoder impl init failed, %{public}s",
+                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+
+    decoder = impl;
+    return AVCS_ERR_OK;
+}
+
+int32_t VideoDecoderFactory::CreateByName(const std::string &name,
+                                          Format &format, std::shared_ptr<AVCodecVideoDecoder> &decoder)
+{
+    AVCODEC_SYNC_TRACE;
+    using namespace OHOS::Media;
+    format.PutIntValue(Tag::AV_CODEC_CALLER_PID, getpid());
+    format.PutStringValue(Tag::AV_CODEC_CALLER_PROCESS_NAME, program_invocation_name);
+
+    (void)format;
+    auto impl = std::make_shared<AVCodecVideoDecoderImpl>();
+
+    int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, false, name);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "AVCodec video decoder impl init failed, %{public}s",
+                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+
+    decoder = impl;
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecVideoDecoderImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
