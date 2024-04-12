@@ -183,7 +183,7 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
 
     auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
+    std::cout << "Decode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
               << " ms" << std::endl;
 
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
