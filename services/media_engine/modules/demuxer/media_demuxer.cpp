@@ -297,6 +297,11 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     std::string type = streamDemuxer_->Init(uri_, mediaDataSize_);
     MediaTypeFound(std::move(type));
 
+    if (source_->IsSeekToTimeSupported()) {
+        ret = source_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo 0 failed before get first video frame");
+    }
+
     MediaInfo mediaInfo;
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create demuxer plugin failed.");
@@ -931,6 +936,13 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::VIDEO_SIZE_CHANGE: {
             MEDIA_LOG_D("OnEvent video size change");
             if (eventReceiver_ != nullptr) {
+                {
+                    AutoLock lock(mapMetaMutex_);
+                    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
+                        AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
+                    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
+                        AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
+                }
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
                     AnyCast<std::pair<int32_t, int32_t>>(event.param)});
             } else {
