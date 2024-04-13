@@ -298,7 +298,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     MediaTypeFound(std::move(type));
 
     if (source_->IsSeekToTimeSupported()) {
-        ret = source_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC);
+        Status ret = source_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo 0 failed before get first video frame");
     }
 
