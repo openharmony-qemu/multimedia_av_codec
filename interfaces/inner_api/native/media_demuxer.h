@@ -110,6 +110,7 @@ private:
     Status StopAllTask();
     Status PauseAllTask();
     Status ResumeAllTask();
+    Status PauseAsync();
 
     bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ProcessDrmInfos();
