@@ -37,8 +37,9 @@ namespace Plugins {
 namespace FileFdSource {
 namespace {
 constexpr size_t SAVE_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr int32_t SLEEP_TIME = 1000;
-constexpr int32_t TIME_OUT = 10 * 1000;
+constexpr int32_t ONE_THOUSAND_MICROSECOUNDS = 1000;
+constexpr int32_t TEN_THOUSAND_MICROSECOUNDS = 10 * 1000;
+constexpr int32_t ONE_MILLION_MICROSECOUNDS = 1 * 1000 * 1000;
 const std::string BUNDLE_NAME_FIRST = "com.hua";
 const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
 uint64_t GetFileSize(int32_t fd)
@@ -124,6 +125,22 @@ void FileFdSourcePlugin::StartTimerTask()
     }
 }
 
+void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
+{
+    if (!isBuffering_) {
+        return;
+    }
+    if (downloadTask_ == nullptr) {
+        return;
+    }
+    isBuffering_ = false;
+    if (isAsync) {
+        downloadTask_->PauseAsync();
+    } else {
+        downloadTask_->Pause();
+    }
+}
+
 void FileFdSourcePlugin::PauseTimerTask()
 {
     if (timerTask_ != nullptr) {
@@ -131,12 +148,28 @@ void FileFdSourcePlugin::PauseTimerTask()
     }
 }
 
+bool FileFdSourcePlugin::HandleBuffering()
+{
+    int32_t sleepTime = 0;
+    while (sleepTime < ONE_MILLION_MICROSECOUNDS) {    // 1s
+        if (!isBuffering_) {
+            break;
+        }
+        usleep(TEN_THOUSAND_MICROSECOUNDS);
+        sleepTime += TEN_THOUSAND_MICROSECOUNDS;
+    }
+    return isBuffering_;
+}
+
 Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     if (isBuffering_ && bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
         MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
             PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
-        return Status::ERROR_AGAIN;
+        if (HandleBuffering()) {
+            return Status::ERROR_AGAIN;
+            MEDIA_LOG_I("return error again.");
+        }
     }
     if (!buffer) {
         buffer = std::make_shared<Buffer>();
@@ -263,9 +296,9 @@ Status FileFdSourcePlugin::Reset()
 
 void FileFdSourcePlugin::ReadTimer()
 {
-    usleep(SLEEP_TIME);
-    readTime_ += SLEEP_TIME;
-    if (readTime_ > TIME_OUT) {
+    usleep(ONE_THOUSAND_MICROSECOUNDS); // 1ms
+    readTime_ += ONE_THOUSAND_MICROSECOUNDS;
+    if (readTime_ > TEN_THOUSAND_MICROSECOUNDS) {   // 10ms
         if (callback_ != nullptr && !isTaskCallback_) {
             MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
             isBuffering_ = true;
@@ -298,17 +331,9 @@ void FileFdSourcePlugin::SetBundleName(const std::string& bundleName)
     }
 }
 
-void FileFdSourcePlugin::CheckIfReadFail(bool isReadFail)
+void FileFdSourcePlugin::HandleReadFail()
 {
-    if (!isReadFail) {
-        return;
-    }
-    if (isBuffering_) {
-        isBuffering_ = false;
-        if (downloadTask_ != nullptr) {
-            downloadTask_->PauseAsync();
-        }
-    }
+    PauseDownloadTask(true);
     SubmitReadFail();
 }
 
@@ -344,7 +369,9 @@ void FileFdSourcePlugin::CacheData()
     delete[] cacheBuffer;
     lseek(fd_, position_, SEEK_SET);
 
-    CheckIfReadFail(isReadFail);
+    if (isReadFail) {
+        HandleReadFail();
+    }
 
     if (callback_ != nullptr && !isReadFail) {
         MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_END.");
@@ -352,12 +379,8 @@ void FileFdSourcePlugin::CacheData()
     } else {
         MEDIA_LOG_I("BUFFERING_END callback_ is nullptr or isReadFail is true.");
     }
-    if (isBuffering_) {
-        isBuffering_ = false;
-        if (downloadTask_ != nullptr) {
-            downloadTask_->PauseAsync();
-        }
-    }
+
+    PauseDownloadTask(true);
 }
 } // namespace FileFdSource
 } // namespace Plugin
