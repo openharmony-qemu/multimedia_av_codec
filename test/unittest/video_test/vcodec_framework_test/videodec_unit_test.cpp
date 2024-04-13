@@ -610,7 +610,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_003, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2); // invalid width size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
-
+}
 
 /**
  * @tc.name: VideoDecoder_Configure_004
