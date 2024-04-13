@@ -297,6 +297,11 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     std::string type = streamDemuxer_->Init(uri_, mediaDataSize_);
     MediaTypeFound(std::move(type));
 
+    if (source_->IsSeekToTimeSupported()) {
+        ret = source_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo 0 failed before get first video frame");
+    }
+
     MediaInfo mediaInfo;
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create demuxer plugin failed.");
@@ -894,6 +899,10 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
+    if (eventReceiver_ == nullptr) {
+        MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
+        return;
+    }
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
             MEDIA_LOG_D("OnEvent source drmInfo update");
@@ -902,40 +911,29 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            if (eventReceiver_ != nullptr) {
-                MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
             break;
         }
         case PluginEventType::BUFFERING_END: {
             MEDIA_LOG_D("OnEvent pause");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
             break;
         }
         case PluginEventType::BUFFERING_START: {
             MEDIA_LOG_D("OnEvent start");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::VIDEO_SIZE_CHANGE: {
             MEDIA_LOG_D("OnEvent video size change");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
-                    AnyCast<std::pair<int32_t, int32_t>>(event.param)});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            AutoLock lock(mapMetaMutex_);
+            mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
+                AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
+            mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
+                AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
+                AnyCast<std::pair<int32_t, int32_t>>(event.param)});
             break;
         }
         default:

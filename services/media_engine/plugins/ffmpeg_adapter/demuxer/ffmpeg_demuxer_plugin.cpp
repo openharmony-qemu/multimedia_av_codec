@@ -286,10 +286,6 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 #endif
     av_log_set_callback(FfmpegLogPrint);
-    hevcParser_ = HevcParserManager::Create();
-    if (hevcParser_ == nullptr) {
-        MEDIA_LOG_W("Init hevc parser failed, frame will not be converted to annexb");
-    }
     MEDIA_LOG_D("Create FFmpeg Demuxer Plugin successfully.");
 }
 
@@ -652,7 +648,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
-    int ret = -1;
+    int ret = 0;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     if (ioContext && ioContext->dataSource) {
@@ -816,20 +812,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         "Set datasource failed due to can not init formatContext for source.");
 
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
-        auto avStream = formatContext_->streams[trackIndex];
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC && hevcParser_ != nullptr) {
-            if (firstFrame_ == nullptr) {
-                GetVideoFirstKeyFrame(trackIndex);
-                FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
-                    Status::ERROR_WRONG_STATE, "Init AVFormatContext failed due to get sei info failed.");
-            }
-            if (!hevcParserInited_) {
-                hevcParser_->ConvertExtraDataToAnnexb(
-                    avStream->codecpar->extradata, avStream->codecpar->extradata_size);
-                hevcParserInited_ = true;
-            }
-            break;
-        } else if (g_bitstreamFilterMap.count(formatContext_->streams[trackIndex]->codecpar->codec_id) != 0) {
+        if (g_bitstreamFilterMap.count(formatContext_->streams[trackIndex]->codecpar->codec_id) != 0) {
             InitBitStreamContext(*(formatContext_->streams[trackIndex]));
             if (avbsfContext_ == nullptr) {
                 MEDIA_LOG_W("init bitStreamContext failed for format " PUBLIC_LOG_S ", stream will not be converted",
@@ -837,8 +820,16 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
             }
             break;
         }
+        if (formatContext_->streams[trackIndex]->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+            hevcParser_ = HevcParserManager::Create();
+            if (hevcParser_ == nullptr) {
+                MEDIA_LOG_W("Init hevc parser failed, frame will not be converted to annexb");
+            }
+            break;
+        }
     }
-    MEDIA_LOG_D("Set data source for demuxer successfully.");
+
+    MEDIA_LOG_I("Set data source for demuxer successfully.");
     return Status::OK;
 }
 
@@ -849,7 +840,24 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     MEDIA_LOG_D("Get media info by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Get media info failed due to formatContext_ is nullptr.");
-    
+
+    if (hevcParser_ != nullptr && !hevcParserInited_) {
+        for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+            auto avStream = formatContext_->streams[trackIndex];
+            if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+                GetVideoFirstKeyFrame(trackIndex);
+                FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
+                    Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
+
+                hevcParser_->ConvertExtraDataToAnnexb(
+                    avStream->codecpar->extradata, avStream->codecpar->extradata_size);
+                hevcParserInited_ = true;
+
+                break;
+            }
+        }
+    }
+
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
 
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
@@ -985,7 +993,6 @@ void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
     auto rtv = av_seek_frame(formatContext_.get(), startTrackIndex, startPts, AVSEEK_FLAG_BACKWARD);
     if (rtv < 0) {
         MEDIA_LOG_W("seek failed, return value: ffmpeg error:" PUBLIC_LOG_D32, rtv);
-        firstFrame_ = nullptr;
     }
 }
 
