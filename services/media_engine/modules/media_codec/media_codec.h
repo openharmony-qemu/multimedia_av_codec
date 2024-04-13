@@ -67,9 +67,18 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
+class AudioBaseCodecCallback {
+public:
+    virtual ~AudioBaseCodecCallback() = default;
+
+    virtual void OnError(CodecErrorType errorType, int32_t errorCode) = 0;
+
+    virtual void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+};
+
 class MediaCodec : public Plugins::DataCallback {
 public:
-    MediaCodec() = default;
+    MediaCodec();
 
     int32_t Init(const std::string &mime, bool isEncoder);
 
@@ -80,6 +89,8 @@ public:
     int32_t SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
 
     int32_t SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback);
+
+    int32_t SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallback> &codecCallback);
 
     int32_t SetOutputSurface(sptr<Surface> surface);
 
@@ -140,14 +151,15 @@ private:
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
     std::shared_ptr<CodecCallback> codecCallback_;
+    std::shared_ptr<AudioBaseCodecCallback> mediaCodecCallback_;
     AVBufferConfig outputBufferConfig_;
-    bool isEncoder_ = false;
-    bool isSurfaceMode_ = false;
-    bool isBufferMode_ = false;
-    int32_t outputBufferCapacity_ = 0;
+    bool isEncoder_;
+    bool isSurfaceMode_;
+    bool isBufferMode_;
+    int32_t outputBufferCapacity_;
 
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
-    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
+    std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };
 } // namespace Media
