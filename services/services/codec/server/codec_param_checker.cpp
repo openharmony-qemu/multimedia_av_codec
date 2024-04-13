@@ -25,77 +25,152 @@
 #include "meta/meta_key.h"
 #include "codec_ability_singleton.h"
 #include "media_description.h"
+#include "meta/meta_key.h"
+#include "temporal_scalability.h"
+#include "meta/video_types.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecParamChecker"};
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
+template<class T> bool IsSupported(std::vector<T> cap, T value)
+{
+    return std::find(cap.begin(), cap.end(), value) != cap.end();
+}
+
+// Video scenario checker
+std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
+                                                        AVCodecType codecType);
+
 // Video codec checker
-int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 
 // Checkers list define
-using CheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
-using CheckerListType = std::vector<CheckerType>;
-const CheckerListType VIDEO_ENCODER_PARAMS_CHECKER_LIST = {
-    WidthChecker,
-    HeightChecker,
+using ScenarioCheckerType =
+    std::optional<CodecScenario> (*)(CapabilityData &capData, const Format &format, AVCodecType codecType);
+using ParamCheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
+using ScenarioCheckerListType = std::vector<ScenarioCheckerType>;
+using ParamCheckerListType = std::vector<ParamCheckerType>;
+const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
+    ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
     BitrateAndQualityChecker,
     VideoProfileChecker,
+    QPChecker,
 };
 
-const CheckerListType VIDEO_DECODER_PARAMS_CHECKER_LIST = {
-    WidthChecker,
-    HeightChecker,
+const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
+    ResolutionChecker,
+    PixelFormatChecker,
+    FramerateChecker,
+    BitrateAndQualityChecker,
+    VideoProfileChecker,
+    QPChecker,
+    TemporalGopSizeChecker,
+    TemporalGopReferenceModeChecker,
+};
+
+const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
+    ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
     RotaitonChecker,
 };
 
+const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
+    FramerateChecker,
+    BitrateAndQualityChecker,
+    QPChecker,
+};
+
+const ParamCheckerListType VIDEO_DECODER_PARAMETER_CHECKER_LIST = {};
+
+const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
+    TemporalScalabilityChecker,
+};
+
+const std::vector<std::string_view> FORMAT_MERGE_LIST = {
+    MediaDescriptionKey::MD_KEY_BITRATE,
+    MediaDescriptionKey::MD_KEY_QUALITY,
+    Tag::VIDEO_ENCODER_QP_MIN,
+    Tag::VIDEO_ENCODER_QP_MAX,
+};
+
 // Checkers table
-const std::unordered_map<AVCodecType, CheckerListType> CHECKERS_TABLE = {
-    {AVCODEC_TYPE_VIDEO_ENCODER, VIDEO_ENCODER_PARAMS_CHECKER_LIST},
-    {AVCODEC_TYPE_VIDEO_DECODER, VIDEO_DECODER_PARAMS_CHECKER_LIST},
+const std::unordered_map<CodecScenario, ParamCheckerListType> CONFIGURE_CHECKERS_TABLE = {
+    {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_CONFIGURE_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_CONFIGURE_CHECKER_LIST},
+};
+
+const std::unordered_map<CodecScenario, ParamCheckerListType> PARAMETER_CHECKERS_TABLE = {
+    {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_PARAMETER_CHECKER_LIST},
 };
 
 // Checkers implementation
-int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
+                                                        AVCodecType codecType)
+{
+    (void)codecType;
+    int32_t enable = 0;
+    std::optional<CodecScenario> scenario = std::nullopt;
+    bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
+    bool temporalGopSizeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+    bool modeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+
+    if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+        if (enableExist || temporalGopSizeExist || modeExist) {
+            AVCODEC_LOGW("Temporal scalability is only supported in video encoder!");
+        }
+        return scenario;
+    }
+    if (!enableExist || !enable) {
+        if (temporalGopSizeExist || modeExist) {
+            AVCODEC_LOGW("Please enable key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
+        }
+        return scenario;
+    }
+    CHECK_AND_RETURN_RET_LOG(capData.featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)),
+        scenario, "Not support temporal scalability");
+
+    scenario = CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY;
+    return scenario;
+}
+
+int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)codecType;
     int32_t width = 0;
-    bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
-    CHECK_AND_RETURN_RET_LOG(paramExist, AVCS_ERR_INVALID_VAL, "Key param missing, %{public}s",
-        MediaDescriptionKey::MD_KEY_WIDTH.data());     // Missing width
-
-    bool paramValid = capData.width.InRange(width);
-    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_INVALID_VAL, "Param invalid, %{public}s: %{public}d",
-        MediaDescriptionKey::MD_KEY_WIDTH.data(), width);     // Invalid width
-
-    AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_WIDTH.data(), width);
-    return AVCS_ERR_OK;
-}
-
-int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
-{
-    (void)codecType;
     int32_t height = 0;
-    bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
-    CHECK_AND_RETURN_RET_LOG(paramExist, AVCS_ERR_INVALID_VAL, "Key param missing, %{public}s",
-        MediaDescriptionKey::MD_KEY_HEIGHT.data());     // Missing height
+    bool widthExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    bool heightExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    CHECK_AND_RETURN_RET_LOG(widthExist && heightExist, AVCS_ERR_INVALID_VAL, "Key param missing, width or height");
 
-    bool paramValid = capData.height.InRange(height);
-    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_INVALID_VAL, "Param invalid, %{public}s: %{public}d",
-        MediaDescriptionKey::MD_KEY_HEIGHT.data(), height);     // Invalid height
-
-    AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_HEIGHT.data(), height);
+    bool widthValid = true;
+    bool heightValid = true;
+    if (capData.supportSwapWidthHeight) {
+        widthValid = capData.width.InRange(width) || capData.height.InRange(width);
+        heightValid = capData.width.InRange(height) || capData.height.InRange(height);
+    } else {
+        widthValid = capData.width.InRange(width);
+        heightValid = capData.height.InRange(height);
+    }
+    CHECK_AND_RETURN_RET_LOG(widthValid, AVCS_ERR_INVALID_VAL, "Param invalid, width: %{public}d", width);
+    CHECK_AND_RETURN_RET_LOG(heightValid, AVCS_ERR_INVALID_VAL, "Param invalid, height: %{public}d", height);
+    AVCODEC_LOGI("Param valid, resolution: %{public}d * %{public}d", width, height);
     return AVCS_ERR_OK;
 }
 
@@ -106,12 +181,11 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
     CHECK_AND_RETURN_RET_LOG(!(codecType == AVCODEC_TYPE_VIDEO_ENCODER && !paramExist),
         AVCS_ERR_INVALID_VAL, "Key param missing for encoder, %{public}s",
         MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data());     // Encoder missing pixel format
-    if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+    if (!paramExist) {
         return AVCS_ERR_OK;
     }
 
-    bool paramValid =
-        std::find(capData.pixFormat.begin(), capData.pixFormat.end(), pixelFormat) != capData.pixFormat.end();
+    bool paramValid = IsSupported(capData.pixFormat, pixelFormat);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data(), pixelFormat);     // Invalid pixel format
 
@@ -162,8 +236,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     }
 
     if (bitrateModeExist) {
-        bool bitrateModeValid = std::find(capData.bitrateMode.begin(), capData.bitrateMode.end(), bitrateMode) !=
-            capData.bitrateMode.end();
+        bool bitrateModeValid = IsSupported(capData.bitrateMode, bitrateMode);
         CHECK_AND_RETURN_RET_LOG(bitrateModeValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE.data(), bitrateMode);     // Invalid bitrate mode
         CHECK_AND_RETURN_RET_LOG(!(bitrateExist && bitrateMode == VideoEncodeBitrateMode::CQ),
@@ -171,7 +244,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
         CHECK_AND_RETURN_RET_LOG(!(qualityExist && bitrateMode != VideoEncodeBitrateMode::CQ),
             AVCS_ERR_INVALID_VAL, "Param invalid, not in CQ mode but set quality!");
     } else {
-        if (qualityExist) {
+        if (qualityExist && IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
             bitrateMode = VideoEncodeBitrateMode::CQ;
             format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
         }
@@ -193,8 +266,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
         return AVCS_ERR_OK;
     }
 
-    bool paramValid =
-        std::find(capData.profiles.begin(), capData.profiles.end(), profile) != capData.profiles.end();
+    bool paramValid = IsSupported(capData.profiles, profile);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);     // Invalid pixel format
 
@@ -220,27 +292,202 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
     AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);
     return AVCS_ERR_OK;
 }
+
+int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)format;
+    (void)codecType;
+    constexpr int32_t MAX_QP = 51;
+    int32_t qpMin;
+    int32_t qpMax;
+    bool qpMinExist = format.GetIntValue(Tag::VIDEO_ENCODER_QP_MIN, qpMin);
+    bool qpMaxExist = format.GetIntValue(Tag::VIDEO_ENCODER_QP_MAX, qpMax);
+    if (!qpMinExist && !qpMaxExist) {
+        return AVCS_ERR_OK;
+    }
+    CHECK_AND_RETURN_RET_LOG(!(qpMinExist ^ qpMaxExist), AVCS_ERR_INVALID_VAL,
+        "Param invalid, qp_min and qp_max are expected to be set in pairs in format");
+
+    CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
+        "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
+    CHECK_AND_RETURN_RET_LOG(qpMax <= MAX_QP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
+        "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
+    
+    AVCODEC_LOGI("Param valid, QP range: %{public}d-%{public}d", qpMin, qpMax);
+    return AVCS_ERR_OK;
+}
+
+int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t gopSize;
+    int32_t temporalGopSize;
+    double frameRate;
+    int32_t iFrameInterval;
+
+    bool frameRateExist = format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
+    bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
+    CHECK_AND_RETURN_RET_LOG(!(iFrameIntervalExist && iFrameInterval == 0), AVCS_ERR_INVALID_VAL,
+        "Not support all key frame in temporal scalability");
+    
+    if (!frameRateExist) {
+        frameRate = DEFAULT_FRAMERATE;
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAMERATE);
+    }
+    if (!iFrameIntervalExist) {
+        iFrameInterval = DEFAULT_I_FRAME_INTERVAL;
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+    }
+    gopSize = iFrameInterval < 0 ? INT32_MAX : static_cast<int32_t>(frameRate * iFrameInterval / 1000); // 1000: ms to s
+    CHECK_AND_RETURN_RET_LOG(gopSize > MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
+        "Unsuppoted gop size, should be greater than %{public}d!", MIN_TEMPORAL_GOPSIZE);
+    format.PutIntValue("video_encoder_gop_size", gopSize);
+
+    bool gopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+    if (!gopSizeExist) {
+        return AVCS_ERR_OK;
+    }
+    CHECK_AND_RETURN_RET_LOG(temporalGopSize >= MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
+        "Param invalid, %{public}s: %{public}d, expect greater or equal than %{public}d",
+        Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, MIN_TEMPORAL_GOPSIZE);
+    CHECK_AND_RETURN_RET_LOG(temporalGopSize < gopSize, AVCS_ERR_INVALID_VAL,
+        "Param invalid, %{public}s: %{public}d, expect less than gop_size: %{public}d",
+        Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, gopSize);
+    
+    return AVCS_ERR_OK;
+}
+
+int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t mode;
+    bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
+    if (!modeExist) {
+        return AVCS_ERR_OK;
+    }
+
+    using namespace OHOS::Media::Plugins;
+    if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
+        mode > static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName)
+int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecType codecType,
+                                               const std::string &codecName, CodecScenario scenario)
 {
-    return AVCS_ERR_OK;
+    AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
-        AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
-    AVCODEC_SYNC_TRACE;
+        AVCS_ERR_INVALID_OPERATION, "Get codec capability from codec list failed");
 
-    auto checkers = CHECKERS_TABLE.find(codecType);
-    if (checkers != CHECKERS_TABLE.end()) {
-        for (const auto &checker : checkers->second) {
-            int32_t ret = checker(capData.value(), format, codecType);
-            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
+    auto checkers = CONFIGURE_CHECKERS_TABLE.find(scenario);
+    CHECK_AND_RETURN_RET_LOG(checkers != CONFIGURE_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
+        "This scenario can not find any checkers");
+
+    for (const auto &checker : checkers->second) {
+        auto ret = checker(capData.value(), format, codecType);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Media::Format &oldFormat,
+                                               AVCodecType codecType, const std::string &codecName,
+                                               CodecScenario scenario)
+{
+    AVCODEC_SYNC_TRACE;
+    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
+        AVCS_ERR_INVALID_OPERATION, "Get codec capability from codec list failed");
+
+    auto checkers = PARAMETER_CHECKERS_TABLE.find(scenario);
+    CHECK_AND_RETURN_RET_LOG(checkers != PARAMETER_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
+        "This scenario can not find any checkers");
+
+    MergeFormat(format, oldFormat);
+
+    for (const auto &checker : checkers->second) {
+        auto ret = checker(capData.value(), oldFormat, codecType);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
+    }
+    return AVCS_ERR_OK;
+}
+
+std::optional<CodecScenario> CodecParamChecker::CheckCodecScenario(const Media::Format &format, AVCodecType codecType,
+                                                                   const std::string &codecName)
+{
+    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
+        std::nullopt, "Get codec capability from codec list failed");
+
+    CodecScenario scenario = CodecScenario::CODEC_SCENARIO_DEC_NORMAL;
+    if (codecType == AVCODEC_TYPE_VIDEO_ENCODER) {
+        scenario = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
+    }
+    
+    for (const auto& checker : VIDEO_SCENARIO_CHECKER_LIST) {
+        auto ret = checker(capData.value(), format, codecType);
+        if (ret == std::nullopt) {
+            continue;
+        }
+        scenario = ret.value();
+        break;
+    }
+    AVCODEC_LOGI("Codec scenario is %{public}d", scenario);
+    return scenario;
+}
+
+void CodecParamChecker::MergeFormat(const Media::Format &format, Media::Format &oldFormat)
+{
+    for (const auto& key : FORMAT_MERGE_LIST) {
+        if (!format.ContainKey(key)) {
+            continue;
+        }
+        auto keyType = format.GetValueType(key);
+        switch (keyType) {
+            case FORMAT_TYPE_INT32: {
+                int32_t value;
+                format.GetIntValue(key, value);
+                oldFormat.PutIntValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_INT64: {
+                int64_t value;
+                format.GetLongValue(key, value);
+                oldFormat.PutLongValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_FLOAT: {
+                float value;
+                format.GetFloatValue(key, value);
+                oldFormat.PutFloatValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_DOUBLE: {
+                double value;
+                format.GetDoubleValue(key, value);
+                oldFormat.PutDoubleValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_STRING: {
+                std::string value;
+                format.GetStringValue(key, value);
+                oldFormat.PutStringValue(key, value);
+                break;
+            }
+            default:
+                break;
         }
     }
-    (void)format;
-    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
