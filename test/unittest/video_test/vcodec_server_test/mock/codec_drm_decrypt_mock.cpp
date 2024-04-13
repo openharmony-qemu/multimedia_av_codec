@@ -178,7 +178,16 @@ void CodecDrmDecrypt::DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t d
     (void)cencInfo;
 }
 
-int32_t CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+int32_t CodecDrmDecrypt::DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, std::shared_ptr<AVBuffer> &outBuf,
+    uint32_t &dataSize)
+{
+    (void)inBuf;
+    (void)outBuf;
+    (void)dataSize;
+    return 0;
+}
+
+int32_t CodecDrmDecrypt::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, std::shared_ptr<AVBuffer> &outBuf,
     uint32_t &dataSize)
 {
     (void)inBuf;
@@ -196,7 +205,8 @@ void CodecDrmDecrypt::GetCodingType()
 {
 }
 
-void CodecDrmDecrypt::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
+void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
 {
     (void)keySession;
     (void)svpFlag;
@@ -213,8 +223,8 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, co
     return AVCS_ERR_OK;
 }
 
-int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo *const cencInfo, std::shared_ptr<AVBuffer> inBuf,
-                                          std::shared_ptr<AVBuffer> outBuf)
+int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo *const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
+                                          std::shared_ptr<AVBuffer> &outBuf)
 {
     AVCODEC_LOGI("CodecDrmDecrypt DecryptMediaData");
     (void)cencInfo;

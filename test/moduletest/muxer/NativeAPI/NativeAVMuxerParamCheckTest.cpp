@@ -1206,6 +1206,55 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_022
 }
 
 /**
+ * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_025
+ * @tc.name      : OH_AVMuxer_WriteSampleBuffer - sample check
+ * @tc.desc      : param check test
+ */
+HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_025, TestSize.Level2)
+{
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
+    OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MP3;
+    int32_t fd = muxerDemo->GetFdByMode(format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
+    ASSERT_NE(nullptr, handle);
+
+    uint8_t a[CODEC_CONFIG];
+
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
+    OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
+    OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PROFILE, PROFILE);
+
+    int32_t trackId;
+
+    OH_AVErrCode ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+    ASSERT_EQ(0, trackId);
+
+    ret = muxerDemo->NativeStart(handle);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVBuffer *avBuffer = OH_AVBuffer_Create(INFO_SIZE);
+
+    OH_AVCodecBufferAttr info;
+    info.pts = 0;
+    info.size = INFO_SIZE;
+    info.offset = 0;
+    info.flags = 0;
+    OH_AVBuffer_SetBufferAttr(avBuffer, &info);
+    ret = muxerDemo->NativeWriteSampleBuffer(handle, trackId, avBuffer);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVBuffer_Destroy(avBuffer);
+    muxerDemo->NativeDestroy(handle);
+    OH_AVFormat_Destroy(trackFormat);
+    handle = nullptr;
+    delete muxerDemo;
+}
+
+/**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_023
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - sample check
  * @tc.desc      : param check test

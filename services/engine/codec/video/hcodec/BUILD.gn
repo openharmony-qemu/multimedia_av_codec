@@ -75,6 +75,7 @@ ohos_shared_library("hcodec") {
     "graphic_surface:sync_fence",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
     "media_foundation:media_foundation",

@@ -308,7 +308,6 @@ void TesterCommon::EncoderInputLoop()
         if (!ret) {
             continue;
         }
-        currInputCnt_++;
         if (opt_.enableInputCb) {
             WaitForInput(buf);
             if (!opt_.perFrameParamsMap.empty() && opt_.perFrameParamsMap.begin()->first == currInputCnt_) {
@@ -317,6 +316,7 @@ void TesterCommon::EncoderInputLoop()
             }
             ReturnInput(buf);
         }
+        currInputCnt_++;
     }
 }
 

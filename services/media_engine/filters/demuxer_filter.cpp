@@ -137,8 +137,9 @@ void DemuxerFilter::SetBundleName(const std::string& bundleName)
     }
 }
 
-Status DemuxerFilter::PrepareWork()
+Status DemuxerFilter::Prepare()
 {
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
         return Status::ERROR_INVALID_PARAMETER;
@@ -192,22 +193,6 @@ Status DemuxerFilter::PrepareWork()
     return Filter::Prepare();
 }
 
-Status DemuxerFilter::Prepare()
-{
-    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
-    MEDIA_LOG_I("Prepare called.");
-    auto ret = PrepareWork();
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("PrepareWork failed with error " PUBLIC_LOG_D32, ret);
-        return ret;
-    }
-    if (!IsExistVideoTrace()) {
-        MEDIA_LOG_D("This is an audio file.");
-        return Status::OK;
-    }
-    return PrepareBeforeStart();
-}
-
 Status DemuxerFilter::PrepareBeforeStart()
 {
     if (isLoopStarted.load()) {
@@ -216,7 +201,8 @@ Status DemuxerFilter::PrepareBeforeStart()
     }
     MEDIA_LOG_I("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareBeforeStart start filter failed.");
     return demuxer_->Start();
 }
 
@@ -229,7 +215,8 @@ Status DemuxerFilter::Start()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     MEDIA_LOG_I("Start called.");
     isLoopStarted = true;
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start filter failed.");
     return demuxer_->Start();
 }
 
@@ -488,11 +475,6 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
 bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     return demuxer_->GetDuration(durationMs);
-}
-
-bool DemuxerFilter::IsExistVideoTrace()
-{
-    return demuxer_->IsExistVideoTrace();
 }
 } // namespace Pipeline
 } // namespace Media

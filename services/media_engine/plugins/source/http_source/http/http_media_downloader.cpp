@@ -30,7 +30,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int32_t TIME_OUT = 3 * 1000;
+constexpr int32_t TIME_OUT = 5 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -116,9 +116,11 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
     readTime_ = 0;
-    while (buffer_->GetSize() == 0) {
+    uint32_t remain = downloadRequest_->GetFileContentLength() - buffer_->GetMediaOffset();
+    wantReadLength = remain < wantReadLength ? remain : wantReadLength;
+    while (buffer_->GetSize() < wantReadLength) {
         isEos = downloadRequest_->IsEos();
-        if (isEos) {
+        if (isEos && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
             realReadLength = 0;
             return false;
@@ -137,7 +139,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             return false;
         }
         bool isClosed = downloadRequest_->IsClosed();
-        if (isClosed) {
+        if (isClosed && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             realReadLength = 0;
             return false;
@@ -145,11 +147,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         OSAL::SleepFor(5); // 5
         readTime_ += 5;    // 5
     }
-    if (buffer_->GetSize() > wantReadLength) {
-        realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
-    } else {
-        realReadLength = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2); // wait 2 times
-    }
+    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
     return true;
