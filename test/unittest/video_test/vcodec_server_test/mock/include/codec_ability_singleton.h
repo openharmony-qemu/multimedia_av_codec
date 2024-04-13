@@ -13,26 +13,47 @@
  * limitations under the License.
  */
 
-#ifndef CODEABILITY_SINGLETON_MOCK_H
-#define CODEABILITY_SINGLETON_MOCK_H
+#ifndef CODEABILITY_SINGLETON_H
+#define CODEABILITY_SINGLETON_H
 
 #include <mutex>
 #include <optional>
 #include <unordered_map>
+#include "avcodec_codec_name.h"
 #include "avcodec_info.h"
-#include "codeclist_core.h"
+#include "codeclist_utils.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecAbilitySingleton {
+class __attribute__((visibility("default"))) CodecAbilitySingletonImpl : public NoCopyable {
 public:
-    ~CodecAbilitySingleton();
-    static CodecAbilitySingleton &GetInstance();
+    CodecAbilitySingletonImpl();
+    ~CodecAbilitySingletonImpl();
+    static CodecAbilitySingletonImpl &GetInstance();
+    void RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType);
+    std::vector<CapabilityData> GetCapabilityArray();
     std::optional<CapabilityData> GetCapabilityByName(std::string name);
+    std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
+    std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
 
 private:
-    CodecAbilitySingleton();
+    std::vector<CapabilityData> capabilityDataArray_;
+    std::unordered_map<std::string, std::vector<size_t>> mimeCapIdxMap_;
+    std::unordered_map<std::string, CodecType> nameCodecTypeMap_;
+    std::mutex mutex_;
 };
+
+#ifndef CodecAbilitySingleton
+class __attribute__((visibility("default"))) CodecAbilitySingleton : public CodecAbilitySingletonImpl {
+public:
+    static CodecAbilitySingleton &GetInstance();
+    void RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType);
+    std::vector<CapabilityData> GetCapabilityArray();
+    std::optional<CapabilityData> GetCapabilityByName(std::string name);
+    std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
+    std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
+};
+#endif
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // CODEABILITY_SINGLETON_MOCK_H
+#endif // CODEABILITY_SINGLETON_H

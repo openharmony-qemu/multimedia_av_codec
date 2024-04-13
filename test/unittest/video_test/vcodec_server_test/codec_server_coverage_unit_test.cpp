@@ -23,7 +23,11 @@
 #include "codecbase.h"
 #include "codeclist_core.h"
 #include "meta/meta_key.h"
-
+#include "unittest_utils.h"
+#define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
+    EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
+#define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
+    EXPECT_CALL(*codecBaseMock_, GetFCapabilityList).Times(AtLeast(1)).WillRepeatedly
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -43,7 +47,6 @@ public:
     void CreateHCodecByName();
     void CreateHCodecByMime();
     std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
-    std::shared_ptr<CodecListCoreMock> codeclistCoreMock_ = nullptr;
     std::shared_ptr<CodecServer> server_ = nullptr;
 
 private:
@@ -58,13 +61,11 @@ void CodecServerUnitTest::SetUp(void)
 {
     codecBaseMock_ = std::make_shared<CodecBaseMock>();
     CodecBase::RegisterMock(codecBaseMock_);
-    codeclistCoreMock_ = std::make_shared<CodecListCoreMock>();
-    CodecListCore::RegisterMock(codeclistCoreMock_);
 
     server_ = std::static_pointer_cast<CodecServer>(CodecServer::Create());
     EXPECT_NE(server_, nullptr);
 
-    validFormat_.PutIntValue(Tag::VIDEO_WIDTH, 4096); // 4096: valid parameter
+    validFormat_.PutIntValue(Tag::VIDEO_WIDTH, 4096);  // 4096: valid parameter
     validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, 4096); // 4096: valid parameter
     validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, 1);
 }
@@ -74,20 +75,16 @@ void CodecServerUnitTest::TearDown(void)
     server_ = nullptr;
     // mock object
     codecBaseMock_ = nullptr;
-    codeclistCoreMock_ = nullptr;
+    validFormat_ = Format();
 }
 
 void CodecServerUnitTest::CreateFCodecByName()
 {
-    std::string codecName = "codec_name_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName))
-        .Times(1)
-        .WillOnce(Return(CodecType::AVCODEC_VIDEO_CODEC));
+    std::string codecName = "video.F.Decoder.Name.00";
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
@@ -97,24 +94,18 @@ void CodecServerUnitTest::CreateFCodecByName()
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
-
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
 void CodecServerUnitTest::CreateFCodecByMime()
 {
-    std::string codecName = "codec_name_mock";
-    std::string codecMime = "codec_mime_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(AtLeast(1));
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(AtLeast(1));
-    EXPECT_CALL(*codeclistCoreMock_, FindEncoder).Times(1).WillOnce(Return(codecName));
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName))
-        .Times(1)
-        .WillOnce(Return(CodecType::AVCODEC_VIDEO_CODEC));
+    std::string codecName = "video.F.Decoder.Name.00";
+    std::string codecMime = CODEC_MIME_MOCK_00;
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
@@ -131,13 +122,11 @@ void CodecServerUnitTest::CreateFCodecByMime()
 
 void CodecServerUnitTest::CreateHCodecByName()
 {
-    std::string codecName = "codec_name_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName)).Times(1).WillOnce(Return(CodecType::AVCODEC_HCODEC));
+    std::string codecName = "video.H.Encoder.Name.00";
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
@@ -154,15 +143,12 @@ void CodecServerUnitTest::CreateHCodecByName()
 
 void CodecServerUnitTest::CreateHCodecByMime()
 {
-    std::string codecName = "codec_name_mock";
-    std::string codecMime = "codec_mime_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(AtLeast(1));
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(AtLeast(1));
-    EXPECT_CALL(*codeclistCoreMock_, FindEncoder).Times(1).WillOnce(Return(codecName));
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName)).Times(1).WillOnce(Return(CodecType::AVCODEC_HCODEC));
+    std::string codecName = "video.H.Encoder.Name.00";
+    std::string codecMime = CODEC_MIME_MOCK_00;
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
@@ -218,17 +204,47 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_004, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Codec_Server_Constructor_005
+ * @tc.desc: 1. failed to create video decoder of hcodec by mime
+ *           2. return fcodec
+ */
+HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_005, TestSize.Level1)
+{
+    std::string codecMime = CODEC_MIME_MOCK_01;
+    std::string hcodecName = "video.H.Decoder.Name.01";
+    std::string fcodecName = "video.F.Decoder.Name.01";
+
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(hcodecName)).Times(1).WillOnce(Return(nullptr));
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(fcodecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_DECODER, true, codecMime, API_VERSION::API_VERSION_11);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    EXPECT_NE(server_->codecBase_, nullptr);
+}
+
+/**
  * @tc.name: Codec_Server_Constructor_Invalid_001
  * @tc.desc: 1. create hcodec by name
  *           2. CodecFactory return nullptr
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_001, TestSize.Level1)
 {
-    std::string codecName = "codec_name_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName)).Times(1).WillOnce(Return(CodecType::AVCODEC_HCODEC));
+    std::string codecName = "video.H.Encoder.Name.00";
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName)).Times(1).WillOnce(Return(nullptr));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr))).Times(0);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr))).Times(0);
@@ -244,19 +260,17 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_001, TestSize.Lev
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_002, TestSize.Level1)
 {
-    std::string codecName = "codec_name_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName)).Times(1).WillOnce(Return(CodecType::AVCODEC_HCODEC));
+    std::string codecName = "video.H.Encoder.Name.00";
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
         .Times(1)
-        .WillOnce(Return(AVCS_ERR_UNKNOWN));
+        .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr))).Times(0);
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
@@ -270,13 +284,11 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_002, TestSize.Lev
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_003, TestSize.Level1)
 {
-    std::string codecName = "codec_name_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName)).Times(1).WillOnce(Return(CodecType::AVCODEC_HCODEC));
+    std::string codecName = "video.H.Encoder.Name.00";
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
@@ -285,7 +297,7 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_003, TestSize.Lev
         .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
-        .WillOnce(Return(AVCS_ERR_UNKNOWN));
+        .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
@@ -298,13 +310,11 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_003, TestSize.Lev
  */
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_004, TestSize.Level1)
 {
-    std::string codecName = "codec_name_mock";
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreCtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, CodecListCoreDtor()).Times(1);
-    EXPECT_CALL(*codeclistCoreMock_, FindCodecType(codecName)).Times(1).WillOnce(Return(CodecType::AVCODEC_HCODEC));
+    std::string codecName = "video.H.Encoder.Name.00";
 
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
@@ -313,7 +323,7 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_004, TestSize.Lev
         .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
-        .WillOnce(Return(AVCS_ERR_UNKNOWN));
+        .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);

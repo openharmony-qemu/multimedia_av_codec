@@ -87,7 +87,7 @@ bool VideoEncSample::Create()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(name != nullptr, false, "OH_AVCapability_GetName failed");
 
     codec_ = OH_VideoEncoder_CreateByName(name);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(name != nullptr, false, "OH_VideoEncoder_CreateByName failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoEncoder_CreateByName failed");
     return true;
 }
 

@@ -45,6 +45,28 @@ std::shared_ptr<CodecBase> FCodecLoader::CreateByName(const std::string &name)
     return mock->CreateFCodecByName(name);
 }
 
+int32_t HCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("HCodec");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetHCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+
+int32_t FCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("FCodec");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetFCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+
 void CodecBase::RegisterMock(std::shared_ptr<CodecBaseMock> &mock)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -63,11 +85,7 @@ CodecBase::CodecBase()
 
 CodecBase::~CodecBase()
 {
-    std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("");
-    auto mock = g_mockObject.lock();
-    UNITTEST_CHECK_AND_RETURN_LOG(mock != nullptr, "mock object is nullptr");
-    mock->CodecBaseDtor();
 }
 
 int32_t CodecBase::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
@@ -252,6 +270,15 @@ int32_t CodecBase::GetInputFormat(Format &format)
     return mock->GetInputFormat(format);
 }
 
+std::string CodecBase::GetHidumperInfo()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, "", "mock object is nullptr");
+    return mock->GetHidumperInfo();
+}
+
 int32_t CodecBase::CreateCodecByName(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -322,6 +349,16 @@ void CodecBase::ProcessInputBuffer()
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_LOG(mock != nullptr, "mock object is nullptr");
     mock->ProcessInputBuffer();
+}
+
+int32_t CodecBase::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+                                            const bool svpFlag)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SetAudioDecryptionConfig(keySession, svpFlag);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

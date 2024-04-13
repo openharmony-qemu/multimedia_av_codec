@@ -157,8 +157,6 @@ bool CodecListCore::IsAudioCapSupport(const Format &format, const CapabilityData
 // mime是必要参数
 std::string CodecListCore::FindCodec(const Format &format, bool isEncoder)
 {
-    (void)isEncoder;
-
     std::lock_guard<std::mutex> lock(mutex_);
     if (!format.ContainKey("codec_mime")) {
         AVCODEC_LOGD("Get MimeType from format failed");
@@ -263,6 +261,32 @@ int32_t CodecListCore::GetCapability(CapabilityData &capData, const std::string 
         }
     }
     return AVCS_ERR_OK;
+}
+
+std::vector<std::string> CodecListCore::FindCodecNameArray(const std::string &mime, bool isEncoder)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto &codecAbility = CodecAbilitySingleton::GetInstance();
+
+    std::unordered_map<std::string, std::vector<size_t>> mimeCapIdxMap = codecAbility.GetMimeCapIdxMap();
+    std::vector<CapabilityData> capabilityArray = codecAbility.GetCapabilityArray();
+    std::vector<std::string> nameArray;
+    auto iter = mimeCapIdxMap.find(mime);
+
+    AVCodecType codecType = AVCODEC_TYPE_NONE;
+    bool isVideo = mime.find("video") != std::string::npos;
+    if (isVideo) {
+        codecType = isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
+    } else {
+        codecType = isEncoder ? AVCODEC_TYPE_AUDIO_ENCODER : AVCODEC_TYPE_AUDIO_DECODER;
+    }
+
+    for (auto index : iter->second) {
+        if (capabilityArray[index].codecType == codecType) {
+            nameArray.push_back(capabilityArray[index].codecName);
+        }
+    }
+    return nameArray;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
