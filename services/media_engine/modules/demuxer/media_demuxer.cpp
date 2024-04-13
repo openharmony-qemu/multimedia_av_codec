@@ -896,15 +896,6 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
     MEDIA_LOG_D("demuxer filter received source drminfos but not update");
 }
 
-void MediaDemuxer::HandleVideoSizeChange()
-{
-    AutoLock lock(mapMetaMutex_);
-    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
-        AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
-    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
-        AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
-}
-
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
