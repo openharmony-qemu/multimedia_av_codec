@@ -908,6 +908,10 @@ void MediaDemuxer::HandleVideoSizeChange()
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
+    if (eventReceiver_ == nullptr) {
+        MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
+        return;
+    }
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
             MEDIA_LOG_D("OnEvent source drmInfo update");
@@ -916,41 +920,25 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            if (eventReceiver_ != nullptr) {
-                MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
             break;
         }
         case PluginEventType::BUFFERING_END: {
             MEDIA_LOG_D("OnEvent pause");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
             break;
         }
         case PluginEventType::BUFFERING_START: {
             MEDIA_LOG_D("OnEvent start");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::VIDEO_SIZE_CHANGE: {
             MEDIA_LOG_D("OnEvent video size change");
-            if (eventReceiver_ != nullptr) {
-                HandleVideoSizeChange();
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
-                    AnyCast<std::pair<int32_t, int32_t>>(event.param)});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            HandleVideoSizeChange();
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
+                AnyCast<std::pair<int32_t, int32_t>>(event.param)});
             break;
         }
         default:
