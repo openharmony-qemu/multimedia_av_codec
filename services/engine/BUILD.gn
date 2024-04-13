@@ -15,7 +15,5 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 group("av_codec_engine_package") {
-  deps = [
-    "codec:av_codec_engine_codec",
-  ]
+  deps = [ "codec:av_codec_engine_codec" ]
 }
