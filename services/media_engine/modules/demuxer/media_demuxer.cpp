@@ -896,6 +896,15 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
     MEDIA_LOG_D("demuxer filter received source drminfos but not update");
 }
 
+void MediaDemuxer::HandleVideoSizeChange()
+{
+    AutoLock lock(mapMetaMutex_);
+    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
+        AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
+    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
+        AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
+}
+
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
@@ -936,13 +945,7 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::VIDEO_SIZE_CHANGE: {
             MEDIA_LOG_D("OnEvent video size change");
             if (eventReceiver_ != nullptr) {
-                {
-                    AutoLock lock(mapMetaMutex_);
-                    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
-                        AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
-                    mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
-                        AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
-                }
+                HandleVideoSizeChange();
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
                     AnyCast<std::pair<int32_t, int32_t>>(event.param)});
             } else {

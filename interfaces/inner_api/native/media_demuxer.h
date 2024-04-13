@@ -118,6 +118,7 @@ private:
     bool IsLocalDrmInfosExisted();
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
+    void HandleVideoSizeChange();
     bool HasVideo();
 
     Plugins::Seekable seekable_;
