@@ -117,7 +117,9 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     isEos = false;
     readTime_ = 0;
     uint32_t remain = downloadRequest_->GetFileContentLength() - buffer_->GetMediaOffset();
-    wantReadLength = remain < wantReadLength ? remain : wantReadLength;
+    if (remain > 0) {
+        wantReadLength = remain < wantReadLength ? remain : wantReadLength;
+    }
     while (buffer_->GetSize() < wantReadLength) {
         isEos = downloadRequest_->IsEos();
         if (isEos && buffer_->GetSize() == 0) {
@@ -246,6 +248,9 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
+    if (buffer_ != nullptr && buffer_->GetSize() == 0) {
+        Close(true);
+    }
 }
 }
 }
