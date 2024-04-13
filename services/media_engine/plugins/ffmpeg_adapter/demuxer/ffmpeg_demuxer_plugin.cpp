@@ -845,16 +845,14 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
         for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
             auto avStream = formatContext_->streams[trackIndex];
             if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-                if (firstFrame_ == nullptr) {
-                    GetVideoFirstKeyFrame(trackIndex);
-                    FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
-                        Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
-                }
-                if (!hevcParserInited_) {
-                    hevcParser_->ConvertExtraDataToAnnexb(
-                        avStream->codecpar->extradata, avStream->codecpar->extradata_size);
-                    hevcParserInited_ = true;
-                }
+                GetVideoFirstKeyFrame(trackIndex);
+                FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
+                    Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
+
+                hevcParser_->ConvertExtraDataToAnnexb(
+                    avStream->codecpar->extradata, avStream->codecpar->extradata_size);
+                hevcParserInited_ = true;
+
                 break;
             }
         }
