@@ -56,7 +56,7 @@ public:
     } DrmDecryptVideoBuf;
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
-        API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+                 Format &format, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;

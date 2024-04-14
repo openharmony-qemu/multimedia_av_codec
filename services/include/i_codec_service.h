@@ -23,6 +23,7 @@
 #include "refbase.h"
 #include "surface.h"
 #include "meta/meta.h"
+#include "meta/format.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue.h"
 #include "buffer/avbuffer_queue_consumer.h"
@@ -37,7 +38,7 @@ public:
     virtual ~ICodecService() = default;
 
     virtual int32_t Init(AVCodecType type, bool isMimeType,
-        const std::string &name, API_VERSION apiVersion = API_VERSION::API_VERSION_10) = 0;
+        const std::string &name, Format &format, API_VERSION apiVersion = API_VERSION::API_VERSION_10) = 0;
     virtual int32_t Configure(const Format &format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;

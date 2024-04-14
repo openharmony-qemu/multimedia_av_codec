@@ -213,11 +213,11 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format)
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    int32_t ret = codecServer_->Init(type, isMimeType, name);
+    int32_t ret = codecServer_->Init(type, isMimeType, name, format);
     if (ret != AVCS_ERR_OK) {
         lock.unlock();
         DestroyStub();
@@ -389,10 +389,12 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
     AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
+    Format format;
+    (void)AVCodecParcel::Unmarshalling(data, format);
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
 
-    bool ret = reply.WriteInt32(Init(type, isMimeType, name));
+    bool ret = reply.WriteInt32(Init(type, isMimeType, name, format));
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }

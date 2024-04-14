@@ -77,10 +77,11 @@ int32_t AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, cons
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Init");
+    Format format;
     codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
                              "failed to create codec service");
-    int32_t ret = codecService_->Init(type, isMimeType, name, API_VERSION::API_VERSION_11);
+    int32_t ret = codecService_->Init(type, isMimeType, name, format, API_VERSION::API_VERSION_11);
     return ret;
 }
 

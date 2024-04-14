@@ -137,8 +137,10 @@ int32_t CodecServer::InitServer()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
+int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name,
+                          Format &format, API_VERSION apiVersion)
 {
+    (void)format;
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);

@@ -40,8 +40,9 @@ public:
     static AVCodecServerManager& GetInstance();
     ~AVCodecServerManager();
 
-    enum StubType { CODECLIST, CODEC, MUXER, DEMUXER, SOURCE };
-    sptr<IRemoteObject> CreateStubObject(StubType type);
+
+    enum StubType { CODECLIST, CODEC };
+    int32_t CreateStubObject(StubType type, sptr<IRemoteObject> &object);
     void DestroyStubObject(StubType type, sptr<IRemoteObject> object);
     void DestroyStubObjectForPid(pid_t pid);
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
@@ -53,20 +54,13 @@ private:
     void PrintDumpMenu(int32_t fd);
     void DumpServer(int32_t fd, StubType stubType, std::unordered_set<std::u16string> &argSets);
 
-#ifdef SUPPORT_DEMUXER
-    sptr<IRemoteObject> CreateDemuxerStubObject();
-#endif
-
 #ifdef SUPPORT_CODEC
-    sptr<IRemoteObject> CreateCodecStubObject();
+    int32_t CreateCodecStubObject(sptr<IRemoteObject> &object);
 #endif
 #ifdef SUPPORT_CODECLIST
-    sptr<IRemoteObject> CreateCodecListStubObject();
+    int32_t CreateCodecListStubObject(sptr<IRemoteObject> &object);
 #endif
 
-#ifdef SUPPORT_SOURCE
-    sptr<IRemoteObject> CreateSourceStubObject();
-#endif
     void EraseObject(std::map<sptr<IRemoteObject>, pid_t>::iterator& iter,
                      std::map<sptr<IRemoteObject>, pid_t>& stubMap,
                      pid_t pid,

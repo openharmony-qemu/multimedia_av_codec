@@ -64,10 +64,10 @@ public:
      * All player functions must be created and obtained first.
      *
      * @return Returns a valid pointer if the setting is successful;
-     * @since 4.0
-     * @version 4.0
+     * @since 5.0
+     * @version 5.0
      */
-    virtual std::shared_ptr<ICodecService> CreateCodecService() = 0;
+    virtual int32_t CreateCodecService(std::shared_ptr<ICodecService> &codecClient) = 0;
 
     /**
      * @brief Destroy a avcodec service.

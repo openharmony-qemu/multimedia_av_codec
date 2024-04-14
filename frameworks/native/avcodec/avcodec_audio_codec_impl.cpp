@@ -49,6 +49,7 @@ void AudioCodecConsumerListener::OnBufferAvailable()
 int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
+    Format format;
     codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
 
@@ -58,7 +59,7 @@ int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std
     inputTask_ = std::make_unique<TaskThread>(ASYNC_HANDLE_INPUT);
     outputTask_ = std::make_unique<TaskThread>(ASYNC_OUTPUT_FRAME);
 
-    return codecService_->Init(type, isMimeType, name, API_VERSION::API_VERSION_11);
+    return codecService_->Init(type, isMimeType, name, format, API_VERSION::API_VERSION_11);
 }
 
 AVCodecAudioCodecImpl::AVCodecAudioCodecImpl()
