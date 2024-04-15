@@ -57,6 +57,19 @@ const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayo
     {AudioChannelLayout::STEREO_DOWNMIX, AV_CH_LAYOUT_STEREO_DOWNMIX},
 };
 
+const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaukltMap = {
+    {2, AudioChannelLayout::STEREO},             // 2: STEREO
+    {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
+    {6, AudioChannelLayout::CH_5POINT1},         // 6: CH_5POINT1
+    {8, AudioChannelLayout::CH_5POINT1POINT2},   // 8: CH_5POINT1POINT2
+    {9, AudioChannelLayout::HOA_ORDER2_ACN_N3D}, // 9: HOA_ORDER2_ACN_N3D
+    {10, AudioChannelLayout::CH_7POINT1POINT2},  // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
+    {12, AudioChannelLayout::CH_7POINT1POINT4},  // 12: CH_7POINT1POINT4
+    {14, AudioChannelLayout::CH_9POINT1POINT4},  // 14: CH_9POINT1POINT4
+    {16, AudioChannelLayout::CH_9POINT1POINT6},  // 16: CH_9POINT1POINT6
+    {24, AudioChannelLayout::CH_22POINT2},       // 24: CH_22POINT2
+};
+
 const std::vector<std::pair<AVSampleFormat, AudioSampleFormat>> g_pFfSampleFmtMap = {
     {AVSampleFormat::AV_SAMPLE_FMT_U8, AudioSampleFormat::SAMPLE_U8},
     {AVSampleFormat::AV_SAMPLE_FMT_S16, AudioSampleFormat::SAMPLE_S16LE},
@@ -337,51 +350,14 @@ AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayout(uint64_t ffC
 
 AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
 {
-    AudioChannelLayout ret;
-    switch (channels) {
-        case 2: { // 2: STEREO
-            ret = AudioChannelLayout::STEREO;
-            break;
-        }
-        case 4: { // 4: CH_4POINT0
-            ret = AudioChannelLayout::CH_4POINT0;
-            break;
-        }
-        case 6: { // 6: CH_5POINT1
-            ret = AudioChannelLayout::CH_5POINT1;
-            break;
-        }
-        case 8: { // 8: CH_5POINT1POINT2
-            ret = AudioChannelLayout::CH_5POINT1POINT2;
-            break;
-        }
-        case 10: { // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
-            ret = AudioChannelLayout::CH_7POINT1POINT2;
-            break;
-        }
-        case 12: { // 12: CH_7POINT1POINT4
-            ret = AudioChannelLayout::CH_7POINT1POINT4;
-            break;
-        }
-        case 14: { // 14: CH_9POINT1POINT4
-            ret = AudioChannelLayout::CH_9POINT1POINT4;
-            break;
-        }
-        case 16: { // 16: CH_9POINT1POINT6
-            ret = AudioChannelLayout::CH_9POINT1POINT6;
-            break;
-        }
-        case 24: { // 24: CH_22POINT2
-            ret = AudioChannelLayout::CH_22POINT2;
-            break;
-        }
-        default: {
-            ret = AudioChannelLayout::MONO;
-            break;
-        }
+    AudioChannelLayout layout = AudioChannelLayout::MONO;
+    auto ite = std::find_if(g_channelLayoutDefaukltMap.begin(), g_channelLayoutDefaukltMap.end(),
+                            [&channels](const auto &item) -> bool { return item.first == channels; });
+    if (ite != g_channelLayoutDefaukltMap.end()) {
+        layout = ite->second;
     }
-    MEDIA_LOG_W("Get default channel layout: " PUBLIC_LOG_S "", ConvertOHAudioChannelLayoutToString(ret).data());
-    return ret;
+    MEDIA_LOG_W("Get default channel layout: " PUBLIC_LOG_S "", ConvertOHAudioChannelLayoutToString(layout).data());
+    return layout;
 }
 
 AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChannelLayout, int channels)

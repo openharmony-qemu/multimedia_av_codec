@@ -46,6 +46,8 @@ const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
     {OutputFormat::M4A, {MimeType::AUDIO_AAC,
                          MimeType::IMAGE_JPG, MimeType::IMAGE_PNG,
                          MimeType::IMAGE_BMP}},
+    {OutputFormat::AMR, {MimeType::AUDIO_AMR_NB, MimeType::AUDIO_AMR_WB}},
+    {OutputFormat::MP3, {MimeType::AUDIO_MPEG, MimeType::IMAGE_JPG}},
 };
 
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
@@ -397,6 +399,8 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         {Plugins::OutputFormat::DEFAULT, MimeType::MEDIA_MP4},
         {Plugins::OutputFormat::MPEG_4, MimeType::MEDIA_MP4},
         {Plugins::OutputFormat::M4A, MimeType::MEDIA_M4A},
+        {Plugins::OutputFormat::AMR, MimeType::MEDIA_AMR},
+        {Plugins::OutputFormat::MP3, MimeType::MEDIA_MP3},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);

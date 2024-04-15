@@ -39,6 +39,8 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
     static const std::unordered_map<std::string, AVCodecID> table = {
         {MimeType::AUDIO_MPEG, AV_CODEC_ID_MP3},
         {MimeType::AUDIO_AAC, AV_CODEC_ID_AAC},
+        {MimeType::AUDIO_AMR_NB, AV_CODEC_ID_AMR_NB},
+        {MimeType::AUDIO_AMR_WB, AV_CODEC_ID_AMR_WB},
         {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
         {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
         {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},

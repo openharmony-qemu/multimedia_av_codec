@@ -30,6 +30,7 @@ constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
+constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -402,7 +403,7 @@ void Downloader::HandleRetOK()
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
             currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
+            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
         }
         return;
     }
@@ -415,7 +416,7 @@ void Downloader::HandleRetOK()
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
             currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
+            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
         }
         return;
     }
@@ -459,7 +460,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
             MEDIA_LOG_W("Unsupported range, use content length as content file length");
             header->fileContentLen = header->contentLen;
         } else {
-            MEDIA_LOG_E("fileContentLen and contentLen are both zero.");
+            MEDIA_LOG_D("fileContentLen and contentLen are both zero.");
         }
     }
     if (!mediaDownloader->currentRequest_->isDownloading_) {
@@ -471,7 +472,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
-    MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
+    MEDIA_LOG_D("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
 
@@ -497,14 +498,36 @@ char* StringTrim(char* str)
 }
 }
 
-void Downloader::FLVProcess(bool &isTrunck, std::string url)
+void Downloader::FLVProcess(bool &isTrunck, long &contentLen, std::string url)
 {
     if (isTrunck != true) {
         if (static_cast<int32_t>(url.find(".flv")) != -1) {
             MEDIA_LOG_I("currentRequest flv url :" PUBLIC_LOG_S, url.c_str());
-            isTrunck = true;
+            contentLen = LIVE_CONTENT_LENGTH;
         }
     }
+}
+
+size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+{
+    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
+        !strncmp(key, "content-range", strlen("content-range"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, size * nitems);
+        char* strRange = StringTrim(token);
+        size_t start;
+        size_t end;
+        size_t fileLen;
+        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %ld-%ld/%ld", &start, &end, &fileLen) != -1,
+            "sscanf get range failed");
+        if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
+            MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
+        }
+        if (info->fileContentLen == 0) {
+            info->fileContentLen = fileLen;
+        }
+    }
+    return size * nitems;
 }
 
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
@@ -528,7 +551,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         FALSE_RETURN_V(token != nullptr, size * nitems);
         info->contentLen = atol(StringTrim(token));
         if (info->contentLen <= 0) {
-            FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
+            FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
         }
     }
 
@@ -541,23 +564,22 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         }
     }
 
-    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
-        !strncmp(key, "content-range", strlen("content-range"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* strRange = StringTrim(token);
-        size_t start;
-        size_t end;
-        size_t fileLen;
-        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %ld-%ld/%ld", &start, &end, &fileLen) != -1,
-            "sscanf get range failed");
-        if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
-            MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
-        }
-        if (info->fileContentLen == 0) {
-            info->fileContentLen = fileLen;
-        }
+    if (!strncmp(key, "Location", strlen("Location")) ||
+        !strncmp(key, "location", strlen("location"))) {
+        FALSE_RETURN_V(next != nullptr, size * nitems);
+        char* location = StringTrim(next);
+        mediaDownloader->currentRequest_->location_ = location;
+        MEDIA_LOG_I("RxHeaderData, Location " PUBLIC_LOG_S, location);
     }
+
+    StrncmpContentRange(info, key, next, size, nitems);
+
+    if (info->contentLen <= 0) {
+        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
+    } else {
+        info->isChunked = false;
+    }
+
     mediaDownloader->currentRequest_->SaveHeader(info);
     return size * nitems;
 }

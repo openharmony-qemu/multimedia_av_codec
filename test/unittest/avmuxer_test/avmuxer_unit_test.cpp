@@ -198,7 +198,17 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_005, TestSize.Level0)
     ASSERT_TRUE(isCreated);
 
     avmuxer_->Destroy();
+    outputFormat = AV_OUTPUT_FORMAT_AMR;
+    isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    avmuxer_->Destroy();
     outputFormat = AV_OUTPUT_FORMAT_DEFAULT;
+    isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    avmuxer_->Destroy();
+    outputFormat = AV_OUTPUT_FORMAT_MP3;
     isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
@@ -392,6 +402,30 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Muxer_AddTrack_0091
+ * @tc.desc: Muxer AddTrack while create by unexpected outputFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_0091, TestSize.Level0)
+{
+    int32_t audioTrackId = -1; // -1 track
+    int32_t ret = 0;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.mp3");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MP3;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    ret = avmuxer_->AddTrack(audioTrackId, audioParams);
+    EXPECT_EQ(ret, AV_ERR_OK);
+    EXPECT_GE(audioTrackId, 0);
+}
+
+/**
  * @tc.name: Muxer_AddTrack_005
  * @tc.desc: Muxer AddTrack while create by unexpected outputFormat
  * @tc.type: FUNC
@@ -471,6 +505,50 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_006, TestSize.Level0)
     videoParam->PutIntValue(OH_MD_KEY_WIDTH, 0xFFFF);
     videoParam->PutIntValue(OH_MD_KEY_HEIGHT, 0xFFFF);
     ret = avmuxer_->AddTrack(trackId, videoParam);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_AddTrack_007
+ * @tc.desc: Create amr-nb Muxer AddTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_007, TestSize.Level0)
+{
+    int32_t trackId = -2; // -2: Initialize to an invalid ID
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.amr");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(AV_OUTPUT_FORMAT_AMR));
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> avParam = FormatMockFactory::CreateFormat();
+    avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB);
+    avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 8000); // 8000: 8khz sample rate
+    avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1); // 1: 1 audio channel,mono
+
+    int32_t ret = avmuxer_->AddTrack(trackId, avParam);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_AddTrack_008
+ * @tc.desc: Create amr-wb Muxer AddTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_008, TestSize.Level0)
+{
+    int32_t trackId = -2; // -2: Initialize to an invalid ID
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.amr");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(AV_OUTPUT_FORMAT_AMR));
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> avParam = FormatMockFactory::CreateFormat();
+    avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB);
+    avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 16000); // 16000: 16khz sample rate
+    avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1); // 1: 1 audio channel, mono
+
+    int32_t ret = avmuxer_->AddTrack(trackId, avParam);
     ASSERT_EQ(ret, 0);
 }
 

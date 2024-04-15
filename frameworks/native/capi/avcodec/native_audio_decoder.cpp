@@ -405,6 +405,7 @@ OH_AVFormat *OH_AudioDecoder_GetOutputDescription(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "audioDecoder GetOutputFormat failed!");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "audioCodec OH_AVFormat_Create failed!");
     avFormat->format_ = format;
 
     return avFormat;

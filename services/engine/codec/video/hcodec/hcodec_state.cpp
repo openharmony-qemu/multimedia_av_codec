@@ -15,13 +15,14 @@
 
 #include "hcodec.h"
 #include "utils/hdf_base.h"
+#include "hitrace_meter.h"
 #include "hcodec_list.h"
 #include "hcodec_log.h"
 #include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 
 /**************************** BaseState Start ****************************/
 void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
@@ -181,6 +182,7 @@ static bool IsSecureMode(const string &name)
 
 int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
 {
+    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + name);
     codec_->isSecure_ = IsSecureMode(name);
     codec_->compMgr_ = GetManager();
     if (codec_->compMgr_ == nullptr) {
@@ -197,8 +199,8 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
         return AVCS_ERR_UNKNOWN;
     }
     codec_->componentName_ = name;
-    codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + name + "]";
-    SLOGI("create omx node succ");
+    codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + codec_->shortName_ + "]";
+    SLOGI("create omx node %s succ", name.c_str());
     return AVCS_ERR_OK;
 }
 
@@ -460,7 +462,7 @@ void HCodec::StartingState::OnStateExited()
             codec_->ClearBufferPool(OMX_DirOutput);
         }
     }
-    codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
+    codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, ONE_SECONDS_IN_US);
     BaseState::OnStateExited();
 }
 
@@ -510,7 +512,7 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
             codec_->PrintAllBufferInfo();
-            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, ONE_SECONDS_IN_US);
             return;
         }
         default:
@@ -639,7 +641,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
             codec_->PrintAllBufferInfo();
-            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, ONE_SECONDS_IN_US);
             return;
         }
         default: {
@@ -767,7 +769,7 @@ void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
             codec_->PrintAllBufferInfo();
-            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, ONE_SECONDS_IN_US);
             return;
         }
         default: {

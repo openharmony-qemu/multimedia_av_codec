@@ -47,6 +47,7 @@ private:
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     std::string ClearHeadTailSpace(std::string& str);
+    void CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue);
 private:
     RxHeader rxHeader_;
     RxBody rxBody_;
@@ -55,6 +56,7 @@ private:
     mutable Mutex mutex_;
     std::string userAgent_ {"Harmony OS UA"};
     std::string referer_ {};
+    bool isSetUA_ = false;
 };
 }
 }

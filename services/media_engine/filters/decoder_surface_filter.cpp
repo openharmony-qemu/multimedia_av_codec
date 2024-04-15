@@ -181,7 +181,10 @@ Status DecoderSurfaceFilter::DoInit()
     }
 
     ret = Configure(meta_);
-    FALSE_RETURN_V(ret == Status::OK, ret);
+    if (ret != Status::OK) {
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
     videoDecoder_->SetOutputSurface(videoSurface_);
     if (isDrmProtected_) {
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);

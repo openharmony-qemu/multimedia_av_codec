@@ -45,10 +45,7 @@ config("av_codec_demo_muxer_config") {
     "$av_codec_root_dir/interfaces/plugin",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/media_engine/modules/muxer",
-    "$media_foundation_root_dir/interface/kits/c",
-    "$media_foundation_root_dir/interface/inner_api",
     "$c_utils_root_dir/base/include",
-    "//third_party/ffmpeg",
   ]
 }
 
@@ -64,6 +61,11 @@ ohos_static_library("av_codec_demo_muxer") {
   ]
   public_configs = [ ":av_codec_demo_muxer_config" ]
 
+  public_external_deps = [
+    "ffmpeg:libohosffmpeg",
+    "media_foundation:media_foundation",
+  ]
+
   defines = []
   defines += av_codec_defines
   deps = [
@@ -76,8 +78,8 @@ ohos_static_library("av_codec_demo_muxer") {
     "c_utils:utils",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   subsystem_name = "multimedia"

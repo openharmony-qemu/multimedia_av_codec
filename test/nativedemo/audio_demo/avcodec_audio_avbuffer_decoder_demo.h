@@ -60,6 +60,7 @@ public:
     ADecBufferDemo();
     virtual ~ADecBufferDemo();
     void RunCase(AudioBufferFormatType audioType);
+    void RunDrmCase(AudioBufferFormatType audioType);
 
 private:
     int32_t CreateDec();

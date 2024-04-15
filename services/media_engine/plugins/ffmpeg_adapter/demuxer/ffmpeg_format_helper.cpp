@@ -77,6 +77,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
+    {AV_CODEC_ID_APE, MimeType::AUDIO_APE}
 };
 
 static std::map<std::string, FileType> g_convertFfmpegFileType = {
@@ -381,14 +382,12 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         if (type == nullptr) {
             return FileType::UNKNOW;
         }
-        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A")  ||
-            StartWith(type->value, "m4v")  || StartWith(type->value, "M4V")) {
+        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
+            StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
             fileType = FileType::M4A;
-        } else if (StartWith(type->value, "isom") || StartWith(type->value, "ISOM") ||
-            StartWith(type->value, "mp41") || !StartWith(type->value, "MP41") ||
-            StartWith(type->value, "mp42") || !StartWith(type->value, "MP42"))  {
+        } else {
             fileType = FileType::MP4;
-            }
+        }
     } else {
         if (g_convertFfmpegFileType.count(fileName) != 0) {
             fileType = g_convertFfmpegFileType[fileName];

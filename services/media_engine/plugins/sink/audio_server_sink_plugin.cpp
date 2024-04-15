@@ -253,7 +253,6 @@ Status AudioServerSinkPlugin::Init()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Init");
     MEDIA_LOG_I("Init entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         MEDIA_LOG_I("audio renderer already create ");
         return Status::OK;
@@ -289,7 +288,6 @@ Status AudioServerSinkPlugin::Init()
 
 void AudioServerSinkPlugin::ReleaseRender()
 {
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         if (!audioRenderer_->Release()) {
             MEDIA_LOG_W("release audio render failed");
@@ -330,7 +328,6 @@ Status AudioServerSinkPlugin::Prepare()
         return Status::ERROR_INVALID_PARAMETER;
     }
     {
-        OHOS::Media::AutoLock lock(renderMutex_);
         FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
         if (audioRendererCallback_ == nullptr) {
             audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
@@ -352,7 +349,6 @@ Status AudioServerSinkPlugin::Prepare()
 
 bool AudioServerSinkPlugin::StopRender()
 {
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_) {
         if (audioRenderer_->GetStatus() == AudioStandard::RendererState::RENDERER_STOPPED) {
             MEDIA_LOG_I("AudioRenderer is already in stopped state.");
@@ -391,7 +387,6 @@ Status AudioServerSinkPlugin::Start()
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Start");
     MEDIA_LOG_I("Start entered.");
     bool ret = false;
-    OHOS::Media::AutoLock lock(renderMutex_);
     {
         if (audioRenderer_ == nullptr) {
             return Status::ERROR_WRONG_STATE;
@@ -427,7 +422,6 @@ int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t dur
     MEDIA_LOG_I("SetVolumeWithRamp entered.");
     int32_t ret = 0;
     {
-        OHOS::Media::AutoLock lock(renderMutex_);
         if (audioRenderer_ == nullptr) {
             return 0;
         }
@@ -445,7 +439,6 @@ int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t dur
 Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 {
     AudioStandard::AudioRendererParams params;
-    OHOS::Media::AutoLock lock(renderMutex_);
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
     if (audioRenderer_ && audioRenderer_->GetParams(params) == AudioStandard::SUCCESS) {
         MEDIA_LOG_I("get param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
@@ -542,7 +535,6 @@ bool AudioServerSinkPlugin::AssignSampleFmtIfSupported(Plugins::AudioSampleForma
 
 void AudioServerSinkPlugin::SetInterruptMode(AudioStandard::InterruptMode interruptMode)
 {
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_) {
         audioRenderer_->SetInterruptMode(interruptMode);
     }
@@ -775,7 +767,6 @@ Status AudioServerSinkPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 Status AudioServerSinkPlugin::GetVolume(float &volume)
 {
     MEDIA_LOG_I("GetVolume entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         volume = audioRenderer_->GetVolume();
         return Status::OK;
@@ -786,13 +777,13 @@ Status AudioServerSinkPlugin::GetVolume(float &volume)
 Status AudioServerSinkPlugin::SetVolume(float volume)
 {
     MEDIA_LOG_I("SetVolume entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetVolume(volume);
         if (ret != OHOS::AudioStandard::SUCCESS) {
             MEDIA_LOG_E("set volume failed with code " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
         }
+        MEDIA_LOG_I("SetVolume succ");
         audioRendererVolume_ = volume;
         return Status::OK;
     }
@@ -802,7 +793,6 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
 Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
 {
     MEDIA_LOG_I("GetAudioEffectMode entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         effectMode = audioRenderer_->GetAudioEffectMode();
         MEDIA_LOG_I("GetAudioEffectMode %{public}d", effectMode);
@@ -814,7 +804,6 @@ Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
 Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
 {
     MEDIA_LOG_I("SetAudioEffectMode %{public}d", effectMode);
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetAudioEffectMode(static_cast<OHOS::AudioStandard::AudioEffectMode>(effectMode));
         if (ret != OHOS::AudioStandard::SUCCESS) {
@@ -829,7 +818,6 @@ Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
     MEDIA_LOG_I("GetSpeed entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         speed = audioRenderer_->GetSpeed();
         return Status::OK;
@@ -840,7 +828,6 @@ Status AudioServerSinkPlugin::GetSpeed(float &speed)
 Status AudioServerSinkPlugin::SetSpeed(float speed)
 {
     MEDIA_LOG_I("SetSpeed entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetSpeed(speed);
         if (ret != OHOS::AudioStandard::SUCCESS) {
@@ -863,7 +850,6 @@ Status AudioServerSinkPlugin::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I("Pause entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr || audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
         MEDIA_LOG_E("audio renderer pause fail");
         return Status::ERROR_UNKNOWN;
@@ -878,7 +864,6 @@ Status AudioServerSinkPlugin::PauseTransitent()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I("PauseTransitent entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr || audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
         MEDIA_LOG_E("audio renderer pauseTransitent fail");
         return Status::ERROR_UNKNOWN;
@@ -916,7 +901,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     while (isForcePaused_ && seekable_ == Seekable::SEEKABLE) {
         OHOS::Media::SleepInJob(5); // 5ms
     }
-    OHOS::Media::AutoLock lock(renderMutex_);
+
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     for (; destLength > 0;) {
         MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::To be written: " + std::to_string(destLength));
@@ -952,7 +937,6 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
 Status AudioServerSinkPlugin::Flush()
 {
     MEDIA_LOG_I("Flush entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
@@ -967,7 +951,6 @@ Status AudioServerSinkPlugin::Flush()
 Status AudioServerSinkPlugin::Drain()
 {
     MEDIA_LOG_I("Drain entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
@@ -987,7 +970,6 @@ Status AudioServerSinkPlugin::Drain()
 
 int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
 {
-    OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr && rendererParams_.sampleRate != 0, -1);
     uint32_t numFramesPlayed = 0;
     AudioStandard::Timestamp ts;
@@ -1000,7 +982,6 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
 
 Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
 {
-    OHOS::Media::AutoLock lock(renderMutex_);
     AudioStandard::Timestamp ts;
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (!res) {

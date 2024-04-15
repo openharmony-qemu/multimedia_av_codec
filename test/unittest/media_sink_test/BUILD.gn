@@ -52,8 +52,6 @@ ohos_unittest("av_audio_sink_unit_test") {
     "$av_codec_root_dir/services/media_engine/plugins/sink",
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/sink",
-    "$media_foundation_root_dir/interface/inner_api",
-    "$media_foundation_root_dir/interface/kits/c",
     "$media_foundation_root_dir/../../graphic/graphic_surface/interfaces/innerkits/surface",
     "$media_foundation_root_dir/../../graphic/graphic_surface/interface/inner_api/surface",
     "$media_foundation_root_dir/../../graphic/graphic_surface/surface/include",

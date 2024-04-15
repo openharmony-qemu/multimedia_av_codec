@@ -29,6 +29,7 @@ class TemporalScalability {
 public:
     TemporalScalability();
     virtual ~TemporalScalability();
+    bool ValidateCapability(std::string &codecName);
     int32_t ValidateTemporalGopParam(Media::Format &format);
     void StoreAVBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer);
     uint32_t GetFirstBufferIndex();

@@ -339,7 +339,7 @@ int GetInputNum(int defaultNum)
 
 void NativeSelectMuxerType(void)
 {
-    printf("\nplese select muxer type : 0.mp4 1.m4a\n");
+    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr 3.mp3\n");
     int num = GetInputNum(0);
     switch (num) {
         case MODE_ZERO:
@@ -349,6 +349,14 @@ void NativeSelectMuxerType(void)
         case MODE_ONE:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_M4A;
             (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "m4a");
+            break;
+        case MODE_TWO:
+            g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_AMR;
+            (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "amr");
+            break;
+        case MODE_THREE:
+            g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MP3;
+            (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "mp3");
             break;
         default:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
@@ -383,7 +391,7 @@ void NativeSelectRunMode(void)
 
 void NativeSelectAudio(void)
 {
-    printf("\nplese select audio mode: 0.noAudio 1.aac 2.mpeg\n");
+    printf("\nplese select audio mode: 0.noAudio 1.aac 2.mpeg 3.amr-nb 4.amr-wb\n");
     int num = GetInputNum(1);
     switch (num) {
         case MODE_ONE:
@@ -393,6 +401,14 @@ void NativeSelectAudio(void)
         case MODE_TWO:
             g_muxerParam.audioParams = &g_audioMpegPar;
             (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "mpeg");
+            break;
+        case MODE_THREE:
+            g_muxerParam.audioParams = &g_audioAmrNbPar;
+            (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "amr");
+            break;
+        case MODE_FOUR:
+            g_muxerParam.audioParams = &g_audioAmrWbPar;
+            (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "amr");
             break;
         default:
             g_muxerParam.audioParams = NULL;

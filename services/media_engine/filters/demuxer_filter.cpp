@@ -146,8 +146,7 @@ Status DemuxerFilter::Prepare()
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
-    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
-        "trackCount is invalid.");
+    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER, "trackCount is invalid.");
 
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
     for (size_t index = 0; index < trackCount; index++) {
@@ -202,7 +201,8 @@ Status DemuxerFilter::PrepareBeforeStart()
     }
     MEDIA_LOG_I("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareBeforeStart start filter failed.");
     return demuxer_->Start();
 }
 
@@ -215,7 +215,8 @@ Status DemuxerFilter::Start()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     MEDIA_LOG_I("Start called.");
     isLoopStarted = true;
-    Filter::Start();
+    auto ret = Filter::Start();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start filter failed.");
     return demuxer_->Start();
 }
 
@@ -223,6 +224,7 @@ Status DemuxerFilter::Stop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop called.");
+    demuxer_->Pause();
     Filter::Stop();
     return demuxer_->Stop();
 }

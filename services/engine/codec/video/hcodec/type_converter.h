@@ -28,7 +28,7 @@
 #include "codec_omx_ext.h"
 #include "surface_type.h" // foundation/graphic/graphic_2d/interfaces/inner_api/surface/
 #include "meta/video_types.h" // foundation/multimedia/histreamer/interface/inner_api/
-#include "v2_0/codec_types.h"
+#include "v3_0/codec_types.h"
 
 namespace OHOS::MediaAVCodec {
 struct PixelFmt {
@@ -39,10 +39,10 @@ struct PixelFmt {
 
 class TypeConverter {
 public:
-    static std::optional<AVCodecType> HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V2_0::CodecType type);
+    static std::optional<AVCodecType> HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V3_0::CodecType type);
     // coding type
-    static std::optional<OMX_VIDEO_CODINGTYPE> HdiRoleToOmxCodingType(OHOS::HDI::Codec::V2_0::AvCodecRole role);
-    static std::string HdiRoleToMime(OHOS::HDI::Codec::V2_0::AvCodecRole role);
+    static std::optional<OMX_VIDEO_CODINGTYPE> HdiRoleToOmxCodingType(OHOS::HDI::Codec::V3_0::AvCodecRole role);
+    static std::string HdiRoleToMime(OHOS::HDI::Codec::V3_0::AvCodecRole role);
     // pixel format
     static std::optional<PixelFmt> GraphicFmtToFmt(GraphicPixelFormat format);
     static std::optional<PixelFmt> InnerFmtToFmt(VideoPixelFormat format);
@@ -63,7 +63,7 @@ public:
     static std::optional<OMX_VIDEO_AVCPROFILETYPE> InnerAvcProfileToOmxProfile(AVCProfile profile);
     static std::optional<CodecHevcProfile> InnerHevcProfileToOmxProfile(HEVCProfile profile);
     // bitrate mode
-    static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V2_0::BitRateMode mode);
+    static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V3_0::BitRateMode mode);
 };
 }
 #endif // TYPE_CONVERTER_H

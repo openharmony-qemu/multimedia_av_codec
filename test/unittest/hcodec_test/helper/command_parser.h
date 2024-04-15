@@ -64,6 +64,7 @@ struct CommandOpt {
     ApiType apiType = ApiType::TEST_CODEC_BASE;
     bool isEncoder = false;
     bool isBufferMode = false;
+    uint32_t ltrFrameCount = 0;
     uint32_t repeatCnt = 1;
     std::string inputFile;
     uint32_t maxReadFrameCnt = 0; // 0 means read whole file

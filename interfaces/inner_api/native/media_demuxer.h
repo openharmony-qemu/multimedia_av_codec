@@ -105,7 +105,7 @@ private:
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     void HandleFrame(const AVBuffer& bufferPtr, uint32_t trackId);
-    
+
     Status StopTask(uint32_t trackId);
     Status StopAllTask();
     Status PauseAllTask();
@@ -117,6 +117,8 @@ private:
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     bool IsLocalDrmInfosExisted();
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
+
+    bool HasVideo();
 
     Plugins::Seekable seekable_;
     std::string uri_;

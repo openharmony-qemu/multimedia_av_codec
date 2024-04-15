@@ -29,8 +29,6 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
     "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
     "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
-    "$media_foundation_root_dir/interface/kits/c",
-    "$media_foundation_root_dir/interface/inner_api",
     "./audio_demo",
     "./video_demo",
     "./avmuxer",
@@ -38,7 +36,6 @@ ohos_executable("av_codec_demo") {
     "./codeclist_demo",
     "./include",
     "./e2e_demo",
-    "//third_party/ffmpeg",
   ]
 
   if (target_cpu == "arm64" || is_emulator) {
@@ -109,19 +106,20 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/test/nativedemo/avmuxer:av_codec_demo_muxer",
-    "//third_party/ffmpeg:libohosffmpeg",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "drm_framework:native_drm",
+    "ffmpeg:libohosffmpeg",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
 

@@ -64,7 +64,9 @@ ohos_unittest("encoder_native_module_test") {
 
       #"./src/perf_test.cpp",
       #"./src/reli_test.cpp",
+      "./src/setparam_test.cpp",
       "./src/state_test.cpp",
+      "./src/videoenc_api11_sample.cpp",
       "./src/videoenc_ndk_sample.cpp",
     ]
   }
@@ -81,8 +83,8 @@ ohos_unittest("encoder_native_module_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
 

@@ -21,12 +21,13 @@
 #include "sync_fence.h"  // foundation/graphic/graphic_2d/utils/sync_fence/export/
 #include "OMX_VideoExt.h"
 #include "hcodec_log.h"
+#include "hcodec_dfx.h"
 #include "type_converter.h"
 #include "surface_buffer.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
@@ -239,6 +240,7 @@ int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface, bool cfg)
 
 int32_t HDecoder::OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface)
 {
+    SCOPED_TRACE();
     HLOGI(">>");
     if (surface == nullptr) {
         HLOGE("surface is null");
@@ -494,6 +496,7 @@ int32_t HDecoder::SetMinQueueSize(const sptr<Surface> &surface, uint32_t targetS
 
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
+    SCOPED_TRACE();
     GSError err = currSurface_.surface_->CleanCache();
     if (err != GSERROR_OK) {
         HLOGW("clean cache failed, GSError=%d", err);
@@ -501,9 +504,6 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     int32_t ret = SetMinQueueSize(currSurface_.surface_, outBufferCnt_ + 1);
     if (ret != AVCS_ERR_OK) {
         return ret;
-    }
-    if (!outputBufferPool_.empty()) {
-        HLOGW("output buffer pool should be empty");
     }
     outputBufferPool_.clear();
     CombineConsumerUsage();
@@ -601,6 +601,7 @@ void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
 
 bool HDecoder::GetOneBufferFromSurface(bool isOld)
 {
+    SCOPED_TRACE();
     sptr<Surface> surface = isOld ? oldSurface_.surface_ : currSurface_.surface_;
     sptr<SurfaceBuffer> buffer;
     sptr<SyncFence> fence;
@@ -616,6 +617,9 @@ bool HDecoder::GetOneBufferFromSurface(bool isOld)
         surface->CancelBuffer(buffer);
         return false;
     }
+    if (!debugMode_) {
+        HLOGI("outBufId = %u, surface -> us", iter->bufferId);
+    }
     ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
     if (isOld) {
         int ret = SwitchBufferBetweenSurface(*iter, oldSurface_.surface_, currSurface_.surface_);
@@ -624,15 +628,7 @@ bool HDecoder::GetOneBufferFromSurface(bool isOld)
         }
     }
     ReclaimIfPossible();
-    if (fence != nullptr && fence->IsValid()) {
-        int waitRes = fence->Wait(WAIT_FENCE_MS);
-        if (waitRes != 0) {
-            HLOGW("wait fence time out, cancel it");
-            ChangeOwner(*iter, BufferOwner::OWNED_BY_SURFACE);
-            currSurface_.surface_->CancelBuffer(buffer);
-            return false;
-        }
-    }
+    WaitFence(fence);
     int32_t ret = NotifyOmxToFillThisOutBuffer(*iter);
     if (ret != AVCS_ERR_OK) {
         ChangeOwner(*iter, BufferOwner::OWNED_BY_SURFACE);
@@ -644,6 +640,7 @@ bool HDecoder::GetOneBufferFromSurface(bool isOld)
 
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
+    SCOPED_TRACE_WITH_ID(info.bufferId);
     flushCfg_.timestamp = info.omxBuffer->pts;
     info.lastFlushTime = chrono::steady_clock::now();
     GSError ret = info.surface->FlushBuffer(info.surfaceBuffer, -1, flushCfg_);
@@ -652,15 +649,16 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
                   info.surface->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), ret);
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGD("outBufId = %u, render succ, pts = %" PRId64 ", "
-        "[%d %d %d %d]", info.bufferId, flushCfg_.timestamp,
-        flushCfg_.damage.x, flushCfg_.damage.y, flushCfg_.damage.w, flushCfg_.damage.h);
+    if (!debugMode_) {
+        HLOGI("outBufId = %u, us -> surface, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+    }
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
 }
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
+    SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);
@@ -688,6 +686,13 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
     }
 }
 
+void HDecoder::OnReleaseOutputBuffer(const BufferInfo &info)
+{
+    if (currSurface_.surface_) {
+        HLOGI("outBufId = %u, discard by user, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
+    }
+}
+
 void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
     if (currSurface_.surface_ == nullptr) {
@@ -697,6 +702,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     }
     uint32_t bufferId;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
+    SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -708,7 +714,6 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    HLOGD("outBufId = %u", info.bufferId);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
@@ -744,6 +749,7 @@ void HDecoder::SurfaceItem::Release()
 
 int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
 {
+    SCOPED_TRACE();
     if (currSurface_.surface_ == nullptr) {
         HLOGE("can only switch surface on surface mode");
         return AVCS_ERR_INVALID_OPERATION;

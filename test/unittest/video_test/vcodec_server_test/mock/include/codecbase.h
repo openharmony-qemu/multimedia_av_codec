@@ -28,6 +28,7 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avsharedmemorybase.h"
 #include "surface.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -46,7 +47,7 @@ public:
     MOCK_METHOD(void, CodecBaseCtor, ());
     MOCK_METHOD(void, CodecBaseDtor, ());
 
-    MOCK_METHOD(void, CreateFCodecByName, (const std::string &name));
+    MOCK_METHOD(std::shared_ptr<CodecBase>, CreateFCodecByName, (const std::string &name));
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHCodecByName, (const std::string &name));
 
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));
@@ -125,6 +126,15 @@ public:
     virtual int32_t Prepare();
     virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue();
     virtual void ProcessInputBuffer();
+
+    /* API12 audio codec interface for drm*/
+    virtual int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag)
+    {
+        (void)keySession;
+        (void)svpFlag;
+        return 0;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -106,6 +106,10 @@ private:
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
 
+    int32_t width_ = 0;
+    int32_t height_ = 0;
+    int32_t stride_ = 0;
+
 private:
     OH_AVCodecAsyncCallback asyncCallback_;
     OH_AVCodecCallback callback_;

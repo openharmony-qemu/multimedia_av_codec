@@ -86,11 +86,11 @@ public:
 
         if (signal_->outFile_ != nullptr && signal_->outFile_->is_open() &&
             (*frameOutputCount_) < MAX_OUTPUT_FRMAENUM) {
-            int32_t bufferSize = buffer->GetSize();
             int32_t width = buffer->GetWidth();
+            int32_t height = buffer->GetHeight();
             int32_t stride = buffer->GetStride();
-            for (int32_t i = 0; i < bufferSize; i += stride) {
-                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i, width);
+            for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
+                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride, width);
             }
         }
         cs_->ReleaseBuffer(buffer, -1);
@@ -131,6 +131,12 @@ public:
     {
         TITLE_LOG;
         WindowObject obj;
+        if (queue_.size() >= OFFSET_8) {
+            obj = queue_.front();
+            queue_.push(obj);
+            queue_.pop();
+            return;
+        }
         obj.consumer_ = Surface::CreateSurfaceAsConsumer();
         if (queue_.empty()) {
             obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
@@ -145,10 +151,6 @@ public:
 
         obj.nativeWindow_ = CreateNativeWindowFromSurface(&obj.producer_);
         queue_.push(std::move(obj));
-        if (queue_.size() > OFFSET_8) {
-            DestoryNativeWindow(queue_.front().nativeWindow_);
-            queue_.pop();
-        }
     }
 
 private:
@@ -422,7 +424,7 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
 int32_t VideoDecSample::ReleaseOutputData(uint32_t index)
 {
     UNITTEST_INFO_LOG("index:%d", index);
-    int32_t ret = AV_ERR_OK;
+    int32_t ret;
     if (isAVBufferMode_ && !isSurfaceMode_) {
         ret = OH_VideoDecoder_FreeOutputBuffer(codec_, index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_FreeOutputBuffer failed");
@@ -588,14 +590,14 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         return AV_ERR_OK;
     }
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        int32_t width = 0;
-        int32_t stride = 0;
-        auto format = GetOutputDescription();
-        OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_WIDTH, &width);
-        OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
-        format = nullptr;
-        for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i, width);
+        if (stride_ == 0) {
+            std::shared_ptr<OH_AVFormat> format = GetOutputDescription();
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_WIDTH, &width_);
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_HEIGHT, &height_);
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &stride_);
+        }
+        for (int32_t i = 0; i < height_ * 3 / 2; ++i) { // 3: nom, 2: denom
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
         }
     }
     if (addr == nullptr) {

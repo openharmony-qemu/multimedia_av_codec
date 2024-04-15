@@ -40,7 +40,7 @@
 
 namespace OHOS {
 namespace Media {
-static const uint32_t REQUEST_BUFFER_TIMEOUT = 200; // Retry if the time of requesting buffer overtimes 200ms.
+static const uint32_t REQUEST_BUFFER_TIMEOUT = 50; // Retry if the time of requesting buffer overtimes 50ms.
 static const int32_t MSERR_EXT_IO = 5400103;
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
@@ -157,7 +157,7 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
     drmCallback_ = callback;
     bool isExisted = IsLocalDrmInfosExisted();
     if (isExisted) {
-        MEDIA_LOG_D("Already received drminfo and report!");
+        MEDIA_LOG_D("SetDrmCallback Already received drminfo and report!");
         ReportDrmInfos(localDrmInfos_);
     }
 }
@@ -230,16 +230,16 @@ Status MediaDemuxer::ProcessDrmInfos()
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     Status ret = plugin_->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
-        MEDIA_LOG_D("demuxer filter get drminfo success");
+        MEDIA_LOG_D("MediaDemuxer get drminfo success");
         bool isUpdated = IsDrmInfosUpdate(drmInfo);
         if (isUpdated) {
             return ReportDrmInfos(drmInfo);
         } else {
-            MEDIA_LOG_D("demuxer filter received drminfo but not update");
+            MEDIA_LOG_D("MediaDemuxer received drminfo but not update");
         }
     } else {
         if (ret != Status::OK) {
-            MEDIA_LOG_D("demuxer filter get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+            MEDIA_LOG_D("MediaDemuxer get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
         }
     }
     return Status::OK;
@@ -687,6 +687,11 @@ void MediaDemuxer::MediaTypeFound(std::string pluginName)
     }
 }
 
+bool MediaDemuxer::HasVideo()
+{
+    return videoTrackId_ != TRACK_ID_DUMMY;
+}
+
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMetaMutex_);
@@ -761,7 +766,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "Get buffer from queue failed, trackId: " PUBLIC_LOG_U32, trackId);
 
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
-    if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_) {
+    if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
             !IsContainIdrFrame(bufferMap_[trackId]->memory_->GetAddr(), bufferMap_[trackId]->memory_->GetSize())) {
             if (firstAudio_ && trackId == audioTrackId_) {
@@ -897,8 +902,8 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_D("OnEvent source http error");
             if (eventReceiver_ != nullptr) {
+                MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
             } else {
                 MEDIA_LOG_D("OnEvent source eventReceiver_ null.");

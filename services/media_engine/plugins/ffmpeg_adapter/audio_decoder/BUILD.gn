@@ -53,9 +53,6 @@ config("ffmpeg_adapter_config") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/amrnb",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/amrwb",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ape",
-    "$media_foundation_root_dir/interface/inner_api",
-    "$media_foundation_root_dir/src",
-    "//third_party/ffmpeg",
   ]
 }
 
@@ -82,10 +79,11 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_converter.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
   ]
-  public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
+  public_external_deps = [ "ffmpeg:libohosffmpeg" ]
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

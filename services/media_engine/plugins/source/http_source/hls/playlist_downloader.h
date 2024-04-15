@@ -42,7 +42,7 @@ public:
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
-    virtual void ParseManifest() = 0;
+    virtual void ParseManifest(const std::string& location) = 0;
     virtual void PlayListUpdateLoop() = 0;
     virtual void SetPlayListCallback(PlayListChangeCallback* callback) = 0;
     virtual int64_t GetDuration() const = 0;
@@ -65,7 +65,7 @@ public:
     void Cancel();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
-    void UpdateDownloadFinished(const std::string& url);
+    void UpdateDownloadFinished(const std::string& url, const std::string& location);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

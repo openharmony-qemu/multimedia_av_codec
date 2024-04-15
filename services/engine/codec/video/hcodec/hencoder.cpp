@@ -21,11 +21,12 @@
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
 #include "type_converter.h"
 #include "hcodec_log.h"
+#include "hcodec_dfx.h"
 #include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 
 int32_t HEncoder::OnConfigure(const Format &format)
 {
@@ -730,7 +731,7 @@ void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
     AppendToVector(omxBuffer->alongParam, param);
 }
 
-void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
                                                    const shared_ptr<Media::Meta> &meta)
 {
     bool requestIFrame = false;
@@ -747,7 +748,7 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::
     HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
 }
 
-void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
                                              const shared_ptr<Media::Meta> &meta)
 {
     int32_t minQp;
@@ -810,6 +811,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     // buffer mode
     uint32_t bufferId;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
+    SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (bufferInfo == nullptr) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
@@ -845,6 +847,7 @@ void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
 
 bool HEncoder::GetOneBufferFromSurface()
 {
+    SCOPED_TRACE();
     InSurfaceBufferEntry entry;
     GSError ret = inputSurface_->AcquireBuffer(entry.buffer, entry.fence, entry.timestamp, entry.damage);
     if (ret != GSERROR_OK || entry.buffer == nullptr) {
@@ -886,13 +889,9 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
         NotifyOmxToEmptyThisInBuffer(info);
         return;
     }
-    if (entry.fence != nullptr && entry.fence->IsValid()) {
-        int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
-        if (waitRes != 0) {
-            HLOGW("wait fence time out, discard this input, pts=%" PRId64, entry.timestamp);
-            inputSurface_->ReleaseBuffer(entry.buffer, -1);
-            return;
-        }
+    if (!WaitFence(entry.fence)) {
+        inputSurface_->ReleaseBuffer(entry.buffer, -1);
+        return;
     }
     int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp, 0);
     if (err != AVCS_ERR_OK) {
@@ -913,6 +912,7 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
 
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
+    SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %u", bufferId);

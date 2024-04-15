@@ -26,6 +26,9 @@
 #include "native_avmagic.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_audio_codec_impl.h"
+#ifdef SUPPORT_DRM
+#include "foundation/multimedia/drm_framework/interfaces/kits/c/drm_capi/common/native_drm_object.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioCodec"};
@@ -383,6 +386,7 @@ OH_AVFormat *OH_AudioCodec_GetOutputDescription(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "audioCodec GetOutputFormat failed!");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "audioCodec OH_AVFormat_Create failed!");
     avFormat->format_ = format;
 
     return avFormat;
@@ -456,6 +460,49 @@ OH_AVErrCode OH_AudioCodec_IsValid(OH_AVCodec *codec, bool *isValid)
     *isValid = true;
     return AV_ERR_OK;
 }
+
+#ifdef SUPPORT_DRM
+OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
+    bool secureVideoPath)
+{
+    AVCODEC_LOGI("OH_AudioCodec_SetDecryptionConfig");
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
+        AV_ERR_INVALID_VAL, "magic error!");
+
+    struct AudioCodecObject *audioCodecObj = reinterpret_cast<AudioCodecObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(audioCodecObj->audioCodec_ != nullptr, AV_ERR_INVALID_VAL, "audioCodec_ is nullptr!");
+
+    DrmStandard::MediaKeySessionObject *sessionObject =
+        reinterpret_cast<DrmStandard::MediaKeySessionObject *>(mediaKeySession);
+    CHECK_AND_RETURN_RET_LOG(sessionObject != nullptr, AV_ERR_INVALID_VAL, "sessionObject is nullptr!");
+    AVCODEC_LOGD("DRM sessionObject impl :0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(sessionObject));
+
+    CHECK_AND_RETURN_RET_LOG(sessionObject->sessionImpl_ != nullptr, AV_ERR_INVALID_VAL,
+        "sessionObject->impl is nullptr!");
+    AVCODEC_LOGD("DRM impl :0x%{public}06" PRIXPTR " Instances create",
+        FAKE_POINTER(sessionObject->sessionImpl_.GetRefPtr()));
+    CHECK_AND_RETURN_RET_LOG(sessionObject->sessionImpl_ ->GetMediaKeySessionServiceProxy() != nullptr,
+        AV_ERR_INVALID_VAL, "MediaKeySessionServiceProxy is nullptr!");
+
+    int32_t ret = audioCodecObj->audioCodec_->SetAudioDecryptionConfig(
+        sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), secureVideoPath);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        "audioCodec SetAudioDecryptionConfig failed!");
+
+    return AV_ERR_OK;
+}
+#else
+OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
+    bool secureVideoPath)
+{
+    AVCODEC_LOGI("OH_AudioCodec_SetDecryptionConfig");
+    (void)codec;
+    (void)mediaKeySession;
+    (void)secureVideoPath;
+    return AV_ERR_OK;
+}
+#endif
 
 #ifdef __cplusplus
 };

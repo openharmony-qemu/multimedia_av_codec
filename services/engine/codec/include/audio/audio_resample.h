@@ -30,7 +30,7 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 struct ResamplePara {
-    int32_t channels {2}; // 2: STEREO
+    uint32_t channels {2}; // 2: STEREO
     int32_t sampleRate {0};
     int32_t bitsPerSample {0};
     uint64_t channelLayout {0};

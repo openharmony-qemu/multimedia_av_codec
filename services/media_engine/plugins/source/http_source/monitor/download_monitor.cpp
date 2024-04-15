@@ -167,9 +167,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
                 MEDIA_LOG_I("Send http server error, code " PUBLIC_LOG_D32, serverError);
                 downloader_->SetDownloadErrorState();
             }
-            task_->StopAsync();
-            // The current thread is the downloader thread, Therefore, the thread must be stopped asynchronously.
-            downloader_->Close(true);
+            request->Close();
             return false;
         }
         return true;

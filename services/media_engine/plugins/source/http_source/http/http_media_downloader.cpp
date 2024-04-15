@@ -30,7 +30,6 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int32_t SLEEP_TIME = 1 * 1000;
 constexpr int32_t TIME_OUT = 5 * 1000;
 }
 
@@ -39,31 +38,27 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
-
-    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
-    timerTask_->RegisterJob([this] { SetSourceTimer(); });
-    timerTask_->Start();
 }
 
 HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
 {
-    int total_buffer_size = CURRENT_BIT_RATE * expectBufferDuration;
-    if (total_buffer_size < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_D32, total_buffer_size);
+    int totalBufferSize = CURRENT_BIT_RATE * expectBufferDuration;
+    if (totalBufferSize < RING_BUFFER_SIZE) {
+        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
+        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
         buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
-    } else if (total_buffer_size > MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("exceed the max buffer size: " PUBLIC_LOG_D32, total_buffer_size);
+    } else if (totalBufferSize > MAX_BUFFER_SIZE) {
+        MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
+        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+        totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
         buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
     } else {
-        buffer_ = std::make_shared<RingBuffer>(total_buffer_size);
-        MEDIA_LOG_I("success setted buffer size: " PUBLIC_LOG_D32, total_buffer_size);
+        buffer_ = std::make_shared<RingBuffer>(totalBufferSize);
+        MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_D32, totalBufferSize);
     }
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
-
-    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
-    timerTask_->RegisterJob([this] { SetSourceTimer(); });
-    timerTask_->Start();
 }
 
 HttpMediaDownloader::~HttpMediaDownloader()
@@ -121,40 +116,38 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
     readTime_ = 0;
-    while (buffer_->GetSize() == 0 && isReadFrame_) {
+    uint32_t remain = downloadRequest_->GetFileContentLength() - buffer_->GetMediaOffset();
+    wantReadLength = remain < wantReadLength ? remain : wantReadLength;
+    while (buffer_->GetSize() < wantReadLength) {
+        isEos = downloadRequest_->IsEos();
+        if (isEos && buffer_->GetSize() == 0) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
+            realReadLength = 0;
+            return false;
+        }
         if (readTime_ >= TIME_OUT || downloadErrorState_) {
-            if (callback_ != nullptr) {
-                MEDIA_LOG_I("Read time out, OnEvent");
-                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-            }
             if (downloader_ != nullptr) {
                 downloader_->Pause();
             }
             if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
                 downloadRequest_->Close();
             }
+            if (callback_ != nullptr) {
+                MEDIA_LOG_I("Read time out, OnEvent");
+                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            }
             return false;
         }
-        isEos = downloadRequest_->IsEos();
         bool isClosed = downloadRequest_->IsClosed();
-        if (isEos || isClosed) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32 ", isClosed: "
-                PUBLIC_LOG_D32, isEos, isClosed);
+        if (isClosed && buffer_->GetSize() == 0) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             realReadLength = 0;
             return false;
         }
         OSAL::SleepFor(5); // 5
         readTime_ += 5;    // 5
     }
-    if (buffer_->GetMediaOffset() + wantReadLength <= downloadRequest_->GetFileContentLength() &&
-        (buffer_->GetSize() < wantReadLength)) {
-        MEDIA_LOG_D("wantReadLength larger than available, wait for write");
-        AutoLock lock(mutex_);
-        cvReadWrite_.Wait(lock, [this, wantReadLength] {
-            return buffer_->GetSize() >= wantReadLength || downloadRequest_->IsEos() || downloadRequest_->IsClosed();
-        });
-    }
-    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
+    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
     return true;
@@ -247,32 +240,6 @@ void HttpMediaDownloader::SetDemuxerState()
 {
     MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;
-}
-
-void HttpMediaDownloader::SetSourceTimer()
-{
-    if (isReadFrame_) {
-        if (timerTask_ != nullptr) {
-            timerTask_->StopAsync();
-        }
-    }
-    setSourceTime_ += SLEEP_TIME;
-    if ((!isReadFrame_ && setSourceTime_ > TIME_OUT) || downloadErrorState_) {
-        if (callback_ != nullptr) {
-            MEDIA_LOG_I("SetSource time out");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-        }
-        if (downloader_ != nullptr) {
-            downloader_->Pause();
-        }
-        if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-            downloadRequest_->Close();
-        }
-        if (timerTask_ != nullptr) {
-            timerTask_->StopAsync();
-        }
-    }
-    OSAL::SleepFor(SLEEP_TIME);
 }
 
 void HttpMediaDownloader::SetDownloadErrorState()

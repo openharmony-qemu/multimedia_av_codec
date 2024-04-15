@@ -344,4 +344,34 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0040, TestSize.Level3)
         encVec.clear();
     }
 }
+/**
+ * @tc.number    : RESET_BITRATE_RELI_001
+ * @tc.name      : reset bitrate
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncReliNdkTest, RESET_BITRATE_RELI_001, TestSize.Level3)
+{
+    while (true) {
+        vector<shared_ptr<VEncNdkSample>> encVec;
+        for (int i = 0; i < 16; i++) {
+            auto vEncSample = make_shared<VEncNdkSample>();
+            encVec.push_back(vEncSample);
+            vEncSample->INP_DIR = inpDir720Array[i];
+            vEncSample->DEFAULT_WIDTH = 1280;
+            vEncSample->DEFAULT_HEIGHT = 720;
+            vEncSample->DEFAULT_FRAME_RATE = 30;
+            vEncSample->enableAutoSwitchParam =  true;
+            vEncSample->needResetBitrate = true;
+            vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameAvc.c_str()));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        }
+        for (int i = 0; i < 16; i++) {
+            encVec[i]->WaitForEOS();
+        }
+        encVec.clear();
+    }
+}
 } // namespace
