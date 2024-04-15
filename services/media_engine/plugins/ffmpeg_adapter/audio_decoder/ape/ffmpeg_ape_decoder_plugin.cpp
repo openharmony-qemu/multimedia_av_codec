@@ -30,7 +30,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
-constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 200000;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 300000;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 20000;
 } // namespace
 
@@ -88,6 +88,9 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
 {
     Status ret = basePlugin->AllocateContext("ape");
     SetSamplerate(parameter);
+    if (!CheckChannelCount(parameter)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     if (ret != Status::OK) {
         AVCODEC_LOGE("AllocateContext failed, ret=%{public}d", ret);
         return ret;
@@ -129,7 +132,6 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
-    format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE);
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
     ret = basePlugin->OpenContext();
     return ret;
@@ -137,6 +139,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
 
 Status FFmpegAPEDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
+    parameter->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE);
     parameter = basePlugin->GetFormat();
     return Status::OK;
 }
