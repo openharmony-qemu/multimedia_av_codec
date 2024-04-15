@@ -228,7 +228,7 @@ Status DemuxerFilter::Stop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop called.");
-    demuxer_->Pause();
+    demuxer_->PauseAsync();
     Filter::Stop();
     return demuxer_->Stop();
 }
@@ -237,9 +237,13 @@ Status DemuxerFilter::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
     MEDIA_LOG_I("Pause called");
-    // demuxer pause first for auido render immediatly
-    demuxer_->Pause();
-    return Filter::Pause();
+    // demuxer pause first for auido render immediatly.
+    // acclerating the stop of reading data.
+    demuxer_->PauseAsync();
+    // Pause decoder, thi operation maybe lost of 1-2 frames, the lost frames should be saved in audio_server_sink.
+    // The next two operations for reduce the time to write, indirectly reduce the time to pause.
+    Filter::Pause();
+    return demuxer_->Pause();
 }
 
 Status DemuxerFilter::PauseForSeek()
