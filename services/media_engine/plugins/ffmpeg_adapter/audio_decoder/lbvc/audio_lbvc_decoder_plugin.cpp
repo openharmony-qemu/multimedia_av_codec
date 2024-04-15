@@ -15,6 +15,7 @@
 #include "audio_lbvc_decoder_plugin.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_log.h"
+#include "plugin/plugin_loader_v2.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -61,6 +62,11 @@ void UnRegisterAudioDecoderPlugin() {}
 
 PLUGIN_DEFINITION(LbvcAudioDecoder, LicenseType::VENDOR, RegisterAudioDecoderPlugins,
     UnRegisterAudioDecoderPlugin);
+
+REGISTER_PLUGIN
+{
+    pluginLoader->RegisterPlugin(std::make_shared<AudioLbvcDecoderPlugin>("Lbvc_audio_decoder"));
+}
 } // namespace
 
 namespace OHOS {

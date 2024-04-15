@@ -73,7 +73,7 @@ ohos_shared_library("media_plugin_LbvcAudioDecoder") {
     "media_foundation:media_foundation",
   ]
 
-  relative_install_dir = "media/media_plugins"
+  relative_install_dir = "media/media_plugins/audio_decoder/lbvc_audio_decoder"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

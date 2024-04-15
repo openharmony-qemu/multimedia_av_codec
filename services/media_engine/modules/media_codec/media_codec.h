@@ -34,6 +34,14 @@
 
 namespace OHOS {
 namespace Media {
+
+template <typename T>
+inline auto __attribute__((visibility("default"))) GetEnumUnderlyingValue(T const value)->
+    typename std::underlying_type<T>::type
+    {
+        return static_cast<typename std::underlying_type<T>::type>(value);
+    }
+
 enum class CodecState : int32_t {
     UNINITIALIZED,
     INITIALIZED,
@@ -122,8 +130,15 @@ public:
         const bool svpFlag);
 
 private:
+    static const std::unordered_map<std::string, Plugins::SubPluginType> CODEC_NAME_TO_PLUGIN_MAP;
+
+    static const std::unordered_map<std::string, Plugins::SubPluginType> DECODER_MIME_TO_PLUGIN_MAP;
+
+    static const std::unordered_map<std::string, Plugins::SubPluginType> ENCODER_MIME_TO_PLUGIN_MAP;
+
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
-    std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
+    std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType,
+        bool isEncoder);
     Status AttachBufffer();
     Status AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
         uint32_t size);

@@ -74,7 +74,7 @@ ohos_shared_library("media_plugin_AudioServerSink") {
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins"
+  relative_install_dir = "media/media_plugins/audio_sink/default_audio_sink"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

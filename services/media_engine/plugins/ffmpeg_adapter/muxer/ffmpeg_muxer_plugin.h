@@ -54,6 +54,7 @@ private:
     Status SetMetaData(std::shared_ptr<Meta> param);
 
 private:
+    std::shared_ptr<AVOutputFormat> InitAVOutputFormat(const std::string& fmtName);
     Status SetCodecParameterOfTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterExtra(AVStream *stream, const uint8_t *extraData, int32_t extraDataSize);
     Status SetCodecParameterColor(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
