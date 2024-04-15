@@ -126,8 +126,11 @@ Status AudioCaptureFilter::PrepareAudioCapture()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "PrepareAudioCapture", logTag_.c_str());
     if (!taskPtr_) {
-        taskPtr_ = std::make_shared<Task>("DataReader");
-        taskPtr_->RegisterJob([this] { ReadLoop(); });
+        taskPtr_ = std::make_shared<Task>("DataReader", playerId_, TaskType::AUDIO);
+        taskPtr_->RegisterJob([this] {
+            ReadLoop();
+            return 0;
+        });
     }
 
     Status err = audioCaptureModule_->Prepare();
@@ -146,7 +149,7 @@ Status AudioCaptureFilter::SetAudioCaptureChangeCallback(
     return audioCaptureModule_->SetAudioCapturerInfoChangeCallback(callback);
 }
 
-Status AudioCaptureFilter::Prepare()
+Status AudioCaptureFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
     if (callback_ == nullptr) {
@@ -158,10 +161,9 @@ Status AudioCaptureFilter::Prepare()
     return Status::OK;
 }
 
-Status AudioCaptureFilter::Start()
+Status AudioCaptureFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
-    nextFilter_->Start();
     eos_ = false;
     auto res = Status::ERROR_INVALID_OPERATION;
     // start audioCaptureModule firstly
@@ -176,7 +178,7 @@ Status AudioCaptureFilter::Start()
     return res;
 }
 
-Status AudioCaptureFilter::Pause()
+Status AudioCaptureFilter::DoPause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     if (taskPtr_) {
@@ -192,7 +194,7 @@ Status AudioCaptureFilter::Pause()
     return ret;
 }
 
-Status AudioCaptureFilter::Resume()
+Status AudioCaptureFilter::DoResume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     if (taskPtr_) {
@@ -208,7 +210,7 @@ Status AudioCaptureFilter::Resume()
     return ret;
 }
 
-Status AudioCaptureFilter::Stop()
+Status AudioCaptureFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     // stop task firstly
@@ -223,19 +225,16 @@ Status AudioCaptureFilter::Stop()
     if (ret != Status::OK) {
         MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule stop fail", logTag_.c_str());
     }
-    if (nextFilter_) {
-        nextFilter_->Stop();
-    }
     return ret;
 }
 
-Status AudioCaptureFilter::Flush()
+Status AudioCaptureFilter::DoFlush()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
     return Status::OK;
 }
 
-Status AudioCaptureFilter::Release()
+Status AudioCaptureFilter::DoRelease()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
     if (taskPtr_) {
@@ -267,10 +266,10 @@ Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     auto meta = std::make_shared<Meta>();
     GetParameter(meta);
     nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioCaptureFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, meta, filterLinkCallback);
-    nextFilter->Prepare();
     return Status::OK;
 }
 

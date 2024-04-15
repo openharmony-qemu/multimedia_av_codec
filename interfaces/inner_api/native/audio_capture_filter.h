@@ -34,13 +34,13 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     void SetLogTag(std::string logTag);
-    Status Prepare() override;
-    Status Start() override;
-    Status Pause() override;
-    Status Resume() override;
-    Status Stop() override;
-    Status Flush() override;
-    Status Release() override;
+    Status DoPrepare() override;
+    Status DoStart() override;
+    Status DoPause() override;
+    Status DoResume() override;
+    Status DoStop() override;
+    Status DoFlush() override;
+    Status DoRelease() override;
     void SetParameter(const std::shared_ptr<Meta> &meta) override;
     void GetParameter(std::shared_ptr<Meta> &meta) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;

@@ -61,7 +61,7 @@ public:
     void SetDemuxerState() override;
 
 private:
-    void HttpMonitorLoop();
+    int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
 

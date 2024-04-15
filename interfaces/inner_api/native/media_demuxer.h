@@ -89,6 +89,7 @@ public:
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
+    void SetPlayerId(std::string playerId);
 private:
     class DataSourceImpl;
 
@@ -134,7 +135,7 @@ private:
     std::shared_ptr<Source> source_;
     MediaMetaData mediaMetaData_;
 
-    void ReadLoop(uint32_t trackId);
+    int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
@@ -163,6 +164,7 @@ private:
 
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
+    std::string playerId_;
 };
 } // namespace Media
 } // namespace OHOS

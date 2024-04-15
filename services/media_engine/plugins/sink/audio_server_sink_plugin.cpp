@@ -856,9 +856,13 @@ Status AudioServerSinkPlugin::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I("Pause entered.");
-    if (audioRenderer_ == nullptr || audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
+    if (audioRenderer_ == nullptr) {
         MEDIA_LOG_E("audio renderer pause fail");
         return Status::ERROR_UNKNOWN;
+    }
+    if (audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
+        MEDIA_LOG_E("audio renderer no need pause");
+        return Status::OK;
     }
     sliceCount_++;
     FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), Status::ERROR_UNKNOWN, "renderer pause fail.");
@@ -870,9 +874,14 @@ Status AudioServerSinkPlugin::PauseTransitent()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I("PauseTransitent entered.");
-    if (audioRenderer_ == nullptr || audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ == nullptr) {
         MEDIA_LOG_E("audio renderer pauseTransitent fail");
         return Status::ERROR_UNKNOWN;
+    }
+    if (audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
+        MEDIA_LOG_E("audio renderer no need pauseTransitent");
+        return Status::OK;
     }
     sliceCount_++;
     FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN, "renderer pauseTransitent fail.");

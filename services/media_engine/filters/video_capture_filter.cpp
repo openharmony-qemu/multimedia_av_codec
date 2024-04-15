@@ -168,7 +168,7 @@ sptr<Surface> VideoCaptureFilter::GetInputSurface()
     return producerSurface;
 }
 
-Status VideoCaptureFilter::Prepare()
+Status VideoCaptureFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
@@ -176,7 +176,7 @@ Status VideoCaptureFilter::Prepare()
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Start()
+Status VideoCaptureFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
     isStop_ = false;
@@ -184,7 +184,7 @@ Status VideoCaptureFilter::Start()
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Pause()
+Status VideoCaptureFilter::DoPause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     isStop_ = true;
@@ -192,7 +192,7 @@ Status VideoCaptureFilter::Pause()
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Resume()
+Status VideoCaptureFilter::DoResume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     isStop_ = false;
@@ -200,7 +200,7 @@ Status VideoCaptureFilter::Resume()
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Stop()
+Status VideoCaptureFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     isStop_ = true;
@@ -212,13 +212,13 @@ Status VideoCaptureFilter::Stop()
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Flush()
+Status VideoCaptureFilter::DoFlush()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Release()
+Status VideoCaptureFilter::DoRelease()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
     return Status::OK;
@@ -244,10 +244,10 @@ Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
     nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<VideoCaptureFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
-    nextFilter->Prepare();
     return Status::OK;
 }
 

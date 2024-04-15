@@ -86,6 +86,7 @@ int32_t AVSourceImpl::InitWithURI(const std::string &uri)
     CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION,
         "Create source failed due to has been used by demuxer.");
     demuxerEngine = std::make_shared<MediaDemuxer>();
+    demuxerEngine->SetPlayerId("AVSource_URI");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Init AVSource with uri failed due to create demuxer engine failed.");
 
@@ -130,6 +131,7 @@ int32_t AVSourceImpl::InitWithDataSource(const std::shared_ptr<Media::IMediaData
     CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION,
         "Create source failed due to has been used by demuxer.");
     demuxerEngine = std::make_shared<MediaDemuxer>();
+    demuxerEngine->SetPlayerId("AVSource_Data");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Init AVSource with dataSource failed due to create demuxer engine failed.");
 

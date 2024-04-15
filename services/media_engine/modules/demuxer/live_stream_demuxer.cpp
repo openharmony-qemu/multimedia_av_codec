@@ -65,8 +65,11 @@ void LiveStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {
-        taskPtr_ = std::make_shared<Task>("DataReader");
-        taskPtr_->RegisterJob([this] { ReadLoop(); });
+        taskPtr_ = std::make_shared<Task>("DataReader", "", TaskType::SINGLETON);
+        taskPtr_->RegisterJob([this] {
+            ReadLoop();
+            return 0;
+        });
     }
     MEDIA_LOG_I("Init task start");
     taskPtr_->Start();

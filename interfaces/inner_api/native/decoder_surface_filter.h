@@ -44,8 +44,7 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
-
-    Status DoInit() override;
+    Status DoInitAfterLink() override;
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
@@ -53,8 +52,8 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
-    Status DoProcessInputBuffer(int arg, bool dropped) override;
-    Status DoProcessOutputBuffer(int arg, bool dropped) override;
+    Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
+    Status DoProcessOutputBuffer(int recvArg, bool dropFrame) override;
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;

@@ -40,11 +40,11 @@
 
 namespace OHOS {
 namespace Media {
-static const uint32_t REQUEST_BUFFER_TIMEOUT = 50; // Retry if the time of requesting buffer overtimes 50ms.
+static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
 static const int32_t MSERR_EXT_IO = 5400103;
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
-static const uint32_t RETRY_FRAME_TIME = 10; // Retry if no buffer ready 10ms.
+static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -165,6 +165,11 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
 void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     eventReceiver_ = receiver;
+}
+
+void MediaDemuxer::SetPlayerId(std::string playerId)
+{
+    playerId_ = playerId;
 }
 
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
@@ -702,6 +707,7 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
         std::string mimeType;
         std::string trackType;
+        std::unique_ptr<Task> tempTask;
         if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0) {
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime_ = mimeType;
@@ -709,16 +715,16 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             if (!trackMeta.GetData(Tag::MEDIA_START_TIME, videoStartTime_)) {
                 MEDIA_LOG_W("Get media start time failed");
             }
-            trackType = "V";
+            tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             audioTrackId_ = index;
-            trackType = "A";
+            tempTask = std::make_unique<Task>("DemuxerLoopA", playerId_, TaskType::AUDIO);
         }
-        std::string threadReadName = std::string("DemuxerLoop") + trackType.c_str();
-        std::unique_ptr<Task> tempTask = std::make_unique<Task>(threadReadName);
-        taskMap_[index] = std::move(tempTask);
-        taskMap_[index]->RegisterJob([this, index] { ReadLoop(index); });
+        if (tempTask != nullptr) {
+            taskMap_[index] = std::move(tempTask);
+            taskMap_[index]->RegisterJob([this, index] { return ReadLoop(index); });
+        }
     }
 }
 
@@ -740,13 +746,16 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     avBufferConfig.capacity = static_cast<int32_t>(size);
     Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
-    FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
-        PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+    if (ret != Status::OK) {
+        MEDIA_LOG_D("Get buffer failed due to get buffer from bufferQueue failed, user queue: "
+            PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+    }
     return ret == Status::OK;
 }
 
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
     MEDIA_LOG_D("CopyFrameToUserQueue enter, copy frame for track: " PUBLIC_LOG_U32, trackId);
     int32_t size = 0;
     Status ret = plugin_->GetNextSampleSize(trackId, size);
@@ -754,8 +763,9 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
-    FALSE_RETURN_V_MSG_E(GetBufferFromUserQueue(trackId, size), Status::ERROR_INVALID_PARAMETER,
-        "Get buffer from queue failed, trackId: " PUBLIC_LOG_U32, trackId);
+    if (!GetBufferFromUserQueue(trackId, size)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
 
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
@@ -807,11 +817,11 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     return ret;
 }
 
-void MediaDemuxer::ReadLoop(uint32_t trackId)
+int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
     if (streamDemuxer_->GetIsIgnoreParse()) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
-        OSAL::SleepFor(RETRY_FRAME_TIME); // sleep 10ms to avoid useless reading
+        return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
         if (ret == Status::ERROR_UNKNOWN) {
@@ -822,6 +832,7 @@ void MediaDemuxer::ReadLoop(uint32_t trackId)
                 MEDIA_LOG_D("OnEvent eventReceiver_ null.");
             }
         }
+        return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
     }
 }
 

@@ -120,7 +120,7 @@ private:
     std::weak_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 
-DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type)
+DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type, true)
 {
     videoDecoder_ = std::make_shared<VideoDecoderAdapter>();
     videoSink_ = std::make_shared<VideoSink>();
@@ -157,7 +157,7 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     return ret;
 }
 
-Status DecoderSurfaceFilter::DoInit()
+Status DecoderSurfaceFilter::DoInitAfterLink()
 {
     Status ret;
     // create secure decoder for drm.
@@ -380,7 +380,7 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
 
-Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
+Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
 {
     std::pair<int, std::shared_ptr<AVBuffer>> task;
     {
@@ -396,18 +396,18 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
             CalculateNextRender(nextTask.first, nextTask.second);
         }
     }
-    if (!arg) {
+    if (recvArg == 0) { // recvArg == 0 means no render this frame
         if (sinceLastDropped_ > 0) {
             MEDIA_LOG_I("drop buffer after %{public}d", sinceLastDropped_);
             sinceLastDropped_ = 0;
         } else {
-            arg = true;
+            recvArg = true;
             sinceLastDropped_++;
         }
     } else {
         sinceLastDropped_++;
     }
-    videoDecoder_->ReleaseOutputBuffer(task.first, arg);
+    videoDecoder_->ReleaseOutputBuffer(task.first, recvArg);
     if (task.second->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, task.second->GetUniqueId(),
@@ -421,10 +421,10 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
     return Status::OK;
 }
 
-Status DecoderSurfaceFilter::DoProcessInputBuffer(int arg, bool dropped)
+Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     // input buffers will be detach in DoFlush, no need handle
-    if (dropped) {
+    if (dropFrame) {
         return Status::OK;
     }
     videoDecoder_->AquireAvailableInputBuffer();

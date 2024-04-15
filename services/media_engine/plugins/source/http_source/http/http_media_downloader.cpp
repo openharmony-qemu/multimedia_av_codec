@@ -146,7 +146,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             realReadLength = 0;
             return false;
         }
-        OSAL::SleepFor(5); // 5
+        Task::SleepInTask(5); // 5
         readTime_ += 5;    // 5
     }
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
