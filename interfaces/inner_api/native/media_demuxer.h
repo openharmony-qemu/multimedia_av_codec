@@ -73,6 +73,7 @@ public:
     Status Pause();
     Status Resume();
     Status Flush();
+    Status PauseAsync();
 
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);

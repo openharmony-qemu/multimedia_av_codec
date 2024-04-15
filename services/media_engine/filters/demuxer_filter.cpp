@@ -234,7 +234,6 @@ Status DemuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
     MEDIA_LOG_I("Pause called");
-    // demuxer pause first for auido render immediatly
     return demuxer_->Pause();
 }
 
