@@ -29,6 +29,7 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#include "codec_param_checker.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -186,35 +187,18 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
+    int32_t ret = ValidateTemporalScalabilityParam(config);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Set temporal scalability parameter failed!");
 
-    int32_t ret;
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_, codecName_);
-        CHECK_AND_RETURN_RET_LOG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL, "Failed to get codec scenario");
-        scenario_ = scenario.value();
-        ret = CodecParamChecker::CheckConfigureValid(config, codecType_, codecName_, scenario_);
+        ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
-        CodecScenarioInit(config);
     }
-
     ret = codecBase_->Configure(config);
+
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     StatusChanged(newStatus);
     return ret;
-}
-
-int32_t CodecServer::CodecScenarioInit(Format &config)
-{
-    switch (scenario_) {
-        case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
-            temporalScalability_ = std::make_shared<TemporalScalability>();
-            temporalScalability_->ConfigFrameGop(config);
-            break;
-        default:
-            break;
-    }
-
-    return AVCS_ERR_OK;
 }
 
 void CodecServer::StartInputParamTask()
@@ -410,6 +394,41 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     return ret;
 }
 
+int32_t CodecServer::ValidateTemporalScalabilityParam(Format &config)
+{
+    if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
+        if (config.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) ||
+            config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
+            config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
+            AVCODEC_LOGW("Temporal scalability is only supported in video encoder!");
+        }
+        return AVCS_ERR_OK;
+    }
+    int32_t isEnable;
+    if (!config.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, isEnable)) {
+        if (config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
+            config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
+            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
+        }
+        return AVCS_ERR_OK;
+    }
+    if (isEnable < 0) {
+        AVCODEC_LOGE("Set enable parameter %{public}d failed, should be 0 or 1!", isEnable);
+        return AVCS_ERR_INVALID_VAL;
+    } else if (isEnable == 0) {
+        return AVCS_ERR_OK;
+    }
+    temporalScalability_ = std::make_shared<TemporalScalability>();
+    if (!temporalScalability_->ValidateCapability(codecName_) ||
+        temporalScalability_->ValidateTemporalGopParam(config) != AVCS_ERR_OK) {
+        temporalScalability_ = nullptr;
+        AVCODEC_LOGE("Temporal scalability is not supported or Set temporal gop parameter failed!");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    AVCODEC_LOGI("Set temporal scalability parameter successfully.");
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
 {
     int32_t ret = AVCS_ERR_OK;
@@ -545,15 +564,6 @@ int32_t CodecServer::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG(status_ != INITIALIZED && status_ != CONFIGURED, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-
-    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        Format oldFormat;
-        int32_t ret = codecBase_->GetOutputFormat(oldFormat);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Failed to get codec format");
-        ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecType_, codecName_, scenario_);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
-    }
-
     return codecBase_->SetParameter(format);
 }
 

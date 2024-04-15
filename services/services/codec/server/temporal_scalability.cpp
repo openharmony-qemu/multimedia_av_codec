@@ -24,16 +24,18 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalScalability"};
 } // namespace
 
-constexpr int32_t DEFAULT_GOPSIZE = 60;   // DEFAULT_FRAMERATE * DEFAULT_I_FRAME_INTERVAL / 1000;
+constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_LTR_FRAME_NUM = 2;
+constexpr int32_t SECOND_TO_MILL = 1000;
+constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
 constexpr int32_t ENABLE_PARAMETER_CALLBACK = 1;
+constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 using namespace Plugins;
-
 
 TemporalScalability::TemporalScalability()
 {
@@ -47,26 +49,76 @@ TemporalScalability::~TemporalScalability()
 
 void TemporalScalability::ConfigFrameGop(Format &format)
 {
-    if (!format.GetIntValue("video_encoder_gop_size", gopSize_)) {
-        gopSize_ = DEFAULT_GOPSIZE;
+    if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
+        AVCODEC_LOGI("Set frame rate successfully, value is %{public}f.", frameRate_);
+    } else {
+        frameRate_ = DEFAULT_FRAME_RATE;
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
+        AVCODEC_LOGI("Get frame rate failed, use default value %{public}f.", frameRate_);
     }
+    if (format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_) && frameInterval_ != 0) {
+        AVCODEC_LOGI("Set i frame interval successfully, value is %{public}d.", frameInterval_);
+    } else {
+        frameInterval_ = DEFAULT_I_FRAME_INTERVAL;
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+        AVCODEC_LOGI("Get i frame interval failed, use default value %{public}d.", frameInterval_);
+    }
+    if (frameInterval_ < 0) {
+        gopSize_ = INT32_MAX;
+    } else {
+        gopSize_ = static_cast<int32_t>(frameRate_ * frameInterval_ / SECOND_TO_MILL);
+    }
+}
 
+bool TemporalScalability::ValidateCapability(std::string &codecName)
+{
+    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
+        false, "Get codec capbility failed, codecName is %{public}s.", codecName.c_str());
+    return capData->featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)) != 0;;
+}
+
+int32_t TemporalScalability::ValidateTemporalGopParam(Format &format)
+{
+    ConfigFrameGop(format);
+    if (gopSize_ <= MIN_TEMPORAL_GOPSIZE) {
+        AVCODEC_LOGE("Unsuppoted gop size, should be greater than 2!");
+        return AVCS_ERR_INVALID_VAL;
+    }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
-        AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
+        if (temporalGopSize_ <= 1) {
+            AVCODEC_LOGE("Set temporal gop size failed, value is %{public}d, should be greater than 1!",
+                         temporalGopSize_);
+            return AVCS_ERR_INVALID_VAL;
+        } else if (temporalGopSize_ >= static_cast<int32_t>(gopSize_)) {
+            AVCODEC_LOGE(
+                "Set temporal gop size failed, value is %{public}d, should be less than gop size, which is %{public}u!",
+                temporalGopSize_, gopSize_);
+            return AVCS_ERR_INVALID_VAL;
+        } else {
+            AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
+        }
     } else {
         temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
         AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
-        AVCODEC_LOGI("Set temporal reference mode successfully.");
+        if (tRefMode_ >= static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
+            tRefMode_ <= static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
+            AVCODEC_LOGI("Set temporal reference mode successfully.");
+        } else {
+            AVCODEC_LOGE("Set temporal reference mode failed, should be ADJACENT_REFERENCE or JUMP_REFERENCE!");
+            return AVCS_ERR_INVALID_VAL;
+        }
     } else {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
         AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
     }
-
     format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_VIDEO_LTR_FRAME_NUM);
     format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
     AVCODEC_LOGI("Set temporal gop parameter successfully.");
+    return AVCS_ERR_OK;
 }
 
 void TemporalScalability::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)

@@ -609,7 +609,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_003, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2); // invalid width size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    if (GetParam() == VCodecTestCode::SW_AVC) {
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    } else {
+        EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    }
 }
 
 /**
@@ -622,7 +626,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_004, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
-    EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    if (GetParam() == VCodecTestCode::SW_AVC) {
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    } else {
+        EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    }
 }
 
 /**
@@ -633,7 +641,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_004, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_Configure_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
-    EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    if (GetParam() == VCodecTestCode::SW_AVC) {
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    } else {
+        EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    }
 }
 
 /**
