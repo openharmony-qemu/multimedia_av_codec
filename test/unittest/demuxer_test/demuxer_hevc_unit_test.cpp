@@ -66,7 +66,7 @@ string g_fmp4HevcPath = TEST_FILE_PATH + string("h265_fmp4.mp4");
 string g_fmp4HevcUri = TEST_URI_PATH + string("h265_fmp4.mp4");
 string g_DoubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_DoubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
-string g_hls = TEST_URI_PATH2 + string("index_264.m3u8");
+string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
