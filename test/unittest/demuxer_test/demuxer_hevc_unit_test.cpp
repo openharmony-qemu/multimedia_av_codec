@@ -1170,7 +1170,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1204, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_ReadSample_1412
- * @tc.desc: copy current sample to buffer
+ * @tc.desc: copy current sample to buffer(h265 hls uri)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1412, TestSize.Level1)
@@ -1204,7 +1204,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1412, TestSize.Level1)
 
 /**
  * @tc.name: Demuxer_SeekToTime_1413
- * @tc.desc: seek to the specified time
+ * @tc.desc: seek to the specified time(h265 hls uri)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1413, TestSize.Level1)
