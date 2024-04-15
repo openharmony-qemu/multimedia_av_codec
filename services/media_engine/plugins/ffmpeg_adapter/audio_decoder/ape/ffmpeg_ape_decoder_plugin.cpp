@@ -78,9 +78,6 @@ Status FFmpegAPEDecoderPlugin::Stop()
 void FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
 {
     int32_t sampleRate;
-    if (!CheckChannelCount(parameter)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
     if (sampleRate <= 0) {
         parameter->SetData(Tag::AUDIO_SAMPLE_RATE, 16000); // set 16000 sample rate
@@ -91,6 +88,9 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
 {
     Status ret = basePlugin->AllocateContext("ape");
     SetSamplerate(parameter);
+    if (!CheckChannelCount(parameter)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     if (ret != Status::OK) {
         AVCODEC_LOGE("AllocateContext failed, ret=%{public}d", ret);
         return ret;
@@ -139,7 +139,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
 
 Status FFmpegAPEDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE);
+    parameter->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE);
     parameter = basePlugin->GetFormat();
     return Status::OK;
 }
