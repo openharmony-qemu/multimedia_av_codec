@@ -910,6 +910,7 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_001, TestSize.Level1)
             EXPECT_EQ(OH_AVFormat_GetIntValue(
                 property, OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, &ltrNum), true);
             EXPECT_GT(ltrNum, 0);
+            OH_AVFormat_Destroy(property);
         } else {
             OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
             EXPECT_EQ(property, nullptr);
@@ -967,7 +968,7 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_001, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        EXPECT_LE(levelsNum, AVC_LEVEL_51 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, AVC_LEVEL_1);
@@ -998,7 +999,7 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_002, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(profilesNum, HEVC_LEVEL_62 + 1);
+        EXPECT_LE(levelsNum, HEVC_LEVEL_62 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, HEVC_LEVEL_1);
@@ -1029,7 +1030,7 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_003, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        EXPECT_LE(levelsNum, AVC_LEVEL_51 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, AVC_LEVEL_1);
@@ -1060,7 +1061,7 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_004, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(profilesNum, HEVC_LEVEL_62 + 1);
+        EXPECT_LE(levelsNum, HEVC_LEVEL_62 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, HEVC_LEVEL_1);
@@ -1091,7 +1092,7 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        EXPECT_LE(levelsNum, AVC_LEVEL_51 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, AVC_LEVEL_1);
