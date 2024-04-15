@@ -20,6 +20,7 @@
 #include "av_codec_sample_error.h"
 #include "av_codec_sample_log.h"
 #include "codec_callback.h"
+#include "native_window.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoder"};
@@ -224,6 +225,10 @@ int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
         (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_USAGE, 16425);      // 16425: Window usage
         (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT,
             ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
+
+        if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
+            sampleInfo.window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
+        }
     }
     return AVCODEC_SAMPLE_ERR_OK;
 }

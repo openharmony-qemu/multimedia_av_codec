@@ -44,89 +44,93 @@ enum DemoArgumentType : int {
     DEMO_ARG_SEEK_MODE,
     DEMO_ARG_CODEC_COMSUMER,
     DEMO_ARG_THREAD_SLEEP_MODE,
+    DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER,
     DEMO_ARG_END,
 };
 
 const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_STRING = {
-    {DEMO_ARG_CODEC_TYPE,           "codec_type"},
-    {DEMO_ARG_INPUT_FILE,           "input_file"},
-    {DEMO_ARG_OUTPUT_FILE,          "output_file"},
-    {DEMO_ARG_CODEC_MIME,           "codec_mime"},
-    {DEMO_ARG_WIDTH,                "width"},
-    {DEMO_ARG_HEIGHT,               "height"},
-    {DEMO_ARG_FRAMERATE,            "framerate"},
-    {DEMO_ARG_PIXEL_FORMAT,         "pixel_format"},
-    {DEMO_ARG_BITRATE,              "bitrate"},
-    {DEMO_ARG_BITRATE_MODE,         "bitrate_mode"},
-    {DEMO_ARG_CODEC_RUN_MODE,       "codec_run_mode"},
-    {DEMO_ARG_FRAME_INTERVAL,       "frame_interval"},
-    {DEMO_ARG_REPEAT_TIMES,         "repeat_times"},
-    {DEMO_ARG_HDR_VIVID_VIDEO,      "hdr_vivid_video"},
-    {DEMO_ARG_NEED_DUMP_OUTPUT,     "need_dump_output"},
-    {DEMO_ARG_MAX_FRAMES,           "max_frames"},
-    {DEMO_ARG_DATA_PRODUCER,        "data_producer"},
-    {DEMO_ARG_BITSTREAM_TYPE,       "bitstream_type"},
-    {DEMO_ARG_SEEK_MODE,            "seek_mode"},
-    {DEMO_ARG_CODEC_COMSUMER,       "codec_comsumer"},
-    {DEMO_ARG_THREAD_SLEEP_MODE,    "thread_sleep_mode"},
+    {DEMO_ARG_CODEC_TYPE,                       "codec_type"},
+    {DEMO_ARG_INPUT_FILE,                       "input_file"},
+    {DEMO_ARG_OUTPUT_FILE,                      "output_file"},
+    {DEMO_ARG_CODEC_MIME,                       "codec_mime"},
+    {DEMO_ARG_WIDTH,                            "width"},
+    {DEMO_ARG_HEIGHT,                           "height"},
+    {DEMO_ARG_FRAMERATE,                        "framerate"},
+    {DEMO_ARG_PIXEL_FORMAT,                     "pixel_format"},
+    {DEMO_ARG_BITRATE,                          "bitrate"},
+    {DEMO_ARG_BITRATE_MODE,                     "bitrate_mode"},
+    {DEMO_ARG_CODEC_RUN_MODE,                   "codec_run_mode"},
+    {DEMO_ARG_FRAME_INTERVAL,                   "frame_interval"},
+    {DEMO_ARG_REPEAT_TIMES,                     "repeat_times"},
+    {DEMO_ARG_HDR_VIVID_VIDEO,                  "hdr_vivid_video"},
+    {DEMO_ARG_NEED_DUMP_OUTPUT,                 "need_dump_output"},
+    {DEMO_ARG_MAX_FRAMES,                       "max_frames"},
+    {DEMO_ARG_DATA_PRODUCER,                    "data_producer"},
+    {DEMO_ARG_BITSTREAM_TYPE,                   "bitstream_type"},
+    {DEMO_ARG_SEEK_MODE,                        "seek_mode"},
+    {DEMO_ARG_CODEC_COMSUMER,                   "codec_comsumer"},
+    {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
+    {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, "encoder_surface_max_input_buffer"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
-    {"help",                no_argument,        nullptr, DEMO_ARG_HELP},
-    {"codec_type",          required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
-    {"input",               required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
-    {"output",              required_argument,  nullptr, DEMO_ARG_OUTPUT_FILE},
-    {"mime",                required_argument,  nullptr, DEMO_ARG_CODEC_MIME},
-    {"width",               required_argument,  nullptr, DEMO_ARG_WIDTH},
-    {"height",              required_argument,  nullptr, DEMO_ARG_HEIGHT},
-    {"framerate",           required_argument,  nullptr, DEMO_ARG_FRAMERATE},
-    {"pixel_format",        required_argument,  nullptr, DEMO_ARG_PIXEL_FORMAT},
-    {"bitrate",             required_argument,  nullptr, DEMO_ARG_BITRATE},
-    {"bitrate_mode",        required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
-    {"codec_run_mode",      required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
-    {"frame_interval",      required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
-    {"repeat_times",        required_argument,  nullptr, DEMO_ARG_REPEAT_TIMES},
-    {"hdr_vivid_video",     required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
-    {"need_dump_output",    required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
-    {"max_frames",          required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
-    {"data_producer",       required_argument,  nullptr, DEMO_ARG_DATA_PRODUCER},
-    {"bitstream_type",      required_argument,  nullptr, DEMO_ARG_BITSTREAM_TYPE},
-    {"seek_mode",           required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
-    {"codec_comsumer",      required_argument,  nullptr, DEMO_ARG_CODEC_COMSUMER},
-    {"thread_sleep_mode",   required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
+    {"help",                             no_argument,        nullptr, DEMO_ARG_HELP},
+    {"codec_type",                       required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
+    {"input",                            required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
+    {"output",                           required_argument,  nullptr, DEMO_ARG_OUTPUT_FILE},
+    {"mime",                             required_argument,  nullptr, DEMO_ARG_CODEC_MIME},
+    {"width",                            required_argument,  nullptr, DEMO_ARG_WIDTH},
+    {"height",                           required_argument,  nullptr, DEMO_ARG_HEIGHT},
+    {"framerate",                        required_argument,  nullptr, DEMO_ARG_FRAMERATE},
+    {"pixel_format",                     required_argument,  nullptr, DEMO_ARG_PIXEL_FORMAT},
+    {"bitrate",                          required_argument,  nullptr, DEMO_ARG_BITRATE},
+    {"bitrate_mode",                     required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
+    {"codec_run_mode",                   required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
+    {"frame_interval",                   required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
+    {"repeat_times",                     required_argument,  nullptr, DEMO_ARG_REPEAT_TIMES},
+    {"hdr_vivid_video",                  required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
+    {"need_dump_output",                 required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
+    {"max_frames",                       required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
+    {"data_producer",                    required_argument,  nullptr, DEMO_ARG_DATA_PRODUCER},
+    {"bitstream_type",                   required_argument,  nullptr, DEMO_ARG_BITSTREAM_TYPE},
+    {"seek_mode",                        required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
+    {"codec_comsumer",                   required_argument,  nullptr, DEMO_ARG_CODEC_COMSUMER},
+    {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
+    {"encoder_surface_max_input_buffer", required_argument,  nullptr, DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
 Video codec demo help:
-    --help                      print this help info
+    --help                              print this help info
 
-    --codec_type                codec type (0: decoder; 2: encoder)
-    --input                     input file path
-    --output                    output file path
-    --mime                      codec mime (video/avc: H264; video/hevc: H265)
-    --width                     video width
-    --height                    video height
-    --framerate                 video framerate
-    --pixel_format              1: YUVI420          2: NV12     3: NV21
-                                4: SURFACE_FORMAT   5: RGBA
-    --bitrate                   encoder bitrate (bps)
-    --bitrate_mode              encoder bitrate mode (0: CBR; 1: VBR; 2: CQ)
-    --codec_run_mode            0: Surface origin      1: Buffer SharedMemory
-                                2: Surface AVBuffer    3: Buffer AVBuffer
-    --data_producer             0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
-    --bitstream_type            0: AnnexB;   1: AVCC
-    --codec_comsumer            0: Default;  1: Decoder render output
+    --codec_type                        codec type (0: decoder; 2: encoder)
+    --input                             input file path
+    --output                            output file path
+    --mime                              codec mime (video/avc: H264; video/hevc: H265)
+    --width                             video width
+    --height                            video height
+    --framerate                         video framerate
+    --pixel_format                      1: YUVI420          2: NV12     3: NV21
+                                        4: SURFACE_FORMAT   5: RGBA
+    --bitrate                           encoder bitrate (bps)
+    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ)
+    --codec_run_mode                    0: Surface origin      1: Buffer SharedMemory
+                                        2: Surface AVBuffer    3: Buffer AVBuffer
+    --data_producer                     0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
+    --bitstream_type                    0: AnnexB;   1: AVCC
+    --codec_comsumer                    0: Default;  1: Decoder render output
 
-    --frame_interval            frame push interval (ms)
-    --repeat_times              demo repeat times
-    --hdr_vivid_video           input file is hdr vivid video? (0: false; 1: true)
-    --need_dump_output          need to dump output stream? (0: false; 1: true)
-    --max_frames                number of frames to be processed
-    --seek_mode                 demuxer seek mode:
-                                    0: SEEK_MODE_NEXT_SYNC
-                                    1: SEEK_MODE_PREVIOUS_SYNC
-                                    2: SEEK_MODE_CLOSEST_SYNC
-    --thread_sleep_mode         0: Input sleep;  1: Output sleep
+    --frame_interval                    frame push interval (ms)
+    --repeat_times                      demo repeat times
+    --hdr_vivid_video                   input file is hdr vivid video? (0: false; 1: true)
+    --need_dump_output                  need to dump output stream? (0: false; 1: true)
+    --max_frames                        number of frames to be processed
+    --seek_mode                         demuxer seek mode:
+                                            0: SEEK_MODE_NEXT_SYNC
+                                            1: SEEK_MODE_PREVIOUS_SYNC
+                                            2: SEEK_MODE_CLOSEST_SYNC
+    --thread_sleep_mode                 0: Input sleep;  1: Output sleep
+    --encoder_surface_max_input_buffer  set for encoder surface max input buffer count
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -247,29 +251,35 @@ inline void SetThreadSleepMode(SampleInfo &info, const char * const value)
     info.threadSleepMode = static_cast<ThreadSleepMode>(std::stol(value));
 }
 
+inline void SetEncoderSurfaceMaxInputBufferCount(SampleInfo &info, const char * const value)
+{
+    info.encoderSurfaceMaxInputBuffer = std::stol(value);
+}
+
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
-    {DEMO_ARG_HELP,                     ShowHelp},
-    {DEMO_ARG_CODEC_TYPE,               SetCodecType},
-    {DEMO_ARG_INPUT_FILE,               SetInputFilePath},
-    {DEMO_ARG_OUTPUT_FILE,              SetOutputFilePath},
-    {DEMO_ARG_CODEC_MIME,               SetMime},
-    {DEMO_ARG_WIDTH,                    SetWidth},
-    {DEMO_ARG_HEIGHT,                   SetHeight},
-    {DEMO_ARG_FRAMERATE,                SetFramerate},
-    {DEMO_ARG_PIXEL_FORMAT,             SetPixelFormat},
-    {DEMO_ARG_BITRATE,                  SetBitrate},
-    {DEMO_ARG_BITRATE_MODE,             SetBitrateMode},
-    {DEMO_ARG_CODEC_RUN_MODE,           SetCodecRunMode},
-    {DEMO_ARG_FRAME_INTERVAL,           SetFrameInterval},
-    {DEMO_ARG_REPEAT_TIMES,             SetRepeatTimes},
-    {DEMO_ARG_HDR_VIVID_VIDEO,          SetHdrVividVideo},
-    {DEMO_ARG_NEED_DUMP_OUTPUT,         SetNeedDumpOutput},
-    {DEMO_ARG_MAX_FRAMES,               SetMaxFrames},
-    {DEMO_ARG_DATA_PRODUCER,            SetDataProducer},
-    {DEMO_ARG_BITSTREAM_TYPE,           SetBitstreamType},
-    {DEMO_ARG_SEEK_MODE,                SetSeekMode},
-    {DEMO_ARG_CODEC_COMSUMER,           SetCodecComsumerType},
-    {DEMO_ARG_THREAD_SLEEP_MODE,        SetThreadSleepMode},
+    {DEMO_ARG_HELP,                             ShowHelp},
+    {DEMO_ARG_CODEC_TYPE,                       SetCodecType},
+    {DEMO_ARG_INPUT_FILE,                       SetInputFilePath},
+    {DEMO_ARG_OUTPUT_FILE,                      SetOutputFilePath},
+    {DEMO_ARG_CODEC_MIME,                       SetMime},
+    {DEMO_ARG_WIDTH,                            SetWidth},
+    {DEMO_ARG_HEIGHT,                           SetHeight},
+    {DEMO_ARG_FRAMERATE,                        SetFramerate},
+    {DEMO_ARG_PIXEL_FORMAT,                     SetPixelFormat},
+    {DEMO_ARG_BITRATE,                          SetBitrate},
+    {DEMO_ARG_BITRATE_MODE,                     SetBitrateMode},
+    {DEMO_ARG_CODEC_RUN_MODE,                   SetCodecRunMode},
+    {DEMO_ARG_FRAME_INTERVAL,                   SetFrameInterval},
+    {DEMO_ARG_REPEAT_TIMES,                     SetRepeatTimes},
+    {DEMO_ARG_HDR_VIVID_VIDEO,                  SetHdrVividVideo},
+    {DEMO_ARG_NEED_DUMP_OUTPUT,                 SetNeedDumpOutput},
+    {DEMO_ARG_MAX_FRAMES,                       SetMaxFrames},
+    {DEMO_ARG_DATA_PRODUCER,                    SetDataProducer},
+    {DEMO_ARG_BITSTREAM_TYPE,                   SetBitstreamType},
+    {DEMO_ARG_SEEK_MODE,                        SetSeekMode},
+    {DEMO_ARG_CODEC_COMSUMER,                   SetCodecComsumerType},
+    {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},
+    {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, SetEncoderSurfaceMaxInputBufferCount},
 };
 } // namespace
 

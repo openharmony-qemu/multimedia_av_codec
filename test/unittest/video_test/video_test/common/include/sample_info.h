@@ -122,6 +122,7 @@ struct SampleInfo {
     std::string outputFilePath;
     CodecComsumerType codecComsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
     ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
+    int32_t encoderSurfaceMaxInputBuffer = 0;
 };
 
 struct CodecBufferInfo {
