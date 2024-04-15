@@ -43,7 +43,7 @@ public:
     void SubmitReadFail();
 private:
     Status ParseUriInfo(const std::string& uri);
-    void ReadTimer();
+    int64_t ReadTimer();
     void CacheData();
     void StartTimerTask();
     void PauseTimerTask();

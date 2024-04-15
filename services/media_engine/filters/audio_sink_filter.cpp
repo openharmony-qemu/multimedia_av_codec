@@ -47,7 +47,7 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 }
 
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
-    : Filter(name, FilterType::FILTERTYPE_ASINK)
+    : Filter(name, FilterType::FILTERTYPE_ASINK, true)
 {
     filterType_ = filterType;
     audioSink_ = std::make_shared<AudioSink>();
@@ -68,7 +68,7 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("audio sink Init called");
 }
 
-Status AudioSinkFilter::DoInit()
+Status AudioSinkFilter::DoInitAfterLink()
 {
     audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
@@ -193,7 +193,7 @@ Status AudioSinkFilter::DoRelease()
     return audioSink_->Release();
 }
 
-Status AudioSinkFilter::DoProcessInputBuffer(int arg, bool dropped)
+Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     Status ret;
     std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
@@ -204,7 +204,7 @@ Status AudioSinkFilter::DoProcessInputBuffer(int arg, bool dropped)
     if (ret != Status::OK || filledOutputBuffer == nullptr) {
         return Status::ERROR_INVALID_STATE;
     }
-    if (dropped) {
+    if (dropFrame) {
         MEDIA_LOG_W("ProcessInputBuffer drop buffer");
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return Status::OK;

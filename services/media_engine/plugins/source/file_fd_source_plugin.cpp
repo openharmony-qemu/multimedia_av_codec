@@ -300,10 +300,8 @@ Status FileFdSourcePlugin::Reset()
     return Status::OK;
 }
 
-void FileFdSourcePlugin::ReadTimer()
+int64_t FileFdSourcePlugin::ReadTimer()
 {
-    usleep(ONE_THOUSAND_MICROSECOUNDS); // 1ms
-    readTime_ += ONE_THOUSAND_MICROSECOUNDS;
     if (readTime_ > TEN_THOUSAND_MICROSECOUNDS) {   // 10ms
         if (callback_ != nullptr && !isTaskCallback_) {
             MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
@@ -317,6 +315,8 @@ void FileFdSourcePlugin::ReadTimer()
             MEDIA_LOG_D("BUFFERING_START callback_ is nullptr or isTaskCallback_ is null.");
         }
     }
+    readTime_ += ONE_THOUSAND_MICROSECOUNDS;
+    return ONE_THOUSAND_MICROSECOUNDS;
 }
 
 void FileFdSourcePlugin::SetDemuxerState()
@@ -330,10 +330,13 @@ void FileFdSourcePlugin::SetBundleName(const std::string& bundleName)
     MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
     bundleName_ = bundleName;
     if (bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
-        timerTask_ = std::make_shared<Task>(std::string("OS_timerTask"));
-        timerTask_->RegisterJob([this] { ReadTimer(); });
-        downloadTask_ = std::make_shared<Task>(std::string("OS_downloadTask"));
-        downloadTask_->RegisterJob([this] { CacheData(); });
+        timerTask_ = std::make_shared<Task>(std::string("OS_timerTask"), "", TaskType::SINGLETON);
+        timerTask_->RegisterJob([this] { return ReadTimer(); });
+        downloadTask_ = std::make_shared<Task>(std::string("OS_downloadTask"), "", TaskType::SINGLETON);
+        downloadTask_->RegisterJob([this] {
+            CacheData();
+            return 0;
+        });
     }
 }
 

@@ -115,7 +115,7 @@ sptr<Surface> AudioEncoderFilter::GetInputSurface()
     return mediaCodec_->GetInputSurface();
 }
 
-Status AudioEncoderFilter::Prepare()
+Status AudioEncoderFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
     switch (filterType_) {
@@ -129,13 +129,9 @@ Status AudioEncoderFilter::Prepare()
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Start()
+Status AudioEncoderFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
-    Status status = nextFilter_->Start();
-    if (status != Status::OK) {
-        return status;
-    }
     int32_t ret = mediaCodec_->Start();
     if (ret != 0) {
         return Status::ERROR_UNKNOWN;
@@ -143,25 +139,21 @@ Status AudioEncoderFilter::Start()
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Pause()
+Status AudioEncoderFilter::DoPause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Resume()
+Status AudioEncoderFilter::DoResume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Stop()
+Status AudioEncoderFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
-    Status status = nextFilter_->Stop();
-    if (status != Status::OK) {
-        return status;
-    }
     int32_t ret = mediaCodec_->Stop();
     if (ret != 0) {
         return Status::ERROR_UNKNOWN;
@@ -169,7 +161,7 @@ Status AudioEncoderFilter::Stop()
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Flush()
+Status AudioEncoderFilter::DoFlush()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
     int32_t ret = mediaCodec_->Flush();
@@ -179,7 +171,7 @@ Status AudioEncoderFilter::Flush()
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Release()
+Status AudioEncoderFilter::DoRelease()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
     int32_t ret = mediaCodec_->Release();
@@ -214,11 +206,11 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
     nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioEncoderFilterLinkCallback>(shared_from_this());
     auto ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, PUBLIC_LOG_S "OnLinked failed", logTag_.c_str());
-    nextFilter->Prepare();
     return Status::OK;
 }
 

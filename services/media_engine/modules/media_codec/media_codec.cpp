@@ -18,8 +18,8 @@
 #include "mime_type.h"
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager_v2.h"
-
 #include "avcodec_codec_name.h"
+#include "avcodec_trace.h"
 
 namespace {
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
@@ -594,6 +594,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
 
 void MediaCodec::ProcessInputBuffer()
 {
+    MediaAVCodec::AVCodecTrace trace("MediaCodec::ProcessInputBuffer");
     Status ret;
     uint32_t eosStatus = 0;
     std::shared_ptr<AVBuffer> filledInputBuffer;

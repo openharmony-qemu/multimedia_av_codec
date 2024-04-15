@@ -31,12 +31,12 @@ public:
     ~DemuxerFilter() override;
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
-    Status Prepare() override;
-    Status Start() override;
-    Status Stop() override;
-    Status Pause() override;
-    Status Resume() override;
-    Status Flush() override;
+    Status DoPrepare() override;
+    Status DoStart() override;
+    Status DoStop() override;
+    Status DoPause() override;
+    Status DoResume() override;
+    Status DoFlush() override;
     Status Reset();
     Status PauseForSeek();
     Status ResumeForSeek();

@@ -33,7 +33,7 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
 
-    Status DoInit() override;
+    Status DoInitAfterLink() override;
 
     Status DoPrepare() override;
 
@@ -49,7 +49,7 @@ public:
 
     Status DoRelease() override;
 
-    Status DoProcessInputBuffer(int arg, bool dropped) override;
+    Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
 
     void SetParameter(const std::shared_ptr<Meta>& meta) override;
 

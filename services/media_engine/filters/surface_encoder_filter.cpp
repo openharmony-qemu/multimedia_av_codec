@@ -144,7 +144,7 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
     return mediaCodec_->GetInputSurface();
 }
 
-Status SurfaceEncoderFilter::Prepare()
+Status SurfaceEncoderFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
@@ -152,7 +152,7 @@ Status SurfaceEncoderFilter::Prepare()
     return Status::OK;
 }
 
-Status SurfaceEncoderFilter::Start()
+Status SurfaceEncoderFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
     if (mediaCodec_ == nullptr) {
@@ -162,7 +162,7 @@ Status SurfaceEncoderFilter::Start()
     return mediaCodec_->Start();
 }
 
-Status SurfaceEncoderFilter::Pause()
+Status SurfaceEncoderFilter::DoPause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     if (mediaCodec_ == nullptr) {
@@ -171,7 +171,7 @@ Status SurfaceEncoderFilter::Pause()
     return mediaCodec_->Pause();
 }
 
-Status SurfaceEncoderFilter::Resume()
+Status SurfaceEncoderFilter::DoResume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     if (mediaCodec_ == nullptr) {
@@ -180,7 +180,7 @@ Status SurfaceEncoderFilter::Resume()
     return mediaCodec_->Resume();
 }
 
-Status SurfaceEncoderFilter::Stop()
+Status SurfaceEncoderFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     if (mediaCodec_ == nullptr) {
@@ -190,7 +190,6 @@ Status SurfaceEncoderFilter::Stop()
     if (nextFilter_ == nullptr) {
         return Status::OK;
     }
-    nextFilter_->Stop();
     return Status::OK;
 }
 
@@ -204,13 +203,13 @@ Status SurfaceEncoderFilter::Reset()
     return Status::OK;
 }
 
-Status SurfaceEncoderFilter::Flush()
+Status SurfaceEncoderFilter::DoFlush()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
     return mediaCodec_->Flush();
 }
 
-Status SurfaceEncoderFilter::Release()
+Status SurfaceEncoderFilter::DoRelease()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
     if (mediaCodec_ == nullptr) {
@@ -243,10 +242,10 @@ Status SurfaceEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter,
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
     nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<SurfaceEncoderFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
-    nextFilter->Prepare();
     return Status::OK;
 }
 
