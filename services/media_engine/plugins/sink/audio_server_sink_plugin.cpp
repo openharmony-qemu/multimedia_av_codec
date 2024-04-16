@@ -569,7 +569,7 @@ void AudioServerSinkPlugin::SetUpMimeTypeSetter()
         if (!Any::IsSameTypeWith<std::string>(para)) {
             MEDIA_LOG_E("mimeType type should be string");
             playerEventReceiver_->OnEvent({"MIME_TYPE type is not string",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         mime_type_ = AnyCast<std::string>(para);
@@ -584,7 +584,7 @@ void AudioServerSinkPlugin::SetUpSampleRateSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("sample rate type should be int32_t");
             playerEventReceiver_->OnEvent({"AUDIO_SAMPLE_RATE type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         if (!AssignSampleRateIfSupported(AnyCast<int32_t>(para))) {
@@ -603,7 +603,7 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelsSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("channels type should be int32_t");
             playerEventReceiver_->OnEvent({"AUDIO_OUTPUT_CHANNELS type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         channels_ = AnyCast<int32_t>(para);
@@ -624,7 +624,7 @@ void AudioServerSinkPlugin::SetUpMediaBitRateSetter()
         if (!Any::IsSameTypeWith<int64_t>(para)) {
             MEDIA_LOG_E("bit rate type should be int64_t");
             playerEventReceiver_->OnEvent({"MEDIA_BITRATE type is not int64_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         bitRate_ = AnyCast<int64_t>(para);
@@ -638,7 +638,7 @@ void AudioServerSinkPlugin::SetUpAudioSampleFormatSetter()
         if (!Any::IsSameTypeWith<AudioSampleFormat>(para)) {
             MEDIA_LOG_E("AudioSampleFormat type should be AudioSampleFormat");
             playerEventReceiver_->OnEvent({"AUDIO_SAMPLE_FORMAT type is not AudioSampleFormat",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         if (!AssignSampleFmtIfSupported(AnyCast<AudioSampleFormat>(para))) {
@@ -656,7 +656,7 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelLayoutSetter()
         if (!Any::IsSameTypeWith<AudioChannelLayout>(para)) {
             MEDIA_LOG_E("channel layout type should be AudioChannelLayout");
             playerEventReceiver_->OnEvent({"AUDIO_OUTPUT_CHANNEL_LAYOUT type is not AudioChannelLayout",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         channelLayout_ = AnyCast<AudioChannelLayout>(para);
@@ -670,7 +670,7 @@ void AudioServerSinkPlugin::SetUpAudioSamplePerFrameSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("SAMPLE_PER_FRAME type should be int32_t");
             playerEventReceiver_->OnEvent({"AUDIO_SAMPLE_PER_FRAME type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         samplesPerFrame_ = AnyCast<uint32_t>(para);
@@ -683,7 +683,7 @@ void AudioServerSinkPlugin::SetUpBitsPerCodedSampleSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("BITS_PER_CODED_SAMPLE type should be int32_t");
             playerEventReceiver_->OnEvent({"AUDIO_BITS_PER_CODED_SAMPLE type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         bitsPerSample_ = AnyCast<uint32_t>(para);
@@ -696,7 +696,7 @@ void AudioServerSinkPlugin::SetUpMediaSeekableSetter()
         if (!Any::IsSameTypeWith<Seekable>(para)) {
             MEDIA_LOG_E("MEDIA_SEEKABLE type should be Seekable");
             playerEventReceiver_->OnEvent({"MEDIA_SEEKABLE type is not Seekable",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         seekable_ = AnyCast<Plugins::Seekable>(para);
@@ -709,7 +709,7 @@ void AudioServerSinkPlugin::SetUpAppPidSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("APP_PID type should be int32_t");
             playerEventReceiver_->OnEvent({"APP_PID type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         appPid_ = AnyCast<int32_t>(para);
@@ -722,7 +722,7 @@ void AudioServerSinkPlugin::SetUpAppUidSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("APP_UID type should be int32_t");
             playerEventReceiver_->OnEvent({"APP_UID type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         appUid_ = AnyCast<int32_t>(para);
@@ -735,7 +735,7 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
         if (!Any::IsSameTypeWith<AudioRenderInfo>(para)) {
             MEDIA_LOG_E("AUDIO_RENDER_INFO type should be int32_t");
             playerEventReceiver_->OnEvent({"AUDIO_RENDER_INFO type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         audioRenderInfo_ = AnyCast<AudioRenderInfo>(para);
@@ -748,7 +748,7 @@ void AudioServerSinkPlugin::SetUpAudioInterruptModeSetter()
         if (!Any::IsSameTypeWith<int32_t>(para)) {
             MEDIA_LOG_E("AUDIO_INTERRUPT_MODE type should be int32_t");
             playerEventReceiver_->OnEvent({"AUDIO_INTERRUPT_MODE type is not int32_t",
-                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+                EventType::EVENT_ERROR, MSERR_INVALID_VAL});
             return Status::ERROR_MISMATCHED_TYPE;
         }
         AudioInterruptMode2InterruptMode(AnyCast<AudioInterruptMode>(para), audioInterruptMode_);
