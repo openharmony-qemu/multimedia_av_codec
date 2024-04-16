@@ -71,12 +71,8 @@ ohos_unittest("capability_module_test") {
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
-    "$MEDIA_ROOT_DIR/services/services:av_codec_service",
-    "$THIRD_ROOT_DIR/bounds_checking_function:libsec_static",
-    "$THIRD_ROOT_DIR/ffmpeg:libohosffmpeg",
   ]
 
   external_deps = [
