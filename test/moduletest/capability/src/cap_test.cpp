@@ -17,7 +17,6 @@
 #include "gtest/gtest.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
-#include "videoenc_ndk_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
@@ -260,7 +259,8 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0022, TestSize.Level1)
         format = OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE);
         ASSERT_NE(nullptr, format);
         int ltrnum = 0;
-        EXPECT_EQ(OH_AVFormat_GetIntValue(format,OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT,&ltrnum),true);
+        bool Cap_val = OH_AVFormat_GetIntValue(format, OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, &ltrnum)
+        EXPECT_EQ(Cap_val, true);
         EXPECT_EQ(ltrnum, 10);
     } else {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
