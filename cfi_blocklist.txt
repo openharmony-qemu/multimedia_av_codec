@@ -1,4 +1,0 @@
-src:*services/engine/*
-src:*frameworks/native/capi/*
-src:*services/engine/codec/audio/encoder/*
-src:*services/engine/plugin/core/hevc_parser_manager.cpp

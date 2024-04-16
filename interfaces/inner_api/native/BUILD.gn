@@ -181,15 +181,7 @@ ohos_shared_library("av_codec_client") {
     "media_foundation:media_foundation",
   ]
 
-  sanitize = {
-    boundary_sanitize = true
-    cfi = true
-    cfi_cross_dso = true
-    integer_overflow = true
-    ubsan = true
-    debug = false
-    blocklist = "$av_codec_root_dir/cfi_blocklist.txt"
-  }
+  sanitize = av_codec_sanitize
 
   configs = [
     ":av_codec_packege_include",
