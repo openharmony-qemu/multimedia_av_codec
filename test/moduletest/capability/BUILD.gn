@@ -20,10 +20,7 @@ module_output_path = "av_codec/moduletest"
 
 ohos_unittest("capability_module_test") {
   module_out_path = module_output_path
-  sources = [
-    "./src/cap_test.cpp",
-    
-  ]
+  sources = [ "./src/cap_test.cpp" ]
 
   include_dirs = [
     "Avbuffer/include",
@@ -84,17 +81,16 @@ ohos_unittest("capability_module_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:libgraphic_utils",
+    "graphic_2d:librender_service_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
     "window_manager:libwm",
   ]
 
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
-
