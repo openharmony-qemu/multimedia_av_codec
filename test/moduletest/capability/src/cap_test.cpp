@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include <string>
-
 #include "gtest/gtest.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
