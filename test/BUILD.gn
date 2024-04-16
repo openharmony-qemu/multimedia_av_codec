@@ -86,6 +86,7 @@ group("av_codec_module_test") {
       "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
       "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
+      "moduletest/capability:capability_module_test",
     ]
   }
 }
