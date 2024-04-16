@@ -19,6 +19,7 @@ module_output_path = "av_codec/moduletest"
 AUDIO_ROOT_DIR = "//foundation/multimedia/audio_framework/"
 
 ohos_unittest("audio_decoder_module_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   sources = [
     "Avbuffer/src/avcodec_audio_avbuffer_decoder_demo.cpp",
