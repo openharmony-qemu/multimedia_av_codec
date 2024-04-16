@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef HEVC_PARSER_H
-#define HEVC_PARSER_H
+#ifndef STREAM_PARSER_H
+#define STREAM_PARSER_H
 
 #include <cstdint>
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-class HevcParser {
+class StreamParser {
 public:
-    explicit HevcParser() = default;
-    virtual ~HevcParser() = default;
+    explicit StreamParser() = default;
+    virtual ~StreamParser() = default;
     virtual void ParseExtraData(const uint8_t *sample, int32_t size,
                                 uint8_t **extraDataBuf, int32_t *extraDataSize) = 0;
     virtual void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) = 0;
@@ -47,4 +47,4 @@ public:
 } // Plugins
 } // Media
 } // OHOS
-#endif // HEVC_PARSER_H
+#endif // STREAM_PARSER_H

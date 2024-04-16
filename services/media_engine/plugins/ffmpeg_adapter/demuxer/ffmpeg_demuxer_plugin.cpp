@@ -83,6 +83,11 @@ static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
     { AV_CODEC_ID_H264, "h264_mp4toannexb" },
 };
 
+static const std::map<AVCodecID, StreamType> g_streamParserMap = {
+    { AV_CODEC_ID_HEVC, StreamType::HEVC },
+    { AV_CODEC_ID_VVC,  StreamType::VVC },
+};
+
 static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_MJPEG,
     AV_CODEC_ID_PNG,
@@ -143,6 +148,11 @@ bool IsAVTrack(const AVStream& avStream)
         return true;
     }
     return false;
+}
+
+bool HaveValidParser(const AVCodecID codecId)
+{
+    return g_streamParserMap.count(codecId) != 0;
 }
 
 int64_t GetFileDuration(const AVFormatContext& avFormatContext)
@@ -280,7 +290,7 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
       ioContext_(),
       selectedTrackIds_(),
       cacheQueue_("cacheQueue"),
-      hevcParserInited_(false)
+      streamParserInited_(false)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("Create FFmpeg Demuxer Plugin.");
@@ -302,7 +312,7 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
     pluginImpl_ = nullptr;
     formatContext_ = nullptr;
     avbsfContext_ = nullptr;
-    hevcParser_ = nullptr;
+    streamParser_ = nullptr;
     selectedTrackIds_.clear();
     if (firstFrame_ != nullptr) {
         av_packet_free(&firstFrame_);
@@ -384,7 +394,7 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
         ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
     }
     if (ret == AVERROR_EOF) {
-        MEDIA_LOG_D("Convert avc/hevc to annexb successfully, ret:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
+        MEDIA_LOG_D("Convert avc to annexb successfully, ret:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
     }
 }
 
@@ -393,10 +403,19 @@ void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<Sam
     int cencInfoSize = 0;
     uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
         &cencInfoSize);
-    hevcParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
         static_cast<size_t>(cencInfoSize));
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
-        hevcParser_->IsSyncFrame(pkt.data, pkt.size)) {
+        streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
+        pkt.flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
+    }
+}
+
+void FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+{
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, nullptr, 0);
+    if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
+        streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
         pkt.flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
     }
 }
@@ -528,8 +547,10 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
-    if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
+    if (codecId == AV_CODEC_ID_HEVC && streamParser_ != nullptr && streamParserInited_) {
         ConvertHevcToAnnexb(*tempPkt, samplePacket);
+    } else if (codecId == AV_CODEC_ID_VVC && streamParser_ != nullptr && streamParserInited_) {
+        ConvertVvcToAnnexb(*tempPkt, samplePacket);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
     }
@@ -823,10 +844,11 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
             }
             break;
         }
-        if (formatContext_->streams[trackIndex]->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-            hevcParser_ = HevcParserManager::Create();
-            if (hevcParser_ == nullptr) {
-                MEDIA_LOG_W("Init hevc parser failed, frame will not be converted to annexb");
+        if (HaveValidParser(formatContext_->streams[trackIndex]->codecpar->codec_id)) {
+            streamParser_ = StreamParserManager::Create(g_streamParserMap.at(
+                formatContext_->streams[trackIndex]->codecpar->codec_id));
+            if (streamParser_ == nullptr) {
+                MEDIA_LOG_W("Init hevc/vvc parser failed, frame will not be converted to annexb");
             }
             break;
         }
@@ -844,17 +866,17 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Get media info failed due to formatContext_ is nullptr.");
 
-    if (hevcParser_ != nullptr && !hevcParserInited_) {
+    if (streamParser_ != nullptr && !streamParserInited_) {
         for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
             auto avStream = formatContext_->streams[trackIndex];
-            if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+            if (HaveValidParser(avStream->codecpar->codec_id)) {
                 GetVideoFirstKeyFrame(trackIndex);
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
 
-                hevcParser_->ConvertExtraDataToAnnexb(
+                streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
-                hevcParserInited_ = true;
+                streamParserInited_ = true;
 
                 break;
             }
@@ -872,19 +894,23 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             continue;
         }
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta);
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-            if (hevcParser_ != nullptr && hevcParserInited_ && firstFrame_ != nullptr) {
-                hevcParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0);
-                hevcParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
+        if (HaveValidParser(avStream->codecpar->codec_id)) {
+            if (streamParser_ != nullptr && streamParserInited_ && firstFrame_ != nullptr) {
+                streamParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0);
+                streamParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
                 // Parser only sends xps info when first call ConvertPacketToAnnexb
                 // readSample will call ConvertPacketToAnnexb again, so rest here
-                hevcParser_->ResetXPSSendStatus();
-                ParseHEVCMetadataInfo(*avStream, meta);
+                streamParser_->ResetXPSSendStatus();
+                if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+                    ParseHEVCMetadataInfo(*avStream, meta);
+                }
             } else {
-                MEDIA_LOG_W("hevcParser_ or firstFrame_ is nullptr, parser hevc fail");
+                MEDIA_LOG_W("streamParser_ or firstFrame_ is nullptr, parser hevc/vvc fail");
             }
         }
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC || avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
+        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+            avStream->codecpar->codec_id == AV_CODEC_ID_H264 ||
+            avStream->codecpar->codec_id == AV_CODEC_ID_VVC) {
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
@@ -953,8 +979,8 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
 {
     uint8_t *extradata = avStream.codecpar->extradata;
     int32_t extradataSize = avStream.codecpar->extradata_size;
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
-        hevcParser_->ConvertPacketToAnnexb(&(extradata), extradataSize, nullptr, 0);
+    if (HaveValidParser(avStream.codecpar->codec_id) && streamParser_ != nullptr && streamParserInited_) {
+        streamParser_->ConvertPacketToAnnexb(&(extradata), extradataSize, nullptr, 0);
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         if (avbsfContext_->par_out->extradata != nullptr && avbsfContext_->par_out->extradata_size > 0) {
             extradata = avbsfContext_->par_out->extradata;
@@ -1002,16 +1028,16 @@ void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
 void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& format)
 {
     HevcParseFormat parse;
-    parse.isHdrVivid = hevcParser_->IsHdrVivid();
-    parse.colorRange = hevcParser_->GetColorRange();
-    parse.colorPrimaries = hevcParser_->GetColorPrimaries();
-    parse.colorTransfer = hevcParser_->GetColorTransfer();
-    parse.colorMatrixCoeff = hevcParser_->GetColorMatrixCoeff();
-    parse.profile = hevcParser_->GetProfileIdc();
-    parse.level = hevcParser_->GetLevelIdc();
-    parse.chromaLocation = hevcParser_->GetChromaLocation();
-    parse.picWidInLumaSamples = hevcParser_->GetPicWidInLumaSamples();
-    parse.picHetInLumaSamples = hevcParser_->GetPicHetInLumaSamples();
+    parse.isHdrVivid = streamParser_->IsHdrVivid();
+    parse.colorRange = streamParser_->GetColorRange();
+    parse.colorPrimaries = streamParser_->GetColorPrimaries();
+    parse.colorTransfer = streamParser_->GetColorTransfer();
+    parse.colorMatrixCoeff = streamParser_->GetColorMatrixCoeff();
+    parse.profile = streamParser_->GetProfileIdc();
+    parse.level = streamParser_->GetLevelIdc();
+    parse.chromaLocation = streamParser_->GetChromaLocation();
+    parse.picWidInLumaSamples = streamParser_->GetPicWidInLumaSamples();
+    parse.picHetInLumaSamples = streamParser_->GetPicHetInLumaSamples();
 
     FFmpegFormatHelper::ParseHevcInfo(*formatContext_, parse, format);
 }

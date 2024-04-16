@@ -13,25 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef HEVC_PARSER_MANAGER_H
-#define HEVC_PARSER_MANAGER_H
+#ifndef STREAM_PARSER_MANAGER_H
+#define STREAM_PARSER_MANAGER_H
 
 #include <string>
 #include <memory>
 #include <mutex>
-#include "hevc_parser.h"
+#include "stream_parser.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-class HevcParserManager {
+enum StreamType {
+    HEVC = 0,
+    VVC  = 1,
+};
+
+class StreamParserManager {
 public:
-    static std::shared_ptr<HevcParserManager> Create();
-    HevcParserManager() {};
-    HevcParserManager(const HevcParserManager &) = delete;
-    HevcParserManager operator=(const HevcParserManager &) = delete;
-    ~HevcParserManager();
-    static bool Init();
+    static std::shared_ptr<StreamParserManager> Create(StreamType streamType);
+    StreamParserManager() {};
+    StreamParserManager(const StreamParserManager &) = delete;
+    StreamParserManager operator=(const StreamParserManager &) = delete;
+    ~StreamParserManager();
+    static bool Init(StreamType streamType);
 
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
     bool IsHdrVivid();
@@ -52,13 +57,13 @@ public:
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
     
 private:
-    HevcParser *hevcParser_ {nullptr};
+    StreamParser *streamParser_ {nullptr};
     // .so initialize
     static void *handler_;
     static void *LoadPluginFile(const std::string &path);
     static bool CheckSymbol(void *handler);
-    using CreateFunc = HevcParser *(*)();
-    using DestroyFunc = void (*)(HevcParser *);
+    using CreateFunc = StreamParser *(*)();
+    using DestroyFunc = void (*)(StreamParser *);
     static CreateFunc createFunc_;
     static DestroyFunc destroyFunc_;
     static std::mutex mtx_;
@@ -66,4 +71,4 @@ private:
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
-#endif // HEVC_PARSER_MANAGER_H
+#endif // STREAM_PARSER_MANAGER_H

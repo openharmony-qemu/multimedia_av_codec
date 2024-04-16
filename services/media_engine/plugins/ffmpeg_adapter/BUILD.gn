@@ -60,7 +60,7 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
 
   sources = [
     "common/ffmpeg_utils.cpp",
-    "common/hevc_parser_manager.cpp",
+    "common/stream_parser_manager.cpp",
     "muxer/ffmpeg_muxer_plugin.cpp",
   ]
 
@@ -92,7 +92,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
   sources = [
     "common/ffmpeg_converter.cpp",
     "common/ffmpeg_utils.cpp",
-    "common/hevc_parser_manager.cpp",
+    "common/stream_parser_manager.cpp",
     "demuxer/block_queue_pool.cpp",
     "demuxer/ffmpeg_demuxer_plugin.cpp",
     "demuxer/ffmpeg_format_helper.cpp",
