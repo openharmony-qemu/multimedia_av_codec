@@ -28,6 +28,8 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+static const uint32_t LOCK_WAIT_TIME = 1000; // Lock wait for 1000ms.
+
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
         return std::make_shared<DecoderSurfaceFilter>(name, FilterType::FILTERTYPE_VDEC);
@@ -110,7 +112,7 @@ public:
     void OnBufferAvailable()
     {
         if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
-            decoderSurfaceFilter->ProcessInputBuffer();
+            decoderSurfaceFilter->HandleInputBuffer();
         } else {
             MEDIA_LOG_I("invalid videoDecoder");
         }
@@ -208,6 +210,35 @@ Status DecoderSurfaceFilter::DoPrepare()
         inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
         videoDecoder_->SetInputBufferQueue(inputBufferQueueConsumer_);
         onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta_);
+    }
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    doPrepareFrame_ = true;
+    renderFirstFrame_ = renderFirstFrame;
+    return videoDecoder_->Start();
+}
+
+Status DecoderSurfaceFilter::WaitPrepareFrame()
+{
+    MEDIA_LOG_I("WaitPrepareFrame enter.");
+    AutoLock lock(firstFrameMutex_);
+    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+         return !doPrepareFrame_;
+    });
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::HandleInputBuffer()
+{
+    if (doPrepareFrame_) {
+        MEDIA_LOG_I("doPrepareFrame enter.");
+        DoProcessInputBuffer(0, false);
+    } else {
+        ProcessInputBuffer();
     }
     return Status::OK;
 }
@@ -460,7 +491,21 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
-    if (outputBuffers_.empty()) {
+    if (doPrepareFrame_.load()) {
+        if (renderFirstFrame_) {
+            videoDecoder_->ReleaseOutputBuffer(index, true);
+        } else {
+            firstFrameNoRender_ = true;
+            outputBuffers_.push_back(make_pair(index, outputBuffer));
+        }
+        lock.unlock();
+        AutoLock autolock(firstFrameMutex_);
+        doPrepareFrame_ = false;
+        firstFrameCond_.NotifyAll();
+        return;
+    }
+    if (outputBuffers_.empty() || firstFrameNoRender_.load()) {
+        firstFrameNoRender_ = false;
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         lock.unlock();
         CalculateNextRender(index, outputBuffer);

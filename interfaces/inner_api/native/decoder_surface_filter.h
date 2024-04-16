@@ -46,6 +46,8 @@ public:
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status DoInitAfterLink() override;
     Status DoPrepare() override;
+    Status PrepareFrame(bool renderFirstFrame) override;
+    Status WaitPrepareFrame() override;
     Status DoStart() override;
     Status DoPause() override;
     Status DoResume() override;
@@ -75,6 +77,7 @@ public:
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetSeekTime(int64_t seekTimeUs);
+    Status HandleInputBuffer();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -122,6 +125,12 @@ private:
     std::atomic<bool> isPaused_{false};
     std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
     std::mutex mutex_;
+
+    Mutex firstFrameMutex_{};
+    ConditionVariable firstFrameCond_;
+    std::atomic<bool> doPrepareFrame_{false};
+    std::atomic<bool> firstFrameNoRender_{false};
+    bool renderFirstFrame_{false};
 };
 } // namespace Pipeline
 } // namespace Media
