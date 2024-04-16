@@ -91,6 +91,18 @@ bool VideoEncSample::Create()
     return true;
 }
 
+bool VideoEncSample::CreateByMime()
+{
+    TITLE_LOG;
+
+    inPath_ = "/data/test/media/" + inPath_;
+    outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".h264";
+
+    codec_ = OH_VideoEncoder_CreateByMime(mime_.c_str());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoEncoder_CreateByMime failed");
+    return true;
+}
+
 bool VideoEncSample::InitFile()
 {
     if (signal_->inFile_ == nullptr) {

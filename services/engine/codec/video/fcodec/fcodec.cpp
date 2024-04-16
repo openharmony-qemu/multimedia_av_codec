@@ -118,7 +118,7 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
     }
 }
 
-void FCodec::ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t formatType)
+void FCodec::ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
 {
     CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
 
@@ -464,7 +464,7 @@ int32_t FCodec::Release()
     return AVCS_ERR_OK;
 }
 
-void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t formatType)
+void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
 {
     CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
     int32_t val = 0;

@@ -171,13 +171,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateStubObject(StubType type)
 #ifdef SUPPORT_CODECLIST
 sptr<IRemoteObject> AVCodecServerManager::CreateCodecListStubObject()
 {
-    if (codecListStubMap_.size() >= SERVER_MAX_NUMBER) {
-        AVCODEC_LOGE(
-            "The number of codeclist services(%{public}zu) has reached the upper limit."
-            "Please release the applied resources.",
-            codecListStubMap_.size());
-        return nullptr;
-    }
     sptr<CodecListServiceStub> stub = CodecListServiceStub::Create();
     if (stub == nullptr) {
         AVCODEC_LOGE("failed to create AVCodecListServiceStub");
@@ -187,7 +180,8 @@ sptr<IRemoteObject> AVCodecServerManager::CreateCodecListStubObject()
     if (object != nullptr) {
         pid_t pid = IPCSkeleton::GetCallingPid();
         codecListStubMap_[object] = pid;
-        AVCODEC_LOGD("The number of codeclist services(%{public}zu).", codecListStubMap_.size());
+        AVCODEC_LOGI("The number of codeclist services(%{public}zu).pid(%{public}d)", codecListStubMap_.size(),
+                     static_cast<int32_t>(pid));
     }
     return object;
 }
@@ -195,13 +189,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateCodecListStubObject()
 #ifdef SUPPORT_CODEC
 sptr<IRemoteObject> AVCodecServerManager::CreateCodecStubObject()
 {
-    if (codecStubMap_.size() >= SERVER_MAX_NUMBER) {
-        AVCODEC_LOGE(
-            "The number of codec services(%{public}zu) has reached the upper limit."
-            "Please release the applied resources.",
-            codecStubMap_.size());
-        return nullptr;
-    }
     sptr<CodecServiceStub> stub = CodecServiceStub::Create();
     if (stub == nullptr) {
         AVCODEC_LOGE("failed to create CodecServiceStub");
@@ -218,7 +205,8 @@ sptr<IRemoteObject> AVCodecServerManager::CreateCodecStubObject()
         dumper.uid_ = IPCSkeleton::GetCallingUid();
         dumper.remoteObject_ = object;
         dumperTbl_[StubType::CODEC].emplace_back(dumper);
-        AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
+        AVCODEC_LOGI("The number of codec services(%{public}zu).pid(%{public}d)", codecStubMap_.size(),
+                     static_cast<int32_t>(pid));
         if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
             AVCODEC_LOGW("failed to call InstanceDump");
         }

@@ -27,7 +27,6 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr uint32_t SERVER_MAX_NUMBER = 64;
 using DumperEntry = std::function<int32_t(int32_t)>;
 struct Dumper {
     pid_t pid_;

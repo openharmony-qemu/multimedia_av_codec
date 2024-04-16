@@ -50,6 +50,11 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder, const
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
     std::vector<std::string> nameArray = codecListCore->FindCodecNameArray(mime, isEncoder);
     for (std::string name : nameArray) {
+#ifndef CLIENT_SUPPORT_CODEC
+        if (name.find("secure") != std::string::npos) {
+            continue;
+        }
+#endif
         std::shared_ptr<CodecBase> codec = CreateCodecByName(name, apiVersion);
         if (codec != nullptr) {
             codecName = name;

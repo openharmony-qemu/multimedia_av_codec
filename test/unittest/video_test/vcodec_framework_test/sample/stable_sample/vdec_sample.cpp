@@ -221,7 +221,7 @@ bool VideoDecSample::CreateByMime()
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
     codec_ = OH_VideoDecoder_CreateByMime(mime_.c_str());
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoDecoder_CreateByName failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoDecoder_CreateByMime failed");
     return true;
 }
 
