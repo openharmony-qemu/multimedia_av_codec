@@ -88,13 +88,13 @@ void MuxerFilter::SetLogTag(std::string logTag)
     logTag_ = std::move(logTag);
 }
 
-Status MuxerFilter::Prepare()
+Status MuxerFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
     return Status::OK;
 }
 
-Status MuxerFilter::Start()
+Status MuxerFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
     startCount_++;
@@ -106,17 +106,17 @@ Status MuxerFilter::Start()
     }
 }
 
-Status MuxerFilter::Pause()
+Status MuxerFilter::DoPause()
 {
     return Status::OK;
 }
 
-Status MuxerFilter::Resume()
+Status MuxerFilter::DoResume()
 {
     return Status::OK;
 }
 
-Status MuxerFilter::Stop()
+Status MuxerFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     stopCount_++;
@@ -128,12 +128,12 @@ Status MuxerFilter::Stop()
     }
 }
 
-Status MuxerFilter::Flush()
+Status MuxerFilter::DoFlush()
 {
     return Status::OK;
 }
 
-Status MuxerFilter::Release()
+Status MuxerFilter::DoRelease()
 {
     return Status::OK;
 }

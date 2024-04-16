@@ -25,6 +25,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServer"};
+constexpr uint32_t SERVER_MAX_IPC_THREAD_NUM = 64;
 }
 
 namespace OHOS {
@@ -58,6 +59,7 @@ void AVCodecServer::OnStart()
     (void)gettimeofday(&end, nullptr);
     uint32_t useTime = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
     ServiceStartEventWrite(useTime, "AV_CODEC service");
+    IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
 }
 
 void AVCodecServer::OnStop()

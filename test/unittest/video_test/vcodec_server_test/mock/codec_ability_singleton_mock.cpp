@@ -13,42 +13,46 @@
  * limitations under the License.
  */
 
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "codeclist_builder.h"
+#ifndef CLIENT_SUPPORT_CODEC
+#include "hcodec_loader.h"
+#endif
 #include "codec_ability_singleton.h"
-#define PRINT_HILOG
-#include "unittest_log.h"
-
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecAbilitySingletonMock"};
-const OHOS::MediaAVCodec::Range DEFAULT_RANGE = {96, 4096};
-const std::vector<int32_t> DEFALUT_PIXFORMAT = {1, 2, 3};
-} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
 CodecAbilitySingleton &CodecAbilitySingleton::GetInstance()
 {
-    static CodecAbilitySingleton instance;
-    return instance;
+    static std::shared_ptr<CodecAbilitySingleton> instance = nullptr;
+    instance = std::make_shared<CodecAbilitySingleton>();
+    return *instance;
 }
 
-CodecAbilitySingleton::CodecAbilitySingleton()
+void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
 {
-    UNITTEST_INFO_LOG("Succeed");
+    CodecAbilitySingletonImpl::RegisterCapabilityArray(capaArray, codecType);
 }
 
-CodecAbilitySingleton::~CodecAbilitySingleton()
+std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
 {
-    UNITTEST_INFO_LOG("Succeed");
+    return CodecAbilitySingletonImpl::GetCapabilityArray();
 }
 
 std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(std::string name)
 {
-    (void)name;
-    CapabilityData data;
-    data.width = DEFAULT_RANGE;
-    data.height = DEFAULT_RANGE;
-    data.pixFormat = DEFALUT_PIXFORMAT;
-    return data;
+    return CodecAbilitySingletonImpl::GetCapabilityByName(name);
+}
+
+std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()
+{
+    return CodecAbilitySingletonImpl::GetNameCodecTypeMap();
+}
+
+std::unordered_map<std::string, std::vector<size_t>> CodecAbilitySingleton::GetMimeCapIdxMap()
+{
+    return CodecAbilitySingletonImpl::GetMimeCapIdxMap();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

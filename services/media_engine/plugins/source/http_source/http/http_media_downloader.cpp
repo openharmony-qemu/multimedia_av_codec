@@ -116,9 +116,13 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
     readTime_ = 0;
-    while (buffer_->GetSize() <= wantReadLength) {
+    uint32_t remain = downloadRequest_->GetFileContentLength() - buffer_->GetMediaOffset();
+    if (remain > 0) {
+        wantReadLength = remain < wantReadLength ? remain : wantReadLength;
+    }
+    while (buffer_->GetSize() < wantReadLength) {
         isEos = downloadRequest_->IsEos();
-        if (isEos) {
+        if (isEos && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
             realReadLength = 0;
             return false;
@@ -137,12 +141,12 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             return false;
         }
         bool isClosed = downloadRequest_->IsClosed();
-        if (isClosed) {
+        if (isClosed && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             realReadLength = 0;
             return false;
         }
-        OSAL::SleepFor(5); // 5
+        Task::SleepInTask(5); // 5
         readTime_ += 5;    // 5
     }
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
@@ -244,6 +248,9 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
+    if (buffer_ != nullptr && buffer_->GetSize() == 0) {
+        Close(true);
+    }
 }
 }
 }

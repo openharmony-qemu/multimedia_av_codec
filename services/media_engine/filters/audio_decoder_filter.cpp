@@ -107,7 +107,7 @@ void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     mediaCodec_ = std::make_shared<MediaCodec>();
 }
 
-Status AudioDecoderFilter::Prepare()
+Status AudioDecoderFilter::DoPrepare()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Prepare.");
     switch (filterType_) {
@@ -120,63 +120,51 @@ Status AudioDecoderFilter::Prepare()
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_AUDIO);
             break;
-        case FilterType::FILTERTYPE_VENC:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                StreamType::STREAMTYPE_ENCODED_VIDEO);
-            break;
-        case FilterType::FILTERTYPE_VDEC:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                StreamType::STREAMTYPE_RAW_VIDEO);
-            break;
         default:
             break;
     }
-    return Filter::Prepare();
+    return Status::OK;
 }
 
-Status AudioDecoderFilter::Start()
+Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Start.");
-    Filter::Start();
     return (Status)mediaCodec_->Start();
 }
 
-Status AudioDecoderFilter::Pause()
+Status AudioDecoderFilter::DoPause()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
-    return Filter::Pause();
+    return Status::OK;
 }
 
-Status AudioDecoderFilter::Resume()
+Status AudioDecoderFilter::DoResume()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Resume.");
     refreshTotalPauseTime_ = true;
-    Filter::Resume();
     return (Status)mediaCodec_->Start();
 }
 
-Status AudioDecoderFilter::Stop()
+Status AudioDecoderFilter::DoStop()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Stop.");
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
-    Filter::Stop();
     return (Status)mediaCodec_->Stop();
 }
 
-Status AudioDecoderFilter::Flush()
+Status AudioDecoderFilter::DoFlush()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Flush.");
     return (Status)mediaCodec_->Flush();
 }
 
-Status AudioDecoderFilter::Release()
+Status AudioDecoderFilter::DoRelease()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Release.");
-    Filter::Release();
     return (Status)mediaCodec_->Release();
 }
 
@@ -240,6 +228,10 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
+    if (isDrmProtected_) {
+        MEDIA_LOG_D("AudioDecoderFilter::isDrmProtected_ true.");
+        mediaCodec_->SetAudioDecryptionConfig(keySessionServiceProxy_, svpFlag_);
+    }
     return Status::OK;
 }
 
@@ -262,6 +254,22 @@ sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
     FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     return inputBufferQueueProducer_;
+}
+
+Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+    bool svp)
+{
+    MEDIA_LOG_I("AudioDecoderFilter SetDecryptionConfig enter.");
+    if (keySessionProxy == nullptr) {
+        MEDIA_LOG_E("SetDecryptionConfig keySessionProxy is nullptr.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    isDrmProtected_ = true;
+    keySessionServiceProxy_ = keySessionProxy;
+    (void)svp;
+    // audio svp: false
+    svpFlag_ = false;
+    return Status::OK;
 }
 
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,

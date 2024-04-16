@@ -61,19 +61,21 @@ LiveStreamDemuxer::~LiveStreamDemuxer()
     taskPtr_ = nullptr;
 }
 
-std::string LiveStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
+void LiveStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {
-        taskPtr_ = std::make_shared<Task>("DataReader");
-        taskPtr_->RegisterJob([this] { ReadLoop(); });
+        taskPtr_ = std::make_shared<Task>("DataReader", "", TaskType::SINGLETON);
+        taskPtr_->RegisterJob([this] {
+            ReadLoop();
+            return 0;
+        });
     }
     MEDIA_LOG_I("Init task start");
     taskPtr_->Start();
 
     MediaAVCodec::AVCodecTrace trace("LiveStreamDemuxer::Init");
     MEDIA_LOG_I("LiveStreamDemuxer::Init called");
-    InitTypeFinder();
     checkRange_ = [this](uint64_t offset, uint32_t size) {
         return !dataPacker_->IsEmpty(); // True if there is some data
     };
@@ -85,9 +87,6 @@ std::string LiveStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
         return dataPacker_->GetRange(size, bufferPtr, offset,
             pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
     };
-    typeFinder_->Init(uri, mediaDataSize, checkRange_, peekRange_);
-    std::string type = typeFinder_->FindMediaType();
-    return type;
 }
 
 Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset)

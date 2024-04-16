@@ -25,6 +25,8 @@
 #include "ffmpeg_utils.h"
 #include "meta/mime_type.h"
 
+#include "plugin/plugin_loader_v2.h"
+
 namespace {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
@@ -32,7 +34,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr int64_t TIMESTAMP_US = 1000;
 constexpr float LATITUDE_MIN = -90.0f;
@@ -87,6 +89,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "amr") {
         auto cap = Capability(MimeType::MEDIA_AMR);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "mp3") {
+        auto cap = Capability(MimeType::MEDIA_MP3);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -155,6 +161,30 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
 
 PLUGIN_DEFINITION(FFmpegMuxer, LicenseType::LGPL, RegisterMuxerPlugins, [] {g_pluginOutputFmt.clear();})
 
+REGISTER_PLUGIN
+{
+    auto extra = pluginLoader->GetExtraInfo();
+    std::string mimeType = extra.find("mimeType")->second;
+    std::shared_ptr<PluginBase> plugin = nullptr;
+
+    MEDIA_LOG_I("RegisterPlugin start mimeType = %{public}s", mimeType.c_str());
+
+    std::string fmtName;
+    if (mimeType == MimeType::MEDIA_MP4) {
+        fmtName = "mp4";
+    } else if (mimeType == MimeType::MEDIA_M4A) {
+        fmtName = "ipod";
+    } else if (mimeType == MimeType::MEDIA_AMR) {
+        fmtName = "amr";
+    } else {
+        MEDIA_LOG_W("Register plugin failed, unknorw mimeType = %{public}s ", mimeType.c_str());
+    }
+
+    MEDIA_LOG_I("RegisterPlugin end fmtName = %{public}s", fmtName.c_str());
+
+    pluginLoader->RegisterPlugin(std::make_shared<FFmpegMuxerPlugin>(fmtName));
+}
+
 void ResetCodecParameter(AVCodecParameters *par)
 {
     av_freep(&par->extradata);
@@ -188,7 +218,7 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
 #endif
     auto pkt = av_packet_alloc();
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
-    outputFormat_ = g_pluginOutputFmt[pluginName_];
+    outputFormat_ = InitAVOutputFormat(pluginName_);
     auto fmt = avformat_alloc_context();
     fmt->pb = nullptr;
     fmt->oformat = outputFormat_.get();
@@ -202,6 +232,32 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
         }
     });
     av_log_set_level(AV_LOG_ERROR);
+}
+
+std::shared_ptr<AVOutputFormat> FFmpegMuxerPlugin::InitAVOutputFormat(const std::string& fmtName)
+{
+    const AVOutputFormat *outputFormat = nullptr;
+    void *ite = nullptr;
+
+    MEDIA_LOG_I("InitAVOutputFormat fmtName = %{public}s", fmtName.c_str());
+    while ((outputFormat = av_muxer_iterate(&ite))) {
+        if (!IsMuxerSupported(outputFormat->name)) {
+            continue;
+        }
+        if (outputFormat->long_name != nullptr) {
+            if (!strncmp(outputFormat->long_name, "raw ", 4)) { // 4
+                continue;
+            }
+        }
+
+        if (strcmp(fmtName.c_str(), outputFormat->name) == 0) {
+            MEDIA_LOG_I("InitAVOutputFormat found outputFormat = %{public}s", outputFormat->name);
+            return std::shared_ptr<AVOutputFormat>(
+            const_cast<AVOutputFormat*>(outputFormat), [](AVOutputFormat *ptr) {});
+        }
+    }
+
+    return nullptr;
 }
 
 FFmpegMuxerPlugin::~FFmpegMuxerPlugin()

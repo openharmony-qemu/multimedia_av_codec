@@ -22,10 +22,10 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-void HlsPlayListDownloader::PlayListUpdateLoop()
+int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 {
-    OSAL::SleepFor(5000); // 5000 how often is playlist updated
     UpdateManifest();
+    return 5000 * 1000;  // 5000 how often is playlist updated
 }
 
 // StateMachine thread: call plugin SetSource -> call Open
@@ -70,7 +70,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
         if (master_ && master_->isSimple_) {
             break;
         }
-        OSAL::SleepFor(1);
+        Task::SleepInTask(1); // 1 ms
     }
     if (master_->bLive_) {
         updateTask_->Start();
@@ -84,7 +84,7 @@ void HlsPlayListDownloader::NotifyListChange()
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
         while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
-            OSAL::SleepFor(10); // 10
+            Task::SleepInTask(10); // 10 ms
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);

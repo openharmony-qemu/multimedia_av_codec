@@ -25,7 +25,6 @@
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
 #include "demuxer/data_packer.h"
-#include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
 #include "osal/task/task.h"
@@ -50,7 +49,7 @@ public:
     explicit BaseStreamDemuxer();
     virtual ~BaseStreamDemuxer();
 
-    virtual std::string Init(std::string uri, uint64_t mediaDataSize) = 0;
+    virtual void Init(std::string uri, uint64_t mediaDataSize) = 0;
     virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
@@ -58,7 +57,6 @@ public:
     virtual Status Stop() = 0;
     virtual Status Flush() = 0;
 
-    void InitTypeFinder();
     void SetSource(const std::shared_ptr<Source>& source);
 
     virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) = 0;
@@ -67,7 +65,6 @@ public:
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
 protected:
-    std::shared_ptr<TypeFinder> typeFinder_;
     std::shared_ptr<Source> source_;
     std::function<bool(uint64_t, size_t)> checkRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;

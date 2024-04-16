@@ -26,6 +26,7 @@
 #include "securec.h"
 #include "meta/mime_type.h"
 #include "plugin/plugin_manager.h"
+#include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
 #include "data_sink_fd.h"
 #include "data_sink_file.h"
@@ -47,6 +48,7 @@ const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
                          MimeType::IMAGE_JPG, MimeType::IMAGE_PNG,
                          MimeType::IMAGE_BMP}},
     {OutputFormat::AMR, {MimeType::AUDIO_AMR_NB, MimeType::AUDIO_AMR_WB}},
+    {OutputFormat::MP3, {MimeType::AUDIO_MPEG, MimeType::IMAGE_JPG}},
 };
 
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
@@ -399,34 +401,20 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         {Plugins::OutputFormat::MPEG_4, MimeType::MEDIA_MP4},
         {Plugins::OutputFormat::M4A, MimeType::MEDIA_M4A},
         {Plugins::OutputFormat::AMR, MimeType::MEDIA_AMR},
+        {Plugins::OutputFormat::MP3, MimeType::MEDIA_MP3},
     };
+
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);
 
-    auto names = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::MUXER);
-    std::string pluginName = "";
-    uint32_t maxProb = 0;
-    for (auto& name : names) {
-        auto info = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::MUXER, name);
-        if (info == nullptr) {
-            continue;
-        }
-        for (const auto& cap : info->outCaps) {
-            if (cap.mime == table.at(format) && info->rank > maxProb) {
-                maxProb = info->rank;
-                pluginName = name;
-                break;
-            }
-        }
-    }
-    MEDIA_LOG_I("The max probability is %{public}d, and the plugin name is %{public}s.", maxProb, pluginName.c_str());
-    if (!pluginName.empty()) {
-        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::MUXER);
-        return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
-    } else {
-        MEDIA_LOG_E("No plugins matching output format - %{public}d", format);
-    }
-    return nullptr;
+    std::string mimeType = table.at(format);
+
+    MEDIA_LOG_D("CreatePlugin mimeType = %{public}s", mimeType.c_str());
+
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePlugin(
+        Plugins::PluginType::MUXER, Plugins::SubPluginType::FFMPEG_MUXER, {{"mimeType", mimeType}});
+
+    return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
 }
 
 bool MediaMuxer::CanAddTrack(const std::string &mimeType)

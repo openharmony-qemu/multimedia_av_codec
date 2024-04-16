@@ -218,6 +218,12 @@ ohos_shared_library("native_media_acodec") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
   innerapi_tags = [ "ndk" ]
   output_extension = "so"
   subsystem_name = "multimedia"

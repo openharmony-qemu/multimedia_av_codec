@@ -31,12 +31,14 @@ public:
     ~DemuxerFilter() override;
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
-    Status Prepare() override;
-    Status Start() override;
-    Status Stop() override;
-    Status Pause() override;
-    Status Resume() override;
-    Status Flush() override;
+    Status DoPrepare() override;
+    Status PrepareFrame(bool renderFirstFrame) override;
+    Status WaitPrepareFrame() override;
+    Status DoStart() override;
+    Status DoStop() override;
+    Status DoPause() override;
+    Status DoResume() override;
+    Status DoFlush() override;
     Status Reset();
     Status PauseForSeek();
     Status ResumeForSeek();
@@ -69,7 +71,6 @@ public:
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
-    bool IsExistVideoTrace();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -85,11 +86,11 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
-    Status PrepareWork();
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
+    std::atomic<bool> isPrepareFramed{false};
 
     std::shared_ptr<Filter> nextFilter_;
     MediaMetaData mediaMetaData_;

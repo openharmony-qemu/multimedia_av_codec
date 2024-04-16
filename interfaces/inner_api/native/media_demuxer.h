@@ -25,7 +25,6 @@
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
 #include "demuxer/data_packer.h"
-#include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
 #include "osal/task/autolock.h"
@@ -42,6 +41,11 @@ namespace {
 }
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
+using MediaInfo = OHOS::Media::Plugins::MediaInfo;
+using MimeType = OHOS::Media::Plugins::MimeType;
+using AVBufferFlag = OHOS::Media::Plugins::AVBufferFlag;
+using PluginEventType = OHOS::Media::Plugins::PluginEventType;
+
 class BaseStreamDemuxer;
 class DataPacker;
 class TypeFinder;
@@ -64,11 +68,13 @@ public:
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status Reset();
+    Status PrepareFrame(bool renderFirstFrame);
     Status Start();
     Status Stop();
     Status Pause();
     Status Resume();
     Status Flush();
+    Status PauseAsync();
 
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
@@ -84,7 +90,7 @@ public:
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
-    bool IsExistVideoTrace();
+    void SetPlayerId(std::string playerId);
 private:
     class DataSourceImpl;
 
@@ -97,11 +103,9 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    bool CreatePlugin(std::string pluginName);
-    bool InitPlugin(std::string pluginName);
+    void InitPlugin(const Plugins::SubPluginType& subPluginType);
 
     void ReportIsLiveStreamEvent();
-    void MediaTypeFound(std::string pluginName);
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
@@ -132,7 +136,7 @@ private:
     std::shared_ptr<Source> source_;
     MediaMetaData mediaMetaData_;
 
-    void ReadLoop(uint32_t trackId);
+    int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
@@ -161,6 +165,12 @@ private:
 
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
+    std::string playerId_;
+
+    Mutex firstFrameMutex_{};
+    ConditionVariable firstFrameCond_;
+    uint64_t firstFrameCount_ = 0;
+    bool doPrepareFrame_{false};
 };
 } // namespace Media
 } // namespace OHOS

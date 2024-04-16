@@ -15,13 +15,14 @@
 #include "audio_lbvc_decoder_plugin.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_log.h"
+#include "plugin/plugin_loader_v2.h"
 
 namespace {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Lbvc;
 using namespace Hdi;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioLbvcDecoderPlugin"};
 const std::string LBVC_DECODER_COMPONENT_NAME = "OMX.audio.decoder.lbvc";
@@ -61,6 +62,11 @@ void UnRegisterAudioDecoderPlugin() {}
 
 PLUGIN_DEFINITION(LbvcAudioDecoder, LicenseType::VENDOR, RegisterAudioDecoderPlugins,
     UnRegisterAudioDecoderPlugin);
+
+REGISTER_PLUGIN
+{
+    pluginLoader->RegisterPlugin(std::make_shared<AudioLbvcDecoderPlugin>("Lbvc_audio_decoder"));
+}
 } // namespace
 
 namespace OHOS {

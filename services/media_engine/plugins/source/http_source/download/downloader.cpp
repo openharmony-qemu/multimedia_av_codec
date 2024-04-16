@@ -137,7 +137,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     size_t times = 0;
     while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
-        OSAL::SleepFor(SLEEP_TIME);
+        Task::SleepInTask(SLEEP_TIME);
         times++;
     }
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times);
@@ -186,8 +186,8 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
     client_->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
-    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
-    task_->RegisterJob([this] { HttpDownloadLoop(); });
+    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"), "", TaskType::SINGLETON);
+    task_->RegisterJob([this] { return HttpDownloadLoop(); });
 }
 
 Downloader::~Downloader()
@@ -343,14 +343,14 @@ bool Downloader::BeginDownload()
     return true;
 }
 
-void Downloader::HttpDownloadLoop()
+int64_t Downloader::HttpDownloadLoop()
 {
     AutoLock lock(operatorMutex_);
     if (shouldStartNextRequest) {
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
         if (!tempRequest) {
             MEDIA_LOG_W("HttpDownloadLoop tempRequest is null.");
-            return;
+            return 0;
         }
         currentRequest_ = tempRequest;
         BeginDownload();
@@ -359,7 +359,7 @@ void Downloader::HttpDownloadLoop()
     if (currentRequest_ == nullptr) {
         MEDIA_LOG_I("currentRequest is null");
         task_->PauseAsync();
-        return;
+        return -1;
     }
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
         + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
@@ -384,6 +384,7 @@ void Downloader::HttpDownloadLoop()
         std::shared_ptr<Downloader> unused;
         currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
     }
+    return 0;
 }
 
 void Downloader::HandleRetOK()

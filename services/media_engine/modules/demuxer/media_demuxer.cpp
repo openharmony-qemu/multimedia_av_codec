@@ -37,14 +37,15 @@
 #include "source/source.h"
 #include "live_stream_demuxer.h"
 #include "vod_stream_demuxer.h"
+#include "media_core.h"
 
 namespace OHOS {
 namespace Media {
-static const uint32_t REQUEST_BUFFER_TIMEOUT = 50; // Retry if the time of requesting buffer overtimes 50ms.
-static const int32_t MSERR_EXT_IO = 5400103;
+static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
-static const uint32_t RETRY_FRAME_TIME = 10; // Retry if no buffer ready 10ms.
+static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -157,7 +158,7 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
     drmCallback_ = callback;
     bool isExisted = IsLocalDrmInfosExisted();
     if (isExisted) {
-        MEDIA_LOG_D("Already received drminfo and report!");
+        MEDIA_LOG_D("SetDrmCallback Already received drminfo and report!");
         ReportDrmInfos(localDrmInfos_);
     }
 }
@@ -165,6 +166,11 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
 void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     eventReceiver_ = receiver;
+}
+
+void MediaDemuxer::SetPlayerId(std::string playerId)
+{
+    playerId_ = playerId;
 }
 
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
@@ -230,16 +236,16 @@ Status MediaDemuxer::ProcessDrmInfos()
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     Status ret = plugin_->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
-        MEDIA_LOG_D("demuxer filter get drminfo success");
+        MEDIA_LOG_D("MediaDemuxer get drminfo success");
         bool isUpdated = IsDrmInfosUpdate(drmInfo);
         if (isUpdated) {
             return ReportDrmInfos(drmInfo);
         } else {
-            MEDIA_LOG_D("demuxer filter received drminfo but not update");
+            MEDIA_LOG_D("MediaDemuxer received drminfo but not update");
         }
     } else {
         if (ret != Status::OK) {
-            MEDIA_LOG_D("demuxer filter get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+            MEDIA_LOG_D("MediaDemuxer get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
         }
     }
     return Status::OK;
@@ -294,8 +300,14 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         streamDemuxer_ = std::make_shared<LiveStreamDemuxer>();
     }
     streamDemuxer_->SetSource(source_);
-    std::string type = streamDemuxer_->Init(uri_, mediaDataSize_);
-    MediaTypeFound(std::move(type));
+    streamDemuxer_->Init(uri_, mediaDataSize_);
+
+    InitPlugin(Plugins::SubPluginType::FFMPEG_DEMUXER);
+
+    if (source_->IsSeekToTimeSupported()) {
+        ret = source_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo 0 failed before get first video frame");
+    }
 
     MediaInfo mediaInfo;
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -439,11 +451,6 @@ std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
     return meta;
 }
 
-bool MediaDemuxer::IsExistVideoTrace()
-{
-    return videoTrackId_ != TRACK_ID_DUMMY;
-}
-
 Status MediaDemuxer::Flush()
 {
     MEDIA_LOG_I("Flush enter.");
@@ -524,6 +531,19 @@ Status MediaDemuxer::PauseAllTask()
         }
     }
 
+    return Status::OK;
+}
+
+Status MediaDemuxer::PauseAsync()
+{
+    MEDIA_LOG_I("PauseAsync enter.");
+    source_->SetReadBlockingFlag(true);
+
+    for (auto &iter : taskMap_) {
+        if (iter.second != nullptr) {
+            iter.second->PauseAsync();
+        }
+    }
     return Status::OK;
 }
 
@@ -650,51 +670,37 @@ Status MediaDemuxer::Stop()
     return plugin_->Stop();
 }
 
-bool MediaDemuxer::CreatePlugin(std::string pluginName)
+void MediaDemuxer::InitPlugin(const Plugins::SubPluginType& subPluginType)
 {
-    if (plugin_) {
-        plugin_->Deinit();
-    }
-    auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::DEMUXER);
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePlugin(Plugins::PluginType::DEMUXER, subPluginType);
     plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(plugin);
     if (!plugin_ || plugin_->Init() != Status::OK) {
-        MEDIA_LOG_E("CreatePlugin " PUBLIC_LOG_S " failed.", pluginName.c_str());
-        return false;
+        MEDIA_LOG_E("CreatePlugin failed.");
+        return;
     }
-    plugin_->SetCallback(this);
-    pluginName_.swap(pluginName);
-    return true;
-}
 
-bool MediaDemuxer::InitPlugin(std::string pluginName)
-{
-    if (pluginName.empty()) {
-        return false;
-    }
-    if (pluginName_ != pluginName) {
-        FALSE_RETURN_V(CreatePlugin(std::move(pluginName)), false);
-    } else {
-        if (plugin_->Reset() != Status::OK) {
-            FALSE_RETURN_V(CreatePlugin(std::move(pluginName)), false);
-        }
-    }
-    MEDIA_LOG_I("InitPlugin, " PUBLIC_LOG_S " used.", pluginName_.c_str());
+    plugin_->SetCallback(this);
     streamDemuxer_->SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     Status st = plugin_->SetDataSource(dataSource_);
-    return st == Status::OK;
-}
-
-void MediaDemuxer::MediaTypeFound(std::string pluginName)
-{
-    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::MediaTypeFound");
-    if (!InitPlugin(std::move(pluginName))) {
-        MEDIA_LOG_E("MediaTypeFound init plugin error.");
-    }
+    MEDIA_LOG_I("InitPlugin, result status = %{public}d used.", (st == Status::OK ? 0 : 1));
 }
 
 bool MediaDemuxer::HasVideo()
 {
     return videoTrackId_ != TRACK_ID_DUMMY;
+}
+
+Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    doPrepareFrame_ = true;
+    Start();
+    AutoLock lock(firstFrameMutex_);
+    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+         return firstFrameCount_ == taskMap_.size();
+    });
+    doPrepareFrame_ = false;
+    return Pause();
 }
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
@@ -715,6 +721,7 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
         std::string mimeType;
         std::string trackType;
+        std::unique_ptr<Task> tempTask;
         if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0) {
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime_ = mimeType;
@@ -722,16 +729,16 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             if (!trackMeta.GetData(Tag::MEDIA_START_TIME, videoStartTime_)) {
                 MEDIA_LOG_W("Get media start time failed");
             }
-            trackType = "V";
+            tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             audioTrackId_ = index;
-            trackType = "A";
+            tempTask = std::make_unique<Task>("DemuxerLoopA", playerId_, TaskType::AUDIO);
         }
-        std::string threadReadName = std::string("DemuxerLoop") + trackType.c_str();
-        std::unique_ptr<Task> tempTask = std::make_unique<Task>(threadReadName);
-        taskMap_[index] = std::move(tempTask);
-        taskMap_[index]->RegisterJob([this, index] { ReadLoop(index); });
+        if (tempTask != nullptr) {
+            taskMap_[index] = std::move(tempTask);
+            taskMap_[index]->RegisterJob([this, index] { return ReadLoop(index); });
+        }
     }
 }
 
@@ -753,13 +760,16 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     avBufferConfig.capacity = static_cast<int32_t>(size);
     Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
-    FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
-        PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+    if (ret != Status::OK) {
+        MEDIA_LOG_D("Get buffer failed due to get buffer from bufferQueue failed, user queue: "
+            PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+    }
     return ret == Status::OK;
 }
 
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
     MEDIA_LOG_D("CopyFrameToUserQueue enter, copy frame for track: " PUBLIC_LOG_U32, trackId);
     int32_t size = 0;
     Status ret = plugin_->GetNextSampleSize(trackId, size);
@@ -767,8 +777,9 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
-    FALSE_RETURN_V_MSG_E(GetBufferFromUserQueue(trackId, size), Status::ERROR_INVALID_PARAMETER,
-        "Get buffer from queue failed, trackId: " PUBLIC_LOG_U32, trackId);
+    if (!GetBufferFromUserQueue(trackId, size)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
 
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
@@ -820,21 +831,28 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     return ret;
 }
 
-void MediaDemuxer::ReadLoop(uint32_t trackId)
+int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
     if (streamDemuxer_->GetIsIgnoreParse()) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
-        OSAL::SleepFor(RETRY_FRAME_TIME); // sleep 10ms to avoid useless reading
+        return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
         if (ret == Status::ERROR_UNKNOWN) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
             } else {
                 MEDIA_LOG_D("OnEvent eventReceiver_ null.");
             }
         }
+        if (ret == Status::OK && doPrepareFrame_) {
+            AutoLock lock(firstFrameMutex_);
+            firstFrameCount_++;
+            firstFrameCond_.NotifyAll();
+            taskMap_[trackId]->Pause();
+        }
+        return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
     }
 }
 
@@ -899,6 +917,10 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
+    if (eventReceiver_ == nullptr) {
+        MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
+        return;
+    }
     switch (event.type) {
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
             MEDIA_LOG_D("OnEvent source drmInfo update");
@@ -907,40 +929,29 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_D("OnEvent source http error");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_IO_ERROR});
             break;
         }
         case PluginEventType::BUFFERING_END: {
             MEDIA_LOG_D("OnEvent pause");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
             break;
         }
         case PluginEventType::BUFFERING_START: {
             MEDIA_LOG_D("OnEvent start");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
         case PluginEventType::VIDEO_SIZE_CHANGE: {
             MEDIA_LOG_D("OnEvent video size change");
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
-                    AnyCast<std::pair<int32_t, int32_t>>(event.param)});
-            } else {
-                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
-            }
+            AutoLock lock(mapMetaMutex_);
+            mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
+                AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
+            mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
+                AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
+                AnyCast<std::pair<int32_t, int32_t>>(event.param)});
             break;
         }
         default:

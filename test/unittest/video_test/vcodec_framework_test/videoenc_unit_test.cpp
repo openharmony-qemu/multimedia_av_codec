@@ -46,7 +46,7 @@ void MultiThreadCreateVEnc()
     std::shared_ptr<VideoEncSample> videoEnc = std::make_shared<VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc);
 
-    EXPECT_LE(g_vencCount.load(), 16); // 16: max instances supported
+    EXPECT_LE(g_vencCount.load(), 64); // 64: max instances supported
     if (videoEnc->CreateVideoEncMockByName(g_vencName)) {
         g_vencCount++;
         cout << "create successed, num:" << g_vencCount.load() << endl;

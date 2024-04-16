@@ -15,6 +15,7 @@
 #ifndef AVCODEC_AUDIO_CODEC_IMPL_H
 #define AVCODEC_AUDIO_CODEC_IMPL_H
 
+#include <queue>
 #include "avcodec_audio_codec.h"
 #include "nocopyable.h"
 #include "task_thread.h"
@@ -25,6 +26,7 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "buffer/avbuffer_queue_producer.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -41,6 +43,8 @@ public:
     int32_t Reset();
     int32_t Release();
     int32_t QueueInputBuffer(uint32_t index);
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
     int32_t GetOutputFormat(Format &format);
     int32_t ReleaseOutputBuffer(uint32_t index);
     int32_t SetParameter(const Format &format);
@@ -55,6 +59,20 @@ private:
     void ClearCache();
     void StopTask();
     void PauseTask();
+
+private:
+    class AVCodecInnerCallback : public MediaCodecCallback {
+    public:
+        explicit AVCodecInnerCallback(AVCodecAudioCodecImpl *impl);
+        ~AVCodecInnerCallback() = default;
+        void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
+        void OnOutputFormatChanged(const Format &format) override;
+        void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+        void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
+    private:
+        AVCodecAudioCodecImpl *impl_;
+    };
 
 private:
     std::atomic<bool> isRunning_;
@@ -72,6 +90,8 @@ private:
     std::atomic<int32_t> bufferConsumerAvailableCount_ = 0;
     std::atomic<int32_t> indexInput_ = 0;
     std::atomic<int32_t> indexOutput_ = 0;
+    uint32_t inputBufferSize_ = 0;
+    std::queue<std::shared_ptr<AVBuffer>> inputIndexQueue;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inputBufferObjMap_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferObjMap_;
     sptr<Media::AVBufferQueueProducer> mediaCodecProducer_;

@@ -26,6 +26,7 @@ namespace MediaAVCodec {
 class HCodecLoader {
 public:
     static std::shared_ptr<CodecBase> CreateByName(const std::string &name);
+    static int32_t GetCapabilityList(std::vector<CapabilityData> &caps);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

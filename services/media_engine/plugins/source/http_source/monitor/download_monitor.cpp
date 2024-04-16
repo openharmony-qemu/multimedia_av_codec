@@ -32,12 +32,12 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
-    task_->RegisterJob([this] { HttpMonitorLoop(); });
+    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"), "", TaskType::SINGLETON);
+    task_->RegisterJob([this] { return HttpMonitorLoop(); });
     task_->Start();
 }
 
-void DownloadMonitor::HttpMonitorLoop()
+int64_t DownloadMonitor::HttpMonitorLoop()
 {
     RetryRequest task;
     {
@@ -50,7 +50,7 @@ void DownloadMonitor::HttpMonitorLoop()
     if (task.request && task.function) {
         task.function();
     }
-    OSAL::SleepFor(50); // 50
+    return 50 * 1000; // retry after 50ms
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -167,6 +167,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
                 MEDIA_LOG_I("Send http server error, code " PUBLIC_LOG_D32, serverError);
                 downloader_->SetDownloadErrorState();
             }
+            request->Close();
             return false;
         }
         return true;

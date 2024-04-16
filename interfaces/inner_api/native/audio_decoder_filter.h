@@ -20,6 +20,7 @@
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace Media {
@@ -32,19 +33,19 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
 
-    Status Prepare() override;
+    Status DoPrepare() override;
 
-    Status Start() override;
+    Status DoStart() override;
 
-    Status Pause() override;
+    Status DoPause() override;
 
-    Status Resume() override;
+    Status DoResume() override;
 
-    Status Stop() override;
+    Status DoStop() override;
 
-    Status Flush() override;
+    Status DoFlush() override;
 
-    Status Release() override;
+    Status DoRelease() override;
 
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
 
@@ -65,6 +66,9 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
+
+    Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+        bool svp);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -90,6 +94,10 @@ private:
 
     std::shared_ptr<MediaCodec> mediaCodec_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+
+    bool isDrmProtected_ = false;
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+    bool svpFlag_ = false;
 
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{HST_TIME_NONE};

@@ -29,9 +29,19 @@
 #include "plugin/plugin_event.h"
 #include "plugin/codec_plugin.h"
 #include "osal/task/mutex.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "foundation/multimedia/av_codec/services/drm_decryptor/codec_drm_decrypt.h"
 
 namespace OHOS {
 namespace Media {
+
+template <typename T>
+inline auto __attribute__((visibility("default"))) GetEnumUnderlyingValue(T const value)->
+    typename std::underlying_type<T>::type
+    {
+        return static_cast<typename std::underlying_type<T>::type>(value);
+    }
+
 enum class CodecState : int32_t {
     UNINITIALIZED,
     INITIALIZED,
@@ -65,9 +75,18 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
+class AudioBaseCodecCallback {
+public:
+    virtual ~AudioBaseCodecCallback() = default;
+
+    virtual void OnError(CodecErrorType errorType, int32_t errorCode) = 0;
+
+    virtual void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+};
+
 class MediaCodec : public Plugins::DataCallback {
 public:
-    MediaCodec() = default;
+    MediaCodec();
 
     int32_t Init(const std::string &mime, bool isEncoder);
 
@@ -78,6 +97,8 @@ public:
     int32_t SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
 
     int32_t SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback);
+
+    int32_t SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallback> &codecCallback);
 
     int32_t SetOutputSurface(sptr<Surface> surface);
 
@@ -105,10 +126,23 @@ public:
 
     void ProcessInputBuffer();
 
+    int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
+
 private:
+    static const std::unordered_map<std::string, Plugins::SubPluginType> CODEC_NAME_TO_PLUGIN_MAP;
+
+    static const std::unordered_map<std::string, Plugins::SubPluginType> DECODER_MIME_TO_PLUGIN_MAP;
+
+    static const std::unordered_map<std::string, Plugins::SubPluginType> ENCODER_MIME_TO_PLUGIN_MAP;
+
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
-    std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
+    std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType,
+        bool isEncoder);
     Status AttachBufffer();
+    Status AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::shared_ptr<AVBuffer> &drmOutbuf,
+        uint32_t size);
+    Status DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer);
     Status HandleOutputBuffer(uint32_t eosStatus);
 
     int32_t PrepareInputBufferQueue();
@@ -132,13 +166,15 @@ private:
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
     std::shared_ptr<CodecCallback> codecCallback_;
+    std::shared_ptr<AudioBaseCodecCallback> mediaCodecCallback_;
     AVBufferConfig outputBufferConfig_;
-    bool isEncoder_ = false;
-    bool isSurfaceMode_ = false;
-    bool isBufferMode_ = false;
-    int32_t outputBufferCapacity_ = 0;
+    bool isEncoder_;
+    bool isSurfaceMode_;
+    bool isBufferMode_;
+    int32_t outputBufferCapacity_;
 
-    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
+    std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
+    std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };
 } // namespace Media

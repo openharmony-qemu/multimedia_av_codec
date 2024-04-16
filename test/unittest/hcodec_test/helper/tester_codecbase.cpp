@@ -187,7 +187,9 @@ bool TesterCodecBase::ConfigureEncoder()
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, 1);
         opt_.enableInputCb = true;
     }
-
+    if (!opt_.perFrameParamsMap.empty()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, opt_.ltrFrameCount);
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {
@@ -234,6 +236,11 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
     if (param.qpRange.has_value()) {
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.qpRange->qpMin));
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.qpRange->qpMax));
+    }
+    if (param.ltrParam.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, param.ltrParam->markAsLTR);
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, param.ltrParam->useLTR);
+        meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, param.ltrParam->useLTRPoc);
     }
     return true;
 }

@@ -45,6 +45,10 @@ void HeapMemoryThread::HeapMemoryLoop() const
     while (!isStopLoop_) {
         uint8_t *memory = new uint8_t[sizeof(OH_AVMemory)];
         uint8_t *buffer = new uint8_t[sizeof(OH_AVBuffer)];
+        uint8_t *format = new uint8_t[sizeof(OH_AVFormat)];
+        memset_s(memory, sizeof(OH_AVMemory), 0, sizeof(OH_AVMemory));
+        memset_s(buffer, sizeof(OH_AVBuffer), 0, sizeof(OH_AVBuffer));
+        memset_s(format, sizeof(OH_AVFormat), 0, sizeof(OH_AVFormat));
         while (memoryList.size() >= MAX_HEAPNUM) {
             uint8_t *memoryFront = memoryList.front();
             delete memoryFront;
@@ -52,6 +56,7 @@ void HeapMemoryThread::HeapMemoryLoop() const
         }
         memoryList.push(memory);
         memoryList.push(buffer);
+        memoryList.push(format);
     }
     while (!memoryList.empty()) {
         uint8_t *memoryFront = memoryList.front();

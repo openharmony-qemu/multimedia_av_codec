@@ -44,6 +44,7 @@ public:
     VideoEncSample();
     ~VideoEncSample();
     bool Create();
+    bool CreateByMime();
 
     int32_t SetCallback(OH_AVCodecAsyncCallback callback, std::shared_ptr<VideoEncSignal> &signal);
     int32_t RegisterCallback(OH_AVCodecCallback callback, std::shared_ptr<VideoEncSignal> &signal);

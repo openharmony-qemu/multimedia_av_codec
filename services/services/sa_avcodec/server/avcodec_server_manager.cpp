@@ -50,7 +50,6 @@ const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::st
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr uint32_t SERVER_MAX_NUMBER = 16;
 AVCodecServerManager& AVCodecServerManager::GetInstance()
 {
     static AVCodecServerManager instance;
@@ -171,10 +170,6 @@ int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject
 #ifdef SUPPORT_CODECLIST
 int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &object)
 {
-    CHECK_AND_RETURN_RET_LOG(codecStubMap_.size() < SERVER_MAX_NUMBER, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,
-        "The number of codeclist services(%{public}zu) has reached the upper limit."
-        "Please release the applied resources.", codecListStubMap_.size());
-
     sptr<CodecListServiceStub> stub = CodecListServiceStub::Create();
     CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED, "Failed to create AVCodecListServiceStub");
     object = stub->AsObject();
@@ -189,10 +184,6 @@ int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &obj
 #ifdef SUPPORT_CODEC
 int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 {
-    CHECK_AND_RETURN_RET_LOG(codecStubMap_.size() < SERVER_MAX_NUMBER, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED,
-        "The number of codec services(%{public}zu) has reached the upper limit."
-        "Please release the applied resources.", codecStubMap_.size());
-
     sptr<CodecServiceStub> stub = CodecServiceStub::Create();
     CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED, "Failed to create CodecServiceStub");
 
