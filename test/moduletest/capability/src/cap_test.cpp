@@ -27,9 +27,6 @@ OH_AVCodec *venc_ = NULL;
 OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
 constexpr uint32_t CODEC_NAME_SIZE = 128;
-// constexpr uint32_t DEFAULT_BITRATE = 1000000;
-// constexpr double DEFAULT_FRAME_RATE = 30.0;
-// constexpr uint32_t MAX_PROFILE_NUM = 3;
 char g_codecName[CODEC_NAME_SIZE] = {};
 char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
 OH_AVFormat *format;
@@ -92,8 +89,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0010, TestSize.Level2)
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, static_cast<OH_AVCapabilityFeature>(4)));
-   // ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY));
-    
+    ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY));
 }
 
 /**
