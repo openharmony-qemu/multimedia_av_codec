@@ -272,7 +272,8 @@ std::vector<std::string> CodecListCore::FindCodecNameArray(const std::string &mi
     std::vector<CapabilityData> capabilityArray = codecAbility.GetCapabilityArray();
     std::vector<std::string> nameArray;
     auto iter = mimeCapIdxMap.find(mime);
-
+    CHECK_AND_RETURN_RET_LOG(iter != mimeCapIdxMap.end(), nameArray, "Can not find input mime type, %{public}s.",
+                             mime.c_str());
     AVCodecType codecType = AVCODEC_TYPE_NONE;
     bool isVideo = mime.find("video") != std::string::npos;
     if (isVideo) {
