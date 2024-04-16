@@ -130,6 +130,7 @@ private:
     ConditionVariable firstFrameCond_;
     std::atomic<bool> doPrepareFrame_{false};
     std::atomic<bool> firstFrameNoRender_{false};
+    std::atomic<bool> isNeedStartDecoder_{true};
     bool renderFirstFrame_{false};
 };
 } // namespace Pipeline

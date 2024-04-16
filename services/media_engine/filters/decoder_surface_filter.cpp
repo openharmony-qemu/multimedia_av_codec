@@ -219,7 +219,11 @@ Status DecoderSurfaceFilter::PrepareFrame(bool renderFirstFrame)
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
-    return videoDecoder_->Start();
+    auto ret = videoDecoder_->Start();
+    if (ret == Status::OK) {
+        isNeedStartDecoder_ = false;
+    }
+    return ret;
 }
 
 Status DecoderSurfaceFilter::WaitPrepareFrame()
@@ -246,6 +250,10 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
+    if (!isNeedStartDecoder_.load()) {
+        MEDIA_LOG_I("Already start videoDecoder and enter.");
+        return Status::OK;
+    }
     return videoDecoder_->Start();
 }
 
