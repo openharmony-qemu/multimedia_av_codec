@@ -252,6 +252,8 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
             AVCS_ERR_INVALID_VAL, "Param invalid, in CQ mode but set bitrate!");
         CHECK_AND_RETURN_RET_LOG(!(qualityExist && bitrateMode != VideoEncodeBitrateMode::CQ),
             AVCS_ERR_INVALID_VAL, "Param invalid, not in CQ mode but set quality!");
+        CHECK_AND_RETURN_RET_LOG(!(!qualityExist && bitrateMode == VideoEncodeBitrateMode::CQ),
+            AVCS_ERR_INVALID_VAL, "Param invalid, in CQ mode but not set quality!");
     } else {
         if (qualityExist && IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
             bitrateMode = VideoEncodeBitrateMode::CQ;
