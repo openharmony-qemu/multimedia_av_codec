@@ -45,7 +45,7 @@ void MultiThreadCreateVDec()
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec);
 
-    EXPECT_LE(g_vdecCount.load(), 16); // 16: max instances supported
+    EXPECT_LE(g_vdecCount.load(), 64); // 64: max instances supported
     if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
         g_vdecCount++;
         cout << "create successed, num:" << g_vdecCount.load() << endl;

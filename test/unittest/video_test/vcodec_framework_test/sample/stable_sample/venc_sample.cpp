@@ -87,7 +87,19 @@ bool VideoEncSample::Create()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(name != nullptr, false, "OH_AVCapability_GetName failed");
 
     codec_ = OH_VideoEncoder_CreateByName(name);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(name != nullptr, false, "OH_VideoEncoder_CreateByName failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoEncoder_CreateByName failed");
+    return true;
+}
+
+bool VideoEncSample::CreateByMime()
+{
+    TITLE_LOG;
+
+    inPath_ = "/data/test/media/" + inPath_;
+    outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".h264";
+
+    codec_ = OH_VideoEncoder_CreateByMime(mime_.c_str());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoEncoder_CreateByMime failed");
     return true;
 }
 
