@@ -57,6 +57,7 @@ group("vcodec_framework_test") {
 
 #################################################################################################################videodec
 ohos_unittest("videodec_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
     "./",
@@ -100,6 +101,7 @@ ohos_unittest("videodec_capi_unit_test") {
 
 #################################################################################################################videodec
 ohos_unittest("videodec_inner_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
     "./",
@@ -141,6 +143,7 @@ ohos_unittest("videodec_inner_unit_test") {
 
 #################################################################################################################videoenc
 ohos_unittest("videoenc_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
     "./",
@@ -186,6 +189,7 @@ ohos_unittest("videoenc_capi_unit_test") {
 
 #################################################################################################################videoenc
 ohos_unittest("videoenc_inner_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
     "./",
@@ -229,6 +233,7 @@ ohos_unittest("videoenc_inner_unit_test") {
 
 #################################################################################################################videoenc
 ohos_unittest("videodec_stable_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
     "./",
@@ -264,6 +269,7 @@ ohos_unittest("videodec_stable_unit_test") {
 
 #################################################################################################################videoenc
 ohos_unittest("videoenc_stable_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = [
     "./",
