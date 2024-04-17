@@ -37,14 +37,15 @@
 #include "source/source.h"
 #include "live_stream_demuxer.h"
 #include "vod_stream_demuxer.h"
+#include "media_core.h"
 
 namespace OHOS {
 namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
-static const int32_t MSERR_EXT_IO = 5400103;
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -689,6 +690,19 @@ bool MediaDemuxer::HasVideo()
     return videoTrackId_ != TRACK_ID_DUMMY;
 }
 
+Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    doPrepareFrame_ = true;
+    Start();
+    AutoLock lock(firstFrameMutex_);
+    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+         return firstFrameCount_ == taskMap_.size();
+    });
+    doPrepareFrame_ = false;
+    return Pause();
+}
+
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMetaMutex_);
@@ -827,10 +841,16 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
         if (ret == Status::ERROR_UNKNOWN) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
             } else {
                 MEDIA_LOG_D("OnEvent eventReceiver_ null.");
             }
+        }
+        if (ret == Status::OK && doPrepareFrame_) {
+            AutoLock lock(firstFrameMutex_);
+            firstFrameCount_++;
+            firstFrameCond_.NotifyAll();
+            taskMap_[trackId]->Pause();
         }
         return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
     }
@@ -910,7 +930,7 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
             MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_IO_ERROR});
             break;
         }
         case PluginEventType::BUFFERING_END: {

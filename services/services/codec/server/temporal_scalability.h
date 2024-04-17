@@ -32,7 +32,7 @@ class TemporalScalability {
 public:
     TemporalScalability();
     virtual ~TemporalScalability();
-    void ConfigFrameGop(Format &format);
+    void ValidateTemporalGopParam(Format &format);
     void StoreAVBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer);
     uint32_t GetFirstBufferIndex();
     void SetBlockQueueActive();

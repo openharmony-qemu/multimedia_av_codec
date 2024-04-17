@@ -165,11 +165,11 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                              codecName_.c_str());
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     int32_t ret = codecBase_->SetCallback(callback);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase SetCallback failed");
 
     std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(videoCallback);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase SetCallback failed");
 
     StatusChanged(INITIALIZED);
     return AVCS_ERR_OK;
@@ -208,7 +208,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
     switch (scenario_) {
         case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
             temporalScalability_ = std::make_shared<TemporalScalability>();
-            temporalScalability_->ConfigFrameGop(config);
+            temporalScalability_->ValidateTemporalGopParam(config);
             break;
         default:
             break;

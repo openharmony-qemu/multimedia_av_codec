@@ -44,7 +44,7 @@ constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 33;
-constexpr int32_t VIDEO_INSTANCE_SIZE = 16;
+constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
@@ -118,9 +118,9 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
     }
 }
 
-void FCodec::ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE)
+void FCodec::ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
 {
-    CHECK_AND_RETURN_LOG(FORMAT_TYPE == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
+    CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
 
     int32_t val = 0;
     CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
@@ -464,9 +464,9 @@ int32_t FCodec::Release()
     return AVCS_ERR_OK;
 }
 
-void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE)
+void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
 {
-    CHECK_AND_RETURN_LOG(FORMAT_TYPE == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
+    CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
     int32_t val = 0;
     CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
     if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
@@ -637,17 +637,17 @@ int32_t FCodec::AllocateBuffers()
     if (surface_ != nullptr && isOutBufSetted_ == false) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_SURFACE_CNT);
     }
-    int32_t InputBufferCnt = 0;
-    int32_t OutputBufferCnt = 0;
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, InputBufferCnt);
-    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, OutputBufferCnt);
-    inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", InputBufferCnt);
-    codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", OutputBufferCnt);
+    int32_t inputBufferCnt = 0;
+    int32_t outputBufferCnt = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCnt);
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
+    inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", inputBufferCnt);
+    codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", outputBufferCnt);
     if (surface_ != nullptr) {
-        renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", OutputBufferCnt);
+        renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
     }
-    if (AllocateInputBuffer(InputBufferCnt, inputBufferSize_) == AVCS_ERR_NO_MEMORY ||
-        AllocateOutputBuffer(OutputBufferCnt, outputBufferSize_) == AVCS_ERR_NO_MEMORY) {
+    if (AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_NO_MEMORY ||
+        AllocateOutputBuffer(outputBufferCnt, outputBufferSize_) == AVCS_ERR_NO_MEMORY) {
         return AVCS_ERR_NO_MEMORY;
     }
     AVCODEC_LOGI("Allocate buffers successful");
