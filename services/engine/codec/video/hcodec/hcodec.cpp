@@ -1073,6 +1073,7 @@ void HCodec::ClearBufferPool(OMX_DIRTYPE portIndex)
         i--;
         EraseBufferFromPool(portIndex, i);
     }
+    OnClearBufferPool(portIndex);
 }
 
 void HCodec::FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info)

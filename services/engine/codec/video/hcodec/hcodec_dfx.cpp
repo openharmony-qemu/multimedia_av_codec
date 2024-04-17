@@ -52,13 +52,15 @@ void HCodec::PrintAllBufferInfo()
 
 void HCodec::PrintAllBufferInfo(bool isInput)
 {
+    auto now = chrono::steady_clock::now();
     std::array<uint32_t, OWNER_CNT> arr;
     arr.fill(0);
     std::stringstream s;
     const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
     for (const BufferInfo& info : pool) {
         arr[info.owner]++;
-        s << info.bufferId << ":" << ToString(info.owner) << ", ";
+        int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
+        s << info.bufferId << ":" << ToString(info.owner) << "(" << holdMs << "), ";
     }
     HLOGI("%s: %u/%u/%u/%u, %s", (isInput ? " in" : "out"),
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
@@ -106,6 +108,7 @@ void HCodec::TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
     if (!debugMode_) {
+        info.lastOwnerChangeTime = chrono::steady_clock::now();
         info.owner = newOwner;
         return;
     }

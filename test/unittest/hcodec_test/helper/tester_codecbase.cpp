@@ -187,7 +187,7 @@ bool TesterCodecBase::ConfigureEncoder()
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, 1);
         opt_.enableInputCb = true;
     }
-    if (!opt_.perFrameParamsMap.empty()) {
+    if (opt_.ltrFrameCount > 0) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, opt_.ltrFrameCount);
     }
     auto begin = std::chrono::steady_clock::now();
