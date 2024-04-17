@@ -66,6 +66,12 @@ public:
         return AVCODEC_ERROR_EXTEND_START;
     }
 
+    virtual int32_t SetCallerInfo(Format &format)
+    {
+        (void)format;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
     virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta)
     {
         (void)meta;
