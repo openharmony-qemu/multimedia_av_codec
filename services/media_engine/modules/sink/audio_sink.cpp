@@ -170,6 +170,7 @@ Status AudioSink::SetVolume(float volume)
     if (volume < 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
+    volume_ = volume;
     return plugin_->SetVolume(volume);
 }
 
@@ -219,6 +220,7 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
 
 void AudioSink::DrainOutputBuffer()
 {
+    std::lock_guard<std::mutex> lock(pluginMutex_);
     Status ret;
     std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
     if (plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr) {
@@ -309,6 +311,7 @@ Status AudioSink::SetSpeed(float speed)
     if (speed < 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
+    speed_ = speed;
     return plugin_->SetSpeed(speed);
 }
 
@@ -318,6 +321,7 @@ Status AudioSink::SetAudioEffectMode(int32_t effectMode)
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
+    effectMode_ = effectMode;
     return plugin_->SetAudioEffectMode(effectMode);
 }
 
@@ -385,6 +389,45 @@ void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 {
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
+}
+
+Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+{
+    MEDIA_LOG_I("AudioSink::GetAudioEffectMode ChangeTrack. ");
+    std::lock_guard<std::mutex> lock(pluginMutex_);
+    Status res = Status::OK;
+
+    if (plugin_) {
+        plugin_->Stop();
+        plugin_->Deinit();
+        plugin_ = nullptr;
+    }
+    plugin_ = CreatePlugin();
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (meta != nullptr) {
+        meta->SetData(Tag::APP_PID, appPid_);
+        meta->SetData(Tag::APP_UID, appUid_);
+    }
+    plugin_->SetEventReceiver(receiver);
+    plugin_->SetParameter(meta);
+    plugin_->Init();
+    plugin_->Prepare();
+    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
+    meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
+    if (volume_ >= 0) {
+        plugin_->SetVolume(volume_);
+    }
+    if (speed_ >= 0) {
+        plugin_->SetSpeed(speed_);
+    }
+    if (effectMode_ >= 0) {
+        plugin_->SetAudioEffectMode(effectMode_);
+    }
+    if (state_ == Pipeline::FilterState::RUNNING) {
+        res = plugin_->Start();
+    }
+
+    return res;
 }
 
 } // namespace MEDIA

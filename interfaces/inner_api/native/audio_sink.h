@@ -15,6 +15,7 @@
 
 #ifndef HISTREAMER_AUDIO_SINK_H
 #define HISTREAMER_AUDIO_SINK_H
+#include <mutex>
 #include "common/status.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
@@ -59,6 +60,7 @@ public:
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
     Status SetIsTransitent(bool isTransitent);
+    Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -92,6 +94,10 @@ private:
     int64_t fixDelay_ {0};
     bool isTransitent_ {false};
     bool isEos_ {false};
+    std::mutex pluginMutex_;
+    float volume_ {-1.0f};
+    float speed_ {-1.0f};
+    int32_t effectMode_ {-1};
 };
 }
 }

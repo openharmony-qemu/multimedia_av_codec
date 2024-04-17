@@ -73,6 +73,8 @@ public:
 
     Status SetIsTransitent(bool isTransitent);
 
+    Status ChangeTrack(std::shared_ptr<Meta>& meta);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;

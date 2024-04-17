@@ -50,6 +50,9 @@ public:
     void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
+    Status StartAudioTask();
+    Status SelectTrack(int32_t trackId);
+
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
     std::shared_ptr<Meta> GetGlobalMetaInfo() const;
 

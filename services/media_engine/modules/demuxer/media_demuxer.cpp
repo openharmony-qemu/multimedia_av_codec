@@ -372,19 +372,51 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
     return plugin_->SelectTrack(trackId);
 }
 
+Status MediaDemuxer::StartAudioTask()
+{
+    MEDIA_LOG_I("StartAudioTask trackId: " PUBLIC_LOG_D32, audioTrackId_);
+    if (!taskMap_[audioTrackId_]->IsTaskRunning()) {
+        taskMap_[audioTrackId_]->Start();
+    }
+    return Status::OK;
+}
+
 Status MediaDemuxer::SelectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select trackId error.");
-    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot select track when use buffer queue.");
-    return InnerSelectTrack(trackId);
+    std::string mimeType;
+    Status ret = Status::OK;
+    if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
+        MEDIA_LOG_I("SelectTrack now: " PUBLIC_LOG_D32 ", to: " PUBLIC_LOG_D32, audioTrackId_, trackId);
+        if (audioTrackId_ != trackId) {
+            if (audioTrackId_ != TRACK_ID_DUMMY) {
+                taskMap_[audioTrackId_]->Stop();
+                ret = UnselectTrack(audioTrackId_);
+                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Unselect track error.");
+                bufferQueueMap_.insert(
+                    std::pair<uint32_t, sptr<AVBufferQueueProducer>>(trackId, bufferQueueMap_[audioTrackId_]));
+                bufferMap_.insert(std::pair<uint32_t, std::shared_ptr<AVBuffer>>(trackId, bufferMap_[audioTrackId_]));
+                bufferQueueMap_.erase(audioTrackId_);
+                bufferMap_.erase(audioTrackId_);
+            }
+            ret = InnerSelectTrack(trackId);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Select track error.");
+            audioTrackId_ = trackId;
+        }
+    } else {
+        FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE,
+            "Cannot select track when use buffer queue.");
+        return InnerSelectTrack(trackId);
+    }
+    return Status::OK;
 }
 
 Status MediaDemuxer::UnselectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot unselect track when use buffer queue.");
+    MEDIA_LOG_I("UnselectTrack trackId: " PUBLIC_LOG_D32, trackId);
     return plugin_->UnselectTrack(trackId);
 }
 
@@ -551,11 +583,10 @@ Status MediaDemuxer::ResumeAllTask()
     MEDIA_LOG_I("ResumeAllTask enter.");
     streamDemuxer_->SetIsIgnoreParse(false);
 
-    auto it = taskMap_.begin();
-    while (it != taskMap_.end()) {
-        if (it->second != nullptr) {
-            it->second->Start();
-        }
+    auto it = bufferQueueMap_.begin();
+    while (it != bufferQueueMap_.end()) {
+        uint32_t trackId = it->first;
+        taskMap_[trackId]->Start();
         it++;
     }
     return Status::OK;
@@ -738,7 +769,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
-            audioTrackId_ = index;
+            if (audioTrackId_ == TRACK_ID_DUMMY) {
+                audioTrackId_ = index;
+            }
             tempTask = std::make_unique<Task>("DemuxerLoopA", playerId_, TaskType::AUDIO);
         }
         if (tempTask != nullptr) {

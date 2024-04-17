@@ -337,6 +337,18 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
+Status DemuxerFilter::StartAudioTask()
+{
+    return demuxer_->StartAudioTask();
+}
+
+Status DemuxerFilter::SelectTrack(int32_t trackId)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SelectTrack");
+    MEDIA_LOG_I("SelectTrack called");
+    return demuxer_->SelectTrack(trackId);
+}
+
 std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
 {
     return demuxer_->GetStreamMetaInfo();
