@@ -16,14 +16,30 @@
 #ifndef CODEC_PARAM_CHECKER_H
 #define CODEC_PARAM_CHECKER_H
 
+#include <optional>
+#include <tuple>
 #include "meta/format.h"
 #include "avcodec_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+enum class CodecScenario : int32_t {
+    CODEC_SCENARIO_ENC_NORMAL = 0,
+    CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
+    CODEC_SCENARIO_DEC_NORMAL = (1 << 31),
+};
+
 class CodecParamChecker {
 public:
-    static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName);
+    static int32_t CheckConfigureValid(Media::Format &format, AVCodecType codecType,
+                                       const std::string &codecName, CodecScenario scenario);
+    static int32_t CheckParameterValid(const Media::Format &format, Media::Format &oldFormat, AVCodecType codecType,
+                                       const std::string &codecName, CodecScenario scenario);
+    static std::optional<CodecScenario> CheckCodecScenario(const Media::Format &format, AVCodecType codecType,
+                                                           const std::string &codecName);
+
+private:
+    static void MergeFormat(const Media::Format &format, Media::Format &oldFormat);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

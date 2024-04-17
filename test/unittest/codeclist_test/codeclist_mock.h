@@ -94,7 +94,7 @@ const std::map<std::string, std::string> CAPABILITY_ENCODER_HARD_NAME = {
 const std::string DEFAULT_AUDIO_MIME = std::string(CodecMimeType::AUDIO_AAC);
 const std::string DEFAULT_VIDEO_MIME = std::string(CodecMimeType::VIDEO_AVC);
 constexpr int32_t MAX_SURPPORT_ACODEC = 16;
-constexpr int32_t MAX_SURPPORT_VCODEC = 16;
+constexpr int32_t MAX_SURPPORT_VCODEC = 64;
 
 constexpr OH_AVRange DEFAULT_BITRATE_RANGE = {8000, 448000};
 constexpr OH_AVRange DEFAULT_QUALITY_RANGE = {0, 0};
@@ -105,7 +105,7 @@ constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT = {96, 2304};
 constexpr OH_AVRange DEFAULT_HEIGHT_RANGE = {96, 4096};
 constexpr OH_AVRange DEFAULT_WIDTH_RANGE = {96, 4096};
 constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_ENC = {144, 2160};
-constexpr OH_AVRange DEFAULT_WIDTH_RANGE_ENC = {176, 3840};
+constexpr OH_AVRange DEFAULT_WIDTH_RANGE_ENC = {176, 4096};
 constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE = {0, 120};
 constexpr OH_AVRange DEFAULT_BITRATE_RANGE_ENC = {280000, 100000000};
 constexpr OH_AVRange DEFAULT_VIDEO_QUALITY_RANGE = {0, 100};

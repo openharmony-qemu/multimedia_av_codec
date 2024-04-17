@@ -208,7 +208,20 @@ bool VideoDecSample::Create()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(name != nullptr, false, "OH_AVCapability_GetName failed");
 
     codec_ = OH_VideoDecoder_CreateByName(name);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(name != nullptr, false, "OH_VideoDecoder_CreateByName failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoDecoder_CreateByName failed");
+    return true;
+}
+
+bool VideoDecSample::CreateByMime()
+{
+    TITLE_LOG;
+
+    isH264Stream_ = inPath_.substr(inPath_.length() - 4, 4) == "h264"; // 4: "h264" string len
+    inPath_ = "/data/test/media/" + inPath_;
+    outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
+
+    codec_ = OH_VideoDecoder_CreateByMime(mime_.c_str());
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, false, "OH_VideoDecoder_CreateByMime failed");
     return true;
 }
 

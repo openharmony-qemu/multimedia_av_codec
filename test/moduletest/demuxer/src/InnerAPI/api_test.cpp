@@ -438,6 +438,8 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0600, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0700, TestSize.Level2)
 {
+    using SeekMode = Media::Plugins::SeekMode;
+
     uint32_t ms = 1000;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);

@@ -46,7 +46,7 @@ void MultiThreadCreateVEnc()
     std::shared_ptr<VideoEncSample> videoEnc = std::make_shared<VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc);
 
-    EXPECT_LE(g_vencCount.load(), 16); // 16: max instances supported
+    EXPECT_LE(g_vencCount.load(), 64); // 64: max instances supported
     if (videoEnc->CreateVideoEncMockByName(g_vencName)) {
         g_vencCount++;
         cout << "create successed, num:" << g_vencCount.load() << endl;
@@ -1300,8 +1300,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_009, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_TemporalScalability_010
- * @tc.desc: set invalid framerate 0.0 and enalbe temporal scalability encode, use default framerate 30.0
- * expect level stream
+ * @tc.desc: set invalid framerate 0.0 and enalbe temporal scalability encode, configure fail
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_010, TestSize.Level1)
@@ -1312,10 +1311,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_010, TestSize.Level1)
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 0.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 2000);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**
@@ -1340,8 +1336,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_011, TestSize.Level1)
 
 /**
  * @tc.name: VideoEncoder_TemporalScalability_012
- * @tc.desc: set i frame interval 0 and enalbe temporal scalability encode, use default i frame interval 2000
- * expect level stream
+ * @tc.desc: set i frame interval 0 and enalbe temporal scalability encode, configure fail
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
@@ -1352,10 +1347,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 60.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**

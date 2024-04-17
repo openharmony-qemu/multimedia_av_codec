@@ -33,19 +33,19 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
 
-    Status Prepare() override;
+    Status DoPrepare() override;
 
-    Status Start() override;
+    Status DoStart() override;
 
-    Status Pause() override;
+    Status DoPause() override;
 
-    Status Resume() override;
+    Status DoResume() override;
 
-    Status Stop() override;
+    Status DoStop() override;
 
-    Status Flush() override;
+    Status DoFlush() override;
 
-    Status Release() override;
+    Status DoRelease() override;
 
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
 

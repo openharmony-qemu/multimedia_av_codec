@@ -90,8 +90,11 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
         }
     }
     if (!releaseBufferTask_) {
-        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
-        releaseBufferTask_->RegisterJob([this] { ReleaseBuffer(); });
+        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder",  "", TaskType::SINGLETON);
+        releaseBufferTask_->RegisterJob([this] {
+            ReleaseBuffer();
+            return 0;
+        });
     }
     return Status::OK;
 }

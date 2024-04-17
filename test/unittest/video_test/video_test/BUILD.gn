@@ -99,6 +99,7 @@ ohos_source_set("video_sample") {
 }
 
 ohos_unittest("video_perf_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/unittest/perf_test"
 
   sources = [ "./test_suilt/video_perf_test_suilt.cpp" ]

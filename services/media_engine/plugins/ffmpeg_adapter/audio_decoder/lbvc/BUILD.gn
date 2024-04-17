@@ -68,12 +68,12 @@ ohos_shared_library("media_plugin_LbvcAudioDecoder") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:libcodec_proxy_2.0",
+    "drivers_interface_codec:libcodec_proxy_3.0",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
 
-  relative_install_dir = "media/media_plugins"
+  relative_install_dir = "media/media_plugins/audio_decoder/lbvc_audio_decoder"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

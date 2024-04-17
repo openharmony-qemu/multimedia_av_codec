@@ -107,7 +107,7 @@ void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     mediaCodec_ = std::make_shared<MediaCodec>();
 }
 
-Status AudioDecoderFilter::Prepare()
+Status AudioDecoderFilter::DoPrepare()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Prepare.");
     switch (filterType_) {
@@ -120,64 +120,51 @@ Status AudioDecoderFilter::Prepare()
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_AUDIO);
             break;
-        case FilterType::FILTERTYPE_VENC:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                StreamType::STREAMTYPE_ENCODED_VIDEO);
-            break;
-        case FilterType::FILTERTYPE_VDEC:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                StreamType::STREAMTYPE_RAW_VIDEO);
-            break;
         default:
             break;
     }
-    return Filter::Prepare();
+    return Status::OK;
 }
 
-Status AudioDecoderFilter::Start()
+Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Start.");
-    auto ret = Filter::Start();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start filter failed.");
     return (Status)mediaCodec_->Start();
 }
 
-Status AudioDecoderFilter::Pause()
+Status AudioDecoderFilter::DoPause()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
-    return Filter::Pause();
+    return Status::OK;
 }
 
-Status AudioDecoderFilter::Resume()
+Status AudioDecoderFilter::DoResume()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Resume.");
     refreshTotalPauseTime_ = true;
-    Filter::Resume();
     return (Status)mediaCodec_->Start();
 }
 
-Status AudioDecoderFilter::Stop()
+Status AudioDecoderFilter::DoStop()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Stop.");
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
-    Filter::Stop();
     return (Status)mediaCodec_->Stop();
 }
 
-Status AudioDecoderFilter::Flush()
+Status AudioDecoderFilter::DoFlush()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Flush.");
     return (Status)mediaCodec_->Flush();
 }
 
-Status AudioDecoderFilter::Release()
+Status AudioDecoderFilter::DoRelease()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Release.");
-    Filter::Release();
     return (Status)mediaCodec_->Release();
 }
 

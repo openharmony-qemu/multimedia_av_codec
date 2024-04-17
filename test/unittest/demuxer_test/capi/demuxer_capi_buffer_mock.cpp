@@ -20,6 +20,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+using SeekMode = Media::Plugins::SeekMode;
+
 int32_t DemuxerCapiMock::Destroy()
 {
     if (demuxer_ != nullptr) {
@@ -81,7 +84,7 @@ int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemor
     return AV_ERR_UNKNOWN;
 }
 
-int32_t DemuxerCapiMock::SeekToTime(int64_t mSeconds, Media::SeekMode mode)
+int32_t DemuxerCapiMock::SeekToTime(int64_t mSeconds, SeekMode mode)
 {
     if (demuxer_ != nullptr) {
         OH_AVSeekMode seekMode = static_cast<OH_AVSeekMode>(mode);

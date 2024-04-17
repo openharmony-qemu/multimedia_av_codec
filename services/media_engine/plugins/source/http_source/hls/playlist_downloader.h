@@ -43,7 +43,7 @@ public:
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
     virtual void ParseManifest(const std::string& location) = 0;
-    virtual void PlayListUpdateLoop() = 0;
+    virtual int64_t PlayListUpdateLoop() = 0;
     virtual void SetPlayListCallback(PlayListChangeCallback* callback) = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;

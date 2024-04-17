@@ -16,6 +16,7 @@
 #ifndef UNITTEST_LOG_H
 #define UNITTEST_LOG_H
 
+#include <cinttypes>
 #include <cstdio>
 #include "securec.h"
 

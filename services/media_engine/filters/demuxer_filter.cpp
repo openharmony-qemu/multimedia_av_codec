@@ -28,6 +28,10 @@ namespace Pipeline {
 namespace {
     const std::string MIME_IMAGE = "image";
 }
+
+using MediaType = OHOS::Media::Plugins::MediaType;
+using MimeType = OHOS::Media::Plugins::MimeType;
+
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
     [](const std::string& name, const FilterType type) {
@@ -115,6 +119,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
     demuxer_->SetDrmCallback(drmCallback);
     demuxer_->SetEventReceiver(receiver);
+    demuxer_->SetPlayerId(playerId_);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -137,7 +142,7 @@ void DemuxerFilter::SetBundleName(const std::string& bundleName)
     }
 }
 
-Status DemuxerFilter::Prepare()
+Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     if (mediaSource_ == nullptr) {
@@ -190,7 +195,24 @@ Status DemuxerFilter::Prepare()
         auto ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
     }
-    return Filter::Prepare();
+    return Status::OK;
+}
+
+Status DemuxerFilter::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    Filter::PrepareFrame(renderFirstFrame);
+    auto ret = demuxer_->PrepareFrame(renderFirstFrame);
+    if (ret == Status::OK) {
+        isPrepareFramed = true;
+    }
+    return ret;
+}
+
+Status DemuxerFilter::WaitPrepareFrame()
+{
+    MEDIA_LOG_I("WaitPrepareFrame enter.");
+    return Filter::WaitPrepareFrame();
 }
 
 Status DemuxerFilter::PrepareBeforeStart()
@@ -203,10 +225,13 @@ Status DemuxerFilter::PrepareBeforeStart()
     isLoopStarted = true;
     auto ret = Filter::Start();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareBeforeStart start filter failed.");
+    if (isPrepareFramed.load()) {
+        return demuxer_->Resume();
+    }
     return demuxer_->Start();
 }
 
-Status DemuxerFilter::Start()
+Status DemuxerFilter::DoStart()
 {
     if (isLoopStarted.load()) {
         MEDIA_LOG_I("Loop is started. Resume only.");
@@ -215,27 +240,24 @@ Status DemuxerFilter::Start()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     MEDIA_LOG_I("Start called.");
     isLoopStarted = true;
-    auto ret = Filter::Start();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Start filter failed.");
+    if (isPrepareFramed.load()) {
+        return demuxer_->Resume();
+    }
     return demuxer_->Start();
 }
 
-Status DemuxerFilter::Stop()
+Status DemuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop called.");
-    demuxer_->Pause();
-    Filter::Stop();
     return demuxer_->Stop();
 }
 
-Status DemuxerFilter::Pause()
+Status DemuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
     MEDIA_LOG_I("Pause called");
-    // demuxer pause first for auido render immediatly
-    demuxer_->Pause();
-    return Filter::Pause();
+    return demuxer_->Pause();
 }
 
 Status DemuxerFilter::PauseForSeek()
@@ -255,11 +277,10 @@ Status DemuxerFilter::PauseForSeek()
     return Status::ERROR_INVALID_OPERATION;
 }
 
-Status DemuxerFilter::Resume()
+Status DemuxerFilter::DoResume()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
     MEDIA_LOG_I("Resume called");
-    Filter::Resume();
     return demuxer_->Resume();
 }
 
@@ -278,11 +299,10 @@ Status DemuxerFilter::ResumeForSeek()
     return demuxer_->Resume();
 }
 
-Status DemuxerFilter::Flush()
+Status DemuxerFilter::DoFlush()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Flush");
     MEDIA_LOG_I("Flush entered");
-    Filter::Flush();
     return demuxer_->Flush();
 }
 

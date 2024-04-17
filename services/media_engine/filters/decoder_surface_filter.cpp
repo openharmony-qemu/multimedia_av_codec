@@ -28,6 +28,8 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+static const uint32_t LOCK_WAIT_TIME = 1000; // Lock wait for 1000ms.
+
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
         return std::make_shared<DecoderSurfaceFilter>(name, FilterType::FILTERTYPE_VDEC);
@@ -110,7 +112,7 @@ public:
     void OnBufferAvailable()
     {
         if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
-            decoderSurfaceFilter->ProcessInputBuffer();
+            decoderSurfaceFilter->HandleInputBuffer();
         } else {
             MEDIA_LOG_I("invalid videoDecoder");
         }
@@ -120,7 +122,7 @@ private:
     std::weak_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 
-DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type)
+DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type, true)
 {
     videoDecoder_ = std::make_shared<VideoDecoderAdapter>();
     videoSink_ = std::make_shared<VideoSink>();
@@ -157,7 +159,7 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
     return ret;
 }
 
-Status DecoderSurfaceFilter::DoInit()
+Status DecoderSurfaceFilter::DoInitAfterLink()
 {
     Status ret;
     // create secure decoder for drm.
@@ -212,10 +214,48 @@ Status DecoderSurfaceFilter::DoPrepare()
     return Status::OK;
 }
 
+Status DecoderSurfaceFilter::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    doPrepareFrame_ = true;
+    renderFirstFrame_ = renderFirstFrame;
+    auto ret = videoDecoder_->Start();
+    if (ret == Status::OK) {
+        isNeedStartDecoder_ = false;
+    }
+    return ret;
+}
+
+Status DecoderSurfaceFilter::WaitPrepareFrame()
+{
+    MEDIA_LOG_I("WaitPrepareFrame enter.");
+    AutoLock lock(firstFrameMutex_);
+    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+         return !doPrepareFrame_;
+    });
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::HandleInputBuffer()
+{
+    if (doPrepareFrame_) {
+        MEDIA_LOG_I("doPrepareFrame enter.");
+        DoProcessInputBuffer(0, false);
+    } else {
+        ProcessInputBuffer();
+    }
+    return Status::OK;
+}
+
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
-    return videoDecoder_->Start();
+    auto ret = videoDecoder_->Start();
+    if (!isNeedStartDecoder_.load()) {
+        MEDIA_LOG_I("Already start videoDecoder and enter.");
+        return Status::OK;
+    }
+    return ret;
 }
 
 Status DecoderSurfaceFilter::DoPause()
@@ -380,7 +420,7 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
 
-Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
+Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
 {
     std::pair<int, std::shared_ptr<AVBuffer>> task;
     {
@@ -396,7 +436,18 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
             CalculateNextRender(nextTask.first, nextTask.second);
         }
     }
-    videoDecoder_->ReleaseOutputBuffer(task.first, arg);
+    if (recvArg == 0) { // recvArg == 0 means no render this frame
+        if (sinceLastDropped_ > 0) {
+            MEDIA_LOG_I("drop buffer after %{public}d", sinceLastDropped_);
+            sinceLastDropped_ = 0;
+        } else {
+            recvArg = true;
+            sinceLastDropped_++;
+        }
+    } else {
+        sinceLastDropped_++;
+    }
+    videoDecoder_->ReleaseOutputBuffer(task.first, recvArg);
     if (task.second->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, task.second->GetUniqueId(),
@@ -410,10 +461,10 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
     return Status::OK;
 }
 
-Status DecoderSurfaceFilter::DoProcessInputBuffer(int arg, bool dropped)
+Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     // input buffers will be detach in DoFlush, no need handle
-    if (dropped) {
+    if (dropFrame) {
         return Status::OK;
     }
     videoDecoder_->AquireAvailableInputBuffer();
@@ -449,7 +500,21 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
-    if (outputBuffers_.empty()) {
+    if (doPrepareFrame_.load()) {
+        if (renderFirstFrame_) {
+            videoDecoder_->ReleaseOutputBuffer(index, true);
+        } else {
+            firstFrameNoRender_ = true;
+            outputBuffers_.push_back(make_pair(index, outputBuffer));
+        }
+        lock.unlock();
+        AutoLock autolock(firstFrameMutex_);
+        doPrepareFrame_ = false;
+        firstFrameCond_.NotifyAll();
+        return;
+    }
+    if (outputBuffers_.empty() || firstFrameNoRender_.load()) {
+        firstFrameNoRender_ = false;
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         lock.unlock();
         CalculateNextRender(index, outputBuffer);
