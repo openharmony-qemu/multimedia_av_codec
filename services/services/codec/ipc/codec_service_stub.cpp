@@ -388,9 +388,9 @@ int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &
 int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
-    AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
+    AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
 
