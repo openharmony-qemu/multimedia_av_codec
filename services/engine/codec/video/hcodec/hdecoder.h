@@ -62,19 +62,14 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId);
     void OnGetBufferFromSurface(const ParamSP& param) override;
-    bool GetOneBufferFromSurface(bool isOld);
+    bool GetOneBufferFromSurface();
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
-    int32_t PushBlankBufferToCurrSurface();
-    int32_t SwitchBufferBetweenSurface(BufferInfo& info,
-        const sptr<Surface> &oldSurface, const sptr<Surface> &newSurface);
-    void ReclaimIfPossible();
-    void CheckIfWeNeedToForceReclaimBuffer();
-    void CheckIfSwitchDone();
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
+    void OnClearBufferPool(OMX_DIRTYPE portIndex) override;
     void CancelBufferToSurface(BufferInfo &info);
     void OnEnterUninitializedState() override;
 
@@ -89,10 +84,8 @@ private:
         void Release();
         sptr<Surface> surface_;
     private:
-        GraphicTransformType originalTransform_ = GRAPHIC_ROTATE_NONE;
-    };
-    SurfaceItem oldSurface_;
-    SurfaceItem currSurface_;
+        std::optional<GraphicTransformType> originalTransform_;
+    } currSurface_;
 
     uint32_t outBufferCnt_ = 0;
     BufferFlushConfig flushCfg_;
