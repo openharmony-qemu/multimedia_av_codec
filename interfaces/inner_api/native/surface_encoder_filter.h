@@ -85,7 +85,11 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
 
+    std::atomic<bool> updateMediaCodec_ = false;
+    sptr<Surface> surface_{nullptr};
+
     std::string logTag_ = "";
+
 };
 } // namespace Pipeline
 } // namespace MEDIA
