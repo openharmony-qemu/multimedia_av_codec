@@ -156,10 +156,10 @@ void StreamParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t e
 }
 
 void StreamParserManager::ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
-    size_t sideDataSize)
+    size_t sideDataSize, bool isExtradata)
 {
     FALSE_RETURN_MSG(streamParser_ != nullptr, "stream parser is null!");
-    streamParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, sideData, sideDataSize);
+    streamParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, sideData, sideDataSize, isExtradata);
 }
 
 void StreamParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)

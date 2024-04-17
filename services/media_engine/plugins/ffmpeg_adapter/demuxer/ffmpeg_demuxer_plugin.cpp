@@ -404,7 +404,7 @@ void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<Sam
     uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
         &cencInfoSize);
     streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
-        static_cast<size_t>(cencInfoSize));
+        static_cast<size_t>(cencInfoSize), false);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
         streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
         pkt.flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
@@ -413,11 +413,7 @@ void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<Sam
 
 void FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
-    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, nullptr, 0);
-    if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
-        streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
-        pkt.flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
-    }
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, nullptr, 0, false);
 }
 
 Status FFmpegDemuxerPlugin::WriteBuffer(
@@ -896,7 +892,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta);
         if (HaveValidParser(avStream->codecpar->codec_id)) {
             if (streamParser_ != nullptr && streamParserInited_ && firstFrame_ != nullptr) {
-                streamParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0);
+                streamParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0, false);
                 streamParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
                 // Parser only sends xps info when first call ConvertPacketToAnnexb
                 // readSample will call ConvertPacketToAnnexb again, so rest here
@@ -980,7 +976,7 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     uint8_t *extradata = avStream.codecpar->extradata;
     int32_t extradataSize = avStream.codecpar->extradata_size;
     if (HaveValidParser(avStream.codecpar->codec_id) && streamParser_ != nullptr && streamParserInited_) {
-        streamParser_->ConvertPacketToAnnexb(&(extradata), extradataSize, nullptr, 0);
+        streamParser_->ConvertPacketToAnnexb(&(extradata), extradataSize, nullptr, 0, true);
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         if (avbsfContext_->par_out->extradata != nullptr && avbsfContext_->par_out->extradata_size > 0) {
             extradata = avbsfContext_->par_out->extradata;
