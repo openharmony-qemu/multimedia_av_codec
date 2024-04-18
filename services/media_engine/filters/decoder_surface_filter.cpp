@@ -233,6 +233,7 @@ Status DecoderSurfaceFilter::WaitPrepareFrame()
     firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
          return !doPrepareFrame_;
     });
+    doPrepareFrame_ = false;
     return Status::OK;
 }
 
@@ -514,7 +515,9 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         return;
     }
     if (outputBuffers_.empty() || firstFrameNoRender_.load()) {
-        firstFrameNoRender_ = false;
+        if (firstFrameNoRender_.load()) {
+            firstFrameNoRender_ = false;
+        }
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         lock.unlock();
         CalculateNextRender(index, outputBuffer);
