@@ -89,7 +89,6 @@ private:
     sptr<Surface> surface_{nullptr};
 
     std::string logTag_ = "";
-
 };
 } // namespace Pipeline
 } // namespace MEDIA
