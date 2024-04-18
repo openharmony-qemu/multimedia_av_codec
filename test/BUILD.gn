@@ -95,9 +95,9 @@ group("av_codec_fuzz_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [
+      "fuzztest/audiodecoder_fuzzer:AudioDecoderFuzzTest",
       "fuzztest/audiodecoderconfigure_fuzzer:AudiodecoderConfigureFuzzTest",
       "fuzztest/audiodecodersetparameter_fuzzer:AudiodecoderSetParameterFuzzTest",
-      "fuzztest/audiodecoder_fuzzer:AudioDecoderFuzzTest",
       "fuzztest/audioencoder_fuzzer:AudioencoderFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/encoderConfigure_fuzzer:EncoderConfigureFuzzTest",
