@@ -68,6 +68,34 @@ HWTEST_F(M3u8UnitTest, UpdateTest, TestSize.Level1)
     EXPECT_FALSE(m3u8.Update("Invalid Playlist"));
 }
 
+HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST, TestSize.Level1)
+{
+    M3U8 m3u8(testUri, "LivePlaylist");
+    std::list<std::shared_ptr<Tag>> tags;
+    m3u8.UpdateFromTags(tags);
+    EXPECT_TRUE(m3u8.bLive_);
+    m3u8.isDecryptAble_ = true;
+    m3u8.UpdateFromTags(tags);
+    EXPECT_TRUE(m3u8.bLive_);
+    EXPECT_EQ(m3u8.files_.size(), 0);
+    m3u8.isDecryptAble_ = false;
+    m3u8.UpdateFromTags(tags);
+    EXPECT_TRUE(m3u8.bLive_);
+    EXPECT_EQ(m3u8.files_.size(), 0);
+
+}
+
+HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
+{
+    M3U8Fragment m3u8(testUri, "LivePlaylist", 10.0, 1, false);
+    M3U8Fragment fragment(m3u8, nullptr, nullptr);
+    EXPECT_EQ(fragment.uri_, testUri);
+    EXPECT_EQ(fragment.duration_, 10.0);
+    EXPECT_EQ(fragment.sequence_, 1);
+    EXPECT_EQ(fragment.title_, "LivePlaylist");
+    EXPECT_EQ(fragment.discont_, false);
+}
+
 // 测试 IsLive 方法
 HWTEST_F(M3u8UnitTest, IsLiveTest, TestSize.Level1)
 {
