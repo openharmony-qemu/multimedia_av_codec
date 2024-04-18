@@ -773,10 +773,12 @@ OH_AVErrCode ADecBufferDemo::PushInputData(OH_AVCodec *codec, uint32_t index)
     OH_AVCodecBufferAttr info;
 
     if (!signal_->inBufferQueue_.empty()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
         auto buffer = signal_->inBufferQueue_.front();
-        info.size = buffer->buffer_->memory_->GetSize();
-        info.pts = buffer->buffer_->pts_;
-        info.flags = buffer->buffer_->flag_;
+        OH_AVErrCode ret = OH_AVBuffer_GetBufferAttr(buffer, &info);
+        if (ret != AV_ERR_OK) {
+            return ret;
+        }
         OH_AVErrCode ret = OH_AVBuffer_SetBufferAttr(buffer, &info);
         if (ret != AV_ERR_OK) {
             return ret;
