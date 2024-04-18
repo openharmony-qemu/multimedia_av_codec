@@ -85,7 +85,7 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
 
-    std::atomic<bool> updateMediaCodec_ = false;
+    std::atomic<bool> isUpdateCodecNeeded_ = false;
     sptr<Surface> surface_{nullptr};
 
     std::string logTag_ = "";
