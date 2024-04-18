@@ -779,7 +779,7 @@ OH_AVErrCode ADecBufferDemo::PushInputData(OH_AVCodec *codec, uint32_t index)
         if (ret != AV_ERR_OK) {
             return ret;
         }
-        OH_AVErrCode ret = OH_AVBuffer_SetBufferAttr(buffer, &info);
+        ret = OH_AVBuffer_SetBufferAttr(buffer, &info);
         if (ret != AV_ERR_OK) {
             return ret;
         }
