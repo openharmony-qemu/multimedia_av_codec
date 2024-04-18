@@ -89,7 +89,7 @@ std::optional<AVCodecServerManager::StubType> AVCodecServer::SwitchSystemId(
 }
 
 int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                       const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
+                                           const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
 {
     std::optional<AVCodecServerManager::StubType> stubType = SwitchSystemId(subSystemId);
     CHECK_AND_RETURN_RET_LOG(stubType != std::nullopt, AVCS_ERR_INVALID_OPERATION, "Get sub system type failed");

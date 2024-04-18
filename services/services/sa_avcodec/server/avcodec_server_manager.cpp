@@ -171,9 +171,11 @@ int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject
 int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &object)
 {
     sptr<CodecListServiceStub> stub = CodecListServiceStub::Create();
-    CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED, "Failed to create AVCodecListServiceStub");
+    CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,
+        "Failed to create AVCodecListServiceStub");
     object = stub->AsObject();
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED, "Failed to create AVCodecListServiceStub");
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,
+        "Failed to create AVCodecListServiceStub");
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     codecListStubMap_[object] = pid;
@@ -188,7 +190,8 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED, "Failed to create CodecServiceStub");
 
     object = stub->AsObject();
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED, "Failed to create CodecServiceStub");
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED,
+        "Failed to create CodecServiceStub");
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     codecStubMap_[object] = pid;

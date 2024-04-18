@@ -36,7 +36,7 @@ AVCodecServiceProxy::~AVCodecServiceProxy()
 int32_t AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
                                                  const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &object)
 {
-    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,"listener is nullptr");
+    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "listener is nullptr");
 
     MessageParcel data;
     MessageParcel reply;

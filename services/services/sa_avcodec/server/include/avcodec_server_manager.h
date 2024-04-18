@@ -40,7 +40,6 @@ public:
     static AVCodecServerManager& GetInstance();
     ~AVCodecServerManager();
 
-
     enum StubType { CODECLIST, CODEC };
     int32_t CreateStubObject(StubType type, sptr<IRemoteObject> &object);
     void DestroyStubObject(StubType type, sptr<IRemoteObject> object);
