@@ -1172,9 +1172,12 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
-        } else if (ret == Status::ERROR_UNKNOWN || ret == Status::ERROR_AGAIN) {
+        } else if (ret == Status::ERROR_UNKNOWN) {
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
+        } else if (ret == Status::ERROR_AGAIN) {
+            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            return Status::ERROR_AGAIN;
         }
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());

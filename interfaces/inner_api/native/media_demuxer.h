@@ -145,6 +145,7 @@ private:
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
+    std::map<uint32_t, uint32_t> requestBufferErrorCountMap_;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
     bool isAccurateSeekForHLS_ = false;
