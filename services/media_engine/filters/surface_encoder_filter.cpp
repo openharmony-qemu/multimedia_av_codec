@@ -96,7 +96,7 @@ Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
     std::string codecMimeType;
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType), Status::ERROR_INVALID_PARAMETER);
     if (strcmp(codecMimeType.c_str(), codecMimeType_.c_str()) != 0) {
-        updateMediaCodec_ = true;
+        isUpdateCodecNeeded_ = true;
     }
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType_), Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
@@ -108,7 +108,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    if (!mediaCodec_ || updateMediaCodec_) {
+    if (!mediaCodec_ || isUpdateCodecNeeded_) {
         if (mediaCodec_) {
             mediaCodec_->Release();
         }
@@ -124,7 +124,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
         }
         surface_ = nullptr;
-        updateMediaCodec_ = false;
+        isUpdateCodecNeeded_ = false;
     }
 }
 
