@@ -279,6 +279,15 @@ std::string CodecBase::GetHidumperInfo()
     return mock->GetHidumperInfo();
 }
 
+int32_t CodecBase::SetCallerInfo(Format &format)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("format:%s", format.Stringify().c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SetCallerInfo(format);
+}
+
 int32_t CodecBase::CreateCodecByName(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(g_mutex);

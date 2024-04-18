@@ -35,8 +35,8 @@ public:
         AVCODEC_CODEC,
     };
 
-    virtual sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                    const sptr<IRemoteObject> &listener) = 0;
+    virtual int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                        const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };
@@ -48,8 +48,9 @@ public:
 
     MOCK_METHOD(void, AVCodecServiceStubCtor, ());
     MOCK_METHOD(void, AVCodecServiceStubDtor, ());
-    MOCK_METHOD(sptr<IRemoteObject>, GetSubSystemAbility,
-                (IStandardAVCodecService::AVCodecSystemAbility subSystemId, const sptr<IRemoteObject> &listener));
+    MOCK_METHOD(int32_t, GetSubSystemAbility,
+                (IStandardAVCodecService::AVCodecSystemAbility subSystemId, const sptr<IRemoteObject> &listener,
+                 sptr<IRemoteObject> &stubObject));
     MOCK_METHOD(int32_t, SetDeathListener, (const sptr<IRemoteObject> &object));
 };
 
@@ -59,8 +60,8 @@ public:
 
     AVCodecServiceStub();
     ~AVCodecServiceStub();
-    sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                    const sptr<IRemoteObject> &listener) override;
+    int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) override;
     int32_t SetDeathListener(const sptr<IRemoteObject> &object);
 };
 
