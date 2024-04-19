@@ -192,6 +192,10 @@ void VideoDecoderAdapter::SetInputBufferQueue(sptr<Media::AVBufferQueueConsumer>
 void VideoDecoderAdapter::AquireAvailableInputBuffer()
 {
     AVCodecTrace trace("VideoDecoderAdapter::AquireAvailableInputBuffer");
+    if (inputBufferQueueConsumer_ == nullptr) {
+        MEDIA_LOG_E("inputBufferQueueConsumer_ is null");
+        return;
+    }
     std::unique_lock<std::mutex> lock(mutex_);
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
