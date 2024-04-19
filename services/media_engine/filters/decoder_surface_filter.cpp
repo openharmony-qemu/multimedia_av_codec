@@ -437,17 +437,6 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
             CalculateNextRender(nextTask.first, nextTask.second);
         }
     }
-    if (recvArg == 0) { // recvArg == 0 means no render this frame
-        if (sinceLastDropped_ > 0) {
-            MEDIA_LOG_I("drop buffer after %{public}d", sinceLastDropped_);
-            sinceLastDropped_ = 0;
-        } else {
-            recvArg = true;
-            sinceLastDropped_++;
-        }
-    } else {
-        sinceLastDropped_++;
-    }
     videoDecoder_->ReleaseOutputBuffer(task.first, recvArg);
     if (task.second->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64

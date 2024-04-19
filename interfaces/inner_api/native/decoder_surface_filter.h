@@ -119,7 +119,6 @@ private:
     int64_t stopTime_{0};
     sptr<Surface> videoSurface_;
     bool isDrmProtected_ = false;
-    int32_t sinceLastDropped_ = 0;
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
     std::atomic<bool> isPaused_{false};
