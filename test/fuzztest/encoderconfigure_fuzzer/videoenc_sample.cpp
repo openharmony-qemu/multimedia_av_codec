@@ -199,7 +199,7 @@ int32_t VEncFuzzSample::OpenFile()
         (void)OH_VideoEncoder_Stop(venc_);
         return AV_ERR_UNKNOWN;
     }
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(inpDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         cout << "file open fail" << endl;
         isRunning_.store(false);
@@ -459,7 +459,7 @@ void VEncFuzzSample::OutputFuncFail()
 
 void VEncFuzzSample::OutputFunc()
 {
-    FILE *outFile = fopen(OUT_DIR, "wb");
+    FILE *outFile = fopen(outDir, "wb");
 
     while (true) {
         if (!isRunning_.load()) {

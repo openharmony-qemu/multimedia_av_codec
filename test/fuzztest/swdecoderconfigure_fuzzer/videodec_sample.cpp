@@ -33,7 +33,7 @@ constexpr uint8_t PPS = 8;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint32_t FRAME_INTERVAL = 16666;
-VDecFuzzSample *dec_sample = nullptr;
+VDecFuzzSample *g_decSample = nullptr;
 constexpr uint8_t H264_NALU_TYPE = 0x1f;
 
 bool g_fuzzError = false;
@@ -74,8 +74,8 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
     int32_t currentHeight = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
-    dec_sample->defaultWidth = currentWidth;
-    dec_sample->defaultHeight = currentHeight;
+    g_decSample->defaultWidth = currentWidth;
+    g_decSample->defaultHeight = currentHeight;
 }
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
@@ -212,7 +212,7 @@ int32_t VDecFuzzSample::StartVideoDecoder()
         (void)OH_VideoDecoder_Stop(vdec_);
         return AV_ERR_UNKNOWN;
     }
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(inpDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         cout << "open input file failed" << endl;
         isRunning_.store(false);
@@ -253,7 +253,7 @@ int32_t VDecFuzzSample::CreateVideoDecoder(string codeName)
     } else {
         vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
     }
-    dec_sample = this;
+    g_decSample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -274,7 +274,10 @@ void VDecFuzzSample::WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AV
     if (memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size) != EOK) {
         cout << "Fatal: memory copy failed" << endl;
     }
-    fwrite(tmpBuffer, 1, attr.size, outFile);
+    uint32_t ret = fwrite(tmpBuffer, 1, attr.size, outFile);
+    if (!ret) {
+        cout << ret << endl;
+    }
     delete[] tmpBuffer;
     if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
         cout << "Fatal: ReleaseOutputBuffer fail" << endl;
@@ -284,7 +287,7 @@ void VDecFuzzSample::WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AV
 
 void VDecFuzzSample::OutputFunc()
 {
-    FILE *outFile = fopen(OUT_DIR, "wb");
+    FILE *outFile = fopen(outDir, "wb");
     if (outFile == nullptr) {
         return;
     }

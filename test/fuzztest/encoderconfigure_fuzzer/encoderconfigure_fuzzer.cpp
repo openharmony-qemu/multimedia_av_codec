@@ -34,7 +34,7 @@ bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VEncFuzzSample *vEncSample = new VEncFuzzSample();
-    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    vEncSample->inpDir = "/data/test/media/1280_720_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);
     vEncSample->CreateVideoEncoder(tmpCodecName.c_str());

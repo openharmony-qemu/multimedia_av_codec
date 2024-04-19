@@ -53,8 +53,8 @@ public:
     VDecFuzzSample() = default;
     ~VDecFuzzSample();
     int32_t RunVideoDec(std::string codeName = "");
-    const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
-    const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
+    const char *inpDir = "/data/test/media/1920_1080_10_30Mb.h264";
+    const char *outDir = "/data/test/media/VDecTest.yuv";
     uint32_t defaultWidth = 1920;
     uint32_t defaultHeight = 1080;
     uint32_t defaultFrameRate = 30;
@@ -99,6 +99,7 @@ public:
     int64_t outTimeArray[2000] = {};
     bool sleepOnFPS = false;
     bool repeatRun = false;
+
     bool setParameters = false;
     OH_AVCodec *vdec_;
 

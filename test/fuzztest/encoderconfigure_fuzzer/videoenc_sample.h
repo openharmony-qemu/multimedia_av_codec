@@ -54,8 +54,8 @@ class VEncFuzzSample : public NoCopyable {
 public:
     VEncFuzzSample() = default;
     ~VEncFuzzSample();
-    const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *inpDir = "/data/test/media/1280_720_nv.yuv";
+    const char *outDir = "/data/test/media/VEncTest.h264";
     uint32_t defaultWidth = 1280;
     uint32_t defaultHeight = 720;
     uint32_t defaultBitrate = 5000000;

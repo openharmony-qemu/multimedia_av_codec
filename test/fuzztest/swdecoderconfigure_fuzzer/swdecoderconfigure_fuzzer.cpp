@@ -32,7 +32,7 @@ bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
-    vDecSample->INP_DIR = "/data/test/media/1280_720_30_10Mb.h264";
+    vDecSample->inpDir = "/data/test/media/1280_720_30_10Mb.h264";
     vDecSample->defaultWidth = data_;
     vDecSample->defaultHeight = data_;
     vDecSample->defaultFrameRate = data_;
