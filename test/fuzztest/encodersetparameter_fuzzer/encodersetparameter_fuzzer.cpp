@@ -16,13 +16,13 @@
 #include <cstdint>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
-#include "videoenc_ndk_sample.h"
+#include "videoenc_sample.h"
 #include "native_avcapability.h"
 #define FUZZ_PROJECT_NAME "encodersetparameter_fuzzer"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-static VEncNdkSample *vEncSample = nullptr;
+static VEncFuzzSample *vEncSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
@@ -33,7 +33,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         return false;
     }
     if (!vEncSample) {
-        vEncSample = new VEncNdkSample();
+        vEncSample = new VEncFuzzSample();
         vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vEncSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;

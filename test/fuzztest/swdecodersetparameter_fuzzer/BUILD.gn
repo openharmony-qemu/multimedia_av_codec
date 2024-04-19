@@ -23,11 +23,7 @@ ohos_fuzztest("SwdecoderSetParameterFuzzTest") {
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/swdecodersetparameter_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/include",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_surface/surface/include",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
+    "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderconfigure_fuzzer/",
   ]
   cflags = [
     "-g",
@@ -36,15 +32,11 @@ ohos_fuzztest("SwdecoderSetParameterFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/src/videodec_ndk_sample.cpp",
+    "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderconfigure_fuzzer/videodec_sample.cpp",
     "swdecodersetparameter_fuzzer.cpp",
   ]
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
-    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
     "media_foundation:native_media_core",

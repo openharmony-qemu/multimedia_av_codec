@@ -18,7 +18,7 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
-#include "videoenc_ndk_sample.h"
+#include "videoenc_sample.h"
 #include "native_avcapability.h"
 using namespace std;
 using namespace OHOS;
@@ -33,7 +33,7 @@ bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
     }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    VEncFuzzSample *vEncSample = new VEncFuzzSample();
     vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);

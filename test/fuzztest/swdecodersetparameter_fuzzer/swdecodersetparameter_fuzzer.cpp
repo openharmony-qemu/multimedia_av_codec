@@ -16,12 +16,12 @@
 #include <cstdint>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
-#include "videodec_ndk_sample.h"
+#include "videodec_sample.h"
 #define FUZZ_PROJECT_NAME "swdecodersetparameter_fuzzer"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-static VDecNdkSample *vDecSample = nullptr;
+static VDecFuzzSample *vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
@@ -32,7 +32,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         return false;
     }
     if (!vDecSample) {
-        vDecSample = new VDecNdkSample();
+        vDecSample = new VDecFuzzSample();
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
