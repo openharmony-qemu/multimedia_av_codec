@@ -34,9 +34,9 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     if (!vEncSample) {
         vEncSample = new VEncFuzzSample();
-        vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
-        vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
-        vEncSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
+        vEncSample->defaultWidth = DEFAULT_WIDTH;
+        vEncSample->defaultHeight = DEFAULT_HEIGHT;
+        vEncSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         vEncSample->fuzzMode = true;
         OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
         string tmpCodecName = OH_AVCapability_GetName(cap);

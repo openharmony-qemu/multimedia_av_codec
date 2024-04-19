@@ -94,47 +94,16 @@ int32_t VEncFuzzSample::ConfigureVideoEncoder()
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
-    if (DEFAULT_BITRATE_MODE == CQ) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, defaultWidth);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defaultPixFmt);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, defaultFrameRate);
+    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, defaultBitrate);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, defaultKeyFrameInterval);
+    if (defaultBitrateMode == CQ) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, defaultQuality);
     }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
-    int ret = OH_VideoEncoder_Configure(venc_, format);
-    OH_AVFormat_Destroy(format);
-    return ret;
-}
-
-int32_t VEncFuzzSample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size)
-{
-    OH_AVFormat *format = OH_AVFormat_Create();
-    if (format == nullptr) {
-        cout << "Fatal: Failed to create format" << endl;
-        return AV_ERR_UNKNOWN;
-    }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
-
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
-
-    if (TEMPORAL_CONFIG) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
-            ADJACENT_REFERENCE);
-    }
-    if (TEMPORAL_ENABLE) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
-    }
-    if (TEMPORAL_JUMP_MODE) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, JUMP_REFERENCE);
-    }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, defaultBitrateMode);
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -148,9 +117,9 @@ int32_t VEncFuzzSample::ConfigureVideoEncoder_fuzz(int32_t data)
         return AV_ERR_UNKNOWN;
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
-    DEFAULT_WIDTH = data;
+    defaultWidth = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
-    DEFAULT_HEIGHT = data;
+    defaultHeight = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, data % MAX_PIXEL_FMT);
     double frameRate = data;
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
@@ -310,16 +279,16 @@ uint32_t VEncFuzzSample::ReadOneFrameYUV420SP(uint8_t *dst)
 {
     uint8_t *start = dst;
     // copy Y
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
+    for (uint32_t i = 0; i < defaultHeight; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
+        if (!ReturnZeroIfEOS(defaultWidth))
             return 0;
         dst += stride_;
     }
     // copy UV
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
+    for (uint32_t i = 0; i < defaultHeight / SAMPLE_RATIO; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
+        if (!ReturnZeroIfEOS(defaultWidth))
             return 0;
         dst += stride_;
     }
@@ -328,8 +297,8 @@ uint32_t VEncFuzzSample::ReadOneFrameYUV420SP(uint8_t *dst)
 
 void VEncFuzzSample::ReadOneFrameRGBA8888(uint8_t *dst)
 {
-    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * RGBA_SIZE);
+    for (uint32_t i = 0; i < defaultHeight; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), defaultWidth * RGBA_SIZE);
         dst += stride_;
     }
 }
@@ -381,24 +350,17 @@ int32_t VEncFuzzSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &r
         return -1;
     }
     int32_t size = OH_AVMemory_GetSize(buffer);
-    if (DEFAULT_PIX_FMT == AV_PIXEL_FORMAT_RGBA) {
-        if (size < DEFAULT_HEIGHT * stride_) {
+    if (defaultPixFmt == AV_PIXEL_FORMAT_RGBA) {
+        if (size < defaultHeight * stride_) {
             return -1;
         }
         ReadOneFrameRGBA8888(fileBuffer);
-        attr.size = stride_ * DEFAULT_HEIGHT;
+        attr.size = stride_ * defaultHeight;
     } else {
-        if (size < (DEFAULT_HEIGHT * stride_ + (DEFAULT_HEIGHT * stride_ / DOUBLE))) {
+        if (size < (defaultHeight * stride_ + (defaultHeight * stride_ / DOUBLE))) {
             return -1;
         }
         attr.size = ReadOneFrameYUV420SP(fileBuffer);
-    }
-    if (repeatRun && inFile_->eof()) {
-        inFile_->clear();
-        inFile_->seekg(0, ios::beg);
-        encode_count++;
-        cout << "repeat"<< "   encode_count:" << encode_count << endl;
-        return -1;
     }
     if (inFile_->eof()) {
         SetEOS(index);
@@ -436,7 +398,7 @@ int32_t VEncFuzzSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
 void VEncFuzzSample::InputDataFuzz(bool &runningFlag, uint32_t index)
 {
     frameCount++;
-    if (frameCount == DEFAULT_FUZZ_TIME) {
+    if (frameCount == defaultFuzzTime) {
         SetEOS(index);
         runningFlag = false;
         return;

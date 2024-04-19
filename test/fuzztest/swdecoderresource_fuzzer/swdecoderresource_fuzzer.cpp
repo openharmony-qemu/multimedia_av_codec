@@ -36,16 +36,15 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
     if (!vDecSample) {
         vDecSample = new VDecFuzzSample();
-        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
-        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
-        vDecSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
-        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        vDecSample->defaultWidth = DEFAULT_WIDTH;
+        vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
         vDecSample->ConfigureVideoDecoder();
         vDecSample->SetVideoDecoderCallback();
         vDecSample->Start();
     }
-    OH_AVErrCode ret = vDecSample->InputFunc_FUZZ(data, size);
+    OH_AVErrCode ret = vDecSample->InputFuncFUZZ(data, size);
     if (ret != AV_ERR_OK) {
         vDecSample->Release();
         delete vDecSample;

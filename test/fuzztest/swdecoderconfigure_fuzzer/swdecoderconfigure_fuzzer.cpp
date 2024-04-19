@@ -33,12 +33,11 @@ bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecFuzzSample *vDecSample = new VDecFuzzSample();
     vDecSample->INP_DIR = "/data/test/media/1280_720_30_10Mb.h264";
-    vDecSample->DEFAULT_WIDTH = data_;
-    vDecSample->DEFAULT_HEIGHT = data_;
-    vDecSample->DEFAULT_FRAME_RATE = data_;
-    vDecSample->DEFAULT_ROTATION = data_;
-    vDecSample->DEFAULT_PIXEL_FORMAT = data_;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    vDecSample->defaultWidth = data_;
+    vDecSample->defaultHeight = data_;
+    vDecSample->defaultFrameRate = data_;
+    vDecSample->defaultRotation = data_;
+    vDecSample->defaultPixelFormat = data_;
     vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();

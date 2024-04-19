@@ -55,16 +55,12 @@ public:
     int32_t RunVideoDec(std::string codeName = "");
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
-    uint32_t DEFAULT_WIDTH = 1920;
-    uint32_t DEFAULT_HEIGHT = 1080;
-    uint32_t DEFAULT_FRAME_RATE = 30;
-    uint32_t DEFAULT_ROTATION = 0;
-    uint32_t DEFAULT_PIXEL_FORMAT = 1;
-    bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
-    bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
-    bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
-    uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
-    uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
+    uint32_t defaultWidth = 1920;
+    uint32_t defaultHeight = 1080;
+    uint32_t defaultFrameRate = 30;
+    uint32_t defaultRotation = 0;
+    
+    uint32_t defaultPixelFormat = 1;
     uint32_t frameCount_ = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
@@ -92,8 +88,8 @@ public:
     int32_t SetParameter(OH_AVFormat *format);
     void OutputFunc();
     void WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile);
-    void InputFunc_AVCC();
-    OH_AVErrCode InputFunc_FUZZ(const uint8_t *data, size_t size);
+    void InputFuncAVCC();
+    OH_AVErrCode InputFuncFUZZ(const uint8_t *data, size_t size);
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();

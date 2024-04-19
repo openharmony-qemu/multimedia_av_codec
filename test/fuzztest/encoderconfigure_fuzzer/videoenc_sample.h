@@ -56,19 +56,18 @@ public:
     ~VEncFuzzSample();
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
-    uint32_t DEFAULT_WIDTH = 1280;
-    uint32_t DEFAULT_HEIGHT = 720;
-    uint32_t DEFAULT_BITRATE = 5000000;
-    uint32_t DEFAULT_QUALITY = 30;
-    double DEFAULT_FRAME_RATE = 30.0;
-    uint32_t DEFAULT_FUZZ_TIME = 30;
-    uint32_t DEFAULT_BITRATE_MODE = CBR;
-    OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
-    uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
+    uint32_t defaultWidth = 1280;
+    uint32_t defaultHeight = 720;
+    uint32_t defaultBitrate = 5000000;
+    uint32_t defaultQuality = 30;
+    double defaultFrameRate = 30.0;
+    uint32_t defaultFuzzTime = 30;
+    uint32_t defaultBitrateMode = CBR;
+    OH_AVPixelFormat defaultPixFmt = AV_PIXEL_FORMAT_NV12;
+    uint32_t defaultKeyFrameInterval = 1000;
     uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
-    int32_t ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size);
     int32_t ConfigureVideoEncoder_fuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t StartVideoEncoder();
@@ -115,17 +114,7 @@ public:
     bool repeatRun = false;
     bool showLog = false;
     bool fuzzMode = false;
-    int64_t encode_count = 0;
-    bool enable_random_eos = false;
-    uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
-    uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
-    int64_t start_time = 0;
-    int64_t end_time = 0;
 
-    bool TEMPORAL_CONFIG = false;
-    bool TEMPORAL_ENABLE = false;
-    bool TEMPORAL_JUMP_MODE = false;
-    bool TEMPORAL_DEFAULT = false;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
