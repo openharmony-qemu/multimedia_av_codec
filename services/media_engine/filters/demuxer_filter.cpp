@@ -250,6 +250,11 @@ Status DemuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop called.");
+    for (auto iter : nextFiltersMap_) {
+        for (auto filter : iter.second) {
+            filter->Stop();
+        }
+    }
     return demuxer_->Stop();
 }
 
@@ -257,6 +262,11 @@ Status DemuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
     MEDIA_LOG_I("Pause called");
+    for (auto iter : nextFiltersMap_) {
+        for (auto filter : iter.second) {
+            filter->Pause();
+        }
+    }
     return demuxer_->Pause();
 }
 

@@ -534,19 +534,6 @@ Status MediaDemuxer::PauseAllTask()
     return Status::OK;
 }
 
-Status MediaDemuxer::PauseAsync()
-{
-    MEDIA_LOG_I("PauseAsync enter.");
-    source_->SetReadBlockingFlag(true);
-
-    for (auto &iter : taskMap_) {
-        if (iter.second != nullptr) {
-            iter.second->PauseAsync();
-        }
-    }
-    return Status::OK;
-}
-
 Status MediaDemuxer::ResumeAllTask()
 {
     MEDIA_LOG_I("ResumeAllTask enter.");
