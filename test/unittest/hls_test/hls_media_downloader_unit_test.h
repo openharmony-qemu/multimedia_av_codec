@@ -37,6 +37,8 @@ public:
     void TearDown(void);
 };
 std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>();
+static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
 }
 }
 }
