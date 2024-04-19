@@ -35,7 +35,7 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 };
-
+static const string TEST_URI_PATH = "http://127.0.0.1:46666/"
 std::shared_ptr<HlsPlayListDownloader> playListDownloader = std::make_shared<HlsPlayListDownloader>();
 }
 }
