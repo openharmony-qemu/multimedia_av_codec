@@ -132,4 +132,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // VIDEODEC_NDK_SAMPLE_H
+#endif // VIDEODEC_SAMPLE_H

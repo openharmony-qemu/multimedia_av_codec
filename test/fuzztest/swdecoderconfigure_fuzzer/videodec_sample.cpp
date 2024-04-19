@@ -363,8 +363,8 @@ int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVMemory *buffer)
         SetEOS(index);
         return 1;
     }
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
-                                     ((ch[0] & 0xFF) << TWENTY_FOUR));
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT)
+    ((ch[1] & 0xFF) << SIXTEEN) | ((ch[0] & 0xFF) << TWENTY_FOUR));
     return SendData(bufferSize, index, buffer);
 }
 
