@@ -65,7 +65,7 @@ void AudioBuffersManager::initBuffers()
         name_.data(), bufferSize_);
     for (size_t i = 0; i < bufferCount_; i++) {
         bufferInfo_[i] = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_);
-        emplace(i);
+        inBufIndexQue_.emplace(i);
         inBufIndexExist[i] = true;
     }
 }
