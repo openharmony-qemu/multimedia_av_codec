@@ -655,7 +655,7 @@ Status MediaDemuxer::Start()
         it->second = false;
     }
     for (auto it = requestBufferErrorCountMap_.begin(); it != requestBufferErrorCountMap_.end(); it++) {
-        it->second = false;
+        it->second = 0;
     }
     isThreadExit_ = false;
     auto it = bufferQueueMap_.begin();
