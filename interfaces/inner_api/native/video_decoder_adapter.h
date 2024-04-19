@@ -70,7 +70,7 @@ private:
     std::mutex mutex_;
     std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
 
-    bool isConfigured {false};
+    bool isConfigured_ {false};
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
