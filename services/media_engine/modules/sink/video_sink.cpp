@@ -101,7 +101,7 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
                 .srcFilter = "VideoSink",
                 .type = EventType::EVENT_COMPLETE,
             };
-            eventReceiver_ ->OnEvent(event);
+            eventReceiver_->OnEvent(event);
         }
         return -1;
     }
