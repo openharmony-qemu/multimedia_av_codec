@@ -95,7 +95,14 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         }
         lastTimeStamp_ = buffer->pts_ - firstPts_;
     } else {
-        MEDIA_LOG_I("Video sink EOS");
+        MEDIA_LOG_I("Videosink report EOS.");
+        if (eventReceiver_ != nullptr) {
+            Event event {
+                .srcFilter = "VideoSink",
+                .type = EventType::EVENT_COMPLETE,
+            };
+            eventReceiver_->OnEvent(event);
+        }
         return -1;
     }
     if (shouldDrop) {

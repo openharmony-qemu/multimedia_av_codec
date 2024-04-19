@@ -442,11 +442,6 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, task.second->GetUniqueId(),
                 task.second->pts_, task.second->flag_);
-        Event event {
-            .srcFilter = "VideoSink",
-            .type = EventType::EVENT_COMPLETE,
-        };
-        eventReceiver_ ->OnEvent(event);
     }
     return Status::OK;
 }
