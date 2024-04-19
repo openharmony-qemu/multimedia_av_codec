@@ -198,6 +198,23 @@ Status DemuxerFilter::DoPrepare()
     return Status::OK;
 }
 
+Status DemuxerFilter::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    Filter::PrepareFrame(renderFirstFrame);
+    auto ret = demuxer_->PrepareFrame(renderFirstFrame);
+    if (ret == Status::OK) {
+        isPrepareFramed = true;
+    }
+    return ret;
+}
+
+Status DemuxerFilter::WaitPrepareFrame()
+{
+    MEDIA_LOG_I("WaitPrepareFrame enter.");
+    return Filter::WaitPrepareFrame();
+}
+
 Status DemuxerFilter::PrepareBeforeStart()
 {
     if (isLoopStarted.load()) {
@@ -208,6 +225,9 @@ Status DemuxerFilter::PrepareBeforeStart()
     isLoopStarted = true;
     auto ret = Filter::Start();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareBeforeStart start filter failed.");
+    if (isPrepareFramed.load()) {
+        return demuxer_->Resume();
+    }
     return demuxer_->Start();
 }
 
@@ -220,6 +240,9 @@ Status DemuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     MEDIA_LOG_I("Start called.");
     isLoopStarted = true;
+    if (isPrepareFramed.load()) {
+        return demuxer_->Resume();
+    }
     return demuxer_->Start();
 }
 

@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <iostream>
+#include <string>
 #include "surface_encoder_filter.h"
 #include "filter/filter_factory.h"
 #include "surface_encoder_adapter.h"
@@ -91,6 +93,11 @@ SurfaceEncoderFilter::~SurfaceEncoderFilter()
 Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
 {
     MEDIA_LOG_I("SetCodecFormat");
+    std::string codecMimeType;
+    FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType), Status::ERROR_INVALID_PARAMETER);
+    if (strcmp(codecMimeType.c_str(), codecMimeType_.c_str()) != 0) {
+        isUpdateCodecNeeded_ = true;
+    }
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType_), Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
 }
@@ -101,7 +108,10 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    if (!mediaCodec_) {
+    if (!mediaCodec_ || isUpdateCodecNeeded_) {
+        if (mediaCodec_) {
+            mediaCodec_->Release();
+        }
         mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
         mediaCodec_->SetLogTag(logTag_);
         Status ret = mediaCodec_->Init(codecMimeType_, true);
@@ -113,6 +123,8 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             MEDIA_LOG_I(PUBLIC_LOG_S "Init mediaCodec fail", logTag_.c_str());
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
         }
+        surface_ = nullptr;
+        isUpdateCodecNeeded_ = false;
     }
 }
 
@@ -141,7 +153,11 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetInputSurface", logTag_.c_str());
-    return mediaCodec_->GetInputSurface();
+    if (surface_) {
+        return surface_;
+    }
+    surface_ = mediaCodec_->GetInputSurface();
+    return surface_;
 }
 
 Status SurfaceEncoderFilter::DoPrepare()

@@ -32,6 +32,8 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
+    Status PrepareFrame(bool renderFirstFrame) override;
+    Status WaitPrepareFrame() override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
@@ -88,6 +90,7 @@ private:
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
+    std::atomic<bool> isPrepareFramed{false};
 
     std::shared_ptr<Filter> nextFilter_;
     MediaMetaData mediaMetaData_;

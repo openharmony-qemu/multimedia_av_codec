@@ -39,8 +39,6 @@
 
 namespace OHOS {
 namespace Media {
-const std::string BUNDLE_NAME_FIRST = "com.hua";
-const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
 VodStreamDemuxer::VodStreamDemuxer()
     : cacheData_(),
     position_(0)
@@ -58,13 +56,11 @@ VodStreamDemuxer::~VodStreamDemuxer()
 bool VodStreamDemuxer::GetPeekRangeSub(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
     auto ret = PullData(offset, size, bufferPtr);
-    if (bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
-        if (ret == Status::ERROR_AGAIN) {
-            isIgnoreRead_ = true;
-            return true;
-        } else {
-            isIgnoreRead_ = false;
-        }
+    if (ret == Status::ERROR_AGAIN) {
+        isIgnoreRead_ = true;
+        return true;
+    } else {
+        isIgnoreRead_ = false;
     }
     return Status::OK == ret;
 }

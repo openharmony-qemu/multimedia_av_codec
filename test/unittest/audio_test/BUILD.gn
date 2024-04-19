@@ -45,6 +45,7 @@ av_codec_unittest_cflags = [
 
 ##################################################################################################################
 ohos_unittest("av_audio_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
@@ -87,6 +88,7 @@ ohos_unittest("av_audio_capi_unit_test") {
 
 ##################################################################################################################
 ohos_unittest("av_audio_codecbase_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
@@ -129,6 +131,7 @@ ohos_unittest("av_audio_codecbase_unit_test") {
 
 ##################################################################################################################
 ohos_unittest("av_audio_decode_ability_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
@@ -171,6 +174,7 @@ ohos_unittest("av_audio_decode_ability_unit_test") {
 
 ##################################################################################################################
 ohos_unittest("av_audio_inner_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
@@ -210,6 +214,7 @@ ohos_unittest("av_audio_inner_unit_test") {
 
 ##################################################################################################################
 ohos_unittest("av_audio_encoder_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
@@ -252,6 +257,7 @@ ohos_unittest("av_audio_encoder_capi_unit_test") {
 
 ##################################################################################################################
 ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
@@ -295,6 +301,7 @@ ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
 
 ##################################################################################################################
 ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [

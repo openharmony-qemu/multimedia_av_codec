@@ -45,6 +45,7 @@ static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
@@ -701,6 +702,19 @@ bool MediaDemuxer::HasVideo()
     return videoTrackId_ != TRACK_ID_DUMMY;
 }
 
+Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    doPrepareFrame_ = true;
+    Start();
+    AutoLock lock(firstFrameMutex_);
+    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+         return firstFrameCount_ == taskMap_.size();
+    });
+    doPrepareFrame_ = false;
+    return Pause();
+}
+
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMetaMutex_);
@@ -851,6 +865,12 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             } else {
                 MEDIA_LOG_D("OnEvent eventReceiver_ null.");
             }
+        }
+        if (ret == Status::OK && doPrepareFrame_) {
+            AutoLock lock(firstFrameMutex_);
+            firstFrameCount_++;
+            firstFrameCond_.NotifyAll();
+            taskMap_[trackId]->Pause();
         }
         return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
     }

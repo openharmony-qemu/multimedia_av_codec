@@ -35,6 +35,9 @@ av_codec_sanitize = {
   ubsan = true
   debug = false
 }
+av_codec_test_sanitize = {
+  debug = false
+}
 av_codec_root_dir = "//foundation/multimedia/av_codec"
 media_foundation_root_dir = "//foundation/multimedia/media_foundation"
 audio_framework_root_dir = "//foundation/multimedia/audio_framework"

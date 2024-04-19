@@ -18,10 +18,10 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("AudiodecoderSetParameterFuzzTest") {
+ohos_fuzztest("AudiodecoderConfigureFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file =
-      "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderSetParameter_fuzzer"
+      "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoderconfigure_fuzzer"
   include_dirs = [ "$MEDIA_ROOT_DIR/interfaces/kits/c" ]
   cflags = [
     "-g",
@@ -29,7 +29,7 @@ ohos_fuzztest("AudiodecoderSetParameterFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "audiodecoderSetParameter_fuzzer.cpp" ]
+  sources = [ "audiodecoderConfigure_fuzzer.cpp" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
@@ -54,7 +54,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":AudiodecoderSetParameterFuzzTest",
+    ":AudiodecoderConfigureFuzzTest",
   ]
 }
 ###############################################################################

@@ -68,6 +68,7 @@ public:
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status Reset();
+    Status PrepareFrame(bool renderFirstFrame);
     Status Start();
     Status Stop();
     Status Pause();
@@ -166,6 +167,11 @@ private:
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
+
+    Mutex firstFrameMutex_{};
+    ConditionVariable firstFrameCond_;
+    uint64_t firstFrameCount_ = 0;
+    bool doPrepareFrame_{false};
 };
 } // namespace Media
 } // namespace OHOS

@@ -49,6 +49,7 @@ hwdecoder_moduletest_cflags = [
 
 ##################################################################################################################
 ohos_unittest("hwdecoder_native_module_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   include_dirs = hwdecoder_moduletest_native_include_dirs
   include_dirs += [ "./" ]
