@@ -55,14 +55,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
     EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
-{
-    int testDuration = 10;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
-    size_t expectBufferSize = 10 * 1024 * 1024;
-    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
-}
-
 HWTEST_F(HlsMediaDownloaderUnitTest, OPEN_URL_TEST_001, TestSize.Level1)
 {
     std::string test_url = TEST_URI_PATH + M3U8_PATH_1;
