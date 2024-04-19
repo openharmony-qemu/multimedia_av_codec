@@ -861,7 +861,6 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     MEDIA_LOG_D("Get media info by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Get media info failed due to formatContext_ is nullptr.");
-
     if (streamParser_ != nullptr && !streamParserInited_) {
         for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
             auto avStream = formatContext_->streams[trackIndex];
@@ -869,18 +868,14 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
                 GetVideoFirstKeyFrame(trackIndex);
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
-
                 streamParser_->ConvertExtraDataToAnnexb(
                     avStream->codecpar->extradata, avStream->codecpar->extradata_size);
                 streamParserInited_ = true;
-
                 break;
             }
         }
     }
-
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
-
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         Meta meta;
         auto avStream = formatContext_->streams[trackIndex];
@@ -890,18 +885,16 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             continue;
         }
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta);
-        if (HaveValidParser(avStream->codecpar->codec_id)) {
+        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
             if (streamParser_ != nullptr && streamParserInited_ && firstFrame_ != nullptr) {
                 streamParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0, false);
                 streamParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
                 // Parser only sends xps info when first call ConvertPacketToAnnexb
                 // readSample will call ConvertPacketToAnnexb again, so rest here
                 streamParser_->ResetXPSSendStatus();
-                if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-                    ParseHEVCMetadataInfo(*avStream, meta);
-                }
+                ParseHEVCMetadataInfo(*avStream, meta);
             } else {
-                MEDIA_LOG_W("streamParser_ or firstFrame_ is nullptr, parser hevc/vvc fail");
+                MEDIA_LOG_W("streamParser_ or firstFrame_ is nullptr, parser hevc fail");
             }
         }
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC ||
