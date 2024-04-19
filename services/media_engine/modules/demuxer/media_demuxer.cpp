@@ -480,7 +480,12 @@ Status MediaDemuxer::Flush()
 Status MediaDemuxer::StopAllTask()
 {
     MEDIA_LOG_I("StopAllTask enter.");
-    streamDemuxer_->SetIsIgnoreParse(true);
+    if (streamDemuxer_ != nullptr) {
+        streamDemuxer_->SetIsIgnoreParse(true);
+    }
+    if (source_ != nullptr) {
+        source_->Stop();
+    }
 
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
@@ -666,7 +671,6 @@ Status MediaDemuxer::Stop()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
     isStopped_ = true;
-    source_->Stop();
     StopAllTask();
     streamDemuxer_->Stop();
     return plugin_->Stop();
