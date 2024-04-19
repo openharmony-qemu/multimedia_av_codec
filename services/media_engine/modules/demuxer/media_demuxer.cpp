@@ -45,6 +45,7 @@ static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -843,7 +844,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
         // when read failed, or request always failed in 1min, send error event
-        if (ret == Status::ERROR_UNKNOWN || requestBufferErrorCountMap_[trackId] >= 12000) { // retry 1min 5ms*200*60
+        if (ret == Status::ERROR_UNKNOWN || requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
