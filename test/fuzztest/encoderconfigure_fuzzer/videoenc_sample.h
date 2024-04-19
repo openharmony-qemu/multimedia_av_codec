@@ -65,7 +65,6 @@ public:
     uint32_t defaultBitrateMode = CBR;
     OH_AVPixelFormat defaultPixFmt = AV_PIXEL_FORMAT_NV12;
     uint32_t defaultKeyFrameInterval = 1000;
-    uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
     int32_t ConfigureVideoEncoderFuzz(int32_t data);

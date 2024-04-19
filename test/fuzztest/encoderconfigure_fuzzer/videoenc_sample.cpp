@@ -29,7 +29,7 @@ constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 constexpr uint32_t DOUBLE = 2;
-VEncFuzzSample *enc_sample = nullptr;
+VEncFuzzSample *g_encSample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -82,8 +82,7 @@ int64_t VEncFuzzSample::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
-
+    int64_t nanoTime = static_cast<int64_t>(now.tv_sec) * NANOS_IN_SECOND + now.tv_nsec;
     return nanoTime / NANOS_IN_MICRO;
 }
 
@@ -252,7 +251,7 @@ int32_t VEncFuzzSample::StartVideoEncoder()
 int32_t VEncFuzzSample::CreateVideoEncoder(const char *codecName)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
-    enc_sample = this;
+    g_encSample = this;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 

@@ -71,7 +71,6 @@ public:
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
-    void Flush_buffer();
     int32_t Reset();
     void SetEOS(uint32_t index);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);

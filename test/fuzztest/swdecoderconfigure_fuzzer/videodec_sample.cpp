@@ -108,7 +108,7 @@ int64_t VDecFuzzSample::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
+    int64_t nanoTime = static_cast<int64_t>(now.tv_sec) * NANOS_IN_SECOND + now.tv_nsec;
     return nanoTime / NANOS_IN_MICRO;
 }
 
@@ -324,21 +324,6 @@ void VDecFuzzSample::OutputFunc()
     (void)fclose(outFile);
 }
 
-void VDecFuzzSample::Flush_buffer()
-{
-    unique_lock<mutex> inLock(signal_->inMutex_);
-    clearIntqueue(signal_->inIdxQueue_);
-    std::queue<OH_AVMemory *> empty;
-    swap(empty, signal_->inBufferQueue_);
-    signal_->inCond_.notify_all();
-    inLock.unlock();
-    unique_lock<mutex> outLock(signal_->outMutex_);
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    signal_->outCond_.notify_all();
-    outLock.unlock();
-}
-
 void VDecFuzzSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr)
 {
     switch (frameBuffer[START_CODE_SIZE] & H264_NALU_TYPE) {
@@ -378,9 +363,8 @@ int32_t VDecFuzzSample::ReadData(uint32_t index, OH_AVMemory *buffer)
         SetEOS(index);
         return 1;
     }
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
-
     return SendData(bufferSize, index, buffer);
 }
 
