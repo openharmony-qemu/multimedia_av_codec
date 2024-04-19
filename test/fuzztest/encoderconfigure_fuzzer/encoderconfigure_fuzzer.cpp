@@ -40,7 +40,7 @@ bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     vEncSample->SetVideoEncoderCallback();
     vEncSample->fuzzMode = true;
-    vEncSample->ConfigureVideoEncoder_fuzz(data_);
+    vEncSample->ConfigureVideoEncoderFuzz(data_);
     vEncSample->StartVideoEncoder();
     vEncSample->WaitForEOS();
     delete vEncSample;

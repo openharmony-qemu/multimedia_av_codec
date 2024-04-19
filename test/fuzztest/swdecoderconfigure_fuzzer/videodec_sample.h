@@ -77,7 +77,6 @@ public:
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
     void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
     int32_t ReadData(uint32_t index, OH_AVMemory *buffer);
-    int32_t state_EOS();
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
@@ -100,8 +99,6 @@ public:
     int64_t outTimeArray[2000] = {};
     bool sleepOnFPS = false;
     bool repeatRun = false;
-    int64_t start_time = 0;
-    int64_t end_time = 0;
     bool setParameters = false;
     OH_AVCodec *vdec_;
 

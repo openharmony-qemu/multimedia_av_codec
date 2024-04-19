@@ -70,12 +70,12 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
-    int32_t current_width = 0;
-    int32_t current_height = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
-    dec_sample->defaultWidth = current_width;
-    dec_sample->defaultHeight = current_height;
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
+    dec_sample->defaultWidth = currentWidth;
+    dec_sample->defaultHeight = currentHeight;
 }
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
@@ -131,27 +131,23 @@ int32_t VDecFuzzSample::ConfigureVideoDecoder()
 
 int32_t VDecFuzzSample::RunVideoDec(string codeName)
 {
- 
     int err = CreateVideoDecoder(codeName);
     if (err != AV_ERR_OK) {
         cout << "Failed to create video decoder" << endl;
         return err;
     }
-
     err = ConfigureVideoDecoder();
     if (err != AV_ERR_OK) {
         cout << "Failed to configure video decoder" << endl;
         Release();
         return err;
     }
-
     err = SetVideoDecoderCallback();
     if (err != AV_ERR_OK) {
         cout << "Failed to setCallback" << endl;
         Release();
         return err;
     }
-
     err = StartVideoDecoder();
     if (err != AV_ERR_OK) {
         cout << "Failed to start video decoder" << endl;
@@ -399,7 +395,7 @@ uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemo
         StopOutloop();
         return 1;
     }
-    uint8_t *bufferAddr= OH_AVMemory_GetAddr(buffer);
+    uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
     if (memcpy_s(bufferAddr, size, frameBuffer, attr.size) != EOK) {
         delete[] frameBuffer;
         cout << "Fatal: memcpy fail" << endl;

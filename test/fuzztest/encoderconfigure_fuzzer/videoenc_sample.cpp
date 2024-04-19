@@ -109,7 +109,7 @@ int32_t VEncFuzzSample::ConfigureVideoEncoder()
     return ret;
 }
 
-int32_t VEncFuzzSample::ConfigureVideoEncoder_fuzz(int32_t data)
+int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
@@ -281,15 +281,17 @@ uint32_t VEncFuzzSample::ReadOneFrameYUV420SP(uint8_t *dst)
     // copy Y
     for (uint32_t i = 0; i < defaultHeight; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
-        if (!ReturnZeroIfEOS(defaultWidth))
+        if (!ReturnZeroIfEOS(defaultWidth)) {
             return 0;
+        }
         dst += stride_;
     }
     // copy UV
-    for (uint32_t i = 0; i < defaultHeight / SAMPLE_RATIO; i++) {
+    for (uint32_t i = 0; i < defaultHeight / sampleRatio; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
-        if (!ReturnZeroIfEOS(defaultWidth))
+        if (!ReturnZeroIfEOS(defaultWidth)) {
             return 0;
+        }
         dst += stride_;
     }
     return dst - start;
@@ -301,21 +303,6 @@ void VEncFuzzSample::ReadOneFrameRGBA8888(uint8_t *dst)
         inFile_->read(reinterpret_cast<char *>(dst), defaultWidth * RGBA_SIZE);
         dst += stride_;
     }
-}
-
-void VEncFuzzSample::Flush_buffer()
-{
-    unique_lock<mutex> inLock(signal_->inMutex_);
-    clearIntqueue(signal_->inIdxQueue_);
-    std::queue<OH_AVMemory *> empty;
-    swap(empty, signal_->inBufferQueue_);
-    signal_->inCond_.notify_all();
-    inLock.unlock();
-    unique_lock<mutex> outLock(signal_->outMutex_);
-    clearIntqueue(signal_->outIdxQueue_);
-    clearBufferqueue(signal_->attrQueue_);
-    signal_->outCond_.notify_all();
-    outLock.unlock();
 }
 
 void VEncFuzzSample::SetEOS(uint32_t index)

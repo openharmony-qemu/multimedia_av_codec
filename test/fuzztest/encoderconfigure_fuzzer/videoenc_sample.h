@@ -68,7 +68,7 @@ public:
     uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
-    int32_t ConfigureVideoEncoder_fuzz(int32_t data);
+    int32_t ConfigureVideoEncoderFuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t StartVideoEncoder();
     int32_t SetParameter(OH_AVFormat *format);
@@ -83,7 +83,6 @@ public:
     int32_t Reset();
     int32_t Stop();
     int32_t Release();
-    void Flush_buffer();
     bool RandomEOS(uint32_t index);
     void SetEOS(uint32_t index);
     int32_t PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result);
@@ -129,7 +128,7 @@ private:
     bool isFirstFrame_ = true;
     OHNativeWindow *nativeWindow;
     int stride_;
-    static constexpr uint32_t SAMPLE_RATIO = 2;
+    static constexpr uint32_t sampleRatio = 2;
 };
 } // namespace Media
 } // namespace OHOS
