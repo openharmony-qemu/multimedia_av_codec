@@ -647,6 +647,7 @@ Status MediaDemuxer::Start()
         it->second = false;
     }
     isThreadExit_ = false;
+    isStopped_ = false;
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
@@ -664,8 +665,9 @@ Status MediaDemuxer::Stop()
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    StopAllTask();
+    isStopped_ = true;
     source_->Stop();
+    StopAllTask();
     streamDemuxer_->Stop();
     return plugin_->Stop();
 }
@@ -833,12 +835,12 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse()) {
+    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
-        if (ret == Status::ERROR_UNKNOWN) {
+        if (ret == Status::ERROR_UNKNOWN && !isStopped_) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
