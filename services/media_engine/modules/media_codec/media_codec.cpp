@@ -608,7 +608,7 @@ void MediaCodec::ProcessInputBuffer()
         return;
     }
     if (state_ != CodecState::RUNNING) {
-        MEDIA_LOG_E("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
+        MEDIA_LOG_D("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
         return;
     }
