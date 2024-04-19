@@ -162,6 +162,7 @@ private:
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
 
+    std::atomic<bool> isStopped_ = false;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
