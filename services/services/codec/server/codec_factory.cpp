@@ -102,8 +102,14 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             return codec;
     }
     (void)apiVersion;
-    EXPECT_AND_LOGI(codec != nullptr, "Create codec %{public}s successful", name.c_str());
-    error = AVCS_ERR_OK;
+    if (codec != nullptr) {
+        AVCODEC_LOGI("Create codec %{public}s successful", name.c_str());
+        error = AVCS_ERR_OK;
+    } else {
+        AVCODEC_LOGE("Create codec %{public}s failed", name.c_str());
+        error = AVCS_ERR_NO_MEMORY;
+    }
+    
     return codec;
 }
 } // namespace MediaAVCodec
