@@ -1180,8 +1180,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
-    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER,
-        "Read Sample failed due to samplePacket is nullptr");
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Read failed, samplePacket is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_W("File is end, push EOS buffer to user queue.");
         ret = ReadEosSample(sample);
@@ -1193,7 +1192,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_D("Sample size is not enough, copy partial frame");
         return Status::OK;
     }
     if (ret == Status::OK) {
