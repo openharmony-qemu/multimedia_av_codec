@@ -85,7 +85,7 @@ void AudioDataSourceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     callback_ = callback;
     if (!taskPtr_) {
         taskPtr_ = std::make_shared<Task>("DataReader");
-        taskPtr_->RegisterJob([this] { ReadLoop(); return 0});
+        taskPtr_->RegisterJob([this] { ReadLoop(); return 0;});
     }
 }
  
