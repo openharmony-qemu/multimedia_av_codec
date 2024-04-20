@@ -69,7 +69,7 @@ public:
     virtual int32_t Init(Format &format)
     {
         (void)format;
-        return AVCODEC_ERROR_EXTEND_START;
+        return 0;
     }
 
     virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta)
