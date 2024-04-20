@@ -68,7 +68,7 @@ private:
 
     Mutex captureMutex_{};
 };
- // namespace Pipeline
+} // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
 #endif // FILTERS_AUDIO_CAPTURE_FILTER_H
