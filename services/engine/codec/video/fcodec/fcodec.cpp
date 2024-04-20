@@ -538,6 +538,15 @@ int32_t FCodec::GetOutputFormat(Format &format)
         int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
+
+    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_STRIDE)) {
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
+    }
+
+    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT)) {
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+    }
+
     format = format_;
     AVCODEC_LOGI("Get outputFormat successful");
     return AVCS_ERR_OK;
