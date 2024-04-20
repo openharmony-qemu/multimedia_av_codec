@@ -120,12 +120,15 @@ Status MuxerFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     stopCount_++;
+    Status ret = Status::OK;
     if (stopCount_ == preFilterCount_) {
         stopCount_ = 0;
-        return mediaMuxer_->Stop();
-    } else {
-        return Status::OK;
+        ret = mediaMuxer_->Stop();
+        if (ret == Status::ERROR_WRONG_STATE) {
+            return Status::Ok;
+        }
     }
+    return ret;
 }
 
 Status MuxerFilter::DoFlush()
