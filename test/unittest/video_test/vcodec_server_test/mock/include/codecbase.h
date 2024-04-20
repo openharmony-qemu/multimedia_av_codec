@@ -135,7 +135,7 @@ public:
     MOCK_METHOD(int32_t, SignalRequestIDRFrame, ());
     MOCK_METHOD(int32_t, GetInputFormat, (Format & format));
     MOCK_METHOD(std::string, GetHidumperInfo, ());
-    MOCK_METHOD(int32_t, SetCallerInfo, (Format & format));
+    MOCK_METHOD(int32_t, Init, (Format & format));
 
     /* API11 audio codec interface */
     MOCK_METHOD(int32_t, CreateCodecByName, (const std::string &name));
@@ -181,7 +181,7 @@ public:
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format &format);
     virtual std::string GetHidumperInfo();
-    virtual int32_t SetCallerInfo(Format &format);
+    virtual int32_t Init(Format &format);
 
     /* API11 audio codec interface */
     virtual int32_t CreateCodecByName(const std::string &name);
