@@ -66,9 +66,9 @@ public:
         return AVCODEC_ERROR_EXTEND_START;
     }
 
-    virtual int32_t Init(Format &format)
+    virtual int32_t Init(Media::Meta &callerInfo)
     {
-        (void)format;
+        (void)callerInfo;
         return 0;
     }
 

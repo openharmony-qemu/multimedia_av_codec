@@ -137,7 +137,7 @@ int32_t CodecServer::InitServer()
 }
 
 int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name,
-                          Format &format, API_VERSION apiVersion)
+                          Meta &callerInfo, API_VERSION apiVersion)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
@@ -164,7 +164,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     }
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY,
         "CodecBase is nullptr, %{public}s", codecName_.c_str());
-    int32_t ret = codecBase_->Init(format);
+    int32_t ret = codecBase_->Init(callerInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase Init failed");
 
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());

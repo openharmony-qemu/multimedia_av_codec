@@ -59,7 +59,7 @@ int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std
     inputTask_ = std::make_unique<TaskThread>(ASYNC_HANDLE_INPUT);
     outputTask_ = std::make_unique<TaskThread>(ASYNC_OUTPUT_FRAME);
 
-    return codecService_->Init(type, isMimeType, name, format, API_VERSION::API_VERSION_11);
+    return codecService_->Init(type, isMimeType, name, *format.GetMeta(), API_VERSION::API_VERSION_11);
 }
 
 AVCodecAudioCodecImpl::AVCodecAudioCodecImpl()

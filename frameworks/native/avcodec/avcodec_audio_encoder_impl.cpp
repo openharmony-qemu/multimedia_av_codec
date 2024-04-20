@@ -55,7 +55,7 @@ int32_t AVCodecAudioEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
     codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
 
-    return codecService_->Init(type, isMimeType, name, format);
+    return codecService_->Init(type, isMimeType, name, *format.GetMeta());
 }
 
 AVCodecAudioEncoderImpl::AVCodecAudioEncoderImpl()

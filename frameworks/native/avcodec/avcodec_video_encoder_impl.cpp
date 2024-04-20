@@ -84,7 +84,7 @@ int32_t AVCodecVideoEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
     int32_t ret = AVCodecServiceFactory::GetInstance().CreateCodecService(codecClient_);
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, ret, "Codec client create failed");
 
-    return codecClient_->Init(type, isMimeType, name, format);
+    return codecClient_->Init(type, isMimeType, name, *format.GetMeta());
 }
 
 AVCodecVideoEncoderImpl::AVCodecVideoEncoderImpl()

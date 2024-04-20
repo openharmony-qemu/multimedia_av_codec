@@ -88,17 +88,17 @@ int32_t CodecClient::CreateListenerObject()
 }
 
 int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name,
-                          Format &format, API_VERSION apiVersion)
+                          Meta &callerInfo, API_VERSION apiVersion)
 {
     (void)apiVersion;
     using namespace OHOS::Media;
-    format.PutIntValue(Tag::AV_CODEC_CALLER_PID, getpid());
-    format.PutStringValue(Tag::AV_CODEC_CALLER_PROCESS_NAME, program_invocation_name);
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getpid());
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, program_invocation_name);
 
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
-    int32_t ret = codecProxy_->Init(type, isMimeType, name, format);
+    int32_t ret = codecProxy_->Init(type, isMimeType, name, callerInfo);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
