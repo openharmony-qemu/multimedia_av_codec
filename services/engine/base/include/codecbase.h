@@ -66,7 +66,7 @@ public:
         return AVCODEC_ERROR_EXTEND_START;
     }
 
-    virtual int32_t SetCallerInfo(Format &format)
+    virtual int32_t Init(Format &format)
     {
         (void)format;
         return AVCODEC_ERROR_EXTEND_START;

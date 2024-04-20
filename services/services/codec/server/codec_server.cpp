@@ -143,10 +143,9 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     codecType_ = type;
-    AVCodecServiceErrCode error = AVCS_ERR_OK;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
-        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_, error);
+        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_);
     } else {
         codecName_ = name;
         if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
@@ -161,12 +160,15 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
                 return AVCS_ERR_INVALID_OPERATION;
             }
         }
-        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion, error);
+        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
     }
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, error, "CodecBase is nullptr, %{public}s", codecName_.c_str());
-    codecBase_->SetCallerInfo(format);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY,
+        "CodecBase is nullptr, %{public}s", codecName_.c_str());
+    int32_t ret = codecBase_->Init(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase Init failed");
+
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
-    int32_t ret = codecBase_->SetCallback(callback);
+    ret = codecBase_->SetCallback(callback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase SetCallback failed");
 
     std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());

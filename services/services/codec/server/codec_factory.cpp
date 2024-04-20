@@ -45,8 +45,7 @@ CodecFactory &CodecFactory::Instance()
 CodecFactory::~CodecFactory() {}
 
 std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder, const std::string &mime,
-                                                           API_VERSION apiVersion, std::string &codecName,
-                                                           AVCodecServiceErrCode &error)
+                                                           API_VERSION apiVersion, std::string &codecName)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
     std::vector<std::string> nameArray = codecListCore->FindCodecNameArray(mime, isEncoder);
@@ -56,20 +55,17 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder, const
             continue;
         }
 #endif
-        std::shared_ptr<CodecBase> codec = CreateCodecByName(name, apiVersion, error);
+        std::shared_ptr<CodecBase> codec = CreateCodecByName(name, apiVersion);
         if (codec != nullptr) {
             codecName = name;
-            error = AVCS_ERR_OK;
             return codec;
         }
     }
     AVCODEC_LOGE("Failed to find codec. %{public}s", mime.c_str());
-    error = AVCS_ERR_UNSUPPORT;
     return nullptr;
 }
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion,
-                                                           AVCodecServiceErrCode &error)
+std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
     CodecType codecType = codecListCore->FindCodecType(name);
@@ -77,11 +73,9 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
     switch (codecType) {
 #ifndef CLIENT_SUPPORT_CODEC
         case CodecType::AVCODEC_HCODEC:
-            (void)error;
             codec = HCodecLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_CODEC:
-            (void)error;
             codec = FCodecLoader::CreateByName(name);
             break;
 #else
@@ -98,18 +92,10 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
 #endif
         default:
             AVCODEC_LOGE("Create codec %{public}s failed", name.c_str());
-            error = AVCS_ERR_UNSUPPORT;
             return codec;
     }
     (void)apiVersion;
-    if (codec != nullptr) {
-        AVCODEC_LOGI("Create codec %{public}s successful", name.c_str());
-        error = AVCS_ERR_OK;
-    } else {
-        AVCODEC_LOGE("Create codec %{public}s failed", name.c_str());
-        error = AVCS_ERR_NO_MEMORY;
-    }
-    
+    EXPECT_AND_LOGI(codec != nullptr, "Create codec %{public}s successful", name.c_str());
     return codec;
 }
 } // namespace MediaAVCodec
