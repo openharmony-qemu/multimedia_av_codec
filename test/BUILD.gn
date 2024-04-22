@@ -51,6 +51,7 @@ group("av_codec_unit_test") {
       "unittest/hls_test:hls_playlist_downloader_unit_test",
       "unittest/hls_test:hls_tags_unit_test",
       "unittest/hls_test:m3u8_unit_test",
+      "unittest/key_type_test:av_codec_key_type_test",
       "unittest/media_sink_test:av_audio_sink_unit_test",
       "unittest/sa_avcodec_test:sa_avcodec_unit_test",
       "unittest/video_test:av_video_capi_unit_test",
