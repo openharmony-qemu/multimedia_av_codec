@@ -328,6 +328,7 @@ void FileFdSourcePlugin::SetBundleName(const std::string& bundleName)
     MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
     bundleName_ = bundleName;
     timerTask_ = std::make_shared<Task>(std::string("timerTask"), "", TaskType::SINGLETON);
+    timerTask_->SetEnableStateChangeLog(false);
     timerTask_->RegisterJob([this] { return ReadTimer(); });
     downloadTask_ = std::make_shared<Task>(std::string("downloadTask"), "", TaskType::SINGLETON);
     downloadTask_->RegisterJob([this] {

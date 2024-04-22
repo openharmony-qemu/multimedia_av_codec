@@ -442,11 +442,6 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, task.second->GetUniqueId(),
                 task.second->pts_, task.second->flag_);
-        Event event {
-            .srcFilter = "VideoSink",
-            .type = EventType::EVENT_COMPLETE,
-        };
-        eventReceiver_ ->OnEvent(event);
     }
     return Status::OK;
 }
@@ -488,7 +483,7 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_I("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
+    MEDIA_LOG_D("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
     if (doPrepareFrame_.load()) {
         if (renderFirstFrame_) {

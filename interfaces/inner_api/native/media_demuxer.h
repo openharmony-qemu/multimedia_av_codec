@@ -74,7 +74,6 @@ public:
     Status Pause();
     Status Resume();
     Status Flush();
-    Status PauseAsync();
 
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
@@ -164,6 +163,7 @@ private:
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
 
+    std::atomic<bool> isStopped_ = false;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;

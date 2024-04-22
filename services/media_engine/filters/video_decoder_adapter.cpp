@@ -108,7 +108,8 @@ Status VideoDecoderAdapter::Configure(const Format &format)
     MEDIA_LOG_I("VideoDecoderAdapter->Configure.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Configure(format);
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_DATA;
+    isConfigured_ = ret == AVCodecServiceErrCode::AVCS_ERR_OK;
+    return isConfigured_ ? Status::OK : Status::ERROR_INVALID_DATA;
 }
 
 int32_t VideoDecoderAdapter::SetParameter(const Format &format)
@@ -122,6 +123,7 @@ Status VideoDecoderAdapter::Start()
 {
     MEDIA_LOG_I("Start enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     int32_t ret = mediaCodec_->Start();
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
@@ -130,6 +132,7 @@ Status VideoDecoderAdapter::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     mediaCodec_->Stop();
     return Status::OK;
 }
@@ -138,13 +141,16 @@ Status VideoDecoderAdapter::Flush()
 {
     MEDIA_LOG_I("Flush enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     int32_t ret = mediaCodec_->Flush();
     std::unique_lock<std::mutex> lock(mutex_);
-    for (auto &buffer : bufferVector_) {
-        inputBufferQueueConsumer_->DetachBuffer(buffer);
+    if (inputBufferQueueConsumer_ != nullptr) {
+        for (auto &buffer : bufferVector_) {
+            inputBufferQueueConsumer_->DetachBuffer(buffer);
+        }
+        bufferVector_.clear();
+        inputBufferQueueConsumer_->SetQueueSize(0);
     }
-    bufferVector_.clear();
-    inputBufferQueueConsumer_->SetQueueSize(0);
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
@@ -153,12 +159,15 @@ Status VideoDecoderAdapter::Reset()
     MEDIA_LOG_I("Reset enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     mediaCodec_->Reset();
+    isConfigured_ = false;
     std::unique_lock<std::mutex> lock(mutex_);
-    for (auto &buffer : bufferVector_) {
-        inputBufferQueueConsumer_->DetachBuffer(buffer);
+    if (inputBufferQueueConsumer_ != nullptr) {
+        for (auto &buffer : bufferVector_) {
+            inputBufferQueueConsumer_->DetachBuffer(buffer);
+        }
+        bufferVector_.clear();
+        inputBufferQueueConsumer_->SetQueueSize(0);
     }
-    bufferVector_.clear();
-    inputBufferQueueConsumer_->SetQueueSize(0);
     return Status::OK;
 }
 
@@ -188,6 +197,10 @@ void VideoDecoderAdapter::SetInputBufferQueue(sptr<Media::AVBufferQueueConsumer>
 void VideoDecoderAdapter::AquireAvailableInputBuffer()
 {
     AVCodecTrace trace("VideoDecoderAdapter::AquireAvailableInputBuffer");
+    if (inputBufferQueueConsumer_ == nullptr) {
+        MEDIA_LOG_E("inputBufferQueueConsumer_ is null");
+        return;
+    }
     std::unique_lock<std::mutex> lock(mutex_);
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
