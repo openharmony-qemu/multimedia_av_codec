@@ -1329,9 +1329,9 @@ void FFmpegDemuxerPlugin::SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuff
     sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
     bool canDrop = false;
     if (codecId == AV_CODEC_ID_HEVC) {
-        canDrop = CanDropHevcPkt(*tempPkt);
+        canDrop = CanDropHevcPkt(pkt);
     } else if (codecId == AV_CODEC_ID_H264) {
-        canDrop = CanDropAvcPkt(*tempPkt);
+        canDrop = CanDropAvcPkt(pkt);
     }
     if (canDrop) {
         sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
