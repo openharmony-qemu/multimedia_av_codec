@@ -1158,12 +1158,10 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
         "Read Sample failed due to no track has been selected.");
-
     FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to input sample is nullptr");
-
     Status ret;
     if (NeedCombineFrame(trackId)) {
         ret = ReadPacketToCacheQueue(trackId);
@@ -1172,15 +1170,17 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
-        } else if (ret == Status::ERROR_UNKNOWN || ret == Status::ERROR_AGAIN) {
+        } else if (ret == Status::ERROR_UNKNOWN) {
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
+        } else if (ret == Status::ERROR_AGAIN) {
+            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            return Status::ERROR_AGAIN;
         }
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
-    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER,
-        "Read Sample failed due to samplePacket is nullptr");
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Read failed, samplePacket is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_W("File is end, push EOS buffer to user queue.");
         ret = ReadEosSample(sample);
@@ -1192,7 +1192,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_D("Sample size is not enough, copy partial frame");
         return Status::OK;
     }
     if (ret == Status::OK) {

@@ -46,6 +46,7 @@ static const int32_t START = 1;
 static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
 static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
+static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -131,6 +132,7 @@ MediaDemuxer::~MediaDemuxer()
     source_ = nullptr;
     eventReceiver_ = nullptr;
     eosMap_.clear();
+    requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
 }
 
@@ -365,6 +367,7 @@ std::map<uint32_t, sptr<AVBufferQueueProducer>> MediaDemuxer::GetBufferQueueProd
 Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 {
     eosMap_[trackId] = false;
+    requestBufferErrorCountMap_[trackId] = 0;
     return plugin_->SelectTrack(trackId);
 }
 
@@ -410,6 +413,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     isSeeked_ = true;
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
+    }
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
     }
     MEDIA_LOG_I("SeekTo done");
     return ret;
@@ -620,6 +626,9 @@ Status MediaDemuxer::Reset()
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
+    }
     videoStartTime_ = 0;
     streamDemuxer_->Reset();
     return plugin_->Reset();
@@ -637,6 +646,9 @@ Status MediaDemuxer::Start()
         "Read task is running already.");
     for (auto it = eosMap_.begin(); it != eosMap_.end(); it++) {
         it->second = false;
+    }
+    for (auto it = requestBufferErrorCountMap_.begin(); it != requestBufferErrorCountMap_.end(); it++) {
+        it->second = 0;
     }
     isThreadExit_ = false;
     isStopped_ = false;
@@ -754,9 +766,13 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
-        MEDIA_LOG_D("Get buffer failed due to get buffer from bufferQueue failed, user queue: "
-            PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+        requestBufferErrorCountMap_[queueIndex]++;
+        OSAL::SleepFor(5); // when request buffer failed, wait 5ms
+    } else {
+        requestBufferErrorCountMap_[queueIndex] = 0;
     }
+    FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
+        PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
     return ret == Status::OK;
 }
 
@@ -801,10 +817,13 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
         }
-        ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+    } else {
+        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+        MEDIA_LOG_E("ReadSample failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
     MEDIA_LOG_D("CopyFrameToUserQueue exit, copy frame for track: " PUBLIC_LOG_U32, trackId);
-    return Status::OK;
+    return ret;
 }
 
 Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
@@ -831,7 +850,9 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
-        if (ret == Status::ERROR_UNKNOWN && !isStopped_) {
+        // when read failed, or request always failed in 1min, send error event
+        if ((ret == Status::ERROR_UNKNOWN && !isStopped_) ||
+             requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
