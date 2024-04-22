@@ -18,16 +18,12 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("SwdecoderSetParameterFuzzTest") {
+ohos_fuzztest("SwdecoderResourceFuzzTest") {
   module_out_path = module_output_path
-
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderresource_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/include",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_surface/surface/include",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
+    "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderconfigure_fuzzer",
   ]
   cflags = [
     "-g",
@@ -36,25 +32,24 @@ ohos_fuzztest("SwdecoderSetParameterFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/src/videodec_ndk_sample.cpp",
-    "swdecoderSetParameter_fuzzer.cpp",
+    "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderconfigure_fuzzer/videodec_sample.cpp",
+    "swdecoderresource_fuzzer.cpp",
   ]
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
-    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
   deps = [
+    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_media_vdec",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
   ]
+
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 ###############################################################################
@@ -63,7 +58,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":SwdecoderSetParameterFuzzTest",  #引用测试套
+    ":SwdecoderResourceFuzzTest",
   ]
 }
 ###############################################################################

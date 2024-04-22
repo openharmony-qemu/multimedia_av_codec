@@ -14,39 +14,36 @@
  */
 #include <cstddef>
 #include <cstdint>
-#include "native_avcodec_videodecoder.h"
+
+#include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
-#include "videodec_ndk_sample.h"
+#include "videoenc_sample.h"
+#include "native_avcapability.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-#define FUZZ_PROJECT_NAME "swdecoderConfigure_fuzzer"
+#define FUZZ_PROJECT_NAME "encoderconfigure_fuzzer"
 
 namespace OHOS {
-bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
+bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int32_t)) {
         return false;
     }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
-    VDecNdkSample *vDecSample = new VDecNdkSample();
-    vDecSample->INP_DIR = "/data/test/media/1280_720_30_10Mb.h264";
-    vDecSample->DEFAULT_WIDTH = data_;
-    vDecSample->DEFAULT_HEIGHT = data_;
-    vDecSample->DEFAULT_FRAME_RATE = data_;
-    vDecSample->DEFAULT_ROTATION = data_;
-    vDecSample->DEFAULT_PIXEL_FORMAT = data_;
-    vDecSample->SURFACE_OUTPUT = false;
-    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
-    vDecSample->ConfigureVideoDecoder();
-    vDecSample->SetVideoDecoderCallback();
-    vDecSample->StartVideoDecoder();
-    vDecSample->WaitForEOS();
-    vDecSample->Release();
-    delete vDecSample;
+    VEncFuzzSample *vEncSample = new VEncFuzzSample();
+    vEncSample->inpDir = "/data/test/media/1280_720_nv.yuv";
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
+    string tmpCodecName = OH_AVCapability_GetName(cap);
+    vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
+    vEncSample->SetVideoEncoderCallback();
+    vEncSample->fuzzMode = true;
+    vEncSample->ConfigureVideoEncoderFuzz(data_);
+    vEncSample->StartVideoEncoder();
+    vEncSample->WaitForEOS();
+    delete vEncSample;
     return result;
 }
 } // namespace OHOS
@@ -55,6 +52,6 @@ bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::swdecoderConfigureFuzzTest(data, size);
+    OHOS::encoderConfigureFuzzTest(data, size);
     return 0;
 }

@@ -16,15 +16,14 @@
 #include <cstdint>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
-#include "videoenc_ndk_sample.h"
-#include "native_avcapability.h"
-#define FUZZ_PROJECT_NAME "encoderSetParameter_fuzzer"
+#include "videodec_sample.h"
+#define FUZZ_PROJECT_NAME "swdecodersetparameter_fuzzer"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
-static VEncNdkSample *vEncSample = nullptr;
-constexpr uint32_t DEFAULT_WIDTH = 1280;
-constexpr uint32_t DEFAULT_HEIGHT = 720;
+static VDecFuzzSample *vDecSample = nullptr;
+constexpr uint32_t DEFAULT_WIDTH = 1920;
+constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
@@ -32,19 +31,16 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    if (!vEncSample) {
-        vEncSample = new VEncNdkSample();
-        vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
-        vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
-        vEncSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
-        OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
-        string tmpCodecName = OH_AVCapability_GetName(cap);
-        vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
-        vEncSample->SetVideoEncoderCallback();
-        vEncSample->ConfigureVideoEncoder();
-        vEncSample->Start();
+    if (!vDecSample) {
+        vDecSample = new VDecFuzzSample();
+        vDecSample->defaultWidth = DEFAULT_WIDTH;
+        vDecSample->defaultHeight = DEFAULT_HEIGHT;
+        vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
+        vDecSample->ConfigureVideoDecoder();
+        vDecSample->SetVideoDecoderCallback();
+        vDecSample->Start();
     }
-
     OH_AVFormat *format = OH_AVFormat_CreateVideoFormat("video/avc", DEFAULT_WIDTH, DEFAULT_HEIGHT);
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
     int64_t longData = *reinterpret_cast<const int64_t *>(data);
@@ -61,7 +57,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
 
-    vEncSample->SetParameter(format);
+    vDecSample->SetParameter(format);
     OH_AVFormat_Destroy(format);
     return true;
 }
