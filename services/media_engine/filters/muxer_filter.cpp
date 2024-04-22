@@ -125,7 +125,7 @@ Status MuxerFilter::DoStop()
         stopCount_ = 0;
         ret = mediaMuxer_->Stop();
         if (ret == Status::ERROR_WRONG_STATE) {
-            return Status::Ok;
+            return Status::OK;
         }
     }
     return ret;
