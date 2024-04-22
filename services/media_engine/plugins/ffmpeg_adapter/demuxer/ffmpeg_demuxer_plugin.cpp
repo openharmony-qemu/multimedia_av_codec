@@ -1247,7 +1247,7 @@ std::shared_ptr<AVInputFormat> FFmpegDemuxerPlugin::InitAVInputFormat(std::share
     const AVInputFormat* avInputFormat = nullptr;
     const AVInputFormat* bestAvInputFormat = nullptr;
 
-    int maxConfidence = -1;
+    int maxConfidence = 0;
 
     void* i = nullptr;
     while ((avInputFormat = av_demuxer_iterate(&i))) {
