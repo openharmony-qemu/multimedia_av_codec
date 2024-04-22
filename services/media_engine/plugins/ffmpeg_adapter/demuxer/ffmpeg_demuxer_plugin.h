@@ -97,6 +97,7 @@ private:
     int FindNaluSpliter(int size, const uint8_t *data);
     bool CanDropAvcPkt(const AVPacket& pkt);
     bool CanDropHevcPkt(const AVPacket& pkt);
+    void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};

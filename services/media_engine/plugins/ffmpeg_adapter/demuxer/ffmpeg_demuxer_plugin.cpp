@@ -530,18 +530,10 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
         ConvertHevcToAnnexb(*tempPkt, samplePacket);
-        sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
-        bool canDrop = CanDropHevcPkt(*tempPkt);
-        if (canDrop) {
-            sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
-        }
+        SetDropTag(*tempPkt, sample, AV_CODEC_ID_HEVC);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
-        sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
-        bool canDrop = CanDropAvcPkt(*tempPkt);
-        if (canDrop) {
-            sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
-        }
+        SetDropTag(*tempPkt, sample, AV_CODEC_ID_H264);
     }
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
@@ -1331,6 +1323,20 @@ void FFmpegDemuxerPlugin::ReplaceDelimiter(const std::string& delmiters, char ne
     }
     MEDIA_LOG_D("Reset to [" PUBLIC_LOG_S "].", str.c_str());
 };
+
+void FFmpegDemuxerPlugin::SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId)
+{
+    sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
+    bool canDrop = false;
+    if (codecId == AV_CODEC_ID_HEVC) {
+        canDrop = CanDropHevcPkt(*tempPkt);
+    } else if (codecId == AV_CODEC_ID_H264) {
+        canDrop = CanDropAvcPkt(*tempPkt);
+    }
+    if (canDrop) {
+        sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
+    }
+}
 
 int FFmpegDemuxerPlugin::FindNaluSpliter(int size, const uint8_t* data)
 {

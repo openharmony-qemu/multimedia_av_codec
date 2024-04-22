@@ -790,7 +790,6 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     if (!GetBufferFromUserQueue(trackId, size)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
@@ -818,7 +817,6 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
-            MEDIA_LOG_D("CopyFrameToUserQueue exit, copy frame for track: " PUBLIC_LOG_U32, trackId);
             return Status::OK;
         }
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
