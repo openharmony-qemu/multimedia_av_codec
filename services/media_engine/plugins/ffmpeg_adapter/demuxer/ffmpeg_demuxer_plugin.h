@@ -94,6 +94,10 @@ private:
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
 
+    int FindNaluSpliter(int size, const uint8_t *data);
+    bool CanDropAvcPkt(const AVPacket& pkt);
+    bool CanDropHevcPkt(const AVPacket& pkt);
+
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
         int64_t offset {0};

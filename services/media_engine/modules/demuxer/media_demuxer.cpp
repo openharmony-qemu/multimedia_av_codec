@@ -46,6 +46,7 @@ static const int32_t START = 1;
 static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
 static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
+static const double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
@@ -816,8 +817,12 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
+            ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+            MEDIA_LOG_D("CopyFrameToUserQueue exit, copy frame for track: " PUBLIC_LOG_U32, trackId);
+            return Status::OK;
         }
-        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+        bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
+        ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
         MEDIA_LOG_E("ReadSample failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
@@ -971,6 +976,73 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         default:
             break;
     }
+}
+
+Status MediaDemuxer::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+{
+    MEDIA_LOG_I("OptimizeDecodeSlow entered.");
+    useDecodeSlowOptimization_ = useDecodeSlowOptimization;
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit,
+    uint32_t trackId)
+{
+    MEDIA_LOG_I("decodeFramerateUpperLimit = " PUBLIC_LOG_D32 " trackId = " PUBLIC_LOG_D32,
+        decodeFramerateUpperLimit, trackId);
+    FALSE_RETURN_V(trackId == videoTrackId_, Status::OK);
+    FALSE_RETURN_V_MSG_E(decodeFramerateUpperLimit > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetDecodeFramerateUpperLimit failed, decodeFramerateUpperLimit <= 0");
+    decodeFramerateUpperLimit_.store(decodeFramerateUpperLimit);
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetSpeed(float speed)
+{
+    MEDIA_LOG_I("speed = " PUBLIC_LOG_F, speed);
+    FALSE_RETURN_V_MSG_E(speed > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetSpeed failed, speed <= 0");
+    speed_.store(speed);
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetFrameRate(double frameRate, uint32_t trackId)
+{
+    MEDIA_LOG_I("frameRate = " PUBLIC_LOG_F " trackId = " PUBLIC_LOG_D32,
+        frameRate, trackId);
+    FALSE_RETURN_V(trackId == videoTrackId_, Status::OK);
+    FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetFrameRate failed, frameRate <= 0");
+    frameRate_.store(frameRate);
+    return Status::OK;
+}
+
+bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
+{
+    if (trackId != videoTrackId_) {
+        return false;
+    }
+
+    if (!useDecodeSlowOptimization_.load()) {
+        return false;
+    }
+
+    double targetRate = frameRate_.load() * speed_.load();
+    double actualRate = decodeFramerateUpperLimit_.load() * (1 + DECODE_RATE_THRESHOLD);
+    if (targetRate <= actualRate) {
+        return false;
+    }
+
+    bool canDrop = false;
+    bool ret = sample->meta_->GetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, canDrop);
+    if (!ret || !canDrop) {
+        return false;
+    }
+
+    MEDIA_LOG_D("drop buffer, frameRate = " PUBLIC_LOG_F " speed = " PUBLIC_LOG_F " decodeUpLimit = "
+        PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_U64, frameRate_.load(), speed_.load(),
+        decodeFramerateUpperLimit_.load(), sample->pts_);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

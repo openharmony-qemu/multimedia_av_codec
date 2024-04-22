@@ -89,6 +89,7 @@ protected:
 private:
     std::string GetCodecName(std::string mimeType);
     int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    void ParseDecodeRateLimit();
 
     std::string name_;
     FilterType filterType_;

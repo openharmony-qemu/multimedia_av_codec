@@ -38,6 +38,7 @@ namespace OHOS {
 namespace Media {
 namespace {
     constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+    constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
 }
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
@@ -90,6 +91,11 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
+
+    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
+    Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
+    Status SetSpeed(float speed);
+    Status SetFrameRate(double frameRate, uint32_t trackId);
 private:
     class DataSourceImpl;
 
@@ -123,6 +129,7 @@ private:
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
     bool HasVideo();
+    bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
 
     Plugins::Seekable seekable_;
     std::string uri_;
@@ -172,6 +179,11 @@ private:
     ConditionVariable firstFrameCond_;
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
+
+    std::atomic<bool> useDecodeSlowOptimization_ {false};
+    std::atomic<float> speed_ {1.0f};
+    std::atomic<double> frameRate_ {0.0};
+    std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 };
 } // namespace Media
 } // namespace OHOS
