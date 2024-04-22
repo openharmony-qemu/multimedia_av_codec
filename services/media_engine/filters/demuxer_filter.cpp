@@ -119,7 +119,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
     demuxer_->SetDrmCallback(drmCallback);
     demuxer_->SetEventReceiver(receiver);
-    demuxer_->SetPlayerId(playerId_);
+    demuxer_->SetPlayerId(groupId_);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -198,21 +198,14 @@ Status DemuxerFilter::DoPrepare()
     return Status::OK;
 }
 
-Status DemuxerFilter::PrepareFrame(bool renderFirstFrame)
+Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
 {
     MEDIA_LOG_I("PrepareFrame enter.");
-    Filter::PrepareFrame(renderFirstFrame);
     auto ret = demuxer_->PrepareFrame(renderFirstFrame);
     if (ret == Status::OK) {
         isPrepareFramed = true;
     }
     return ret;
-}
-
-Status DemuxerFilter::WaitPrepareFrame()
-{
-    MEDIA_LOG_I("WaitPrepareFrame enter.");
-    return Filter::WaitPrepareFrame();
 }
 
 Status DemuxerFilter::PrepareBeforeStart()

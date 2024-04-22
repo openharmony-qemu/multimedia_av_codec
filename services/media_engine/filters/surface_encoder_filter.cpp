@@ -174,7 +174,6 @@ Status SurfaceEncoderFilter::DoStart()
     if (mediaCodec_ == nullptr) {
         return Status::ERROR_UNKNOWN;
     }
-    nextFilter_->Start();
     return mediaCodec_->Start();
 }
 
@@ -203,9 +202,6 @@ Status SurfaceEncoderFilter::DoStop()
         return Status::OK;
     }
     mediaCodec_->Stop();
-    if (nextFilter_ == nullptr) {
-        return Status::OK;
-    }
     return Status::OK;
 }
 

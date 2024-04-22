@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -59,6 +59,22 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     return Status::OK;
 }
 
+sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
+{
+    if (state_ != Pipeline::FilterState::READY) {
+        return nullptr;
+    }
+    return inputBufferQueueProducer_;
+}
+
+sptr<AVBufferQueueConsumer> AudioSink::GetBufferQueueConsumer()
+{
+    if (state_ != Pipeline::FilterState::READY) {
+        return nullptr;
+    }
+    return inputBufferQueueConsumer_;
+}
+
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     UpdateMediaTimeRange(meta);
@@ -78,8 +94,14 @@ Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta)
 
 Status AudioSink::Prepare()
 {
+    state_ = Pipeline::FilterState::PREPARING;
+    Status ret = PrepareInputBufferQueue();
+    if (ret != Status::OK) {
+        state_ = Pipeline::FilterState::INITIALIZED;
+        return ret;
+    }
     state_ = Pipeline::FilterState::READY;
-    return Status::OK;
+    return ret;
 }
 
 Status AudioSink::Start()
@@ -162,6 +184,24 @@ Status AudioSink::SetIsTransitent(bool isTransitent)
     return Status::OK;
 }
 
+Status AudioSink::PrepareInputBufferQueue()
+{
+    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
+        MEDIA_LOG_I("InputBufferQueue already create");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    int inputBufferSize = 8;
+    MemoryType memoryType = MemoryType::SHARED_MEMORY;
+#ifndef MEDIA_OHOS
+    memoryType = MemoryType::VIRTUAL_MEMORY;
+#endif
+    MEDIA_LOG_I("PrepareInputBufferQueue ");
+    inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
+    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
+    return Status::OK;
+}
+
 std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
 {
     Plugins::PluginType pluginType = Plugins::PluginType::AUDIO_SINK;
@@ -177,8 +217,21 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
     return std::reinterpret_pointer_cast<Plugins::AudioSinkPlugin>(plugin);
 }
 
-void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
+void AudioSink::DrainOutputBuffer()
 {
+    Status ret;
+    std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
+    if (plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr) {
+        return;
+    }
+    ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
+    if (ret != Status::OK || filledOutputBuffer == nullptr) {
+        return;
+    }
+    if (state_ != Pipeline::FilterState::RUNNING) {
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        return;
+    }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;
         Event event {
@@ -187,6 +240,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         plugin_->Drain();
         plugin_->PauseTransitent();
         return;
@@ -196,6 +250,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
     plugin_->Write(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
+    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 void AudioSink::ResetSyncInfo()
@@ -206,7 +261,6 @@ void AudioSink::ResetSyncInfo()
     }
     lastReportedClockTime_ = HST_TIME_NONE;
     forceUpdateTimeAnchorNextTime_ = false;
-
     firstPts_ = HST_TIME_NONE;
 }
 
