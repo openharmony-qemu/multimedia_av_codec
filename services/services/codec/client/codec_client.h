@@ -17,6 +17,7 @@
 #define CODEC_CLIENT_H
 
 #include <shared_mutex>
+#include "buffer_converter.h"
 #include "codec_listener_stub.h"
 #include "i_codec_service.h"
 #include "i_standard_codec_service.h"
@@ -95,6 +96,8 @@ private:
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
+    std::shared_ptr<BufferConverter> converter_ = nullptr;
+
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;
