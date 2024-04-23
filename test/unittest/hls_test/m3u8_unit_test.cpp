@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #include "m3u8_unit_test.h"
-
+#include <new>
 #define LOCAL true
 
 using namespace OHOS;
@@ -21,6 +21,7 @@ using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
+constexpr unit_32_t MAX_LOOP = 16;S
 
 void M3u8UnitTest::SetUpTestCase(void) {}
 
@@ -71,30 +72,136 @@ HWTEST_F(M3u8UnitTest, UpdateTest, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
+    //
     std::list<std::shared_ptr<Tag>> tags;
     m3u8.UpdateFromTags(tags);
     EXPECT_TRUE(m3u8.bLive_);
     m3u8.isDecryptAble_ = true;
     m3u8.UpdateFromTags(tags);
+    //
     EXPECT_TRUE(m3u8.bLive_);
     EXPECT_EQ(m3u8.files_.size(), 0);
     m3u8.isDecryptAble_ = false;
     m3u8.UpdateFromTags(tags);
+    
+    //
     EXPECT_TRUE(m3u8.bLive_);
     EXPECT_EQ(m3u8.files_.size(), 0);
 }
 
 HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
 {
-    M3U8Fragment m3u8("http://example.com", "LivePlaylist", 10.0, 1, false);
+    M3U8Fragment m3u8("http://example.com", "Test Title", 10.0, 1, false);
     M3U8Fragment fragment(m3u8, nullptr, nullptr);
-    EXPECT_EQ(fragment.uri_, "http://example.com");
+    EXPECT_EQ(fragment.title_, "Test Title");
     EXPECT_EQ(fragment.duration_, 10.0);
     EXPECT_EQ(fragment.sequence_, 1);
-    EXPECT_EQ(fragment.title_, "LivePlaylist");
     EXPECT_EQ(fragment.discont_, false);
+    //
+    
+    for (int i = 0; i < static_cast<int>(MAX_LOOP); i++) {
+        EXPECT_NE(fragment.iv_[i], -1);
+        EXPECT_NE(fragment.key_[i], -1);
+    }
 }
 
+HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_VALID_KEY_AND_IV, TestSize.Level1)
+{
+    M3U8Fragment m3u8("http://example.com", "Test Title", 10.0, 1, false);
+    uint8_t key[MAX_LOOP] = {1, 2, 3, 4, 5};
+    uint8_t iv[MAX_LOOP] = {6, 7, 8, 9, 10};
+    M3U8Fragment fragment(m3u8, key, iv);
+    EXPECT_EQ(fragment.uri_, "http://example.com");
+    EXPECT_EQ(fragment.title_, "Test Title");
+    EXPECT_EQ(fragment.duration_, 10.0);
+    EXPECT_EQ(fragment.sequence_, 1);
+    EXPECT_EQ(fragment.discont_, false);
+    //
+    for (int i = 0; i < 5; i++) {
+        EXPECT_EQ(fragment.iv_[i], false);
+        EXPECT_EQ(fragment.key_[i], false);
+    }
+}
+
+HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "Test M3U8");
+
+    // check url
+    EXPECT_EQ(m3u8.uri_, "http://example.com/test.m3u8");
+
+    //check name
+    EXPECT_EQ(m3u8.name_, "Test M3U8");
+
+    //check updaters map
+    EXPECT_EQ(fragment.tagUpdaterMap_.empty, 10.0);
+}
+
+HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
+{
+    M3U8 m3u8("", "Test M3U8");
+
+    // check url
+    EXPECT_EQ(m3u8.uri_, "");
+
+    //check name
+    EXPECT_EQ(m3u8.name_, "Test M3U8");
+
+    //check updaters map
+    EXPECT_EQ(fragment.tagUpdaterMap_.empty, 10.0);
+}
+
+HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+
+    // check url
+    EXPECT_EQ(m3u8.uri_, "http://example.com/test.m3u8");
+
+    //check name
+    EXPECT_EQ(m3u8.name_, "");
+
+    //check updaters map
+    EXPECT_EQ(fragment.tagUpdaterMap_.empty, 10.0);
+}
+
+// test get ext
+HWTEST_F(M3u8UnitTest, GET_EXT_INF_TEST, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDISCONTINUITY, "123");
+    auto attr1 =  std::make_shared<Attribute>("DURATION", "3.5");
+    tag->AddAttribute(attr1);
+    auto attr2 =  std::make_shared<Attribute>("TITLE", "\"Test Title\"");
+    tag->AddAttribute(attr2);
+    double duration;
+    std::string title;
+    m3u8.GetExtInf(tag, duration, title);
+    //check name
+    EXPECT_DOUBLE_EQ(3.5, duration);
+    //check updaters map
+    EXPECT_EQ("Test Title", title);
+}
+
+HWTEST_F(M3u8UnitTest, PARSE_KEY_METHOD_ATTRIBUTE, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDISCONTINUITY, "123");
+    auto attr1 =  std::make_shared<Attribute>("METHOD", "AES-128");
+    tag->AddAttribute(attr1);
+    m3u8.ParseKey(tag);
+    EXPECT_EQ(*m3u8.method_, "AES-128");
+}
+
+HWTEST_F(M3u8UnitTest, PARSE_KEY_URI_ATTRIBUTE, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDISCONTINUITY, "123");
+    auto attr1 =  std::make_shared<Attribute>("URI", "http://example.com/key.bin");
+    tag->AddAttribute(attr1);
+    m3u8.ParseKey(tag);
+    EXPECT_EQ(*m3u8.keyUri_, "http://example.com/key.bin");
+}
 // 测试 IsLive 方法
 HWTEST_F(M3u8UnitTest, IsLiveTest, TestSize.Level1)
 {
@@ -194,4 +301,6 @@ HWTEST_F(M3u8UnitTest, ProcessDrmInfosTest, TestSize.Level1)
     // 验证 isDecryptAble_ 是否根据 DRM 信息的处理结果正确设置
     ASSERT_EQ(testM3u8->isDecryptAble_, testM3u8->localDrmInfos_.empty());
 }
+
+
 }
