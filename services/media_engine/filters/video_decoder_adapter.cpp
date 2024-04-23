@@ -30,6 +30,7 @@
 namespace OHOS {
 namespace Media {
 using namespace MediaAVCodec;
+const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
@@ -189,9 +190,26 @@ int32_t VideoDecoderAdapter::SetCallback(const std::shared_ptr<MediaAVCodec::Med
     return mediaCodec_->SetCallback(mediaCodecCallback);
 }
 
-void VideoDecoderAdapter::SetInputBufferQueue(sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer)
+void VideoDecoderAdapter::PrepareInputBufferQueue()
 {
-    inputBufferQueueConsumer_ = inputBufferQueueConsumer;
+    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
+        MEDIA_LOG_W("InputBufferQueue already create");
+        return;
+    }
+    inputBufferQueue_ = AVBufferQueue::Create(0,
+        MemoryType::UNKNOWN_MEMORY, VIDEO_INPUT_BUFFER_QUEUE_NAME, true);
+    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
+    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
+}
+
+sptr<AVBufferQueueProducer> VideoDecoderAdapter::GetBufferQueueProducer()
+{
+    return inputBufferQueueProducer_;
+}
+
+sptr<AVBufferQueueConsumer> VideoDecoderAdapter::GetBufferQueueConsumer()
+{
+    return inputBufferQueueConsumer_;
 }
 
 void VideoDecoderAdapter::AquireAvailableInputBuffer()

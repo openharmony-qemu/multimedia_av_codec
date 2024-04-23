@@ -44,7 +44,10 @@ public:
     Status Release();
     int32_t SetCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback);
 
-    void SetInputBufferQueue(sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer);
+    void PrepareInputBufferQueue();
+    sptr<AVBufferQueueProducer> GetBufferQueueProducer();
+    sptr<AVBufferQueueConsumer> GetBufferQueueConsumer();
+
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     void OnOutputFormatChanged(const MediaAVCodec::Format &format);
@@ -59,6 +62,8 @@ public:
         const bool svpFlag);
 
 private:
+    std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
+    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer_;
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoDecoder> mediaCodec_;

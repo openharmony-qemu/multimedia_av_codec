@@ -132,6 +132,7 @@ protected:
         std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
+        bool needDealWithCache = false;
 
         void CleanUpUnusedInfo();
         void BeginCpuAccess();
