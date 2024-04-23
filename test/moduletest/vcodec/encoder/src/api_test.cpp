@@ -615,40 +615,18 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
-
     format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
-
     string widthStr = "width";
     string heightStr = "height";
     string frameRateStr = "frame_rate";
     (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
-    OH_AVCodecAsyncCallback cb_;
-    cb_.onError = onError;
-    cb_.onStreamChanged = onStreamChanged;
-    cb_.onNeedInputData = onNeedInputData;
-    cb_.onNeedOutputData = onNewOutputData;
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_SetCallback(venc_, cb_, static_cast<void *>(signal_)));
-
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(venc_));
-    unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inCond_.wait(lock, [] { return signal_->inIdxQueue_.size() > 1; });
-    uint32_t index = signal_->inIdxQueue_.front();
-    OH_AVCodecBufferAttr attr;
-    attr.pts = 0;
-    attr.size = 0;
-    attr.offset = 0;
-    attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_PushInputData(venc_, index, attr));
-    signal_->inIdxQueue_.pop();
-    index = signal_->inIdxQueue_.front();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_PushInputData(venc_, index, attr));
-    signal_->inIdxQueue_.pop();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_NotifyEndOfStream(venc_));
+    ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_NotifyEndOfStream(venc_));
 }
 
 /**
