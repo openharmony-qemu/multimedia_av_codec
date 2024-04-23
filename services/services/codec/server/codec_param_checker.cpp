@@ -102,6 +102,7 @@ const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
 const std::vector<std::string_view> FORMAT_MERGE_LIST = {
     MediaDescriptionKey::MD_KEY_BITRATE,
     MediaDescriptionKey::MD_KEY_QUALITY,
+    MediaDescriptionKey::MD_KEY_FRAME_RATE,
     Tag::VIDEO_ENCODER_QP_MIN,
     Tag::VIDEO_ENCODER_QP_MAX,
 };
