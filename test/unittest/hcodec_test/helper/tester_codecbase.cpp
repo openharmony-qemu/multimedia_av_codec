@@ -409,6 +409,7 @@ bool TesterCodecBase::WaitForOutput(BufInfo& buf)
     if (buf.avbuf->memory_) {
         buf.va = buf.avbuf->memory_->GetAddr();
         buf.capacity = static_cast<size_t>(buf.avbuf->memory_->GetCapacity());
+        buf.attr.size = buf.avbuf->memory_->GetSize();
     }
     return true;
 }
