@@ -768,12 +768,16 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
+        MEDIA_LOG_D("Request buffer failed, wait for 5ms and retry again, user queue: "
+            PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+        if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
+            MEDIA_LOG_E("Request buffer failed from Buffer queue too many times in one minute, user queue: "
+                PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+        }
         OSAL::SleepFor(5); // when request buffer failed, wait 5ms
     } else {
         requestBufferErrorCountMap_[queueIndex] = 0;
     }
-    FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
-        PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
     return ret == Status::OK;
 }
 
@@ -820,7 +824,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             return Status::OK;
         }
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
-        ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
+        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
         MEDIA_LOG_E("ReadSample failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
