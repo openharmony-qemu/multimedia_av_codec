@@ -38,7 +38,7 @@ public:
     ~AVCodecClient();
 
 #ifdef SUPPORT_CODEC
-    std::shared_ptr<ICodecService> CreateCodecService() override;
+    int32_t CreateCodecService(std::shared_ptr<ICodecService> &codecClient) override;
     int32_t DestroyCodecService(std::shared_ptr<ICodecService> codecClient) override;
 #endif
 

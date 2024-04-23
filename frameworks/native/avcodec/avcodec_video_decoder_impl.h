@@ -45,10 +45,10 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         const bool svpFlag) override;
 #endif
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format);
 
 private:
-    std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<ICodecService> codecClient_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

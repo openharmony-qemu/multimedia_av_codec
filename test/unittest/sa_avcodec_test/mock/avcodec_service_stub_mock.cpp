@@ -50,15 +50,15 @@ AVCodecServiceStub::~AVCodecServiceStub()
     mock->AVCodecServiceStubDtor();
 }
 
-sptr<IRemoteObject> AVCodecServiceStub::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                            const sptr<IRemoteObject> &listener)
+int32_t AVCodecServiceStub::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                                const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("subSystemId:%d, listener refCount:%d", static_cast<int32_t>(subSystemId),
                       listener->GetSptrRefCount());
     auto mock = g_mockObject.lock();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
-    return mock->GetSubSystemAbility(subSystemId, listener);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->GetSubSystemAbility(subSystemId, listener, stubObject);
 }
 
 int32_t AVCodecServiceStub::SetDeathListener(const sptr<IRemoteObject> &object)

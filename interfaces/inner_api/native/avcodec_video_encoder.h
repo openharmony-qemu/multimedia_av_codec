@@ -249,6 +249,22 @@ public:
         (void)name;
         return nullptr;
     }
+        
+    static int32_t CreateByMime(const std::string &mime, Format &format, std::shared_ptr<AVCodecVideoEncoder> &encodec)
+    {
+        (void)name;
+        (void)format;
+        codec = nullptr;
+        return codec;
+    }
+
+    static int32_t CreateByName(const std::string &name, Format &format, std::shared_ptr<AVCodecVideoEncoder> &encodec)
+    {
+        (void)name;
+        (void)format;
+        codec = nullptr;
+        return codec;
+    }
 #else
     /**
      * @brief Instantiate the preferred encoder of the given mime type.
@@ -269,6 +285,30 @@ public:
      * @version 3.1
      */
     static std::shared_ptr<AVCodecVideoEncoder> CreateByName(const std::string &name);
+
+    /**
+     * @brief Instantiate the preferred decoder of the given mime type.
+     *
+     * @param mime The mime type.
+     * @param format Caller info
+     * @param codec The designated decoder.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     * @version 5.0
+     */
+    static int32_t CreateByMime(const std::string &mime, Format &format, std::shared_ptr<AVCodecVideoEncoder> &encodec);
+
+    /**
+     * @brief Instantiate the preferred decoder of the given mime type.
+     *
+     * @param mime The mime type.
+     * @param format Caller info
+     * @param codec The designated decoder.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     * @version 5.0
+     */
+    static int32_t CreateByName(const std::string &name, Format &format, std::shared_ptr<AVCodecVideoEncoder> &encodec);
 #endif
 private:
     VideoEncoderFactory() = default;

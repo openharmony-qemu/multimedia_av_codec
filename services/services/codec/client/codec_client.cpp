@@ -25,18 +25,19 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
-std::shared_ptr<CodecClient> CodecClient::Create(const sptr<IStandardCodecService> &ipcProxy)
+int32_t CodecClient::Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec)
 {
-    CHECK_AND_RETURN_RET_LOG(ipcProxy != nullptr, nullptr, "Ipc proxy is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(ipcProxy != nullptr, AVCS_ERR_INVALID_VAL, "Ipc proxy is nullptr.");
 
-    std::shared_ptr<CodecClient> codec = std::make_shared<CodecClient>(ipcProxy);
-    CHECK_AND_RETURN_RET_LOG(codec != nullptr && codec->syncMutex_ != nullptr, nullptr, "Codec client is nullptr");
+    codec = std::make_shared<CodecClient>(ipcProxy);
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr && std::static_pointer_cast<CodecClient>(codec)->syncMutex_ != nullptr,
+        AVCS_ERR_UNKNOWN, "Codec client is nullptr");
 
-    int32_t ret = codec->CreateListenerObject();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Codec client create failed");
+    int32_t ret = std::static_pointer_cast<CodecClient>(codec)->CreateListenerObject();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Codec client create failed");
 
     AVCODEC_LOGI("Succeed");
-    return codec;
+    return AVCS_ERR_OK;
 }
 
 CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy)
@@ -86,9 +87,14 @@ int32_t CodecClient::CreateListenerObject()
     return ret;
 }
 
-int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
+int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name,
+                          Meta &callerInfo, API_VERSION apiVersion)
 {
     (void)apiVersion;
+    using namespace OHOS::Media;
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getpid());
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, program_invocation_name);
+
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     converter_ = BufferConverter::Create(type);
@@ -97,7 +103,7 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
         listenerStub_->SetConverter(converter_);
     }
 
-    int32_t ret = codecProxy_->Init(type, isMimeType, name);
+    int32_t ret = codecProxy_->Init(type, isMimeType, name, callerInfo);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }

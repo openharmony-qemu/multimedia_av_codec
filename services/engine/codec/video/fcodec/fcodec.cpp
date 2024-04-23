@@ -74,7 +74,7 @@ FCodec::~FCodec()
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
-int32_t FCodec::Init()
+int32_t FCodec::Initialize()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(!codecName_.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed:  empty name");
@@ -176,7 +176,7 @@ int32_t FCodec::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     if (state_ == State::UNINITIALIZED) {
-        int32_t ret = Init();
+        int32_t ret = Initialize();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Init codec failed");
     }
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED), AVCS_ERR_INVALID_STATE,
@@ -432,7 +432,7 @@ int32_t FCodec::Reset()
     AVCODEC_LOGI("Reset codec called");
     int32_t ret = Release();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Reset codec failed: cannot release codec");
-    ret = Init();
+    ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Reset codec failed: cannot init codec");
     AVCODEC_LOGI("Reset codec successful, state: Initialized");
     return AVCS_ERR_OK;

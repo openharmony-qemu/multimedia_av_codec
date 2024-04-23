@@ -31,12 +31,12 @@ class CodecClient : public MediaCodecCallback,
                     public ICodecService,
                     public std::enable_shared_from_this<CodecClient> {
 public:
-    static std::shared_ptr<CodecClient> Create(const sptr<IStandardCodecService> &ipcProxy);
+    static int32_t Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec);
     explicit CodecClient(const sptr<IStandardCodecService> &ipcProxy);
     ~CodecClient();
     // 业务
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
-                 API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+                 Media::Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;

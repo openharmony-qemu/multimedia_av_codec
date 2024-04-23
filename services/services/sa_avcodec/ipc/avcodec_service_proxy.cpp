@@ -33,33 +33,28 @@ AVCodecServiceProxy::~AVCodecServiceProxy()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-sptr<IRemoteObject> AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                             const sptr<IRemoteObject> &listener)
+int32_t AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                                 const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &object)
 {
+    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "listener is nullptr");
+
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
 
-    if (listener == nullptr) {
-        AVCODEC_LOGE("listener is nullptr");
-        return nullptr;
-    }
-
-    if (!data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor())) {
-        AVCODEC_LOGE("Failed to write descriptor");
-        return nullptr;
-    }
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
 
     (void)data.WriteInt32(static_cast<int32_t>(subSystemId));
     (void)data.WriteRemoteObject(listener);
     int error =
         Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_SUBSYSTEM), data, reply, option);
-    if (error != AVCS_ERR_OK) {
-        AVCODEC_LOGE("Create av_codec proxy failed, error: %{public}d", error);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
 
-    return reply.ReadRemoteObject();
+    object = reply.ReadRemoteObject();
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Remote object is nullptr");
+    return reply.ReadInt32();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

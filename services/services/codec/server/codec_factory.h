@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "codecbase.h"
+#include "avcodec_errors.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

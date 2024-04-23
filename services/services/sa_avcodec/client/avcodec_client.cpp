@@ -61,26 +61,25 @@ bool AVCodecClient::IsAlived()
     return avCodecProxy_ != nullptr;
 }
 #ifdef SUPPORT_CODEC
-std::shared_ptr<ICodecService> AVCodecClient::CreateCodecService()
+int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecClient)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsAlived()) {
-        AVCODEC_LOGE("av_codec service does not exist.");
-        return nullptr;
-    }
+    bool alived = IsAlived();
+    CHECK_AND_RETURN_RET_LOG(alived, AVCS_ERR_SERVICE_DIED, "AVCodec service does not exist.");
 
-    sptr<IRemoteObject> object = avCodecProxy_->GetSubSystemAbility(
-        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, listenerStub_->AsObject());
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "codec proxy object is nullptr.");
+    sptr<IRemoteObject> object = nullptr;
+    int32_t ret = avCodecProxy_->GetSubSystemAbility(
+        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODEC, listenerStub_->AsObject(), object);
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, ret, "Create codec proxy object failed.");
 
     sptr<IStandardCodecService> codecProxy = iface_cast<IStandardCodecService>(object);
-    CHECK_AND_RETURN_RET_LOG(codecProxy != nullptr, nullptr, "codec proxy is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(codecProxy != nullptr, AVCS_ERR_UNSUPPORT, "Codec proxy is nullptr.");
 
-    std::shared_ptr<CodecClient> codecClient = CodecClient::Create(codecProxy);
-    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, nullptr, "failed to create codec client.");
+    ret = CodecClient::Create(codecProxy, codecClient);
+    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, ret, "Failed to create codec client.");
 
     codecClientList_.push_back(codecClient);
-    return codecClient;
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecClient)
@@ -95,14 +94,13 @@ int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecC
 std::shared_ptr<ICodecListService> AVCodecClient::CreateCodecListService()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsAlived()) {
-        AVCODEC_LOGE("av_codec service does not exist.");
-        return nullptr;
-    }
+    bool alived = IsAlived();
+    CHECK_AND_RETURN_RET_LOG(alived, nullptr, "AVCodec service does not exist.");
 
-    sptr<IRemoteObject> object = avCodecProxy_->GetSubSystemAbility(
-        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, listenerStub_->AsObject());
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "codeclist proxy object is nullptr.");
+    sptr<IRemoteObject> object = nullptr;
+    (void)avCodecProxy_->GetSubSystemAbility(
+        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, listenerStub_->AsObject(), object);
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Create codeclist proxy object failed.");
 
     sptr<IStandardCodecListService> codecListProxy = iface_cast<IStandardCodecListService>(object);
     CHECK_AND_RETURN_RET_LOG(codecListProxy != nullptr, nullptr, "codeclist proxy is nullptr.");
@@ -136,7 +134,6 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "avcodec object is nullptr.");
 
     avCodecProxy_ = iface_cast<IStandardAVCodecService>(object);
-
     CHECK_AND_RETURN_RET_LOG(avCodecProxy_ != nullptr, nullptr, "avcodec proxy is nullptr.");
 
     pid_t pid = 0;
@@ -145,10 +142,7 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 
     deathRecipient_->SetNotifyCb(std::bind(&AVCodecClient::AVCodecServerDied, std::placeholders::_1));
     bool result = object->AddDeathRecipient(deathRecipient_);
-    if (!result) {
-        AVCODEC_LOGE("failed to add deathRecipient");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(result, nullptr, "Failed to add deathRecipient");
 
     listenerStub_ = new (std::nothrow) AVCodecListenerStub();
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "failed to new AVCodecListenerStub");
