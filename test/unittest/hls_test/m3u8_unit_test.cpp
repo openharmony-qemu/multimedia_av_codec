@@ -302,5 +302,4 @@ HWTEST_F(M3u8UnitTest, ProcessDrmInfosTest, TestSize.Level1)
     ASSERT_EQ(testM3u8->isDecryptAble_, testM3u8->localDrmInfos_.empty());
 }
 
-
 }
