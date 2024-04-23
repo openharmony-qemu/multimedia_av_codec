@@ -40,11 +40,11 @@ public:
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
 
 private:
-    bool isMarkLTR_;
+    int32_t isMarkLTR_;
     bool isUseLTR_;
-    uint32_t ltrPoc_;
-    uint32_t poc_ = 0;
-    uint32_t temporalPoc_ = 0;
+    int32_t ltrPoc_;
+    int32_t poc_ = 0;
+    int32_t temporalPoc_ = 0;
     uint32_t inputFrameCounter_ = 0;
     uint32_t outputFrameCounter_ = 0;
     int32_t frameNum_ = 0;
