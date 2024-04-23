@@ -104,7 +104,6 @@ Status AudioDataSourceFilter::DoPrepare()
 Status AudioDataSourceFilter::DoStart()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoStart");
-    nextFilter_->Start();
     eos_ = false;
     if (taskPtr_) {
         taskPtr_->Start();
@@ -136,9 +135,6 @@ Status AudioDataSourceFilter::DoStop()
     // stop task firstly
     if (taskPtr_) {
         taskPtr_->Stop();
-    }
-    if (nextFilter_) {
-        nextFilter_->Stop();
     }
     return Status::OK;
 }

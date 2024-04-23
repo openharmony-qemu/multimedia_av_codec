@@ -32,8 +32,7 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
-    Status PrepareFrame(bool renderFirstFrame) override;
-    Status WaitPrepareFrame() override;
+    Status DoPrepareFrame(bool renderFirstFrame) override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
