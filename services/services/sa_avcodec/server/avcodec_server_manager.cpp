@@ -23,7 +23,6 @@
 #include "avcodec_log.h"
 #include "avcodec_xcollie.h"
 #include "avcodec_dump_utils.h"
-#include "avcodec_bitstream_dump.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
 #endif
@@ -40,7 +39,7 @@ constexpr uint32_t DUMP_UID_INDEX = 0x01010200;
 constexpr uint32_t DUMP_OFFSET_16 = 16;
 
 const std::vector<const std::string> SA_DUMP_MENU_DUMP_TABLE = {
-    "All", "Codec", " ", "Switch_bitstream_dump"
+    "All", "Codec"
 };
 
 const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::string> STUB_TYPE_STRING_MAP = {
@@ -122,16 +121,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 
     if (argSets.empty() || argSets.find(u"h") != argSets.end() || argSets.find(u"help") != argSets.end()) {
         PrintDumpMenu(fd);
-    }
-
-    if (argSets.find(u"Switch_bitstream_dump") != argSets.end()) {
-        dumpString += "[Bitstream_Dump]\n";
-        bool isEnable = AVCodecBitStreamDumper::GetInstance().SwitchEnable();
-        dumpString += "    status - ";
-        dumpString += isEnable ? "Enable" : "Disable";
-        dumpString += "\n";
-
-        WriteFd(fd, dumpString);
     }
 
     return OHOS::NO_ERROR;
