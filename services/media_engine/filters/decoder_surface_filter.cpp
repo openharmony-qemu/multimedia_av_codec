@@ -200,6 +200,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_SRC_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
+    ParseDecodeRateLimit();
     videoDecoder_->SetOutputSurface(videoSurface_);
     if (isDrmProtected_) {
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
@@ -624,6 +625,31 @@ void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
 {
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
+}
+
+void DecoderSurfaceFilter::ParseDecodeRateLimit()
+{
+    MEDIA_LOG_I("ParseDecodeRateLimit entered.");
+    std::shared_ptr<MediaAVCodec::AVCodecList> codecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    if (codecList == nullptr) {
+        MEDIA_LOG_E("create avcodeclist failed.");
+        return;
+    }
+    int32_t height = 0;
+    bool ret = meta_->GetData(Tag::VIDEO_HEIGHT, height);
+    FALSE_RETURN_MSG(ret || height <= 0, "failed to get video height");
+    int32_t width = 0;
+    ret = meta_->GetData(Tag::VIDEO_WIDTH, width);
+    FALSE_RETURN_MSG(ret || width <= 0, "failed to get video width");
+
+    MediaAVCodec::CapabilityData *capabilityData = codecList->GetCapability(codecMimeType_, false,
+        MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
+    std::shared_ptr<MediaAVCodec::VideoCaps> videoCap = std::make_shared<MediaAVCodec::VideoCaps>(capabilityData);
+    const MediaAVCodec::Range &frameRange = videoCap->GetSupportedFrameRatesFor(width, height);
+    int32_t rateUpperLimit = frameRange.maxVal;
+    if (rateUpperLimit > 0) {
+        meta_->SetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, rateUpperLimit);
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

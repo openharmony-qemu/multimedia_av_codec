@@ -530,8 +530,10 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
         ConvertHevcToAnnexb(*tempPkt, samplePacket);
+        SetDropTag(*tempPkt, sample, AV_CODEC_ID_HEVC);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
+        SetDropTag(*tempPkt, sample, AV_CODEC_ID_H264);
     }
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
@@ -1321,6 +1323,63 @@ void FFmpegDemuxerPlugin::ReplaceDelimiter(const std::string& delmiters, char ne
     }
     MEDIA_LOG_D("Reset to [" PUBLIC_LOG_S "].", str.c_str());
 };
+
+void FFmpegDemuxerPlugin::SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId)
+{
+    sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
+    bool canDrop = false;
+    if (codecId == AV_CODEC_ID_HEVC) {
+        canDrop = CanDropHevcPkt(pkt);
+    } else if (codecId == AV_CODEC_ID_H264) {
+        canDrop = CanDropAvcPkt(pkt);
+    }
+    if (canDrop) {
+        sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
+    }
+}
+
+int FFmpegDemuxerPlugin::FindNaluSpliter(int size, const uint8_t* data)
+{
+    int naluPos = -1;
+    if (size >= 4 && data[0] == 0x00 && data[1] == 0x00) { // 4: least size
+        if (data[2] == 0x01) { // 2: next index
+            naluPos = 3; // 3: the actual start pos of nal unit
+        } else if (size >= 5 && data[2] == 0x00 && data[3] == 0x01) { // 5: least size, 2, 3: next indecies
+            naluPos = 4; // 4: the actual start pos of nal unit
+        }
+    }
+    return naluPos;
+}
+
+bool FFmpegDemuxerPlugin::CanDropAvcPkt(const AVPacket& pkt)
+{
+    const uint8_t *data = pkt.data;
+    int size = pkt.size;
+    int naluPos = FindNaluSpliter(size, data);
+    if (naluPos < 0) {
+        MEDIA_LOG_D("pkt->data starts with error start code!");
+        return false;
+    }
+    int nalRefIdc = (data[naluPos] >> 5) & 0x03; // 5: get H.264 nal_ref_idc
+    int nalUnitType = data[naluPos] & 0x1f; // get H.264 nal_unit_type
+    bool isCodedSliceData = nalUnitType == 1 || nalUnitType == 2 || // 1: non-IDR, 2: partiton A
+        nalUnitType == 3 || nalUnitType == 4 || nalUnitType == 5; // 3: partiton B, 4: partiton C, 5: IDR
+    return nalRefIdc == 0 && isCodedSliceData;
+}
+
+bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
+{
+    const uint8_t *data = pkt.data;
+    int size = pkt.size;
+    int naluPos = FindNaluSpliter(size, data);
+    if (naluPos < 0) {
+        MEDIA_LOG_D("pkt->data starts with error start code!");
+        return false;
+    }
+    int nalUnitType = (data[naluPos] >> 1) & 0x3f; // get H.265 nal_unit_type
+    return nalUnitType == 0 || nalUnitType == 2 || nalUnitType == 4 || // 0: TRAIL_N, 2: TSA_N, 4: STSA_N
+        nalUnitType == 6 || nalUnitType == 8; // 6: RADL_N, 8: RASL_N
+}
 
 namespace { // plugin set
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)

@@ -465,6 +465,18 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
         return;
     }
     demuxer_->SetOutputBufferQueue(trackId, outputBufferQueue);
+    if (trackId < 0) {
+        return;
+    }
+    uint32_t trackIdU32 = static_cast<uint32_t>(trackId);
+    int32_t decodeFramerateUpperLimit = 0;
+    if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decodeFramerateUpperLimit)) {
+        demuxer_->SetDecodeFramerateUpperLimit(decodeFramerateUpperLimit, trackIdU32);
+    }
+    double frameRate;
+    if (meta->GetData(Tag::VIDEO_FRAME_RATE, frameRate)) {
+        demuxer_->SetFrameRate(frameRate, trackIdU32);
+    }
 }
 
 void DemuxerFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -488,6 +500,18 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
 bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     return demuxer_->GetDuration(durationMs);
+}
+
+Status DemuxerFilter::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "OptimizeDecodeSlow failed.");
+    return demuxer_->OptimizeDecodeSlow(useDecodeSlowOptimization);
+}
+
+Status DemuxerFilter::SetSpeed(float speed)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "SetSpeed failed.");
+    return demuxer_->SetSpeed(speed);
 }
 } // namespace Pipeline
 } // namespace Media

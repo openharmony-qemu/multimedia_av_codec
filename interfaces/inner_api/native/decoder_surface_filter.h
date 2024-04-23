@@ -89,6 +89,7 @@ private:
     void RenderLoop();
     std::string GetCodecName(std::string mimeType);
     int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer);
 
