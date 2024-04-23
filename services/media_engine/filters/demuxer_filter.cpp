@@ -191,7 +191,7 @@ Status DemuxerFilter::DoPrepare()
     return Status::OK;
 }
 
-void UpdateTrackIdMap(StreamType streamType, int32_t index)
+void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 {
     AutoLock lock(mapMutex_);
     auto it = track_id_map_.find(streamType);
