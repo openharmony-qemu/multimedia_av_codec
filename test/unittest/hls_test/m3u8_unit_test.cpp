@@ -21,7 +21,7 @@ using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
-constexpr unit_32_t MAX_LOOP = 16;S
+constexpr unit_32_t MAX_LOOP = 16;
 
 void M3u8UnitTest::SetUpTestCase(void) {}
 
