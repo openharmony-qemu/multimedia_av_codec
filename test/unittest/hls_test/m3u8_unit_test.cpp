@@ -134,7 +134,7 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "Test M3U8");
 
     //check updaters map
-    EXPECT_TRUE(m3u8.tagUpdaterMap_.empty());
+    EXPECT_TRUE(m3u8.tagUpdatersMap_.empty());
 }
 
 HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
@@ -148,7 +148,7 @@ HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "Test M3U8");
 
     //check updaters map
-    EXPECT_TRUE(m3u8.tagUpdaterMap_.empty());
+    EXPECT_TRUE(m3u8.tagUpdatersMap_.empty());
 }
 
 HWTEST_F(M3u8UnitTest, TEST_EMPTY_NAME, TestSize.Level1)
@@ -162,7 +162,7 @@ HWTEST_F(M3u8UnitTest, TEST_EMPTY_NAME, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "");
 
     //check updaters map
-    EXPECT_TRUE(m3u8.tagUpdaterMap_.empty());
+    EXPECT_TRUE(m3u8.tagUpdatersMap_.empty());
 }
 
 // test get ext
@@ -266,53 +266,53 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, NULL_SRC, TestSize.Level1)
 {
-    uint8_t dest[100];
+    uint8_t *dest[100];
     uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::BaseDecode(nullptr, 10, dest, &destSize));
+    EXPECT_FALSE(M3U8::Base64Decode(nullptr, 10, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, NULL_DEST, TestSize.Level1)
 {
-    uint8_t src[10] = {0};
+    uint8_t *src[10] = {0};
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 10, nullptr, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, NULL_DEST_SIZE, TestSize.Level1)
 {
-    uint8_t src[10] = {0};
+    uint8_t *src[10] = {0};
     uint32_t dest [100];
     EXPECT_FALSE(M3U8::Base64Decode(src, 10, dest, nullptr));
 }
 
 HWTEST_F(M3u8UnitTest, ZERO_SRC_SIZE, TestSize.Level1)
 {
-    uint8_t src[10] = {0};
-    uint32_t dest [100];
+    uint8_t *src[10] = {0};
+    uint32_t *dest [100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 0, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, SRC_SIZE_GREATER_THAN_DEST_SIZE, TestSize.Level1)
 {
-    uint8_t src[10] = {0};
-    uint32_t dest [100];
+    uint8_t *src[10] = {0};
+    uint32_t *dest [100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 20, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, INVALID_SRC_SIZE, TestSize.Level1)
 {
-    uint8_t src[5] = {0};
-    uint32_t dest [100];
+    uint8_t *src[5] = {0};
+    uint32_t *dest [100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 5, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, VALID_SRC, TestSize.Level1)
 {
-    uint8_t src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
-    uint32_t dest [100];
+    uint8_t *src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
+    uint32_t *dest [100];
     uint32_t destSize = 100;
     EXPECT_TEUE(M3U8::Base64Decode(src, 12, dest, &destSize));
 }
