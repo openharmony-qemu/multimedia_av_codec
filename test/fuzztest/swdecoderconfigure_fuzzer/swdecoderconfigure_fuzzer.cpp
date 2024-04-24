@@ -24,7 +24,7 @@ using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "swdecoderconfigure_fuzzer"
 
 namespace OHOS {
-bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
+bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int32_t)) {
         return false;
@@ -53,6 +53,6 @@ bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::swdecoderConfigureFuzzTest(data, size);
+    OHOS::SwdecoderConfigureFuzzTest(data, size);
     return 0;
 }
