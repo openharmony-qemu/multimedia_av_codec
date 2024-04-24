@@ -720,6 +720,7 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
 
 void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaCodec::OnOutputBufferDone");
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     if (mediaCodecCallback_) {
         mediaCodecCallback_->OnOutputBufferDone(outputBuffer);

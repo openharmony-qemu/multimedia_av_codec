@@ -17,6 +17,7 @@
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "source/audio_capture/audio_capture_module.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -310,6 +311,7 @@ Status AudioCaptureFilter::SendEos()
 void AudioCaptureFilter::ReadLoop()
 {
     MEDIA_LOG_D(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::ReadLoop");
     if (eos_.load()) {
         return;
     }

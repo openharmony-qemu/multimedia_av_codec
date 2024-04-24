@@ -22,6 +22,7 @@
 #include "media_description.h"
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
+#include "avcodec_trace.h"
 
 constexpr uint32_t TIME_OUT_MS = 1000;
 
@@ -346,6 +347,7 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     MEDIA_LOG_D(PUBLIC_LOG_S "OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), buffer->pts_);
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);

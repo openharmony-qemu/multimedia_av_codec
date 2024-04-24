@@ -20,6 +20,7 @@
 #include "filter/filter_factory.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -309,6 +310,7 @@ void VideoCaptureFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void VideoCaptureFilter::OnBufferAvailable()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "OnBufferAvailable", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::OnBufferAvailable");
     sptr<SurfaceBuffer> buffer;
     sptr<SyncFence> fence;
     int64_t timestamp;

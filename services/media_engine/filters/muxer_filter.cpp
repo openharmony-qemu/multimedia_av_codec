@@ -18,6 +18,7 @@
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "muxer/media_muxer.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -209,6 +210,7 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     sptr<AVBufferQueueProducer> inputBufferQueue)
 {
     MEDIA_LOG_D(PUBLIC_LOG_S "OnBufferFilled", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     int64_t currentBufferPts = inputBuffer->pts_;
     int64_t anotherBufferPts = 0;
     for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
