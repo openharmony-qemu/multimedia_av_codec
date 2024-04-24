@@ -120,12 +120,15 @@ Status MuxerFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     stopCount_++;
+    Status ret = Status::OK;
     if (stopCount_ == preFilterCount_) {
         stopCount_ = 0;
-        return mediaMuxer_->Stop();
-    } else {
-        return Status::OK;
+        ret = mediaMuxer_->Stop();
+        if (ret == Status::ERROR_WRONG_STATE) {
+            return Status::OK;
+        }
     }
+    return ret;
 }
 
 Status MuxerFilter::DoFlush()
@@ -142,6 +145,15 @@ void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
     mediaMuxer_->SetParameter(parameter);
+}
+
+void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    MEDIA_LOG_I("SetUserMeta enter");
+    Status ret = mediaMuxer_->SetUserMeta(userMeta);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("SetUserMeta failed");
+    }
 }
 
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)

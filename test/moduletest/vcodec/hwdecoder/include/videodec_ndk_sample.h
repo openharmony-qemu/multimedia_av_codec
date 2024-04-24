@@ -79,8 +79,6 @@ public:
     uint32_t expectCropBottom = 0;
     uint32_t expectCropLeft = 0;
     uint32_t expectCropRight = 0;
-    uint32_t expectStride = 0;
-    uint32_t expectSliceHeight = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",

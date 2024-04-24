@@ -99,7 +99,7 @@ void TemporalScalability::LTRDecision()
     temporalPoc_ = poc_ % temporalGopSize_;
 
     if (temporalPoc_ == 0) {
-        isMarkLTR_ = true;
+        isMarkLTR_ = 1;
         if (poc_ == 0) {
             isUseLTR_ = false;
             ltrPoc_ = 0;
@@ -108,11 +108,11 @@ void TemporalScalability::LTRDecision()
             ltrPoc_ = poc_ - temporalGopSize_;
         }
     } else if (temporalPoc_ == 1) {
-        isMarkLTR_ = false;
+        isMarkLTR_ = 0;
         isUseLTR_ = false;
         ltrPoc_ = poc_ - 1;
     } else {
-        isMarkLTR_ = false;
+        isMarkLTR_ = 0;
         if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
             isUseLTR_ = false;
             ltrPoc_ = poc_ - 1;
@@ -126,9 +126,9 @@ void TemporalScalability::LTRDecision()
 void TemporalScalability::DisposableDecision()
 {
     uint32_t flag = AVCODEC_BUFFER_FLAG_NONE;
-    if (!isMarkLTR_) {
+    if (isMarkLTR_ == 0) {
         if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
-            temporalPoc_ != static_cast<uint32_t>(temporalGopSize_ - 1) && poc_ != gopSize_ - 1) {
+            temporalPoc_ != temporalGopSize_ - 1 && poc_ != gopSize_ - 1) {
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
         } else {
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
@@ -150,8 +150,11 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
         LTRDecision();
         DisposableDecision();
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
-        inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, isUseLTR_);
-        inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_PER_FRAME_POC, ltrPoc_);
+        if (isUseLTR_) {
+            inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, ltrPoc_);
+        } else {
+            inputBufferMap_[index]->meta_->Remove(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR);
+        }
         inputBufferMap_.erase(index);
         inputIndexQueue_->Pop();
         AVCODEC_LOGD("frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",

@@ -132,7 +132,7 @@ protected:
         std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
-        sptr<Surface> surface; // the surfaceBuffer above is belong to this surface
+        bool needDealWithCache = false;
 
         void CleanUpUnusedInfo();
         void BeginCpuAccess();
@@ -227,6 +227,7 @@ protected:
     bool IsAllBufferOwnedByUsOrSurface();
     void EraseOutBuffersOwnedByUsOrSurface();
     void ClearBufferPool(OMX_DIRTYPE portIndex);
+    virtual void OnClearBufferPool(OMX_DIRTYPE portIndex) {}
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
     virtual void OnEnterUninitializedState() {}

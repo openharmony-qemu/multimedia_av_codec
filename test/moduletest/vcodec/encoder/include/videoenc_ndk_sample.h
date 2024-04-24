@@ -63,6 +63,7 @@ public:
     uint32_t DEFAULT_BITRATE = 5000000;
     uint32_t DEFAULT_QUALITY = 30;
     double DEFAULT_FRAME_RATE = 30.0;
+    uint32_t DEFAULT_FUZZ_TIME = 30;
     uint32_t DEFAULT_BITRATE_MODE = CBR;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
@@ -93,6 +94,8 @@ public:
     bool RandomEOS(uint32_t index);
     void SetEOS(uint32_t index);
     int32_t PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result);
+    void InputDataNormal(bool &runningFlag, uint32_t index, OH_AVMemory *buffer);
+    void InputDataFuzz(bool &runningFlag, uint32_t index);
     int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     void InputFunc();
     int32_t state_EOS();
@@ -122,6 +125,7 @@ public:
     bool needResetQP = false;
     bool repeatRun = false;
     bool showLog = false;
+    bool fuzzMode = false;
     int64_t encode_count = 0;
     bool enable_random_eos = false;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例

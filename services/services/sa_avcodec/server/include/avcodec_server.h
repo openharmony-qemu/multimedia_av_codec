@@ -31,8 +31,8 @@ public:
     ~AVCodecServer();
 
     // IStandardAVCodecService override
-    sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-        const sptr<IRemoteObject> &listener) override;
+    int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) override;
 
 protected:
     // SystemAbility override

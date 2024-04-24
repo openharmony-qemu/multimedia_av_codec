@@ -620,6 +620,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
     }
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSurfaceAllocator(requestCfg_);
     IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateSurfaceAllocator failed");
+    bool needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
 
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     pool.clear();
@@ -648,6 +649,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
         bufInfo.avBuffer       = avBuffer;
         bufInfo.omxBuffer      = outBuffer;
         bufInfo.bufferId       = outBuffer->bufferId;
+        bufInfo.needDealWithCache = needDealWithCache;
         pool.push_back(bufInfo);
     }
 
@@ -711,7 +713,7 @@ void HCodec::BufferInfo::CleanUpUnusedInfo()
 
 void HCodec::BufferInfo::BeginCpuAccess()
 {
-    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+    if (surfaceBuffer && needDealWithCache) {
         GSError err = surfaceBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
             LOGW("InvalidateCache failed, GSError=%d", err);
@@ -721,7 +723,7 @@ void HCodec::BufferInfo::BeginCpuAccess()
 
 void HCodec::BufferInfo::EndCpuAccess()
 {
-    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+    if (surfaceBuffer && needDealWithCache) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
             LOGW("Map failed, GSError=%d", err);
@@ -1073,6 +1075,7 @@ void HCodec::ClearBufferPool(OMX_DIRTYPE portIndex)
         i--;
         EraseBufferFromPool(portIndex, i);
     }
+    OnClearBufferPool(portIndex);
 }
 
 void HCodec::FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info)

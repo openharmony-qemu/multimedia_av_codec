@@ -30,7 +30,6 @@
 #include "filter/filter.h"
 #include "media_sync_manager.h"
 #include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
-#include <utility>
 
 namespace OHOS {
 namespace Media {
@@ -46,7 +45,7 @@ public:
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status DoInitAfterLink() override;
     Status DoPrepare() override;
-    Status PrepareFrame(bool renderFirstFrame) override;
+    Status DoPrepareFrame(bool renderFirstFrame) override;
     Status WaitPrepareFrame() override;
     Status DoStart() override;
     Status DoPause() override;
@@ -87,8 +86,12 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    void RenderLoop();
     std::string GetCodecName(std::string mimeType);
     int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    void ParseDecodeRateLimit();
+    void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
+    Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer);
 
     std::string name_;
     FilterType filterType_;
@@ -100,9 +103,6 @@ private:
     std::string codecMimeType_;
     std::shared_ptr<Meta> configureParameter_;
     std::shared_ptr<Meta> meta_;
-    std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
-    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
-    sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer_;
 
     std::shared_ptr<Filter> nextFilter_;
     Format configFormat_;
@@ -119,12 +119,14 @@ private:
     int64_t stopTime_{0};
     sptr<Surface> videoSurface_;
     bool isDrmProtected_ = false;
-    int32_t sinceLastDropped_ = 0;
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
     std::atomic<bool> isPaused_{false};
     std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
     std::mutex mutex_;
+    std::unique_ptr<std::thread> readThread_ = nullptr;
+    std::atomic<bool> isThreadExit_ = true;
+    std::condition_variable condBufferAvailable_;
 
     Mutex firstFrameMutex_{};
     ConditionVariable firstFrameCond_;

@@ -858,7 +858,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0800, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
     ASSERT_NE(cap, nullptr);
-    ASSERT_EQ(16, OH_AVCapability_GetMaxSupportedInstances(cap));
+    ASSERT_EQ(64, OH_AVCapability_GetMaxSupportedInstances(cap));
 }
 
 /**

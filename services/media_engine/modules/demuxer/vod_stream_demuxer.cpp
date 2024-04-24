@@ -39,8 +39,6 @@
 
 namespace OHOS {
 namespace Media {
-const std::string BUNDLE_NAME_FIRST = "com.hua";
-const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
 VodStreamDemuxer::VodStreamDemuxer()
     : cacheData_(),
     position_(0)
@@ -58,13 +56,11 @@ VodStreamDemuxer::~VodStreamDemuxer()
 bool VodStreamDemuxer::GetPeekRangeSub(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
     auto ret = PullData(offset, size, bufferPtr);
-    if (bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
-        if (ret == Status::ERROR_AGAIN) {
-            isIgnoreRead_ = true;
-            return true;
-        } else {
-            isIgnoreRead_ = false;
-        }
+    if (ret == Status::ERROR_AGAIN) {
+        isIgnoreRead_ = true;
+        return true;
+    } else {
+        isIgnoreRead_ = false;
     }
     return Status::OK == ret;
 }
@@ -82,7 +78,7 @@ bool VodStreamDemuxer::GetPeekRange(uint64_t offset, size_t size, std::shared_pt
         offset >= cacheData_.offset && offset < (cacheData_.offset + cacheData_.data->GetMemory()->GetSize())) {
         auto memory = cacheData_.data->GetMemory();
         if (memory != nullptr && memory->GetSize() > 0) {
-            MEDIA_LOG_I("PullMode, Read data from cache data.");
+            MEDIA_LOG_D("PullMode, Read data from cache data.");
             return PullDataWithCache(offset, size, bufferPtr);
         }
     }
@@ -113,7 +109,7 @@ bool VodStreamDemuxer::PullDataWithCache(uint64_t offset, size_t size, std::shar
         return false;
     }
 
-    MEDIA_LOG_I("PullMode, Read data from cache data.");
+    MEDIA_LOG_D("PullMode, Read data from cache data.");
     uint64_t offsetInCache = offset - cacheData_.offset;
     if (size <= memory->GetSize() - offsetInCache) {
         bufferPtr->GetMemory()->Write(memory->GetReadOnlyData() + offsetInCache, size, 0);

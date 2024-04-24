@@ -725,9 +725,12 @@ void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
     }
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamLTR);
     CodecLTRPerFrameParam param;
-    meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, param.markAsLTR);
-    meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, param.useLTR);
-    meta->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, param.useLTRPoc);
+    int32_t markLTR = 0;
+    meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, markLTR);
+    param.markAsLTR = (markLTR == 0) ? false : true;
+    int32_t useLtrPoc = 0;
+    param.useLTR = meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrPoc);
+    param.useLTRPoc = static_cast<uint32_t>(useLtrPoc);
     AppendToVector(omxBuffer->alongParam, param);
 }
 

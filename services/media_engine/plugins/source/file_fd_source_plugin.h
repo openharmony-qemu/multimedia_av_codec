@@ -67,6 +67,7 @@ private:
 
     bool isReadFrame_ {false};
     std::string bundleName_ {};
+    bool isReadSuccess_ {false};
 };
 } // namespace FileSource
 } // namespace Plugins
