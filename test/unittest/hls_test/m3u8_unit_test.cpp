@@ -383,7 +383,7 @@ HWTEST_F(M3u8UnitTest, SET_DRM_INFOS, TestSize.Level1)
     drmInfo.insert(std::make_pair("uuid1", pssh));
     m3u8.StoreDrmInfos(drmInfo);
     EXPECT_EQ(2, m3u8.localDrmInfos_.size());
-    EXPECT_EQ(psshs, (++m3u8.localDrmInfos_.begin())->second);
+    EXPECT_EQ(pssh, (++m3u8.localDrmInfos_.begin())->second);
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistStartWithEXTM3U, TestSize.Level1)
