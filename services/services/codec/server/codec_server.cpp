@@ -652,9 +652,10 @@ void CodecServer::SetCallerInfo(const Meta &callerInfo)
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.Uid_);
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.ProcessName_);
 
-    EXPECT_AND_LOGI(forwardCaller_.Pid_ >= 0, "Codec forward caller pid: %{public}d, process name: %{public}s",
+    EXPECT_AND_LOGI((forwardCaller_.Pid_ >= 0) || (!forwardCaller_.ProcessName_.empty()),
+        "Forward caller pid: %{public}d, process name: %{public}s",
         forwardCaller_.Pid_, forwardCaller_.ProcessName_.c_str());
-    AVCODEC_LOGI("Codec caller pid: %{public}d, process name: %{public}s", caller_.Pid_, caller_.ProcessName_.c_str());
+    AVCODEC_LOGI("Caller pid: %{public}d, process name: %{public}s", caller_.Pid_, caller_.ProcessName_.c_str());
 }
 
 inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
