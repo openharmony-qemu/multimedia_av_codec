@@ -20,6 +20,7 @@
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "osal/task/autolock.h"
+#include "common/media_core.h"
 #include "demuxer_filter.h"
 
 namespace OHOS {
@@ -151,9 +152,12 @@ Status DemuxerFilter::DoPrepare()
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
-    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER, "trackCount is invalid.");
-
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
+    if (trackCount == 0) {
+        MEDIA_LOG_E("Doprepare: trackCount is invalid.");
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         if (meta == nullptr) {
@@ -171,23 +175,12 @@ Status DemuxerFilter::DoPrepare()
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
             continue;
         }
-
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (!FindStreamType(streamType, mediaType, mime)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
-
-        {
-            AutoLock lock(mapMutex_);
-            auto it = track_id_map_.find(streamType);
-            if (it != track_id_map_.end()) {
-                it->second.push_back(index);
-            } else {
-                std::vector<int32_t> vec = {index};
-                track_id_map_.insert({streamType, vec});
-            }
-        }
+        UpdateTrackIdMap(streamType, static_cast<int32_t>(index));
         if (callback_ == nullptr) {
             MEDIA_LOG_W("callback is nullptr");
             continue;
@@ -196,6 +189,18 @@ Status DemuxerFilter::DoPrepare()
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
     }
     return Status::OK;
+}
+
+void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
+{
+    AutoLock lock(mapMutex_);
+    auto it = track_id_map_.find(streamType);
+    if (it != track_id_map_.end()) {
+        it->second.push_back(index);
+    } else {
+        std::vector<int32_t> vec = {index};
+        track_id_map_.insert({streamType, vec});
+    }
 }
 
 Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)

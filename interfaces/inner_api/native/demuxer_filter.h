@@ -89,6 +89,7 @@ private:
 
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
+    void UpdateTrackIdMap(StreamType streamType, int32_t index);
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
     std::atomic<bool> isPrepareFramed{false};
