@@ -211,7 +211,7 @@ HWTEST_F(M3u8UnitTest, PARSE_KEY_IV_ATTRIBUTE, TestSize.Level1)
     tag->AddAttribute(attr1);
     m3u8.ParseKey(tag);
     uint8_t vec[4] {0x12, 0x34, 0x56, 0x78};
-    EXPECT_NE(*m3u8.iv_, vec);
+    EXPECT_NE(m3u8.iv_, vec);
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_KEY_NO_ATTRIBUTE, TestSize.Level1)
@@ -266,55 +266,55 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, NULL_SRC, TestSize.Level1)
 {
-    uint8_t *dest[100];
+    uint8_t dest[100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(nullptr, 10, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, NULL_DEST, TestSize.Level1)
 {
-    uint8_t *src[10] = {0};
+    uint8_t src[10] = {0};
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 10, nullptr, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, NULL_DEST_SIZE, TestSize.Level1)
 {
-    uint8_t *src[10] = {0};
-    uint32_t dest [100];
+    uint8_t src[10] = {0};
+    uint8_t dest [100];
     EXPECT_FALSE(M3U8::Base64Decode(src, 10, dest, nullptr));
 }
 
 HWTEST_F(M3u8UnitTest, ZERO_SRC_SIZE, TestSize.Level1)
 {
-    uint8_t *src[10] = {0};
-    uint32_t *dest [100];
+    uint8_t src[10] = {0};
+    uint8_t dest [100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 0, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, SRC_SIZE_GREATER_THAN_DEST_SIZE, TestSize.Level1)
 {
-    uint8_t *src[10] = {0};
-    uint32_t *dest [100];
+    uint8_t src[10] = {0};
+    uint8_t dest [100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 20, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, INVALID_SRC_SIZE, TestSize.Level1)
 {
-    uint8_t *src[5] = {0};
-    uint32_t *dest [100];
+    uint8_t src[5] = {0};
+    uint8_t dest [100];
     uint32_t destSize = 100;
     EXPECT_FALSE(M3U8::Base64Decode(src, 5, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, VALID_SRC, TestSize.Level1)
 {
-    uint8_t *src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
-    uint32_t *dest [100];
+    uint8_t src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
+    uint8_t dest [100];
     uint32_t destSize = 100;
-    EXPECT_TEUE(M3U8::Base64Decode(src, 12, dest, &destSize));
+    EXPECT_TRUE(M3U8::Base64Decode(src, 12, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, SET_DRM_INFO_NULL_KEY_URI, TestSize.Level1)
@@ -363,7 +363,7 @@ HWTEST_F(M3u8UnitTest, SET_DRM_INFOS, TestSize.Level1)
 
     // test no DRM info
     m3u8.StoreDrmInfos(drmInfo);
-    EXPECT_TRUE(m3u8.localDrmInfos_.begin()->second);
+    EXPECT_TRUE(m3u8.localDrmInfos_.empty());
 
     // test new drm info
     std::vector<uint8_t> pssh = {1, 2, 3, 4, 5};
@@ -379,11 +379,11 @@ HWTEST_F(M3u8UnitTest, SET_DRM_INFOS, TestSize.Level1)
     EXPECT_EQ(pssh, m3u8.localDrmInfos_.begin()->second);
 
     // test diff drm info
-    std::vector<uint8_t> pssh = {6, 7, 8, 9, 10};
-    drmInfo.insert(std::make_pair("uuid1", pssh));
+    std::vector<uint8_t> pssh2 = {6, 7, 8, 9, 10};
+    drmInfo.insert(std::make_pair("uuid1", pssh2));
     m3u8.StoreDrmInfos(drmInfo);
     EXPECT_EQ(2, m3u8.localDrmInfos_.size());
-    EXPECT_EQ(pssh, (++m3u8.localDrmInfos_.begin())->second);
+    EXPECT_EQ(pssh2, (++m3u8.localDrmInfos_.begin())->second);
 }
 
 HWTEST_F(M3u8UnitTest, TestPlaylistStartWithEXTM3U, TestSize.Level1)
