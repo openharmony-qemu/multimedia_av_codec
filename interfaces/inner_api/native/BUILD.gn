@@ -181,15 +181,7 @@ ohos_shared_library("av_codec_client") {
     "media_foundation:media_foundation",
   ]
 
-  sanitize = {
-    boundary_sanitize = true
-    cfi = true
-    cfi_cross_dso = true
-    integer_overflow = true
-    ubsan = true
-    debug = false
-    blocklist = "$av_codec_root_dir/cfi_blocklist.txt"
-  }
+  sanitize = av_codec_sanitize
 
   configs = [
     ":av_codec_packege_include",
@@ -214,6 +206,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_video_decoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_video_encoder_impl.cpp",
       "$av_codec_root_dir/services/services/codec/client/codec_client.cpp",
+      "$av_codec_root_dir/services/services/codec/ipc/buffer_converter.cpp",
       "$av_codec_root_dir/services/services/codec/ipc/codec_listener_stub.cpp",
       "$av_codec_root_dir/services/services/codec/ipc/codec_service_proxy.cpp",
     ]

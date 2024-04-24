@@ -45,10 +45,10 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format);
 
 private:
-    std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<ICodecService> codecClient_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

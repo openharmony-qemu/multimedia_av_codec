@@ -32,6 +32,7 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
+    Status DoPrepareFrame(bool renderFirstFrame) override;
     Status DoStart() override;
     Status DoStop() override;
     Status DoPause() override;
@@ -69,6 +70,8 @@ public:
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
+    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
+    Status SetSpeed(float speed);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -88,6 +91,7 @@ private:
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
+    std::atomic<bool> isPrepareFramed{false};
 
     std::shared_ptr<Filter> nextFilter_;
     MediaMetaData mediaMetaData_;

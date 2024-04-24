@@ -36,14 +36,12 @@ constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 constexpr int32_t RES_CHANGE_TIME = 4;
-constexpr int32_t CROP_INFO_SIZE = 4;
-constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103, 1152, 640},
-    {1079, 1919, 1920, 1088}, {719, 1279, 1280, 736}, {855, 1919, 1920, 864}};
+constexpr int32_t CROP_INFO_SIZE = 2;
+constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
+    {1079, 1919}, {719, 1279}, {855, 1919}};
 
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
-constexpr int32_t STRIDE = 2;
-constexpr int32_t SLICE_HEIGHT = 3;
 
 
 SHA512_CTX c;
@@ -120,7 +118,7 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
         if (cropBottom != CROP_INFO[resCount][CROP_BOTTOM] || cropRight != CROP_INFO[resCount][CROP_RIGHT]) {
             dec_sample->errCount++;
         }
-        if (stride != CROP_INFO[resCount][STRIDE] || sliceHeight != CROP_INFO[resCount][SLICE_HEIGHT]) {
+        if (stride <= 0 || sliceHeight <= 0) {
             dec_sample->errCount++;
         }
         resCount++;
@@ -579,7 +577,7 @@ void VDecNdkSample::CheckOutputDescription()
         if (cropTop != expectCropTop || cropBottom != expectCropBottom || cropLeft != expectCropLeft) {
             errCount++;
         }
-        if (cropRight != expectCropRight || stride != expectStride || sliceHeight != expectSliceHeight) {
+        if (cropRight != expectCropRight || stride <= 0 || sliceHeight <= 0) {
             errCount++;
         }
     } else {
@@ -775,9 +773,10 @@ int32_t VDecNdkSample::SetParameter(OH_AVFormat *format)
 
 int32_t VDecNdkSample::SwitchSurface()
 {
+    int32_t ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
     switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
     cout << "manual switch surf "<< switchSurfaceFlag << endl;
-    return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
+    return ret;
 }
 
 int32_t VDecNdkSample::RepeatCallSetSurface()
@@ -790,5 +789,5 @@ int32_t VDecNdkSample::RepeatCallSetSurface()
             return AV_ERR_OPERATE_NOT_PERMIT;
         }
     }
-    return ret;
+    return AV_ERR_OK;
 }

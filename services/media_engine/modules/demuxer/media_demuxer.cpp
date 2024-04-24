@@ -45,6 +45,9 @@ static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
+static const double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
+static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -130,6 +133,7 @@ MediaDemuxer::~MediaDemuxer()
     source_ = nullptr;
     eventReceiver_ = nullptr;
     eosMap_.clear();
+    requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
 }
 
@@ -364,6 +368,7 @@ std::map<uint32_t, sptr<AVBufferQueueProducer>> MediaDemuxer::GetBufferQueueProd
 Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 {
     eosMap_[trackId] = false;
+    requestBufferErrorCountMap_[trackId] = 0;
     return plugin_->SelectTrack(trackId);
 }
 
@@ -409,6 +414,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     isSeeked_ = true;
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
+    }
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
     }
     MEDIA_LOG_I("SeekTo done");
     return ret;
@@ -479,7 +487,12 @@ Status MediaDemuxer::Flush()
 Status MediaDemuxer::StopAllTask()
 {
     MEDIA_LOG_I("StopAllTask enter.");
-    streamDemuxer_->SetIsIgnoreParse(true);
+    if (streamDemuxer_ != nullptr) {
+        streamDemuxer_->SetIsIgnoreParse(true);
+    }
+    if (source_ != nullptr) {
+        source_->Stop();
+    }
 
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
@@ -530,19 +543,6 @@ Status MediaDemuxer::PauseAllTask()
         }
     }
 
-    return Status::OK;
-}
-
-Status MediaDemuxer::PauseAsync()
-{
-    MEDIA_LOG_I("PauseAsync enter.");
-    source_->SetReadBlockingFlag(true);
-
-    for (auto &iter : taskMap_) {
-        if (iter.second != nullptr) {
-            iter.second->PauseAsync();
-        }
-    }
     return Status::OK;
 }
 
@@ -627,6 +627,9 @@ Status MediaDemuxer::Reset()
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    for (auto item : requestBufferErrorCountMap_) {
+        requestBufferErrorCountMap_[item.first] = 0;
+    }
     videoStartTime_ = 0;
     streamDemuxer_->Reset();
     return plugin_->Reset();
@@ -645,7 +648,11 @@ Status MediaDemuxer::Start()
     for (auto it = eosMap_.begin(); it != eosMap_.end(); it++) {
         it->second = false;
     }
+    for (auto it = requestBufferErrorCountMap_.begin(); it != requestBufferErrorCountMap_.end(); it++) {
+        it->second = 0;
+    }
     isThreadExit_ = false;
+    isStopped_ = false;
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
@@ -663,8 +670,8 @@ Status MediaDemuxer::Stop()
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
+    isStopped_ = true;
     StopAllTask();
-    source_->Stop();
     streamDemuxer_->Stop();
     return plugin_->Stop();
 }
@@ -687,6 +694,19 @@ void MediaDemuxer::InitPlugin(const Plugins::SubPluginType& subPluginType)
 bool MediaDemuxer::HasVideo()
 {
     return videoTrackId_ != TRACK_ID_DUMMY;
+}
+
+Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
+{
+    MEDIA_LOG_I("PrepareFrame enter.");
+    doPrepareFrame_ = true;
+    Start();
+    AutoLock lock(firstFrameMutex_);
+    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+         return firstFrameCount_ == taskMap_.size();
+    });
+    doPrepareFrame_ = false;
+    return Pause();
 }
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
@@ -747,9 +767,13 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
-        MEDIA_LOG_D("Get buffer failed due to get buffer from bufferQueue failed, user queue: "
-            PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+        requestBufferErrorCountMap_[queueIndex]++;
+        OSAL::SleepFor(5); // when request buffer failed, wait 5ms
+    } else {
+        requestBufferErrorCountMap_[queueIndex] = 0;
     }
+    FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
+        PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
     return ret == Status::OK;
 }
 
@@ -766,7 +790,6 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     if (!GetBufferFromUserQueue(trackId, size)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
@@ -793,11 +816,17 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
+            ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+            return Status::OK;
         }
-        ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+        bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
+        ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
+    } else {
+        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+        MEDIA_LOG_E("ReadSample failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
     MEDIA_LOG_D("CopyFrameToUserQueue exit, copy frame for track: " PUBLIC_LOG_U32, trackId);
-    return Status::OK;
+    return ret;
 }
 
 Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
@@ -819,18 +848,26 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse()) {
+    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
-        if (ret == Status::ERROR_UNKNOWN) {
+        // when read failed, or request always failed in 1min, send error event
+        if ((ret == Status::ERROR_UNKNOWN && !isStopped_) ||
+             requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
             } else {
                 MEDIA_LOG_D("OnEvent eventReceiver_ null.");
             }
+        }
+        if (ret == Status::OK && doPrepareFrame_) {
+            AutoLock lock(firstFrameMutex_);
+            firstFrameCount_++;
+            firstFrameCond_.NotifyAll();
+            taskMap_[trackId]->Pause();
         }
         return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
     }
@@ -937,6 +974,73 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         default:
             break;
     }
+}
+
+Status MediaDemuxer::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+{
+    MEDIA_LOG_I("OptimizeDecodeSlow entered.");
+    useDecodeSlowOptimization_ = useDecodeSlowOptimization;
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit,
+    uint32_t trackId)
+{
+    MEDIA_LOG_I("decodeFramerateUpperLimit = " PUBLIC_LOG_D32 " trackId = " PUBLIC_LOG_D32,
+        decodeFramerateUpperLimit, trackId);
+    FALSE_RETURN_V(trackId == videoTrackId_, Status::OK);
+    FALSE_RETURN_V_MSG_E(decodeFramerateUpperLimit > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetDecodeFramerateUpperLimit failed, decodeFramerateUpperLimit <= 0");
+    decodeFramerateUpperLimit_.store(decodeFramerateUpperLimit);
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetSpeed(float speed)
+{
+    MEDIA_LOG_I("speed = " PUBLIC_LOG_F, speed);
+    FALSE_RETURN_V_MSG_E(speed > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetSpeed failed, speed <= 0");
+    speed_.store(speed);
+    return Status::OK;
+}
+
+Status MediaDemuxer::SetFrameRate(double frameRate, uint32_t trackId)
+{
+    MEDIA_LOG_I("frameRate = " PUBLIC_LOG_F " trackId = " PUBLIC_LOG_D32,
+        frameRate, trackId);
+    FALSE_RETURN_V(trackId == videoTrackId_, Status::OK);
+    FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetFrameRate failed, frameRate <= 0");
+    frameRate_.store(frameRate);
+    return Status::OK;
+}
+
+bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
+{
+    if (trackId != videoTrackId_) {
+        return false;
+    }
+
+    if (!useDecodeSlowOptimization_.load()) {
+        return false;
+    }
+
+    double targetRate = frameRate_.load() * speed_.load();
+    double actualRate = decodeFramerateUpperLimit_.load() * (1 + DECODE_RATE_THRESHOLD);
+    if (targetRate <= actualRate) {
+        return false;
+    }
+
+    bool canDrop = false;
+    bool ret = sample->meta_->GetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, canDrop);
+    if (!ret || !canDrop) {
+        return false;
+    }
+
+    MEDIA_LOG_D("drop buffer, frameRate = " PUBLIC_LOG_F " speed = " PUBLIC_LOG_F " decodeUpLimit = "
+        PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_U64, frameRate_.load(), speed_.load(),
+        decodeFramerateUpperLimit_.load(), sample->pts_);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

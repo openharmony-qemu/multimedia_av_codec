@@ -136,7 +136,8 @@ int32_t CodecServer::InitServer()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
+int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name,
+                          Meta &callerInfo, API_VERSION apiVersion)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
@@ -161,10 +162,13 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         }
         codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
     }
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr, %{public}s",
-                             codecName_.c_str());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY,
+        "CodecBase is nullptr, %{public}s", codecName_.c_str());
+    int32_t ret = codecBase_->Init(callerInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase Init failed");
+
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
-    int32_t ret = codecBase_->SetCallback(callback);
+    ret = codecBase_->SetCallback(callback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase SetCallback failed");
 
     std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
@@ -208,7 +212,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
     switch (scenario_) {
         case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
             temporalScalability_ = std::make_shared<TemporalScalability>();
-            temporalScalability_->ConfigFrameGop(config);
+            temporalScalability_->ValidateTemporalGopParam(config);
             break;
         default:
             break;

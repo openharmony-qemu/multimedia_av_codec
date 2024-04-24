@@ -59,7 +59,7 @@ void CodecServiceProxy::SetListener(const sptr<CodecListenerStub> &listener)
     listener_ = listener;
 }
 
-int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
 {
     MessageParcel data;
     MessageParcel reply;
@@ -68,6 +68,7 @@ int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::st
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
+    callerInfo.ToParcel(data);
     data.WriteInt32(static_cast<int32_t>(type));
     data.WriteBool(isMimeType);
     data.WriteString(name);

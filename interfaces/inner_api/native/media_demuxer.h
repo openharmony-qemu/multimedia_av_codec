@@ -38,6 +38,7 @@ namespace OHOS {
 namespace Media {
 namespace {
     constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+    constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
 }
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
@@ -68,12 +69,12 @@ public:
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status Reset();
+    Status PrepareFrame(bool renderFirstFrame);
     Status Start();
     Status Stop();
     Status Pause();
     Status Resume();
     Status Flush();
-    Status PauseAsync();
 
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
@@ -90,6 +91,11 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
+
+    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
+    Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
+    Status SetSpeed(float speed);
+    Status SetFrameRate(double frameRate, uint32_t trackId);
 private:
     class DataSourceImpl;
 
@@ -123,6 +129,7 @@ private:
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
     bool HasVideo();
+    bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
 
     Plugins::Seekable seekable_;
     std::string uri_;
@@ -145,6 +152,7 @@ private:
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
+    std::map<uint32_t, uint32_t> requestBufferErrorCountMap_;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
     bool isAccurateSeekForHLS_ = false;
@@ -162,9 +170,20 @@ private:
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
 
+    std::atomic<bool> isStopped_ = false;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
+
+    Mutex firstFrameMutex_{};
+    ConditionVariable firstFrameCond_;
+    uint64_t firstFrameCount_ = 0;
+    bool doPrepareFrame_{false};
+
+    std::atomic<bool> useDecodeSlowOptimization_ {false};
+    std::atomic<float> speed_ {1.0f};
+    std::atomic<double> frameRate_ {0.0};
+    std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 };
 } // namespace Media
 } // namespace OHOS

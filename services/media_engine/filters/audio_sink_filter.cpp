@@ -20,6 +20,7 @@
 #include "osal/utils/dump_buffer.h"
 #include "filter/filter_factory.h"
 #include "media_core.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
@@ -31,6 +32,7 @@ static AutoRegisterFilter<AudioSinkFilter> g_registerAudioSinkFilter("builtin.pl
         return std::make_shared<AudioSinkFilter>(name, FilterType::FILTERTYPE_ASINK);
     });
 
+static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
 
 AudioSinkFilter::AVBufferAvailableListener::AVBufferAvailableListener(std::shared_ptr<AudioSinkFilter> audioSinkFilter)
 {
@@ -47,7 +49,7 @@ void AudioSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 }
 
 AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
-    : Filter(name, FilterType::FILTERTYPE_ASINK, true)
+    : Filter(name, FilterType::FILTERTYPE_ASINK, IS_FILTER_ASYNC)
 {
     filterType_ = filterType;
     audioSink_ = std::make_shared<AudioSink>();
@@ -78,27 +80,12 @@ Status AudioSinkFilter::DoInitAfterLink()
 
 Status AudioSinkFilter::DoPrepare()
 {
-    if (state_ == FilterState::READY) {
-        return Status::OK;
-    }
     audioSink_->Prepare();
-    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
-        MEDIA_LOG_I("InputBufferQueue already create");
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    int inputBufferSize = 8;
-    MemoryType memoryType = MemoryType::SHARED_MEMORY;
-#ifndef MEDIA_OHOS
-    memoryType = MemoryType::VIRTUAL_MEMORY;
-#endif
-    MEDIA_LOG_I("PrepareInputBufferQueue ");
-    inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
-    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
+    inputBufferQueueConsumer_ = audioSink_->GetBufferQueueConsumer();
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     if (onLinkedResultCallback_ != nullptr) {
-        onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, trackMeta_);
+        onLinkedResultCallback_->OnLinkedResult(audioSink_->GetBufferQueueProducer(), trackMeta_);
     }
     state_ = FilterState::READY;
     return Status::OK;
@@ -118,6 +105,7 @@ Status AudioSinkFilter::DoStart()
     auto err = audioSink_->Start();
     if (err != Status::OK) {
         eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED});
+        return err;
     }
     state_ = FilterState::RUNNING;
     frameCnt_ = 0;
@@ -195,23 +183,8 @@ Status AudioSinkFilter::DoRelease()
 
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    Status ret;
-    std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
-    if (inputBufferQueueConsumer_ == nullptr) {
-        return Status::ERROR_INVALID_STATE;
-    }
-    ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
-    if (ret != Status::OK || filledOutputBuffer == nullptr) {
-        return Status::ERROR_INVALID_STATE;
-    }
-    if (dropFrame) {
-        MEDIA_LOG_W("ProcessInputBuffer drop buffer");
-        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-        return Status::OK;
-    }
-    audioSink_->DrainOutputBuffer(filledOutputBuffer);
-    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-    return ret;
+    audioSink_->DrainOutputBuffer();
+    return Status::OK;
 }
 
 int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)

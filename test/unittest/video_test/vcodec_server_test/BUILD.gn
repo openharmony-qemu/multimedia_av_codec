@@ -65,6 +65,7 @@ codec_server_coverage_include_dirs = [
 ]
 
 ohos_unittest("codec_server_coverage_unit_test") {
+  sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   cflags = av_codec_unittest_cflags
   cflags_cc = cflags

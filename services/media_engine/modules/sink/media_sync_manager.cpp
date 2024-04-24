@@ -214,7 +214,9 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     seekingMediaTime_ = mediaTime;
     alreadySetSyncersShouldWait_ = false; // set already as false
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
+    int8_t oldSyncerPriority = currentSyncerPriority_;
     ResetTimeAnchorNoLock(); // reset the time anchor
+    currentSyncerPriority_ = oldSyncerPriority;
     return Status::OK;
 }
 
@@ -304,13 +306,13 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = supplier->GetPriority();
         SimpleUpdateTimeAnchor(clockTime, mediaTime, mediaAbsTime);
-        MEDIA_LOG_DD("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
+        MEDIA_LOG_D("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
         PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
-    }
-    if (isSeeking_) {
-        MEDIA_LOG_I("leaving seeking_");
-        isSeeking_ = false;
-        seekCond_.notify_all();
+        if (isSeeking_) {
+            MEDIA_LOG_I("leaving seeking_");
+            isSeeking_ = false;
+            seekCond_.notify_all();
+        }
     }
     return render;
 }

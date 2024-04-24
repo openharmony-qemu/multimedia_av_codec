@@ -94,7 +94,8 @@ void CodecServerUnitTest::CreateFCodecByName()
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
+        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -116,7 +117,8 @@ void CodecServerUnitTest::CreateFCodecByMime()
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
+        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -137,7 +139,8 @@ void CodecServerUnitTest::CreateHCodecByName()
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
+        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -159,7 +162,8 @@ void CodecServerUnitTest::CreateHCodecByMime()
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
+        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -228,7 +232,8 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_005, TestSize.Level1)
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_DECODER, true, codecMime, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_DECODER, true, codecMime,
+        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 
     EXPECT_NE(server_->codecBase_, nullptr);
@@ -249,7 +254,8 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_001, TestSize.Lev
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr))).Times(0);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr))).Times(0);
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
+            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
 }
 
@@ -273,7 +279,8 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_002, TestSize.Lev
         .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr))).Times(0);
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
+            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
 }
 
@@ -299,7 +306,8 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_003, TestSize.Lev
         .Times(1)
         .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
+            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
 }
 
@@ -325,7 +333,9 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_004, TestSize.Lev
         .Times(1)
         .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
 
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret =
+        server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
+            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
 }
 
@@ -336,7 +346,9 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_004, TestSize.Lev
 HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_005, TestSize.Level1)
 {
     std::string codecName = "AudioDecoder.InvaildName";
-    int32_t ret = server_->Init(AVCODEC_TYPE_AUDIO_ENCODER, false, codecName, API_VERSION::API_VERSION_11);
+    int32_t ret =
+        server_->Init(AVCODEC_TYPE_AUDIO_ENCODER, false, codecName,
+            *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
 }
 
