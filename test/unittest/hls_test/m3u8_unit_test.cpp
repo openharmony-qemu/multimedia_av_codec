@@ -21,7 +21,7 @@ using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
-constexpr uint_32_t MAX_LOOP = 16;
+constexpr uint32_t MAX_LOOP = 16;
 
 void M3u8UnitTest::SetUpTestCase(void) {}
 
@@ -134,7 +134,7 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "Test M3U8");
 
     //check updaters map
-    EXPECT_EQ(m3u8.tagUpdaterMap_.empty());
+    EXPECT_TRUE(m3u8.tagUpdaterMap_.empty());
 }
 
 HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
@@ -148,10 +148,10 @@ HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "Test M3U8");
 
     //check updaters map
-    EXPECT_EQ(fragment.tagUpdaterMap_.empty, 10.0);
+    EXPECT_TRUE(m3u8.tagUpdaterMap_.empty());
 }
 
-HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, TEST_EMPTY_NAME, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
 
@@ -162,7 +162,7 @@ HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "");
 
     //check updaters map
-    EXPECT_EQ(fragment.tagUpdaterMap_.empty, 10.0);
+    EXPECT_TRUE(m3u8.tagUpdaterMap_.empty());
 }
 
 // test get ext
@@ -210,7 +210,7 @@ HWTEST_F(M3u8UnitTest, PARSE_KEY_IV_ATTRIBUTE, TestSize.Level1)
     auto attr1 =  std::make_shared<Attribute>("IV", "0x12345678");
     tag->AddAttribute(attr1);
     m3u8.ParseKey(tag);
-    unit8_t vec[4] {0x12, 0x34, 0x56, 0x78};
+    uint8_t vec[4] {0x12, 0x34, 0x56, 0x78};
     EXPECT_NE(*m3u8.iv_, vec);
 }
 
@@ -221,14 +221,14 @@ HWTEST_F(M3u8UnitTest, PARSE_KEY_NO_ATTRIBUTE, TestSize.Level1)
     m3u8.ParseKey(tag);
     EXPECT_NE(m3u8.method_, nullptr);
     EXPECT_NE(m3u8.keyUri_, nullptr);
-    unit8_t vec[4] {0, 0, 0, 0};
+    uint8_t vec[4] {0, 0, 0, 0};
     EXPECT_NE(m3u8.iv_, vec);
 }
 
 HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    uint8_t data[0] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
     bool result = m3u8.SaveData(data, len);
@@ -241,7 +241,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    uint8_t data[0] = {1,2,3,4,5,6,7,8,9,10};
+    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
     bool result = m3u8.SaveData(data, len);
@@ -275,14 +275,14 @@ HWTEST_F(M3u8UnitTest, NULL_DEST, TestSize.Level1)
 {
     uint8_t src[10] = {0};
     uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::BaseDecode(src, 10, nullptr, &destSize));
+    EXPECT_FALSE(M3U8::Base64Decode(src, 10, nullptr, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, NULL_DEST_SIZE, TestSize.Level1)
 {
     uint8_t src[10] = {0};
     uint32_t dest [100];
-    EXPECT_FALSE(M3U8::BaseDecode(src, 10, dest, nullptr));
+    EXPECT_FALSE(M3U8::Base64Decode(src, 10, dest, nullptr));
 }
 
 HWTEST_F(M3u8UnitTest, ZERO_SRC_SIZE, TestSize.Level1)
@@ -290,7 +290,7 @@ HWTEST_F(M3u8UnitTest, ZERO_SRC_SIZE, TestSize.Level1)
     uint8_t src[10] = {0};
     uint32_t dest [100];
     uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::BaseDecode(src, 0, dest, &destSize));
+    EXPECT_FALSE(M3U8::Base64Decode(src, 0, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, SRC_SIZE_GREATER_THAN_DEST_SIZE, TestSize.Level1)
@@ -298,7 +298,7 @@ HWTEST_F(M3u8UnitTest, SRC_SIZE_GREATER_THAN_DEST_SIZE, TestSize.Level1)
     uint8_t src[10] = {0};
     uint32_t dest [100];
     uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::BaseDecode(src, 20, dest, &destSize));
+    EXPECT_FALSE(M3U8::Base64Decode(src, 20, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, INVALID_SRC_SIZE, TestSize.Level1)
@@ -306,7 +306,7 @@ HWTEST_F(M3u8UnitTest, INVALID_SRC_SIZE, TestSize.Level1)
     uint8_t src[5] = {0};
     uint32_t dest [100];
     uint32_t destSize = 100;
-    EXPECT_FALSE(M3U8::BaseDecode(src, 5, dest, &destSize));
+    EXPECT_FALSE(M3U8::Base64Decode(src, 5, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, VALID_SRC, TestSize.Level1)
@@ -314,7 +314,7 @@ HWTEST_F(M3u8UnitTest, VALID_SRC, TestSize.Level1)
     uint8_t src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
     uint32_t dest [100];
     uint32_t destSize = 100;
-    EXPECT_TEUE(M3U8::BaseDecode(src, 12, dest, &destSize));
+    EXPECT_TEUE(M3U8::Base64Decode(src, 12, dest, &destSize));
 }
 
 HWTEST_F(M3u8UnitTest, SET_DRM_INFO_NULL_KEY_URI, TestSize.Level1)
