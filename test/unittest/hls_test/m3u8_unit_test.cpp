@@ -21,7 +21,7 @@ using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
-constexpr unit_32_t MAX_LOOP = 16;
+constexpr uint_32_t MAX_LOOP = 16;
 
 void M3u8UnitTest::SetUpTestCase(void) {}
 
@@ -134,7 +134,7 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR, TestSize.Level1)
     EXPECT_EQ(m3u8.name_, "Test M3U8");
 
     //check updaters map
-    EXPECT_EQ(fragment.tagUpdaterMap_.empty, 10.0);
+    EXPECT_EQ(m3u8.tagUpdaterMap_.empty());
 }
 
 HWTEST_F(M3u8UnitTest, TEST_EMPTY_URI, TestSize.Level1)
@@ -228,7 +228,7 @@ HWTEST_F(M3u8UnitTest, PARSE_KEY_NO_ATTRIBUTE, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    uint8_t data[0] = {1,2,3,4,5,6,7,8,9,10};
+    uint8_t data[0] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
     bool result = m3u8.SaveData(data, len);
