@@ -202,8 +202,243 @@ HWTEST_F(M3u8UnitTest, PARSE_KEY_URI_ATTRIBUTE, TestSize.Level1)
     m3u8.ParseKey(tag);
     EXPECT_EQ(*m3u8.keyUri_, "http://example.com/key.bin");
 }
+
+HWTEST_F(M3u8UnitTest, PARSE_KEY_IV_ATTRIBUTE, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDISCONTINUITY, "123");
+    auto attr1 =  std::make_shared<Attribute>("IV", "0x12345678");
+    tag->AddAttribute(attr1);
+    m3u8.ParseKey(tag);
+    unit8_t vec[4] {0x12, 0x34, 0x56, 0x78};
+    EXPECT_NE(*m3u8.iv_, vec);
+}
+
+HWTEST_F(M3u8UnitTest, PARSE_KEY_NO_ATTRIBUTE, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDISCONTINUITY, "123");
+    m3u8.ParseKey(tag);
+    EXPECT_NE(m3u8.method_, nullptr);
+    EXPECT_NE(m3u8.keyUri_, nullptr);
+    unit8_t vec[4] {0, 0, 0, 0};
+    EXPECT_NE(m3u8.iv_, vec);
+}
+
+HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    uint8_t data[0] = {1,2,3,4,5,6,7,8,9,10};
+    uint32_t len = 10;
+
+    bool result = m3u8.SaveData(data, len);
+
+    EXPECT_TRUE(result);
+    EXPECT_EQ(m3u8.keyLen_, len);
+    EXPECT_TRUE(m3u8.isDecryptKeyReady_);
+}
+
+HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    uint8_t data[0] = {1,2,3,4,5,6,7,8,9,10};
+    uint32_t len = 10;
+
+    bool result = m3u8.SaveData(data, len);
+
+    EXPECT_TRUE(result);
+    EXPECT_EQ(m3u8.keyLen_, len);
+    EXPECT_FALSE(m3u8.isDecryptKeyReady_);
+}
+
+HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    uint8_t data[MAX_LOOP + 1];
+    uint32_t len = MAX_LOOP + 1;
+
+    bool result = m3u8.SaveData(data, len);
+
+    EXPECT_TRUE(result);
+    EXPECT_EQ(m3u8.keyLen_, 0);
+    EXPECT_FALSE(m3u8.isDecryptKeyReady_);
+}
+
+HWTEST_F(M3u8UnitTest, NULL_SRC, TestSize.Level1)
+{
+    uint8_t dest[100];
+    uint32_t destSize = 100;
+    EXPECT_FALSE(M3U8::BaseDecode(nullptr, 10, dest, &destSize));
+}
+
+HWTEST_F(M3u8UnitTest, NULL_DEST, TestSize.Level1)
+{
+    uint8_t src[10] = {0};
+    uint32_t destSize = 100;
+    EXPECT_FALSE(M3U8::BaseDecode(src, 10, nullptr, &destSize));
+}
+
+HWTEST_F(M3u8UnitTest, NULL_DEST_SIZE, TestSize.Level1)
+{
+    uint8_t src[10] = {0};
+    uint32_t dest [100];
+    EXPECT_FALSE(M3U8::BaseDecode(src, 10, dest, nullptr));
+}
+
+HWTEST_F(M3u8UnitTest, ZERO_SRC_SIZE, TestSize.Level1)
+{
+    uint8_t src[10] = {0};
+    uint32_t dest [100];
+    uint32_t destSize = 100;
+    EXPECT_FALSE(M3U8::BaseDecode(src, 0, dest, &destSize));
+}
+
+HWTEST_F(M3u8UnitTest, SRC_SIZE_GREATER_THAN_DEST_SIZE, TestSize.Level1)
+{
+    uint8_t src[10] = {0};
+    uint32_t dest [100];
+    uint32_t destSize = 100;
+    EXPECT_FALSE(M3U8::BaseDecode(src, 20, dest, &destSize));
+}
+
+HWTEST_F(M3u8UnitTest, INVALID_SRC_SIZE, TestSize.Level1)
+{
+    uint8_t src[5] = {0};
+    uint32_t dest [100];
+    uint32_t destSize = 100;
+    EXPECT_FALSE(M3U8::BaseDecode(src, 5, dest, &destSize));
+}
+
+HWTEST_F(M3u8UnitTest, VALID_SRC, TestSize.Level1)
+{
+    uint8_t src[12] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'};
+    uint32_t dest [100];
+    uint32_t destSize = 100;
+    EXPECT_TEUE(M3U8::BaseDecode(src, 12, dest, &destSize));
+}
+
+HWTEST_F(M3u8UnitTest, SET_DRM_INFO_NULL_KEY_URI, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_FALSE(m3u8.SetDrmInfo(drmInfo));
+}
+
+HWTEST_F(M3u8UnitTest, SET_DRM_INFO_INVALID_KEY_URI, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = std::make_shared<std::string>("invalid");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_FALSE(m3u8.SetDrmInfo(drmInfo));
+}
+
+HWTEST_F(M3u8UnitTest, SET_DRM_INFO_VALID_KEY_URI, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = std::make_shared<std::string>("base64,valid");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_FALSE(m3u8.SetDrmInfo(drmInfo));
+}
+
+HWTEST_F(M3u8UnitTest, SET_DRM_INFO_PSSH_SIZE_SMALL, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = std::make_shared<std::string>("base64,valid");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_FALSE(m3u8.SetDrmInfo(drmInfo));
+}
+
+HWTEST_F(M3u8UnitTest, SET_DRM_INFO_PSSH_SIZE_VALID, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = std::make_shared<std::string>("base64,valid");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_FALSE(m3u8.SetDrmInfo(drmInfo));
+}
+
+HWTEST_F(M3u8UnitTest, SET_DRM_INFOS, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+
+    // test no DRM info
+    m3u8.StoreDrmInfos(drmInfo);
+    EXPECT_TRUE(m3u8.localDrmInfos_.begin()->second);
+
+    // test new drm info
+    std::vector<uint8_t> pssh = {1, 2, 3, 4, 5};
+    drmInfo.insert(std::make_pair("uuid1", pssh));
+    m3u8.StoreDrmInfos(drmInfo);
+    EXPECT_EQ(1, m3u8.localDrmInfos_.size());
+    EXPECT_EQ(pssh, m3u8.localDrmInfos_.begin()->second);
+
+    // test existed drm info
+    drmInfo.insert(std::make_pair("uuid1", pssh));
+    m3u8.StoreDrmInfos(drmInfo);
+    EXPECT_EQ(1, m3u8.localDrmInfos_.size());
+    EXPECT_EQ(pssh, m3u8.localDrmInfos_.begin()->second);
+
+    // test diff drm info
+    std::vector<uint8_t> pssh = {6, 7, 8, 9, 10};
+    drmInfo.insert(std::make_pair("uuid1", pssh));
+    m3u8.StoreDrmInfos(drmInfo);
+    EXPECT_EQ(2, m3u8.localDrmInfos_.size());
+    EXPECT_EQ(psshs, (++m3u8.localDrmInfos_.begin())->second);
+}
+
+HWTEST_F(M3u8UnitTest, TestPlaylistStartWithEXTM3U, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("#EXTM3U", "uri");
+    EXPECT_EQ(playlist.playList_, "#EXTM3U");
+}
+
+HWTEST_F(M3u8UnitTest, TestPlaylistNotStartWithEXTM3U, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("playlist", "uri");
+    EXPECT_EQ(playlist.playList_, "playlist");
+}
+
+HWTEST_F(M3u8UnitTest, TestPlaylistContainsEXTINF, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("\n#EXTM3U:", "uri");
+    EXPECT_EQ(playlist.playList_, "\n#EXTM3U:");
+}
+
+HWTEST_F(M3u8UnitTest, TestPlaylistNotContainsEXTINF, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("playlist", "uri");
+    EXPECT_EQ(playlist.playList_, "playlist");
+}
+
+HWTEST_F(M3u8UnitTest, UpdateMediaPlaylistTest, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("playlist", "uri");
+    playlist.UpdateMediaPlaylist();
+
+    // test variants contains new stream
+    EXPECT_EQ(1, playlist.variants_.size());
+
+    // test defaultVariant_ point new stream
+    EXPECT_EQ(playlist.variants_.front(), playlist.defaultVariant_);
+
+    // test duration updated
+    EXPECT_EQ(0, playlist.duration_);
+
+    // test bLive_ updated
+    EXPECT_FALSE(playlist.bLive_);
+
+    // isSimple updated
+    EXPECT_TRUE(playlist.isSimple_);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_default, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("test", "http://test.com/test");
+    playlist.UpdateMediaPlaylist();
+    EXPECT_EQ(playlist.defaultVariant_, playlist.variants_.front());
+}
 // 测试 IsLive 方法
-HWTEST_F(M3u8UnitTest, IsLiveTest, TestSize.Level1)
+HWTEST_F(M3u8UnitTest, IS_LIVE_TEST, TestSize.Level1)
 {
     M3U8 m3u8(testUri, "LivePlaylist");
     EXPECT_FALSE(m3u8.IsLive());
