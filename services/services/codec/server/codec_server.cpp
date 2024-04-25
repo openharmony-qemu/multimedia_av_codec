@@ -270,7 +270,7 @@ int32_t CodecServer::Stop()
     StatusChanged(newStatus);
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
-        CodecStopEventWrite(caller_.Pid_, caller_.Uid_, FAKE_POINTER(this));
+        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -287,7 +287,7 @@ int32_t CodecServer::Flush()
     StatusChanged(newStatus);
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
-        CodecStopEventWrite(caller_.Pid_, caller_.Uid_, FAKE_POINTER(this));
+        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -304,7 +304,7 @@ int32_t CodecServer::NotifyEos()
         StatusChanged(newStatus);
         if (isStarted_) {
             isStarted_ = false;
-            CodecStopEventWrite(caller_.Pid_, caller_.Uid_, FAKE_POINTER(this));
+            CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
         }
     }
     return ret;
@@ -332,7 +332,7 @@ int32_t CodecServer::Reset()
         isStarted_ = false;
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
-        CodecStopEventWrite(caller_.Pid_, caller_.Uid_, FAKE_POINTER(this));
+        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -360,7 +360,7 @@ int32_t CodecServer::Release()
         isStarted_ = false;
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
-        CodecStopEventWrite(caller_.Pid_, caller_.Uid_, FAKE_POINTER(this));
+        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -645,17 +645,17 @@ int32_t CodecServer::DumpInfo(int32_t fd)
 
 void CodecServer::SetCallerInfo(const Meta &callerInfo)
 {
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, caller_.Pid_);
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, caller_.Uid_);
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.ProcessName_);
-    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.Pid_);
-    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.Uid_);
-    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.ProcessName_);
+    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
+    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
+    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
+    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
+    (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
 
-    EXPECT_AND_LOGI((forwardCaller_.Pid_ >= 0) || (!forwardCaller_.ProcessName_.empty()),
+    EXPECT_AND_LOGI((forwardCaller_.pid >= 0) || (!forwardCaller_.processName.empty()),
         "Forward caller pid: %{public}d, process name: %{public}s",
-        forwardCaller_.Pid_, forwardCaller_.ProcessName_.c_str());
-    AVCODEC_LOGI("Caller pid: %{public}d, process name: %{public}s", caller_.Pid_, caller_.ProcessName_.c_str());
+        forwardCaller_.pid, forwardCaller_.processName.c_str());
+    AVCODEC_LOGI("Caller pid: %{public}d, process name: %{public}s", caller_.pid, caller_.processName.c_str());
 }
 
 inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
@@ -883,8 +883,8 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     int32_t codecIsVendor = 0;
     format.GetIntValue("IS_VENDOR", codecIsVendor);
 
-    codecDfxInfo.clientPid = caller_.Pid_;
-    codecDfxInfo.clientUid = caller_.Uid_;
+    codecDfxInfo.clientPid = caller_.pid;
+    codecDfxInfo.clientUid = caller_.uid;
     codecDfxInfo.codecInstanceId = FAKE_POINTER(this);
     format.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecDfxInfo.codecName);
     codecDfxInfo.codecIsVendor = codecIsVendor == 1 ? "True" : "False";
