@@ -106,6 +106,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
+      "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
     ]
   }
 }
