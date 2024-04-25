@@ -574,16 +574,17 @@ Status MediaDemuxer::Pause()
 Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 {
     MEDIA_LOG_I("Pause trackId: %{public}d", trackId);
+    FALSE_RETURN_V_MSG_E(trackId >= 0, Status::ERROR_INVALID_PARAMETER, "Track id is invalid.");
 
     // To accelerate DemuxerLoop thread to run into PAUSED state
     for (auto &iter : taskMap_) {
-        if (iter.first == trackId && iter.second != nullptr) {
+        if (iter.first == static_cast<uint32_t>(trackId) && iter.second != nullptr) {
             iter.second->PauseAsync();
         }
     }
 
     for (auto &iter : taskMap_) {
-        if (iter.first == trackId && iter.second != nullptr) {
+        if (iter.first == static_cast<uint32_t>(trackId) && iter.second != nullptr) {
             iter.second->Pause();
         }
     }
