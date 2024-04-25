@@ -55,7 +55,7 @@ AVMuxerImpl::~AVMuxerImpl()
 int32_t AVMuxerImpl::Init(int32_t fd, Plugins::OutputFormat format)
 {
     AVCODEC_SYNC_TRACE;
-    muxerEngine_ = std::make_shared<Media::MediaMuxer>(getuid(), getpid());
+    muxerEngine_ = std::make_shared<Media::MediaMuxer>(getuid(), getprocpid());
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_NO_MEMORY, "Create AVMuxer Engine failed");
     return StatusConvert(muxerEngine_->Init(fd, format));
 }
