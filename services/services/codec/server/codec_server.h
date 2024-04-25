@@ -83,7 +83,7 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t DumpInfo(int32_t fd);
-    int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
+    void SetCallerInfo(const Meta &callerInfo);
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);
@@ -133,8 +133,11 @@ private:
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     bool isStarted_ = false;
-    uint32_t clientPid_ = 0;
-    uint32_t clientUid_ = 0;
+    struct CallerInfo {
+        int32_t Pid_ = -1;
+        int32_t Uid_ = -1;
+        std::string ProcessName_;
+    } caller_, forwardCaller_;
     bool isSurfaceMode_ = false;
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
