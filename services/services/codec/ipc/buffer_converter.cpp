@@ -14,6 +14,7 @@
  */
 
 #include "buffer_converter.h"
+#include <cmath>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "meta/meta_key.h"
@@ -214,6 +215,7 @@ void BufferConverter::SetFormat(const Format &format)
     if (isSharedMemory_) {
         return;
     }
+    needResetFormat_ = false;
     int32_t width = 0;
     int32_t height = 0;
     int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
@@ -238,6 +240,8 @@ void BufferConverter::SetFormat(const Format &format)
         rect_.stride = width * pixcelSize_;
         usrRect_.stride *= pixcelSize_;
     }
+    usrRect_.stride = std::min(usrRect_.stride, hwRect_.stride);
+    usrRect_.height = std::min(usrRect_.height, hwRect_.height);
     AVCODEC_LOGI(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
         width, rect_.height, usrRect_.stride, usrRect_.height, hwRect_.stride, hwRect_.height);
@@ -343,6 +347,8 @@ void BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
         rect_.stride = width * pixcelSize_;
         usrRect_.stride *= pixcelSize_;
     }
+    usrRect_.stride = std::min(usrRect_.stride, hwRect_.stride);
+    usrRect_.height = std::min(usrRect_.height, hwRect_.height);
     AVCODEC_LOGI(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
         width, rect_.height, usrRect_.stride, usrRect_.height, hwRect_.stride, hwRect_.height);
