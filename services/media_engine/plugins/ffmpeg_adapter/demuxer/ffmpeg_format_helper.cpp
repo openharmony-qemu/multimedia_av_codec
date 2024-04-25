@@ -259,9 +259,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     if (duration <= 0) {
         for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-            auto streamDuration = avFormatContext.streams[i]->duration;
-            if (streamDuration > duration) {
-                duration = streamDuration;
+            if (avFormatContext.streams[i]->duration > duration) {
+                duration = avFormatContext.streams[i]->duration;
             }
         }
     } else {

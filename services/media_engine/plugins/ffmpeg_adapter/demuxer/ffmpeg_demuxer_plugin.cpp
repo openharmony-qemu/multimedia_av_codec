@@ -538,12 +538,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int64_t inputPts = ConvertPts(samplePacket->pkts[0]->pts, avStream->start_time);
         pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
-    } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+    } else {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
-    } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_SUBRIP) {
-            pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
-        }
     }
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
