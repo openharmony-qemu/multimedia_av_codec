@@ -165,7 +165,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         // use video first render time as anchor when first few times
         if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
             diff = (nowCt - firstFrameNowct_) - (buffer->pts_ - firstFramePts_);
-            MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " ms", diff);
+            MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us", diff);
         }
         MEDIA_LOG_D("VideoSink ct4Buffer: " PUBLIC_LOG_D64 " us, diff: " PUBLIC_LOG_D64
                 " us, nowCt: " PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
