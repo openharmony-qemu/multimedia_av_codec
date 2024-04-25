@@ -48,7 +48,7 @@ void FaultEventWrite(FaultType faultType, const std::string& msg, const std::str
 void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
 {
     OHOS::HiviewDFX::DumpUsage dumpUse;
-    uint64_t useMemory = dumpUse.GetPss(getpid());
+    uint64_t useMemory = dumpUse.GetPss(getprocpid());
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "SERVICE_START_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "MODULE", module.c_str(), "TIME", useTime,
                     "MEMORY", useMemory);

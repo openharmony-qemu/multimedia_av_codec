@@ -346,7 +346,7 @@ Status AudioServerSinkPlugin::Prepare()
         }
         if (audioServiceDiedCallback_ == nullptr) {
             audioServiceDiedCallback_ = std::make_shared<AudioServiceDiedCallbackImpl>(playerEventReceiver_);
-            audioRenderer_->RegisterAudioPolicyServerDiedCb(getpid(), audioServiceDiedCallback_);
+            audioRenderer_->RegisterAudioPolicyServerDiedCb(getprocpid(), audioServiceDiedCallback_);
         }
     }
     MEDIA_LOG_I("audio renderer plugin prepare ok");
