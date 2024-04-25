@@ -664,7 +664,7 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
         "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
 
     if (codeID == AV_CODEC_ID_HEVC && hevcParser_ == nullptr) {
-        hevcParser_ = HevcParserManager::Create();
+        hevcParser_ = StreamParserManager::Create(StreamType::HEVC);
         FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, Status::ERROR_INVALID_DATA,
             "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
     }

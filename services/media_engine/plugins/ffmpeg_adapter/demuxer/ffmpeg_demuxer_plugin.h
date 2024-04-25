@@ -24,7 +24,7 @@
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
-#include "hevc_parser_manager.h"
+#include "stream_parser_manager.h"
 #include "meta/meta.h"
 
 #ifdef __cplusplus
@@ -93,6 +93,7 @@ private:
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
 
     int FindNaluSpliter(int size, const uint8_t *data);
     bool CanDropAvcPkt(const AVPacket& pkt);
@@ -117,8 +118,8 @@ private:
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
-    std::shared_ptr<HevcParserManager> hevcParser_ {nullptr};
-    bool hevcParserInited_ {false};
+    std::shared_ptr<StreamParserManager> streamParser_ {nullptr};
+    bool streamParserInited_ {false};
 
     void GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
