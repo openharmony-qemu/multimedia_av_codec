@@ -724,6 +724,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     if (mediaCodecCallback_) {
         mediaCodecCallback_->OnOutputBufferDone(outputBuffer);
     }
+    MEDIA_LOG_D("OnOutputBufferDone buffer->pts" PUBLIC_LOG_D64, outputBuffer->pts_);
     FALSE_RETURN_MSG(ret == Status::OK, "OnOutputBufferDone fail");
 }
 

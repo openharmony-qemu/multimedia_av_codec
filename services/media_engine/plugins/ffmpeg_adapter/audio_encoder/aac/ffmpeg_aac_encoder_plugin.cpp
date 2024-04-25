@@ -689,6 +689,7 @@ Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &input
 
 Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 {
+    MEDIA_LOG_D("SendFrameToFfmpeg enter");
     int32_t fifoSize = av_audio_fifo_size(fifo_);
     if (fifoSize < avCodecContext_->frame_size) {
         MEDIA_LOG_D("fifoSize:%{public}d not enough", fifoSize);
@@ -725,6 +726,7 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 
 Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
+    MEDIA_LOG_D("PcmFillFrame enter");
     auto memory = inputBuffer->memory_;
     auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     const uint8_t *srcBuffer = memory->GetAddr();
