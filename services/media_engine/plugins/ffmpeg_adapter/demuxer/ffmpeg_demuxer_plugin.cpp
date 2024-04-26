@@ -15,7 +15,6 @@
 
 #include <memory>
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
-
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -540,7 +539,11 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
     } else {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            sample->duration_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
+        }
     }
+
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
@@ -553,6 +556,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         ConvertAvcToAnnexb(*tempPkt);
         SetDropTag(*tempPkt, sample, AV_CODEC_ID_H264);
     }
+
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
     MEDIA_LOG_D("packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, tempPkt->size, remainSize);
