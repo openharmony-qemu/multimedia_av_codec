@@ -84,6 +84,8 @@ private:
     Status ReadPacketToCacheQueue(const uint32_t readId);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    void ConvertAvccToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+        std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData,
         int32_t writeSize);
