@@ -176,6 +176,8 @@ REGISTER_PLUGIN
         fmtName = "ipod";
     } else if (mimeType == MimeType::MEDIA_AMR) {
         fmtName = "amr";
+    } else if (mimeType == MimeType::MEDIA_MP3) {
+        fmtName = "mp3";
     } else {
         MEDIA_LOG_W("Register plugin failed, unknorw mimeType = %{public}s ", mimeType.c_str());
     }
