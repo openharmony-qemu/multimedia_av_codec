@@ -44,7 +44,7 @@ namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
-static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t RETRY_FRAME_TIME = 50; // Retry if no buffer ready 50ms.
 static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 static const double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
@@ -773,7 +773,6 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Request buffer failed from buffer queue too many times in one minute.");
         }
-        OSAL::SleepFor(5); // when request buffer failed, wait 5ms
     } else {
         requestBufferErrorCountMap_[queueIndex] = 0;
     }
@@ -872,7 +871,11 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             firstFrameCond_.NotifyAll();
             taskMap_[trackId]->Pause();
         }
-        return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
+        if (ret == Status::OK || ret == Status::ERROR_AGAIN) {
+            return 0; // retry next frame
+        } else {
+            return RETRY_FRAME_TIME * 1000; // delay to retry if no frame, 1000 convert to us
+        }
     }
 }
 

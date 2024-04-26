@@ -27,7 +27,7 @@ namespace Media {
 namespace Pipeline {
 int64_t GetvideoLatencyFixDelay()
 {
-    constexpr uint64_t defaultValue = 120 * HST_USECOND;
+    constexpr uint64_t defaultValue = 0;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.video_sync_fix_delay", defaultValue);
     MEDIA_LOG_I("video_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
     return (int64_t)fixDelay;
@@ -62,32 +62,24 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     bool shouldDrop = false;
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
+        auto syncCenter = syncCenter_.lock();
+        int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
         if (isFirstFrame_) {
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
-            int64_t nowCt = 0;
-            auto syncCenter = syncCenter_.lock();
             FALSE_RETURN_V(syncCenter != nullptr, false);
-            if (syncCenter) {
-                nowCt = syncCenter->GetClockTimeNow();
-            }
-            uint64_t latency = 0;
-            if (GetLatency(latency) != Status::OK) {
-                MEDIA_LOG_I("failed to get latency, treat as 0");
-            }
-            if (syncCenter) {
-                render = syncCenter->UpdateTimeAnchor(nowCt, latency, buffer->pts_ - firstPts_,
-                    buffer->pts_, buffer->duration_, this);
-                MEDIA_LOG_I("VideoSink firstframe use latency: " PUBLIC_LOG_D64
-                    " us, pts-f: " PUBLIC_LOG_D64
-                    " us, pts: " PUBLIC_LOG_D64
-                    " us, nowCt: " PUBLIC_LOG_D64 " us",
-                    latency, buffer->pts_ - firstPts_, buffer->pts_, nowCt);
-            }
             isFirstFrame_ = false;
             firstFrameNowct_ = nowCt;
             firstFramePts_ = buffer->pts_;
         } else {
             waitTime = CheckBufferLatenessMayWait(buffer);
+        }
+        if (syncCenter) {
+            uint64_t latency = 0;
+            if (GetLatency(latency) != Status::OK) {
+                MEDIA_LOG_I("failed to get latency, treat as 0");
+            }
+            render = syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, buffer->pts_ - firstPts_,
+                buffer->pts_, buffer->duration_, this);
         }
         if (forceRenderNextFrame_) {
             shouldDrop = false;
