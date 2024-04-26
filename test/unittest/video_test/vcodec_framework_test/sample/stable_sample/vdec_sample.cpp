@@ -608,8 +608,12 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_WIDTH, &width_);
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_HEIGHT, &height_);
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &stride_);
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &heightSlice_);
         }
-        for (int32_t i = 0; i < height_ * 3 / 2; ++i) { // 3: nom, 2: denom
+        for (int32_t i = 0; i < heightSlice_; ++i) {
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
+        }
+        for (int32_t i = 0; i < (height_ >> 1); ++i) { // 2: denom
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
         }
     }

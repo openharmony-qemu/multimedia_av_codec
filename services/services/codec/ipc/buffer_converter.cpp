@@ -196,10 +196,10 @@ void BufferConverter::GetFormat(Format &format)
     if (isSharedMemory_ || needResetFormat_) {
         return;
     }
-    if (format.ContainKey(Tag::VIDEO_WIDTH)) {
+    if (!isEncoder_ && format.ContainKey(Tag::VIDEO_WIDTH)) {
         format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.stride / pixcelSize_);
     }
-    if (format.ContainKey(Tag::VIDEO_HEIGHT)) {
+    if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.height);
     }
     if (format.ContainKey(Tag::VIDEO_STRIDE)) {
