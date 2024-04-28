@@ -250,7 +250,7 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
         MEDIA_LOG_I("SeekTo enter fial, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
         seekErrorCount_++;
         if (seekErrorCount_ > ERROR_COUNT) {
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetWorkClientErrorCode::ERROE_TIME_OUT}, "seek error"});
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "seek error"});
         }
         FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
     }
