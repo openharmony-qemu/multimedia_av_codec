@@ -41,7 +41,6 @@ struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
-    size_t times = 0 ;
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
@@ -56,7 +55,7 @@ struct HeaderInfo {
 
     size_t GetFileContentLength() const
     {
-        while (fileContentLen == 0 && !isChunked && !isClosed) {
+        while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < RETRY_TIMES) {
             OSAL::SleepFor(SLEEP_TIME); // 10, wait for fileContentLen updated
             retryTimes++;
         }
@@ -140,6 +139,7 @@ private:
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
+    mutable size_t times = 0 ;
 };
 
 class Downloader {
@@ -170,7 +170,6 @@ private:
     std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     Mutex operatorMutex_{};
-
     std::shared_ptr<DownloadRequest> currentRequest_;
     bool shouldStartNextRequest {false};
 };

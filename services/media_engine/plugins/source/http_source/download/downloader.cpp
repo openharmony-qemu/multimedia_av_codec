@@ -135,11 +135,11 @@ void DownloadRequest::Close()
 void DownloadRequest::WaitHeaderUpdated() const
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
-    while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
+    while (!isHeaderUpdated && times_ < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
         Task::SleepInTask(SLEEP_TIME);
-        times++;
+        times_++;
     }
-    MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times);
+    MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times_);
 }
 
 double DownloadRequest::GetDuration() const
