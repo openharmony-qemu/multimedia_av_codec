@@ -956,6 +956,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
         }
         case FREE_BUFFER:
             EraseBufferFromPool(OMX_DirOutput, bufferIdx);
+            EraseOutBuffersOwnedByOmx(info.bufferId);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -1100,7 +1101,22 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
     }
 }
 
-int32_t HCodec::ForceShutdown(int32_t generation)
+void HCodec::RecordOutBuffersOwnedByOmx()
+{
+    outBuffersOwnedByOmx_.clear();
+    for (const BufferInfo& info : outputBufferPool_) {
+        if (info.owner == BufferOwner::OWNED_BY_OMX) {
+            outBuffersOwnedByOmx_.insert(info.bufferId);
+        }
+    }
+}
+
+void HCodec::EraseOutBuffersOwnedByOmx(uint32_t bufferId)
+{
+    outBuffersOwnedByOmx_.erase(bufferId);
+}
+
+int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)
 {
     if (generation != stateGeneration_) {
         HLOGE("ignoring stale force shutdown message: #%d (now #%d)",
@@ -1109,7 +1125,7 @@ int32_t HCodec::ForceShutdown(int32_t generation)
     }
     HLOGI("force to shutdown");
     isShutDownFromRunning_ = true;
-    notifyCallerAfterShutdownComplete_ = false;
+    notifyCallerAfterShutdownComplete_ = isNeedNotifyCaller;
     keepComponentAllocated_ = false;
     auto err = compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (err == HDF_SUCCESS) {
@@ -1138,7 +1154,7 @@ int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamS
     if (oper) {
         oper(msg);
     }
-    bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply);
+    bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply, FIVE_SECONDS_IN_MS);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ret, AVCS_ERR_UNKNOWN, "wait msg %d time out", msgType);
     int32_t err;
     IF_TRUE_RETURN_VAL_WITH_MSG(reply == nullptr || !reply->GetValue("err", err),

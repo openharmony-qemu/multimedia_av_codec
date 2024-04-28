@@ -19,6 +19,7 @@
 #include <queue>
 #include <array>
 #include <functional>
+#include <unordered_set>
 #include "securec.h"
 #include "OMX_Component.h"  // third_party/openmax/api/1.1.2
 #include "codecbase.h"
@@ -226,6 +227,8 @@ protected:
     bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
     bool IsAllBufferOwnedByUsOrSurface();
     void EraseOutBuffersOwnedByUsOrSurface();
+    void RecordOutBuffersOwnedByOmx();
+    void EraseOutBuffersOwnedByOmx(uint32_t bufferId);
     void ClearBufferPool(OMX_DIRTYPE portIndex);
     virtual void OnClearBufferPool(OMX_DIRTYPE portIndex) {}
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
@@ -315,6 +318,7 @@ protected:
 
     std::vector<BufferInfo> inputBufferPool_;
     std::vector<BufferInfo> outputBufferPool_;
+    std::unordered_set<uint32_t> outBuffersOwnedByOmx_;
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
@@ -350,7 +354,7 @@ private:
         virtual void OnCodecEvent(OHOS::HDI::Codec::V3_0::CodecEventType event, uint32_t data1, uint32_t data2);
         void OnGetFormat(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;
-        void OnCheckIfStuck(const MsgInfo &info);
+        virtual void OnCheckIfStuck(const MsgInfo &info);
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
 
@@ -416,6 +420,7 @@ private:
         void HandleOutputPortDisabled();
         void HandleOutputPortEnabled();
         void OnFlush(const MsgInfo &info);
+        void OnCheckIfStuck(const MsgInfo &info) override;
     };
 
     struct FlushingState : BaseState {
@@ -468,7 +473,7 @@ private:
                                 OHOS::HDI::Codec::V3_0::CodecStateType targetState);
     bool RollOmxBackToLoaded();
 
-    int32_t ForceShutdown(int32_t generation);
+    int32_t ForceShutdown(int32_t generation, bool isNeedNotifyCaller);
     void SignalError(AVCodecErrorType errorType, int32_t errorCode);
     void DeferMessage(const MsgInfo &info);
     void ProcessDeferredMessages();
@@ -479,6 +484,7 @@ private:
     static constexpr size_t MAX_HCODEC_BUFFER_SIZE = 8192 * 4096 * 4; // 8K RGBA
     static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
     static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
+    static constexpr uint32_t FIVE_SECONDS_IN_MS = 5'000;
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;
