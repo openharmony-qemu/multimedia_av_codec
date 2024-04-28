@@ -542,7 +542,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         char* type = StringTrim(token);
-        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, sizeof(info->contentType)));
+        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
     }
 
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
