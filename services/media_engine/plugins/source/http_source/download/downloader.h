@@ -138,7 +138,7 @@ private:
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
-    mutable size_t times = 0 ;
+    mutable size_t times_ {0};
 };
 
 class Downloader {
