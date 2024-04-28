@@ -310,7 +310,6 @@ void VideoCaptureFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void VideoCaptureFilter::OnBufferAvailable()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "OnBufferAvailable", logTag_.c_str());
-    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::OnBufferAvailable");
     sptr<SurfaceBuffer> buffer;
     sptr<SyncFence> fence;
     int64_t timestamp;
@@ -376,6 +375,7 @@ void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, in
         refreshTotalPauseTime_ = false;
     }
     buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::UpdateBufferConfig");
     MEDIA_LOG_I(PUBLIC_LOG_S "UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), buffer->pts_);
 }
 
