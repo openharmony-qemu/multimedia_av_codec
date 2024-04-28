@@ -176,6 +176,7 @@ bool HlsMediaDownloader::CheckReadStatus()
         MEDIA_LOG_I("HLS read Eos.");
         return true;
     }
+    return false;
 }
 
 bool HlsMediaDownloader::CheckReadTimeOut()

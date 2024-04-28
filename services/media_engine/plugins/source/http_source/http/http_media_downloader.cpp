@@ -127,7 +127,8 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             realReadLength = 0;
             return false;
         }
-        if (readTime_ >= TIME_OUT || downloadErrorState_) {
+        if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
+            isTimeOut_ = true;
             if (downloader_ != nullptr) {
                 downloader_->Pause();
             }
@@ -138,6 +139,8 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                 MEDIA_LOG_I("Read time out, OnEvent");
                 callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             }
+            isEos = true;
+            realReadLength = 0;
             return false;
         }
         bool isClosed = downloadRequest_->IsClosed();
