@@ -39,6 +39,8 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
+    bool HlsMediaDownloader::CheckReadStatus();
+    bool HlsMediaDownloader::CheckReadTimeOut();
     bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 

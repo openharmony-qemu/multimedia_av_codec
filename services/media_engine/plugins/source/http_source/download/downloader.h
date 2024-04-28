@@ -31,6 +31,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+static constexpr unsigned int SLEEP_TIME = 10;
+static constexpr unsigned int RETRY_TIMES = 100;
 enum struct DownloadStatus {
     PARTTAL_DOWNLOAD,
 };
@@ -54,8 +56,6 @@ struct HeaderInfo {
 
     size_t GetFileContentLength() const
     {
-        constexpr unsigned int SLEEP_TIME = 10;
-        constexpr unsigned int RETRY_TIMES = 100;
         while (fileContentLen == 0 && !isChunked && !isClosed) {
             OSAL::SleepFor(SLEEP_TIME); // 10, wait for fileContentLen updated
             retryTimes++;

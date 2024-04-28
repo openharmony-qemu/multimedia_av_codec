@@ -165,21 +165,45 @@ void HlsMediaDownloader::Resume()
     downloader_->Resume();
 }
 
+bool HlsMediaDownloader::CheckReadStatus()
+{
+    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        MEDIA_LOG_I("HLS read Eos.");
+        return true;
+    }
+    if (playListDownloader_->GetDuration() > 0 && seekTime_ >= playListDownloader_->GetDuration()) {
+        MEDIA_LOG_I("HLS read Eos.");
+        return true;
+    }
+}
+
+bool HlsMediaDownloader::CheckReadTimeOut()
+{
+    if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
+        isTimeOut_ = true;
+        if (downloader_ != nullptr) {
+            downloader_->Pause();
+        }
+        if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+            downloadRequest_->Close();
+        }
+        if (callback_ != nullptr) {
+            MEDIA_LOG_I("Read time out, OnEvent");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
+        return true;
+    }
+    return false
+}
+
 bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
-        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+    if (CheckReadStatus()) {
         isEos = true;
         realReadLength = 0;
-        MEDIA_LOG_I("HLS read Eos.");
-        return false;
-    }
-    if (playListDownloader_->GetDuration() > 0 && seekTime_ >= playListDownloader_->GetDuration()) {
-        isEos = true;
-        realReadLength = 0;
-        MEDIA_LOG_I("HLS read Eos.");
         return false;
     }
     readTime_ = 0;
@@ -194,18 +218,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             realReadLength = 0;
             return false;
         }
-        if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
-            isTimeOut_ = true;
-            if (downloader_ != nullptr) {
-                downloader_->Pause();
-            }
-            if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-                downloadRequest_->Close();
-            }
-            if (callback_ != nullptr) {
-                MEDIA_LOG_I("Read time out, OnEvent");
-                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-            }
+        if (CheckReadTimeOut()){
             isEos = true;
             realReadLength = 0;
             return false;
