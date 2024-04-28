@@ -30,6 +30,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
+constexpr int ERROR_COUNT = 5;
 }
 
 std::shared_ptr<SourcePlugin> HttpSourcePluginCreater(const std::string& name)
@@ -244,7 +245,15 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
+    if (offset > downloader_->GetContentLength()) {
+        MEDIA_LOG_I("SeekTo enter fial, offset = " PUBLIC_LOG_U64, offset);
+        MEDIA_LOG_I("SeekTo enter fial, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
+        seekErrorCount_++;
+        if (seekErrorCount_ > ERROR_COUNT) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetWorkClientErrorCode::ERROE_TIME_OUT}, "seek error"});
+        }
+        FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
+    }
     FALSE_RETURN_V(downloader_->SeekToPos(offset), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
