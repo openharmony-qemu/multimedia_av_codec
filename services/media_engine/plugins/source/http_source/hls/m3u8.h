@@ -148,6 +148,8 @@ struct M3U8MasterPlaylist {
     std::string uri_;
     std::string playList_;
     double duration_ {0};
+    std::atomic<bool> isSimple_ {false};
+    std::atomic<bool> bLive_ {false};
 };
 }
 }
