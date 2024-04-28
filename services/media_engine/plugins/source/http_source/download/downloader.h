@@ -43,6 +43,7 @@ struct HeaderInfo {
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
+    unsigned int sleepTime = 5
 
     void Update(const HeaderInfo* info)
     {
@@ -55,7 +56,7 @@ struct HeaderInfo {
     size_t GetFileContentLength() const
     {
         while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < maxRetryTimes) {
-            OSAL::SleepFor(SLEEP_TIME); // 10, wait for fileContentLen updated
+            OSAL::SleepFor(sleepTime); // 10, wait for fileContentLen updated
             retryTimes++;
         }
         return fileContentLen;
