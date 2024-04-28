@@ -246,8 +246,8 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     if (offset > downloader_->GetContentLength()) {
-        MEDIA_LOG_I("SeekTo enter fial, offset = " PUBLIC_LOG_U64, offset);
-        MEDIA_LOG_I("SeekTo enter fial, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
+        MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);
+        MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
         seekErrorCount_++;
         if (seekErrorCount_ > ERROR_COUNT) {
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "seek error"});
