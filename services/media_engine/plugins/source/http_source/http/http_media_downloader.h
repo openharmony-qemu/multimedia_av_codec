@@ -63,6 +63,7 @@ private:
     bool startedPlayStatus_ {false};
     uint64_t readTime_ {0};
     bool isReadFrame_ {false};
+    bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
 };
 }
