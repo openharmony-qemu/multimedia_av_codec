@@ -195,7 +195,7 @@ bool HlsMediaDownloader::CheckReadTimeOut()
         }
         return true;
     }
-    return false
+    return false;
 }
 
 bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
