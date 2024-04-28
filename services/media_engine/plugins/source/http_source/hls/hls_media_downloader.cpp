@@ -218,7 +218,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             realReadLength = 0;
             return false;
         }
-        if (CheckReadTimeOut()){
+        if (CheckReadTimeOut()) {
             isEos = true;
             realReadLength = 0;
             return false;

@@ -31,8 +31,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-static constexpr unsigned int SLEEP_TIME = 10;
-static constexpr unsigned int RETRY_TIMES = 100;
 enum struct DownloadStatus {
     PARTTAL_DOWNLOAD,
 };
@@ -112,7 +110,6 @@ public:
     uint32_t GetBitRate() const;
 private:
     void WaitHeaderUpdated() const;
-
     std::string url_;
     double duration_ {0.0};
     DataSaveFunc saveData_;
