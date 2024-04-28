@@ -37,7 +37,7 @@ static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("
         return std::make_shared<DecoderSurfaceFilter>(name, FilterType::FILTERTYPE_VDEC);
     });
 
-static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "0") == "1";
+static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
 
 static const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
 
@@ -499,10 +499,6 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
 
 Status DecoderSurfaceFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    // input buffers will be detach in DoFlush, no need handle
-    if (dropFrame) {
-        return Status::OK;
-    }
     videoDecoder_->AquireAvailableInputBuffer();
     return Status::OK;
 }
@@ -548,13 +544,16 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
             videoDecoder_->ReleaseOutputBuffer(index, true);
         } else {
             outputBuffers_.push_back(make_pair(index, outputBuffer));
+            if (IS_FILTER_ASYNC) {
+                Filter::ProcessOutputBuffer(1, false); // 1 indicate to render
+            }
         }
         AutoLock autolock(firstFrameMutex_);
         doPrepareFrame_ = false;
         firstFrameCond_.NotifyAll();
         return;
     }
-    if (IS_FILTER_ASYNC && (outputBuffers_.empty() || firstFrameNoRender_.load())) {
+    if (IS_FILTER_ASYNC && outputBuffers_.empty()) {
         RenderNextOutput(index, outputBuffer);
     }
     outputBuffers_.push_back(make_pair(index, outputBuffer));
@@ -596,6 +595,14 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
         return Status::ERROR_INVALID_PARAMETER;
     }
     videoSurface_ = videoSurface;
+    if (videoDecoder_ != nullptr) {
+        MEDIA_LOG_I("videoDecoder_ SetOutputSurface in");
+        int32_t res = videoDecoder_->SetOutputSurface(videoSurface_);
+        if (res != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK) {
+            MEDIA_LOG_E("videoDecoder_ SetOutputSurface error, result is " PUBLIC_LOG_D32, res);
+            return Status::ERROR_UNKNOWN;
+        }
+    }
     MEDIA_LOG_I("SetVideoSurface success");
     return Status::OK;
 }
