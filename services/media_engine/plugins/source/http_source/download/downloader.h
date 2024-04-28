@@ -39,6 +39,7 @@ struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
+    size_t maxRetryTimes {100};
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
@@ -53,7 +54,7 @@ struct HeaderInfo {
 
     size_t GetFileContentLength() const
     {
-        while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < RETRY_TIMES) {
+        while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < maxRetryTimes) {
             OSAL::SleepFor(SLEEP_TIME); // 10, wait for fileContentLen updated
             retryTimes++;
         }
