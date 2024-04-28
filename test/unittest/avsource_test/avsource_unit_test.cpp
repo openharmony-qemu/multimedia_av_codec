@@ -71,6 +71,7 @@ string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
 string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -1946,5 +1947,43 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1601, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_3000
+ * @tc.desc: get format when the file is srt
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_srt);
+    size_ = GetFileSize(g_srt);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_SUBTITLE, formatVal_.hasSubtitle));
+    ASSERT_EQ(formatVal_.fileType, 301);
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 0);
+    ASSERT_EQ(formatVal_.hasSubtitle, 1);
+#endif
+
+    printf("---- %s ----\n", g_srt.c_str());
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_SUBTITLE);
+    ASSERT_EQ(formatVal_.codecMime, "application/x-subrip");
 }
 } // namespace

@@ -301,6 +301,7 @@
             <option name="push" value="demuxer_res/audio/h264_fmp4.m4a -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/h265_fmp4.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264_fmp4.m4v -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/subtitle.srt -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/audiovivid_hdrvivid_2s.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
@@ -342,6 +343,7 @@
             <option name="push" value="demuxer_res/audio/h264_fmp4.m4a -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/h265_fmp4.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264_fmp4.m4v -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/subtitle.srt -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/audiovivid_hdrvivid_2s.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
@@ -381,6 +383,7 @@
             <option name="push" value="demuxer_res/audio/h264_fmp4.m4a -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/h265_fmp4.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264_fmp4.m4v -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/subtitle.srt -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/audiovivid_hdrvivid_2s.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
@@ -420,6 +423,7 @@
             <option name="push" value="demuxer_res/audio/h264_fmp4.m4a -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/h265_fmp4.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264_fmp4.m4v -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/subtitle.srt -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/audiovivid_hdrvivid_2s.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
@@ -459,6 +463,7 @@
             <option name="push" value="demuxer_res/audio/h264_fmp4.m4a -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/h265_fmp4.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264_fmp4.m4v -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/subtitle.srt -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/audiovivid_hdrvivid_2s.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
@@ -498,6 +503,7 @@
             <option name="push" value="demuxer_res/audio/h264_fmp4.m4a -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/h265_fmp4.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264_fmp4.m4v -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/subtitle.srt -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/audiovivid_hdrvivid_2s.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>

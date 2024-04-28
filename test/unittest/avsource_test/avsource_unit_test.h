@@ -69,6 +69,7 @@ protected:
         std::string composer = "";
         int32_t hasVideo = -1;
         int32_t hasAudio = -1;
+        int32_t hasSubtitle = -1;
         int32_t fileType = 0;
         // track format
         std::string codecMime = "";

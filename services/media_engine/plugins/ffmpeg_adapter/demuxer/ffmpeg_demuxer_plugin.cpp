@@ -15,7 +15,6 @@
 
 #include <memory>
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
-
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -265,7 +264,8 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 bool IsSupportedTrack(const AVStream& avStream)
 {
     FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codec par is nullptr.");
-    if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+    if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+        avStream.codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_S ".",
             ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
         return false;
@@ -520,6 +520,21 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
     return tempPkt;
 }
 
+void FFmpegDemuxerPlugin::ConvertAvccToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
+    std::shared_ptr<SamplePacket> dstSamplePacket)
+{
+    auto codecId = formatContext_->streams[srcAVPacket->stream_index]->codecpar->codec_id;
+    if (codecId == AV_CODEC_ID_HEVC && streamParser_ != nullptr && streamParserInited_) {
+        ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
+        SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_HEVC);
+    } else if (codecId == AV_CODEC_ID_VVC && streamParser_ != nullptr && streamParserInited_) {
+        ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
+    } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
+        ConvertAvcToAnnexb(*srcAVPacket);
+        SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
+    }
+}
+
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
@@ -537,21 +552,17 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int64_t inputPts = ConvertPts(samplePacket->pkts[0]->pts, avStream->start_time);
         pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
-    } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+    } else {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            sample->duration_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
+        }
     }
+
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
-    auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
-    if (codecId == AV_CODEC_ID_HEVC && streamParser_ != nullptr && streamParserInited_) {
-        ConvertHevcToAnnexb(*tempPkt, samplePacket);
-        SetDropTag(*tempPkt, sample, AV_CODEC_ID_HEVC);
-    } else if (codecId == AV_CODEC_ID_VVC && streamParser_ != nullptr && streamParserInited_) {
-        ConvertVvcToAnnexb(*tempPkt, samplePacket);
-    } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
-        ConvertAvcToAnnexb(*tempPkt);
-        SetDropTag(*tempPkt, sample, AV_CODEC_ID_H264);
-    }
+    ConvertAvccToAnnexb(sample, tempPkt, samplePacket);
+
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
     MEDIA_LOG_D("packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, tempPkt->size, remainSize);
