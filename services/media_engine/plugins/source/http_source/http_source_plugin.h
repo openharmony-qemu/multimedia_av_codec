@@ -58,6 +58,7 @@ private:
 
     uint32_t bufferSize_;
     uint32_t waterline_;
+    uint32_t seekErrorCount_{0};
     Callback* callback_ {};
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
