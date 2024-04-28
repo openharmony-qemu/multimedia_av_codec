@@ -38,6 +38,8 @@ enum struct DownloadStatus {
 struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
+    mutable size_t retryTimes {0};
+    size_t times = 0 ;
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
@@ -52,8 +54,11 @@ struct HeaderInfo {
 
     size_t GetFileContentLength() const
     {
+        constexpr unsigned int SLEEP_TIME = 10;
+        constexpr unsigned int RETRY_TIMES = 100;
         while (fileContentLen == 0 && !isChunked && !isClosed) {
-            OSAL::SleepFor(10); // 10, wait for fileContentLen updated
+            OSAL::SleepFor(SLEEP_TIME); // 10, wait for fileContentLen updated
+            retryTimes++;
         }
         return fileContentLen;
     }

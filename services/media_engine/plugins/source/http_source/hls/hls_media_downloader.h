@@ -124,6 +124,7 @@ private:
     bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
     bool isReadFrame_ {false};
+    bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
     int64_t currentBitrate_ {1*1024*1024};

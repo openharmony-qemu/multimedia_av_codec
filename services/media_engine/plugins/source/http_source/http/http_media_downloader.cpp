@@ -30,7 +30,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int32_t TIME_OUT = 5 * 1000;
+constexpr int32_t TIME_OUT = 3 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept

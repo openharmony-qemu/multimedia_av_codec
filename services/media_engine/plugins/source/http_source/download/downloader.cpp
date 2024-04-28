@@ -135,7 +135,6 @@ void DownloadRequest::Close()
 void DownloadRequest::WaitHeaderUpdated() const
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
-    size_t times = 0;
     while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
         Task::SleepInTask(SLEEP_TIME);
         times++;
@@ -473,7 +472,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
-    MEDIA_LOG_D("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
+    MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
 

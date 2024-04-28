@@ -22,6 +22,10 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+namespace {
+constexpr unsigned int SLEEP_TIME = 1;
+constexpr size_t RETRY_TIMES = 1000;
+}
 int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 {
     UpdateManifest();
@@ -66,11 +70,16 @@ int64_t HlsPlayListDownloader::GetDuration() const
 Seekable HlsPlayListDownloader::GetSeekable() const
 {
     // need wait master_ not null
-    while (true) {
+    size_t times = 0;
+    while (times < RETRY_TIMES) {
         if (master_ && master_->isSimple_) {
             break;
         }
-        Task::SleepInTask(1); // 1 ms
+        OSAL::SleepFor(SLEEP_TIME); // 1 ms
+        times++;
+    }
+    if (times >= RETRY_TIMES) {
+        return Seekable::SEEKABLE;
     }
     if (master_->bLive_) {
         updateTask_->Start();
