@@ -39,8 +39,6 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool HlsMediaDownloader::CheckReadStatus();
-    bool HlsMediaDownloader::CheckReadTimeOut();
     bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
@@ -87,6 +85,8 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     int TransferSizeToBitRate(int width);
+    bool CheckReadStatus();
+    bool CheckReadTimeOut();
 private:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
