@@ -210,8 +210,6 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         MEDIA_LOG_D("Set http header fail, http header is empty.");
         return;
     }
-    MEDIA_LOG_I("User-Agent: " PUBLIC_LOG_S "Refer: " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
-                httpHeader["Refer"].c_str());
     for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
         std::string setKey = iter->first;
         std::string setValue = iter->second;
