@@ -77,8 +77,8 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     uint32_t pixFormatNum = 0;
     auto ret = OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum);
     if (ret == AV_ERR_OK) {
-        std::cout << "encoderPixelFormat = " << pixFormats[0] << std::endl;
         g_encoderPixelFormat = pixFormatNum > 0 ? pixFormats[0] : g_encoderPixelFormat;
+        std::cout << "encoderPixelFormat = " << g_encoderPixelFormat << std::endl;
     }
 
     OH_AVCapability *decoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
@@ -86,8 +86,8 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     pixFormatNum = 0;
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(decoderCapability, &pixFormats, &pixFormatNum);
     if (ret == AV_ERR_OK) {
-        std::cout << "decoderPixelFormat = " << pixFormats[0] << std::endl;
-        g_decoderPixelFormat = pixFormats[0] ? pixFormats[0] : g_decoderPixelFormat;
+        g_decoderPixelFormat = pixFormatNum > 0 ? pixFormats[0] : g_decoderPixelFormat;
+        std::cout << "decoderPixelFormat = " << g_decoderPixelFormat << std::endl;
     }
 }
 
