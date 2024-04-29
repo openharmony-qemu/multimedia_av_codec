@@ -162,7 +162,7 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType c
 
     bool resolutionValid = true;
     if (capData.supportSwapWidthHeight) {
-        resolutionValid = (capData.width.InRange(width) && capData.height.InRange(width)) ||
+        resolutionValid = (capData.width.InRange(width) && capData.height.InRange(height)) ||
                           (capData.width.InRange(height) && capData.height.InRange(width));
     } else {
         resolutionValid = capData.width.InRange(width) || capData.height.InRange(height);
