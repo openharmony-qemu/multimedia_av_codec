@@ -28,7 +28,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 512;
-
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
     std::string str;
@@ -211,6 +210,8 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         MEDIA_LOG_D("Set http header fail, http header is empty.");
         return;
     }
+    MEDIA_LOG_I("User-Agent: " PUBLIC_LOG_S "Refer: " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
+                httpHeader["Refer"].c_str());
     for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
         std::string setKey = iter->first;
         std::string setValue = iter->second;
@@ -266,7 +267,7 @@ Status HttpCurlClient::Deinit()
 void HttpCurlClient::InitCurlEnvironment(const std::string& url)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
+    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 2); // 2
 
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -284,11 +285,8 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_WRITEDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERFUNCTION, rxHeader_);
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
-
-    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, 2); // 2
-    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, 5); // 连续5s下载速度低于2kb/s会触发timeout
-
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
+
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
 
     std::string host;

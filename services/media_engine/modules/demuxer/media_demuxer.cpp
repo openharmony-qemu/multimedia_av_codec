@@ -44,7 +44,7 @@ namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 0; // Requesting buffer overtimes 0ms means no retry
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
-static const uint32_t RETRY_FRAME_TIME = 100; // Retry if no buffer ready 100ms.
+static const uint32_t RETRY_FRAME_TIME = 50; // Retry if no buffer ready 50ms.
 static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 static const double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
@@ -372,19 +372,51 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
     return plugin_->SelectTrack(trackId);
 }
 
+Status MediaDemuxer::StartAudioTask()
+{
+    MEDIA_LOG_I("StartAudioTask trackId: " PUBLIC_LOG_D32, audioTrackId_);
+    if (!taskMap_[audioTrackId_]->IsTaskRunning()) {
+        taskMap_[audioTrackId_]->Start();
+    }
+    return Status::OK;
+}
+
 Status MediaDemuxer::SelectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select trackId error.");
-    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot select track when use buffer queue.");
-    return InnerSelectTrack(trackId);
+    std::string mimeType;
+    Status ret = Status::OK;
+    if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
+        MEDIA_LOG_I("SelectTrack now: " PUBLIC_LOG_D32 ", to: " PUBLIC_LOG_D32, audioTrackId_, trackId);
+        if (audioTrackId_ != trackId) {
+            if (audioTrackId_ != TRACK_ID_DUMMY) {
+                taskMap_[audioTrackId_]->Stop();
+                ret = UnselectTrack(audioTrackId_);
+                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Unselect track error.");
+                bufferQueueMap_.insert(
+                    std::pair<uint32_t, sptr<AVBufferQueueProducer>>(trackId, bufferQueueMap_[audioTrackId_]));
+                bufferMap_.insert(std::pair<uint32_t, std::shared_ptr<AVBuffer>>(trackId, bufferMap_[audioTrackId_]));
+                bufferQueueMap_.erase(audioTrackId_);
+                bufferMap_.erase(audioTrackId_);
+            }
+            ret = InnerSelectTrack(trackId);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Select track error.");
+            audioTrackId_ = trackId;
+        }
+    } else {
+        FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE,
+            "Cannot select track when use buffer queue.");
+        return InnerSelectTrack(trackId);
+    }
+    return Status::OK;
 }
 
 Status MediaDemuxer::UnselectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot unselect track when use buffer queue.");
+    MEDIA_LOG_I("UnselectTrack trackId: " PUBLIC_LOG_D32, trackId);
     return plugin_->UnselectTrack(trackId);
 }
 
@@ -551,11 +583,10 @@ Status MediaDemuxer::ResumeAllTask()
     MEDIA_LOG_I("ResumeAllTask enter.");
     streamDemuxer_->SetIsIgnoreParse(false);
 
-    auto it = taskMap_.begin();
-    while (it != taskMap_.end()) {
-        if (it->second != nullptr) {
-            it->second->Start();
-        }
+    auto it = bufferQueueMap_.begin();
+    while (it != bufferQueueMap_.end()) {
+        uint32_t trackId = it->first;
+        taskMap_[trackId]->Start();
         it++;
     }
     return Status::OK;
@@ -581,16 +612,17 @@ Status MediaDemuxer::Pause()
 Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 {
     MEDIA_LOG_I("Pause trackId: %{public}d", trackId);
+    FALSE_RETURN_V_MSG_E(trackId >= 0, Status::ERROR_INVALID_PARAMETER, "Track id is invalid.");
 
     // To accelerate DemuxerLoop thread to run into PAUSED state
     for (auto &iter : taskMap_) {
-        if (iter.first == trackId && iter.second != nullptr) {
+        if (iter.first == static_cast<uint32_t>(trackId) && iter.second != nullptr) {
             iter.second->PauseAsync();
         }
     }
 
     for (auto &iter : taskMap_) {
-        if (iter.first == trackId && iter.second != nullptr) {
+        if (iter.first == static_cast<uint32_t>(trackId) && iter.second != nullptr) {
             iter.second->Pause();
         }
     }
@@ -738,7 +770,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
-            audioTrackId_ = index;
+            if (audioTrackId_ == TRACK_ID_DUMMY) {
+                audioTrackId_ = index;
+            }
             tempTask = std::make_unique<Task>("DemuxerLoopA", playerId_, TaskType::AUDIO);
         }
         if (tempTask != nullptr) {
@@ -768,12 +802,14 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
-        OSAL::SleepFor(5); // when request buffer failed, wait 5ms
+        MEDIA_LOG_D("Request buffer failed, wait for 5ms and retry again, user queue: "
+            PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
+        if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
+            MEDIA_LOG_E("Request buffer failed from buffer queue too many times in one minute.");
+        }
     } else {
         requestBufferErrorCountMap_[queueIndex] = 0;
     }
-    FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
-        PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
     return ret == Status::OK;
 }
 
@@ -820,7 +856,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             return Status::OK;
         }
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
-        ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
+        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDroppable);
     } else {
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
         MEDIA_LOG_E("ReadSample failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
@@ -869,7 +905,11 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             firstFrameCond_.NotifyAll();
             taskMap_[trackId]->Pause();
         }
-        return ret == Status::OK ? 0 : RETRY_FRAME_TIME * 1000; // delay 100ms to retry if no frame
+        if (ret == Status::OK || ret == Status::ERROR_AGAIN) {
+            return 0; // retry next frame
+        } else {
+            return RETRY_FRAME_TIME * 1000; // delay to retry if no frame, 1000 convert to us
+        }
     }
 }
 

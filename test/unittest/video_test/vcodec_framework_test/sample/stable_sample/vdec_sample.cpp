@@ -196,7 +196,7 @@ bool VideoDecSample::Create()
 {
     TITLE_LOG;
 
-    isH264Stream_ = inPath_.substr(inPath_.length() - 4, 4) == "h264"; // 4: "h264" string len
+    isH264Stream_ = inPath_.find("h264") != std::string::npos;
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
 
@@ -285,7 +285,7 @@ int32_t VideoDecSample::Configure()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixcel_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
     int32_t ret = OH_VideoDecoder_Configure(codec_, format);
@@ -608,8 +608,12 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_WIDTH, &width_);
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_HEIGHT, &height_);
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &stride_);
+            OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &heightSlice_);
         }
-        for (int32_t i = 0; i < height_ * 3 / 2; ++i) { // 3: nom, 2: denom
+        for (int32_t i = 0; i < heightSlice_; ++i) {
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
+        }
+        for (int32_t i = 0; i < (height_ >> 1); ++i) { // 2: denom
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
         }
     }

@@ -129,6 +129,8 @@ public:
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
+    Status ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta);
+
 private:
     static const std::unordered_map<std::string, Plugins::SubPluginType> CODEC_NAME_TO_PLUGIN_MAP;
 

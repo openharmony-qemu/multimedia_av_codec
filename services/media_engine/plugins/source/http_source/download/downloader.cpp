@@ -135,12 +135,11 @@ void DownloadRequest::Close()
 void DownloadRequest::WaitHeaderUpdated() const
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
-    size_t times = 0;
-    while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
+    while (!isHeaderUpdated && times_ < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
         Task::SleepInTask(SLEEP_TIME);
-        times++;
+        times_++;
     }
-    MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times);
+    MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times_);
 }
 
 double DownloadRequest::GetDuration() const
@@ -473,7 +472,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
-    MEDIA_LOG_D("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
+    MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
 
@@ -543,7 +542,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         char* type = StringTrim(token);
-        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, sizeof(info->contentType)));
+        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
     }
 
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||

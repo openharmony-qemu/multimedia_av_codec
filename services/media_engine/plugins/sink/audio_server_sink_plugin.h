@@ -146,7 +146,7 @@ private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     };
     void ReleaseRender();
-    void ReleaseFile();
+    __attribute__((no_sanitize("cfi"))) void ReleaseFile();
     bool StopRender();
     bool AssignSampleRateIfSupported(uint32_t sampleRate);
     bool AssignChannelNumIfSupported(uint32_t channelNum);

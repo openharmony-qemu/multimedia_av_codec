@@ -36,6 +36,7 @@ group("av_codec_unit_test") {
       "unittest/audio_test:av_audio_encoder_avbuffer_capi_unit_test",
       "unittest/audio_test:av_audio_encoder_capi_unit_test",
       "unittest/audio_test:av_audio_inner_unit_test",
+      "unittest/avcenc_info_test:avcenc_info_capi_unit_test",
       "unittest/avmuxer_test:avmuxer_capi_unit_test",
       "unittest/avmuxer_test:avmuxer_inner_unit_test",
       "unittest/avsource_test:avsource_capi_unit_test",
@@ -55,6 +56,7 @@ group("av_codec_unit_test") {
       "unittest/media_sink_test:av_audio_sink_unit_test",
       "unittest/sa_avcodec_test:sa_avcodec_unit_test",
       "unittest/video_test:av_video_capi_unit_test",
+      "unittest/video_test/drm_decryptor_test:drm_decryptor_coverage_unit_test",
       "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
       "unittest/video_test/vcodec_server_test:codec_server_test",
     ]

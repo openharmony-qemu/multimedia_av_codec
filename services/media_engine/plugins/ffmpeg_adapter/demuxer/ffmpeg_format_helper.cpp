@@ -52,6 +52,7 @@ namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
+    {AVMEDIA_TYPE_SUBTITLE, MediaType::SUBTITLE},
 };
 
 static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
@@ -73,11 +74,13 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MPEG2TS, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_MPEG2VIDEO, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
+    {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
-    {AV_CODEC_ID_APE, MimeType::AUDIO_APE}
+    {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
+    {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP}
 };
 
 static std::map<std::string, FileType> g_convertFfmpegFileType = {
@@ -91,6 +94,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
     {"ape", FileType::APE},
+    {"srt", FileType::SRT},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
@@ -221,6 +225,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     format.Set<Tag::MEDIA_TRACK_COUNT>(static_cast<int32_t>(avFormatContext.nb_streams));
     bool hasVideo = false;
     bool hasAudio = false;
+    bool hasSubtitle = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
             MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " is invalid.", i);
@@ -233,10 +238,13 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             }
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             hasAudio = true;
+        } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            hasSubtitle = true;
         }
     }
     format.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
     format.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+    format.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
     format.Set<Tag::MEDIA_FILE_TYPE>(GetFileTypeByName(avFormatContext));
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
@@ -251,9 +259,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     if (duration <= 0) {
         for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-            auto streamDuration = avFormatContext.streams[i]->duration;
-            if (streamDuration > duration) {
-                duration = streamDuration;
+            if (avFormatContext.streams[i]->duration > duration) {
+                duration = avFormatContext.streams[i]->duration;
             }
         }
     } else {

@@ -59,7 +59,6 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t DumpInfo(int32_t fd);
-    int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
 private:
     CodecServiceStub();

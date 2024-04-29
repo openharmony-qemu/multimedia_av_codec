@@ -278,6 +278,13 @@ Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
     return audioSink_->SetIsTransitent(isTransitent);
 }
 
+Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
+{
+    MEDIA_LOG_I("AudioSinkFilter::ChangeTrack in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->ChangeTrack(meta, eventReceiver_);
+}
+
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {

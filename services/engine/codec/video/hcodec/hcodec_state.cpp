@@ -139,8 +139,10 @@ void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 {
     int32_t generation;
+    bool isNeedNotifyCaller;
     (void)info.param->GetValue("generation", generation);
-    codec_->ForceShutdown(generation);
+    (void)info.param->GetValue("isNeedNotifyCaller", isNeedNotifyCaller);
+    codec_->ForceShutdown(generation, isNeedNotifyCaller);
 }
 /**************************** BaseState End ******************************/
 
@@ -598,6 +600,7 @@ void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
 /**************************** OutputPortChangedState Start ********************************/
 void HCodec::OutputPortChangedState::OnStateEntered()
 {
+    codec_->RecordOutBuffersOwnedByOmx();
     ParamSP msg = ParamBundle::Create();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
@@ -655,10 +658,28 @@ void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
     if (codec_->hasFatalError_) {
         ParamSP stopMsg = ParamBundle::Create();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
+        stopMsg->SetValue("isNeedNotifyCaller", true);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
     }
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER, true);
     codec_->DeferMessage(info);
+}
+
+void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
+{
+    int32_t generation;
+    (void)info.param->GetValue("generation", generation);
+    if (generation != codec_->stateGeneration_) {
+        return;
+    }
+    if (codec_->outBuffersOwnedByOmx_.empty()) {
+        SLOGI("output buffers owned by omx has been returned");
+        return;
+    }
+    codec_->PrintAllBufferInfo();
+    codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+    SLOGE("stucked, need force shut down");
+    (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
 }
 
 void HCodec::OutputPortChangedState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
@@ -708,6 +729,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
     }
     if (ret != AVCS_ERR_OK) {
         codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INVALID_VAL);
+        (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
     }
 }
 
@@ -726,6 +748,7 @@ void HCodec::OutputPortChangedState::OnFlush(const MsgInfo &info)
     if (codec_->hasFatalError_) {
         ParamSP stopMsg = ParamBundle::Create();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
+        stopMsg->SetValue("isNeedNotifyCaller", false);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
     }
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER, true);
@@ -849,6 +872,7 @@ void HCodec::FlushingState::OnShutDown(const MsgInfo &info)
     if (codec_->hasFatalError_) {
         ParamSP stopMsg = ParamBundle::Create();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
+        stopMsg->SetValue("isNeedNotifyCaller", true);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
     }
 }

@@ -92,8 +92,9 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
 {
     (void)apiVersion;
     using namespace OHOS::Media;
-    callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getpid());
-    callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, program_invocation_name);
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getprocpid());
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_UID, getuid());
+    callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, std::string(program_invocation_name));
 
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
@@ -282,6 +283,7 @@ int32_t CodecClient::GetOutputFormat(Format &format)
     int32_t ret = codecProxy_->GetOutputFormat(format);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     if (callbackMode_ == MEMORY_CALLBACK && converter_ != nullptr) {
+        converter_->SetFormat(format);
         converter_->GetFormat(format);
     }
     return ret;
@@ -376,6 +378,7 @@ int32_t CodecClient::GetInputFormat(Format &format)
     int32_t ret = codecProxy_->GetInputFormat(format);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     if (callbackMode_ == MEMORY_CALLBACK && converter_ != nullptr) {
+        converter_->SetFormat(format);
         converter_->GetFormat(format);
     }
     return ret;

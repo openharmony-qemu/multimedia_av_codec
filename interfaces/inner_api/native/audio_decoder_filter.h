@@ -59,6 +59,8 @@ public:
 
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
 
+    Status ChangePlugin(std::shared_ptr<Meta> meta);
+
     FilterType GetFilterType();
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);

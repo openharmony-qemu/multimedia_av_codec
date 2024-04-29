@@ -85,6 +85,8 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     int TransferSizeToBitRate(int width);
+    bool CheckReadStatus();
+    bool CheckReadTimeOut();
 private:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
@@ -124,6 +126,7 @@ private:
     bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
     bool isReadFrame_ {false};
+    bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
     int64_t currentBitrate_ {1*1024*1024};

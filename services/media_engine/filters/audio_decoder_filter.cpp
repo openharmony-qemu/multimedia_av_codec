@@ -206,6 +206,21 @@ Status AudioDecoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter,
     return Status::OK;
 }
 
+Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
+{
+    MEDIA_LOG_I("AudioDecoderFilter::ChangePlugin.");
+    std::string mime;
+    meta_ = meta;
+    bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
+    if (!mimeGetRes && eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
+    return mediaCodec_->ChangePlugin(mime, false, meta);
+}
+
 FilterType AudioDecoderFilter::GetFilterType()
 {
     return filterType_;

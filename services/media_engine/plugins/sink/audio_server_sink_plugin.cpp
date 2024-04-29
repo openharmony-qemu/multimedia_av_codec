@@ -288,6 +288,10 @@ Status AudioServerSinkPlugin::Init()
         playerEventReceiver_->OnEvent({"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
     }
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (audioRenderInfo_.streamUsage != AudioStandard::STREAM_USAGE_MUSIC &&
+        audioRenderInfo_.streamUsage != AudioStandard::STREAM_USAGE_AUDIOBOOK) {
+        audioRenderer_->SetOffloadAllowed(false);
+    }
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     return Status::OK;
 }
@@ -346,7 +350,7 @@ Status AudioServerSinkPlugin::Prepare()
         }
         if (audioServiceDiedCallback_ == nullptr) {
             audioServiceDiedCallback_ = std::make_shared<AudioServiceDiedCallbackImpl>(playerEventReceiver_);
-            audioRenderer_->RegisterAudioPolicyServerDiedCb(getpid(), audioServiceDiedCallback_);
+            audioRenderer_->RegisterAudioPolicyServerDiedCb(getprocpid(), audioServiceDiedCallback_);
         }
     }
     MEDIA_LOG_I("audio renderer plugin prepare ok");
