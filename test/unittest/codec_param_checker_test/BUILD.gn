@@ -20,7 +20,7 @@ ohos_unittest("av_codec_param_checker_test") {
 
   include_dirs = [ "$av_codec_root_dir/interfaces/kits/c" ]
 
-  sources = [ "key_type_test.cpp" ]
+  sources = [ "codec_param_checker_test.cpp" ]
 
   deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
 

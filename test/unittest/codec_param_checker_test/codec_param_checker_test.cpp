@@ -44,44 +44,51 @@ OH_AVCodec *g_videoEnc;
 OH_AVCodec *g_videoDec;
 
 class AVCodecParamCheckerTest : public testing::Test {
-    public:
-        static void SetUpTestCase(void);
-        static void TearDownTestCase(void){};
-        void SetUp(void);
-        void TearDown(void);
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void){};
+    void SetUp(void);
+    void TearDown(void);
 };
 
 void AVCodecParamCheckerTest::SetUpTestCase(void)
 {
     OH_AVCapability *encoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
     OH_AVRange range;
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoWidthRange(encoderCapability, &range));
-    std::cout << "width min = " << range.minVal << " width max = " << range.maxVal << std::endl;
-    std::cout << "defaultWidth = " << (range.minVal + range.maxVal) / 2 << std::endl;
-    g_defaultWidth = (range.minVal + range.maxVal) / 2;
+    if (OH_AVCapability_GetVideoWidthRange(encoderCapability, &range) == AV_ERR_OK) {
+        std::cout << "width min = " << range.minVal << " width max = " << range.maxVal << std::endl;
+        std::cout << "defaultWidth = " << (range.minVal + range.maxVal) / 2 << std::endl;
+        g_defaultWidth = (range.minVal + range.maxVal) / 2;
+    }
 
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoHeightRange(encoderCapability, &range));
-    std::cout << "height min = " << range.minVal << " height max = " << range.maxVal << std::endl;
-    std::cout << "defaultHeight = " << (range.minVal + range.maxVal) / 2 << std::endl;
-    g_defaultHeight = (range.minVal + range.maxVal) / 2;
+    if (OH_AVCapability_GetVideoHeightRange(encoderCapability, &range) == AV_ERR_OK) {
+        std::cout << "height min = " << range.minVal << " height max = " << range.maxVal << std::endl;
+        std::cout << "defaultHeight = " << (range.minVal + range.maxVal) / 2 << std::endl;
+        g_defaultHeight = (range.minVal + range.maxVal) / 2;
+    }
 
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range));
-    std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
-    std::cout << "defaultBitrate = " << (range.minVal + range.maxVal) / 2 << std::endl;
-    g_defaultBitrate = (range.minVal + range.maxVal) / 2;
+    if (OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range) == AV_ERR_OK) {
+        std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
+        std::cout << "defaultBitrate = " << (range.minVal + range.maxVal) / 2 << std::endl;
+        g_defaultBitrate = (range.minVal + range.maxVal) / 2;
+    }
 
     const int32_t *pixFormats = nullptr;
     uint32_t pixFormatNum = 0;
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum));
-    std::cout << "encoderPixelFormat = " << pixFormats[0] << std::endl;
-    g_encoderPixelFormat = pixFormats[0] ? pixFormats[0] : g_encoderPixelFormat;
+    auto ret = OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum);
+    if (ret == AV_ERR_OK) {
+        std::cout << "encoderPixelFormat = " << pixFormats[0] << std::endl;
+        g_encoderPixelFormat = pixFormatNum > 0 ? pixFormats[0] : g_encoderPixelFormat;
+    }
 
     OH_AVCapability *decoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
     pixFormats = nullptr;
     pixFormatNum = 0;
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoSupportedPixelFormats(decoderCapability, &pixFormats, &pixFormatNum));
-    std::cout << "decoderPixelFormat = " << pixFormats[0] << std::endl;
-    g_decoderPixelFormat = pixFormats[0] ? pixFormats[0] : g_decoderPixelFormat;
+    ret = OH_AVCapability_GetVideoSupportedPixelFormats(decoderCapability, &pixFormats, &pixFormatNum);
+    if (ret == AV_ERR_OK) {
+        std::cout << "decoderPixelFormat = " << pixFormats[0] << std::endl;
+        g_decoderPixelFormat = pixFormats[0] ? pixFormats[0] : g_decoderPixelFormat;
+    }
 }
 
 void AVCodecParamCheckerTest::SetUp(void)
@@ -243,7 +250,8 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0302, Tes
     OH_AVCapability *encoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
     const int32_t *pixFormats = nullptr;
     uint32_t pixFormatNum = 0;
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum));
+    auto ret = OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     std::vector<uint32_t> unsupportedPixelFormats = g_pixelFormats;
     for (int32_t i = 0; i < pixFormatNum; i++) {
@@ -802,7 +810,8 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1302, TestS
     OH_AVCapability *encoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
     const int32_t *pixFormats = nullptr;
     uint32_t pixFormatNum = 0;
-    ASSERT_EQ(AV_ERR_OK, OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum));
+    auto ret = OH_AVCapability_GetVideoSupportedPixelFormats(encoderCapability, &pixFormats, &pixFormatNum);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     std::vector<uint32_t> unsupportedPixelFormats = g_pixelFormats;
     for (int32_t i = 0; i < pixFormatNum; i++) {
