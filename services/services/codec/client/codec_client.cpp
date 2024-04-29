@@ -283,6 +283,7 @@ int32_t CodecClient::GetOutputFormat(Format &format)
     int32_t ret = codecProxy_->GetOutputFormat(format);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     if (callbackMode_ == MEMORY_CALLBACK && converter_ != nullptr) {
+        converter_->SetFormat(format);
         converter_->GetFormat(format);
     }
     return ret;
@@ -377,6 +378,7 @@ int32_t CodecClient::GetInputFormat(Format &format)
     int32_t ret = codecProxy_->GetInputFormat(format);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     if (callbackMode_ == MEMORY_CALLBACK && converter_ != nullptr) {
+        converter_->SetFormat(format);
         converter_->GetFormat(format);
     }
     return ret;
