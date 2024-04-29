@@ -76,6 +76,7 @@ public:
     Status Resume();
     Status Flush();
 
+    Status StartAudioTask();
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
