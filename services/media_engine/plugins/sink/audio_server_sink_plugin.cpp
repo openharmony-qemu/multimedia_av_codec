@@ -31,7 +31,6 @@
 #include "osal/utils/steady_clock.h"
 #include "plugin/plugin_time.h"
 #include "param_wrapper.h"
-#include "plugin/plugin_loader_v2.h"
 
 
 namespace {
@@ -124,11 +123,6 @@ OHOS::Media::Status AudioServerSinkRegister(const std::shared_ptr<Register> &reg
 }
 
 PLUGIN_DEFINITION(AudioServerSink, LicenseType::APACHE_V2, AudioServerSinkRegister, [] {});
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<AudioServerSinkPlugin>("audio_server_sink"));
-}
 
 inline void ResetAudioRendererParams(OHOS::AudioStandard::AudioRendererParams &param)
 {

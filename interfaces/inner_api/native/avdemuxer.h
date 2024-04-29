@@ -89,7 +89,7 @@ public:
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
      */
-    virtual int32_t SeekToTime(int64_t millisecond, OHOS::Media::Plugins::SeekMode mode) = 0;
+    virtual int32_t SeekToTime(int64_t millisecond, SeekMode mode) = 0;
 
     /**
      * @brief Registers a demuxer listener.

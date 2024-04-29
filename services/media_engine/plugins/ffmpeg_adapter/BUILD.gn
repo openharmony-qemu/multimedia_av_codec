@@ -73,7 +73,7 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
     "media_foundation:media_foundation",
   ]
 
-  relative_install_dir = "media/media_plugins/muxer/ffmpeg_muxer"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -109,7 +109,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "media_foundation:media_foundation",
   ]
 
-  relative_install_dir = "media/media_plugins/demuxer/ffmpeg_demuxer"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

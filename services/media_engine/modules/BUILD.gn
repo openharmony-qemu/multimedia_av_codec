@@ -65,6 +65,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "demuxer/frame_detector.cpp",
     "demuxer/live_stream_demuxer.cpp",
     "demuxer/media_demuxer.cpp",
+    "demuxer/type_finder.cpp",
     "demuxer/vod_stream_demuxer.cpp",
     "media_codec/media_codec.cpp",
     "muxer/data_sink_fd.cpp",

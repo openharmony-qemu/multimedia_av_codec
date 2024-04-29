@@ -25,6 +25,7 @@
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
 #include "demuxer/data_packer.h"
+#include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
 #include "osal/task/autolock.h"
@@ -42,11 +43,6 @@ namespace {
 }
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
-using MediaInfo = OHOS::Media::Plugins::MediaInfo;
-using MimeType = OHOS::Media::Plugins::MimeType;
-using AVBufferFlag = OHOS::Media::Plugins::AVBufferFlag;
-using PluginEventType = OHOS::Media::Plugins::PluginEventType;
-
 class BaseStreamDemuxer;
 class DataPacker;
 class TypeFinder;
@@ -109,9 +105,11 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    void InitPlugin(const Plugins::SubPluginType& subPluginType);
+    bool CreatePlugin(std::string pluginName);
+    bool InitPlugin(std::string pluginName);
 
     void ReportIsLiveStreamEvent();
+    void MediaTypeFound(std::string pluginName);
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);

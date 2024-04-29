@@ -14,7 +14,6 @@
  */
 #define HST_LOG_TAG "HttpSourcePlugin"
 
-#include "plugin/plugin_loader_v2.h"
 #include "avcodec_trace.h"
 #include "http_source_plugin.h"
 #include "download/http_curl_client.h"
@@ -52,11 +51,6 @@ Status HttpSourceRegister(std::shared_ptr<Register> reg)
     return reg->AddPlugin(definition);
 }
 PLUGIN_DEFINITION(HttpSource, LicenseType::APACHE_V2, HttpSourceRegister, [] {});
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<HttpSourcePlugin>("http_source"));
-}
 
 HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
     : SourcePlugin(std::move(name)),
