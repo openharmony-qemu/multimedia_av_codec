@@ -36,64 +36,78 @@ VideoPixelFormat TranslateSurfaceFormat(GraphicPixelFormat surfaceFormat)
 {
     switch (surfaceFormat) {
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
-            return VideoPixelFormat::YUV420P;
+            return VideoPixelFormat::YUVI420;
         }
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888: {
             return VideoPixelFormat::RGBA;
         }
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP: {
             return VideoPixelFormat::NV12;
         }
+        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010:
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
             return VideoPixelFormat::NV21;
         }
         default:
+            AVCODEC_LOGE("Invalid graphic pixcel format:%{public}d", static_cast<int32_t>(surfaceFormat));
             return VideoPixelFormat::UNKNOWN;
     }
 }
 
-int32_t ConvertYUV420SP(uint8_t *dst, const AVCodecRect &dstRect, uint8_t *src, const AVCodecRect &srcRect,
-                        AVCodecRect rect)
+int32_t ConvertYUV420SP(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t capacity)
 {
+    AVCodecRect &dstRect = rects[0];
+    AVCodecRect &srcRect = rects[1];
+    AVCodecRect &rect = rects[2]; // 2: index
+    int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) >> 1;
+    CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
+                             capacity);
     // Y
-    for (int32_t i = 0; i < rect.height; ++i) {
-        (void)memcpy_s(dst, dstRect.stride, src, rect.stride);
-        dst += dstRect.stride;
-        src += srcRect.stride;
+    for (int32_t i = 0; i < rect.hStride; ++i) {
+        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        dst += dstRect.wStride;
+        src += srcRect.wStride;
     }
     // padding
-    dst += (dstRect.height - rect.height) * dstRect.stride;
-    src += (srcRect.height - rect.height) * srcRect.stride;
-    rect.height >>= 1;
+    dst += (dstRect.hStride - rect.hStride) * dstRect.wStride;
+    src += (srcRect.hStride - rect.hStride) * srcRect.wStride;
+    rect.hStride >>= 1;
     // UV
-    for (int32_t i = 0; i < rect.height; ++i) {
-        (void)memcpy_s(dst, dstRect.stride, src, rect.stride);
-        dst += dstRect.stride;
-        src += srcRect.stride;
+    for (int32_t i = 0; i < rect.hStride; ++i) {
+        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        dst += dstRect.wStride;
+        src += srcRect.wStride;
     }
-    return (OFFSET_3 * dstRect.stride * dstRect.height) >> 1;
+    return dstSize;
 }
 
-int32_t ConvertYUV420P(uint8_t *dst, const AVCodecRect &dstRect, uint8_t *src, const AVCodecRect &srcRect,
-                       AVCodecRect rect)
+int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t capacity)
 {
+    AVCodecRect &dstRect = rects[0];
+    AVCodecRect &srcRect = rects[1];
+    AVCodecRect &rect = rects[2]; // 2: index
+    int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) >> 1;
+    CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
+                             capacity);
     // Y
-    for (int32_t i = 0; i < rect.height; ++i) {
-        (void)memcpy_s(dst, dstRect.stride, src, rect.stride);
-        dst += dstRect.stride;
-        src += srcRect.stride;
+    for (int32_t i = 0; i < rect.hStride; ++i) {
+        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        dst += dstRect.wStride;
+        src += srcRect.wStride;
     }
     // padding
-    const int32_t dstWidth = dstRect.stride >> 1;
-    const int32_t srcWidth = srcRect.stride >> 1;
-    const int32_t dstPadding = (dstRect.height - rect.height) * dstRect.stride;
-    const int32_t srcPadding = (srcRect.height - rect.height) * srcRect.stride;
+    const int32_t dstWidth = dstRect.wStride >> 1;
+    const int32_t srcWidth = srcRect.wStride >> 1;
+    const int32_t dstPadding = (dstRect.hStride - rect.hStride) * dstRect.wStride;
+    const int32_t srcPadding = (srcRect.hStride - rect.hStride) * srcRect.wStride;
+    rect.hStride >>= 1;
+    rect.wStride >>= 1;
     dst += dstPadding;
     src += srcPadding;
-    rect.height >>= 1;
     // U
-    for (int32_t i = 0; i < rect.height; ++i) {
-        (void)memcpy_s(dst, dstRect.stride, src, rect.stride);
+    for (int32_t i = 0; i < rect.hStride; ++i) {
+        (void)memcpy_s(dst, dstWidth, src, rect.wStride);
         dst += dstWidth;
         src += srcWidth;
     }
@@ -101,23 +115,28 @@ int32_t ConvertYUV420P(uint8_t *dst, const AVCodecRect &dstRect, uint8_t *src, c
     dst += dstPadding >> OFFSET_2;
     src += srcPadding >> OFFSET_2;
     // V
-    for (int32_t i = 0; i < rect.height; ++i) {
-        (void)memcpy_s(dst, dstRect.stride, src, rect.stride);
+    for (int32_t i = 0; i < rect.hStride; ++i) {
+        (void)memcpy_s(dst, dstWidth, src, rect.wStride);
         dst += dstWidth;
         src += srcWidth;
     }
-    return (OFFSET_3 * dstRect.stride * dstRect.height) >> 1;
+    return dstSize;
 }
 
-int32_t ConverteRGBA8888(uint8_t *dst, const AVCodecRect &dstRect, uint8_t *src, const AVCodecRect &srcRect,
-                         AVCodecRect rect)
+int32_t ConverteRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t capacity)
 {
-    for (int32_t i = 0; i < rect.height; ++i) {
-        (void)memcpy_s(dst, dstRect.stride, src, rect.stride);
-        dst += dstRect.stride;
-        src += srcRect.stride;
+    AVCodecRect &dstRect = rects[0];
+    AVCodecRect &srcRect = rects[1];
+    AVCodecRect &rect = rects[2]; // 2: index
+    int32_t dstSize = dstRect.wStride * dstRect.hStride;
+    CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
+                             capacity);
+    for (int32_t i = 0; i < rect.hStride; ++i) {
+        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        dst += dstRect.wStride;
+        src += srcRect.wStride;
     }
-    return dstRect.stride * dstRect.height;
+    return dstSize;
 }
 } // namespace
 
@@ -152,15 +171,17 @@ int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::
     CHECK_AND_RETURN_RET_LOG(buffer->memory_->GetAddr() != nullptr, AVCS_ERR_INVALID_VAL, "buffer addr is nullptr");
     CHECK_AND_RETURN_RET_LOG(memory != nullptr && memory->GetBase() != nullptr, AVCS_ERR_INVALID_VAL,
                              "shared memory is nullptr");
-    if (isEncoder_) {
-        int32_t size = buffer->memory_->GetSize();
-        if (size > 0) {
-            int32_t ret = buffer->memory_->Read(memory->GetBase(), size, 0);
-            CHECK_AND_RETURN_RET_LOG(ret == size, AVCS_ERR_INVALID_VAL, "Read avbuffer's data failed.");
-        }
+    int32_t size = buffer->memory_->GetSize();
+    if (size <= 0) {
         return AVCS_ERR_OK;
     }
-    int32_t usrSize = func_(memory->GetBase(), usrRect_, buffer->memory_->GetAddr(), hwRect_, rect_);
+    if (isEncoder_) {
+        int32_t ret = buffer->memory_->Read(memory->GetBase(), size, 0);
+        CHECK_AND_RETURN_RET_LOG(ret == size, AVCS_ERR_INVALID_VAL, "Read avbuffer's data failed.");
+        return AVCS_ERR_OK;
+    }
+    AVCodecRect rects[3] = {usrRect_, hwRect_, rect_}; // 1:dstRect, 2:srcRect, 3:rect
+    int32_t usrSize = func_(memory->GetBase(), buffer->memory_->GetAddr(), rects, memory->GetSize());
     buffer->memory_->SetSize(usrSize);
     return AVCS_ERR_OK;
 }
@@ -174,14 +195,16 @@ int32_t BufferConverter::WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::s
                              AVCS_ERR_INVALID_VAL, "buffer is nullptr");
     CHECK_AND_RETURN_RET_LOG(memory != nullptr && memory->GetBase() != nullptr, AVCS_ERR_INVALID_VAL,
                              "shared memory is nullptr");
-    if (!isEncoder_) {
-        int32_t size = buffer->memory_->GetSize();
-        if (size > 0) {
-            (void)buffer->memory_->Write(memory->GetBase(), size, 0);
-        }
+    int32_t size = buffer->memory_->GetSize();
+    if (size <= 0) {
         return AVCS_ERR_OK;
     }
-    int32_t hwSize = func_(buffer->memory_->GetAddr(), hwRect_, memory->GetBase(), usrRect_, rect_);
+    if (!isEncoder_) {
+        (void)buffer->memory_->Write(memory->GetBase(), size, 0);
+        return AVCS_ERR_OK;
+    }
+    AVCodecRect rects[3] = {hwRect_, usrRect_, rect_}; // 1:dstRect, 2:srcRect, 3:rect
+    int32_t hwSize = func_(buffer->memory_->GetAddr(), memory->GetBase(), rects, buffer->memory_->GetCapacity());
     buffer->memory_->SetSize(hwSize);
     return AVCS_ERR_OK;
 }
@@ -197,27 +220,28 @@ void BufferConverter::GetFormat(Format &format)
         return;
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_WIDTH)) {
-        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.stride / pixcelSize_);
+        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride / pixcelSize_);
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
-        format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.height);
+        format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.hStride);
     }
     if (format.ContainKey(Tag::VIDEO_STRIDE)) {
-        format.PutIntValue(Tag::VIDEO_STRIDE, usrRect_.stride);
+        format.PutIntValue(Tag::VIDEO_STRIDE, usrRect_.wStride);
     }
     if (format.ContainKey(Tag::VIDEO_SLICE_HEIGHT)) {
-        format.PutIntValue(Tag::VIDEO_SLICE_HEIGHT, usrRect_.height);
+        format.PutIntValue(Tag::VIDEO_SLICE_HEIGHT, usrRect_.hStride);
     }
 }
 
 void BufferConverter::SetFormat(const Format &format)
 {
-    if (isSharedMemory_) {
+    if (isSharedMemory_ || !needResetFormat_) {
         return;
     }
-    needResetFormat_ = false;
     int32_t width = 0;
     int32_t height = 0;
+    int32_t wStride = 0;
+    int32_t hStride = 0;
     int32_t pixelFormat = static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     if (format.GetIntValue(Tag::VIDEO_PIXEL_FORMAT, pixelFormat)) {
         SetPixFormat(static_cast<VideoPixelFormat>(pixelFormat));
@@ -228,23 +252,28 @@ void BufferConverter::SetFormat(const Format &format)
     if (format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_HEIGHT, height)) {
         SetHeight(height);
     }
-    if (!format.GetIntValue(Tag::VIDEO_STRIDE, hwRect_.stride)) {
-        SetStride(rect_.stride);
+    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride)) {
+        SetWidthStride(rect_.wStride);
+    } else {
+        hwRect_.wStride = wStride;
     }
-    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hwRect_.height)) {
-        SetSliceHeight(rect_.height);
+    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride)) {
+        SetHeightStride(rect_.hStride);
+    } else {
+        hwRect_.hStride = hStride;
     }
-    if (width != 0) {
-        const int32_t tempPixcelSize = hwRect_.stride / width;
-        pixcelSize_ = tempPixcelSize == 0 ? 1 : tempPixcelSize;
-        rect_.stride = width * pixcelSize_;
-        usrRect_.stride *= pixcelSize_;
+    // check if the converter needs to reset the format.
+    bool isHeightStrideValid = (hStride != 0 && !isEncoder_) || isEncoder_;
+    needResetFormat_ = width == 0 || height == 0 || wStride == 0 || !isHeightStrideValid ||
+                       pixelFormat == static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
+    if (needResetFormat_) {
+        AVCODEC_LOGW("Invalid format:%{public}s", format.Stringify().c_str());
+        return;
     }
-    usrRect_.stride = std::min(usrRect_.stride, hwRect_.stride);
-    usrRect_.height = std::min(usrRect_.height, hwRect_.height);
+    SetFormatInner(width);
     AVCODEC_LOGI(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
-        width, rect_.height, usrRect_.stride, usrRect_.height, hwRect_.stride, hwRect_.height);
+        width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
 }
 
 void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
@@ -252,8 +281,7 @@ void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
     if (!needResetFormat_ || !isEncoder_) {
         return;
     }
-    needResetFormat_ = false;
-    SetBufferFormat(buffer);
+    needResetFormat_ = !SetBufferFormat(buffer);
 }
 
 void BufferConverter::SetOutputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
@@ -261,13 +289,13 @@ void BufferConverter::SetOutputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
     if (!needResetFormat_ || isEncoder_) {
         return;
     }
-    needResetFormat_ = false;
-    SetBufferFormat(buffer);
+    needResetFormat_ = !SetBufferFormat(buffer);
 }
 
 void BufferConverter::SetPixFormat(const VideoPixelFormat pixelFormat)
 {
     switch (pixelFormat) {
+        case VideoPixelFormat::YUV420P:
         case VideoPixelFormat::YUVI420:
             func_ = ConvertYUV420P;
             break;
@@ -279,79 +307,95 @@ void BufferConverter::SetPixFormat(const VideoPixelFormat pixelFormat)
             func_ = ConverteRGBA8888;
             break;
         default:
-            AVCODEC_LOGE("Invalid video pix format.");
+            AVCODEC_LOGE("Invalid video pix format:%{public}d", static_cast<int32_t>(pixelFormat));
             break;
     };
 }
 
 inline void BufferConverter::SetWidth(const int32_t width)
 {
-    rect_.stride = width;
+    rect_.wStride = width;
     int32_t modVal = width & OFFSET_15;
     if (modVal) {
-        usrRect_.stride = width + OFFSET_16 - modVal;
+        usrRect_.wStride = width + OFFSET_16 - modVal;
     } else {
-        usrRect_.stride = width;
+        usrRect_.wStride = width;
     }
 }
 
 inline void BufferConverter::SetHeight(const int32_t height)
 {
-    rect_.height = height;
+    rect_.hStride = height;
     int32_t modVal = height & OFFSET_15;
     if (modVal) {
-        usrRect_.height = height + OFFSET_16 - modVal;
+        usrRect_.hStride = height + OFFSET_16 - modVal;
     } else {
-        usrRect_.height = height;
+        usrRect_.hStride = height;
     }
 }
 
-inline void BufferConverter::SetStride(const int32_t stride)
+inline void BufferConverter::SetWidthStride(const int32_t wStride)
 {
-    hwRect_.stride = stride;
+    hwRect_.wStride = wStride;
 }
 
-inline void BufferConverter::SetSliceHeight(const int32_t sliceHeight)
+inline void BufferConverter::SetHeightStride(const int32_t hStride)
 {
-    hwRect_.height = sliceHeight;
+    hwRect_.hStride = hStride;
 }
 
-void BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
+bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    CHECK_AND_RETURN_LOG(buffer != nullptr && buffer->memory_ != nullptr, "buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, false, "buffer is nullptr");
     isSharedMemory_ = buffer->memory_->GetMemoryType() == MemoryType::SHARED_MEMORY;
 
     auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
-    CHECK_AND_RETURN_LOG(surfaceBuffer != nullptr, "surface buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, false, "surface buffer is nullptr");
     // pixcelFormat
     VideoPixelFormat pixelFormat = TranslateSurfaceFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     SetPixFormat(pixelFormat);
     // width
     int32_t width = surfaceBuffer->GetWidth();
     SetWidth(width);
-    // height
-    SetHeight(surfaceBuffer->GetHeight());
-    // stride
-    SetStride(surfaceBuffer->GetStride());
+    // hStride
+    int32_t height = surfaceBuffer->GetHeight();
+    SetHeight(height);
+    // wStride
+    SetWidthStride(surfaceBuffer->GetStride());
     // sliceHeight
-    void *planesInfoPtr = nullptr;
-    surfaceBuffer->GetPlanesInfo(&planesInfoPtr);
-    CHECK_AND_RETURN_LOG(planesInfoPtr != nullptr, "planes info is nullptr");
-    auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
-    CHECK_AND_RETURN_LOG(planesInfo->planeCount > 1, "planes count is %{public}d", planesInfo->planeCount);
-    SetSliceHeight(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
-    // pixcelSize
-    if (width != 0) {
-        const int32_t tempPixcelSize = hwRect_.stride / width;
-        pixcelSize_ = tempPixcelSize == 0 ? 1 : tempPixcelSize;
-        rect_.stride = width * pixcelSize_;
-        usrRect_.stride *= pixcelSize_;
+    if (isEncoder_) {
+        SetHeightStride(height);
+    } else {
+        void *planesInfoPtr = nullptr;
+        surfaceBuffer->GetPlanesInfo(&planesInfoPtr);
+        CHECK_AND_RETURN_RET_LOG(planesInfoPtr != nullptr, false, "planes info is nullptr");
+        auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
+        CHECK_AND_RETURN_RET_LOG(planesInfo->planeCount > 1, false, "planes count is %{public}d",
+                                 planesInfo->planeCount);
+        SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
     }
-    usrRect_.stride = std::min(usrRect_.stride, hwRect_.stride);
-    usrRect_.height = std::min(usrRect_.height, hwRect_.height);
+    // pixcelSize
+    CHECK_AND_RETURN_RET_LOG(width != 0, false, "width is 0");
+    SetFormatInner(width);
     AVCODEC_LOGI(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
-        width, rect_.height, usrRect_.stride, usrRect_.height, hwRect_.stride, hwRect_.height);
+        width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
+    return true;
+}
+
+void BufferConverter::SetFormatInner(const int32_t &width)
+{
+    if (width == 0) {
+        return;
+    }
+    const int32_t tempPixcelSize = hwRect_.wStride / width;
+    pixcelSize_ = tempPixcelSize == 0 ? 1 : tempPixcelSize;
+
+    rect_.wStride = width * pixcelSize_;
+    usrRect_.wStride *= pixcelSize_;
+
+    usrRect_.wStride = std::min(usrRect_.wStride, hwRect_.wStride);
+    usrRect_.hStride = std::min(usrRect_.hStride, hwRect_.hStride);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

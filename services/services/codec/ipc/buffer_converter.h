@@ -41,19 +41,20 @@ public:
     void SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer);
     void SetOutputBufferFormat(std::shared_ptr<AVBuffer> &buffer);
     typedef struct AVCodecRect {
-        int32_t stride = 0;
-        int32_t height = 0;
+        int32_t wStride = 0;
+        int32_t hStride = 0;
     } AVCodecRect;
 
 private:
     void SetPixFormat(const VideoPixelFormat pixelFormat);
     void SetWidth(const int32_t width);
     void SetHeight(const int32_t height);
-    void SetStride(const int32_t stride);
-    void SetSliceHeight(const int32_t sliceHeight);
+    void SetWidthStride(const int32_t wStride);
+    void SetHeightStride(const int32_t hStride);
 
-    void SetBufferFormat(std::shared_ptr<AVBuffer> &buffer);
-    std::function<int32_t(uint8_t *, const AVCodecRect &, uint8_t *, const AVCodecRect &, const AVCodecRect &)> func_;
+    bool SetBufferFormat(std::shared_ptr<AVBuffer> &buffer);
+    void SetFormatInner(const int32_t &width);
+    std::function<int32_t(uint8_t *, uint8_t *, AVCodecRect *, int32_t)> func_;
     int32_t pixcelSize_ = 1; // 1: byte
     AVCodecRect rect_;
     AVCodecRect hwRect_;
