@@ -43,7 +43,7 @@ struct HeaderInfo {
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
-    unsigned int sleepTime = 5;
+    unsigned int sleepTime {10};
 
     void Update(const HeaderInfo* info)
     {
