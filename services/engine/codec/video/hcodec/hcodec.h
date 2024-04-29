@@ -81,7 +81,6 @@ protected:
         STOP,
         RELEASE,
         GET_HIDUMPER_INFO,
-        PRINT_ALL_BUFFER_OWNER,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -156,11 +155,13 @@ protected:
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
     void PrintAllBufferInfo();
-    void PrintAllBufferInfo(bool isInput);
+    void PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
     std::string OnGetHidumperInfo();
     std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
     void TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput);
     void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
+    void ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner);
+    void ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner);
     void UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
     void UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
 
@@ -338,7 +339,7 @@ protected:
 
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 100;
-    static constexpr uint32_t WARN_FENCE_MS = 10;
+    static constexpr uint32_t WARN_FENCE_MS = 15;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
