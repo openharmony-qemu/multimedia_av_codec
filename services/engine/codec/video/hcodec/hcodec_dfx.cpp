@@ -46,13 +46,13 @@ FuncTracker::~FuncTracker()
 
 void HCodec::PrintAllBufferInfo()
 {
-    PrintAllBufferInfo(true);
-    PrintAllBufferInfo(false);
+    auto now = chrono::steady_clock::now();
+    PrintAllBufferInfo(true, now);
+    PrintAllBufferInfo(false, now);
 }
 
-void HCodec::PrintAllBufferInfo(bool isInput)
+void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
 {
-    auto now = chrono::steady_clock::now();
     std::array<uint32_t, OWNER_CNT> arr;
     arr.fill(0);
     std::stringstream s;
@@ -69,17 +69,24 @@ void HCodec::PrintAllBufferInfo(bool isInput)
 
 std::string HCodec::OnGetHidumperInfo()
 {
+    auto now = chrono::steady_clock::now();
     std::stringstream s;
     s << endl;
     s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
+    s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_ << endl;
     for (const BufferInfo& info : inputBufferPool_) {
-        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
+        int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
+        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
+          << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl;
     s << "        " << "------------OUTPUT----------" << endl;
+    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << outRecord_.totalCnt << endl;
     for (const BufferInfo& info : outputBufferPool_) {
-        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
+        int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
+        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
+          << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl;
     return s.str();
@@ -107,11 +114,32 @@ void HCodec::TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput
 
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
-    if (!debugMode_) {
-        info.lastOwnerChangeTime = chrono::steady_clock::now();
-        info.owner = newOwner;
-        return;
+    debugMode_ ? ChangeOwnerDebug(info, newOwner) : ChangeOwnerNormal(info, newOwner);
+}
+
+void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
+{
+    BufferOwner oldOwner = info.owner;
+    auto now = chrono::steady_clock::now();
+    info.lastOwnerChangeTime = now;
+    info.owner = newOwner;
+    static constexpr uint64_t PRINT_PER_FRAME = 200;
+    if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
+        inTotalCnt_++;
+        if (inTotalCnt_ % PRINT_PER_FRAME == 0) {
+            PrintAllBufferInfo(info.isInput, now);
+        }
     }
+    if (!info.isInput && oldOwner == OWNED_BY_OMX && newOwner == OWNED_BY_US) {
+        outRecord_.totalCnt++;
+        if (outRecord_.totalCnt % PRINT_PER_FRAME == 0) {
+            PrintAllBufferInfo(info.isInput, now);
+        }
+    }
+}
+
+void HCodec::ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner)
+{
     BufferOwner oldOwner = info.owner;
     const char* oldOwnerStr = ToString(oldOwner);
     const char* newOwnerStr = ToString(newOwner);
@@ -131,7 +159,7 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
     info.lastOwnerChangeTime = now;
     info.owner = newOwner;
     std::array<uint32_t, OWNER_CNT> arr = CountOwner(info.isInput);
-    HLOGD("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
+    HLOGI("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
           "%u/%u/%u/%u",
           idStr, info.bufferId, holdMs, aveHoldMs, oldOwnerStr, newOwnerStr,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE]);
@@ -157,11 +185,11 @@ void HCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<s
 
     uint64_t fromFirstInToNow = chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count();
     if (fromFirstInToNow == 0) {
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
     } else {
         double inFps = inTotalCnt_ * US_TO_S / fromFirstInToNow;
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag, inFps);
     }
 }
@@ -188,13 +216,13 @@ void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<
 
     uint64_t fromFirstOutToNow = chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count();
     if (fromFirstOutToNow == 0) {
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms)",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs);
     } else {
         double outFps = outRecord_.totalCnt * US_TO_S / fromFirstOutToNow;
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms), out fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs, outFps);

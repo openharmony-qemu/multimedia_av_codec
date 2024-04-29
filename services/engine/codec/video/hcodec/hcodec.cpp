@@ -925,9 +925,6 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
-    if (!debugMode_) {
-        HLOGI("outBufId = %u, omx -> us, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
-    }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -1296,7 +1293,6 @@ const char* HCodec::ToString(MsgWhat what)
         { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
         { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
         { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
-        { PRINT_ALL_BUFFER_OWNER, "PRINT_ALL_BUFFER_OWNER" },
     };
     auto it = m.find(what);
     if (it != m.end()) {
