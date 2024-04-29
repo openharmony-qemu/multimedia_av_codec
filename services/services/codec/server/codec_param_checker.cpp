@@ -169,7 +169,7 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType c
     }
     CHECK_AND_RETURN_RET_LOG(resolutionValid, AVCS_ERR_INVALID_VAL,
         "Param invalid, resolution: %{public}d*%{public}d, range: [%{public}d*%{public}d]-[%{public}d*%{public}d]",
-        width, height, capData.width.minVal, capData.height.minVal, capData.width.maxVal,capData.height.maxVal);
+        width, height, capData.width.minVal, capData.height.minVal, capData.width.maxVal, capData.height.maxVal);
     AVCODEC_LOGI("Param valid, resolution: %{public}d * %{public}d", width, height);
     return AVCS_ERR_OK;
 }
