@@ -34,11 +34,11 @@ std::vector<uint32_t> g_pixelFormats = {
     AV_PIXEL_FORMAT_NV21,
     AV_PIXEL_FORMAT_RGBA
 };
-uint32_t g_defaultWidth = 1280;
-uint32_t g_defaultHeight = 720;
-uint32_t g_defaultBitrate = 10000000;
-uint32_t g_encoderPixelFormat = AV_PIXEL_FORMAT_SURFACE_FORMAT;
-uint32_t g_decoderPixelFormat = AV_PIXEL_FORMAT_SURFACE_FORMAT;
+uint32_t g_defaultWidth = 1280; // 默认的宽度
+uint32_t g_defaultHeight = 720; // 默认的高度
+uint32_t g_defaultBitrate = 10000000; // 默认的比特率
+uint32_t g_encoderPixelFormat = AV_PIXEL_FORMAT_SURFACE_FORMAT; // 编码默认的像素格式
+uint32_t g_decoderPixelFormat = AV_PIXEL_FORMAT_SURFACE_FORMAT; // 解码默认的像素格式
 OH_AVFormat *g_format;
 OH_AVCodec *g_videoEnc;
 OH_AVCodec *g_videoDec;
@@ -57,19 +57,19 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     OH_AVRange range;
     if (OH_AVCapability_GetVideoWidthRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "width min = " << range.minVal << " width max = " << range.maxVal << std::endl;
-        std::cout << "defaultWidth = " << (range.minVal + range.maxVal) / 2 << std::endl;
+        std::cout << "defaultWidth = " << ((range.minVal + range.maxVal) / 2) << std::endl;
         g_defaultWidth = (range.minVal + range.maxVal) / 2;
     }
 
     if (OH_AVCapability_GetVideoHeightRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "height min = " << range.minVal << " height max = " << range.maxVal << std::endl;
-        std::cout << "defaultHeight = " << (range.minVal + range.maxVal) / 2 << std::endl;
+        std::cout << "defaultHeight = " << ((range.minVal + range.maxVal) / 2) << std::endl;
         g_defaultHeight = (range.minVal + range.maxVal) / 2;
     }
 
     if (OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
-        std::cout << "defaultBitrate = " << (range.minVal + range.maxVal) / 2 << std::endl;
+        std::cout << "defaultBitrate = " << ((range.minVal + range.maxVal) / 2) << std::endl;
         g_defaultBitrate = (range.minVal + range.maxVal) / 2;
     }
 
