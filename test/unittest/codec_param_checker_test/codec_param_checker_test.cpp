@@ -57,20 +57,17 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     OH_AVRange range;
     if (OH_AVCapability_GetVideoWidthRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "width min = " << range.minVal << " width max = " << range.maxVal << std::endl;
-        std::cout << "default width = " << ((range.minVal + range.maxVal) / 2) << std::endl;
-        DEFAULT_WIDTH = (range.minVal + range.maxVal) / 2;
+        DEFAULT_WIDTH = static_cast<int>((range.minVal + range.maxVal) / 2);
     }
 
     if (OH_AVCapability_GetVideoHeightRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "height min = " << range.minVal << " height max = " << range.maxVal << std::endl;
-        std::cout << "default height = " << ((range.minVal + range.maxVal) / 2) << std::endl;
-        DEFAULT_HEIGHT = (range.minVal + range.maxVal) / 2;
+        DEFAULT_HEIGHT = static_cast<int>((range.minVal + range.maxVal) / 2);
     }
 
     if (OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
-        std::cout << "default bitrate = " << ((range.minVal + range.maxVal) / 2) << std::endl;
-        DEFAULT_BITRATE = (range.minVal + range.maxVal) / 2;
+        DEFAULT_BITRATE = static_cast<int>((range.minVal + range.maxVal) / 2);
     }
 
     const int32_t *pixFormats = nullptr;
