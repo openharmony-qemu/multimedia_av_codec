@@ -148,7 +148,7 @@ private:
     std::shared_mutex freeMutex_;
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
-    CodecScenario scenario_;
+    CodecScenario scenario_ = CODEC_SCENARIO_ENC_NORMAL;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

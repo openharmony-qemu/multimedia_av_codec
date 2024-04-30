@@ -57,7 +57,7 @@ void AVCodecServer::OnStart()
         AVCODEC_LOGD("AVCodecServer OnStart res=%{public}d", res);
     }
     (void)gettimeofday(&end, nullptr);
-    uint32_t useTime = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
+    uint32_t useTime = static_cast<uint32_t>((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec);
     ServiceStartEventWrite(useTime, "AV_CODEC service");
     IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
 }
