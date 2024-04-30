@@ -312,7 +312,7 @@ protected:
 
     std::shared_ptr<MediaCodecCallback> callback_;
     PixelFmt configuredFmt_;
-    BufferRequestConfig requestCfg_;
+    BufferRequestConfig requestCfg_{};
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
     std::shared_ptr<Format> outputFormat_;
