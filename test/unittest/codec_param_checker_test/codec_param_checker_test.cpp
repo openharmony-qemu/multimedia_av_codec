@@ -28,6 +28,7 @@ namespace {
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t DEFAULT_QUALITY = 30;
 constexpr uint32_t VALID_ROTATION_ANGLE[] = {0, 90, 180, 270};
+cosntexpr uint32_t DIVISOR = 2;
 std::vector<uint32_t> PIXEL_FORMATS = {
     AV_PIXEL_FORMAT_YUVI420,
     AV_PIXEL_FORMAT_NV12,
@@ -37,8 +38,8 @@ std::vector<uint32_t> PIXEL_FORMATS = {
 uint32_t DEFAULT_WIDTH = 1280;
 uint32_t DEFAULT_HEIGHT = 720;
 uint32_t DEFAULT_BITRATE = 10000000;
-OH_AVPixelFormat ENCODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
-OH_AVPixelFormat DECODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
+uint32_t ENCODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
+uint32_t DECODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
 OH_AVFormat *g_format;
 OH_AVCodec *g_videoEnc;
 OH_AVCodec *g_videoDec;
@@ -57,17 +58,17 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     OH_AVRange range;
     if (OH_AVCapability_GetVideoWidthRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "width min = " << range.minVal << " width max = " << range.maxVal << std::endl;
-        DEFAULT_WIDTH = (range.minVal + range.maxVal) / 2; // default width is the middle of the width
+        DEFAULT_WIDTH = (range.minVal + range.maxVal) / DIVISOR;
     }
 
     if (OH_AVCapability_GetVideoHeightRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "height min = " << range.minVal << " height max = " << range.maxVal << std::endl;
-        DEFAULT_HEIGHT = (range.minVal + range.maxVal) / 2; // default height is the middle of the height
+        DEFAULT_HEIGHT = (range.minVal + range.maxVal) / DIVISOR;
     }
 
     if (OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
-        DEFAULT_BITRATE = (range.minVal + range.maxVal) / 2; // default bitrate is the middle of the bitrate
+        DEFAULT_BITRATE = (range.minVal + range.maxVal) / DIVISOR;
     }
 
     const int32_t *pixFormats = nullptr;
