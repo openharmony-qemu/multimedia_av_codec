@@ -289,7 +289,8 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     MEDIA_LOG_I("SetDataSource enter");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetCallback(this);
-    source_->SetSource(source);
+    auto res = source_->SetSource(source);
+    FALSE_RETURN_V_MSG_E(res == Status::OK, Status::ERROR_INVALID_DATA, "plugin set source failed.");
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
