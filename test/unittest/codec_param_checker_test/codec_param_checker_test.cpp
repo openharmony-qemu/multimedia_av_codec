@@ -28,7 +28,7 @@ namespace {
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t DEFAULT_QUALITY = 30;
 constexpr uint32_t VALID_ROTATION_ANGLE[] = {0, 90, 180, 270};
-cosntexpr uint32_t DIVISOR = 2;
+constexpr uint32_t DIVISOR = 2;
 std::vector<uint32_t> PIXEL_FORMATS = {
     AV_PIXEL_FORMAT_YUVI420,
     AV_PIXEL_FORMAT_NV12,
