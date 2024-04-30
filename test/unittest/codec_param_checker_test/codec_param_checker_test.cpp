@@ -34,11 +34,11 @@ std::vector<uint32_t> PIXEL_FORMATS = {
     AV_PIXEL_FORMAT_NV21,
     AV_PIXEL_FORMAT_RGBA
 };
-uint32_t DEFAULT_WIDTH = 1280; // 默认的宽度
-uint32_t DEFAULT_HEIGHT = 720; // 默认的高度
-uint32_t DEFAULT_BITRATE = 10000000; // 默认的比特率
-OH_AVPixelFormat ENCODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT; // 编码默认的像素格式
-OH_AVPixelFormat DECODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT; // 解码默认的像素格式
+uint32_t DEFAULT_WIDTH = 1280;
+uint32_t DEFAULT_HEIGHT = 720;
+uint32_t DEFAULT_BITRATE = 10000000;
+OH_AVPixelFormat ENCODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
+OH_AVPixelFormat DECODER_PIXEL_FORMAT = AV_PIXEL_FORMAT_SURFACE_FORMAT;
 OH_AVFormat *g_format;
 OH_AVCodec *g_videoEnc;
 OH_AVCodec *g_videoDec;
@@ -57,17 +57,17 @@ void AVCodecParamCheckerTest::SetUpTestCase(void)
     OH_AVRange range;
     if (OH_AVCapability_GetVideoWidthRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "width min = " << range.minVal << " width max = " << range.maxVal << std::endl;
-        DEFAULT_WIDTH = static_cast<int>((range.minVal + range.maxVal) / 2);
+        DEFAULT_WIDTH = (range.minVal + range.maxVal) / 2; // default width is the middle of the width
     }
 
     if (OH_AVCapability_GetVideoHeightRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "height min = " << range.minVal << " height max = " << range.maxVal << std::endl;
-        DEFAULT_HEIGHT = static_cast<int>((range.minVal + range.maxVal) / 2);
+        DEFAULT_HEIGHT = (range.minVal + range.maxVal) / 2; // default height is the middle of the height
     }
 
     if (OH_AVCapability_GetEncoderBitrateRange(encoderCapability, &range) == AV_ERR_OK) {
         std::cout << "bitrate min = " << range.minVal << " bitrate max = " << range.maxVal << std::endl;
-        DEFAULT_BITRATE = static_cast<int>((range.minVal + range.maxVal) / 2);
+        DEFAULT_BITRATE = (range.minVal + range.maxVal) / 2; // default bitrate is the middle of the bitrate
     }
 
     const int32_t *pixFormats = nullptr;
