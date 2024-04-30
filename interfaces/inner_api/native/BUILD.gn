@@ -267,10 +267,6 @@ ohos_shared_library("av_codec_client") {
     sources +=
         [ "$av_codec_root_dir/frameworks/native/avmuxer/avmuxer_impl.cpp" ]
   }
-  if (av_codec_support_muxer) {
-    sources +=
-        [ "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp" ]
-  }
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
