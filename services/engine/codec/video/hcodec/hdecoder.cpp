@@ -228,8 +228,10 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
     if (outputFormat_) {
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, rect.nLeft + rect.nWidth - 1);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, rect.nTop + rect.nHeight - 1);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
+            static_cast<int32_t>(rect.nLeft + rect.nWidth) - 1);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
+            static_cast<int32_t>(rect.nTop + rect.nHeight) - 1);
     }
 }
 
@@ -592,7 +594,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 
 GSError HDecoder::OnBufferReleasedByConsumer(uint64_t surfaceId)
 {
-    ParamSP param = ParamBundle::Create();
+    ParamSP param = make_shared<ParamBundle>();
     param->SetValue("surfaceId", surfaceId);
     SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
     return GSERROR_OK;
@@ -724,10 +726,7 @@ void HDecoder::OnEnterUninitializedState()
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)
-{
-    surface_ = surface;
-    originalTransform_ = surface->GetTransform();
-}
+    : surface_(surface), originalTransform_(surface->GetTransform()) {}
 
 void HDecoder::SurfaceItem::Release()
 {

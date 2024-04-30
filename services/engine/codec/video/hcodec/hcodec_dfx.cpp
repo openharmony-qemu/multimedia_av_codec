@@ -147,7 +147,8 @@ void HCodec::ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner)
 
     // calculate hold time
     auto now = chrono::steady_clock::now();
-    uint64_t holdUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count();
+    uint64_t holdUs = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
     double holdMs = holdUs / US_TO_MS;
     TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner][newOwner] :
                                                 outputHoldTimeRecord_[oldOwner][newOwner];
@@ -183,7 +184,8 @@ void HCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<s
     }
     inTotalCnt_++;
 
-    uint64_t fromFirstInToNow = chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count();
+    uint64_t fromFirstInToNow = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count());
     if (fromFirstInToNow == 0) {
         HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
@@ -208,13 +210,15 @@ void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<
     }
     outRecord_.totalCnt++;
 
-    uint64_t fromInToOut = chrono::duration_cast<chrono::microseconds>(now - it->second).count();
+    uint64_t fromInToOut = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - it->second).count());
     inTimeMap_.erase(it);
     outRecord_.totalCostUs += fromInToOut;
     double oneFrameCostMs = fromInToOut / US_TO_MS;
     double averageCostMs = outRecord_.totalCostUs / US_TO_MS / outRecord_.totalCnt;
 
-    uint64_t fromFirstOutToNow = chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count();
+    uint64_t fromFirstOutToNow = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count());
     if (fromFirstOutToNow == 0) {
         HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms)",
@@ -300,7 +304,7 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
     char name[128];
     int ret = 0;
     if (dumpAsVideo) {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%s.%s",
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%u)_fmt%s.%s",
                         DUMP_PATH, prefix.c_str(), w, h, alignedW, assumeAlignedH.value_or(h),
                         fmt->strFmt.c_str(), suffix.c_str());
     } else {
@@ -337,7 +341,8 @@ void HCodec::BufferInfo::DecideDumpInfo(optional<uint32_t>& assumeAlignedH, stri
             if (GetYuv420Size(alignedW, h) == totalSize) {
                 break;
             }
-            uint32_t alignedH = totalSize * 2 / 3 / alignedW; // 2 bytes per pixel for UV, 3 bytes per pixel for YUV
+            // 2 bytes per pixel for UV, 3 bytes per pixel for YUV
+            uint32_t alignedH = totalSize * 2 / 3 / static_cast<uint32_t>(alignedW);
             if (GetYuv420Size(alignedW, alignedH) == totalSize) {
                 dumpAsVideo = true;
                 assumeAlignedH = alignedH;

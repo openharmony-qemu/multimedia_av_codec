@@ -29,7 +29,7 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::GET_HIDUMPER_INFO: {
-            ParamSP reply = ParamBundle::Create();
+            ParamSP reply = make_shared<ParamBundle>();
             reply->SetValue("hidumper-info", codec_->OnGetHidumperInfo());
             reply->SetValue<int32_t>("err", AVCS_ERR_OK);
             codec_->PostReply(info.id, reply);
@@ -79,7 +79,7 @@ void HCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
     if (id == ASYNC_MSG_ID) {
         return;
     }
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     reply->SetValue("err", err);
     codec_->PostReply(id, reply);
 }
@@ -115,7 +115,7 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
 {
     shared_ptr<Format> fmt = (info.type == MsgWhat::GET_INPUT_FORMAT) ?
         codec_->inputFormat_ : codec_->outputFormat_;
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     if (fmt) {
         reply->SetValue<int32_t>("err", AVCS_ERR_OK);
         reply->SetValue("format", *fmt);
@@ -268,7 +268,7 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::CREATE_INPUT_SURFACE: {
             sptr<Surface> surface = codec_->OnCreateInputSurface();
-            ParamSP reply = ParamBundle::Create();
+            ParamSP reply = make_shared<ParamBundle>();
             reply->SetValue<int32_t>("err", surface != nullptr ? AVCS_ERR_OK : AVCS_ERR_UNKNOWN);
             reply->SetValue("surface", surface);
             codec_->PostReply(info.id, reply);
@@ -355,7 +355,7 @@ void HCodec::StartingState::OnStateEntered()
 {
     hasError_ = false;
 
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
@@ -595,7 +595,7 @@ void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
 void HCodec::OutputPortChangedState::OnStateEntered()
 {
     codec_->RecordOutBuffersOwnedByOmx();
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
@@ -645,7 +645,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
 void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 {
     if (codec_->hasFatalError_) {
-        ParamSP stopMsg = ParamBundle::Create();
+        ParamSP stopMsg = make_shared<ParamBundle>();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
         stopMsg->SetValue("isNeedNotifyCaller", true);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
@@ -735,7 +735,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
 void HCodec::OutputPortChangedState::OnFlush(const MsgInfo &info)
 {
     if (codec_->hasFatalError_) {
-        ParamSP stopMsg = ParamBundle::Create();
+        ParamSP stopMsg = make_shared<ParamBundle>();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
         stopMsg->SetValue("isNeedNotifyCaller", false);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
@@ -755,7 +755,7 @@ void HCodec::FlushingState::OnStateEntered()
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
     SLOGI("all buffer owned by user are now owned by us");
 
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
@@ -796,7 +796,7 @@ void HCodec::FlushingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
             return;
         }
         case CODEC_EVENT_PORT_SETTINGS_CHANGED: {
-            ParamSP portSettingChangedMsg = ParamBundle::Create();
+            ParamSP portSettingChangedMsg = make_shared<ParamBundle>();
             portSettingChangedMsg->SetValue("generation", codec_->stateGeneration_);
             portSettingChangedMsg->SetValue("event", event);
             portSettingChangedMsg->SetValue("data1", data1);
@@ -854,7 +854,7 @@ void HCodec::FlushingState::OnShutDown(const MsgInfo &info)
 {
     codec_->DeferMessage(info);
     if (codec_->hasFatalError_) {
-        ParamSP stopMsg = ParamBundle::Create();
+        ParamSP stopMsg = make_shared<ParamBundle>();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
         stopMsg->SetValue("isNeedNotifyCaller", true);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
@@ -872,7 +872,7 @@ void HCodec::StoppingState::OnStateEntered()
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
     SLOGI("all buffer owned by user are now owned by us");
 
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
