@@ -1007,7 +1007,12 @@ void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
         AddPacketToCacheQueue(pkt);
 
         if (static_cast<uint32_t>(pkt->stream_index) == trackIndex) {
-            firstFrame_ = av_packet_clone(pkt);
+            firstFrame_ = av_packet_alloc();
+            FALSE_RETURN_MSG(firstFrame_ != nullptr, "av_packet_alloc fail");
+            int ret = av_new_packet(firstFrame_, pkt->size);
+            FALSE_RETURN_MSG(ret >= 0, "av_new_packet fail");
+            av_packet_copy_props(firstFrame_, pkt);
+            memcpy_s(firstFrame_->data, pkt->size, pkt->data, pkt->size);
             break;
         }
     }
