@@ -83,7 +83,6 @@ SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Init mime: " PUBLIC_LOG_S, logTag_.c_str(), mime.c_str());
-    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Init");
     if (!codecServer_) {
         codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
         if (!codecServer_) {
