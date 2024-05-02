@@ -83,6 +83,7 @@ SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Init mime: " PUBLIC_LOG_S, logTag_.c_str(), mime.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Init");
     if (!codecServer_) {
         codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
         if (!codecServer_) {
@@ -108,6 +109,7 @@ void SurfaceEncoderAdapter::SetLogTag(std::string logTag)
 Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Configure", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Configure");
     MediaAVCodec::Format format = MediaAVCodec::Format();
     if (meta->Find(Tag::VIDEO_WIDTH) != meta->end()) {
         int32_t videoWidth;
@@ -201,6 +203,7 @@ sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 Status SurfaceEncoderAdapter::Start()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Start");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -221,6 +224,7 @@ Status SurfaceEncoderAdapter::Start()
 Status SurfaceEncoderAdapter::Stop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Stop");
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     const int64_t SEC_TO_NS = 1000000000;
@@ -253,12 +257,14 @@ Status SurfaceEncoderAdapter::Stop()
 Status SurfaceEncoderAdapter::Pause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Pause");
     return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Resume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Resume");
     isResume_ = true;
     return Status::OK;
 }
@@ -280,6 +286,7 @@ Status SurfaceEncoderAdapter::Flush()
 Status SurfaceEncoderAdapter::Reset()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Reset", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Reset");
     if (!codecServer_) {
         return Status::OK;
     }
@@ -298,6 +305,7 @@ Status SurfaceEncoderAdapter::Reset()
 Status SurfaceEncoderAdapter::Release()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Release");
     if (!codecServer_) {
         return Status::OK;
     }
@@ -326,6 +334,7 @@ Status SurfaceEncoderAdapter::NotifyEos()
 Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::SetParameter");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
