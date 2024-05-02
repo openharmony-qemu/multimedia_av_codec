@@ -110,6 +110,7 @@ void VideoCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
 }
@@ -129,6 +130,7 @@ Status VideoCaptureFilter::Configure(const std::shared_ptr<Meta> &parameter)
 Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "SetInputSurface", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::SetInputSurface");
     if (surface == nullptr) {
         MEDIA_LOG_E(PUBLIC_LOG_S "surface is nullptr", logTag_.c_str());
         return Status::ERROR_UNKNOWN;
@@ -142,6 +144,7 @@ Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
 sptr<Surface> VideoCaptureFilter::GetInputSurface()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetInputSurface", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::GetInputSurface");
     sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("EncoderSurface");
     if (consumerSurface == nullptr) {
         MEDIA_LOG_E(PUBLIC_LOG_S "Create the surface consumer fail", logTag_.c_str());
@@ -172,6 +175,7 @@ sptr<Surface> VideoCaptureFilter::GetInputSurface()
 Status VideoCaptureFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Prepare");
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
@@ -180,6 +184,7 @@ Status VideoCaptureFilter::DoPrepare()
 Status VideoCaptureFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Start");
     isStop_ = false;
     nextFilter_->Start();
     return Status::OK;
@@ -188,6 +193,7 @@ Status VideoCaptureFilter::DoStart()
 Status VideoCaptureFilter::DoPause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Pause");
     isStop_ = true;
     latestPausedTime_ = latestBufferTime_;
     return Status::OK;
@@ -196,6 +202,7 @@ Status VideoCaptureFilter::DoPause()
 Status VideoCaptureFilter::DoResume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Resume");
     isStop_ = false;
     refreshTotalPauseTime_ = true;
     return Status::OK;
@@ -204,6 +211,7 @@ Status VideoCaptureFilter::DoResume()
 Status VideoCaptureFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Stop");
     isStop_ = true;
     latestBufferTime_ = TIME_NONE;
     latestPausedTime_ = TIME_NONE;
@@ -222,6 +230,7 @@ Status VideoCaptureFilter::DoFlush()
 Status VideoCaptureFilter::DoRelease()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Release");
     return Status::OK;
 }
 
@@ -234,16 +243,19 @@ Status VideoCaptureFilter::NotifyEos()
 void VideoCaptureFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::SetParameter");
 }
 
 void VideoCaptureFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::GetParameter");
 }
 
 Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::LinkNext");
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
@@ -294,6 +306,7 @@ void VideoCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "OnLinkedResult", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::OnLinkedResult");
     outputBufferQueueProducer_ = outputBufferQueue;
 }
 
