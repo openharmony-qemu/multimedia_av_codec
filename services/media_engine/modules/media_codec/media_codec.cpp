@@ -499,7 +499,7 @@ Status MediaCodec::AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::sh
 
 Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer)
 {
-    MEDIA_LOG_D("MediaCodec DrmAudioCencDecrypt"); 
+    MEDIA_LOG_D("DrmAudioCencDecrypt enter");
     Status ret = Status::OK;
 
     // 1. allocate drm buffer
