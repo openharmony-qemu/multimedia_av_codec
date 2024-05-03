@@ -120,7 +120,7 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         dataCallback_->OnInputBufferDone(inputBuffer);
         return Status::OK;
     } else if (ret == AVERROR(EAGAIN)) {
-        AVCODEC_LOGW("skip this frame because data not enough, msg:%{public}s", AVStrError(ret).data());
+        AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "skip frame data no enough, msg:%{public}s", AVStrError(ret).data());
         return Status::ERROR_NOT_ENOUGH_DATA;
     } else if (ret == AVERROR_EOF) {
         dataCallback_->OnInputBufferDone(inputBuffer);
@@ -189,7 +189,7 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         status = Status::END_OF_STREAM;
         dataCallback_->OnOutputBufferDone(outBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
-        AVCODEC_LOGW("audio decoder not enough data");
+        AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "audio decoder not enough data");
         status = Status::ERROR_NOT_ENOUGH_DATA;
     } else {
         AVCODEC_LOGE("audio decoder receive unknow error,ffmpeg error message:%{public}s", AVStrError(ret).data());
