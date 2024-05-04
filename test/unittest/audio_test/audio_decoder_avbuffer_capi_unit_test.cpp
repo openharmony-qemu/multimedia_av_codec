@@ -2736,6 +2736,38 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_01, TestS
     Release();
 }
 
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 1);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 0);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 1);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                AudioSampleFormat::SAMPLE_U8);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 1);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                AudioSampleFormat::SAMPLE_S32LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Stop_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
