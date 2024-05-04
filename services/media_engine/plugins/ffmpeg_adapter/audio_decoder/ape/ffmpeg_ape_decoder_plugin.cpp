@@ -174,11 +174,6 @@ Status FFmpegAPEDecoderPlugin::Release()
     return basePlugin->Release();
 }
 
-bool FFmpegAPEDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
-{
-    return basePlugin->CheckSampleFormat(format, channels_);
-}
-
 bool FFmpegAPEDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &format)
 {
     if (!format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels_)) {
