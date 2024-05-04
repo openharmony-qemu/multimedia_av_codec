@@ -188,7 +188,7 @@ namespace MediaAVCodec {
 struct OH_AVCodec *OH_AudioDecoder_CreateByMime(const char *mime)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input name is too long!");
+    CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
 
     std::shared_ptr<AVCodecAudioDecoder> audioDecoder = AudioDecoderFactory::CreateByMime(mime);
     CHECK_AND_RETURN_RET_LOG(audioDecoder != nullptr, nullptr, "failed to AudioDecoderFactory::CreateByMime");
