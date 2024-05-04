@@ -119,15 +119,13 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     }
     AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     if (codecCtx->extradata == nullptr) {
-        AVCODEC_LOGE("no extradata! auto fix in.");
         codecCtx->extradata_size = EXTRA_DATA_SIZE; // 6bits
         codecCtx->extradata = static_cast<uint8_t *>(av_mallocz(EXTRA_DATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE));
         int16_t fakedata[3]; // 3 int16_t data
         fakedata[0] = 3990;  // 3990 version
         fakedata[1] = 2000;  // 2000 complexity
         fakedata[2] = 0;     // flags 0
-        errno_t rc = memcpy_s(codecCtx->extradata, EXTRA_DATA_SIZE, fakedata, EXTRA_DATA_SIZE);
-        if (rc != EOK) {
+        if (memcpy_s(codecCtx->extradata, EXTRA_DATA_SIZE, fakedata, EXTRA_DATA_SIZE) != EOK) {
             AVCODEC_LOGE("extradata memcpy_s failed.");
             return Status::ERROR_INVALID_PARAMETER;
         }
