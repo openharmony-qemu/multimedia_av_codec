@@ -90,7 +90,7 @@ private:
     std::atomic<int32_t> bufferConsumerAvailableCount_ = 0;
     std::atomic<int32_t> indexInput_ = 0;
     std::atomic<int32_t> indexOutput_ = 0;
-    uint32_t inputBufferSize_ = 0;
+    int32_t inputBufferSize_ = 0;
     std::queue<std::shared_ptr<AVBuffer>> inputIndexQueue;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inputBufferObjMap_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferObjMap_;
