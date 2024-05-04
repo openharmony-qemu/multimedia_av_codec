@@ -35,7 +35,7 @@ public:
     using CodecStubFunc = int32_t(CodecServiceStub::*)(MessageParcel &data, MessageParcel &reply);
     int32_t SetListenerObject(const sptr<IRemoteObject> &object) override;
 
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -59,7 +59,6 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t DumpInfo(int32_t fd);
-    int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
 private:
     CodecServiceStub();

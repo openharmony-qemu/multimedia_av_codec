@@ -109,6 +109,11 @@ public:
         isOutput_ = isOutput;
     }
 
+    void SetConverter(std::shared_ptr<BufferConverter> &converter)
+    {
+        converter_ = converter;
+    }
+
     const std::string GetMemoryTypeStr(const std::shared_ptr<AVBuffer> &buffer)
     {
         CHECK_AND_RETURN_RET_LOG(buffer != nullptr, "UNKNOWN_MEMORY", "Invalid buffer");
@@ -143,16 +148,10 @@ private:
         }
     }
 
-    void ReadOutputMemory(const std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
+    void ReadOutputMemory(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
     {
-        std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
-        if (bufferMem == nullptr || memory == nullptr || bufferMem->GetMemoryType() == MemoryType::SHARED_MEMORY) {
-            return;
-        }
-        int32_t size = bufferMem->GetSize();
-        if (size > 0) {
-            int32_t ret = bufferMem->Read(memory->GetBase(), size, 0);
-            CHECK_AND_RETURN_LOG(ret == size, "Read avbuffer's data failed.");
+        if (converter_ != nullptr) {
+            converter_->ReadFromBuffer(buffer, memory);
         }
     }
 
@@ -182,7 +181,10 @@ private:
         } else if (filter == ELEM_GET_AVMEMORY) {
             AVBufferToAVSharedMemory(elem.buffer, elem.memory);
             if (isOutput_) {
+                converter_->SetOutputBufferFormat(elem.buffer);
                 ReadOutputMemory(elem.buffer, elem.memory);
+            } else {
+                converter_->SetInputBufferFormat(elem.buffer);
             }
         }
     }
@@ -195,6 +197,7 @@ private:
     CacheFlag flag_ = CacheFlag::INVALIDATE_CACHE;
     std::shared_mutex mutex_;
     std::unordered_map<uint32_t, BufferElem> caches_;
+    std::shared_ptr<BufferConverter> converter_ = nullptr;
 };
 
 CodecListenerStub::CodecListenerStub()
@@ -372,12 +375,13 @@ bool CodecListenerStub::WriteInputMemoryToParcel(uint32_t index, AVCodecBufferIn
     CHECK_AND_RETURN_RET_LOG(memory != nullptr, false, "Get memory is nullptr");
     CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
 
-    MemoryType type = buffer->memory_->GetMemoryType();
-    if (type != MemoryType::SHARED_MEMORY) {
-        (void)buffer->memory_->Write(memory->GetBase(), info.size, 0);
+    if (converter_ != nullptr) {
+        buffer->memory_->SetSize(info.size);
+        converter_->WriteToBuffer(buffer, memory);
     }
-    return data.WriteInt64(info.presentationTimeUs) && data.WriteInt32(info.offset) && data.WriteInt32(info.size) &&
-           data.WriteUint32(static_cast<uint32_t>(flag)) && buffer->meta_->ToParcel(data);
+    return data.WriteInt64(info.presentationTimeUs) && data.WriteInt32(info.offset) &&
+           data.WriteInt32(buffer->memory_->GetSize()) && data.WriteUint32(static_cast<uint32_t>(flag)) &&
+           buffer->meta_->ToParcel(data);
 }
 
 bool CodecListenerStub::WriteInputBufferToParcel(uint32_t index, MessageParcel &data)
@@ -411,6 +415,13 @@ bool CodecListenerStub::CheckGeneration(uint64_t messageGeneration) const
 void CodecListenerStub::SetMutex(std::shared_ptr<std::recursive_mutex> &mutex)
 {
     syncMutex_ = mutex;
+}
+
+void CodecListenerStub::SetConverter(std::shared_ptr<BufferConverter> &converter)
+{
+    converter_ = converter;
+    inputBufferCache_->SetConverter(converter);
+    outputBufferCache_->SetConverter(converter);
 }
 
 void CodecListenerStub::SetNeedListen(const bool needListen)

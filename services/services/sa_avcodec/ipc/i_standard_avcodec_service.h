@@ -29,15 +29,12 @@ public:
      * sub system ability ID
      */
     enum AVCodecSystemAbility : int32_t {
-        AVCODEC_DEMUXER = 0,
-        AVCODEC_MUXER,
         AVCODEC_CODECLIST,
         AVCODEC_CODEC,
-        AVCODEC_SOURCE
     };
 
-    virtual sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-        const sptr<IRemoteObject> &listener) = 0;
+    virtual int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+        const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };

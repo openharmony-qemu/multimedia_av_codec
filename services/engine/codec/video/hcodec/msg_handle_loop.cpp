@@ -50,7 +50,7 @@ void MsgHandleLoop::SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t dela
 {
     lock_guard<mutex> lock(m_mtx);
     TimeUs nowUs = GetNowUs();
-    TimeUs msgProcessTime = (delayUs > INT64_MAX - nowUs) ? INT64_MAX : (nowUs + delayUs);
+    TimeUs msgProcessTime = (delayUs > INT64_MAX - nowUs) ? INT64_MAX : (nowUs + static_cast<int64_t>(delayUs));
     if (m_msgQueue.find(msgProcessTime) != m_msgQueue.end()) {
         LOGW("DUPLICATIVE MSG TIMESTAMP!!!");
         msgProcessTime++;

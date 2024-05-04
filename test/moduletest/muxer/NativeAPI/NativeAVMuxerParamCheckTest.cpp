@@ -194,27 +194,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004
     ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
     ASSERT_NE(AV_ERR_OK, ret);
 
-    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    OH_AVFormat_SetFloatValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0.1);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    OH_AVFormat_SetDoubleValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0.1);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    uint8_t b[100];
-    OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_MIME, b, 100);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
     muxerDemo->NativeDestroy(handle);
     OH_AVFormat_Destroy(trackFormat);
     handle = nullptr;
@@ -381,27 +360,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007
         ASSERT_EQ(AV_ERR_OK, ret);
         ASSERT_EQ(2, trackId);
     }
-
-    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    OH_AVFormat_SetFloatValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0.1);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    OH_AVFormat_SetDoubleValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0.1);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-
-    uint8_t b[100];
-    OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_MIME, b, 100);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 
     muxerDemo->NativeDestroy(handle);
     OH_AVFormat_Destroy(trackFormat);

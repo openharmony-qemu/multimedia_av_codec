@@ -162,7 +162,9 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
             }
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop finish, trackIndex: " PUBLIC_LOG_U32 ".",
                 name_.c_str(), trackIndex);
-            sizeMap_[trackIndex] -= 1;
+            if (sizeMap_[trackIndex] > 0) {
+                sizeMap_[trackIndex] -= 1;
+            }
             return block;
         }
     }
@@ -203,10 +205,12 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Back(uint32_t trackIndex)
         return nullptr;
     }
     auto queVector = queMap_[trackIndex];
-    auto lastQueIndex = queVector[queVector.size() - 1];
-    if (quePool_[lastQueIndex].blockQue != nullptr && quePool_[lastQueIndex].blockQue->Size() > 0) {
-        auto block = quePool_[lastQueIndex].blockQue->Back();
-        return block;
+    if (queVector.size() > 0) {
+        auto lastQueIndex = queVector[queVector.size() - 1];
+        if (quePool_[lastQueIndex].blockQue != nullptr && quePool_[lastQueIndex].blockQue->Size() > 0) {
+            auto block = quePool_[lastQueIndex].blockQue->Back();
+            return block;
+        }
     }
     MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;

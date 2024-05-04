@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -73,6 +73,8 @@ public:
 
     Status SetIsTransitent(bool isTransitent);
 
+    Status ChangeTrack(std::shared_ptr<Meta>& meta);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
@@ -100,11 +102,7 @@ private:
     std::shared_ptr<FilterCallback> filterCallback_;
 
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
-    const std::string INPUT_BUFFER_QUEUE_NAME = "AudioSinkInputBufferQueue";
-    std::shared_ptr<AVBufferQueue> inputBufferQueue_;
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
-
     int64_t frameCnt_ {0};
     Plugins::AudioRenderInfo audioRenderInfo_ {};
 

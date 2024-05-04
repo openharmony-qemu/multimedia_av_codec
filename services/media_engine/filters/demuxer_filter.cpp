@@ -20,6 +20,7 @@
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "osal/task/autolock.h"
+#include "common/media_core.h"
 #include "demuxer_filter.h"
 
 namespace OHOS {
@@ -119,7 +120,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
     demuxer_->SetDrmCallback(drmCallback);
     demuxer_->SetEventReceiver(receiver);
-    demuxer_->SetPlayerId(playerId_);
+    demuxer_->SetPlayerId(groupId_);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -151,9 +152,12 @@ Status DemuxerFilter::DoPrepare()
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
-    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER, "trackCount is invalid.");
-
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
+    if (trackCount == 0) {
+        MEDIA_LOG_E("Doprepare: trackCount is invalid.");
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         if (meta == nullptr) {
@@ -171,23 +175,12 @@ Status DemuxerFilter::DoPrepare()
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
             continue;
         }
-
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (!FindStreamType(streamType, mediaType, mime)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
-
-        {
-            AutoLock lock(mapMutex_);
-            auto it = track_id_map_.find(streamType);
-            if (it != track_id_map_.end()) {
-                it->second.push_back(index);
-            } else {
-                std::vector<int32_t> vec = {index};
-                track_id_map_.insert({streamType, vec});
-            }
-        }
+        UpdateTrackIdMap(streamType, static_cast<int32_t>(index));
         if (callback_ == nullptr) {
             MEDIA_LOG_W("callback is nullptr");
             continue;
@@ -198,21 +191,26 @@ Status DemuxerFilter::DoPrepare()
     return Status::OK;
 }
 
-Status DemuxerFilter::PrepareFrame(bool renderFirstFrame)
+void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
+{
+    AutoLock lock(mapMutex_);
+    auto it = track_id_map_.find(streamType);
+    if (it != track_id_map_.end()) {
+        it->second.push_back(index);
+    } else {
+        std::vector<int32_t> vec = {index};
+        track_id_map_.insert({streamType, vec});
+    }
+}
+
+Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
 {
     MEDIA_LOG_I("PrepareFrame enter.");
-    Filter::PrepareFrame(renderFirstFrame);
     auto ret = demuxer_->PrepareFrame(renderFirstFrame);
     if (ret == Status::OK) {
         isPrepareFramed = true;
     }
     return ret;
-}
-
-Status DemuxerFilter::WaitPrepareFrame()
-{
-    MEDIA_LOG_I("WaitPrepareFrame enter.");
-    return Filter::WaitPrepareFrame();
 }
 
 Status DemuxerFilter::PrepareBeforeStart()
@@ -344,6 +342,18 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
+Status DemuxerFilter::StartAudioTask()
+{
+    return demuxer_->StartAudioTask();
+}
+
+Status DemuxerFilter::SelectTrack(int32_t trackId)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SelectTrack");
+    MEDIA_LOG_I("SelectTrack called");
+    return demuxer_->SelectTrack(trackId);
+}
+
 std::vector<std::shared_ptr<Meta>> DemuxerFilter::GetStreamMetaInfo() const
 {
     return demuxer_->GetStreamMetaInfo();
@@ -472,6 +482,18 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
         return;
     }
     demuxer_->SetOutputBufferQueue(trackId, outputBufferQueue);
+    if (trackId < 0) {
+        return;
+    }
+    uint32_t trackIdU32 = static_cast<uint32_t>(trackId);
+    int32_t decodeFramerateUpperLimit = 0;
+    if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decodeFramerateUpperLimit)) {
+        demuxer_->SetDecodeFramerateUpperLimit(decodeFramerateUpperLimit, trackIdU32);
+    }
+    double frameRate;
+    if (meta->GetData(Tag::VIDEO_FRAME_RATE, frameRate)) {
+        demuxer_->SetFrameRate(frameRate, trackIdU32);
+    }
 }
 
 void DemuxerFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -495,6 +517,18 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
 bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     return demuxer_->GetDuration(durationMs);
+}
+
+Status DemuxerFilter::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "OptimizeDecodeSlow failed.");
+    return demuxer_->OptimizeDecodeSlow(useDecodeSlowOptimization);
+}
+
+Status DemuxerFilter::SetSpeed(float speed)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "SetSpeed failed.");
+    return demuxer_->SetSpeed(speed);
 }
 } // namespace Pipeline
 } // namespace Media

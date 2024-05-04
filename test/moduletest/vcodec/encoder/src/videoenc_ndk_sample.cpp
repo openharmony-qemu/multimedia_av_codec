@@ -284,6 +284,9 @@ void VEncNdkSample::GetStride()
 
 int32_t VEncNdkSample::OpenFile()
 {
+    if (fuzzMode) {
+        return AV_ERR_OK;
+    }
     int32_t ret = AV_ERR_OK;
     inFile_ = make_unique<ifstream>();
     if (inFile_ == nullptr) {
@@ -650,10 +653,55 @@ int32_t VEncNdkSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
     return 0;
 }
 
+void VEncNdkSample::InputDataNormal(bool &runningFlag, uint32_t index, OH_AVMemory *buffer)
+{
+    if (!inFile_->eof()) {
+        bool isRandomEosSuccess = RandomEOS(index);
+        if (isRandomEosSuccess) {
+            return;
+        }
+        int32_t pushResult = 0;
+        int32_t ret = PushData(buffer, index, pushResult);
+        if (ret == 0) {
+            runningFlag = false;
+            return;
+        } else if (ret == -1) {
+            return;
+        }
+        if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
+            runningFlag = false;
+            return;
+        }
+        frameCount++;
+        if (enableAutoSwitchParam) {
+            AutoSwitchParam();
+        }
+    }
+}
+
+void VEncNdkSample::InputDataFuzz(bool &runningFlag, uint32_t index)
+{
+    frameCount++;
+    if (frameCount == DEFAULT_FUZZ_TIME) {
+        SetEOS(index);
+        runningFlag = false;
+        return;
+    }
+    OH_AVCodecBufferAttr attr;
+    attr.pts = GetSystemTimeUs();
+    attr.offset = 0;
+    attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+    OH_VideoEncoder_PushInputData(venc_, index, attr);
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
+}
+
 void VEncNdkSample::InputFunc()
 {
     errCount = 0;
-    while (true) {
+    bool runningFlag = true;
+    while (runningFlag) {
         if (!isRunning_.load()) {
             break;
         }
@@ -672,25 +720,10 @@ void VEncNdkSample::InputFunc()
         auto buffer = signal_->inBufferQueue_.front();
 
         lock.unlock();
-        if (!inFile_->eof()) {
-            bool isRandomEosSuccess = RandomEOS(index);
-            if (isRandomEosSuccess) {
-                continue;
-            }
-            int32_t pushResult = 0;
-            int32_t ret = PushData(buffer, index, pushResult);
-            if (ret == 0) {
-                break;
-            } else if (ret == -1) {
-                continue;
-            }
-            if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
-                break;
-            }
-            frameCount++;
-            if (enableAutoSwitchParam) {
-                AutoSwitchParam();
-            }
+        if (fuzzMode == false) {
+            InputDataNormal(runningFlag, index, buffer);
+        } else {
+            InputDataFuzz(runningFlag, index);
         }
         if (sleepOnFPS) {
             usleep(FRAME_INTERVAL);

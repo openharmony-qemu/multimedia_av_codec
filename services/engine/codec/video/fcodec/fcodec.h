@@ -81,7 +81,7 @@ public:
     };
 
 private:
-    int32_t Init();
+    int32_t Initialize();
 
     enum struct State : int32_t {
         UNINITIALIZED,

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+* Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -25,7 +25,7 @@ int64_t GetAudioLatencyFixDelay()
 {
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
     static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
-    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getpid(), fixDelay);
+    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getprocpid(), fixDelay);
     return (int64_t)fixDelay;
 }
 
@@ -59,6 +59,22 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     return Status::OK;
 }
 
+sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
+{
+    if (state_ != Pipeline::FilterState::READY) {
+        return nullptr;
+    }
+    return inputBufferQueueProducer_;
+}
+
+sptr<AVBufferQueueConsumer> AudioSink::GetBufferQueueConsumer()
+{
+    if (state_ != Pipeline::FilterState::READY) {
+        return nullptr;
+    }
+    return inputBufferQueueConsumer_;
+}
+
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     UpdateMediaTimeRange(meta);
@@ -78,8 +94,14 @@ Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta)
 
 Status AudioSink::Prepare()
 {
+    state_ = Pipeline::FilterState::PREPARING;
+    Status ret = PrepareInputBufferQueue();
+    if (ret != Status::OK) {
+        state_ = Pipeline::FilterState::INITIALIZED;
+        return ret;
+    }
     state_ = Pipeline::FilterState::READY;
-    return Status::OK;
+    return ret;
 }
 
 Status AudioSink::Start()
@@ -148,6 +170,7 @@ Status AudioSink::SetVolume(float volume)
     if (volume < 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
+    volume_ = volume;
     return plugin_->SetVolume(volume);
 }
 
@@ -159,6 +182,24 @@ int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
     isTransitent_ = isTransitent;
+    return Status::OK;
+}
+
+Status AudioSink::PrepareInputBufferQueue()
+{
+    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
+        MEDIA_LOG_I("InputBufferQueue already create");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    int inputBufferSize = 8;
+    MemoryType memoryType = MemoryType::SHARED_MEMORY;
+#ifndef MEDIA_OHOS
+    memoryType = MemoryType::VIRTUAL_MEMORY;
+#endif
+    MEDIA_LOG_I("PrepareInputBufferQueue ");
+    inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
+    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
     return Status::OK;
 }
 
@@ -177,8 +218,22 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
     return std::reinterpret_pointer_cast<Plugins::AudioSinkPlugin>(plugin);
 }
 
-void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
+void AudioSink::DrainOutputBuffer()
 {
+    std::lock_guard<std::mutex> lock(pluginMutex_);
+    Status ret;
+    std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
+    if (plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr) {
+        return;
+    }
+    ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
+    if (ret != Status::OK || filledOutputBuffer == nullptr) {
+        return;
+    }
+    if (state_ != Pipeline::FilterState::RUNNING) {
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        return;
+    }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;
         Event event {
@@ -187,6 +242,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         plugin_->Drain();
         plugin_->PauseTransitent();
         return;
@@ -196,6 +252,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
     plugin_->Write(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
+    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 void AudioSink::ResetSyncInfo()
@@ -206,7 +263,6 @@ void AudioSink::ResetSyncInfo()
     }
     lastReportedClockTime_ = HST_TIME_NONE;
     forceUpdateTimeAnchorNextTime_ = false;
-
     firstPts_ = HST_TIME_NONE;
 }
 
@@ -255,6 +311,7 @@ Status AudioSink::SetSpeed(float speed)
     if (speed < 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
+    speed_ = speed;
     return plugin_->SetSpeed(speed);
 }
 
@@ -264,6 +321,7 @@ Status AudioSink::SetAudioEffectMode(int32_t effectMode)
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
+    effectMode_ = effectMode;
     return plugin_->SetAudioEffectMode(effectMode);
 }
 
@@ -331,6 +389,45 @@ void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 {
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
+}
+
+Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+{
+    MEDIA_LOG_I("AudioSink::GetAudioEffectMode ChangeTrack. ");
+    std::lock_guard<std::mutex> lock(pluginMutex_);
+    Status res = Status::OK;
+
+    if (plugin_) {
+        plugin_->Stop();
+        plugin_->Deinit();
+        plugin_ = nullptr;
+    }
+    plugin_ = CreatePlugin();
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (meta != nullptr) {
+        meta->SetData(Tag::APP_PID, appPid_);
+        meta->SetData(Tag::APP_UID, appUid_);
+    }
+    plugin_->SetEventReceiver(receiver);
+    plugin_->SetParameter(meta);
+    plugin_->Init();
+    plugin_->Prepare();
+    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
+    meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
+    if (volume_ >= 0) {
+        plugin_->SetVolume(volume_);
+    }
+    if (speed_ >= 0) {
+        plugin_->SetSpeed(speed_);
+    }
+    if (effectMode_ >= 0) {
+        plugin_->SetAudioEffectMode(effectMode_);
+    }
+    if (state_ == Pipeline::FilterState::RUNNING) {
+        res = plugin_->Start();
+    }
+
+    return res;
 }
 
 } // namespace MEDIA

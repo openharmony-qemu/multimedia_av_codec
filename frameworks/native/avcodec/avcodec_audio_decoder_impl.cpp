@@ -51,9 +51,10 @@ std::shared_ptr<AVCodecAudioDecoder> AudioDecoderFactory::CreateByName(const std
 int32_t AVCodecAudioDecoderImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
+    Format format;
     codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
-    return codecService_->Init(type, isMimeType, name);
+    return codecService_->Init(type, isMimeType, name, *format.GetMeta());
 }
 
 AVCodecAudioDecoderImpl::AVCodecAudioDecoderImpl()

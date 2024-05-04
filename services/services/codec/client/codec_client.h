@@ -17,6 +17,7 @@
 #define CODEC_CLIENT_H
 
 #include <shared_mutex>
+#include "buffer_converter.h"
 #include "codec_listener_stub.h"
 #include "i_codec_service.h"
 #include "i_standard_codec_service.h"
@@ -30,12 +31,12 @@ class CodecClient : public MediaCodecCallback,
                     public ICodecService,
                     public std::enable_shared_from_this<CodecClient> {
 public:
-    static std::shared_ptr<CodecClient> Create(const sptr<IStandardCodecService> &ipcProxy);
+    static int32_t Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec);
     explicit CodecClient(const sptr<IStandardCodecService> &ipcProxy);
     ~CodecClient();
     // 业务
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
-                 API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+                 Media::Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -74,13 +75,13 @@ private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
     void SetNeedListen(const bool needListen);
-    typedef enum : int32_t {
+    typedef enum : uint32_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
         INVALID_CALLBACK,
     } CallbackMode;
 
-    typedef enum : int32_t {
+    typedef enum : uint32_t {
         CODEC_BUFFER_MODE = 0,
         CODEC_SURFACE_MODE = 1,
         CODEC_SET_PARAMETER_CALLBACK = 1 << 1,
@@ -88,13 +89,15 @@ private:
     } CodecMode;
 
     bool hasOnceConfigured_ = false;
-    int32_t callbackMode_ = INVALID_CALLBACK;
-    int32_t codecMode_ = CODEC_BUFFER_MODE;
+    uint32_t callbackMode_ = INVALID_CALLBACK;
+    uint32_t codecMode_ = CODEC_BUFFER_MODE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
+    std::shared_ptr<BufferConverter> converter_ = nullptr;
+
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;

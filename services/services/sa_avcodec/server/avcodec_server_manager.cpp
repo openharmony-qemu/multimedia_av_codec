@@ -44,8 +44,7 @@ const std::vector<const std::string> SA_DUMP_MENU_DUMP_TABLE = {
 };
 
 const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::string> STUB_TYPE_STRING_MAP = {
-    { OHOS::MediaAVCodec::AVCodecServerManager::StubType::CODEC,  "Codec"},
-    { OHOS::MediaAVCodec::AVCodecServerManager::StubType::MUXER,  "Muxer"},
+    { OHOS::MediaAVCodec::AVCodecServerManager::StubType::CODEC,  "Codec"}
 };
 } // namespace
 
@@ -147,71 +146,65 @@ AVCodecServerManager::~AVCodecServerManager()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-sptr<IRemoteObject> AVCodecServerManager::CreateStubObject(StubType type)
+int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject> &object)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     switch (type) {
 #ifdef SUPPORT_CODECLIST
         case CODECLIST: {
-            return CreateCodecListStubObject();
+            return CreateCodecListStubObject(object);
         }
 #endif
 #ifdef SUPPORT_CODEC
         case CODEC: {
-            return CreateCodecStubObject();
+            return CreateCodecStubObject(object);
         }
 #endif
         default: {
             AVCODEC_LOGE("default case, av_codec server manager failed");
-            return nullptr;
+            return AVCS_ERR_UNSUPPORT;
         }
     }
 }
 
 #ifdef SUPPORT_CODECLIST
-sptr<IRemoteObject> AVCodecServerManager::CreateCodecListStubObject()
+int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &object)
 {
     sptr<CodecListServiceStub> stub = CodecListServiceStub::Create();
-    if (stub == nullptr) {
-        AVCODEC_LOGE("failed to create AVCodecListServiceStub");
-        return nullptr;
-    }
-    sptr<IRemoteObject> object = stub->AsObject();
-    if (object != nullptr) {
-        pid_t pid = IPCSkeleton::GetCallingPid();
-        codecListStubMap_[object] = pid;
-        AVCODEC_LOGI("The number of codeclist services(%{public}zu).pid(%{public}d)", codecListStubMap_.size(),
-                     static_cast<int32_t>(pid));
-    }
-    return object;
+    CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,
+        "Failed to create AVCodecListServiceStub");
+    object = stub->AsObject();
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,
+        "Failed to create AVCodecListServiceStub");
+
+    pid_t pid = IPCSkeleton::GetCallingPid();
+    codecListStubMap_[object] = pid;
+    AVCODEC_LOGD("The number of codeclist services(%{public}zu).", codecListStubMap_.size());
+    return AVCS_ERR_OK;
 }
 #endif
 #ifdef SUPPORT_CODEC
-sptr<IRemoteObject> AVCodecServerManager::CreateCodecStubObject()
+int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 {
     sptr<CodecServiceStub> stub = CodecServiceStub::Create();
-    if (stub == nullptr) {
-        AVCODEC_LOGE("failed to create CodecServiceStub");
-        return nullptr;
-    }
-    sptr<IRemoteObject> object = stub->AsObject();
-    if (object != nullptr) {
-        pid_t pid = IPCSkeleton::GetCallingPid();
-        codecStubMap_[object] = pid;
+    CHECK_AND_RETURN_RET_LOG(stub != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED, "Failed to create CodecServiceStub");
 
-        Dumper dumper;
-        dumper.entry_ = [stub](int32_t fd) -> int32_t { return stub->DumpInfo(fd); };
-        dumper.pid_ = pid;
-        dumper.uid_ = IPCSkeleton::GetCallingUid();
-        dumper.remoteObject_ = object;
-        dumperTbl_[StubType::CODEC].emplace_back(dumper);
-        AVCODEC_LOGI("The number of codec services(%{public}zu).pid(%{public}d)", codecStubMap_.size(),
-                     static_cast<int32_t>(pid));
-        if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-            AVCODEC_LOGW("failed to call InstanceDump");
-        }
-    }
-    return object;
+    object = stub->AsObject();
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_CREATE_AVCODEC_STUB_FAILED,
+        "Failed to create CodecServiceStub");
+
+    pid_t pid = IPCSkeleton::GetCallingPid();
+    codecStubMap_[object] = pid;
+
+    Dumper dumper;
+    dumper.entry_ = [stub](int32_t fd) -> int32_t { return stub->DumpInfo(fd); };
+    dumper.pid_ = pid;
+    dumper.uid_ = IPCSkeleton::GetCallingUid();
+    dumper.remoteObject_ = object;
+    dumperTbl_[StubType::CODEC].emplace_back(dumper);
+
+    AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
+    return AVCS_ERR_OK;
 }
 #endif
 

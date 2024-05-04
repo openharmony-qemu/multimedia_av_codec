@@ -434,7 +434,9 @@ Status MediaCodec::AttachBufffer()
 #else
     memoryType = MemoryType::SHARED_MEMORY;
 #endif
-    inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    if (inputBufferQueue_ == nullptr) {
+        inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    }
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,
                          "inputBufferQueue_ is nullptr");
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
@@ -536,8 +538,10 @@ int32_t MediaCodec::PrepareInputBufferQueue()
             return (int32_t)ret;
         }
     } else {
-        inputBufferQueue_ =
-            AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY, INPUT_BUFFER_QUEUE_NAME);
+        if (inputBufferQueue_ == nullptr) {
+            inputBufferQueue_ =
+                AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY, INPUT_BUFFER_QUEUE_NAME);
+        }
         FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
                              "inputBufferQueue_ is nullptr");
         inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
@@ -608,7 +612,7 @@ void MediaCodec::ProcessInputBuffer()
         return;
     }
     if (state_ != CodecState::RUNNING) {
-        MEDIA_LOG_E("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
+        MEDIA_LOG_D("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
         return;
     }
@@ -663,6 +667,40 @@ int32_t MediaCodec::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySe
     return (int32_t)Status::OK;
 }
 #endif
+
+Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
+{
+    Status ret = Status::OK;
+    Plugins::PluginType type;
+    if (isEncoder) {
+        type = Plugins::PluginType::AUDIO_ENCODER;
+    } else {
+        type = Plugins::PluginType::AUDIO_DECODER;
+    }
+    if (codecPlugin_ != nullptr) {
+        codecPlugin_->Release();
+        codecPlugin_ = nullptr;
+    }
+    codecPlugin_ = CreatePlugin(mime, type, isEncoder);
+    if (codecPlugin_ != nullptr) {
+        ret = codecPlugin_->SetParameter(meta);
+        MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
+        ret = codecPlugin_->Init();
+        MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
+        ret = codecPlugin_->SetDataCallback(this);
+        MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
+        PrepareInputBufferQueue();
+        PrepareOutputBufferQueue();
+        if (state_ == CodecState::RUNNING) {
+            ret = codecPlugin_->Start();
+            MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
+        }
+    } else {
+        MEDIA_LOG_I("createPlugin failed");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    return ret;
+}
 
 Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 {

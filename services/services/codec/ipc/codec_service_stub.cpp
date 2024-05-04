@@ -116,12 +116,6 @@ int32_t CodecServiceStub::DumpInfo(int32_t fd)
     return std::static_pointer_cast<CodecServer>(codecServer_)->DumpInfo(fd);
 }
 
-int32_t CodecServiceStub::SetClientInfo(int32_t clientPid, int32_t clientUid)
-{
-    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return std::static_pointer_cast<CodecServer>(codecServer_)->SetClientInfo(clientPid, clientUid);
-}
-
 int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     auto remoteDescriptor = data.ReadInterfaceToken();
@@ -213,11 +207,11 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    int32_t ret = codecServer_->Init(type, isMimeType, name);
+    int32_t ret = codecServer_->Init(type, isMimeType, name, callerInfo);
     if (ret != AVCS_ERR_OK) {
         lock.unlock();
         DestroyStub();
@@ -388,11 +382,13 @@ int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &
 int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
+    Meta callerInfo;
+    callerInfo.FromParcel(data);
     AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
 
-    bool ret = reply.WriteInt32(Init(type, isMimeType, name));
+    bool ret = reply.WriteInt32(Init(type, isMimeType, name, callerInfo));
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
@@ -412,8 +408,6 @@ int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
     (void)data;
-
-    SetClientInfo(IPCSkeleton::GetCallingPid(), IPCSkeleton::GetCallingUid());
 
     bool ret = reply.WriteInt32(Start());
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
