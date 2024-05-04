@@ -21,7 +21,7 @@ using namespace std;
 using namespace testing::ext;
 
 // 黑白球視頻地址
-const std::string TEST_URI = "http://TEST.m3u8";
+
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"}
@@ -37,31 +37,27 @@ void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
 }
 
-void HlsMediaDownloaderUnitTest ::SetUp(void) {}
-
-void HlsMediaDownloaderUnitTest ::TearDown(void) {}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_001, TestSize.Level1)
+void HlsMediaDownloaderUnitTest ::SetUp(void)
 {
-    int testDuration = 30;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
-    size_t expectBufferSize = 30 * 1024 * 1024;
-    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
+    hlsMediaDownloader = new HlsMediaDownloader();
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
+void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
-    int testDuration = 10;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
-    size_t expectBufferSize = 10 * 1024 * 1024;
-    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
+    delete hlsMediaDownloader;
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, OPEN_URL_TEST_001, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
-    std::string test_url = TEST_URI_PATH + M3U8_PATH_1;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>();
-    bool res = tmpDownloader->Open(test_url, httpHeader);
-    EXPECT_EQ(res, true);
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TestUserDefinedConstructor, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(1000);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, MAX_BUFFER_SIZE);
+    delete downloader;
 }
 }

@@ -46,6 +46,10 @@ public:
     void NotifyListChange();
     int32_t GetVideoWidth() const override;
     int32_t GetVideoHeight() const override;
+    std::string GetUrl();
+    std::shared_ptr<M3U8MasterPlaylist> GetMaster();
+    std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
+    std::shared_ptr<M3U8VariantStream> GetNewVariant();
 
 private:
     std::string url_ {};

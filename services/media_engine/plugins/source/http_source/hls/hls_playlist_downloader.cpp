@@ -184,23 +184,35 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
 
 uint32_t HlsPlayListDownloader::GetCurBitrate()
 {
+    if (currentVariant_==nullptr) {
+        return 0;
+    }
     return currentVariant_->bandWidth_;
 }
 
 uint64_t HlsPlayListDownloader::GetCurrentBitRate()
 {
+    if (currentVariant_==nullptr) {
+        return 0;
+    }
     MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
     return currentVariant_->bandWidth_;
 }
 
 int HlsPlayListDownloader::GetVedioWidth()
 {
+    if (currentVariant_==nullptr) {
+        return 0;
+    }
     MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
     return currentVariant_->width_;
 }
 
 int HlsPlayListDownloader::GetVedioHeight()
 {
+    if (currentVariant_==nullptr) {
+        return 0;
+    }
     MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
     return currentVariant_->height_;
 }
@@ -216,13 +228,40 @@ bool HlsPlayListDownloader::IsLive() const
 
 int32_t HlsPlayListDownloader::GetVideoWidth() const
 {
+    if (currentVariant_==nullptr) {
+        return 0;
+    }
     return static_cast<int32_t>(currentVariant_->width_);
 }
 
 int32_t HlsPlayListDownloader::GetVideoHeight() const
 {
+    if (currentVariant_==nullptr) {
+        return 0;
+    }
     return static_cast<int32_t>(currentVariant_->height_);
 }
+
+std::string HlsPlayListDownloader::GetUrl()
+{
+    return url_;
+}
+
+std::shared_ptr<M3U8MasterPlaylist> HlsPlayListDownloader::GetMaster()
+{
+    return master_;
+}
+
+std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetCurrentVariant()
+{
+    return currentVariant_
+}
+
+std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
+{
+    return newVariant_;
+}
+
 }
 }
 }

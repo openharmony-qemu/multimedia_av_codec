@@ -35,8 +35,13 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+protected:
+    HlsMediaDownloader* hlsMediaDownloader;
+    std::map<std::string, std::string> hlsMediaDownloader;
 };
-std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>();
+constexpr unit32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr unit32_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+static const std::string TEST_URI_PATH = "http://127.0.0.1:4666/";
 }
 }
 }
