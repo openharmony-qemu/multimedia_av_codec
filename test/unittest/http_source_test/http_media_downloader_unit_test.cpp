@@ -21,7 +21,7 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 constexpr size_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr size_t MAX_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr size_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 
 void HttpMediaDownloaderUnitTest::SetUpTestCase(void)
 {
