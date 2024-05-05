@@ -48,13 +48,16 @@ HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
         totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
         buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+        totalBufferSize_ = RING_BUFFER_SIZE;
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
         MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
         totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
         buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
+        totalBufferSize_ = MAX_BUFFER_SIZE;
     } else {
         buffer_ = std::make_shared<RingBuffer>(totalBufferSize);
+        totalBufferSize_ = totalBufferSize;
         MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_D32, totalBufferSize);
     }
     buffer_->Init();
@@ -255,6 +258,32 @@ void HttpMediaDownloader::SetDownloadErrorState()
         Close(true);
     }
 }
+
+int HttpMediaDownloader::GetBufferSize()
+{
+    return totalBufferSize_;
+}
+
+RingBuffer& HttpMediaDownloader::GetBuffer()
+{
+    return *buffer_;
+}
+
+bool HttpMediaDownloader::GetReadFrame()
+{
+    return isReadFrame_;
+}
+
+bool HttpMediaDownloader::GetDownloadErrorState()
+{
+    return downloadErrorState_;
+}
+
+StatusCallbackFunc HttpMediaDownloader::GetStatusCallbackFunc()
+{
+    return statusCallback_;
+}
+
 }
 }
 }

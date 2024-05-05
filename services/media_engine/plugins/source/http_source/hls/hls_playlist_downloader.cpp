@@ -149,6 +149,9 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location)
 
 void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
 {
+    if (newVariant_ == nullptr) {
+        return;
+    }
     currentVariant_ = newVariant_;
     MEDIA_LOG_I("SelectBitRate currentVariant_ " PUBLIC_LOG_U64, currentVariant_->bandWidth_);
 }
