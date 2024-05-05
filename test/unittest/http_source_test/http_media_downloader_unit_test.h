@@ -19,6 +19,7 @@
 #include "http/http_media_downloader.h"
 #include "gtest/gtest.h"
 #include "hls/m3u8.h"
+#include "source/souerce.h"
 
 namespace OHOS {
 namespace Media {

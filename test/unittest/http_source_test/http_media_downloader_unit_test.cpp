@@ -39,37 +39,37 @@ void HttpMediaDownloaderUnitTest::TearDown()
 {
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
     HttpMediaDownloader downloader;
     EXPECT_EQ(downloader.GetBufferSize(), 0);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor_001, TestSize.Level1)
 {
     HttpMediaDownloader downloader;
     EXPECT_EQ(downloader.GetBufferSize(), 0);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorDefine, TestSize.level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorDefine, TestSize.Level1)
 {
     HttpMediaDownloader downloader(10);
     EXPECT_EQ(downloader.GetBufferSize(), 2*RING_BUFFER_SIZE);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorExceed, TestSize.level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorExceed, TestSize.Level1)
 {
     HttpMediaDownloader downloader(10000);
     EXPECT_EQ(downloader.GetBufferSize(), MAX_BUFFER_SIZE);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorLess, TestSize.level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorLess, TestSize.Level1)
 {
     HttpMediaDownloader downloader(1);
     EXPECT_EQ(downloader.GetBufferSize(), RING_BUFFER_SIZE);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestOpenWithValidUrl, TestSize.level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TestOpenWithValidUrl, TestSize.Level1)
 {
     HttpMediaDownloader downloader;
     std::map<std::string, std::string> header = {{"a", "b"}};
