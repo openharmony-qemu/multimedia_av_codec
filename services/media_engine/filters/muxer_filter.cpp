@@ -71,6 +71,9 @@ MuxerFilter::~MuxerFilter()
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
 {
+    MEDIA_LOG_I(PUBLIC_LOG_S "SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:"
+    PUBLIC_LOG_D32, logTag_.c_str(), static_cast<int32_t>(appUid), static_cast<int32_t>(appPid),
+    static_cast<int32_t>(format));
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     return mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
 }
@@ -108,11 +111,13 @@ Status MuxerFilter::DoStart()
 
 Status MuxerFilter::DoPause()
 {
+    MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     return Status::OK;
 }
 
 Status MuxerFilter::DoResume()
 {
+    MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     return Status::OK;
 }
 
@@ -138,6 +143,7 @@ Status MuxerFilter::DoFlush()
 
 Status MuxerFilter::DoRelease()
 {
+    MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
     return Status::OK;
 }
 
