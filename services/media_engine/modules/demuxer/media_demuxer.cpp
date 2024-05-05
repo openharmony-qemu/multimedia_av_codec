@@ -308,6 +308,11 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 
     InitPlugin(Plugins::SubPluginType::FFMPEG_DEMUXER);
 
+    if (source_->IsSeekToTimeSupported()) {
+        ret = source_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekTo 0 failed before get first video frame");
+    }
+
     MediaInfo mediaInfo;
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create demuxer plugin failed.");
