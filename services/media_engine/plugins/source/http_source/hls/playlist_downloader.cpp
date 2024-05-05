@@ -148,6 +148,11 @@ void PlayListDownloader::Cancel()
     downloader_->Cancel();
     playList_.clear();
 }
+
+std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
+{
+    return httpHeader_;
+}
 }
 }
 }

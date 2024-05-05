@@ -35,8 +35,11 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+protected:
+    HlsMediaDownloader* hlsMediaDownloader;
 };
-std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>();
+constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr uint32_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 }
 }
 }

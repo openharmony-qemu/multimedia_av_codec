@@ -120,11 +120,13 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
             PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
             totalRingBufferSize_, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
             buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+            totalRingBufferSize_ = RING_BUFFER_SIZE;
         } else if (totalRingBufferSize_ > MAX_BUFFER_SIZE) {
             MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
             PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
             totalRingBufferSize_, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
             buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
+            totalRingBufferSize_ = MAX_BUFFER_SIZE;
         } else {
             buffer_ = std::make_shared<RingBuffer>(totalRingBufferSize_);
             MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_ZU ". ", totalRingBufferSize_);

@@ -21,7 +21,7 @@ using namespace std;
 using namespace testing::ext;
 
 // 黑白球視頻地址
-const std::string TEST_URI = "http://TEST.m3u8";
+
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"}
@@ -37,31 +37,306 @@ void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
 }
 
-void HlsMediaDownloaderUnitTest ::SetUp(void) {}
-
-void HlsMediaDownloaderUnitTest ::TearDown(void) {}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_001, TestSize.Level1)
+void HlsMediaDownloaderUnitTest ::SetUp(void)
 {
-    int testDuration = 30;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
-    size_t expectBufferSize = 30 * 1024 * 1024;
-    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
+    hlsMediaDownloader = new HlsMediaDownloader();
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
+void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
-    int testDuration = 10;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
-    size_t expectBufferSize = 10 * 1024 * 1024;
-    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
+    delete hlsMediaDownloader;
+    hlsMediaDownloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, OPEN_URL_TEST_001, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
-    std::string test_url = TEST_URI_PATH + M3U8_PATH_1;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>();
-    bool res = tmpDownloader->Open(test_url, httpHeader);
-    EXPECT_EQ(res, true);
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TestUserDefinedConstructor, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(1000);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    EXPECT_EQ(downloader->totalRingBufferSize_, MAX_BUFFER_SIZE);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SAVE_HEADER_001, TestSize.Level1)
+{
+    hlsMediaDownloader->SaveHttpHeader(httpHeader);
+    EXPECT_EQ(hlsMediaDownloader->httpHeader_["User-Agent"], "ABC");
+    EXPECT_EQ(hlsMediaDownloader->httpHeader_["Referer"], "DEF");
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(1000);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    EXPECT_EQ(downloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_002, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    EXPECT_GE(downloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_PAUSE, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->Pause();
+    EXPECT_FALSE(downloader->isStopped);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->Close(false);
+    EXPECT_TRUE(downloader->isStopped);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    unsigned char buff[10];
+    unsigned int realReadLength;
+    bool isEos;
+    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_002, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    unsigned char buff[10];
+    unsigned int realReadLength;
+    bool isEos {true};
+    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_003, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->readTime_ = 5 * 1000;
+    downloader->SetDownloadErrorState();
+    unsigned char buff[10];
+    unsigned int realReadLength;
+    bool isEos {true};
+    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_004, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->readTime_ = 5 * 1000;
+    downloader->SetDownloadErrorState();
+    unsigned char buff[10];
+    unsigned int realReadLength;
+    bool isEos {true};
+    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_005, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    unsigned char buff[100];
+    unsigned int realReadLength;
+    bool isEos {true};
+    EXPECT_FALSE(downloader->Read(buff, 10*1024*1024, realReadLength, isEos));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_006, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    unsigned char buff[100];
+    unsigned int realReadLength;
+    bool isEos {true};
+    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    EXPECT_FALSE(downloader->SeekToTime(100, SeekMode::SEEK_CLOSEST));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->backPlayList_.push_back(PlayInfo{"123", 0.0, 0});
+    downloader->backPlayList_.push_back(PlayInfo{"123", 0.0, 0});
+    downloader->backPlayList_.push_back(PlayInfo{"123", 0.0, 0});
+    downloader->SeekToTs(250, SeekMode::SEEK_CLOSEST);
+    EXPECT_EQ(downloader->havePlayedTsNum_, 3);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SAVE, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    uint8_t data[0];
+    uint32_t len = 0;
+    EXPECT_TRUE(downloader->SaveData(data, len));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SAVE_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    uint32_t len = 10;
+    EXPECT_TRUE(downloader->SaveData(data, len));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SAVE_002, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    uint8_t data[17];
+    uint32_t len = 17;
+    EXPECT_TRUE(downloader->SaveData(data, len));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SAVE_003, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    uint8_t data[15];
+    uint32_t len = 15;
+    EXPECT_TRUE(downloader->SaveData(data, len));
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_WRITE_RINGBUFFER_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->OnWriteRingBuffer(0);
+    downloader->OnWriteRingBuffer(0);
+    EXPECT_EQ(downloader->bufferedDuration_, 0);
+    EXPECT_EQ(downloader->totalBits_, 0);
+    EXPECT_EQ(downloader->lastWriteBit_, 0);
+
+    downloader->OnWriteRingBuffer(1);
+    downloader->OnWriteRingBuffer(1);
+    EXPECT_EQ(downloader->bufferedDuration_, 16);
+    EXPECT_EQ(downloader->totalBits_, 16);
+    EXPECT_EQ(downloader->lastWriteBit_, 16);
+
+    downloader->OnWriteRingBuffer(1000);
+    downloader->OnWriteRingBuffer(1000);
+    EXPECT_EQ(downloader->bufferedDuration_, 16016);
+    EXPECT_EQ(downloader->totalBits_, 16016);
+    EXPECT_EQ(downloader->lastWriteBit_, 16016);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, RISE_BUFFER_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->totalRingBufferSize_ = MAX_BUFFER_SIZE;
+    downloader->RiseBufferSize();
+    EXPECT_EQ(downloader->totalRingBufferSize_, MAX_BUFFER_SIZE);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, RISE_BUFFER_002, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->totalRingBufferSize_ = RING_BUFFER_SIZE;
+    downloader->RiseBufferSize();
+    EXPECT_EQ(downloader->totalRingBufferSize_, 6 * 1024 * 1024);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, DOWN_BUFFER_001, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->totalRingBufferSize_ = 10 * 1024 * 1024;
+    downloader->DownBufferSize();
+    EXPECT_EQ(downloader->totalRingBufferSize_, 9 * 1024 * 1024);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, DOWN_BUFFER_002, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader();
+    std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->totalRingBufferSize_ = RING_BUFFER_SIZE;
+    downloader->DownBufferSize();
+    EXPECT_EQ(downloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+    delete downloader;
+    downloader = nullptr;
 }
 }
