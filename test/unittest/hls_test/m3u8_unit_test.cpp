@@ -118,7 +118,7 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_VALID_KEY_AND_IV, TestSize.Level1)
     EXPECT_EQ(fragment.discont_, false);
     //
     for (int i = 0; i < 5; i++) {
-        EXPECT_EQ(fragment.iv_[i], false);
+        EXPECT_EQ(fragment.iv_[i], iv_[i]);
     }
 }
 
@@ -258,9 +258,9 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_EXVEEDS_MAX_LOOP, TestSize.Level1)
 
     bool result = m3u8.SaveData(data, len);
 
-    EXPECT_TRUE(result);
+    EXPECT_FALSE(result);
     EXPECT_EQ(m3u8.keyLen_, 0);
-    EXPECT_TRUE(m3u8.isDecryptKeyReady_);
+    EXPECT_FALSE(m3u8.isDecryptKeyReady_);
 }
 
 HWTEST_F(M3u8UnitTest, NULL_SRC, TestSize.Level1)
