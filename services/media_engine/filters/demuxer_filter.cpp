@@ -135,6 +135,13 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     return demuxer_->SetDataSource(mediaSource_);
 }
 
+void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
+{
+    if (demuxer_ != nullptr) {
+        demuxer_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 void DemuxerFilter::SetBundleName(const std::string& bundleName)
 {
     if (demuxer_ != nullptr) {

@@ -786,6 +786,12 @@ size_t HlsMediaDownloader::GetRingBufferSize()
     return buffer_->GetSize();
 }
 
+void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    if (playListDownloader_ != nullptr) {
+        playListDownloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
 }
 }
 }

@@ -206,6 +206,13 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     FALSE_RETURN_MSG(downloader_ != nullptr, "SetReadBlockingFlag downloader is null");
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
+
+void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
 }
 }
 }

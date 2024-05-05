@@ -97,6 +97,7 @@ public:
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
     Status SetFrameRate(double frameRate, uint32_t trackId);
+    void SetInterruptState(bool isInterruptNeeded);
 private:
     class DataSourceImpl;
 
