@@ -41,6 +41,8 @@ public:
     CapabilityData GetAPEDecoderCapability();
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
+    CapabilityData GetAmrnbEncoderCapability();
+    CapabilityData GetAmrwbEncoderCapability();
 #endif
 private:
     std::vector<CapabilityData> audioCapabilities_;
