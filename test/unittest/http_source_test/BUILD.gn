@@ -31,6 +31,7 @@ config("hls_unittest_cfg") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
+    "TESTING",
   ]
 
   cflags = [
