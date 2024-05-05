@@ -29,12 +29,82 @@
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncSample"};
-} // namespace
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
+using namespace OHOS::MediaAVCodec;
+using ReadFrame = std::function<int32_t(std::shared_ptr<VideoEncSignal> &, uint8_t *, int32_t, int32_t, int32_t)>;
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncSample"};
+
+int32_t ReadYUV420SP(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
+                     int32_t stride)
+{
+    if (width == 0) {
+        return 0;
+    }
+    int32_t pixcelSize = int32_t(stride / width);
+    width *= pixcelSize;
+    for (int32_t i = 0; i < (height * 3 / 2); ++i) { // 3: nom, 2: denom
+        signal->inFile_->read(reinterpret_cast<char *>(addr), width);
+        addr += stride;
+    }
+    return stride * height * 3 / 2; // 3: nom, 2: denom
+}
+
+int32_t ReadYUV420P(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t width, int32_t height,
+                    int32_t stride)
+{
+    if (width == 0) {
+        return 0;
+    }
+    int32_t pixcelSize = int32_t(stride / width);
+    width *= pixcelSize;
+    // Y
+    for (int32_t i = 0; i < height; ++i) {
+        signal->inFile_->read(reinterpret_cast<char *>(addr), width);
+        addr += stride;
+    }
+    width >>= 1;
+    stride >>= 1;
+    // UV
+    for (int32_t i = 0; i < height; ++i) {
+        signal->inFile_->read(reinterpret_cast<char *>(addr), width);
+        addr += stride;
+    }
+    return stride * height * 3 / 2; // 3: nom, 2: denom
+}
+
+int32_t ReadRGBA(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t width, int32_t height, int32_t stride)
+{
+    if (width == 0) {
+        return 0;
+    }
+    int32_t pixcelSize = int32_t(stride / width);
+    width *= pixcelSize;
+    for (int32_t i = 0; i < height; ++i) {
+        signal->inFile_->read(reinterpret_cast<char *>(addr), width);
+        addr += stride;
+    }
+    return stride * height;
+}
+
+ReadFrame GetReadOneFrame(int32_t pixcelFormat)
+{
+    switch (pixcelFormat) {
+        case AV_PIXEL_FORMAT_YUVI420:
+            return ReadYUV420P;
+        case AV_PIXEL_FORMAT_NV21:
+        case AV_PIXEL_FORMAT_NV12:
+            return ReadYUV420SP;
+        case AV_PIXEL_FORMAT_RGBA:
+            return ReadRGBA;
+        default:
+            return ReadYUV420P;
+    }
+}
+} // namespace
 
 namespace {
 constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
@@ -172,7 +242,7 @@ int32_t VideoEncSample::Configure()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixcel_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
     int32_t ret = OH_VideoEncoder_Configure(codec_, format);
@@ -448,12 +518,8 @@ int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_WIDTH, &width);
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_HEIGHT, &height);
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
-    format = nullptr;
-    attr.size = stride * height * 3 / 2; // 3: nom, 2: denom
-    for (int32_t i = 0; i < attr.size; i += stride) {
-        (void)signal_->inFile_->read(reinterpret_cast<char *>(addr) + i, width);
-    }
 
+    attr.size = GetReadOneFrame(samplePixcel_)(signal_, addr, width, height, stride);
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     if (isFirstFrame_) {
         attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;

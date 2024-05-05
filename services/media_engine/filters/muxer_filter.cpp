@@ -72,6 +72,9 @@ MuxerFilter::~MuxerFilter()
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
 {
+    MEDIA_LOG_I(PUBLIC_LOG_S "SetOutputParameter, appUid:" PUBLIC_LOG_D32 ", appPid:" PUBLIC_LOG_D32 ", format:"
+    PUBLIC_LOG_D32, logTag_.c_str(), static_cast<int32_t>(appUid), static_cast<int32_t>(appPid),
+    static_cast<int32_t>(format));
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     return mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
 }
@@ -113,12 +116,14 @@ Status MuxerFilter::DoStart()
 Status MuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Pause");
+    MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     return Status::OK;
 }
 
 Status MuxerFilter::DoResume()
 {
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Resume");
+    MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     return Status::OK;
 }
 
@@ -127,12 +132,15 @@ Status MuxerFilter::DoStop()
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Stop");
     stopCount_++;
+    Status ret = Status::OK;
     if (stopCount_ == preFilterCount_) {
         stopCount_ = 0;
-        return mediaMuxer_->Stop();
-    } else {
-        return Status::OK;
+        ret = mediaMuxer_->Stop();
+        if (ret == Status::ERROR_WRONG_STATE) {
+            return Status::OK;
+        }
     }
+    return ret;
 }
 
 Status MuxerFilter::DoFlush()
@@ -142,6 +150,7 @@ Status MuxerFilter::DoFlush()
 
 Status MuxerFilter::DoRelease()
 {
+    MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
     return Status::OK;
 }
 
@@ -150,6 +159,15 @@ void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetParameter");
     mediaMuxer_->SetParameter(parameter);
+}
+
+void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    MEDIA_LOG_I("SetUserMeta enter");
+    Status ret = mediaMuxer_->SetUserMeta(userMeta);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("SetUserMeta failed");
+    }
 }
 
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)

@@ -38,9 +38,12 @@ enum struct DownloadStatus {
 struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
+    mutable size_t retryTimes {0};
+    size_t maxRetryTimes {100};
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
+    unsigned int sleepTime = 5;
 
     void Update(const HeaderInfo* info)
     {
@@ -52,8 +55,9 @@ struct HeaderInfo {
 
     size_t GetFileContentLength() const
     {
-        while (fileContentLen == 0 && !isChunked && !isClosed) {
-            OSAL::SleepFor(10); // 10, wait for fileContentLen updated
+        while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < maxRetryTimes) {
+            OSAL::SleepFor(sleepTime); // 10, wait for fileContentLen updated
+            retryTimes++;
         }
         return fileContentLen;
     }
@@ -108,7 +112,6 @@ public:
     uint32_t GetBitRate() const;
 private:
     void WaitHeaderUpdated() const;
-
     std::string url_;
     double duration_ {0.0};
     DataSaveFunc saveData_;
@@ -135,6 +138,7 @@ private:
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
+    mutable size_t times_ {0};
 };
 
 class Downloader {
@@ -165,7 +169,6 @@ private:
     std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     Mutex operatorMutex_{};
-
     std::shared_ptr<DownloadRequest> currentRequest_;
     bool shouldStartNextRequest {false};
 };

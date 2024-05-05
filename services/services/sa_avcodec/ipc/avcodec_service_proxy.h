@@ -25,8 +25,8 @@ public:
     explicit AVCodecServiceProxy(const sptr<IRemoteObject> &impl);
     virtual ~AVCodecServiceProxy();
 
-    sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-        const sptr<IRemoteObject> &listener) override;
+    int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &object) override;
 
 private:
     static inline BrokerDelegator<AVCodecServiceProxy> delegator_;

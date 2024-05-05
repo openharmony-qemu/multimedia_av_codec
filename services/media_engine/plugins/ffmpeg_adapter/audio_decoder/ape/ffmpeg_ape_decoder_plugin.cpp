@@ -32,6 +32,7 @@ constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 300000;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 20000;
+constexpr int32_t EXTRA_DATA_SIZE = 6;
 } // namespace
 
 namespace OHOS {
@@ -118,16 +119,16 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     }
     AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     if (codecCtx->extradata == nullptr) {
-        AVCODEC_LOGE("no extradata! auto fix in.");
-        codecCtx->extradata_size = 6; // 6bits
-        uint8_t *fakedata = reinterpret_cast<uint8_t *>(malloc(6)); // 6bits
-        int16_t *fileversion = reinterpret_cast<int16_t *>(&fakedata[0]);
-        int16_t *compressionlevel = reinterpret_cast<int16_t *>(&fakedata[2]);
-        int16_t *flags = reinterpret_cast<int16_t *>(&fakedata[4]);
-        *fileversion = 3990; // 3990 version
-        *compressionlevel = 2000; // 2000 complexity
-        *flags = 0;
-        codecCtx->extradata = fakedata;
+        codecCtx->extradata_size = EXTRA_DATA_SIZE; // 6bits
+        codecCtx->extradata = static_cast<uint8_t *>(av_mallocz(EXTRA_DATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE));
+        int16_t fakedata[3]; // 3 int16_t data
+        fakedata[0] = 3990;  // 3990 version
+        fakedata[1] = 2000;  // 2000 complexity
+        fakedata[2] = 0;     // flags 0
+        if (memcpy_s(codecCtx->extradata, EXTRA_DATA_SIZE, fakedata, EXTRA_DATA_SIZE) != EOK) {
+            AVCODEC_LOGE("extradata memcpy_s failed.");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
     }
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
@@ -172,11 +173,6 @@ Status FFmpegAPEDecoderPlugin::Flush()
 Status FFmpegAPEDecoderPlugin::Release()
 {
     return basePlugin->Release();
-}
-
-bool FFmpegAPEDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
-{
-    return basePlugin->CheckSampleFormat(format, channels_);
 }
 
 bool FFmpegAPEDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &format)

@@ -33,6 +33,8 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
 
+    Status PrepareFrame(bool renderFirstFrame) override;
+
     Status DoPrepare() override;
 
     Status DoStart() override;
@@ -56,6 +58,8 @@ public:
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
 
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
+
+    Status ChangePlugin(std::shared_ptr<Meta> meta);
 
     FilterType GetFilterType();
 

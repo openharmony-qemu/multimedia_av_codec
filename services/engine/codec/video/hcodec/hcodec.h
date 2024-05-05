@@ -19,6 +19,7 @@
 #include <queue>
 #include <array>
 #include <functional>
+#include <unordered_set>
 #include "securec.h"
 #include "OMX_Component.h"  // third_party/openmax/api/1.1.2
 #include "codecbase.h"
@@ -80,7 +81,6 @@ protected:
         STOP,
         RELEASE,
         GET_HIDUMPER_INFO,
-        PRINT_ALL_BUFFER_OWNER,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -132,7 +132,7 @@ protected:
         std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
-        sptr<Surface> surface; // the surfaceBuffer above is belong to this surface
+        bool needDealWithCache = false;
 
         void CleanUpUnusedInfo();
         void BeginCpuAccess();
@@ -155,11 +155,13 @@ protected:
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
     void PrintAllBufferInfo();
-    void PrintAllBufferInfo(bool isInput);
+    void PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
     std::string OnGetHidumperInfo();
     std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
     void TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput);
     void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
+    void ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner);
+    void ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner);
     void UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
     void UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
 
@@ -226,7 +228,10 @@ protected:
     bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
     bool IsAllBufferOwnedByUsOrSurface();
     void EraseOutBuffersOwnedByUsOrSurface();
+    void RecordOutBuffersOwnedByOmx();
+    void EraseOutBuffersOwnedByOmx(uint32_t bufferId);
     void ClearBufferPool(OMX_DIRTYPE portIndex);
+    virtual void OnClearBufferPool(OMX_DIRTYPE portIndex) {}
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
     virtual void OnEnterUninitializedState() {}
@@ -307,13 +312,14 @@ protected:
 
     std::shared_ptr<MediaCodecCallback> callback_;
     PixelFmt configuredFmt_;
-    BufferRequestConfig requestCfg_;
+    BufferRequestConfig requestCfg_{};
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
     std::shared_ptr<Format> outputFormat_;
 
     std::vector<BufferInfo> inputBufferPool_;
     std::vector<BufferInfo> outputBufferPool_;
+    std::unordered_set<uint32_t> outBuffersOwnedByOmx_;
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
@@ -333,7 +339,7 @@ protected:
 
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 100;
-    static constexpr uint32_t WARN_FENCE_MS = 10;
+    static constexpr uint32_t WARN_FENCE_MS = 15;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
@@ -349,7 +355,7 @@ private:
         virtual void OnCodecEvent(OHOS::HDI::Codec::V3_0::CodecEventType event, uint32_t data1, uint32_t data2);
         void OnGetFormat(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;
-        void OnCheckIfStuck(const MsgInfo &info);
+        virtual void OnCheckIfStuck(const MsgInfo &info);
         void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
 
@@ -415,6 +421,7 @@ private:
         void HandleOutputPortDisabled();
         void HandleOutputPortEnabled();
         void OnFlush(const MsgInfo &info);
+        void OnCheckIfStuck(const MsgInfo &info) override;
     };
 
     struct FlushingState : BaseState {
@@ -467,7 +474,7 @@ private:
                                 OHOS::HDI::Codec::V3_0::CodecStateType targetState);
     bool RollOmxBackToLoaded();
 
-    int32_t ForceShutdown(int32_t generation);
+    int32_t ForceShutdown(int32_t generation, bool isNeedNotifyCaller);
     void SignalError(AVCodecErrorType errorType, int32_t errorCode);
     void DeferMessage(const MsgInfo &info);
     void ProcessDeferredMessages();
@@ -478,6 +485,7 @@ private:
     static constexpr size_t MAX_HCODEC_BUFFER_SIZE = 8192 * 4096 * 4; // 8K RGBA
     static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
     static constexpr uint32_t ONE_SECONDS_IN_US = 1'000'000;
+    static constexpr uint32_t FIVE_SECONDS_IN_MS = 5'000;
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;

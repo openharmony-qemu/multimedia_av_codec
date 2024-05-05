@@ -41,16 +41,16 @@ static const int32_t OPUS_DECODER_SAMPLE_RATE_TABLE[] = {
 namespace OHOS {
 namespace MediaAVCodec {
 AudioOpusDecoderPlugin::AudioOpusDecoderPlugin()
-    :  PluginCodecPtr(nullptr), fbytes(nullptr), len(-1), channels(-1), sampleRate(-1)
+    : PluginCodecPtr(nullptr), fbytes(nullptr), len(-1), codeData(nullptr), channels(-1), sampleRate(-1)
 {
     ret = 0;
-    void* handle = dlopen("/system/lib64/libav_codec_ext_base.z.so", 1);
+    void *handle = dlopen("/system/lib64/libav_codec_ext_base.z.so", 1);
     if (!handle) {
         ret = -1;
         AVCODEC_LOGE("AudioOpusDecoderPlugin dlopen error, check .so file exist");
     }
-    OpusPluginClassCreateFun* PluginCodecCreate = (OpusPluginClassCreateFun *)dlsym(handle,
-        "OpusPluginClassDecoderCreate");
+    OpusPluginClassCreateFun *PluginCodecCreate =
+        (OpusPluginClassCreateFun *)dlsym(handle, "OpusPluginClassDecoderCreate");
     if (!PluginCodecCreate) {
         ret = -1;
         AVCODEC_LOGE("AudioOpusDecoderPlugin dlsym error, check .so file has this function");

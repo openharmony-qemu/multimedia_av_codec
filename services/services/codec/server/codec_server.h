@@ -57,7 +57,7 @@ public:
     } DrmDecryptVideoBuf;
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
-        API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
+                 Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -83,7 +83,7 @@ public:
         const bool svpFlag) override;
 #endif
     int32_t DumpInfo(int32_t fd);
-    int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
+    void SetCallerInfo(const Meta &callerInfo);
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);
@@ -133,8 +133,11 @@ private:
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     bool isStarted_ = false;
-    uint32_t clientPid_ = 0;
-    uint32_t clientUid_ = 0;
+    struct CallerInfo {
+        int32_t pid = -1;
+        int32_t uid = -1;
+        std::string processName;
+    } caller_, forwardCaller_;
     bool isSurfaceMode_ = false;
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
@@ -145,7 +148,7 @@ private:
     std::shared_mutex freeMutex_;
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
-    CodecScenario scenario_;
+    CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

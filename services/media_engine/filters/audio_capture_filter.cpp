@@ -129,7 +129,7 @@ Status AudioCaptureFilter::PrepareAudioCapture()
     MEDIA_LOG_I(PUBLIC_LOG_S "PrepareAudioCapture", logTag_.c_str());
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::PrepareAudioCapture");
     if (!taskPtr_) {
-        taskPtr_ = std::make_shared<Task>("DataReader", playerId_, TaskType::AUDIO);
+        taskPtr_ = std::make_shared<Task>("DataReader", groupId_, TaskType::AUDIO);
         taskPtr_->RegisterJob([this] {
             ReadLoop();
             return 0;

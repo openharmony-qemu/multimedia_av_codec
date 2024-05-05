@@ -32,6 +32,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioCodec"};
+constexpr uint32_t MAX_LENGTH = 255;
 }
 
 using namespace OHOS::MediaAVCodec;
@@ -163,6 +164,7 @@ extern "C" {
 struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
     CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, nullptr, "failed to AudioCodecFactory::CreateByMime");
     AVCodecType type = AVCODEC_TYPE_AUDIO_DECODER;
@@ -180,6 +182,7 @@ struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
 struct OH_AVCodec *OH_AudioCodec_CreateByName(const char *name)
 {
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "input name is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "input name is too long!");
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
     CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, nullptr, "failed to AudioCodecFactory::CreateByMime");
     std::string codecMimeName = name;

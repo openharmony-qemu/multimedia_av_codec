@@ -41,8 +41,6 @@ namespace OHOS {
 namespace Media {
 constexpr size_t DEFAULT_READ_SIZE = 4096;
 const int32_t READ_LOOP_RETRY_TIMES = 15;
-const std::string BUNDLE_NAME_FIRST = "com.hua";
-const std::string BUNDLE_NAME_SECOND = "wei.hmos.photos";
 LiveStreamDemuxer::LiveStreamDemuxer()
     : dataPacker_(std::make_shared<DataPacker>()),
     taskPtr_(nullptr),
@@ -236,10 +234,8 @@ Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>
             if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
-                if (((bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND) && isIgnoreRead_.load()) ||
-                    isIgnoreParse_.load()) &&
-                    buffer != nullptr && buffer->GetMemory() != nullptr &&
-                    buffer->GetMemory()->GetSize() == 0) {
+                if ((isIgnoreRead_.load() || isIgnoreParse_.load()) && buffer != nullptr &&
+                    buffer->GetMemory() != nullptr && buffer->GetMemory()->GetSize() == 0) {
                     MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                                 " Read fail and try again");
                     return Status::ERROR_AGAIN;

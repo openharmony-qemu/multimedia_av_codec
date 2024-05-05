@@ -44,7 +44,6 @@ ohos_shared_library("hcodec") {
     "hdecoder.cpp",
     "hencoder.cpp",
     "msg_handle_loop.cpp",
-    "param_bundle.cpp",
     "state_machine.cpp",
     "type_converter.cpp",
   ]

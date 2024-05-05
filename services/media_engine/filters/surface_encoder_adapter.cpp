@@ -83,12 +83,10 @@ SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Init mime: " PUBLIC_LOG_S, logTag_.c_str(), mime.c_str());
+    codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
     if (!codecServer_) {
-        codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
-        if (!codecServer_) {
-            MEDIA_LOG_I(PUBLIC_LOG_S "Create codecServer failed", logTag_.c_str());
-            return Status::ERROR_UNKNOWN;
-        }
+        MEDIA_LOG_I(PUBLIC_LOG_S "Create codecServer failed", logTag_.c_str());
+        return Status::ERROR_UNKNOWN;
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder",  "", TaskType::SINGLETON);

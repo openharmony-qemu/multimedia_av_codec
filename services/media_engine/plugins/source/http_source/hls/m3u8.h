@@ -146,10 +146,10 @@ struct M3U8MasterPlaylist {
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::string uri_;
-    bool isSimple_ {false};
     std::string playList_;
     double duration_ {0};
-    bool bLive_ {false};
+    std::atomic<bool> isSimple_ {false};
+    std::atomic<bool> bLive_ {false};
 };
 }
 }

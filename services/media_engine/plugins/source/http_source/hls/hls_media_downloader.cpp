@@ -29,7 +29,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int32_t TIME_OUT = 5 * 1000;
+constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
@@ -114,6 +114,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     steadyClock_.Reset();
     if (userDefinedBufferDuration_) {
         MEDIA_LOG_I("User seeting buffer duration playListDownloader_ opened.");
+        totalRingBufferSize_ = expectDuration_ * currentBitrate_;
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
             MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
             PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
@@ -164,25 +165,48 @@ void HlsMediaDownloader::Resume()
     downloader_->Resume();
 }
 
+bool HlsMediaDownloader::CheckReadStatus()
+{
+    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        MEDIA_LOG_I("HLS read Eos.");
+        return true;
+    }
+    if (playListDownloader_->GetDuration() > 0 && seekTime_ >= playListDownloader_->GetDuration()) {
+        MEDIA_LOG_I("HLS read Eos.");
+        return true;
+    }
+    return false;
+}
+
+bool HlsMediaDownloader::CheckReadTimeOut()
+{
+    if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
+        isTimeOut_ = true;
+        if (downloader_ != nullptr) {
+            downloader_->Pause();
+        }
+        if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+            downloadRequest_->Close();
+        }
+        if (callback_ != nullptr) {
+            MEDIA_LOG_I("Read time out, OnEvent");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
+        return true;
+    }
+    return false;
+}
+
 bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
-        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+    if (CheckReadStatus()) {
         isEos = true;
         realReadLength = 0;
-        MEDIA_LOG_I("HLS read Eos.");
         return false;
     }
-
-    if (playListDownloader_->GetDuration() > 0 && seekTime_ >= playListDownloader_->GetDuration()) {
-        isEos = true;
-        realReadLength = 0;
-        MEDIA_LOG_I("HLS read Eos.");
-        return false;
-    }
-
     readTime_ = 0;
     while (buffer_->GetSize() < wantReadLength) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
@@ -195,23 +219,14 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             realReadLength = 0;
             return false;
         }
-        if (readTime_ >= TIME_OUT || downloadErrorState_) {
-            if (downloader_ != nullptr) {
-                downloader_->Pause();
-            }
-            if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-                downloadRequest_->Close();
-            }
-            if (callback_ != nullptr) {
-                MEDIA_LOG_I("Read time out, OnEvent");
-                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-            }
+        if (CheckReadTimeOut()) {
+            isEos = true;
+            realReadLength = 0;
             return false;
         }
         OSAL::SleepFor(5);  // 5
         readTime_ += 5;
     }
-
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);

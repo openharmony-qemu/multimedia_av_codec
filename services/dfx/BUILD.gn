@@ -26,7 +26,6 @@ ohos_shared_library("av_codec_service_dfx") {
   sanitize = av_codec_sanitize
 
   sources = [
-    "avcodec_bitstream_dump.cpp",
     "avcodec_dump_utils.cpp",
     "avcodec_sysevent.cpp",
     "avcodec_trace.cpp",

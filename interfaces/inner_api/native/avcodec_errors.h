@@ -37,10 +37,6 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_INVALID_VAL = AVCS_ERR_OFFSET + EINVAL,       // invalid argument
     AVCS_ERR_UNKNOWN = AVCS_ERR_OFFSET + 0x200,            // unkown error.
     AVCS_ERR_SERVICE_DIED,                                 // avcodec service died
-    AVCS_ERR_CREATE_AVCODEC_SUB_SERVICE_FAILED,            // create avcodec sub service failed.
-    AVCS_ERR_CREATE_MUXER_SUB_SERVICE_FAILED,              // create muxer sub service failed.
-    AVCS_ERR_CREATE_DEMUXER_SUB_SERVICE_FAILED,            // create demuxer sub service failed.
-    AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,             // create source sub service failed.
     AVCS_ERR_INVALID_STATE,                                // the state is not support this operation.
     AVCS_ERR_UNSUPPORT,                                    // unsupport interface.
     AVCS_ERR_UNSUPPORT_AUD_SRC_TYPE,                       // unsupport audio source type.
@@ -75,6 +71,12 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_DATA_SOURCE_IO_ERROR,                         // avcodec data source IO failed.
     AVCS_ERR_DATA_SOURCE_OBTAIN_MEM_ERROR,                 // avcodec data source get mem failed.
     AVCS_ERR_DATA_SOURCE_ERROR_UNKNOWN,                    // avcodec data source error unknow.
+
+    AVCE_ERR_IPC_UNKNOWN,                                  // avcodec ipc unknown err.
+    AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,            // avcodec ipc err, get sub system ability failed.
+    AVCE_ERR_IPC_SET_DEATH_LISTENER_FAILED,                // avcodec ipc err, set death listener failed.
+    AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,                 // create codeclist sub service failed.
+    AVCS_ERR_CREATE_AVCODEC_STUB_FAILED,                   // create avcodec sub service failed.
 
     AVCS_ERR_NOT_ENOUGH_DATA,                              // avcodec output buffer not full of a pack
     AVCS_ERR_END_OF_STREAM,                                // the end of stream

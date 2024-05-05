@@ -186,7 +186,6 @@ Status VideoCaptureFilter::DoStart()
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Start");
     isStop_ = false;
-    nextFilter_->Start();
     return Status::OK;
 }
 
@@ -217,7 +216,6 @@ Status VideoCaptureFilter::DoStop()
     latestPausedTime_ = TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
-    nextFilter_->Stop();
     return Status::OK;
 }
 

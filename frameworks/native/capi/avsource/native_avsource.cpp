@@ -141,6 +141,7 @@ OH_AVFormat *OH_AVSource_GetSourceFormat(OH_AVSource *source)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "source_ GetSourceFormat failed!");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Get source format failed, format is nullptr!");
     avFormat->format_ = format;
     
     return avFormat;
@@ -160,6 +161,7 @@ OH_AVFormat *OH_AVSource_GetTrackFormat(OH_AVSource *source, uint32_t trackIndex
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Source GetTrackFormat failed!");
 
     OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Get format failed, format is nullptr!");
     avFormat->format_ = format;
     
     return avFormat;

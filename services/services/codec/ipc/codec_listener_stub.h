@@ -22,6 +22,7 @@
 #include <thread>
 #include <unordered_map>
 #include "avcodec_common.h"
+#include "buffer_converter.h"
 #include "i_standard_codec_listener.h"
 
 namespace OHOS {
@@ -46,6 +47,7 @@ public:
     bool WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
 
     void SetMutex(std::shared_ptr<std::recursive_mutex> &mutex);
+    void SetConverter(std::shared_ptr<BufferConverter> &converter);
     void SetNeedListen(const bool needListen);
 
 private:
@@ -59,8 +61,9 @@ private:
     std::weak_ptr<AVCodecCallback> callback_;
     std::weak_ptr<MediaCodecCallback> videoCallback_;
     std::weak_ptr<MediaCodecParameterCallback> paramCallback_;
-    bool needListen_{false};
+    bool needListen_ = false;
     std::shared_ptr<std::recursive_mutex> syncMutex_;
+    std::shared_ptr<BufferConverter> converter_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -118,6 +118,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Init");
+    MEDIA_LOG_I("Init enter, mime: " PUBLIC_LOG_S, mime.c_str());
     if (state_ != CodecState::UNINITIALIZED) {
         MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());
         return (int32_t)Status::ERROR_INVALID_STATE;
@@ -147,6 +148,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 int32_t MediaCodec::Init(const std::string &name)
 {
     AutoLock lock(stateMutex_);
+    MEDIA_LOG_I("Init enter, name: " PUBLIC_LOG_S, name.c_str());
     MEDIA_LOG_I("MediaCodec::Init");
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Init");
     if (state_ != CodecState::UNINITIALIZED) {
@@ -257,6 +259,7 @@ int32_t MediaCodec::SetOutputSurface(sptr<Surface> surface)
 
 int32_t MediaCodec::Prepare()
 {
+    MEDIA_LOG_I("Prepare enter");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Prepare");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
@@ -323,6 +326,7 @@ int32_t MediaCodec::Stop()
 {
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Stop");
+    MEDIA_LOG_I("Stop enter");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::STOPPING || state_ == CodecState::RELEASING) {
         MEDIA_LOG_D("Stop, state_=%{public}s", StateToString(state_).data());
@@ -342,6 +346,7 @@ int32_t MediaCodec::Stop()
 int32_t MediaCodec::Flush()
 {
     AutoLock lock(stateMutex_);
+    MEDIA_LOG_I("Flush enter");
     if (state_ == CodecState::FLUSHED) {
         MEDIA_LOG_W("Flush, state is already flushed, state_=%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
@@ -364,6 +369,7 @@ int32_t MediaCodec::Reset()
 {
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Reset");
+    MEDIA_LOG_I("Reset enter");
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
         MEDIA_LOG_W("adapter reset, state is already released, state =%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
@@ -384,6 +390,7 @@ int32_t MediaCodec::Release()
 {
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Release");
+    MEDIA_LOG_I("Release enter");
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
         MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
@@ -436,6 +443,7 @@ int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 
 Status MediaCodec::AttachBufffer()
 {
+    MEDIA_LOG_I("AttachBufffer enter");
     int inputBufferNum = DEFAULT_BUFFER_NUM;
     MemoryType memoryType;
 #ifndef MEDIA_OHOS
@@ -443,7 +451,9 @@ Status MediaCodec::AttachBufffer()
 #else
     memoryType = MemoryType::SHARED_MEMORY;
 #endif
-    inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    if (inputBufferQueue_ == nullptr) {
+        inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    }
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,
                          "inputBufferQueue_ is nullptr");
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
@@ -500,7 +510,7 @@ Status MediaCodec::AttachDrmBufffer(std::shared_ptr<AVBuffer> &drmInbuf, std::sh
 
 Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuffer)
 {
-    MEDIA_LOG_D("MediaCodec DrmAudioCencDecrypt");
+    MEDIA_LOG_D("DrmAudioCencDecrypt enter");
     Status ret = Status::OK;
 
     // 1. allocate drm buffer
@@ -534,6 +544,7 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
 
 int32_t MediaCodec::PrepareInputBufferQueue()
 {
+    MEDIA_LOG_I("PrepareInputBufferQueue enter");
     std::vector<std::shared_ptr<AVBuffer>> inputBuffers;
     MediaAVCodec::AVCodecTrace trace("MediaCodec::PrepareInputBufferQueue");
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
@@ -546,8 +557,10 @@ int32_t MediaCodec::PrepareInputBufferQueue()
             return (int32_t)ret;
         }
     } else {
-        inputBufferQueue_ =
-            AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY, INPUT_BUFFER_QUEUE_NAME);
+        if (inputBufferQueue_ == nullptr) {
+            inputBufferQueue_ =
+                AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY, INPUT_BUFFER_QUEUE_NAME);
+        }
         FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
                              "inputBufferQueue_ is nullptr");
         inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
@@ -566,6 +579,7 @@ int32_t MediaCodec::PrepareInputBufferQueue()
 
 int32_t MediaCodec::PrepareOutputBufferQueue()
 {
+    MEDIA_LOG_I("PrepareOutputBufferQueue enter");
     std::vector<std::shared_ptr<AVBuffer>> outputBuffers;
     MediaAVCodec::AVCodecTrace trace("MediaCodec::PrepareOutputBufferQueue");
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "codecPlugin_ is nullptr");
@@ -605,6 +619,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
 
 void MediaCodec::ProcessInputBuffer()
 {
+    MEDIA_LOG_D("ProcessInputBuffer enter");
     MediaAVCodec::AVCodecTrace trace("MediaCodec::ProcessInputBuffer");
     Status ret;
     uint32_t eosStatus = 0;
@@ -619,7 +634,7 @@ void MediaCodec::ProcessInputBuffer()
         return;
     }
     if (state_ != CodecState::RUNNING) {
-        MEDIA_LOG_E("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
+        MEDIA_LOG_D("ProcessInputBuffer ReleaseBuffer name:MediaCodecInputBufferQueue");
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
         return;
     }
@@ -675,8 +690,43 @@ int32_t MediaCodec::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySe
 }
 #endif
 
+Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta)
+{
+    Status ret = Status::OK;
+    Plugins::PluginType type;
+    if (isEncoder) {
+        type = Plugins::PluginType::AUDIO_ENCODER;
+    } else {
+        type = Plugins::PluginType::AUDIO_DECODER;
+    }
+    if (codecPlugin_ != nullptr) {
+        codecPlugin_->Release();
+        codecPlugin_ = nullptr;
+    }
+    codecPlugin_ = CreatePlugin(mime, type, isEncoder);
+    if (codecPlugin_ != nullptr) {
+        ret = codecPlugin_->SetParameter(meta);
+        MEDIA_LOG_I("codecPlugin SetParameter ret %{public}d", ret);
+        ret = codecPlugin_->Init();
+        MEDIA_LOG_I("codecPlugin Init ret %{public}d", ret);
+        ret = codecPlugin_->SetDataCallback(this);
+        MEDIA_LOG_I("codecPlugin SetDataCallback ret %{public}d", ret);
+        PrepareInputBufferQueue();
+        PrepareOutputBufferQueue();
+        if (state_ == CodecState::RUNNING) {
+            ret = codecPlugin_->Start();
+            MEDIA_LOG_I("codecPlugin Start ret %{public}d", ret);
+        }
+    } else {
+        MEDIA_LOG_I("createPlugin failed");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    return ret;
+}
+
 Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 {
+    MEDIA_LOG_D("HandleOutputBuffer enter");
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
@@ -709,6 +759,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
 void MediaCodec::ClearInputBuffer()
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::ClearInputBuffer");
+    MEDIA_LOG_I("ClearInputBuffer enter");
     if (!inputBufferQueueConsumer_) {
         return;
     }
@@ -728,6 +779,8 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::OnInputBufferDone");
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(inputBuffer);
+    MEDIA_LOG_D("0x%{public}06" PRIXPTR " OnInputBufferDone, buffer->pts" PUBLIC_LOG_D64,
+        FAKE_POINTER(this), inputBuffer->pts_);
     FALSE_RETURN_MSG(ret == Status::OK, "OnInputBufferDone fail");
 }
 
@@ -738,6 +791,8 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     if (mediaCodecCallback_) {
         mediaCodecCallback_->OnOutputBufferDone(outputBuffer);
     }
+    MEDIA_LOG_D("0x%{public}06" PRIXPTR " OnOutputBufferDone, buffer->pts" PUBLIC_LOG_D64,
+        FAKE_POINTER(this), outputBuffer->pts_);
     FALSE_RETURN_MSG(ret == Status::OK, "OnOutputBufferDone fail");
 }
 

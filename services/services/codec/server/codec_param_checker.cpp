@@ -102,6 +102,7 @@ const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
 const std::vector<std::string_view> FORMAT_MERGE_LIST = {
     MediaDescriptionKey::MD_KEY_BITRATE,
     MediaDescriptionKey::MD_KEY_QUALITY,
+    MediaDescriptionKey::MD_KEY_FRAME_RATE,
     Tag::VIDEO_ENCODER_QP_MIN,
     Tag::VIDEO_ENCODER_QP_MAX,
 };
@@ -159,21 +160,17 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType c
     bool heightExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     CHECK_AND_RETURN_RET_LOG(widthExist && heightExist, AVCS_ERR_INVALID_VAL, "Key param missing, width or height");
 
-    bool widthValid = true;
-    bool heightValid = true;
+    bool resolutionValid = true;
     if (capData.supportSwapWidthHeight) {
-        widthValid = capData.width.InRange(width) || capData.height.InRange(width);
-        heightValid = capData.width.InRange(height) || capData.height.InRange(height);
+        AVCODEC_LOGI("Codec support swap width and height");
+        resolutionValid = (capData.width.InRange(width) && capData.height.InRange(height)) ||
+                          (capData.width.InRange(height) && capData.height.InRange(width));
     } else {
-        widthValid = capData.width.InRange(width);
-        heightValid = capData.height.InRange(height);
+        resolutionValid = capData.width.InRange(width) || capData.height.InRange(height);
     }
-    CHECK_AND_RETURN_RET_LOG(widthValid, AVCS_ERR_INVALID_VAL,
-        "Param invalid, width: %{public}d, range: %{public}d-%{public}d",
-        width, capData.width.minVal, capData.width.maxVal);
-    CHECK_AND_RETURN_RET_LOG(heightValid, AVCS_ERR_INVALID_VAL,
-        "Param invalid, height: %{public}d, range: %{public}d-%{public}d",
-        height, capData.height.minVal, capData.height.maxVal);
+    CHECK_AND_RETURN_RET_LOG(resolutionValid, AVCS_ERR_INVALID_VAL,
+        "Param invalid, resolution: %{public}d*%{public}d, range: [%{public}d*%{public}d]-[%{public}d*%{public}d]",
+        width, height, capData.width.minVal, capData.height.minVal, capData.width.maxVal, capData.height.maxVal);
     AVCODEC_LOGI("Param valid, resolution: %{public}d * %{public}d", width, height);
     return AVCS_ERR_OK;
 }
@@ -318,7 +315,7 @@ int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType
     if (!qpMinExist && !qpMaxExist) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(!(qpMinExist ^ qpMaxExist), AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(!(qpMinExist != qpMaxExist), AVCS_ERR_INVALID_VAL,
         "Param invalid, QPmin and QPmax are expected to be set in pairs in format");
 
     CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,

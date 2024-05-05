@@ -214,11 +214,13 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
 
 Status FFmpegAACEncoderPlugin::Init()
 {
+    MEDIA_LOG_I("Init enter");
     return Status::OK;
 }
 
 Status FFmpegAACEncoderPlugin::Start()
 {
+    MEDIA_LOG_I("Start enter");
     Status status = AllocateContext("aac");
     if (status != Status::OK) {
         MEDIA_LOG_D("Allocat aac context failed, status = %{public}d", status);
@@ -334,6 +336,7 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
 
 Status FFmpegAACEncoderPlugin::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
+    MEDIA_LOG_I("ReceiveBuffer enter");
     (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     Status status;
@@ -395,6 +398,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
 
 Status FFmpegAACEncoderPlugin::Reset()
 {
+    MEDIA_LOG_I("Reset enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
@@ -404,6 +408,7 @@ Status FFmpegAACEncoderPlugin::Reset()
 
 Status FFmpegAACEncoderPlugin::Release()
 {
+    MEDIA_LOG_I("Release enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
@@ -412,6 +417,7 @@ Status FFmpegAACEncoderPlugin::Release()
 
 Status FFmpegAACEncoderPlugin::Flush()
 {
+    MEDIA_LOG_I("Flush enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
@@ -553,6 +559,7 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
 Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
     int32_t type;
+    MEDIA_LOG_I("GetMetaData enter");
     if (meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type)) {
         aacName_ = (type == 1 ? "aac" : "aac_latm");
     }
@@ -598,6 +605,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 
 Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
+    MEDIA_LOG_I("SetParameter enter");
     std::lock_guard<std::mutex> lock(parameterMutex_);
     Status ret = GetMetaData(meta);
     if (!CheckFormat()) {
@@ -625,6 +633,7 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 
 Status FFmpegAACEncoderPlugin::InitFrame()
 {
+    MEDIA_LOG_I("InitFrame enter");
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     cachedFrame_->format = avCodecContext_->sample_fmt;
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
@@ -689,6 +698,7 @@ Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &input
 
 Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 {
+    MEDIA_LOG_D("SendFrameToFfmpeg enter");
     int32_t fifoSize = av_audio_fifo_size(fifo_);
     if (fifoSize < avCodecContext_->frame_size) {
         MEDIA_LOG_D("fifoSize:%{public}d not enough", fifoSize);
@@ -725,6 +735,7 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 
 Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
+    MEDIA_LOG_D("PcmFillFrame enter, buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
     auto memory = inputBuffer->memory_;
     auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     const uint8_t *srcBuffer = memory->GetAddr();

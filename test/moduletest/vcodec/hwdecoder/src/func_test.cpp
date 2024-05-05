@@ -57,8 +57,6 @@ constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
 constexpr int32_t UHD_RESOLUTION[2] = {3840, 2160};
 constexpr int32_t HD_RESOLUTION[2] = {1104, 622};
-constexpr int32_t H_ALIGNMENT = 32;
-constexpr int32_t W_ALIGNMENT = 64;
 } // namespace
 
 void HwdecFuncNdkTest::SetUpTestCase()
@@ -436,16 +434,6 @@ HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
     vDecSample->WaitForEOS();
 }
 
-int32_t CalculateStride(int32_t length)
-{
-    return (length % W_ALIGNMENT == 0) ? length : W_ALIGNMENT * (int32_t)(length / W_ALIGNMENT + 1);
-}
-
-int32_t CalculateSliceHeight(int32_t length)
-{
-    return (length % H_ALIGNMENT == 0) ? length : H_ALIGNMENT * (int32_t)(length / H_ALIGNMENT + 1);
-}
-
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_001
  * @tc.name      : get decode output descriptions h264
@@ -463,8 +451,6 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_001, TestSize.Level0)
     vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
-    vDecSample->expectStride = CalculateStride(DEFAULT_WIDTH);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(DEFAULT_HEIGHT);
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -490,8 +476,6 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_002, TestSize.Level0)
     vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
-    vDecSample->expectStride = CalculateStride(DEFAULT_WIDTH);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(DEFAULT_HEIGHT);
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -517,8 +501,6 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_003, TestSize.Level0)
     vDecSample->expectCropBottom = UHD_RESOLUTION[1] - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = UHD_RESOLUTION[0] - 1;
-    vDecSample->expectStride = CalculateStride(UHD_RESOLUTION[0]);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(UHD_RESOLUTION[1]);
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -544,8 +526,6 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_004, TestSize.Level0)
     vDecSample->expectCropBottom = UHD_RESOLUTION[1] - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = UHD_RESOLUTION[0] - 1;
-    vDecSample->expectStride = CalculateStride(UHD_RESOLUTION[0]);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(UHD_RESOLUTION[1]);
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -571,8 +551,6 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_005, TestSize.Level0)
     vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
-    vDecSample->expectStride = CalculateStride(HD_RESOLUTION[0]);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(HD_RESOLUTION[1]);
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -598,8 +576,6 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_006, TestSize.Level0)
     vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
-    vDecSample->expectStride = CalculateStride(HD_RESOLUTION[0]);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(HD_RESOLUTION[1]);
 
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -625,8 +601,7 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_007, TestSize.Level0)
     vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
     vDecSample->expectCropLeft = 0;
     vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
-    vDecSample->expectStride = CalculateStride(HD_RESOLUTION[0]);
-    vDecSample->expectSliceHeight = CalculateSliceHeight(HD_RESOLUTION[1]);
+
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());

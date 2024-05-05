@@ -302,7 +302,7 @@ int32_t HCodec::InitWithName(const std::string &name)
 int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
 {
     LOGI("event = %d, data1 = %u, data2 = %u", event, info.data1, info.data2);
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);
     msg->SetValue("data2", info.data2);
@@ -312,7 +312,7 @@ int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo 
 
 int32_t HCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuffer& buffer)
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue(BUFFER_ID, buffer.bufferId);
     codec_->SendAsyncMsg(MsgWhat::OMX_EMPTY_BUFFER_DONE, msg);
     return HDF_SUCCESS;
@@ -320,7 +320,7 @@ int32_t HCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuff
 
 int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffer& buffer)
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("omxBuffer", buffer);
     codec_->SendAsyncMsg(MsgWhat::OMX_FILL_BUFFER_DONE, msg);
     return HDF_SUCCESS;
@@ -336,6 +336,9 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
     InitOMXParamExt(param);
     if (!GetParameter(OMX_IndexParamWorkingFrequency, param)) {
         HLOGW("get working freq param failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    if (param.level == 0) {
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("level cnt is %d, set level to %d", param.level, param.level - 1);
@@ -620,6 +623,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
     }
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSurfaceAllocator(requestCfg_);
     IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateSurfaceAllocator failed");
+    bool needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
 
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     pool.clear();
@@ -648,6 +652,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
         bufInfo.avBuffer       = avBuffer;
         bufInfo.omxBuffer      = outBuffer;
         bufInfo.bufferId       = outBuffer->bufferId;
+        bufInfo.needDealWithCache = needDealWithCache;
         pool.push_back(bufInfo);
     }
 
@@ -711,7 +716,7 @@ void HCodec::BufferInfo::CleanUpUnusedInfo()
 
 void HCodec::BufferInfo::BeginCpuAccess()
 {
-    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+    if (surfaceBuffer && needDealWithCache) {
         GSError err = surfaceBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
             LOGW("InvalidateCache failed, GSError=%d", err);
@@ -721,7 +726,7 @@ void HCodec::BufferInfo::BeginCpuAccess()
 
 void HCodec::BufferInfo::EndCpuAccess()
 {
-    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+    if (surfaceBuffer && needDealWithCache) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
             LOGW("Map failed, GSError=%d", err);
@@ -833,8 +838,9 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    bufferInfo->omxBuffer->filledLen = bufferInfo->avBuffer->memory_->GetSize();
-    bufferInfo->omxBuffer->offset = bufferInfo->avBuffer->memory_->GetOffset();
+    bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
+        (bufferInfo->avBuffer->memory_->GetSize());
+    bufferInfo->omxBuffer->offset = static_cast<uint32_t>(bufferInfo->avBuffer->memory_->GetOffset());
     bufferInfo->omxBuffer->pts = bufferInfo->avBuffer->pts_;
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
@@ -923,9 +929,6 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
-    if (!debugMode_) {
-        HLOGI("outBufId = %u, omx -> us, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
-    }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -954,6 +957,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
         }
         case FREE_BUFFER:
             EraseBufferFromPool(OMX_DirOutput, bufferIdx);
+            EraseOutBuffersOwnedByOmx(info.bufferId);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -1073,6 +1077,7 @@ void HCodec::ClearBufferPool(OMX_DIRTYPE portIndex)
         i--;
         EraseBufferFromPool(portIndex, i);
     }
+    OnClearBufferPool(portIndex);
 }
 
 void HCodec::FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info)
@@ -1097,7 +1102,22 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
     }
 }
 
-int32_t HCodec::ForceShutdown(int32_t generation)
+void HCodec::RecordOutBuffersOwnedByOmx()
+{
+    outBuffersOwnedByOmx_.clear();
+    for (const BufferInfo& info : outputBufferPool_) {
+        if (info.owner == BufferOwner::OWNED_BY_OMX) {
+            outBuffersOwnedByOmx_.insert(info.bufferId);
+        }
+    }
+}
+
+void HCodec::EraseOutBuffersOwnedByOmx(uint32_t bufferId)
+{
+    outBuffersOwnedByOmx_.erase(bufferId);
+}
+
+int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)
 {
     if (generation != stateGeneration_) {
         HLOGE("ignoring stale force shutdown message: #%d (now #%d)",
@@ -1106,7 +1126,7 @@ int32_t HCodec::ForceShutdown(int32_t generation)
     }
     HLOGI("force to shutdown");
     isShutDownFromRunning_ = true;
-    notifyCallerAfterShutdownComplete_ = false;
+    notifyCallerAfterShutdownComplete_ = isNeedNotifyCaller;
     keepComponentAllocated_ = false;
     auto err = compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (err == HDF_SUCCESS) {
@@ -1130,12 +1150,12 @@ int32_t HCodec::DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper)
 
 int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply)
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     IF_TRUE_RETURN_VAL_WITH_MSG(msg == nullptr, AVCS_ERR_NO_MEMORY, "out of memory");
     if (oper) {
         oper(msg);
     }
-    bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply);
+    bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply, FIVE_SECONDS_IN_MS);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ret, AVCS_ERR_UNKNOWN, "wait msg %d time out", msgType);
     int32_t err;
     IF_TRUE_RETURN_VAL_WITH_MSG(reply == nullptr || !reply->GetValue("err", err),
@@ -1177,7 +1197,7 @@ void HCodec::ReplyErrorCode(MsgId id, int32_t err)
     if (id == ASYNC_MSG_ID) {
         return;
     }
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     reply->SetValue("err", err);
     PostReply(id, reply);
 }
@@ -1277,7 +1297,6 @@ const char* HCodec::ToString(MsgWhat what)
         { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
         { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
         { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
-        { PRINT_ALL_BUFFER_OWNER, "PRINT_ALL_BUFFER_OWNER" },
     };
     auto it = m.find(what);
     if (it != m.end()) {
