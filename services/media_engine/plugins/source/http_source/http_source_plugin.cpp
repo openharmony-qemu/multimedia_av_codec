@@ -237,13 +237,21 @@ Seekable HttpSourcePlugin::GetSeekable()
     return downloader_->GetSeekable();
 }
 
+void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
+{
+    MEDIA_LOG_D("Interrupt enter");
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
     MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
     AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     if (offset > downloader_->GetContentLength()) {
         MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);

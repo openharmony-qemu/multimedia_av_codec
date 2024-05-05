@@ -324,6 +324,13 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     return ret;
 }
 
+void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
+{
+    if (source_ != nullptr) {
+        source_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 void MediaDemuxer::SetBundleName(const std::string& bundleName)
 {
     if (source_ != nullptr) {

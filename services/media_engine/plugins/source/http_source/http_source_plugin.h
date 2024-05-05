@@ -52,6 +52,7 @@ public:
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
+    void SetInterruptState(bool isInterruptNeeded) override;
 
 private:
     void CloseUri();

@@ -46,6 +46,7 @@ public:
     void NotifyListChange();
     int32_t GetVideoWidth() const override;
     int32_t GetVideoHeight() const override;
+    void SetInterruptState(bool isInterruptNeeded) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
@@ -53,6 +54,7 @@ public:
 
 private:
     std::string url_ {};
+    std::atomic<bool> isInterruptNeeded_{false};
     PlayListChangeCallback* callback_ {nullptr};
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;

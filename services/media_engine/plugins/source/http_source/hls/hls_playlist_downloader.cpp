@@ -24,7 +24,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr unsigned int SLEEP_TIME = 1;
-constexpr size_t RETRY_TIMES = 1000;
+constexpr size_t RETRY_TIMES = 15000;
 }
 int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 {
@@ -71,15 +71,15 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 {
     // need wait master_ not null
     size_t times = 0;
-    while (times < RETRY_TIMES) {
+    while (times < RETRY_TIMES && !isInterruptNeeded_) {
         if (master_ && master_->isSimple_) {
             break;
         }
         OSAL::SleepFor(SLEEP_TIME); // 1 ms
         times++;
     }
-    if (times >= RETRY_TIMES) {
-        return Seekable::SEEKABLE;
+    if (times >= RETRY_TIMES || !isInterruptNeeded_) {
+        return Seekable::INVALID;
     }
     if (master_->bLive_) {
         updateTask_->Start();
@@ -265,6 +265,10 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
     return newVariant_;
 }
 
+void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
 }
 }
 }

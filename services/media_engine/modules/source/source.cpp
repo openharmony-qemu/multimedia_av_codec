@@ -268,6 +268,13 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
+void Source::SetInterruptState(bool isInterruptNeeded)
+{
+    if (plugin_) {
+        plugin_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 void Source::ActivateMode()
 {
     MediaAVCodec::AVCodecTrace trace("Source::ActivateMode");

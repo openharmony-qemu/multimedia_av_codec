@@ -90,7 +90,7 @@ public:
 
     size_t GetFileContentLength() const;
     void SaveHeader(const HeaderInfo* header);
-    bool IsChunked() const;
+    Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
     NetworkClientErrorCode GetClientError() const;
@@ -139,6 +139,7 @@ private:
     friend class Downloader;
     std::string location_;
     mutable size_t times_ {0};
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 
 class Downloader {

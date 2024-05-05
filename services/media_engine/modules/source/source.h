@@ -82,6 +82,7 @@ public:
     void SetDemuxerState();
     Status ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);
+    void SetInterruptState(bool isInterruptNeeded);
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
