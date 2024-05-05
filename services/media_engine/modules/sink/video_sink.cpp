@@ -59,7 +59,6 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
 {
     FALSE_RETURN_V(buffer != nullptr, false);
     int64_t waitTime = 0;
-    bool shouldDrop = false;
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         auto syncCenter = syncCenter_.lock();
@@ -81,27 +80,19 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
             render = syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, buffer->pts_ - firstPts_,
                 buffer->pts_, buffer->duration_, this);
         }
-        if (forceRenderNextFrame_) {
-            shouldDrop = false;
-            forceRenderNextFrame_ = false;
-        }
         lastTimeStamp_ = buffer->pts_ - firstPts_;
     } else {
         MEDIA_LOG_I("Video sink EOS");
         return -1;
     }
-    if (shouldDrop) {
-        discardFrameCnt_++;
-        MEDIA_LOG_DD("drop buffer with pts " PUBLIC_LOG_D64 " due to too late", buffer->pts_);
-        return -1;
-    } else if (!render) {
-        discardFrameCnt_++;
-        MEDIA_LOG_DD("drop buffer with pts " PUBLIC_LOG_D64 " due to seek not need to render", buffer->pts_);
-        return -1;
-    } else {
+    if ((render && waitTime >= 0) || lastFrameDropped_) {
+        lastFrameDropped_ = false;
         renderFrameCnt_++;
-        return waitTime;
+        return waitTime > 0 ? waitTime : 0;
     }
+    lastFrameDropped_ = true;
+    discardFrameCnt_++;
+    return -1;
 }
 
 void VideoSink::ResetSyncInfo()
