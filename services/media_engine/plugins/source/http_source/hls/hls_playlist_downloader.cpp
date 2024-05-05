@@ -78,7 +78,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
         OSAL::SleepFor(SLEEP_TIME); // 1 ms
         times++;
     }
-    if (times >= RETRY_TIMES || !isInterruptNeeded_) {
+    if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
     if (master_->bLive_) {
