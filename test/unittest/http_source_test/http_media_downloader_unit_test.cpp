@@ -75,7 +75,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TestOpenWithValidUrl, TestSize.Level1)
     std::map<std::string, std::string> header = {{"a", "b"}};
     Source* source = new Source();
     downloader.SetCallback(source);
-    bool result = downloader.Open("http://127.0.0.0:4666/dewu.mp4", httpHeader);
+    bool result = downloader.Open("http://127.0.0.0:4666/dewu.mp4", header);
     EXPECT_FALSE(result);
 }
 
