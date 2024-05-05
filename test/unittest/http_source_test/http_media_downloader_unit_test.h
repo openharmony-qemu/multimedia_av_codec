@@ -21,8 +21,6 @@
 #include "gtest/gtest.h"
 #include "hls/m3u8.h"
 
-
-
 namespace OHOS {
 namespace Media {
 namespace Plugins {

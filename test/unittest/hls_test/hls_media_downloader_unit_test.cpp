@@ -45,6 +45,7 @@ void HlsMediaDownloaderUnitTest ::SetUp(void)
 void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
     delete hlsMediaDownloader;
+    hlsMediaDownloader = null;
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
