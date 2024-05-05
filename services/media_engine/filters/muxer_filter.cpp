@@ -18,6 +18,7 @@
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "muxer/media_muxer.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -82,6 +83,7 @@ void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
 }
@@ -94,12 +96,14 @@ void MuxerFilter::SetLogTag(std::string logTag)
 Status MuxerFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::Prepare");
     return Status::OK;
 }
 
 Status MuxerFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
     startCount_++;
     if (startCount_ == preFilterCount_) {
         startCount_ = 0;
@@ -111,12 +115,14 @@ Status MuxerFilter::DoStart()
 
 Status MuxerFilter::DoPause()
 {
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::Pause");
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
     return Status::OK;
 }
 
 Status MuxerFilter::DoResume()
 {
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::Resume");
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
     return Status::OK;
 }
@@ -124,6 +130,7 @@ Status MuxerFilter::DoResume()
 Status MuxerFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::Stop");
     stopCount_++;
     Status ret = Status::OK;
     if (stopCount_ == preFilterCount_) {
@@ -150,6 +157,7 @@ Status MuxerFilter::DoRelease()
 void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::SetParameter");
     mediaMuxer_->SetParameter(parameter);
 }
 
@@ -165,6 +173,7 @@ void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::GetParameter");
 }
 
 Status MuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -194,6 +203,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "OnLinked", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnLinked");
     int32_t trackIndex;
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK) {
@@ -227,6 +237,7 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     sptr<AVBufferQueueProducer> inputBufferQueue)
 {
     MEDIA_LOG_D(PUBLIC_LOG_S "OnBufferFilled", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     int64_t currentBufferPts = inputBuffer->pts_;
     int64_t anotherBufferPts = 0;
     for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
