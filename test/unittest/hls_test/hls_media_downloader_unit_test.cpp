@@ -95,7 +95,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_PAUSE, TestSize.Level1)
     HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
-    downloader->Pause()
+    downloader->Pause();
     EXPECT_FALSE(downloader->isStopped);
     delete downloader;
     downloader = nullptr;
@@ -106,7 +106,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE, TestSize.Level1)
     HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
-    downloader->Close()
+    downloader->Close(false);
     EXPECT_TRUE(downloader->isStopped);
     delete downloader;
     downloader = nullptr;
@@ -118,7 +118,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[10];
-    unsigned char int realReadLength;
+    unsigned int realReadLength;
     bool isEos;
     EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
     delete downloader;
@@ -131,7 +131,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_002, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[10];
-    unsigned char int realReadLength;
+    unsigned int realReadLength;
     bool isEos {true};
     EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
     delete downloader;
@@ -146,7 +146,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_003, TestSize.Level1)
     downloader->readTime_ = 5 * 1000;
     downloader->SetDownloadErrorState();
     unsigned char buff[10];
-    unsigned char int realReadLength;
+    unsigned int realReadLength;
     bool isEos {true};
     EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
     delete downloader;
@@ -161,7 +161,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_004, TestSize.Level1)
     downloader->readTime_ = 5 * 1000;
     downloader->SetDownloadErrorState();
     unsigned char buff[10];
-    unsigned char int realReadLength;
+    unsigned int realReadLength;
     bool isEos {true};
     EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
     delete downloader;
@@ -174,7 +174,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_005, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[100];
-    unsigned char int realReadLength;
+    unsigned int realReadLength;
     bool isEos {true};
     EXPECT_FALSE(downloader->Read(buff, 10*1024*1024, realReadLength, isEos));
     delete downloader;
@@ -187,7 +187,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_006, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[100];
-    unsigned char int realReadLength;
+    unsigned int realReadLength;
     bool isEos {true};
     EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
     delete downloader;
@@ -199,7 +199,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     HlsMediaDownloader *downloader = new HlsMediaDownloader();
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
-    EXPECT_FALSE(downloader->SeekToTime(100, SeekMode::SEEK_CLOSET));
+    EXPECT_FALSE(downloader->SeekToTime(100, SeekMode::SEEK_CLOSEST));
     delete downloader;
     downloader = nullptr;
 }
@@ -212,7 +212,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME_001, TestSize.Level1)
     downloader->backPlayList_.push_back(PlayInfo{"123", 0.0, 0});
     downloader->backPlayList_.push_back(PlayInfo{"123", 0.0, 0});
     downloader->backPlayList_.push_back(PlayInfo{"123", 0.0, 0});
-    downloader->SeekTs(250, SeekMode::SEEK_CLOSET)
+    downloader->SeekToTs(250, SeekMode::SEEK_CLOSEST);
     EXPECT_EQ(downloader->havePlayedTsNum_, 3);
     delete downloader;
     downloader = nullptr;

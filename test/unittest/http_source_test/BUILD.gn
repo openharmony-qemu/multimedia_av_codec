@@ -69,7 +69,7 @@ config("hls_unittest_cfg") {
 }
 
 #################################################################################################################
-ohos_unittest("hls_media_downloader_unit_test") {
+ohos_unittest("http_media_downloader_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   testonly = true

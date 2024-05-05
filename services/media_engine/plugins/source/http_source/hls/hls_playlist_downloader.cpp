@@ -254,7 +254,7 @@ std::shared_ptr<M3U8MasterPlaylist> HlsPlayListDownloader::GetMaster()
 
 std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetCurrentVariant()
 {
-    return currentVariant_
+    return currentVariant_;
 }
 
 std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()

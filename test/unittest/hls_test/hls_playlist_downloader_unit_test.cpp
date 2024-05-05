@@ -19,9 +19,9 @@ using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
-const std::string TEST_URI_PATH = "http://127.0.0.1:4666/";
-const std::string M3U8_PATH_1 = "test_cbr/test_cbr.m3u8";
-const std::map<std::string, std::string> httpHeader = {
+const static std::string TEST_URI_PATH = "http://127.0.0.1:4666/";
+const static std::string M3U8_PATH_1 = "test_cbr/test_cbr.m3u8";
+const static std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "userAgent"},
     {"Referer", "DEF"},
 };
@@ -97,12 +97,12 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_004, TestSize.Level1)
     EXPECT_FALSE(downloader.GetMaster()->isSimple_);
 }
 
-HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_004, TestSize.Level1)
+HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_005, TestSize.Level1)
 {
     HlsPlayListDownloader downloader;
     std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
     downloader.ParseManifest(testUrl);
-    EXPECT_NE(downloader.GetMaster()->uri_, nullptr);
+    EXPECT_NE(downloader.GetMaster()->uri_, "");
     EXPECT_EQ(downloader.GetMaster()->uri_, testUrl);
 }
 

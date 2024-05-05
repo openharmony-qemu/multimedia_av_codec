@@ -37,10 +37,9 @@ public:
     void TearDown(void);
 protected:
     HlsMediaDownloader* hlsMediaDownloader;
-    std::map<std::string, std::string> hlsMediaDownloader;
 };
-constexpr unit32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr unit32_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr uint32_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 }
 }
 }

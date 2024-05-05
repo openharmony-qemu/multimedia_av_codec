@@ -118,7 +118,7 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_VALID_KEY_AND_IV, TestSize.Level1)
     EXPECT_EQ(fragment.discont_, false);
     //
     for (int i = 0; i < 5; i++) {
-        EXPECT_EQ(fragment.iv_[i], iv_[i]);
+        EXPECT_EQ(fragment.iv_[i], iv[i]);
     }
 }
 
