@@ -41,6 +41,7 @@ group("av_codec_unit_test") {
       "unittest/avmuxer_test:avmuxer_inner_unit_test",
       "unittest/avsource_test:avsource_capi_unit_test",
       "unittest/avsource_test:avsource_inner_unit_test",
+      "unittest/codec_param_checker_test:av_codec_param_checker_test",
       "unittest/codeclist_test:codeclist_capi_unit_test",
       "unittest/codeclist_test:codeclist_inner_unit_test",
       "unittest/demuxer_test:demuxer_capi_buffer_unit_test",
