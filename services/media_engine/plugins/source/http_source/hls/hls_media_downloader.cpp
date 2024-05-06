@@ -514,7 +514,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     return 1;
 }
 
-void HlsMediaDownloader::SeekToTs(int64_t seekTime, SeekMode mode)
+void HlsMediaDownloader::SeekToTs(uint64_t seekTime, SeekMode mode)
 {
     havePlayedTsNum_ = 0;
     double totalDuration = 0;
@@ -533,7 +533,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime, SeekMode mode)
     }
 }
 
-uint64_t HlsMediaDownloader::RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
+uint64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
     double hstTime, const PlayInfo& item)
 {
     PlayInfo playInfo;
