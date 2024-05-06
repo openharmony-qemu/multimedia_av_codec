@@ -623,7 +623,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         parseFromMoov = true;
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse failed.");
+        MEDIA_LOG_D("Parse failed");
         return;
     }
     if (parseFromMoov) {
