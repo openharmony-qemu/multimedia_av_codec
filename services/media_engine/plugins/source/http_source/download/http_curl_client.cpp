@@ -48,6 +48,9 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::string str(arr, strSize);
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
+    if (length == 0) {
+        return output;
+    }
     while (pos > 0 && pos <= length - 1 && pos != std::string::npos) {
         char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
@@ -70,8 +73,8 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while (std::isspace(str[str.size() - 1])) {
-        str.erase(str.size() - 1, 1);
+    while ((!str.empty()) && std::isspace(str[str.size() - 1])) {
+            str.erase(str.size() - 1, 1);
     }
     return str;
 }

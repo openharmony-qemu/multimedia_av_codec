@@ -529,7 +529,7 @@ size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, 
         size_t start;
         size_t end;
         size_t fileLen;
-        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %ld-%ld/%ld", &start, &end, &fileLen) != -1,
+        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %lu-%lu/%lu", &start, &end, &fileLen) != -1,
             "sscanf get range failed");
         if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
             MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");

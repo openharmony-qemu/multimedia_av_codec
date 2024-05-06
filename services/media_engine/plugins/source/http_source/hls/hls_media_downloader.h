@@ -60,9 +60,9 @@ public:
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    void SeekToTs(int64_t seekTime, SeekMode mode);
+    void SeekToTs(uint64_t seekTime, SeekMode mode);
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
-    int64_t RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
+    uint64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void ReportVideoSizeChange();
@@ -76,6 +76,7 @@ public:
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
+    bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
@@ -90,7 +91,7 @@ PRIVATE:
     void DownBufferSize();
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
-    int TransferSizeToBitRate(int width);
+    uint64_t TransferSizeToBitRate(int width);
     bool CheckReadStatus();
     bool CheckReadTimeOut();
 PRIVATE:
@@ -114,10 +115,10 @@ PRIVATE:
     std::deque<PlayInfo> backPlayList_;
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
-    static constexpr uint32_t DECRYPT_UNIT_LEN = 16;
-    static constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
+    static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
+    static constexpr uint64_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
     uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
-    uint32_t afterAlignRemainedLength_ = 0;
+    uint64_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;
     std::string curUrl_;
     uint8_t key_[16] = {0};
@@ -128,22 +129,22 @@ PRIVATE:
     uint8_t decryptBuffer_[RING_BUFFER_SIZE] {0};
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
-    int64_t seekTime_ = 0;
+    uint64_t seekTime_ = 0;
     bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
-    int64_t currentBitrate_ {1*1024*1024};
+    uint64_t currentBitrate_ {1*1024*1024};
     bool userDefinedBufferDuration_ {false};
-    int expectDuration_ {0};
+    uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
 
     struct BufferDownRecord {
         /* data */
-        uint32_t dataBits {0};
-        int64_t timeoff {0};
+        uint64_t dataBits {0};
+        uint64_t timeoff {0};
         BufferDownRecord* next {nullptr};
     };
     // std::unique_ptr<BufferDownRecord> bufferDownRecord_;
@@ -155,22 +156,22 @@ PRIVATE:
     };
     // std::unique_ptr<BufferLeastRecord> bufferLeastRecord_;
     BufferLeastRecord* bufferLeastRecord_ {nullptr};
-    int64_t lastWriteTime_ {0};
-    int64_t lastReadTime_ {0};
-    int64_t lastWriteBit_ {0};
+    uint64_t lastWriteTime_ {0};
+    uint64_t lastReadTime_ {0};
+    uint64_t lastWriteBit_ {0};
     SteadyClock steadyClock_;
 
     uint64_t totalBits_ {0};        // 总下载量
 
     uint64_t lastBits_ {0};         // 上一统计周期的总下载量
 
-    uint32_t downloadDuringTime_ {0};    // 累计有效下载时长 ms
+    uint64_t downloadDuringTime_ {0};    // 累计有效下载时长 ms
 
     uint64_t downloadBits_ {0};          // 累计有效时间内下载数据量 bit
 
     struct RecordData {
         double downloadRate {0};
-        int32_t bufferDuring {0};
+        uint64_t bufferDuring {0};
         std::shared_ptr<RecordData> next {nullptr};
     };
     std::shared_ptr<RecordData> recordData_ {nullptr};
