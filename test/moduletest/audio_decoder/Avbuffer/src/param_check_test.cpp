@@ -858,6 +858,41 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_017, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : PARAM_CHECK_021
+ * @tc.name      : FreeOutputData - index param check
+ * @tc.desc      : param check test
+ */
+HWTEST_F(ParamCheckTest, PARAM_CHECK_021, TestSize.Level2)
+{
+    OH_AVCodec *codec = nullptr;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    int32_t channel = 1;
+    int32_t sampleRate = 8000;  // 8000hz
+    uint32_t index;
+    OH_AVErrCode result0;
+    ADecBufferDemo *aDecBufferDemo = new ADecBufferDemo();
+    codec = aDecBufferDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
+    ASSERT_NE(codec, nullptr);
+    result0 = aDecBufferDemo->SetCallback(codec);
+    ASSERT_EQ(result0, AV_ERR_OK);
+    result0 = aDecBufferDemo->Configure(codec, format, channel, sampleRate);
+    ASSERT_EQ(result0, AV_ERR_OK);
+    result0 = aDecBufferDemo->Start(codec);
+    ASSERT_EQ(result0, AV_ERR_OK);
+    index = aDecBufferDemo->GetInputIndex();
+    index = 8;
+    result0 = aDecBufferDemo->PushInputData(codec, index);
+    ASSERT_NE(result0, AV_ERR_OK);
+    index = aDecBufferDemo->GetOutputIndex();
+    index = -1;
+    result0 = aDecBufferDemo->FreeOutputData(codec, index);
+    ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
+    result0 = aDecBufferDemo->Destroy(codec);
+
+    delete aDecBufferDemo;
+}
+
+/**
  * @tc.number    : PARAM_CHECK_022
  * @tc.name      : PushInputDataEOS - index param check
  * @tc.desc      : param check test
