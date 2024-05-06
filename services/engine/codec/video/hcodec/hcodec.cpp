@@ -302,7 +302,7 @@ int32_t HCodec::InitWithName(const std::string &name)
 int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
 {
     LOGI("event = %d, data1 = %u, data2 = %u", event, info.data1, info.data2);
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);
     msg->SetValue("data2", info.data2);
@@ -312,7 +312,7 @@ int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo 
 
 int32_t HCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuffer& buffer)
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue(BUFFER_ID, buffer.bufferId);
     codec_->SendAsyncMsg(MsgWhat::OMX_EMPTY_BUFFER_DONE, msg);
     return HDF_SUCCESS;
@@ -320,7 +320,7 @@ int32_t HCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuff
 
 int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffer& buffer)
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("omxBuffer", buffer);
     codec_->SendAsyncMsg(MsgWhat::OMX_FILL_BUFFER_DONE, msg);
     return HDF_SUCCESS;
@@ -336,6 +336,9 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
     InitOMXParamExt(param);
     if (!GetParameter(OMX_IndexParamWorkingFrequency, param)) {
         HLOGW("get working freq param failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    if (param.level == 0) {
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("level cnt is %d, set level to %d", param.level, param.level - 1);
@@ -835,8 +838,9 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    bufferInfo->omxBuffer->filledLen = bufferInfo->avBuffer->memory_->GetSize();
-    bufferInfo->omxBuffer->offset = bufferInfo->avBuffer->memory_->GetOffset();
+    bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
+        (bufferInfo->avBuffer->memory_->GetSize());
+    bufferInfo->omxBuffer->offset = static_cast<uint32_t>(bufferInfo->avBuffer->memory_->GetOffset());
     bufferInfo->omxBuffer->pts = bufferInfo->avBuffer->pts_;
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
@@ -925,9 +929,6 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
-    if (!debugMode_) {
-        HLOGI("outBufId = %u, omx -> us, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
-    }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -1149,7 +1150,7 @@ int32_t HCodec::DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper)
 
 int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply)
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     IF_TRUE_RETURN_VAL_WITH_MSG(msg == nullptr, AVCS_ERR_NO_MEMORY, "out of memory");
     if (oper) {
         oper(msg);
@@ -1196,7 +1197,7 @@ void HCodec::ReplyErrorCode(MsgId id, int32_t err)
     if (id == ASYNC_MSG_ID) {
         return;
     }
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     reply->SetValue("err", err);
     PostReply(id, reply);
 }
@@ -1296,7 +1297,6 @@ const char* HCodec::ToString(MsgWhat what)
         { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
         { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
         { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
-        { PRINT_ALL_BUFFER_OWNER, "PRINT_ALL_BUFFER_OWNER" },
     };
     auto it = m.find(what);
     if (it != m.end()) {

@@ -27,6 +27,7 @@
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
 #include "demuxer/data_packer.h"
+#include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
 #include "osal/task/task.h"
@@ -43,7 +44,7 @@ public:
     explicit LiveStreamDemuxer();
     ~LiveStreamDemuxer() override;
 
-    void Init(std::string uri, uint64_t mediaDataSize) override;
+    std::string Init(std::string uri, uint64_t mediaDataSize) override;
     Status Reset() override;
     Status Pause() override;
     Status Resume() override;

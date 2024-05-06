@@ -179,7 +179,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
         avcodec_flush_buffers(avCodecContext_.get());
         status = AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM;
     } else if (ret == AVERROR(EAGAIN)) {
-        AVCODEC_LOGW("audio decoder not enough data");
+        AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "audio decoder not enough data");
         status = AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA;
     } else {
         AVCODEC_LOGE("audio decoder receive unknow error,ffmpeg error message:%{public}s", AVStrError(ret).data());

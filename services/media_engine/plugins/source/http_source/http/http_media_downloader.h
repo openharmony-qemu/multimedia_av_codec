@@ -47,6 +47,12 @@ public:
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
+    void SetInterruptState(bool isInterruptNeeded) override;
+    int GetBufferSize();
+    RingBuffer& GetBuffer();
+    bool GetReadFrame();
+    bool GetDownloadErrorState();
+    StatusCallbackFunc GetStatusCallbackFunc();
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -65,6 +71,8 @@ private:
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
+    std::atomic<bool> isInterruptNeeded_{false};
+    int totalBufferSize_ {0};
 };
 }
 }

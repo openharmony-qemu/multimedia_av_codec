@@ -42,7 +42,7 @@ int32_t AVCodecDumpControler::AddInfo(const uint32_t dumpIdx, const std::string 
         return AVCS_ERR_OK;
     }
 
-    int32_t level = GetLevel(dumpIdx);
+    auto level = GetLevel(dumpIdx);
     length_[level - 1] = length_[level - 1] > name.length() ? length_[level - 1] : name.length();
     dumpInfoMap_.emplace(dumpIdx, make_pair(name, value));
     return AVCS_ERR_OK;
@@ -116,7 +116,7 @@ int32_t AVCodecDumpControler::AddInfoFromFormatWithMapping(const uint32_t dumpId
 int32_t AVCodecDumpControler::GetDumpString(std::string &dumpString)
 {
     for (auto iter : dumpInfoMap_) {
-        int level = GetLevel(iter.first);
+        auto level = GetLevel(iter.first);
         std::string name = iter.second.first;
         std::string value = iter.second.second;
         dumpString += std::string((level - 1) * DUMP_SPACE_LENGTH, ' ')
@@ -131,7 +131,7 @@ int32_t AVCodecDumpControler::GetDumpString(std::string &dumpString)
 
 uint32_t AVCodecDumpControler::GetLevel(const uint32_t dumpIdx)
 {
-    int level = 1;
+    uint32_t level = 1;
     if (dumpIdx & UINT8_MAX) {
         level = DUMP_LEVEL_4;
     } else if ((dumpIdx >> DUMP_OFFSET_8) & UINT8_MAX) {

@@ -15,7 +15,6 @@
 
 #define HST_LOG_TAG "FileSourcePlugin"
 
-#include "plugin/plugin_loader_v2.h"
 #include "file_source_plugin.h"
 #include <sys/stat.h>
 #include "common/log.h"
@@ -59,11 +58,6 @@ Status FileSourceRegister(const std::shared_ptr<Register>& reg)
 }
 
 PLUGIN_DEFINITION(FileSource, LicenseType::APACHE_V2, FileSourceRegister, [] {});
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<FileSourcePlugin>("file_source"));
-}
 
 void* FileSourceAllocator::Alloc(size_t size)
 {
@@ -160,6 +154,7 @@ Status FileSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 Status FileSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    FALSE_RETURN_V_MSG_E(fp_ != nullptr, Status::ERROR_WRONG_STATE, "invalid fp");
     (void)offset;
     if (std::feof(fp_) || (fileSize_ == position_)) {
         MEDIA_LOG_W("It is the end of file!");

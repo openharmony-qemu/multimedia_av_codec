@@ -41,6 +41,7 @@ group("av_codec_unit_test") {
       "unittest/avmuxer_test:avmuxer_inner_unit_test",
       "unittest/avsource_test:avsource_capi_unit_test",
       "unittest/avsource_test:avsource_inner_unit_test",
+      "unittest/codec_param_checker_test:av_codec_param_checker_test",
       "unittest/codeclist_test:codeclist_capi_unit_test",
       "unittest/codeclist_test:codeclist_inner_unit_test",
       "unittest/demuxer_test:demuxer_capi_buffer_unit_test",
@@ -52,6 +53,7 @@ group("av_codec_unit_test") {
       "unittest/hls_test:hls_playlist_downloader_unit_test",
       "unittest/hls_test:hls_tags_unit_test",
       "unittest/hls_test:m3u8_unit_test",
+      "unittest/http_source_test:http_media_downloader_unit_test",
       "unittest/key_type_test:av_codec_key_type_test",
       "unittest/media_sink_test:av_audio_sink_unit_test",
       "unittest/sa_avcodec_test:sa_avcodec_unit_test",
@@ -104,10 +106,12 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiodecodersetparameter_fuzzer:AudiodecoderSetParameterFuzzTest",
       "fuzztest/audioencoder_fuzzer:AudioencoderFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
+      "fuzztest/drm_decryptor_fuzzer:DrmDecryptorFuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
+      "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
     ]
   }
 }

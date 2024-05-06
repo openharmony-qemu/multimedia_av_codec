@@ -75,13 +75,13 @@ private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
     void SetNeedListen(const bool needListen);
-    typedef enum : int32_t {
+    typedef enum : uint32_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
         INVALID_CALLBACK,
     } CallbackMode;
 
-    typedef enum : int32_t {
+    typedef enum : uint32_t {
         CODEC_BUFFER_MODE = 0,
         CODEC_SURFACE_MODE = 1,
         CODEC_SET_PARAMETER_CALLBACK = 1 << 1,
@@ -89,8 +89,8 @@ private:
     } CodecMode;
 
     bool hasOnceConfigured_ = false;
-    int32_t callbackMode_ = INVALID_CALLBACK;
-    int32_t codecMode_ = CODEC_BUFFER_MODE;
+    uint32_t callbackMode_ = INVALID_CALLBACK;
+    uint32_t codecMode_ = CODEC_BUFFER_MODE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;

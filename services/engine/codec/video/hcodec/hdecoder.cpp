@@ -228,8 +228,10 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
     if (outputFormat_) {
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, rect.nLeft + rect.nWidth - 1);
-        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, rect.nTop + rect.nHeight - 1);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT,
+            static_cast<int32_t>(rect.nLeft + rect.nWidth) - 1);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM,
+            static_cast<int32_t>(rect.nTop + rect.nHeight) - 1);
     }
 }
 
@@ -256,6 +258,9 @@ int32_t HDecoder::OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface)
     }
     currSurface_ = SurfaceItem(surface);
     HLOGI("set surface(%" PRIu64 ")(%s) succ", surface->GetUniqueId(), surface->GetName().c_str());
+    if (surface->GetName() == string("BootAnimationNode")) {
+        debugMode_ = true;
+    }
     return AVCS_ERR_OK;
 }
 
@@ -589,7 +594,7 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 
 GSError HDecoder::OnBufferReleasedByConsumer(uint64_t surfaceId)
 {
-    ParamSP param = ParamBundle::Create();
+    ParamSP param = make_shared<ParamBundle>();
     param->SetValue("surfaceId", surfaceId);
     SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
     return GSERROR_OK;
@@ -622,9 +627,6 @@ bool HDecoder::GetOneBufferFromSurface()
         surface->CancelBuffer(buffer);
         return false;
     }
-    if (!debugMode_) {
-        HLOGI("outBufId = %u, surface -> us", iter->bufferId);
-    }
     ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
     WaitFence(fence);
     int32_t ret = NotifyOmxToFillThisOutBuffer(*iter);
@@ -646,9 +648,6 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
               currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), ret);
         return AVCS_ERR_UNKNOWN;
-    }
-    if (!debugMode_) {
-        HLOGI("outBufId = %u, us -> surface, pts = %" PRId64, info.bufferId, info.omxBuffer->pts);
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
@@ -718,8 +717,6 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     NotifySurfaceToRenderOutputBuffer(info);
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
-    } else {
-        GetOneBufferFromSurface();
     }
 }
 
@@ -729,10 +726,7 @@ void HDecoder::OnEnterUninitializedState()
 }
 
 HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface)
-{
-    surface_ = surface;
-    originalTransform_ = surface->GetTransform();
-}
+    : surface_(surface), originalTransform_(surface->GetTransform()) {}
 
 void HDecoder::SurfaceItem::Release()
 {
@@ -780,9 +774,6 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
             return AVCS_ERR_UNKNOWN;
         }
         if (info.owner == OWNED_BY_SURFACE) {
-            if (!debugMode_) {
-                HLOGI("outBufId = %u, surface -> us", info.bufferId);
-            }
             ChangeOwner(info, BufferOwner::OWNED_BY_US);
         }
         if (info.owner == OWNED_BY_US) {

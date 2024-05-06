@@ -46,13 +46,13 @@ FuncTracker::~FuncTracker()
 
 void HCodec::PrintAllBufferInfo()
 {
-    PrintAllBufferInfo(true);
-    PrintAllBufferInfo(false);
+    auto now = chrono::steady_clock::now();
+    PrintAllBufferInfo(true, now);
+    PrintAllBufferInfo(false, now);
 }
 
-void HCodec::PrintAllBufferInfo(bool isInput)
+void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
 {
-    auto now = chrono::steady_clock::now();
     std::array<uint32_t, OWNER_CNT> arr;
     arr.fill(0);
     std::stringstream s;
@@ -69,17 +69,24 @@ void HCodec::PrintAllBufferInfo(bool isInput)
 
 std::string HCodec::OnGetHidumperInfo()
 {
+    auto now = chrono::steady_clock::now();
     std::stringstream s;
     s << endl;
     s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
+    s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_ << endl;
     for (const BufferInfo& info : inputBufferPool_) {
-        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
+        int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
+        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
+          << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl;
     s << "        " << "------------OUTPUT----------" << endl;
+    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << outRecord_.totalCnt << endl;
     for (const BufferInfo& info : outputBufferPool_) {
-        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
+        int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
+        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
+          << ", holdMs = " << holdMs << endl;
     }
     s << "        " << "----------------------------" << endl;
     return s.str();
@@ -107,11 +114,32 @@ void HCodec::TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput
 
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
-    if (!debugMode_) {
-        info.lastOwnerChangeTime = chrono::steady_clock::now();
-        info.owner = newOwner;
-        return;
+    debugMode_ ? ChangeOwnerDebug(info, newOwner) : ChangeOwnerNormal(info, newOwner);
+}
+
+void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
+{
+    BufferOwner oldOwner = info.owner;
+    auto now = chrono::steady_clock::now();
+    info.lastOwnerChangeTime = now;
+    info.owner = newOwner;
+    static constexpr uint64_t PRINT_PER_FRAME = 200;
+    if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
+        inTotalCnt_++;
+        if (inTotalCnt_ % PRINT_PER_FRAME == 0) {
+            PrintAllBufferInfo(info.isInput, now);
+        }
     }
+    if (!info.isInput && oldOwner == OWNED_BY_OMX && newOwner == OWNED_BY_US) {
+        outRecord_.totalCnt++;
+        if (outRecord_.totalCnt % PRINT_PER_FRAME == 0) {
+            PrintAllBufferInfo(info.isInput, now);
+        }
+    }
+}
+
+void HCodec::ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner)
+{
     BufferOwner oldOwner = info.owner;
     const char* oldOwnerStr = ToString(oldOwner);
     const char* newOwnerStr = ToString(newOwner);
@@ -119,7 +147,8 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 
     // calculate hold time
     auto now = chrono::steady_clock::now();
-    uint64_t holdUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count();
+    uint64_t holdUs = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
     double holdMs = holdUs / US_TO_MS;
     TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner][newOwner] :
                                                 outputHoldTimeRecord_[oldOwner][newOwner];
@@ -131,7 +160,7 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
     info.lastOwnerChangeTime = now;
     info.owner = newOwner;
     std::array<uint32_t, OWNER_CNT> arr = CountOwner(info.isInput);
-    HLOGD("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
+    HLOGI("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
           "%u/%u/%u/%u",
           idStr, info.bufferId, holdMs, aveHoldMs, oldOwnerStr, newOwnerStr,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE]);
@@ -155,13 +184,14 @@ void HCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<s
     }
     inTotalCnt_++;
 
-    uint64_t fromFirstInToNow = chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count();
+    uint64_t fromFirstInToNow = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count());
     if (fromFirstInToNow == 0) {
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
     } else {
         double inFps = inTotalCnt_ * US_TO_S / fromFirstInToNow;
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag, inFps);
     }
 }
@@ -180,21 +210,23 @@ void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<
     }
     outRecord_.totalCnt++;
 
-    uint64_t fromInToOut = chrono::duration_cast<chrono::microseconds>(now - it->second).count();
+    uint64_t fromInToOut = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - it->second).count());
     inTimeMap_.erase(it);
     outRecord_.totalCostUs += fromInToOut;
     double oneFrameCostMs = fromInToOut / US_TO_MS;
     double averageCostMs = outRecord_.totalCostUs / US_TO_MS / outRecord_.totalCnt;
 
-    uint64_t fromFirstOutToNow = chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count();
+    uint64_t fromFirstOutToNow = static_cast<uint64_t>
+        (chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count());
     if (fromFirstOutToNow == 0) {
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms)",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs);
     } else {
         double outFps = outRecord_.totalCnt * US_TO_S / fromFirstOutToNow;
-        HLOGD("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
               "cost %.2f ms (%.2f ms), out fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs, outFps);
@@ -272,7 +304,7 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
     char name[128];
     int ret = 0;
     if (dumpAsVideo) {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%s.%s",
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%u)_fmt%s.%s",
                         DUMP_PATH, prefix.c_str(), w, h, alignedW, assumeAlignedH.value_or(h),
                         fmt->strFmt.c_str(), suffix.c_str());
     } else {
@@ -309,7 +341,8 @@ void HCodec::BufferInfo::DecideDumpInfo(optional<uint32_t>& assumeAlignedH, stri
             if (GetYuv420Size(alignedW, h) == totalSize) {
                 break;
             }
-            uint32_t alignedH = totalSize * 2 / 3 / alignedW; // 2 bytes per pixel for UV, 3 bytes per pixel for YUV
+            // 2 bytes per pixel for UV, 3 bytes per pixel for YUV
+            uint32_t alignedH = totalSize * 2 / 3 / static_cast<uint32_t>(alignedW);
             if (GetYuv420Size(alignedW, alignedH) == totalSize) {
                 dumpAsVideo = true;
                 assumeAlignedH = alignedH;

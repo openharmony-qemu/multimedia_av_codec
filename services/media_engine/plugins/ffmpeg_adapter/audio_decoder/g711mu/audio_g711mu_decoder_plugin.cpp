@@ -21,8 +21,6 @@
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 
-#include "plugin/plugin_loader_v2.h"
-
 
 namespace {
 using namespace OHOS::Media;
@@ -70,11 +68,6 @@ void UnRegisterAudioDecoderPlugin() {}
 PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
     UnRegisterAudioDecoderPlugin);
 }  // namespace
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<AudioG711muDecoderPlugin>("g711mu_audio_decoder"));
-}
 
 namespace OHOS {
 namespace Media {

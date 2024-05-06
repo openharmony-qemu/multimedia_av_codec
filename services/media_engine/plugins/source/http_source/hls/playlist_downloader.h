@@ -57,6 +57,7 @@ public:
     virtual bool IsLive() const = 0;
     virtual int32_t GetVideoWidth() const = 0;
     virtual int32_t GetVideoHeight() const = 0;
+    virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     void Resume();
     void Pause();
     void Close();
@@ -66,6 +67,7 @@ public:
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
+    std::map<std::string, std::string> GetHttpHeader();
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

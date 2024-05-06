@@ -30,6 +30,11 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+#ifdef TESTING
+#define PRIVATE public
+#else
+#define PRIVATE private
+#endif
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
     HlsMediaDownloader() noexcept;
@@ -67,8 +72,9 @@ public:
     void SetDownloadErrorState() override;
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
+    void SetInterruptState(bool isInterruptNeeded) override;
 
-private:
+PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void OnWriteRingBuffer(uint32_t len);
@@ -87,7 +93,7 @@ private:
     int TransferSizeToBitRate(int width);
     bool CheckReadStatus();
     bool CheckReadTimeOut();
-private:
+PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
     std::atomic<bool> usingExtraRingBuffer_ {false};

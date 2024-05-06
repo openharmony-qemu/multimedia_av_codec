@@ -35,12 +35,12 @@ public:
 private:
     using CreateByNameFuncType = void (*)(const std::string &name, std::shared_ptr<CodecBase> &codec);
     using GetCapabilityFuncType = int32_t (*)(std::vector<CapabilityData> &caps);
-    std::shared_ptr<void> codecHandle_{nullptr};
-    CreateByNameFuncType createFunc_;
-    GetCapabilityFuncType getCapsFunc_;
-    const char *libPath_;
-    const char *createFuncName_;
-    const char *getCapsFuncName_;
+    std::shared_ptr<void> codecHandle_ = nullptr;
+    CreateByNameFuncType createFunc_ = nullptr;
+    GetCapabilityFuncType getCapsFunc_ = nullptr;
+    const char *libPath_ = nullptr;
+    const char *createFuncName_ = nullptr;
+    const char *getCapsFuncName_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

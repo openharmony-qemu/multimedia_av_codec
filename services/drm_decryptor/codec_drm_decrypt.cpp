@@ -275,7 +275,8 @@ void CodecDrmDecrypt::SetDrmAlgoAndBlocks(uint8_t algo, MetaDrmCencInfo *cencInf
     return;
 }
 
-int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index)
 {
     uint32_t i = index;
     /*
@@ -301,7 +302,8 @@ int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(uint8_t *data, uint32_t dataSize, uint
     return -1;
 }
 
-int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index)
 {
     uint32_t i = index;
     uint8_t nalType = (data[i + DRM_LEGACY_LEN] >> DRM_SHIFT_LEFT_NUM) & DRM_H265_VIDEO_NAL_TYPE_UMASK_NUM;
@@ -332,7 +334,8 @@ int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(uint8_t *data, uint32_t dataSize, uin
     return -1;
 }
 
-int CodecDrmDecrypt::DrmFindH264CeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+int CodecDrmDecrypt::DrmFindH264CeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index)
 {
     uint32_t i = index;
     uint8_t nalType = data[i + DRM_LEGACY_LEN] & DRM_H264_VIDEO_NAL_TYPE_UMASK_NUM;
@@ -364,7 +367,8 @@ int CodecDrmDecrypt::DrmFindH264CeiNalUnit(uint8_t *data, uint32_t dataSize, uin
     return -1;
 }
 
-int CodecDrmDecrypt::DrmFindCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index) const
+int CodecDrmDecrypt::DrmFindCeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index) const
 {
     int ret = 0;
     if (codingType_ == DRM_VIDEO_AVS) {
@@ -377,7 +381,8 @@ int CodecDrmDecrypt::DrmFindCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_
     return ret;
 }
 
-int CodecDrmDecrypt::DrmFindCeiPos(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t &ceiEndPos) const
+int CodecDrmDecrypt::DrmFindCeiPos(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t &ceiEndPos) const
 {
     uint32_t i;
     for (i = 0; (i + DRM_LEGACY_LEN) < dataSize; i++) {
@@ -407,7 +412,7 @@ int CodecDrmDecrypt::DrmFindCeiPos(uint8_t *data, uint32_t dataSize, uint32_t &c
     return 0;
 }
 
-void CodecDrmDecrypt::DrmFindEncryptionFlagPos(uint8_t *data, uint32_t dataSize, uint32_t &pos)
+void CodecDrmDecrypt::DrmFindEncryptionFlagPos(const uint8_t *data, uint32_t dataSize, uint32_t &pos)
 {
     uint32_t offset = pos;
     if (data[offset + DRM_LEGACY_LEN] == DRM_AVS_FLAG) {
@@ -459,7 +464,7 @@ int CodecDrmDecrypt::DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &po
     return 0;
 }
 
-int CodecDrmDecrypt::DrmGetKeyIv(uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
+int CodecDrmDecrypt::DrmGetKeyIv(const uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
 {
     uint32_t offset = pos;
     if (offset >= dataSize) {
@@ -484,8 +489,8 @@ int CodecDrmDecrypt::DrmGetKeyIv(uint8_t *data, uint32_t dataSize, uint32_t &pos
     return 0;
 }
 
-int CodecDrmDecrypt::DrmParseDrmDescriptor(uint8_t *data, uint32_t dataSize, uint32_t &pos, uint8_t drmDescriptorFlag,
-    MetaDrmCencInfo *cencInfo)
+int CodecDrmDecrypt::DrmParseDrmDescriptor(const uint8_t *data, uint32_t dataSize, uint32_t &pos,
+    uint8_t drmDescriptorFlag, MetaDrmCencInfo *cencInfo)
 {
     uint32_t offset = pos;
     if (drmDescriptorFlag == 0) {
@@ -502,8 +507,8 @@ int CodecDrmDecrypt::DrmParseDrmDescriptor(uint8_t *data, uint32_t dataSize, uin
     return 0;
 }
 
-void CodecDrmDecrypt::DrmSetKeyInfo(uint8_t *data, uint32_t dataSize, uint32_t ceiStartPos, uint8_t &isAmbiguity,
-    MetaDrmCencInfo *cencInfo)
+void CodecDrmDecrypt::DrmSetKeyInfo(const uint8_t *data, uint32_t dataSize, uint32_t ceiStartPos,
+    uint8_t &isAmbiguity, MetaDrmCencInfo *cencInfo)
 {
     uint32_t totalSize = dataSize;
     uint32_t pos = ceiStartPos;
@@ -511,7 +516,7 @@ void CodecDrmDecrypt::DrmSetKeyInfo(uint8_t *data, uint32_t dataSize, uint32_t c
     uint8_t drmDescriptorFlag = 0;
     uint8_t drmNotAmbiguityFlag = 0;
     CHECK_AND_RETURN_LOG((dataSize != 0), "DrmSetKeyInfo dataSize is 0");
-    ceiBuf = (uint8_t *)malloc(dataSize);
+    ceiBuf = reinterpret_cast<uint8_t *>(malloc(dataSize));
     if (ceiBuf == nullptr) {
         AVCODEC_LOGE("malloc cei data failed");
         return;

@@ -15,20 +15,15 @@
 #include "ffmpeg_decoder_plugin.h"
 #include <cstring>
 #include <iostream>
-#include <memory>
 #include <vector>
 #include <unordered_map>
 #include <utility>
 #include <string_view>
-#include "ffmpeg_aac_decoder_plugin.h"
-#include "ffmpeg_flac_decoder_plugin.h"
 #include "osal/utils/util.h"
 #include "common/log.h"
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "meta/mime_type.h"
-
-#include "plugin/plugin_loader_v2.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -116,30 +111,4 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
 void UnRegisterAudioDecoderPlugin() {}
 
 PLUGIN_DEFINITION(FFmpegAudioDecoders, LicenseType::LGPL, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
-
-REGISTER_PLUGIN
-{
-    auto extra = pluginLoader->GetExtraInfo();
-    std::string mimeType = extra.find("mimeType")->second;
-    std::shared_ptr<PluginBase> plugin = nullptr;
-
-    if (mimeType == MimeType::AUDIO_MPEG) {
-        plugin = std::make_shared<FFmpegMp3DecoderPlugin>(std::string(AVCodecCodecName::AUDIO_DECODER_MP3_NAME));
-    } else if (mimeType == MimeType::AUDIO_AAC) {
-        plugin = std::make_shared<FFmpegAACDecoderPlugin>(std::string(AVCodecCodecName::AUDIO_DECODER_AAC_NAME));
-    } else if (mimeType == MimeType::AUDIO_FLAC) {
-        plugin = std::make_shared<FFmpegFlacDecoderPlugin>(std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME));
-    } else if (mimeType == MimeType::AUDIO_VORBIS) {
-        plugin = std::make_shared<FFmpegVorbisDecoderPlugin>(
-            std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME));
-    } else if (mimeType == MimeType::AUDIO_AMR_NB) {
-        plugin = std::make_shared<FFmpegAmrnbDecoderPlugin>(std::string(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME));
-    } else if (mimeType == MimeType::AUDIO_AMR_WB) {
-        plugin = std::make_shared<FFmpegAmrWbDecoderPlugin>(std::string(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME));
-    } else {
-        AVCODEC_LOGD("no plugin for mime type: %{public}s", mimeType.c_str());
-    }
-
-    pluginLoader->RegisterPlugin(plugin);
-}
 } // namespace

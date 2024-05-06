@@ -17,6 +17,7 @@
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "source/audio_capture/audio_capture_module.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -97,6 +98,7 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Init");
     receiver_ = receiver;
     callback_ = callback;
     audioCaptureModule_ = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
@@ -125,6 +127,7 @@ void AudioCaptureFilter::SetLogTag(std::string logTag)
 Status AudioCaptureFilter::PrepareAudioCapture()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "PrepareAudioCapture", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::PrepareAudioCapture");
     if (!taskPtr_) {
         taskPtr_ = std::make_shared<Task>("DataReader", groupId_, TaskType::AUDIO);
         taskPtr_->RegisterJob([this] {
@@ -152,6 +155,7 @@ Status AudioCaptureFilter::SetAudioCaptureChangeCallback(
 Status AudioCaptureFilter::DoPrepare()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Prepare");
     if (callback_ == nullptr) {
         MEDIA_LOG_E(PUBLIC_LOG_S "callback is nullptr", logTag_.c_str());
         return Status::ERROR_NULL_POINTER;
@@ -164,6 +168,7 @@ Status AudioCaptureFilter::DoPrepare()
 Status AudioCaptureFilter::DoStart()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
     eos_ = false;
     auto res = Status::ERROR_INVALID_OPERATION;
     // start audioCaptureModule firstly
@@ -181,6 +186,7 @@ Status AudioCaptureFilter::DoStart()
 Status AudioCaptureFilter::DoPause()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Pause");
     if (taskPtr_) {
         taskPtr_->Pause();
     }
@@ -197,6 +203,7 @@ Status AudioCaptureFilter::DoPause()
 Status AudioCaptureFilter::DoResume()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Resume");
     if (taskPtr_) {
         taskPtr_->Start();
     }
@@ -213,6 +220,7 @@ Status AudioCaptureFilter::DoResume()
 Status AudioCaptureFilter::DoStop()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Stop");
     // stop task firstly
     if (taskPtr_) {
         taskPtr_->StopAsync();
@@ -237,6 +245,7 @@ Status AudioCaptureFilter::DoFlush()
 Status AudioCaptureFilter::DoRelease()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Release");
     if (taskPtr_) {
         taskPtr_->Stop();
     }
@@ -251,18 +260,21 @@ Status AudioCaptureFilter::DoRelease()
 void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::SetParameter");
     audioCaptureConfig_ = meta;
 }
 
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::SetParameter");
     audioCaptureModule_->GetParameter(meta);
 }
 
 Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::LinkNext");
     auto meta = std::make_shared<Meta>();
     GetParameter(meta);
     nextFilter_ = nextFilter;
@@ -310,6 +322,7 @@ Status AudioCaptureFilter::SendEos()
 void AudioCaptureFilter::ReadLoop()
 {
     MEDIA_LOG_D(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::ReadLoop");
     if (eos_.load()) {
         return;
     }
@@ -373,6 +386,7 @@ int32_t AudioCaptureFilter::GetMaxAmplitude()
 void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "OnLinkedResult", logTag_.c_str());
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::OnLinkedResult");
     outputBufferQueue_ = queue;
     PrepareAudioCapture();
 }

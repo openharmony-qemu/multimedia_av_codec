@@ -33,6 +33,22 @@ using MetaDrmCencInfoMode = Plugins::MetaDrmCencInfoMode;
 struct OH_AVCencInfo {
     explicit OH_AVCencInfo()
     {
+        cencInfo_.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED;
+        for (int32_t i = 0; i < META_DRM_KEY_ID_SIZE; i++) {
+            cencInfo_.keyId[i] = 0;
+        }
+        cencInfo_.keyIdLen = 0;
+        for (int32_t i = 0; i < META_DRM_IV_SIZE; i++) {
+            cencInfo_.iv[i] = 0;
+        }
+        cencInfo_.ivLen = 0;
+        cencInfo_.encryptBlocks = 0;
+        cencInfo_.skipBlocks = 0;
+        cencInfo_.firstEncryptOffset = 0;
+        cencInfo_.subSamples[0].clearHeaderLen = 0;
+        cencInfo_.subSamples[0].payLoadLen = 0;
+        cencInfo_.subSampleNum = 1;
+        cencInfo_.mode = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
     }
     ~OH_AVCencInfo() = default;
 

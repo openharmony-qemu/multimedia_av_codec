@@ -490,7 +490,7 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
     CHECK_AND_RETURN_RET_LOG(window->surface != nullptr, AV_ERR_INVALID_VAL, "Input window surface is nullptr!");
 
     GSError gsRet = window->surface->Disconnect();
-    EXPECT_AND_LOGW(gsRet != GSERROR_OK, "Disconnect failed!, %{public}s", GSErrorStr(gsRet).c_str());
+    EXPECT_AND_LOGI(gsRet != GSERROR_OK, "Disconnect failed!, %{public}s", GSErrorStr(gsRet).c_str());
 
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");

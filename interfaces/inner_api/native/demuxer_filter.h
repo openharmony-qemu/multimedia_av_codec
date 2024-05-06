@@ -75,6 +75,7 @@ public:
     bool GetDuration(int64_t& durationMs);
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetSpeed(float speed);
+    void SetInterruptState(bool isInterruptNeeded);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

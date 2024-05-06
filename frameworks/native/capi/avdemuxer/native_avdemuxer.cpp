@@ -52,7 +52,7 @@ static int32_t ProcessApplicationDrmInfo(DRM_MediaKeySystemInfo *info,
             info->psshInfo[index].uuid[i / step] = uuidByte;
         }
 
-        info->psshInfo[index].dataLen = item.second.size();
+        info->psshInfo[index].dataLen = static_cast<int32_t>(item.second.size());
 
         ret = memset_s(info->psshInfo[index].data, MAX_PSSH_DATA_LEN, 0x00, MAX_PSSH_DATA_LEN);
         CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "memset_s pssh failed");
@@ -233,7 +233,7 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL,
         "New DemuxerObject failed when seek!");
 
-    int32_t ret = demuxerObj->demuxer_->SeekToTime(millisecond, static_cast<OHOS::Media::Plugins::SeekMode>(mode));
+    int32_t ret = demuxerObj->demuxer_->SeekToTime(millisecond, static_cast<OHOS::Media::SeekMode>(mode));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "demuxer_ SeekToTime failed!");
 

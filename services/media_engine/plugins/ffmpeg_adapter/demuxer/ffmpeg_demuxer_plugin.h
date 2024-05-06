@@ -62,10 +62,6 @@ public:
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
 
 private:
-    std::shared_ptr<AVInputFormat> InitAVInputFormat(std::shared_ptr<DataSource> dataSource);
-    int SniffAVInputFormat(const AVInputFormat* avInputFormat, std::shared_ptr<DataSource> dataSource);
-    void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str);
-
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
