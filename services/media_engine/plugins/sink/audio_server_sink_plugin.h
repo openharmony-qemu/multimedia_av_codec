@@ -40,7 +40,7 @@ public:
 
     Status Init() override;
 
-    Status Deinit() override;
+    __attribute__((no_sanitize("cfi"))) Status Deinit() override;
 
     Status Prepare() override;
 
