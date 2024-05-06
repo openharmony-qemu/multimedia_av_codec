@@ -304,9 +304,8 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         streamDemuxer_ = std::make_shared<LiveStreamDemuxer>();
     }
     streamDemuxer_->SetSource(source_);
-    streamDemuxer_->Init(uri_, mediaDataSize_);
-
-    InitPlugin(Plugins::SubPluginType::FFMPEG_DEMUXER);
+    std::string type = streamDemuxer_->Init(uri_, mediaDataSize_);
+    MediaTypeFound(std::move(type));
 
     MediaInfo mediaInfo;
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -711,19 +710,46 @@ Status MediaDemuxer::Stop()
     return plugin_->Stop();
 }
 
-void MediaDemuxer::InitPlugin(const Plugins::SubPluginType& subPluginType)
+bool MediaDemuxer::CreatePlugin(std::string pluginName)
 {
-    auto plugin = Plugins::PluginManagerV2::Instance().CreatePlugin(Plugins::PluginType::DEMUXER, subPluginType);
+    if (plugin_) {
+        plugin_->Deinit();
+    }
+    auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::DEMUXER);
     plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(plugin);
     if (!plugin_ || plugin_->Init() != Status::OK) {
-        MEDIA_LOG_E("CreatePlugin failed.");
-        return;
+        MEDIA_LOG_E("CreatePlugin " PUBLIC_LOG_S " failed.", pluginName.c_str());
+        return false;
     }
-
     plugin_->SetCallback(this);
+    pluginName_.swap(pluginName);
+    return true;
+}
+
+bool MediaDemuxer::InitPlugin(std::string pluginName)
+{
+    if (pluginName.empty()) {
+        return false;
+    }
+    if (pluginName_ != pluginName) {
+        FALSE_RETURN_V(CreatePlugin(std::move(pluginName)), false);
+    } else {
+        if (plugin_->Reset() != Status::OK) {
+            FALSE_RETURN_V(CreatePlugin(std::move(pluginName)), false);
+        }
+    }
+    MEDIA_LOG_I("InitPlugin, " PUBLIC_LOG_S " used.", pluginName_.c_str());
     streamDemuxer_->SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     Status st = plugin_->SetDataSource(dataSource_);
-    MEDIA_LOG_I("InitPlugin, result status = %{public}d used.", (st == Status::OK ? 0 : 1));
+    return st == Status::OK;
+}
+
+void MediaDemuxer::MediaTypeFound(std::string pluginName)
+{
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::MediaTypeFound");
+    if (!InitPlugin(std::move(pluginName))) {
+        MEDIA_LOG_E("MediaTypeFound init plugin error.");
+    }
 }
 
 bool MediaDemuxer::HasVideo()

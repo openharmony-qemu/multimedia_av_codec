@@ -25,7 +25,7 @@
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_base.h"
-#include "plugin/plugin_manager_v2.h"
+#include "plugin/plugin_manager.h"
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
 #include "meta/media_types.h"
@@ -35,8 +35,6 @@ namespace OHOS {
 namespace Media {
 using SourceType = OHOS::Media::Plugins::SourceType;
 using MediaSource = OHOS::Media::Plugins::MediaSource;
-using Buffer = OHOS::Media::Plugins::Buffer;
-using SeekMode = OHOS::Media::Plugins::SeekMode;
 
 class CallbackImpl : public Plugins::Callback {
 public:
@@ -89,6 +87,8 @@ private:
     static std::string GetUriSuffix(const std::string& uri);
     bool GetProtocolByUri();
     bool ParseProtocol(const std::shared_ptr<MediaSource>& source);
+    Status CreatePlugin(const std::shared_ptr<Plugins::PluginInfo>& info, const std::string& name,
+        Plugins::PluginManager& manager);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
 
     void ClearData();

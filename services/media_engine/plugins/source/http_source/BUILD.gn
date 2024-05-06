@@ -87,7 +87,7 @@ ohos_shared_library("media_plugin_HttpSource") {
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins/source/http_source"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
