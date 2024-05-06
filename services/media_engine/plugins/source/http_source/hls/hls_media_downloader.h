@@ -45,10 +45,10 @@ public:
     void Pause() override;
     void Resume() override;
     bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
-    bool SeekToTime(uint64_t seekTime, SeekMode mode) override;
+    bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
     size_t GetContentLength() const override;
-    uint64_t GetDuration() const override;
+    int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
     void SetCallback(Callback* cb) override;
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
@@ -90,7 +90,7 @@ PRIVATE:
     void DownBufferSize();
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
-    int TransferSizeToBitRate(int width);
+    uint64_t TransferSizeToBitRate(int width);
     bool CheckReadStatus();
     bool CheckReadTimeOut();
 PRIVATE:

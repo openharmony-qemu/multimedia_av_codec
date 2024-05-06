@@ -117,13 +117,13 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
         totalRingBufferSize_ = expectDuration_ * currentBitrate_;
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
             MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
-            PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+            PUBLIC_LOG_D64 ", setting buffer size: " PUBLIC_LOG_D64 ". ",
             totalRingBufferSize_, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
             buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
             totalRingBufferSize_ = RING_BUFFER_SIZE;
         } else if (totalRingBufferSize_ > MAX_BUFFER_SIZE) {
             MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
-            PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+            PUBLIC_LOG_D64 ", setting buffer size: " PUBLIC_LOG_D64 ". ",
             totalRingBufferSize_, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
             buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
             totalRingBufferSize_ = MAX_BUFFER_SIZE;
@@ -239,7 +239,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
-    seekTime_ = seekTime;
+    seekTime_ = static_cast<int64_t>(seekTime);
     buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
@@ -637,7 +637,7 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
     if (desBitRate == curBitrate) {
         return;
     }
-    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double> bitRate / 8.0 * 0.3); // low size:300ms * bitrate
+    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double>(bitRate) / 8.0 * 0.3); // low size:300ms * bitrate
 
     // switch to high bitrate,if buffersize less than lowsize, do not switch
     if (curBitrate < desBitRate && buffer_->GetSize() < bufferLowSize) {
