@@ -85,6 +85,7 @@ private:
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     sptr<DrmStandard::IMediaDecryptModuleService> decryptModuleProxy_;
     int32_t svpFlag_ = SVP_CLEAR;
+    MetaDrmCencInfoMode mode_ = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
 };
 
 } // namespace MediaAVCodec

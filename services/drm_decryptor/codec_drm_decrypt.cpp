@@ -595,12 +595,6 @@ int32_t CodecDrmDecrypt::DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, s
                 AVCODEC_LOGE("DrmVideoCencDecrypt parameter err");
                 return ret;
             }
-            if (cencInfo->mode == MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_NOT_SET) {
-                uint8_t isAmbiguity = 1;
-                DrmGetCencInfo(inBuf, dataSize, isAmbiguity, cencInfo);
-                DrmModifyCencInfo(inBuf, dataSize, isAmbiguity, cencInfo);
-                cencInfo->subSampleNum = DRM_TS_SUB_SAMPLE_NUM;
-            }
             if (cencInfo->algo == MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED) {
                 cencInfo->subSampleNum = 1;
                 cencInfo->subSamples[0].clearHeaderLen = dataSize;
@@ -614,6 +608,14 @@ int32_t CodecDrmDecrypt::DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, s
             clearCencInfo.subSamples[0].clearHeaderLen = dataSize;
             clearCencInfo.subSamples[0].payLoadLen = 0;
             cencInfo = reinterpret_cast<MetaDrmCencInfo *>(&clearCencInfo);
+        }
+        if (cencInfo->mode == MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_NOT_SET ||
+            mode_ == MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_NOT_SET) {
+            uint8_t isAmbiguity = 1;
+            DrmGetCencInfo(inBuf, dataSize, isAmbiguity, cencInfo);
+            DrmModifyCencInfo(inBuf, dataSize, isAmbiguity, cencInfo);
+            cencInfo->subSampleNum = DRM_TS_SUB_SAMPLE_NUM;
+            mode_ = cencInfo->mode;
         }
         ret = DecryptMediaData(cencInfo, inBuf, outBuf);
     }
@@ -704,6 +706,7 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
     } else {
         svpFlag_ = SVP_FALSE;
     }
+    mode_ = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
 }
 
 int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
