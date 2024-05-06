@@ -156,6 +156,7 @@ protected:
     void ReplyErrorCode(MsgId id, int32_t err);
     void PrintAllBufferInfo();
     void PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
+    void PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
     std::string OnGetHidumperInfo();
     std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
     void TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput);
@@ -329,10 +330,10 @@ protected:
         uint64_t totalCnt = 0;
         uint64_t totalCostUs = 0;
     };
-    std::array<std::array<TotalCntAndCost, OWNER_CNT>, OWNER_CNT> inputHoldTimeRecord_;
+    std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
     uint64_t inTotalCnt_ = 0;
-    std::array<std::array<TotalCntAndCost, OWNER_CNT>, OWNER_CNT> outputHoldTimeRecord_;
+    std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
