@@ -78,7 +78,8 @@ void CodecDrmDecrypt::SetDrmAlgoAndBlocks(uint8_t algo, MetaDrmCencInfo *cencInf
     (void)cencInfo;
 }
 
-int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index)
 {
     (void)data;
     (void)dataSize;
@@ -87,7 +88,8 @@ int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(uint8_t *data, uint32_t dataSize, uint
     return AVCS_ERR_OK;
 }
 
-int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index)
 {
     (void)data;
     (void)dataSize;
@@ -96,7 +98,8 @@ int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(uint8_t *data, uint32_t dataSize, uin
     return AVCS_ERR_OK;
 }
 
-int CodecDrmDecrypt::DrmFindH264CeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+int CodecDrmDecrypt::DrmFindH264CeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index)
 {
     (void)data;
     (void)dataSize;
@@ -105,7 +108,8 @@ int CodecDrmDecrypt::DrmFindH264CeiNalUnit(uint8_t *data, uint32_t dataSize, uin
     return AVCS_ERR_OK;
 }
 
-int CodecDrmDecrypt::DrmFindCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index) const
+int CodecDrmDecrypt::DrmFindCeiNalUnit(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t index) const
 {
     (void)data;
     (void)dataSize;
@@ -114,7 +118,8 @@ int CodecDrmDecrypt::DrmFindCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_
     return AVCS_ERR_OK;
 }
 
-int CodecDrmDecrypt::DrmFindCeiPos(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t &ceiEndPos) const
+int CodecDrmDecrypt::DrmFindCeiPos(const uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos,
+    uint32_t &ceiEndPos) const
 {
     (void)data;
     (void)dataSize;
@@ -123,7 +128,7 @@ int CodecDrmDecrypt::DrmFindCeiPos(uint8_t *data, uint32_t dataSize, uint32_t &c
     return AVCS_ERR_OK;
 }
 
-void CodecDrmDecrypt::DrmFindEncryptionFlagPos(uint8_t *data, uint32_t dataSize, uint32_t &pos)
+void CodecDrmDecrypt::DrmFindEncryptionFlagPos(const uint8_t *data, uint32_t dataSize, uint32_t &pos)
 {
     (void)data;
     (void)dataSize;
@@ -139,7 +144,7 @@ int CodecDrmDecrypt::DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &po
     return AVCS_ERR_OK;
 }
 
-int CodecDrmDecrypt::DrmGetKeyIv(uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
+int CodecDrmDecrypt::DrmGetKeyIv(const uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
 {
     (void)data;
     (void)dataSize;
@@ -148,8 +153,8 @@ int CodecDrmDecrypt::DrmGetKeyIv(uint8_t *data, uint32_t dataSize, uint32_t &pos
     return AVCS_ERR_OK;
 }
 
-int CodecDrmDecrypt::DrmParseDrmDescriptor(uint8_t *data, uint32_t dataSize, uint32_t &pos, uint8_t drmDescriptorFlag,
-    MetaDrmCencInfo *cencInfo)
+int CodecDrmDecrypt::DrmParseDrmDescriptor(const uint8_t *data, uint32_t dataSize, uint32_t &pos,
+    uint8_t drmDescriptorFlag, MetaDrmCencInfo *cencInfo)
 {
     (void)data;
     (void)dataSize;
@@ -159,8 +164,8 @@ int CodecDrmDecrypt::DrmParseDrmDescriptor(uint8_t *data, uint32_t dataSize, uin
     return AVCS_ERR_OK;
 }
 
-void CodecDrmDecrypt::DrmSetKeyInfo(uint8_t *data, uint32_t dataSize, uint32_t ceiStartPos, uint8_t &isAmbiguity,
-    MetaDrmCencInfo *cencInfo)
+void CodecDrmDecrypt::DrmSetKeyInfo(const uint8_t *data, uint32_t dataSize, uint32_t ceiStartPos,
+    uint8_t &isAmbiguity, MetaDrmCencInfo *cencInfo)
 {
     (void)data;
     (void)dataSize;
