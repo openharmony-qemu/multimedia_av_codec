@@ -986,32 +986,33 @@ void FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
 
 void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
 {
-    if (formatContext_ == nullptr) {
-        return;
-    }
-    int64_t startPts = 0;
-    int startTrackIndex = -1;
-    firstFrame_ = av_packet_alloc();
-    if (firstFrame_ == nullptr) {
-        return;
-    }
-    while (av_read_frame(formatContext_.get(), firstFrame_) >= 0) {
-        auto tempStream = formatContext_->streams[firstFrame_->stream_index];
-        if (startTrackIndex < 0 && IsAVTrack(*tempStream)) {
-            startPts = firstFrame_->pts;
-            startTrackIndex = firstFrame_->stream_index;
+    FALSE_RETURN_MSG(formatContext_ != nullptr, "formatContext_ is null");
+    MEDIA_LOG_I("GetVideoFirstKeyFrame enter\n");
+    AVPacket *pkt = nullptr;
+    while (1) {
+        if (pkt == nullptr) {
+            pkt = av_packet_alloc();
+            FALSE_RETURN_MSG(pkt != nullptr, "av_packet_alloc fail");
         }
 
-        if (static_cast<uint32_t>(firstFrame_->stream_index) == trackIndex) {
+        if (av_read_frame(formatContext_.get(), pkt) < 0) {
+            av_packet_unref(pkt);
             break;
         }
-        av_packet_unref(firstFrame_);
-    }
 
-    startPts = (startPts > 0) ? 0 : startPts;
-    auto rtv = av_seek_frame(formatContext_.get(), startTrackIndex, startPts, AVSEEK_FLAG_BACKWARD);
-    if (rtv < 0) {
-        MEDIA_LOG_W("seek failed, return value: ffmpeg error:" PUBLIC_LOG_D32, rtv);
+        cacheQueue_.AddTrackQueue(pkt->stream_index);
+        AddPacketToCacheQueue(pkt);
+
+        if (static_cast<uint32_t>(pkt->stream_index) == trackIndex) {
+            firstFrame_ = av_packet_alloc();
+            FALSE_RETURN_MSG(firstFrame_ != nullptr, "av_packet_alloc fail");
+            int ret = av_new_packet(firstFrame_, pkt->size);
+            FALSE_RETURN_MSG(ret >= 0, "av_new_packet fail");
+            av_packet_copy_props(firstFrame_, pkt);
+            memcpy_s(firstFrame_->data, pkt->size, pkt->data, pkt->size);
+            break;
+        }
+        pkt = nullptr;
     }
 }
 
