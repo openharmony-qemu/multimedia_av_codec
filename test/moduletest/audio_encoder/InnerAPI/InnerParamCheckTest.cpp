@@ -28,7 +28,7 @@ using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 constexpr uint32_t SAMPLE_RATE_44100 = 44100;
-constexpr uint32_t BIT_RATE_112000 = 112000;
+constexpr int64_t BIT_RATE_112000 = 112000;
 
 namespace {
 class InnerParamCheckTest : public testing::Test {
@@ -90,6 +90,55 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, Test
     ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, ret);
     encoderDemo->InnerDestroy();
 
+    delete encoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003
+ * @tc.name      : InnerConfigure - MD_KEY_BITRATE
+ * @tc.desc      : param check test
+ */
+HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+
+    int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    Format audioParams;
+
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, BIT_RATE_112000);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
+
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    encoderDemo->InnerReset();
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+
+    encoderDemo->InnerReset();
+    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_BITRATE, 0.1);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+
+    encoderDemo->InnerReset();
+    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_BITRATE, 0.1);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+
+    encoderDemo->InnerReset();
+    uint8_t b[100];
+    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_BITRATE, b, 100);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+
+    encoderDemo->InnerDestroy();
     delete encoderDemo;
 }
 
