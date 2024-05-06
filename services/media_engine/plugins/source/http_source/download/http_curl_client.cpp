@@ -74,9 +74,7 @@ std::string Trim(std::string str)
         return str;
     }
     while ((!str.empty()) && std::isspace(str[str.size() - 1])) {
-        if (!str.empty()) {
             str.erase(str.size() - 1, 1);
-        }
     }
     return str;
 }

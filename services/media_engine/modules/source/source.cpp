@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "media_types.h"
 #define HST_LOG_TAG "Source"
 
 #include "avcodec_trace.h"
@@ -33,14 +32,6 @@ static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"file", ProtocolType::FILE},
     {"stream", ProtocolType::STREAM},
     {"fd", ProtocolType::FD}
-};
-
-static std::unordered_map<std::string, SubPluginType> g_protocolToPugin = {
-    {"http", SubPluginType::HTTP_SOURCE},
-    {"https", SubPluginType::HTTP_SOURCE},
-    {"file", SubPluginType::FILE_SOURCE},
-    {"stream", SubPluginType::DATA_STREAM_SOURCE},
-    {"fd", SubPluginType::FILE_FD_SOURCE}
 };
 
 Source::Source()
@@ -268,6 +259,13 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
+void Source::SetInterruptState(bool isInterruptNeeded)
+{
+    if (plugin_) {
+        plugin_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 void Source::ActivateMode()
 {
     MediaAVCodec::AVCodecTrace trace("Source::ActivateMode");
@@ -356,6 +354,29 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     return ret;
 }
 
+Status Source::CreatePlugin(const std::shared_ptr<PluginInfo>& info, const std::string& name,
+    PluginManager& manager)
+{
+    MediaAVCodec::AVCodecTrace trace("Source::CreatePlugin");
+    if ((plugin_ != nullptr) && (pluginInfo_ != nullptr)) {
+        if (info->name == pluginInfo_->name && plugin_->Reset() == Status::OK) {
+            MEDIA_LOG_I("Reuse last plugin: " PUBLIC_LOG_S, name.c_str());
+            return Status::OK;
+        }
+        if (plugin_->Deinit() != Status::OK) {
+            MEDIA_LOG_E("Deinit last plugin: " PUBLIC_LOG_S " error", pluginInfo_->name.c_str());
+        }
+    }
+    plugin_ = std::static_pointer_cast<SourcePlugin>(manager.CreatePlugin(name, PluginType::SOURCE));
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("PluginManager CreatePlugin " PUBLIC_LOG_S " fail", name.c_str());
+        return Status::OK;
+    }
+    pluginInfo_ = info;
+    MEDIA_LOG_I("Create new plugin: \"" PUBLIC_LOG_S "\" success", pluginInfo_->name.c_str());
+    return Status::OK;
+}
+
 Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::FindPlugin");
@@ -367,25 +388,34 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
         MEDIA_LOG_E("protocol_ is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-
-    auto pluginTypeEntry = g_protocolToPugin.find(protocol_);
-    if (pluginTypeEntry == g_protocolToPugin.end()) {
-        MEDIA_LOG_E("no plugin for %{public}s", protocol_.c_str());
-        return Status::ERROR_INVALID_PARAMETER;
+    PluginManager& pluginManager = PluginManager::Instance();
+    auto nameList = pluginManager.ListPlugins(PluginType::SOURCE);
+    for (const std::string& name : nameList) {
+        std::shared_ptr<PluginInfo> info = pluginManager.GetPluginInfo(PluginType::SOURCE, name);
+        if (info == nullptr) {
+            MEDIA_LOG_W("info is null.");
+            continue;
+        }
+        MEDIA_LOG_I("name: " PUBLIC_LOG_S ", info->name: " PUBLIC_LOG_S, name.c_str(), info->name.c_str());
+        auto val = info->extra[PLUGIN_INFO_EXTRA_PROTOCOL];
+        if (Any::IsSameTypeWith<std::vector<ProtocolType>>(val)) {
+            MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S,
+                            protocol_.c_str(), name.c_str());
+            auto supportProtocols = AnyCast<std::vector<ProtocolType>>(val);
+            bool result = std::any_of(supportProtocols.begin(), supportProtocols.end(),
+                [&](const auto& supportProtocol) {
+                return supportProtocol == g_protocolStringToType[protocol_] && CreatePlugin(info,
+                    name, pluginManager) == Status::OK;
+            });
+            if (result) {
+                MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
+                    protocol_.c_str(), name.c_str());
+                return Status::OK;
+            }
+        }
     }
-
-    PluginManagerV2& pluginManager = PluginManagerV2::Instance();
-    auto subPluginType = pluginTypeEntry->second;
-
-    auto plugin = pluginManager.CreatePlugin(PluginType::SOURCE, subPluginType);
-    plugin_ = std::static_pointer_cast<SourcePlugin>(plugin);
-    if (plugin_ == nullptr) {
-        MEDIA_LOG_E("PluginManager CreatePlugin " PUBLIC_LOG_S " fail", protocol_.c_str());
-        return Status::OK;
-    }
-
-    MEDIA_LOG_I("Create new plugin: \"" PUBLIC_LOG_S "\" success", protocol_.c_str());
-    return Status::OK;
+    MEDIA_LOG_E("Cannot find any plugin");
+    return Status::ERROR_UNSUPPORTED_FORMAT;
 }
 
 int64_t Source::GetDuration()

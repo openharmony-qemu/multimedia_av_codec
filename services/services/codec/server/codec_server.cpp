@@ -420,7 +420,7 @@ int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
     int32_t ret = AVCS_ERR_OK;
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
-            uint32_t dataSize = decryptVideoBufs_[index].inBuf->memory_->GetSize();
+            uint32_t dataSize = static_cast<uint32_t>(decryptVideoBufs_[index].inBuf->memory_->GetSize());
             decryptVideoBufs_[index].outBuf->pts_ = decryptVideoBufs_[index].inBuf->pts_;
             decryptVideoBufs_[index].outBuf->dts_ = decryptVideoBufs_[index].inBuf->dts_;
             decryptVideoBufs_[index].outBuf->duration_ = decryptVideoBufs_[index].inBuf->duration_;

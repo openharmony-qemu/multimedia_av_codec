@@ -59,6 +59,7 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
+    void SetInterruptState(bool isInterruptNeeded) override;
 
 private:
     int64_t HttpMonitorLoop();

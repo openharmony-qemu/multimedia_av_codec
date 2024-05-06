@@ -74,6 +74,7 @@ public:
     {
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
     }
+    virtual void SetInterruptState(bool isInterruptNeeded) = 0;
 };
 }
 }

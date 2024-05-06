@@ -23,6 +23,8 @@
 #include "avcodec_audio_decoder_demo.h"
 #include "avcodec_audio_aac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_aac_encoder_demo.h"
+#include "avcodec_audio_avbuffer_amrnb_encoder_demo.h"
+#include "avcodec_audio_avbuffer_amrwb_encoder_demo.h"
 #include "avcodec_audio_avbuffer_decoder_inner_demo.h"
 #include "avcodec_audio_flac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_flac_encoder_demo.h"
@@ -55,6 +57,8 @@ using namespace OHOS::MediaAVCodec::InnerVideoDemo;
 using namespace OHOS::MediaAVCodec::E2EDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDecoderLbvcDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioEncoderLbvcDemo;
+using namespace OHOS::MediaAVCodec::AudioAvbufferAmrNbDemo;
+using namespace OHOS::MediaAVCodec::AudioAvbufferAmrWbDemo;
 using namespace std;
 
 static int RunAudioDecoder()
@@ -175,6 +179,8 @@ static int RunAudioEncoder()
     cout << "4: AAC-API11" << endl;
     cout << "5: FLAC-API11" << endl;
     cout << "6: G711MU-API11" << endl;
+    cout << "7: AMR-NB-API11" << endl;
+    cout << "8: AMR-WB-API11" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -197,6 +203,12 @@ static int RunAudioEncoder()
         audioEnc->RunCase();
     } else if (mode == "6") {
         auto audioEnc = std::make_unique<AEncAvbufferG711muDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "7") {
+        auto audioEnc = std::make_unique<AEncAvbufferAmrNbDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "8") {
+        auto audioEnc = std::make_unique<AEncAvbufferAmrWbDemo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;

@@ -96,10 +96,19 @@ void DownloadRequest::SaveHeader(const HeaderInfo* header)
     isHeaderUpdated = true;
 }
 
-bool DownloadRequest::IsChunked() const
+Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
 {
+    isInterruptNeeded_ = isInterruptNeeded;
     WaitHeaderUpdated();
-    return headerInfo_.isChunked;
+    if (isInterruptNeeded) {
+        MEDIA_LOG_I("Canceled");
+        return Seekable::INVALID;
+    }
+    if (headerInfo_.isChunked) {
+        return Seekable::UNSEEKABLE;
+    } else {
+        return Seekable::SEEKABLE;
+    }
 };
 
 bool DownloadRequest::IsEos() const
@@ -135,7 +144,9 @@ void DownloadRequest::Close()
 void DownloadRequest::WaitHeaderUpdated() const
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
-    while (!isHeaderUpdated && times_ < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
+
+    // Wait Header(fileContentLen etc.) updated
+    while (!isHeaderUpdated && times_ < RETRY_TIMES && !isInterruptNeeded_) {
         Task::SleepInTask(SLEEP_TIME);
         times_++;
     }

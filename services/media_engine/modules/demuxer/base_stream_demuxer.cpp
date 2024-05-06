@@ -40,6 +40,7 @@ namespace OHOS {
 namespace Media {
 
 BaseStreamDemuxer::BaseStreamDemuxer()
+    : typeFinder_(nullptr)
 {
     MEDIA_LOG_I("BaseStreamDemuxer called");
 }
@@ -47,11 +48,19 @@ BaseStreamDemuxer::BaseStreamDemuxer()
 BaseStreamDemuxer::~BaseStreamDemuxer()
 {
     MEDIA_LOG_I("~BaseStreamDemuxer called");
+    typeFinder_ = nullptr;
 }
 
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
     source_ = source;
+}
+
+void BaseStreamDemuxer::InitTypeFinder()
+{
+    if (!typeFinder_) {
+        typeFinder_ = std::make_shared<TypeFinder>();
+    }
 }
 
 void BaseStreamDemuxer::SetDemuxerState(DemuxerState state)

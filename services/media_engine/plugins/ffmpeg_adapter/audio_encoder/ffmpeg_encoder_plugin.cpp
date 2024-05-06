@@ -25,7 +25,6 @@
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "meta/mime_type.h"
-#include "plugin/plugin_loader_v2.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -86,22 +85,4 @@ Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register> &reg)
 void UnRegisterAudioEncoderPlugin() {}
 
 PLUGIN_DEFINITION(FFmpegAudioEncoders, LicenseType::LGPL, RegisterAudioEncoderPlugins, UnRegisterAudioEncoderPlugin);
-
-REGISTER_PLUGIN
-{
-    auto extra = pluginLoader->GetExtraInfo();
-    std::string mimeType = extra.find("mimeType")->second;
-    std::shared_ptr<PluginBase> plugin = nullptr;
-
-    if (mimeType == MimeType::AUDIO_AAC) {
-        plugin = std::make_shared<FFmpegAACEncoderPlugin>(std::string(AVCodecCodecName::AUDIO_ENCODER_AAC_NAME));
-    } else if (mimeType == MimeType::AUDIO_FLAC) {
-        plugin = std::make_shared<FFmpegFlacEncoderPlugin>(std::string(AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME));
-    } else {
-        AVCODEC_LOGD("no plugin for mime type: %{public}s", mimeType.c_str());
-    }
-
-    pluginLoader->RegisterPlugin(plugin);
-}
-
 } // namespace
