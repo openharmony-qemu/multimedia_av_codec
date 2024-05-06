@@ -131,21 +131,6 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
     }
 }
 
-bool IsAVTrack(const AVStream& avStream)
-{
-    FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codec par is nulltr.");
-    if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        return true;
-    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
-            (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
-                return false;
-        }
-        return true;
-    }
-    return false;
-}
-
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -627,19 +612,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) && GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;
         }
-        if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
-            std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
-            if (cacheSamplePacket != nullptr) {
-                cacheSamplePacket->pkts.push_back(pkt);
-            }
-        } else {
-            std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
-            if (cacheSamplePacket != nullptr) {
-                cacheSamplePacket->pkts.push_back(pkt);
-                cacheSamplePacket->offset = 0;
-                cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
-            }
-        }
+        AddPacketToCacheQueue(pkt);
         pkt = nullptr;
     }
     return Status::OK;
@@ -990,6 +963,24 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
         std::vector<uint8_t> extra(extradataSize);
         extra.assign(extradata, extradata + extradataSize);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
+    }
+}
+
+void FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
+{
+    auto trackId = pkt->stream_index;
+    if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
+        std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
+        if (cacheSamplePacket != nullptr) {
+            cacheSamplePacket->pkts.push_back(pkt);
+        }
+    } else {
+        std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
+        if (cacheSamplePacket != nullptr) {
+            cacheSamplePacket->pkts.push_back(pkt);
+            cacheSamplePacket->offset = 0;
+            cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
+        }
     }
 }
 
