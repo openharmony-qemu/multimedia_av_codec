@@ -319,18 +319,15 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     uint32_t writeLen = 0;
     uint8_t *writeDataPoint = data;
     uint32_t waitLen = len;
-
     if (keyLen_ == 0) {
         return buffer_->WriteBuffer(data, len);
     }
-
     if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
         memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
             afterAlignRemainedLength_, data, len);
         afterAlignRemainedLength_ += len;
         return true;
     }
-
     writeLen =
         ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
     errno_t err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
