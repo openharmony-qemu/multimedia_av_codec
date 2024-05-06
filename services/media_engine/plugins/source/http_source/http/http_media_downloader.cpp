@@ -15,6 +15,9 @@
 #define HST_LOG_TAG "HttpMediaDownloader"
 
 #include "http/http_media_downloader.h"
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <regex>
 
 namespace OHOS {
 namespace Media {
@@ -31,6 +34,8 @@ constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
 constexpr int32_t TIME_OUT = 3 * 1000;
+constexpr int RECORD_TIME_INTERVAL = 3000;
+constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -38,6 +43,7 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
+    steadyClock_.Reset();
 }
 
 HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
@@ -62,6 +68,7 @@ HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
     }
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
+    steadyClock_.Reset();
 }
 
 HttpMediaDownloader::~HttpMediaDownloader()
@@ -70,9 +77,32 @@ HttpMediaDownloader::~HttpMediaDownloader()
     Close(false);
 }
 
+static std::string extractHostname(const std::string& url)
+{
+    std::smatch matches;
+    std::regex pattern(
+        "https?:\\/\\/([^\\/:]*)",
+        std::regex::icase
+    );
+
+    if (std::regex_search(url, matches, pattern) && matches.size() > 1) {
+        return matches[1].str();
+    }
+    return "";
+}
+
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
+    std::string hostname = extractHostname(url);
+    if (!hostname.empty()) {
+        struct hostent* he = gethostbyname(hostname.c_str());
+        char ip[INET_ADDRSTRLEN];
+        inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
+        MEDIA_LOG_D("Open url ip: %{public}s", ip);
+    }
+
+    openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
@@ -81,10 +111,18 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
                                   std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
+    auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
+        isDownloadFinish_= true;
+        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+        auto downloadTime = (nowTime - startDownloadTime_) / 1000;
+        avgDownloadSpeed_ = totalBits_ / downloadTime;
+        MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+    };
     MediaSouce mediaSouce;
     mediaSouce.url = url;
     mediaSouce.httpHeader = httpHeader;
     downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
+    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
     buffer_->SetMediaOffset(0);
     downloader_->Start();
@@ -96,6 +134,12 @@ void HttpMediaDownloader::Close(bool isAsync)
     buffer_->SetActive(false);
     downloader_->Stop(isAsync);
     cvReadWrite_.NotifyOne();
+    if (!isDownloadFinish_) {
+        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+        auto downloadTime = (nowTime - startDownloadTime_) / 1000;
+        avgDownloadSpeed_ = totalBits_ / downloadTime;
+        MEDIA_LOG_D("Download close, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+    }
 }
 
 void HttpMediaDownloader::Pause()
@@ -177,6 +221,9 @@ bool HttpMediaDownloader::SeekToPos(int64_t offset)
     bool result = downloader_->Seek(offset);
     if (result) {
         buffer_->SetMediaOffset(offset);
+    } else {
+        seekFailedCount_ ++;
+        MEDIA_LOG_D("Seek failed count: " PUBLIC_LOG_D32, seekFailedCount_);
     }
     downloader_->Resume();
     return result;
@@ -224,6 +271,7 @@ void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     FALSE_RETURN_V(buffer_->WriteBuffer(data, len), false);
+    OnWriteRingBuffer(len);
     cvReadWrite_.NotifyOne();
     size_t bufferSize = buffer_->GetSize();
     double ratio = (static_cast<double>(bufferSize)) / RING_BUFFER_SIZE;
@@ -243,6 +291,45 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         }
     }
     return true;
+}
+
+void HttpMediaDownloader::OnWriteRingBuffer(uint32_t len)
+{
+    if (startDownloadTime_ == 0) {
+        startDownloadTime_ = steadyClock_.ElapsedMilliseconds();
+    }
+    uint32_t writeBits = len * 8;
+    totalBits_ += writeBits;
+    if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
+        auto startPlayTime = steadyClock_.ElapsedMilliseconds();
+        playDelayTime_ = startPlayTime - openTime_;
+        MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
+    }
+    DownloadReportLoop();
+}
+
+constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
+void HttpMediaDownloader::DownloadReportLoop()
+{
+    int64_t now = steadyClock_.ElapsedMilliseconds();
+    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+        uint64_t curDownloadBits = totalBits_ - lastBits_;
+        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+            // 有效下载数据量
+            downloadBits_ += curDownloadBits;
+            auto downloadSpeed = downloadBits_ / ((now - lastCheckTime_) / 1000);
+            avgSpeedSum_ += downloadSpeed;
+            recordSpeedCount_ ++;
+            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_U64 " bit/s", downloadSpeed);
+        }
+        // 下载总数据量
+        lastBits_ = totalBits_;
+        lastCheckTime_ = now;
+        if (buffer_ != nullptr) {
+            uint64_t remainingBuffer = buffer_->GetSize() * 8;
+            MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
+        }
+    }
 }
 
 void HttpMediaDownloader::SetDemuxerState()
@@ -288,6 +375,12 @@ bool HttpMediaDownloader::GetDownloadErrorState()
 StatusCallbackFunc HttpMediaDownloader::GetStatusCallbackFunc()
 {
     return statusCallback_;
+}
+
+std::pair<int32_t, int32_t> HttpMediaDownloader::getDownloadRateAndSpeed()
+{
+    auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, avgDownloadSpeed_);
+    return rateAndSpeed;
 }
 }
 }
