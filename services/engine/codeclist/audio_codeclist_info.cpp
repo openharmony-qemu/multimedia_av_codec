@@ -193,6 +193,34 @@ CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVividCapability;
 }
+
+CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
+{
+    CapabilityData audioAmrnbCapability;
+    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME;
+    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB;
+    audioAmrnbCapability.isVendor = false;
+    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRNB);
+    audioAmrnbCapability.channels = Range(1, 1);
+    audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
+    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAmrnbCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetAmrwbEncoderCapability()
+{
+    CapabilityData audioAmrwbCapability;
+    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRWB_NAME;
+    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB;
+    audioAmrnbCapability.isVendor = false;
+    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRWB);
+    audioAmrnbCapability.channels = Range(1, 1);
+    audioAmrnbCapability.sampleRate = AUDIO_AMRWB_SAMPLE_RATE;
+    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAmrwbCapability;
+}
 #endif
 
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
@@ -302,7 +330,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetFlacEncoderCapability(),  GetOpusEncoderCapability(),   GetG711muEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetAPEDecoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
-                          GetVividDecoderCapability()
+                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability()
 #endif
     };
 }

@@ -57,6 +57,7 @@ public:
     virtual bool IsLive() const = 0;
     virtual int32_t GetVideoWidth() const = 0;
     virtual int32_t GetVideoHeight() const = 0;
+    virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     void Resume();
     void Pause();
     void Close();

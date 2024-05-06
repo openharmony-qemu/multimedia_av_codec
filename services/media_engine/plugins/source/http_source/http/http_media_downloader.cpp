@@ -196,7 +196,7 @@ int64_t HttpMediaDownloader::GetDuration() const
 
 Seekable HttpMediaDownloader::GetSeekable() const
 {
-    return downloadRequest_->IsChunked() ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
+    return downloadRequest_->IsChunked(isInterruptNeeded_);
 }
 
 void HttpMediaDownloader::SetCallback(Callback* cb)
@@ -259,6 +259,11 @@ void HttpMediaDownloader::SetDownloadErrorState()
     }
 }
 
+void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
+
 int HttpMediaDownloader::GetBufferSize()
 {
     return totalBufferSize_;
@@ -283,7 +288,6 @@ StatusCallbackFunc HttpMediaDownloader::GetStatusCallbackFunc()
 {
     return statusCallback_;
 }
-
 }
 }
 }

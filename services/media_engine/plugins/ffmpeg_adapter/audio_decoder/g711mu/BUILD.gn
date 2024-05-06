@@ -67,8 +67,7 @@ ohos_shared_library("media_plugin_G711muAudioDecoder") {
     "media_foundation:media_foundation",
   ]
 
-  relative_install_dir =
-      "media/media_plugins/audio_decoder/g711mu_audio_decoder"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

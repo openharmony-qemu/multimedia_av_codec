@@ -85,10 +85,11 @@ bool VodStreamDemuxer::GetPeekRange(uint64_t offset, size_t size, std::shared_pt
     return PullDataWithoutCache(offset, size, bufferPtr);
 }
 
-void VodStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
+std::string VodStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
     MEDIA_LOG_I("VodStreamDemuxer::Init called");
+    InitTypeFinder();
     checkRange_ = [](uint64_t offset, uint32_t size) {
         return true;
     };
@@ -96,6 +97,11 @@ void VodStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
         return GetPeekRange(offset, size, bufferPtr);
     };
     getRange_ = peekRange_;
+    typeFinder_->Init(uri, mediaDataSize, checkRange_, peekRange_);
+    std::string type = typeFinder_->FindMediaType();
+    MEDIA_LOG_I("PullMode FindMediaType result type: " PUBLIC_LOG_S ", uri: %{private}s, mediaDataSize: "
+        PUBLIC_LOG_U64, type.c_str(), uri.c_str(), mediaDataSize);
+    return type;
 }
 
 bool VodStreamDemuxer::PullDataWithCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)

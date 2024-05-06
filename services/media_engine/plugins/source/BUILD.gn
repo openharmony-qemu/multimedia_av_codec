@@ -67,7 +67,7 @@ ohos_shared_library("media_plugin_FileFdSource") {
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins/source/file_fd_source"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -101,7 +101,7 @@ ohos_shared_library("media_plugin_FileSource") {
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins/source/file_source"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
@@ -128,7 +128,7 @@ ohos_shared_library("media_plugin_DataStreamSource") {
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins/source/data_stream_source"
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

@@ -149,6 +149,8 @@ public:
     {
         return Status::OK;
     }
+
+    virtual void SetInterruptState(bool isInterruptNeeded) {}
 };
 
 /// Source plugin api major number.

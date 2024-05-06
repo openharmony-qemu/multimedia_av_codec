@@ -29,7 +29,6 @@
 #include "common/log.h"
 #include "osal/filesystem/file_system.h"
 #include "file_fd_source_plugin.h"
-#include "plugin/plugin_loader_v2.h"
 #include "common/media_core.h"
 
 namespace OHOS {
@@ -69,11 +68,6 @@ Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
 }
 
 PLUGIN_DEFINITION(FileFdSource, LicenseType::APACHE_V2, FileFdSourceRegister, [] {});
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<FileFdSourcePlugin>("file_fd_source"));
-}
 
 FileFdSourcePlugin::FileFdSourcePlugin(std::string name)
     : SourcePlugin(std::move(name))

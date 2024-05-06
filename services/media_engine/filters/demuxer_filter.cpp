@@ -22,17 +22,17 @@
 #include "osal/task/autolock.h"
 #include "common/media_core.h"
 #include "demuxer_filter.h"
+#include "media_types.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+
+using MediaType = OHOS::Media::Plugins::MediaType;
+
 namespace {
     const std::string MIME_IMAGE = "image";
 }
-
-using MediaType = OHOS::Media::Plugins::MediaType;
-using MimeType = OHOS::Media::Plugins::MimeType;
-
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
     [](const std::string& name, const FilterType type) {
@@ -133,6 +133,13 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     }
     mediaSource_ = source;
     return demuxer_->SetDataSource(mediaSource_);
+}
+
+void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
+{
+    if (demuxer_ != nullptr) {
+        demuxer_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 void DemuxerFilter::SetBundleName(const std::string& bundleName)

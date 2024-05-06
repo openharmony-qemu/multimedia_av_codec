@@ -15,7 +15,6 @@
 
 #define HST_LOG_TAG "FileSourcePlugin"
 
-#include "plugin/plugin_loader_v2.h"
 #include "file_source_plugin.h"
 #include <sys/stat.h>
 #include "common/log.h"
@@ -59,11 +58,6 @@ Status FileSourceRegister(const std::shared_ptr<Register>& reg)
 }
 
 PLUGIN_DEFINITION(FileSource, LicenseType::APACHE_V2, FileSourceRegister, [] {});
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<FileSourcePlugin>("file_source"));
-}
 
 void* FileSourceAllocator::Alloc(size_t size)
 {

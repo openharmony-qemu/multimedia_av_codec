@@ -24,9 +24,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 class DemuxerInnerMock : public DemuxerMock {
-
-using SeekMode = Media::Plugins::SeekMode;
-
 public:
     explicit DemuxerInnerMock(std::shared_ptr<AVDemuxer> demuxer) : demuxer_(demuxer) {}
     ~DemuxerInnerMock() = default;

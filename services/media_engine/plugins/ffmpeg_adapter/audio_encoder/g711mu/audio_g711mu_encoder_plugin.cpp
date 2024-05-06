@@ -20,7 +20,7 @@
 #include "avcodec_mime_type.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
-#include "plugin/plugin_loader_v2.h"
+
 
 namespace {
 using namespace OHOS::Media;
@@ -69,11 +69,6 @@ void UnRegisterAudioEncoderPlugin() {}
 
 PLUGIN_DEFINITION(G711muAudioEncoder, LicenseType::APACHE_V2, RegisterAudioEncoderPlugins,
     UnRegisterAudioEncoderPlugin);
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<AudioG711muEncoderPlugin>("g711mu_audio_encoder"));
-}
 }  // namespace
 
 

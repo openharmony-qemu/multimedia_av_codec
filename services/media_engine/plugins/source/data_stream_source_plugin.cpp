@@ -20,8 +20,6 @@
 #include "common/log.h"
 #include "osal/utils/util.h"
 
-#include "plugin/plugin_loader_v2.h"
-
 namespace OHOS {
 namespace Media {
 namespace Plugin {
@@ -53,11 +51,6 @@ Status DataStreamSourceRegister(const std::shared_ptr<Plugins::Register>& reg)
 }
 
 PLUGIN_DEFINITION(DataStreamSource, Plugins::LicenseType::APACHE_V2, DataStreamSourceRegister, [] {});
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<DataStreamSourcePlugin>("data_stream_source"));
-}
 
 DataStreamSourcePlugin::DataStreamSourcePlugin(std::string name)
     : SourcePlugin(std::move(name))

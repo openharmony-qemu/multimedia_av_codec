@@ -27,9 +27,6 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-
-using SeekMode = Media::Plugins::SeekMode;
-
 class DemuxerMock : public NoCopyable {
 public:
     virtual ~DemuxerMock() = default;
@@ -39,7 +36,7 @@ public:
     virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
         AVCodecBufferInfo *bufferInfo, uint32_t &flag) = 0;
-    virtual int32_t SeekToTime(int64_t mSeconds, SeekMode mode) = 0;
+    virtual int32_t SeekToTime(int64_t mSeconds, Media::SeekMode mode) = 0;
 };
 
 class __attribute__((visibility("default"))) AVDemuxerMockFactory {

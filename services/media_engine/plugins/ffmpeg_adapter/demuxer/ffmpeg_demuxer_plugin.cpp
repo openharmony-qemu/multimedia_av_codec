@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <memory>
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
 #include <unistd.h>
 #include <algorithm>
@@ -31,8 +30,6 @@
 #include "common/log.h"
 #include "meta/video_types.h"
 #include "ffmpeg_demuxer_plugin.h"
-
-#include "plugin/plugin_loader_v2.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
 #define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
@@ -132,6 +129,21 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
         default:
             break;
     }
+}
+
+bool IsAVTrack(const AVStream& avStream)
+{
+    FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codec par is nulltr.");
+    if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        return true;
+    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
+            (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
+                return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -615,7 +627,19 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) && GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;
         }
-        AddPacketToCacheQueue(pkt);
+        if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
+            std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
+            if (cacheSamplePacket != nullptr) {
+                cacheSamplePacket->pkts.push_back(pkt);
+            }
+        } else {
+            std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
+            if (cacheSamplePacket != nullptr) {
+                cacheSamplePacket->pkts.push_back(pkt);
+                cacheSamplePacket->offset = 0;
+                cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
+            }
+        }
         pkt = nullptr;
     }
     return Status::OK;
@@ -809,7 +833,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     seekable_ = source->GetSeekable();
     MEDIA_LOG_D("FFmpegDemuxerPlugin SetDataSource, fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32,
         ioContext_.fileSize, seekable_);
-    pluginImpl_ = InitAVInputFormat(source);
+    pluginImpl_ = g_pluginInputFormat[pluginName_];
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");
 
@@ -969,52 +993,34 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     }
 }
 
-void FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
-{
-    auto trackId = pkt->stream_index;
-    if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
-        std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
-        if (cacheSamplePacket != nullptr) {
-            cacheSamplePacket->pkts.push_back(pkt);
-        }
-    } else {
-        std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
-        if (cacheSamplePacket != nullptr) {
-            cacheSamplePacket->pkts.push_back(pkt);
-            cacheSamplePacket->offset = 0;
-            cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
-        }
-    }
-}
-
 void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
 {
-    FALSE_RETURN_MSG(formatContext_ != nullptr, "formatContext_ is null");
-    MEDIA_LOG_I("GetVideoFirstKeyFrame enter\n");
-    AVPacket *pkt = nullptr;
-    while (1) {
-        if (pkt == nullptr) {
-            pkt = av_packet_alloc();
-            FALSE_RETURN_MSG(pkt != nullptr, "av_packet_alloc fail");
+    if (formatContext_ == nullptr) {
+        return;
+    }
+    int64_t startPts = 0;
+    int startTrackIndex = -1;
+    firstFrame_ = av_packet_alloc();
+    if (firstFrame_ == nullptr) {
+        return;
+    }
+    while (av_read_frame(formatContext_.get(), firstFrame_) >= 0) {
+        auto tempStream = formatContext_->streams[firstFrame_->stream_index];
+        if (startTrackIndex < 0 && IsAVTrack(*tempStream)) {
+            startPts = firstFrame_->pts;
+            startTrackIndex = firstFrame_->stream_index;
         }
 
-        if (av_read_frame(formatContext_.get(), pkt) < 0) {
-            av_packet_unref(pkt);
+        if (static_cast<uint32_t>(firstFrame_->stream_index) == trackIndex) {
             break;
         }
+        av_packet_unref(firstFrame_);
+    }
 
-        cacheQueue_.AddTrackQueue(pkt->stream_index);
-        AddPacketToCacheQueue(pkt);
-
-        if (static_cast<uint32_t>(pkt->stream_index) == trackIndex) {
-            firstFrame_ = av_packet_alloc();
-            FALSE_RETURN_MSG(firstFrame_ != nullptr, "av_packet_alloc fail");
-            int ret = av_new_packet(firstFrame_, pkt->size);
-            FALSE_RETURN_MSG(ret >= 0, "av_new_packet fail");
-            av_packet_copy_props(firstFrame_, pkt);
-            memcpy_s(firstFrame_->data, pkt->size, pkt->data, pkt->size);
-            break;
-        }
+    startPts = (startPts > 0) ? 0 : startPts;
+    auto rtv = av_seek_frame(formatContext_.get(), startTrackIndex, startPts, AVSEEK_FLAG_BACKWARD);
+    if (rtv < 0) {
+        MEDIA_LOG_W("seek failed, return value: ffmpeg error:" PUBLIC_LOG_D32, rtv);
     }
 }
 
@@ -1261,86 +1267,6 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     return Status::OK;
 }
 
-std::shared_ptr<AVInputFormat> FFmpegDemuxerPlugin::InitAVInputFormat(std::shared_ptr<DataSource> dataSource)
-{
-    const AVInputFormat* avInputFormat = nullptr;
-    const AVInputFormat* bestAvInputFormat = nullptr;
-
-    int maxConfidence = 0;
-
-    void* i = nullptr;
-    while ((avInputFormat = av_demuxer_iterate(&i))) {
-        if (avInputFormat == nullptr) {
-            continue;
-        }
-        MEDIA_LOG_D("Check ffmpeg demuxer " PUBLIC_LOG_S "[" PUBLIC_LOG_S "].",
-            avInputFormat->name, avInputFormat->long_name);
-        if (avInputFormat->long_name != nullptr) {
-            if (!strncmp(avInputFormat->long_name, "pcm ", STR_MAX_LEN)) {
-                continue;
-            }
-        }
-        if (!IsInputFormatSupported(avInputFormat->name)) {
-            continue;
-        }
-
-        std::string demuxerName = "avdemux_" + std::string(avInputFormat->name);
-        ReplaceDelimiter(".,|-<> ", '_', demuxerName);
-
-        if (avInputFormat == nullptr && !avInputFormat->read_probe) {
-            continue;
-        }
-
-        int confidence = SniffAVInputFormat(avInputFormat, dataSource);
-        if (confidence > maxConfidence) {
-            maxConfidence = confidence;
-            bestAvInputFormat = avInputFormat;
-        }
-    }
-
-    return std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(bestAvInputFormat), [](void*) {});
-}
-
-int FFmpegDemuxerPlugin::SniffAVInputFormat(const AVInputFormat* avInputFormat, std::shared_ptr<DataSource> dataSource)
-{
-        size_t bufferSize = DEFAULT_READ_SIZE;
-        uint64_t fileSize = 0;
-        if (dataSource->GetSize(fileSize) == Status::OK) {
-            bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
-        }
-        // fix ffmpeg probe crash,refer to ffmpeg/tools/probetest.c
-        std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
-        auto bufferInfo = std::make_shared<Buffer>();
-        auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
-        FALSE_RETURN_V_MSG_E(bufData != nullptr, -1, "Sniff failed due to alloc buffer failed.");
-        MEDIA_LOG_D("Prepare buffer for probe, input param bufferSize=" PUBLIC_LOG_ZU
-            ", real buffer size=" PUBLIC_LOG_ZU ".", bufferSize + AVPROBE_PADDING_SIZE, bufferSize);
-
-        Status ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Sniff failed due to read probe data failed.");
-        FALSE_RETURN_V_MSG_E(bufData!= nullptr && buff.data() != nullptr, -1,
-            "Sniff failed due to probe data invalid.");
-
-        AVProbeData probeData{"", buff.data(), static_cast<int>(bufferInfo->GetMemory()->GetSize()), ""};
-        int confidence = avInputFormat->read_probe(&probeData);
-
-        MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
-            avInputFormat->name, confidence);
-
-        return confidence;
-}
-
-void FFmpegDemuxerPlugin::ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
-{
-    MEDIA_LOG_D("Reset string [" PUBLIC_LOG_S "].", str.c_str());
-    for (auto it = str.begin(); it != str.end(); it++) {
-        if (delmiters.find(newDelimiter) != std::string::npos) {
-            *it = newDelimiter;
-        }
-    }
-    MEDIA_LOG_D("Reset to [" PUBLIC_LOG_S "].", str.c_str());
-};
-
 void FFmpegDemuxerPlugin::SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId)
 {
     sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
@@ -1508,21 +1434,14 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
         if (ret != Status::OK) {
             MEDIA_LOG_E("RegisterPlugins failed due to add plugin failed, err=" PUBLIC_LOG_D32, static_cast<int>(ret));
         } else {
-            MEDIA_LOG_I("lj debug Add plugin " PUBLIC_LOG_S ".", pluginName.c_str());
+            MEDIA_LOG_D("Add plugin " PUBLIC_LOG_S ".", pluginName.c_str());
         }
     }
     FALSE_RETURN_V_MSG_E(!g_pluginInputFormat.empty(), Status::ERROR_UNKNOWN, "Can not load any format demuxer.");
     return Status::OK;
 }
-
 } // namespace
-PLUGIN_DEFINITION(FFmpegDemuxer, LicenseType::LGPL, RegisterPlugins, [] { g_pluginInputFormat.clear(); });\
-
-REGISTER_PLUGIN
-{
-    pluginLoader->RegisterPlugin(std::make_shared<FFmpegDemuxerPlugin>("ffmpeg_demuxer"));
-}
-
+PLUGIN_DEFINITION(FFmpegDemuxer, LicenseType::LGPL, RegisterPlugins, [] { g_pluginInputFormat.clear(); });
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
