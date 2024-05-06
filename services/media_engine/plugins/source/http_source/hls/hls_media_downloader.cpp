@@ -533,7 +533,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime, SeekMode mode)
     }
 }
 
-int64_t HlsMediaDownloader::RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
+uint64_t HlsMediaDownloader::RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
     double hstTime, const PlayInfo& item)
 {
     PlayInfo playInfo;
