@@ -319,9 +319,25 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
     format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
+
+    std::shared_ptr<VEncInnerCallback> cb_ = make_shared<VEncInnerCallback>(signal_);
+    ASSERT_EQ(AVCS_ERR_OK, venc_->SetCallback(cb_));
     ASSERT_EQ(AVCS_ERR_OK, venc_->Start());
-    ASSERT_EQ(AVCS_ERR_OK, venc_->NotifyEos());
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->NotifyEos());
+
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inCond_.wait(lock, [] { return signal_->inIdxQueue_.size() > 1; });
+    uint32_t index = signal_->inIdxQueue_.front();
+    AVCodecBufferInfo info;
+    info.presentationTimeUs = 0;
+    info.size = 0;
+    info.offset = 0;
+    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_EOS;
+
+    ASSERT_EQ(AVCS_ERR_OK, venc_->QueueInputBuffer(index, info, flag));
+    signal_->inIdxQueue_.pop();
+    index = signal_->inIdxQueue_.front();
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->QueueInputBuffer(index, info, flag));
+    signal_->inIdxQueue_.pop();
 }
 
 /**
