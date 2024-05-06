@@ -76,6 +76,7 @@ public:
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
+    bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);

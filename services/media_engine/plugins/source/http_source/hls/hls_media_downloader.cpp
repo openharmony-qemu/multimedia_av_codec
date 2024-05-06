@@ -316,12 +316,18 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         OnWriteRingBuffer(len);
     }
     startedPlayStatus_ = true;
+    if (keyLen_ == 0) {
+        return buffer_->WriteBuffer(data, len);
+    } else {
+        return SaveEncryptData(data, len);
+    }
+}
+
+bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
+{
     uint32_t writeLen = 0;
     uint8_t *writeDataPoint = data;
     uint32_t waitLen = len;
-    if (keyLen_ == 0) {
-        return buffer_->WriteBuffer(data, len);
-    }
     if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
         memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
             afterAlignRemainedLength_, data, len);
@@ -637,7 +643,7 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
     if (desBitRate == curBitrate) {
         return;
     }
-    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double>(bitRate) / 8.0 * 0.3); // low size:300ms * bitrate
+    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double>(bitRate) / 8.0 * 0.3);
 
     // switch to high bitrate,if buffersize less than lowsize, do not switch
     if (curBitrate < desBitRate && buffer_->GetSize() < bufferLowSize) {
