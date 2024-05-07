@@ -328,15 +328,19 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     uint32_t writeLen = 0;
     uint8_t *writeDataPoint = data;
     uint32_t waitLen = len;
+    errno_t err {0};
     if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
-        memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
+        err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
             afterAlignRemainedLength_, data, len);
+        if (err!=0) {
+            return false;
+        }
         afterAlignRemainedLength_ += len;
         return true;
     }
     writeLen =
         ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
-    errno_t err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
+    err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
         afterAlignRemainedLength_);
     if (err!=0) {
         return false;
@@ -348,7 +352,6 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     if (err!=0) {
         return false;
     }
-    // decry buffer data
     uint32_t realLen = writeLen + afterAlignRemainedLength_;
     AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
     totalLen_ += realLen;

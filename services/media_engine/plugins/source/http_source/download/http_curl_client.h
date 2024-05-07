@@ -26,6 +26,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+const std::string USER_AGENT = "User-Agent";
+const std::string REFER = "Refer";
 class HttpCurlClient : public NetworkClient {
 public:
     HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam);
@@ -46,8 +48,8 @@ private:
     void InitCurlEnvironment(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
-    std::string ClearHeadTailSpace(std::string& str);
-    void CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue);
+    static std::string ClearHeadTailSpace(std::string& str);
+    void CheckHeaderKey(std::string setKey, std::string setValue);
 private:
     RxHeader rxHeader_;
     RxBody rxBody_;
