@@ -112,6 +112,25 @@ void HCodec::TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput
     CountTrace(HITRACE_TAG_ZMEDIA, compUniqueStr_ + inOutStr + "_surface", arr[OWNED_BY_SURFACE]);
 }
 
+void HCodec::PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
+{
+    int64_t fromFirstToNow = chrono::duration_cast<chrono::microseconds>(
+        now - (isInput ? firstInTime_ : firstOutTime_)).count();
+    if (fromFirstToNow == 0) {
+        return;
+    }
+    double fps = (isInput ? inTotalCnt_ : outRecord_.totalCnt) * US_TO_S / fromFirstToNow;
+    std::array<uint32_t, OWNER_CNT> arr = CountOwner(isInput);
+    double aveHoldMs[OWNER_CNT];
+    for (uint32_t owner = 0; owner < static_cast<uint32_t>(OWNER_CNT); owner++) {
+        TotalCntAndCost& holdRecord = isInput ? inputHoldTimeRecord_[owner] : outputHoldTimeRecord_[owner];
+        aveHoldMs[owner] = (holdRecord.totalCnt == 0) ? -1 : (holdRecord.totalCostUs / US_TO_MS / holdRecord.totalCnt);
+    }
+    HLOGI("%s:%.0f; %u/%u/%u/%u, %.0f/%.0f/%.0f/%.0f", (isInput ? " in" : "out"), fps,
+        arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
+        aveHoldMs[OWNED_BY_US], aveHoldMs[OWNED_BY_USER], aveHoldMs[OWNED_BY_OMX], aveHoldMs[OWNED_BY_SURFACE]);
+}
+
 void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 {
     debugMode_ ? ChangeOwnerDebug(info, newOwner) : ChangeOwnerNormal(info, newOwner);
@@ -121,19 +140,36 @@ void HCodec::ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner)
 {
     BufferOwner oldOwner = info.owner;
     auto now = chrono::steady_clock::now();
+    uint64_t holdUs = static_cast<uint64_t>(
+        chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
+    TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner] :
+                                                outputHoldTimeRecord_[oldOwner];
+    holdRecord.totalCnt++;
+    holdRecord.totalCostUs += holdUs;
     info.lastOwnerChangeTime = now;
     info.owner = newOwner;
+
     static constexpr uint64_t PRINT_PER_FRAME = 200;
     if (info.isInput && oldOwner == OWNED_BY_US && newOwner == OWNED_BY_OMX) {
+        if (inTotalCnt_ == 0) {
+            firstInTime_ = now;
+        }
         inTotalCnt_++;
         if (inTotalCnt_ % PRINT_PER_FRAME == 0) {
-            PrintAllBufferInfo(info.isInput, now);
+            PrintStatistic(info.isInput, now);
+            inTotalCnt_ = 0;
+            inputHoldTimeRecord_.fill({0, 0});
         }
     }
     if (!info.isInput && oldOwner == OWNED_BY_OMX && newOwner == OWNED_BY_US) {
+        if (outRecord_.totalCnt == 0) {
+            firstOutTime_ = now;
+        }
         outRecord_.totalCnt++;
         if (outRecord_.totalCnt % PRINT_PER_FRAME == 0) {
-            PrintAllBufferInfo(info.isInput, now);
+            PrintStatistic(info.isInput, now);
+            outRecord_.totalCnt = 0;
+            outputHoldTimeRecord_.fill({0, 0});
         }
     }
 }
@@ -150,8 +186,8 @@ void HCodec::ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner)
     uint64_t holdUs = static_cast<uint64_t>
         (chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
     double holdMs = holdUs / US_TO_MS;
-    TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner][newOwner] :
-                                                outputHoldTimeRecord_[oldOwner][newOwner];
+    TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner] :
+                                                outputHoldTimeRecord_[oldOwner];
     holdRecord.totalCnt++;
     holdRecord.totalCostUs += holdUs;
     double aveHoldMs = holdRecord.totalCostUs / US_TO_MS / holdRecord.totalCnt;
