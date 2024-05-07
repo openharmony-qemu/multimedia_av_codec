@@ -61,11 +61,13 @@ int32_t ConvertYUV420SP(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t 
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
     int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) >> 1;
+    int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
                              capacity);
     // Y
     for (int32_t i = 0; i < rect.hStride; ++i) {
-        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        ret = memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        EXPECT_AND_LOGW(ret != 0, "memcpy failed");
         dst += dstRect.wStride;
         src += srcRect.wStride;
     }
@@ -75,7 +77,8 @@ int32_t ConvertYUV420SP(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t 
     rect.hStride >>= 1;
     // UV
     for (int32_t i = 0; i < rect.hStride; ++i) {
-        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        ret = memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        EXPECT_AND_LOGW(ret != 0, "memcpy failed");
         dst += dstRect.wStride;
         src += srcRect.wStride;
     }
@@ -88,11 +91,13 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
     int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) >> 1;
+    int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
                              capacity);
     // Y
     for (int32_t i = 0; i < rect.hStride; ++i) {
-        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        ret = memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        EXPECT_AND_LOGW(ret != 0, "memcpy failed");
         dst += dstRect.wStride;
         src += srcRect.wStride;
     }
@@ -107,7 +112,8 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
     src += srcPadding;
     // U
     for (int32_t i = 0; i < rect.hStride; ++i) {
-        (void)memcpy_s(dst, dstWidth, src, rect.wStride);
+        ret = memcpy_s(dst, dstWidth, src, rect.wStride);
+        EXPECT_AND_LOGW(ret != 0, "memcpy failed");
         dst += dstWidth;
         src += srcWidth;
     }
@@ -116,7 +122,8 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
     src += srcPadding >> OFFSET_2;
     // V
     for (int32_t i = 0; i < rect.hStride; ++i) {
-        (void)memcpy_s(dst, dstWidth, src, rect.wStride);
+        ret = memcpy_s(dst, dstWidth, src, rect.wStride);
+        EXPECT_AND_LOGW(ret != 0, "memcpy failed");
         dst += dstWidth;
         src += srcWidth;
     }
@@ -129,10 +136,12 @@ int32_t ConverteRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
     int32_t dstSize = dstRect.wStride * dstRect.hStride;
+    int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
                              capacity);
     for (int32_t i = 0; i < rect.hStride; ++i) {
-        (void)memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        ret = memcpy_s(dst, dstRect.wStride, src, rect.wStride);
+        EXPECT_AND_LOGW(ret != 0, "memcpy failed");
         dst += dstRect.wStride;
         src += srcRect.wStride;
     }
@@ -348,6 +357,10 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, false, "buffer is nullptr");
     isSharedMemory_ = buffer->memory_->GetMemoryType() == MemoryType::SHARED_MEMORY;
+    if (isSharedMemory_) {
+        AVCODEC_LOGW("AVBuffer is shared memory");
+        return true;
+    }
 
     auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, false, "surface buffer is nullptr");
@@ -385,9 +398,7 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 
 void BufferConverter::SetFormatInner(const int32_t &width)
 {
-    if (width == 0) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(width != 0, "width is 0");
     const int32_t tempPixcelSize = hwRect_.wStride / width;
     pixcelSize_ = tempPixcelSize == 0 ? 1 : tempPixcelSize;
 
