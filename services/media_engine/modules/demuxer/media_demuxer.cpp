@@ -388,6 +388,9 @@ Status MediaDemuxer::SelectTrack(int32_t trackId)
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select trackId error.");
+    if (!useBufferQueue_) {
+        return InnerSelectTrack(trackId);
+    }
     std::string mimeType;
     Status ret = Status::OK;
     if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
