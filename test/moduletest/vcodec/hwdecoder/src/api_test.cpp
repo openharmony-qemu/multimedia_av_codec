@@ -846,7 +846,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
     ASSERT_NE(cap, nullptr);
     string codec_name = OH_AVCapability_GetName(cap);
     if (codec_name == "OMX.hisi.video.decoder.avc") {
-        ASSERT_EQ(16, OH_AVCapability_GetMaxSupportedInstances(cap));
+        ASSERT_EQ(30, OH_AVCapability_GetMaxSupportedInstances(cap));
     } else {
         ASSERT_EQ(6, OH_AVCapability_GetMaxSupportedInstances(cap));
     }
