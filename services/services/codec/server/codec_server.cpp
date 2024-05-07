@@ -406,6 +406,8 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     if (surface != nullptr) {
         isSurfaceMode_ = true;
     }
+    GSError gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_VIDEO);
+    EXPECT_AND_LOGW(gsRet != GSERROR_OK, "Set surface source type failed, %{public}s", GSErrorStr(gsRet).c_str());
     int32_t ret = codecBase_->SetOutputSurface(surface);
 #ifdef EMULATOR_ENABLED
     Format config_emulator;
