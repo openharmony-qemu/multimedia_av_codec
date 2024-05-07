@@ -53,7 +53,7 @@ public:
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
-
+    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed) override;
 private:
     void CloseUri();
 

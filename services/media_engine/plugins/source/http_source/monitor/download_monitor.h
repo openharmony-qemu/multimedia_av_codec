@@ -60,6 +60,7 @@ public:
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
 
 private:
     int64_t HttpMonitorLoop();

@@ -78,6 +78,7 @@ public:
 
     void OnDumpInfo(int32_t fd);
 
+    void SetCallerInfo(uint64_t instanceId, const std::string& appName);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -111,6 +112,8 @@ private:
     int64_t latestBufferTime_{HST_TIME_NONE};
     int64_t latestPausedTime_{HST_TIME_NONE};
     int64_t totalPausedTime_{0};
+    uint64_t instanceId_ = 0;
+    std::string appName_;
 };
 } // namespace Pipeline
 } // namespace MEDIA

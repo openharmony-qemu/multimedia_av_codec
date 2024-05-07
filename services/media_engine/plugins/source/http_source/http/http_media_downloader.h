@@ -50,6 +50,7 @@ public:
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
@@ -57,8 +58,6 @@ public:
     StatusCallbackFunc GetStatusCallbackFunc();
     void OnWriteRingBuffer(uint32_t len);
     void DownloadReportLoop();
-    std::pair<int32_t, int32_t> getDownloadRateAndSpeed();
-
 private:
     bool SaveData(uint8_t* data, uint32_t len);
 

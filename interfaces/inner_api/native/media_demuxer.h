@@ -78,7 +78,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
-
+    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;

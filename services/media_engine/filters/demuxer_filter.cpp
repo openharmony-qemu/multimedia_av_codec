@@ -24,13 +24,14 @@
 #include "common/media_core.h"
 #include "demuxer_filter.h"
 #include "media_types.h"
+#include "avcodec_sysevent.h"
+
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-
+using namespace MediaAVCodec;
 using MediaType = OHOS::Media::Plugins::MediaType;
-
 namespace {
     const std::string MIME_IMAGE = "image";
 }
@@ -151,6 +152,12 @@ void DemuxerFilter::SetBundleName(const std::string& bundleName)
     }
 }
 
+void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appName)
+{
+    instanceId_ = instanceId;
+    bundleName_ = appName;
+}
+
 Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
@@ -194,9 +201,57 @@ Status DemuxerFilter::DoPrepare()
             continue;
         }
         auto ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        if (ret != Status::OK) {
+            FaultDemuxerEventInfoWrite(streamType);
+        }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
     }
     return Status::OK;
+}
+
+void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
+{
+    MEDIA_LOG_I("FaultDemuxerEventInfoWrite enter.");
+    struct DemuxerFaultInfo demuxerInfo;
+        demuxerInfo.appName = bundleName_;
+        demuxerInfo.instanceId = std::to_string(instanceId_);
+        demuxerInfo.callerType = "player_framework";
+        demuxerInfo.sourceType = static_cast<int8_t>(mediaSource_->GetSourceType());
+        demuxerInfo.containerFormat = CollectVideoAndAudioMime();
+        demuxerInfo.streamType = std::to_string(static_cast<int32_t>(streamType));
+        demuxerInfo.errMsg = "OnCallback Link Filter Fail.";
+        FaultDemuxerEventWrite(demuxerInfo);
+}
+
+std::string DemuxerFilter::CollectVideoAndAudioMime()
+{
+    MEDIA_LOG_I("CollectVideoAndAudioInfo entered.");
+    std::string mime;
+    std::string videoMime = "";
+    std::string audioMime = "";
+    std::vector<std::shared_ptr<Meta>> metaInfo = demuxer_->GetStreamMetaInfo();
+    for (const auto& trackInfo : metaInfo) {
+        if (!(trackInfo->GetData(Tag::MIME_TYPE, mime))) {
+            MEDIA_LOG_W("Get MIME fail");
+            continue;
+        }
+        if (IsVideoMime(mime)) {
+            videoMime = mime;
+        } else if (IsAudioMime(mime)) {
+            audioMime = mime;
+        }
+    }
+    return videoMime + " : " + audioMime;
+}
+
+bool DemuxerFilter::IsVideoMime(const std::string& mime)
+{
+    return mime.find("video/") == 0;
+}
+
+bool DemuxerFilter::IsAudioMime(const std::string& mime)
+{
+    return mime.find("audio/") == 0;
 }
 
 void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
@@ -409,6 +464,14 @@ Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
         MEDIA_LOG_E("GetBitRates failed, mediaSource = nullptr");
     }
     return demuxer_->GetBitRates(bitRates);
+}
+
+Status DemuxerFilter::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+{
+    if (demuxer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return demuxer_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
 }
 
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)

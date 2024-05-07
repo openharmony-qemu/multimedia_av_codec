@@ -884,8 +884,13 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-std::pair<int32_t, int32_t> HlsMediaDownloader::getDownloadRateAndSpeed()
+std::pair<int32_t, int32_t> HlsMediaDownloader::GetDownloadInfo()
 {
+    MEDIA_LOG_I("HlsMediaDownloader::GetDownloadInfo.");
+    if (recordSpeedCount_ == 0) {
+        MEDIA_LOG_E("recordSpeedCount_ is 0, can't get avgDownloadRate");
+        return std::make_pair(0, avgDownloadSpeed_);
+    }
     auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, avgDownloadSpeed_);
     return rateAndSpeed;
 }
