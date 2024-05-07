@@ -42,12 +42,14 @@ public:
     Status Close() override;
 
     Status Deinit() override;
+
 private:
     void InitCurlEnvironment(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckHeaderKey(std::string setKey, std::string setValue);
+
 private:
     RxHeader rxHeader_;
     RxBody rxBody_;
