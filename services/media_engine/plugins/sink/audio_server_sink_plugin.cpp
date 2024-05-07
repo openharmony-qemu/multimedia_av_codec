@@ -558,6 +558,7 @@ void AudioServerSinkPlugin::SetUpParamsSetterMap()
     SetUpAppPidSetter();
     SetUpAppUidSetter();
     SetUpAudioRenderInfoSetter();
+    SetUpAudioRenderSetFlagSetter();
     SetUpAudioInterruptModeSetter();
 }
 
@@ -692,6 +693,21 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
         return Status::OK;
     };
 }
+
+void AudioServerSinkPlugin::SetUpAudioRenderSetFlagSetter()
+{
+    paramsSetterMap_[Tag::AUDIO_RENDER_SET_FLAG] = [this](const ValueType &para) {
+        if (!Any::IsSameTypeWith<bool>(para)) {
+            MEDIA_LOG_E("AUDIO_RENDER_SET_FLAG type should be bool");
+            playerEventReceiver_->OnEvent({"AUDIO_RENDER_SET_FLAG type is not bool",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
+        audioRenderSetFlag_ = AnyCast<bool>(para);
+        return Status::OK;
+    };
+}
+
 void AudioServerSinkPlugin::SetUpAudioInterruptModeSetter()
 {
     paramsSetterMap_[Tag::AUDIO_INTERRUPT_MODE] = [this](const ValueType &para) {

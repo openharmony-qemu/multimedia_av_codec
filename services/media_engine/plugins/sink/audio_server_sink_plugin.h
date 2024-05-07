@@ -167,7 +167,7 @@ private:
     void SetUpAppUidSetter();
     void SetUpAudioRenderInfoSetter();
     void SetUpAudioInterruptModeSetter();
-
+    void SetUpAudioRenderSetFlagSetter();
     void SetAudioDumpBySysParam();
     void DumpEntireAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
     void DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
@@ -211,6 +211,7 @@ private:
     int32_t curCount_ {-1};
     bool enableEntireDump_ {false};
     bool enableDumpSlice_ {false};
+    bool audioRenderSetFlag_ {false};
 };
 } // namespace Plugin
 } // namespace Media
