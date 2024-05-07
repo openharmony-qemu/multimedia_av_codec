@@ -86,28 +86,27 @@ private:
 
 AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "audio capture filter create", logTag_.c_str());
+    MEDIA_LOG_I("audio capture filter create");
 }
 
 AudioCaptureFilter::~AudioCaptureFilter()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "audio capture filter destroy", logTag_.c_str());
+    MEDIA_LOG_I("audio capture filter destroy");
 }
 
 void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
+    MEDIA_LOG_I("Init");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Init");
     receiver_ = receiver;
     callback_ = callback;
     audioCaptureModule_ = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
-    audioCaptureModule_->SetLogTag(logTag_);
     std::shared_ptr<AudioCaptureModule::AudioCaptureModuleCallback> cb =
         std::make_shared<AudioCaptureModuleCallbackImpl>(receiver_);
     Status cbError = audioCaptureModule_->SetAudioInterruptListener(cb);
     if (cbError != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ SetAudioInterruptListener failed.", logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule_ SetAudioInterruptListener failed.");
     }
     if (audioCaptureModule_) {
         audioCaptureModule_->SetAudioSource(sourceType_);
@@ -115,18 +114,13 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "Init audioCaptureModule fail", logTag_.c_str());
+        MEDIA_LOG_E("Init audioCaptureModule fail");
     }
-}
-
-void AudioCaptureFilter::SetLogTag(std::string logTag)
-{
-    logTag_ = std::move(logTag);
 }
 
 Status AudioCaptureFilter::PrepareAudioCapture()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "PrepareAudioCapture", logTag_.c_str());
+    MEDIA_LOG_I("PrepareAudioCapture");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::PrepareAudioCapture");
     if (!taskPtr_) {
         taskPtr_ = std::make_shared<Task>("DataReader", groupId_, TaskType::AUDIO);
@@ -138,7 +132,7 @@ Status AudioCaptureFilter::PrepareAudioCapture()
 
     Status err = audioCaptureModule_->Prepare();
     if (err != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule prepare fail", logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule prepare fail");
     }
     return err;
 }
@@ -154,10 +148,10 @@ Status AudioCaptureFilter::SetAudioCaptureChangeCallback(
 
 Status AudioCaptureFilter::DoPrepare()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
+    MEDIA_LOG_I("Prepare");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Prepare");
     if (callback_ == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "callback is nullptr", logTag_.c_str());
+        MEDIA_LOG_E("callback is nullptr");
         return Status::ERROR_NULL_POINTER;
     }
     callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
@@ -167,7 +161,7 @@ Status AudioCaptureFilter::DoPrepare()
 
 Status AudioCaptureFilter::DoStart()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
     eos_ = false;
     auto res = Status::ERROR_INVALID_OPERATION;
@@ -185,7 +179,7 @@ Status AudioCaptureFilter::DoStart()
 
 Status AudioCaptureFilter::DoPause()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
+    MEDIA_LOG_I("Pause");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Pause");
     if (taskPtr_) {
         taskPtr_->Pause();
@@ -195,14 +189,14 @@ Status AudioCaptureFilter::DoPause()
         ret = audioCaptureModule_->Stop();
     }
     if (ret != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule stop fail", logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule stop fail");
     }
     return ret;
 }
 
 Status AudioCaptureFilter::DoResume()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
+    MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Resume");
     if (taskPtr_) {
         taskPtr_->Start();
@@ -212,14 +206,14 @@ Status AudioCaptureFilter::DoResume()
         ret = audioCaptureModule_->Start();
     }
     if (ret != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule start fail", logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule start fail");
     }
     return ret;
 }
 
 Status AudioCaptureFilter::DoStop()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Stop");
     // stop task firstly
     if (taskPtr_) {
@@ -231,20 +225,20 @@ Status AudioCaptureFilter::DoStop()
         ret = audioCaptureModule_->Stop();
     }
     if (ret != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule stop fail", logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule stop fail");
     }
     return ret;
 }
 
 Status AudioCaptureFilter::DoFlush()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
+    MEDIA_LOG_I("Flush");
     return Status::OK;
 }
 
 Status AudioCaptureFilter::DoRelease()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
+    MEDIA_LOG_I("Release");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Release");
     if (taskPtr_) {
         taskPtr_->Stop();
@@ -259,21 +253,21 @@ Status AudioCaptureFilter::DoRelease()
 
 void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::SetParameter");
     audioCaptureConfig_ = meta;
 }
 
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter", logTag_.c_str());
+    MEDIA_LOG_I("GetParameter");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::SetParameter");
     audioCaptureModule_->GetParameter(meta);
 }
 
 Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
+    MEDIA_LOG_I("LinkNext");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::LinkNext");
     auto meta = std::make_shared<Meta>();
     GetParameter(meta);
@@ -287,7 +281,7 @@ Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
 
 FilterType AudioCaptureFilter::GetFilterType()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetFilterType", logTag_.c_str());
+    MEDIA_LOG_I("GetFilterType");
     return FilterType::AUDIO_CAPTURE;
 }
 
@@ -302,7 +296,7 @@ void AudioCaptureFilter::SetAudioSource(int32_t source)
 
 Status AudioCaptureFilter::SendEos()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SendEos", logTag_.c_str());
+    MEDIA_LOG_I("SendEos");
     Status ret = Status::OK;
     if (outputBufferQueue_) {
         std::shared_ptr<AVBuffer> buffer;
@@ -321,7 +315,7 @@ Status AudioCaptureFilter::SendEos()
 
 void AudioCaptureFilter::ReadLoop()
 {
-    MEDIA_LOG_D(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
+    MEDIA_LOG_D("ReadLoop");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::ReadLoop");
     if (eos_.load()) {
         return;
@@ -329,7 +323,7 @@ void AudioCaptureFilter::ReadLoop()
     uint64_t bufferSize = 0;
     auto ret = audioCaptureModule_->GetSize(bufferSize);
     if (ret != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "Get audioCaptureModule buffer size fail", logTag_.c_str());
+        MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
         return;
     }
     std::shared_ptr<AVBuffer> buffer;
@@ -338,17 +332,17 @@ void AudioCaptureFilter::ReadLoop()
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "RequestBuffer fail", logTag_.c_str());
+        MEDIA_LOG_E("RequestBuffer fail");
         return;
     }
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     if (ret == Status::ERROR_AGAIN) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule read return again", logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule read return again");
         outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
     if (ret != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "RequestBuffer fail", logTag_.c_str());
+        MEDIA_LOG_E("RequestBuffer fail");
         outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
@@ -356,16 +350,15 @@ void AudioCaptureFilter::ReadLoop()
 
     Status status = outputBufferQueue_->PushBuffer(buffer, true);
     if (status != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "PushBuffer fail", logTag_.c_str());
+        MEDIA_LOG_E("PushBuffer fail");
     }
 }
 
 Status AudioCaptureFilter::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetCurrentCapturerChangeInfo", logTag_.c_str());
+    MEDIA_LOG_I("GetCurrentCapturerChangeInfo");
     if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ is nullptr, cannot get audio capturer change info",
-            logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
         return Status::ERROR_INVALID_OPERATION;
     }
     audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
@@ -374,10 +367,9 @@ Status AudioCaptureFilter::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapt
 
 int32_t AudioCaptureFilter::GetMaxAmplitude()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetMaxAmplitude", logTag_.c_str());
+    MEDIA_LOG_I("GetMaxAmplitude");
     if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ is nullptr, cannot get audio capturer change info ",
-            logTag_.c_str());
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info ");
         return (int32_t)Status::ERROR_INVALID_OPERATION;
     }
     return audioCaptureModule_->GetMaxAmplitude();
@@ -385,7 +377,7 @@ int32_t AudioCaptureFilter::GetMaxAmplitude()
 
 void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnLinkedResult", logTag_.c_str());
+    MEDIA_LOG_I("OnLinkedResult");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::OnLinkedResult");
     outputBufferQueue_ = queue;
     PrepareAudioCapture();
@@ -393,45 +385,45 @@ void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue
 
 Status AudioCaptureFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "UpdateNext", logTag_.c_str());
+    MEDIA_LOG_I("UpdateNext");
     return Status::OK;
 }
 
 Status AudioCaptureFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "UnLinkNext", logTag_.c_str());
+    MEDIA_LOG_I("UnLinkNext");
     return Status::OK;
 }
 
 Status AudioCaptureFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnLinked", logTag_.c_str());
+    MEDIA_LOG_I("OnLinked");
     return Status::OK;
 }
 
 Status AudioCaptureFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUpdated", logTag_.c_str());
+    MEDIA_LOG_I("OnUpdated");
     return Status::OK;
 }
 
 Status AudioCaptureFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUnLinked", logTag_.c_str());
+    MEDIA_LOG_I("OnUnLinked");
     return Status::OK;
 }
 
 void AudioCaptureFilter::OnUnlinkedResult(const std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUnlinkedResult", logTag_.c_str());
+    MEDIA_LOG_I("OnUnlinkedResult");
     (void) meta;
 }
 
 void AudioCaptureFilter::OnUpdatedResult(const std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUpdatedResult", logTag_.c_str());
+    MEDIA_LOG_I("OnUpdatedResult");
     (void) meta;
 }
 

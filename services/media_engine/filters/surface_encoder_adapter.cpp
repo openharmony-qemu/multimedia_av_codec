@@ -68,12 +68,12 @@ private:
 
 SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "encoder adapter create", logTag_.c_str());
+    MEDIA_LOG_I("encoder adapter create");
 }
 
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "encoder adapter destroy", logTag_.c_str());
+    MEDIA_LOG_I("encoder adapter destroy");
     if (codecServer_) {
         codecServer_->Release();
     }
@@ -82,10 +82,10 @@ SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Init mime: " PUBLIC_LOG_S, logTag_.c_str(), mime.c_str());
+    MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
     if (!codecServer_) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "Create codecServer failed", logTag_.c_str());
+        MEDIA_LOG_I("Create codecServer failed");
         return Status::ERROR_UNKNOWN;
     }
     if (!releaseBufferTask_) {
@@ -98,14 +98,9 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
     return Status::OK;
 }
 
-void SurfaceEncoderAdapter::SetLogTag(std::string logTag)
-{
-    logTag_ = std::move(logTag);
-}
-
 Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Configure", logTag_.c_str());
+    MEDIA_LOG_I("Configure");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Configure");
     MediaAVCodec::Format format = MediaAVCodec::Format();
     if (meta->Find(Tag::VIDEO_WIDTH) != meta->end()) {
@@ -154,7 +149,7 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
 
 Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetOutputBufferQueue", logTag_.c_str());
+    MEDIA_LOG_I("SetOutputBufferQueue");
     outputBufferQueueProducer_ = bufferQueueProducer;
     return Status::OK;
 }
@@ -162,7 +157,7 @@ Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProdu
 Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
     const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetEncoderAdapterCallback", logTag_.c_str());
+    MEDIA_LOG_I("SetEncoderAdapterCallback");
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> surfaceEncoderAdapterCallback =
         std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
     encoderAdapterCallback_ = encoderAdapterCallback;
@@ -179,7 +174,7 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
 
 Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetInputSurface", logTag_.c_str());
+    MEDIA_LOG_I("GetInputSurface");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -199,7 +194,7 @@ sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 
 Status SurfaceEncoderAdapter::Start()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Start");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
@@ -220,13 +215,13 @@ Status SurfaceEncoderAdapter::Start()
 
 Status SurfaceEncoderAdapter::Stop()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Stop");
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     const int64_t SEC_TO_NS = 1000000000;
     stopTime_ = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
-    MEDIA_LOG_I(PUBLIC_LOG_S "Stop time: " PUBLIC_LOG_D64, logTag_.c_str(), stopTime_);
+    MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     if (isStart_) {
         std::unique_lock<std::mutex> lock(stopMutex_);
@@ -236,13 +231,13 @@ Status SurfaceEncoderAdapter::Stop()
         isThreadExit_ = true;
         releaseBufferCondition_.notify_all();
         releaseBufferTask_->Stop();
-        MEDIA_LOG_I(PUBLIC_LOG_S "releaseBufferTask_ Stop", logTag_.c_str());
+        MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
     if (!codecServer_) {
         return Status::OK;
     }
     int32_t ret = codecServer_->Stop();
-    MEDIA_LOG_I(PUBLIC_LOG_S "codecServer_ Stop", logTag_.c_str());
+    MEDIA_LOG_I("codecServer_ Stop");
     isStart_ = false;
     if (ret == 0) {
         return Status::OK;
@@ -253,14 +248,14 @@ Status SurfaceEncoderAdapter::Stop()
 
 Status SurfaceEncoderAdapter::Pause()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
+    MEDIA_LOG_I("Pause");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Pause");
     return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Resume()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
+    MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Resume");
     isResume_ = true;
     return Status::OK;
@@ -268,7 +263,7 @@ Status SurfaceEncoderAdapter::Resume()
 
 Status SurfaceEncoderAdapter::Flush()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
+    MEDIA_LOG_I("Flush");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -282,7 +277,7 @@ Status SurfaceEncoderAdapter::Flush()
 
 Status SurfaceEncoderAdapter::Reset()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Reset", logTag_.c_str());
+    MEDIA_LOG_I("Reset");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Reset");
     if (!codecServer_) {
         return Status::OK;
@@ -301,7 +296,7 @@ Status SurfaceEncoderAdapter::Reset()
 
 Status SurfaceEncoderAdapter::Release()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
+    MEDIA_LOG_I("Release");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Release");
     if (!codecServer_) {
         return Status::OK;
@@ -316,7 +311,7 @@ Status SurfaceEncoderAdapter::Release()
 
 Status SurfaceEncoderAdapter::NotifyEos()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "NotifyEos", logTag_.c_str());
+    MEDIA_LOG_I("NotifyEos");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -330,7 +325,7 @@ Status SurfaceEncoderAdapter::NotifyEos()
     
 Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::SetParameter");
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
@@ -346,13 +341,13 @@ Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &paramete
 
 std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetOutputFormat is not supported", logTag_.c_str());
+    MEDIA_LOG_I("GetOutputFormat is not supported");
     return nullptr;
 }
 
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    MEDIA_LOG_D(PUBLIC_LOG_S "OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), buffer->pts_);
+    MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
@@ -371,12 +366,12 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     if (status != Status::OK) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "RequestBuffer fail.", logTag_.c_str());
+        MEDIA_LOG_I("RequestBuffer fail.");
         return;
     }
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     if (emptyOutputBuffer->memory_ == nullptr) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "emptyOutputBuffer->memory_ is nullptr", logTag_.c_str());
+        MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr");
         return;
     }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
@@ -395,15 +390,15 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
-    MEDIA_LOG_D(PUBLIC_LOG_S "OnOutputBufferAvailable end", logTag_.c_str());
+    MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "ReleaseBuffer", logTag_.c_str());
+    MEDIA_LOG_I("ReleaseBuffer");
     while (true) {
         if (isThreadExit_) {
-            MEDIA_LOG_I(PUBLIC_LOG_S "Exit ReleaseBuffer thread.", logTag_.c_str());
+            MEDIA_LOG_I("Exit ReleaseBuffer thread.");
             break;
         }
         std::vector<uint32_t> indexs;
@@ -417,7 +412,7 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
             codecServer_->ReleaseOutputBuffer(index);
         }
     }
-    MEDIA_LOG_I(PUBLIC_LOG_S "ReleaseBuffer end", logTag_.c_str());
+    MEDIA_LOG_I("ReleaseBuffer end");
 }
 void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
 {
