@@ -78,6 +78,7 @@ private:
     void ShowSelectedTracks();
     bool IsInSelectedTrack(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
+    void AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void ConvertAvccToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,

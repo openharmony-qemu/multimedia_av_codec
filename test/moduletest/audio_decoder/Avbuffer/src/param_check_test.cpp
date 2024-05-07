@@ -880,8 +880,9 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_021, TestSize.Level2)
     result0 = aDecBufferDemo->Start(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
     index = aDecBufferDemo->GetInputIndex();
-    result0 = aDecBufferDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    index = 8;
+    result0 = aDecBufferDemo->PushInputData(codec, index);
+    ASSERT_NE(result0, AV_ERR_OK);
     index = aDecBufferDemo->GetOutputIndex();
     index = -1;
     result0 = aDecBufferDemo->FreeOutputData(codec, index);
