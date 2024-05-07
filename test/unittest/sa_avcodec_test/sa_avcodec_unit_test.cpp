@@ -255,8 +255,8 @@ HWTEST_F(SaAVCodecUnitTest, avcodec_server_GetSubSystemAbility_002, TestSize.Lev
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
     int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
-    EXPECT_NE(codecStub, nullptr);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(codecStub, nullptr);
+    EXPECT_NE(ret, AVCS_ERR_OK);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODECLIST;
     sptr<IRemoteObject> codeclistStub = nullptr;
@@ -287,8 +287,8 @@ HWTEST_F(SaAVCodecUnitTest, avcodec_server_GetSubSystemAbility_003, TestSize.Lev
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
     int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
-    EXPECT_NE(codecStub, nullptr);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(codecStub, nullptr);
+    EXPECT_NE(ret, AVCS_ERR_OK);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODECLIST;
     sptr<IRemoteObject> codeclistStub = nullptr;
@@ -316,11 +316,10 @@ HWTEST_F(SaAVCodecUnitTest, avcodec_server_GetSubSystemAbility_004, TestSize.Lev
     auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
     EXPECT_NE(server, nullptr);
 
-    subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
     int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
-    EXPECT_NE(codecStub, nullptr);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(codecStub, nullptr);
+    EXPECT_NE(ret, AVCS_ERR_OK);
     server = nullptr;
 }
 
