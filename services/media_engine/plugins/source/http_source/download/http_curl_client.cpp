@@ -28,6 +28,9 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 512;
+const std::string USER_AGENT = "User-Agent";
+const std::string REFER = "Refer";
+
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
     std::string str;
@@ -287,7 +290,7 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
 
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    if (url.ends_with(".ts")) {
+    if (url.find(".ts") == std::string::npos) {
         MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " .", url.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 5000L);
     }

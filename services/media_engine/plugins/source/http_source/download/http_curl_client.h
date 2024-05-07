@@ -26,8 +26,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-const std::string USER_AGENT = "User-Agent";
-const std::string REFER = "Refer";
 class HttpCurlClient : public NetworkClient {
 public:
     HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam);
