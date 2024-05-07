@@ -177,6 +177,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     Status ret;
     // create secure decoder for drm.
     MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
+    videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_);
     if (isDrmProtected_ && svpFlag_) {
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
         std::string baseName = GetCodecName(codecMimeType_);
@@ -383,6 +384,13 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter enter parameter is valid:  %{public}i", parameter != nullptr);
+}
+
+void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)

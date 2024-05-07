@@ -61,6 +61,8 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
+    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName);
+
 private:
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
@@ -76,6 +78,10 @@ private:
     std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
 
     bool isConfigured_ {false};
+
+    int32_t appUid_;
+    int32_t appPid_;
+    std::string bundleName_;
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
