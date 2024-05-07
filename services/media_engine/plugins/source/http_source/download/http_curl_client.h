@@ -56,7 +56,6 @@ private:
     mutable Mutex mutex_;
     std::string userAgent_ {"Harmony OS UA"};
     std::string referer_ {};
-    bool isSetUA_ = false;
 };
 }
 }
