@@ -47,7 +47,6 @@ private:
     int64_t lastTimeStamp_ {HST_TIME_NONE};
     int64_t lastBufferTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
-    bool forceRenderNextFrame_ {false};
     VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
     void CalcFrameRate();
@@ -58,6 +57,7 @@ private:
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
     bool seekFlag_{false};
+    std::atomic<bool> lastFrameDropped_ {false};
 };
 } // namespace Pipeline
 } // namespace Media
