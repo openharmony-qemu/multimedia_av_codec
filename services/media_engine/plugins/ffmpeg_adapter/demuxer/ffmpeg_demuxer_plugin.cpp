@@ -1356,7 +1356,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
     AVProbeData probeData{"", buff.data(), static_cast<int>(bufferInfo->GetMemory()->GetSize()), ""};
     int confidence = plugin->read_probe(&probeData);
-    if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) { {
+    if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
         MEDIA_LOG_W("Sniff: probe score " PUBLIC_LOG_D32 " is too low, may misdetection, reset to 0", confidence);
         confidence = 0;
     }
