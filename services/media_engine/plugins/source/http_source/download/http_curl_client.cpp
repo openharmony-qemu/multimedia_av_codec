@@ -270,7 +270,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
     curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 2); // 2
-
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
 #ifndef CA_DIR
@@ -312,10 +311,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
             MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
         }
     }
-
-    MEDIA_LOG_I("userAgent : " PUBLIC_LOG_S " refer : " PUBLIC_LOG_S,
-        userAgent_.c_str(), referer_.c_str());
-
     curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, userAgent_.c_str());
     if (!referer_.empty()) {
         curl_easy_setopt(easyHandle_, CURLOPT_REFERER, referer_.c_str());
