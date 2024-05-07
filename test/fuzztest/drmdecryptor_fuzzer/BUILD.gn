@@ -21,7 +21,7 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 ##############################fuzztest##########################################
 ohos_fuzztest("DrmDecryptorFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/drm_decryptor_fuzzer"
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/drmdecryptor_fuzzer"
   include_dirs = [ "$MEDIA_ROOT_DIR/services/drm_decryptor" ]
   defines = av_codec_defines
   cflags = [
@@ -32,7 +32,7 @@ ohos_fuzztest("DrmDecryptorFuzzTest") {
   ]
   cflags_cc = [ "-fno-rtti" ]
 
-  sources = [ "drm_decryptor_fuzzer.cpp" ]
+  sources = [ "drmdecryptor_fuzzer.cpp" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",

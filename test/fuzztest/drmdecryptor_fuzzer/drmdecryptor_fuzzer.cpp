@@ -18,7 +18,7 @@
 #include "codec_drm_decrypt.h"
 #include "securec.h"
 
-#define FUZZ_PROJECT_NAME "drm_decryptor_fuzzer"
+#define FUZZ_PROJECT_NAME "drmdecryptor_fuzzer"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
