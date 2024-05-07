@@ -224,7 +224,7 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         std::string setValue = iter->second;
         if (setKey.length() <= MAX_STRING_LENGTH && setValue.length() <= MAX_STRING_LENGTH) {
             ClearHeadTailSpace(setKey);
-            CheckHeaderKey("User-Agent", setKey, setValue);
+            CheckHeaderKey(setKey, setValue);
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
             MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
@@ -279,22 +279,18 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
 #endif
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
-
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
-
     curl_easy_setopt(easyHandle_, CURLOPT_WRITEFUNCTION, rxBody_);
     curl_easy_setopt(easyHandle_, CURLOPT_WRITEDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERFUNCTION, rxHeader_);
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
-
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
     if (url.find(".ts") == std::string::npos) {
         MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " .", url.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 5000L);
     }
-
     std::string host;
     std::string exclusions;
     int32_t port = 0;

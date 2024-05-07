@@ -340,15 +340,13 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     }
     writeLen =
         ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
-    err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
-        afterAlignRemainedLength_);
+    err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_, afterAlignRemainedLength_);
     if (err!=0) {
         return false;
     }
     uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
                             writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
-    err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint,
-        minWriteLen);
+    err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint, minWriteLen);
     if (err!=0) {
         return false;
     }
