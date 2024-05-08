@@ -40,7 +40,7 @@ int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
 void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    firstTsTask_ = std::make_shared<Task>(std::string("OS_FirstTsLoop"));
+    firstTsTask_ = std::make_shared<Task>(std::string("FirstTsLoop"));
     firstTsTask_->RegisterJob([this] {
         FirstTsUpdateLoop();
         return 0;
