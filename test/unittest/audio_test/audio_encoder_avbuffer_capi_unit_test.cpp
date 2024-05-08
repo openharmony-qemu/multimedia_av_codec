@@ -39,6 +39,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "native_audio_channel_layout.h"
+#include "ffmpeg_base_encoder.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1313,6 +1314,42 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, opusGetOutputDescription_01, TestSize.L
     
     EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioEnc_));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, baseTest_01, TestSize.Level1)
+{
+    Media::Plugins::Ffmpeg::FFmpegBaseEncoder baseEncode;
+    auto allocator = Media::AVAllocatorFactory::CreateSharedAllocator(Media::MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(allocator, 20);
+    buffer->memory_ = nullptr;
+    EXPECT_EQ(Media::Status::ERROR_INVALID_DATA, baseEncode.ProcessSendData(buffer));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, baseTest_02, TestSize.Level1)
+{
+    Media::Plugins::Ffmpeg::FFmpegBaseEncoder baseEncode;
+    auto allocator = Media::AVAllocatorFactory::CreateSharedAllocator(Media::MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(allocator, 20);
+    buffer->memory_->SetSize(0);
+    EXPECT_EQ(Media::Status::ERROR_INVALID_DATA, baseEncode.ProcessSendData(buffer));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, baseTest_03, TestSize.Level1)
+{
+    Media::Plugins::Ffmpeg::FFmpegBaseEncoder baseEncode;
+    auto allocator = Media::AVAllocatorFactory::CreateSharedAllocator(Media::MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(allocator, 20);
+    buffer->meta_ = nullptr;
+    EXPECT_EQ(Media::Status::ERROR_INVALID_DATA, baseEncode.ProcessSendData(buffer));
+}
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, baseTest_04, TestSize.Level1)
+{
+    Media::Plugins::Ffmpeg::FFmpegBaseEncoder baseEncode;
+    auto allocator = Media::AVAllocatorFactory::CreateSharedAllocator(Media::MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+
+    EXPECT_EQ(Media::Status::ERROR_INVALID_DATA, baseEncode.ProcessReceiveData(buffer));
 }
 }
 }
