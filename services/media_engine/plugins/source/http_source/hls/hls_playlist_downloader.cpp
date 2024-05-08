@@ -25,6 +25,7 @@ namespace HttpPlugin {
 namespace {
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr size_t RETRY_TIMES = 15000;
+constexpr int FIRST_TS_TIMEOUT = 2000;
 }
 int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 {
@@ -39,6 +40,12 @@ int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
 void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
+    firstTsTask_ = std::make_shared<Task>(std::string("OS_FirstTsLoop"));
+    firstTsTask_->RegisterJob([this] {
+        FirstTsUpdateLoop();
+        return 0;
+    });
+    firstTsTask_->Start();
     url_ = url;
     master_ = nullptr;
     SaveHttpHeader(httpHeader);
@@ -243,6 +250,29 @@ int32_t HlsPlayListDownloader::GetVideoHeight() const
         return 0;
     }
     return static_cast<int32_t>(currentVariant_->height_);
+}
+
+void HlsPlayListDownloader::FirstTsUpdateLoop()
+{
+    int runTimes = 0;
+    while (runTimes < FIRST_TS_TIMEOUT) {
+        if (currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr
+            && currentVariant_->m3u8_->isFirstFragmentReady_) {
+            std::string uri = currentVariant_->m3u8_->firstFragment_.uri;
+            double duration = currentVariant_->m3u8_->firstFragment_.duration;
+            MEDIA_LOG_I("first ts is ready.");
+            callback_->OnFirstTsReady(uri, duration);
+            firstTsTask_->StopAsync();
+            MEDIA_LOG_I("first ts task stop.");
+            break;
+        }
+        runTimes++;
+        OSAL::SleepFor(1); // 1
+    }
+    if (runTimes >= FIRST_TS_TIMEOUT) { // 5000: runtime above 5s means timeout.
+        firstTsTask_->StopAsync();
+        MEDIA_LOG_I("first ts task stop, caused by timeout.");
+    }
 }
 
 std::string HlsPlayListDownloader::GetUrl()

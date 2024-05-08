@@ -513,7 +513,6 @@ void Downloader::FLVProcess(bool &isTrunck, long &contentLen, const std::string 
 {
     if (isTrunck != true) {
         if (static_cast<int32_t>(url.find(".flv")) != -1) {
-            MEDIA_LOG_I("currentRequest flv url :" PUBLIC_LOG_S, url.c_str());
             contentLen = LIVE_CONTENT_LENGTH;
         }
     }
@@ -580,7 +579,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         FALSE_RETURN_V(next != nullptr, size * nitems);
         char* location = StringTrim(next);
         mediaDownloader->currentRequest_->location_ = location;
-        MEDIA_LOG_I("RxHeaderData, Location " PUBLIC_LOG_S, location);
     }
 
     StrncmpContentRange(info, key, next, size, nitems);

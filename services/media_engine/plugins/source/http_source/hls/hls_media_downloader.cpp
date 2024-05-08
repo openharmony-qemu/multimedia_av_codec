@@ -213,6 +213,9 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     while (buffer_->GetSize() < wantReadLength) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
                                downloadRequest_->IsEos()) || isStopped;
+        if (downloadRequest_ != nullptr) {
+            isEos = downloadRequest_->IsEos();
+        }
         if (isFinishedPlay && buffer_->GetSize() > 0) {
             realReadLength = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
             return true;
@@ -222,7 +225,6 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             return false;
         }
         if (CheckReadTimeOut()) {
-            isEos = true;
             realReadLength = 0;
             return false;
         }
@@ -272,6 +274,7 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
+    AutoLock lock(firstTsMutex_);
     for (int i = 0; i < static_cast<int>(playList.size()); i++) {
         auto fragment = playList[i];
         auto ret = std::find_if(backPlayList_.begin(), backPlayList_.end(), [&](PlayInfo playInfo) {
@@ -803,6 +806,22 @@ size_t HlsMediaDownloader::GetTotalBufferSize()
 size_t HlsMediaDownloader::GetRingBufferSize()
 {
     return buffer_->GetSize();
+}
+
+void HlsMediaDownloader::OnFirstTsReady(const std::string& url, const double& duration)
+{
+    AutoLock lock(firstTsMutex_);
+    if (isDownloadStarted_) {
+        return;
+    }
+    MEDIA_LOG_I("first ts is: " PUBLIC_LOG_S, url.c_str());
+    PlayInfo playInfo;
+    playInfo.url_ = url;
+    playInfo.duration_ = duration;
+    fragmentDownloadStart[playInfo.url_] = true;
+    fragmentPushed[playInfo.url_] = true;
+    isDownloadStarted_ = true;
+    PutRequestIntoDownloader(playInfo);
 }
 
 void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)

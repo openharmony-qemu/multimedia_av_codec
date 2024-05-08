@@ -58,6 +58,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
+    void OnFirstTsReady(const std::string& url, const double& duration) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
@@ -177,6 +178,7 @@ PRIVATE:
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
+    Mutex firstTsMutex_ {};
 };
 }
 }

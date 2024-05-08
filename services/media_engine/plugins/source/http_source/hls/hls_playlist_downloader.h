@@ -46,6 +46,7 @@ public:
     void NotifyListChange();
     int32_t GetVideoWidth() const override;
     int32_t GetVideoHeight() const override;
+    void FirstTsUpdateLoop();
     void SetInterruptState(bool isInterruptNeeded) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
@@ -59,6 +60,7 @@ private:
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
     std::shared_ptr<M3U8VariantStream> newVariant_;
+    std::shared_ptr<Task> firstTsTask_;
 };
 }
 }

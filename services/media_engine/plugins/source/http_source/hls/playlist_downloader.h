@@ -34,6 +34,7 @@ struct PlayListChangeCallback {
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
+    virtual void OnFirstTsReady(const std::string& url, const double& duration) = 0;
 };
 class PlayListDownloader {
 public:
