@@ -414,6 +414,7 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
     if (!modeExist) {
         return AVCS_ERR_OK;
     }
+    PrintParam(modeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
 
     using namespace OHOS::Media::Plugins;
     if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
