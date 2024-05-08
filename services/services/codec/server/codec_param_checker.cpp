@@ -40,13 +40,24 @@ const std::unordered_map<CodecScenario, std::string_view> CODEC_SCENARIO_TO_STRI
     {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, "decoder normal"},
 };
 
-template<class T> void ExistAndLog(bool paramExist, const std::string_view tag, T value)
+template<class T> void PrintParam(bool paramExist, const std::string_view tag, T value)
 {
     if (!paramExist) {
         return;
     }
     using namespace std::string_literals;
     std::string logMsg = "Param "s + tag.data() + " set, value: "s + std::to_string(value);
+    AVCODEC_LOGI("%{public}s", logMsg.c_str());
+}
+
+template<class T> void PrintParam(bool paramExist, const std::string_view tag, T value1, T value2)
+{
+    if (!paramExist) {
+        return;
+    }
+    using namespace std::string_literals;
+    std::string logMsg = "Param "s + tag.data() + " set, value: "s +
+        std::to_string(value1) + "-" + std::to_string(value2);
     AVCODEC_LOGI("%{public}s", logMsg.c_str());
 }
 
@@ -156,7 +167,7 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
     bool temporalGopSizeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
     bool modeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
-    ExistAndLog(enableExist, Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
+    PrintParam(enableExist, Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
 
     if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
         if (enableExist || temporalGopSizeExist || modeExist) {
@@ -186,8 +197,7 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType c
     bool widthExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     bool heightExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     CHECK_AND_RETURN_RET_LOG(widthExist && heightExist, AVCS_ERR_INVALID_VAL, "Key param missing, width or height");
-    ExistAndLog(widthExist, MediaDescriptionKey::MD_KEY_WIDTH, width);
-    ExistAndLog(heightExist, MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    PrintParam(widthExist && heightExist, "resolution", width, height);
 
     bool resolutionValid = true;
     if (capData.supportSwapWidthHeight) {
@@ -213,7 +223,7 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
     if (!paramExist || pixelFormat == static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)) {
         return AVCS_ERR_OK;
     }
-    ExistAndLog(paramExist, MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
+    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
 
     bool paramValid = IsSupported(capData.pixFormat, pixelFormat);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT,
@@ -232,7 +242,7 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType co
     if (paramExist == false) {
         return AVCS_ERR_OK;
     }
-    ExistAndLog(paramExist, MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
+    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
 
     bool paramValid = framerate > 0 ? true : false;
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_INVALID_VAL,
@@ -251,9 +261,9 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     bool bitrateExist = format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
     bool qualityExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
     bool bitrateModeExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
-    ExistAndLog(bitrateExist, MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
-    ExistAndLog(qualityExist, MediaDescriptionKey::MD_KEY_QUALITY, quality);
-    ExistAndLog(bitrateModeExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    PrintParam(bitrateExist, MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
+    PrintParam(qualityExist, MediaDescriptionKey::MD_KEY_QUALITY, quality);
+    PrintParam(bitrateModeExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
 
     CHECK_AND_RETURN_RET_LOG(!(bitrateExist && qualityExist), AVCS_ERR_INVALID_VAL,
         "Param invalid, bitrate and quality mutually include");  // bitrate and quality mutually include
@@ -300,7 +310,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
     if (paramExist == false) {
         return AVCS_ERR_OK;
     }
-    ExistAndLog(paramExist, MediaDescriptionKey::MD_KEY_PROFILE, profile);
+    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_PROFILE, profile);
 
     bool paramValid = IsSupported(capData.profiles, profile);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT,
@@ -319,7 +329,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
     if (paramExist == false) {
         return AVCS_ERR_OK;
     }
-    ExistAndLog(paramExist, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotation);
+    PrintParam(paramExist, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotation);
 
     // valid rotation: 0, 90, 180, 270
     CHECK_AND_RETURN_RET_LOG(rotation == 0 || rotation == 90 || rotation == 180 || rotation == 270, AVCS_ERR_UNSUPPORT,
@@ -332,7 +342,6 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
 int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)capData;
-    (void)format;
     (void)codecType;
     constexpr int32_t MAX_QP = 51;
     int32_t qpMin;
@@ -344,8 +353,7 @@ int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType
     }
     CHECK_AND_RETURN_RET_LOG(!(qpMinExist != qpMaxExist), AVCS_ERR_INVALID_VAL,
         "Param invalid, QPmin and QPmax are expected to be set in pairs in format");
-    ExistAndLog(qpMinExist, Tag::VIDEO_ENCODER_QP_MIN, qpMin);
-    ExistAndLog(qpMaxExist, Tag::VIDEO_ENCODER_QP_MAX, qpMax);
+    PrintParam(qpMinExist && qpMaxExist, "QP", qpMin, qpMax);
 
     CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
         "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
@@ -386,7 +394,7 @@ int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecT
     if (!gopSizeExist) {
         return AVCS_ERR_OK;
     }
-    ExistAndLog(gopSizeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+    PrintParam(gopSizeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
     CHECK_AND_RETURN_RET_LOG(temporalGopSize >= MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
         "Param invalid, %{public}s: %{public}d, expect greater or equal than %{public}d",
         Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, MIN_TEMPORAL_GOPSIZE);
