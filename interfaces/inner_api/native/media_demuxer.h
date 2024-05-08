@@ -94,6 +94,7 @@ public:
     Status SetSpeed(float speed);
     Status SetFrameRate(double frameRate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
+    void OnDumpInfo(int32_t fd);
 private:
     class DataSourceImpl;
 

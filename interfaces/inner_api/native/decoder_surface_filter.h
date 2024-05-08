@@ -80,6 +80,7 @@ public:
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetSeekTime(int64_t seekTimeUs);
     Status HandleInputBuffer();
+    void OnDumpInfo(int32_t fd);
 
     void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName);
 

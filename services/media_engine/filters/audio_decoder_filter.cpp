@@ -327,6 +327,12 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
     FALSE_RETURN(inputBuffer != nullptr);
     inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
+
+void AudioDecoderFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("AudioDecoderFilter::OnDumpInfo called.");
+    mediaCodec_->OnDumpInfo(fd);
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

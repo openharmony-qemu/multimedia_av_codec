@@ -364,6 +364,24 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
     return ret;
 }
 
+void MediaDemuxer::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("MediaDemuxer::OnDumpInfo called.");
+    std::string dumpString;
+    dumpString += "MediaDemuxer plugin name: " + pluginName_ + "\n";
+    dumpString += "MediaDemuxer buffer queue map size: " + std::to_string(bufferQueueMap_.size()) + "\n";
+    dumpString += "MediaDemuxer buffer map size: " + std::to_string(bufferMap_.size()) + "\n";
+    if (fd < 0) {
+        MEDIA_LOG_E("MediaDemuxer::OnDumpInfo fd is invalid.");
+        return;
+    }
+    int ret = write(fd, dumpString.c_str(), dumpString.size());
+    if (ret < 0) {
+        MEDIA_LOG_E("MediaDemuxer::OnDumpInfo write failed.");
+        return;
+    }
+}
+
 std::map<uint32_t, sptr<AVBufferQueueProducer>> MediaDemuxer::GetBufferQueueProducerMap()
 {
     return bufferQueueMap_;

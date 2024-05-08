@@ -102,6 +102,7 @@ Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType
     callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID, appUid_);
     callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, bundleName_);
     format.SetMeta(callerInfo);
+    mediaCodecName_ = "";
     if (isMimeType) {
         ret = MediaAVCodec::VideoDecoderFactory::CreateByMime(name, format, mediaCodec_);
         MEDIA_LOG_I("VideoDecoderAdapter::Init CreateByMime errorCode %{public}d", ret);
@@ -111,6 +112,7 @@ Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType
     }
 
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    mediaCodecName_ = name;
     return Status::OK;
 }
 
@@ -349,6 +351,23 @@ void VideoDecoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid, std::st
     appUid_ = appUid;
     appPid_ = appPid;
     bundleName_ = bundleName;
+}
+
+void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("VideoDecoderAdapter::OnDumpInfo called.");
+    std::string dumpString;
+    dumpString += "VideoDecoderAdapter media codec name is:" + mediaCodecName_ + "\n";
+    dumpString += "VideoDecoderAdapter buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
+    if (fd < 0) {
+        MEDIA_LOG_E("VideoDecoderAdapter::OnDumpInfo fd is invalid.");
+        return;
+    }
+    int ret = write(fd, dumpString.c_str(), dumpString.size());
+    if (ret < 0) {
+        MEDIA_LOG_E("VideoDecoderAdapter::OnDumpInfo write failed.");
+        return;
+    }
 }
 } // namespace Media
 } // namespace OHOS
