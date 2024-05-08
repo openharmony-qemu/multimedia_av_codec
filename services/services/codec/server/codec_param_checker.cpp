@@ -352,7 +352,6 @@ int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType
     CHECK_AND_RETURN_RET_LOG(qpMax <= MAX_QP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
         "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     
-    AVCODEC_LOGI("Param valid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     return AVCS_ERR_OK;
 }
 
