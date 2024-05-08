@@ -28,6 +28,9 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 512;
+const std::string USER_AGENT = "User-Agent";
+const std::string REFER = "Refer";
+
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
     std::string str;
@@ -40,19 +43,19 @@ std::string ToString(const std::list<std::string> &lists, char tab = ',')
     return str;
 }
 
-std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
+std::string InsertCharBefore(const std::string input, char from, char preChar, char nextChar)
 {
     std::string output = input;
     char arr[] = {preChar, from};
     unsigned long strSize = sizeof(arr) / sizeof(arr[0]);
     std::string str(arr, strSize);
-    std::size_t pos = output.find(from);
+    int64_t pos = static_cast<int64_t>(output.find(from));
     std::size_t length = output.length();
     if (length == 0) {
         return output;
     }
     while (pos > 0 && pos <= length - 1 && pos != std::string::npos) {
-        char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
+        char nextCharTemp = pos >= (length - 1) ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
             length += (strSize - 1);
@@ -67,7 +70,7 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while (std::isspace(str[0])) {
+    while ((!str.empty()) && std::isspace(str[0])) {
         str.erase(0, 1);
     }
     if (str.empty()) {
@@ -187,23 +190,26 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
     return str;
 }
 
-void HttpCurlClient::CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue)
+void HttpCurlClient::CheckHeaderKey(const std::string setKey, const std::string setValue)
 {
-    if (setKey == standardKey) {
+    if (setKey != USER_AGENT && setKey != REFER) {
+        MEDIA_LOG_E("Setted invalid key " PUBLIC_LOG_S " .", setKey.c_str());
+        return;
+    }
+    if (setKey == USER_AGENT) {
         if (!setValue.empty()) {
-            if (isSetUA_) {
-                MEDIA_LOG_I("Set the same " PUBLIC_LOG_S ", use last value : " PUBLIC_LOG_S,
-                    standardKey.c_str(), setValue.c_str());
-            }
             userAgent_ = setValue;
-            isSetUA_ = true;
-            MEDIA_LOG_I("Set " PUBLIC_LOG_S " success : " PUBLIC_LOG_S, standardKey.c_str(),
-                setValue.c_str());
+            MEDIA_LOG_I("Setted User-Agent: " PUBLIC_LOG_S " success. ", setValue.c_str());
         } else {
-            MEDIA_LOG_E("Set " PUBLIC_LOG_S " fail, the value is empty.", standardKey.c_str());
+            MEDIA_LOG_I("Setted User-Agent failed, value is empty. ");
         }
-    } else {
-        MEDIA_LOG_E("Set invalid key: " PUBLIC_LOG_S, setKey.c_str());
+    } else if (setKey == REFER) {
+        if (!setValue.empty()) {
+            referer_ = setValue;
+            MEDIA_LOG_I("Setted Refer: " PUBLIC_LOG_S " success. ", setValue.c_str());
+        } else {
+            MEDIA_LOG_I("Setted Refer failed, value is empty. ");
+        }
     }
 }
 
@@ -218,17 +224,12 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         std::string setValue = iter->second;
         if (setKey.length() <= MAX_STRING_LENGTH && setValue.length() <= MAX_STRING_LENGTH) {
             ClearHeadTailSpace(setKey);
-            CheckHeaderKey("User-Agent", setKey, setValue);
+            CheckHeaderKey(setKey, setValue);
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
             MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
         }
     }
-
-    if (!isSetUA_) {
-        MEDIA_LOG_I("Use default UA: " PUBLIC_LOG_S, userAgent_.c_str());
-    }
-
     MEDIA_LOG_D("User-Agent: " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
         httpHeader["Referer"].c_str());
 }
@@ -269,7 +270,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
     curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 2); // 2
-
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
 #ifndef CA_DIR
@@ -278,18 +278,18 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
 #endif
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
-
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
-
     curl_easy_setopt(easyHandle_, CURLOPT_WRITEFUNCTION, rxBody_);
     curl_easy_setopt(easyHandle_, CURLOPT_WRITEDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERFUNCTION, rxHeader_);
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
-
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-
+    if (url.find(".ts") == std::string::npos) {
+        MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " .", url.c_str());
+        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 5000L);
+    }
     std::string host;
     std::string exclusions;
     int32_t port = 0;
@@ -311,10 +311,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
             MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
         }
     }
-
-    MEDIA_LOG_I("userAgent : " PUBLIC_LOG_S " refer : " PUBLIC_LOG_S,
-        userAgent_.c_str(), referer_.c_str());
-
     curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, userAgent_.c_str());
     if (!referer_.empty()) {
         curl_easy_setopt(easyHandle_, CURLOPT_REFERER, referer_.c_str());
