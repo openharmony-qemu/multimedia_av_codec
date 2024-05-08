@@ -24,7 +24,6 @@
 #include "unittest_log.h"
 #include "drm_decryptor_coverage_unit_test.h"
 
-
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -201,7 +200,7 @@ void CreateAvsMediaCencInfo(MetaDrmCencInfo &cencInfo)
 }
 
 /**
- * @tc.name: Codec_Drm_Decryptor_SetCodecName_H264_001
+ * @tc.name: Codec_Drm_Decryptor_SetCodecName_001
  * @tc.desc: set decoder name with H264
  */
 HWTEST_F(CodecDrmDecryptorUnitTest, Codec_Drm_Decryptor_SetCodecName_001, TestSize.Level1)
@@ -361,7 +360,7 @@ HWTEST_F(CodecDrmDecryptorUnitTest, Codec_Drm_Decryptor_DrmVideoCencDecrypt_003,
 
 /**
  * @tc.name: Codec_Drm_Decryptor_DrmAudioCencDecrypt_001
- * @tc.desc: DrmAudioCencDecrypt, test for AVS
+ * @tc.desc: DrmAudioCencDecrypt, test for H264
  */
 HWTEST_F(CodecDrmDecryptorUnitTest, Codec_Drm_Decryptor_DrmAudioCencDecrypt_001, TestSize.Level1)
 {

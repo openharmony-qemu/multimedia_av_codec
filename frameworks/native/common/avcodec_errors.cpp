@@ -115,8 +115,8 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_MISMATCH_SAMPLE_RATE,                AV_ERR_UNSUPPORT},
     {AVCS_ERR_MISMATCH_BIT_RATE,                   AV_ERR_UNSUPPORT},
     {AVCS_ERR_CONFIGURE_ERROR,                     AV_ERR_UNSUPPORT},
-    {AVCS_ERR_DECRYPT_FAILED,                      AV_ERR_DECRYPT_FAILED},
     {AVCS_ERR_EXTEND_START,                        AV_ERR_EXTEND_START},
+    {AVCS_ERR_DECRYPT_FAILED,                      AV_ERR_DRM_DECRYPT_FAILED},
     };
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
@@ -130,8 +130,8 @@ const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_SERVICE_DIED,          "avcodec service died"},
     {AV_ERR_INVALID_STATE,         "the state is not support this operation"},
     {AV_ERR_UNSUPPORT,             "unsupport interface"},
-    {AV_ERR_DECRYPT_FAILED,        "decrypt failed"},
     {AV_ERR_EXTEND_START,          "extend err start"},
+    {AV_ERR_DRM_DECRYPT_FAILED,    "decrypt failed"},
 };
 
 const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
