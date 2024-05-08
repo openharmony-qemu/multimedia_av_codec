@@ -52,7 +52,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
 }
@@ -70,7 +70,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
 
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
     playListDownloader_->SetPlayListCallback(this);
 }
 
