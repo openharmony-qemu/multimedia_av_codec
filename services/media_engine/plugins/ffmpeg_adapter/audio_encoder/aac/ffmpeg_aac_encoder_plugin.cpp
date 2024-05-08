@@ -336,7 +336,7 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
 
 Status FFmpegAACEncoderPlugin::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    MEDIA_LOG_I("ReceiveBuffer enter");
+    MEDIA_LOG_D("ReceiveBuffer enter");
     (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     Status status;
