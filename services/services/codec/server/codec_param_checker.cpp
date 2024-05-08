@@ -189,7 +189,6 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType c
     ExistAndLog(widthExist, MediaDescriptionKey::MD_KEY_WIDTH, width);
     ExistAndLog(heightExist, MediaDescriptionKey::MD_KEY_HEIGHT, height);
 
-
     bool resolutionValid = true;
     if (capData.supportSwapWidthHeight) {
         AVCODEC_LOGI("Codec support swap width and height");
