@@ -57,7 +57,7 @@ template<class T> void PrintParam(bool paramExist, const std::string_view tag, T
     }
     using namespace std::string_literals;
     std::string logMsg = "Param "s + tag.data() + " set, value: "s +
-        std::to_string(value1) + "-" + std::to_string(value2);
+        std::to_string(value1) + " - " + std::to_string(value2);
     AVCODEC_LOGI("%{public}s", logMsg.c_str());
 }
 
