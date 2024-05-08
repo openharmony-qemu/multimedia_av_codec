@@ -102,6 +102,30 @@ const std::vector<CapabilityData> HCODEC_CAPS = {{.codecName = "video.H.Decoder.
 
 class CodecBase;
 using RetAndCaps = std::pair<int32_t, std::vector<CapabilityData>>;
+
+class AVCodecCallbackMock: public AVCodecCallback {
+public:
+    AVCodecCallbackMock() = default;
+    ~AVCodecCallbackMock() = default;
+
+    MOCK_METHOD(void, OnError, (AVCodecErrorType errorType, int32_t errorCode), (override));
+    MOCK_METHOD(void, OnOutputFormatChanged, (const Format &format), (override));
+    MOCK_METHOD(void, OnInputBufferAvailable, (uint32_t index, std::shared_ptr<AVSharedMemory> buffer), (override));
+    MOCK_METHOD(void, OnOutputBufferAvailable, (uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                              std::shared_ptr<AVSharedMemory> buffer), (override));
+};
+
+class MediaCodecCallbackMock: public MediaCodecCallback {
+public:
+    MediaCodecCallbackMock() = default;
+    ~MediaCodecCallbackMock() = default;
+
+    MOCK_METHOD(void, OnError, (AVCodecErrorType errorType, int32_t errorCode), (override));
+    MOCK_METHOD(void, OnOutputFormatChanged, (const Format &format), (override));
+    MOCK_METHOD(void, OnInputBufferAvailable, (uint32_t index, std::shared_ptr<AVBuffer> buffer), (override));
+    MOCK_METHOD(void, OnOutputBufferAvailable, (uint32_t index, std::shared_ptr<AVBuffer> buffer), (override));
+};
+
 class CodecBaseMock {
 public:
     CodecBaseMock() = default;
@@ -125,6 +149,7 @@ public:
     MOCK_METHOD(int32_t, GetOutputFormat, ());
     MOCK_METHOD(int32_t, QueueInputBuffer, (uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag));
     MOCK_METHOD(int32_t, QueueInputBuffer, (uint32_t index));
+    MOCK_METHOD(int32_t, QueueInputParameter, (uint32_t index));
     MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index));
 
     MOCK_METHOD(int32_t, NotifyEos, ());
@@ -135,7 +160,7 @@ public:
     MOCK_METHOD(int32_t, SignalRequestIDRFrame, ());
     MOCK_METHOD(int32_t, GetInputFormat, (Format & format));
     MOCK_METHOD(std::string, GetHidumperInfo, ());
-    MOCK_METHOD(int32_t, Init, (Media::Meta & callerInfo));
+    MOCK_METHOD(int32_t, Init, ());
 
     /* API11 audio codec interface */
     MOCK_METHOD(int32_t, CreateCodecByName, (const std::string &name));
@@ -171,6 +196,7 @@ public:
     virtual int32_t GetOutputFormat(Format &format);
     virtual int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag);
     virtual int32_t QueueInputBuffer(uint32_t index);
+    virtual int32_t QueueInputParameter(uint32_t index);
     virtual int32_t ReleaseOutputBuffer(uint32_t index);
 
     virtual int32_t NotifyEos();
