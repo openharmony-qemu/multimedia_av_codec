@@ -384,7 +384,7 @@ void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<Sam
 {
     int cencInfoSize = 0;
     uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
-        &cencInfoSize);
+        reinterpret_cast<size_t *>(&cencInfoSize));
     streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
         static_cast<size_t>(cencInfoSize), false);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
@@ -428,7 +428,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
 
     int cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkts[0],
-        AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
+        AV_PKT_DATA_ENCRYPTION_INFO, reinterpret_cast<size_t *>(&cencInfoSize));
     if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
         std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
             (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
@@ -939,7 +939,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
         MEDIA_LOG_D("GetDrmInfo by stream side data");
         int drmInfoSize = 0;
         MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
-            AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
+            AV_PKT_DATA_ENCRYPTION_INIT_INFO, reinterpret_cast<size_t *>(&drmInfoSize));
         if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
             ParseDrmInfo(tmpDrmInfo, drmInfoSize, drmInfo);
         }

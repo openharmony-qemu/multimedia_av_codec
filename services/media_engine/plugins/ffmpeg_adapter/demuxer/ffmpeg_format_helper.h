@@ -74,6 +74,7 @@ private:
     static void PutInfoToFormat(const Tag key, double value, Meta &format);
     static void PutInfoToFormat(const Tag key, const std::string_view &value, Meta &format);
     static void PutBufferToFormat(const Tag key, const uint8_t *addr, size_t size, Meta &format);
+    static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
 };
 } // namespace Ffmpeg
 } // namespace Plugins
