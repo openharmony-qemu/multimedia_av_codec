@@ -47,11 +47,6 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_
     {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
 };
 
-const std::vector<std::pair<std::string_view, const std::string>> DEFAULT_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
-};
-
 const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width"},
@@ -64,21 +59,6 @@ const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TAB
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "Max_Input_Buffer_Count"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "Max_Output_Buffer_Count"},
-};
-
-const std::vector<std::pair<std::string_view, const std::string>> AUDIO_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, "Channel_Count"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SAMPLE_RATE, "Sample_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
-};
-
-const std::map<OHOS::MediaAVCodec::CodecServer::CodecType, std::vector<std::pair<std::string_view, const std::string>>>
-    CODEC_DUMP_TABLE = {
-        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_DEFAULT, DEFAULT_DUMP_TABLE},
-        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_VIDEO, VIDEO_DUMP_TABLE},
-        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_AUDIO, AUDIO_DUMP_TABLE},
 };
 
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
@@ -600,29 +580,17 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     Format codecFormat;
     int32_t ret = codecBase_->GetOutputFormat(codecFormat);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Get codec format failed.");
-    CodecType codecType = GetCodecType();
-    auto it = CODEC_DUMP_TABLE.find(codecType);
-    const auto &dumpTable = it != CODEC_DUMP_TABLE.end() ? it->second : DEFAULT_DUMP_TABLE;
+
     AVCodecDumpControler dumpControler;
-    std::string codecInfo;
-    switch (codecType) {
-        case CODEC_TYPE_VIDEO:
-            codecInfo = "Video_Codec_Info";
-            break;
-        case CODEC_TYPE_DEFAULT:
-            codecInfo = "Codec_Info";
-            break;
-        case CODEC_TYPE_AUDIO:
-            codecInfo = "Audio_Codec_Info";
-            break;
-    }
+    std::string codecInfo = "Video_Codec_Info";
+
     auto statusIt = CODEC_STATE_MAP.find(status_);
     dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);
     dumpControler.AddInfo(DUMP_STATUS_INDEX, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
     dumpControler.AddInfo(DUMP_LAST_ERROR_INDEX, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
     int32_t dumpIndex = 3;
-    for (auto iter : dumpTable) {
+    for (auto iter : VIDEO_DUMP_TABLE) {
         if (iter.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
             dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
                                                        codecFormat, iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
@@ -856,21 +824,6 @@ void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, buffer);
     }
-}
-
-CodecServer::CodecType CodecServer::GetCodecType()
-{
-    CodecType codecType;
-
-    if ((codecName_.find("Video") != codecName_.npos) || (codecName_.find("video") != codecName_.npos)) {
-        codecType = CodecType::CODEC_TYPE_VIDEO;
-    } else if ((codecName_.find("Audio") != codecName_.npos) || (codecName_.find("audio") != codecName_.npos)) {
-        codecType = CodecType::CODEC_TYPE_AUDIO;
-    } else {
-        codecType = CodecType::CODEC_TYPE_DEFAULT;
-    }
-
-    return codecType;
 }
 
 int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
