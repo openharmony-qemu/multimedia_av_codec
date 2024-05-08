@@ -814,7 +814,6 @@ void HlsMediaDownloader::OnFirstTsReady(const std::string& url, const double& du
     if (isDownloadStarted_) {
         return;
     }
-    MEDIA_LOG_I("first ts is: " PUBLIC_LOG_S, url.c_str());
     PlayInfo playInfo;
     playInfo.url_ = url;
     playInfo.duration_ = duration;
