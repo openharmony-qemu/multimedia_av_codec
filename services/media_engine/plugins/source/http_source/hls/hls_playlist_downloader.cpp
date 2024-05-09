@@ -266,13 +266,13 @@ void HlsPlayListDownloader::FirstTsUpdateLoop()
             break;
         }
         runTimes++;
-        OSAL::SleepFor(FIRST_TS_TASK_SLEEP_MS); // 1
+        OSAL::SleepFor(FIRST_TS_TASK_SLEEP_MS);
     }
     if (firstTsTask_ != nullptr) {
         firstTsTask_->StopAsync();
     }
     firstTsTask_.reset();
-    MEDIA_LOG_I("first ts task stop, caused by timeout.");
+    MEDIA_LOG_I("first ts task stop, run times: " PUBLIC_LOG_D32 ". ", runTimes);
 }
 
 std::string HlsPlayListDownloader::GetUrl()
