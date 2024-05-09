@@ -406,7 +406,8 @@ int CodecDrmDecrypt::DrmFindCeiPos(const uint8_t *data, uint32_t dataSize, uint3
             i += DRM_LEGACY_LEN;
         }
     }
-    if ((ceiStartPos != DRM_INVALID_START_POS) && (ceiEndPos != DRM_INVALID_START_POS)) {
+    if ((ceiStartPos != DRM_INVALID_START_POS) && (ceiEndPos != DRM_INVALID_START_POS) &&
+        (ceiStartPos < ceiEndPos) && (ceiEndPos <= dataSize)) {
         return 1; // 1 true
     }
     return 0;
@@ -426,7 +427,9 @@ void CodecDrmDecrypt::DrmFindEncryptionFlagPos(const uint8_t *data, uint32_t dat
             }
         }
     }
-    pos = offset;
+    if (offset < dataSize) {
+        pos = offset;
+    }
     return;
 }
 
@@ -566,6 +569,7 @@ void CodecDrmDecrypt::DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t d
     uint32_t ceiEndPos = DRM_INVALID_START_POS;
     if (inBuf->memory_ == nullptr || inBuf->memory_->GetAddr() == nullptr || dataSize == 0 ||
         dataSize > DRM_MAX_STREAM_DATA_SIZE) {
+        AVCODEC_LOGE("DrmGetCencInfo parameter err");
         return;
     }
     uint8_t *data = inBuf->memory_->GetAddr();
