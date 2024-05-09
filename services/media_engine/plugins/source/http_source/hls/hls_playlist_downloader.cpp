@@ -269,8 +269,9 @@ void HlsPlayListDownloader::FirstTsUpdateLoop()
         runTimes++;
         OSAL::SleepFor(1); // 1
     }
-    if (runTimes >= FIRST_TS_TIMEOUT) { // 5000: runtime above 5s means timeout.
+    if (runTimes >= FIRST_TS_TIMEOUT) { // 2000: runtime above 2s means timeout.
         firstTsTask_->StopAsync();
+        firstTsTask_.reset();
         MEDIA_LOG_I("first ts task stop, caused by timeout.");
     }
 }
