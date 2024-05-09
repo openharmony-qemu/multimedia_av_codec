@@ -105,6 +105,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audiodecoderconfigure_fuzzer:AudiodecoderConfigureFuzzTest",
       "fuzztest/audiodecodersetparameter_fuzzer:AudiodecoderSetParameterFuzzTest",
       "fuzztest/audioencoder_fuzzer:AudioencoderFuzzTest",
+      "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
