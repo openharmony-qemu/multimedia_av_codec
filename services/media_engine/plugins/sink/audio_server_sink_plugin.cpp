@@ -282,8 +282,10 @@ Status AudioServerSinkPlugin::Init()
         playerEventReceiver_->OnEvent({"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
     }
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
-    if (audioRenderInfo_.streamUsage != AudioStandard::STREAM_USAGE_MUSIC &&
-        audioRenderInfo_.streamUsage != AudioStandard::STREAM_USAGE_AUDIOBOOK) {
+    if (audioRenderSetFlag_ && (audioRenderInfo_.streamUsage == AudioStandard::STREAM_USAGE_MUSIC ||
+        audioRenderInfo_.streamUsage == AudioStandard::STREAM_USAGE_AUDIOBOOK)) {
+        audioRenderer_->SetOffloadAllowed(true);
+    } else {
         audioRenderer_->SetOffloadAllowed(false);
     }
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
