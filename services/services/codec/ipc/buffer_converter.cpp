@@ -229,10 +229,10 @@ void BufferConverter::GetFormat(Format &format)
         return;
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_WIDTH)) {
-        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride / pixcelSize_);
+        format.PutIntValue(Tag::VIDEO_WIDTH, rect_.wStride / pixcelSize_);
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
-        format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.hStride);
+        format.PutIntValue(Tag::VIDEO_HEIGHT, rect_.hStride);
     }
     if (format.ContainKey(Tag::VIDEO_STRIDE)) {
         format.PutIntValue(Tag::VIDEO_STRIDE, usrRect_.wStride);
@@ -255,10 +255,10 @@ void BufferConverter::SetFormat(const Format &format)
     if (format.GetIntValue(Tag::VIDEO_PIXEL_FORMAT, pixelFormat)) {
         SetPixFormat(static_cast<VideoPixelFormat>(pixelFormat));
     }
-    if (format.GetIntValue(Tag::VIDEO_DISPLAY_WIDTH, width) || format.GetIntValue(Tag::VIDEO_WIDTH, width)) {
+    if (format.GetIntValue(Tag::VIDEO_WIDTH, width)) {
         SetWidth(width);
     }
-    if (format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_HEIGHT, height)) {
+    if (format.GetIntValue(Tag::VIDEO_HEIGHT, height)) {
         SetHeight(height);
     }
     if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride)) {

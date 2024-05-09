@@ -163,14 +163,8 @@ int32_t HDecoder::UpdateOutPortFormat()
     if (outputFormat_ == nullptr) {
         outputFormat_ = make_shared<Format>();
     }
-    if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_WIDTH)) {
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w); // deprecated
-    }
-    if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_HEIGHT)) {
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h); // deprecated
-    }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, flushCfg_.damage.w);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, flushCfg_.damage.h);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, flushCfg_.damage.w);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, flushCfg_.damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     HLOGI("output format: %s", outputFormat_->Stringify().c_str());
@@ -407,11 +401,10 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (surfaceBuffer == nullptr) {
         return;
     }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceBuffer->GetWidth());
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, surfaceBuffer->GetHeight());
     int32_t stride = surfaceBuffer->GetStride();
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, stride); // deprecated
 
     OMX_PARAM_PORTDEFINITIONTYPE def;
     int32_t ret = GetPortDefinition(OMX_DirOutput, def);
@@ -419,7 +412,6 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (ret == AVCS_ERR_OK && sliceHeight >= surfaceBuffer->GetHeight()) {
         HLOGI("[%dx%d][%dx%d]", surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), stride, sliceHeight);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight); // deprecated
     }
 }
 
