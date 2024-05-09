@@ -50,6 +50,8 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
+const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 2;
+const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
@@ -1319,7 +1321,7 @@ bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
 namespace { // plugin set
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
-    MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ".", pluginName.c_str());
+    MEDIA_LOG_I("Sniff: plugin name " PUBLIC_LOG_S ".", pluginName.c_str());
 
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Sniff failed due to plugin name is empty.");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "Sniff failed due to dataSource invalid.");
@@ -1329,9 +1331,16 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
 
     size_t bufferSize = DEFAULT_READ_SIZE;
+    if (StartWith(plugin->name, "mp3")) {
+        bufferSize = MP3_PROBE_SIZE; // mp3 needs more data to probe, refer to ffmpeg
+        MEDIA_LOG_I("Sniff: expend probe data size to " PUBLIC_LOG_ZU " for mp3", bufferSize);
+    }
     uint64_t fileSize = 0;
     if (dataSource->GetSize(fileSize) == Status::OK) {
         bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
+        if (bufferSize == fileSize) {
+            MEDIA_LOG_I("Sniff: file data is not enough, reset probe size to file size");
+        }
     }
     // fix ffmpeg probe crash,refer to ffmpeg/tools/probetest.c
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
@@ -1347,8 +1356,11 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
     AVProbeData probeData{"", buff.data(), static_cast<int>(bufferInfo->GetMemory()->GetSize()), ""};
     int confidence = plugin->read_probe(&probeData);
-
-    MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
+    if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
+        MEDIA_LOG_W("Sniff: probe score " PUBLIC_LOG_D32 " is too low, may misdetection, reset to 0", confidence);
+        confidence = 0;
+    }
+    MEDIA_LOG_I("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
         plugin->name, confidence);
 
     return confidence;
