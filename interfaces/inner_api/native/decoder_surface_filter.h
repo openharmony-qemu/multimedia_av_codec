@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include "plugin/plugin_time.h"
+#include "avcodec_common.h"
 #include "surface/surface.h"
 #include "osal/task/condition_variable.h"
 #include "osal/task/mutex.h"
@@ -72,6 +73,8 @@ public:
 
     Status SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
+
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);

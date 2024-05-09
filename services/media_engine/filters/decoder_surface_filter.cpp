@@ -81,6 +81,11 @@ public:
 
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnError(errorType, errorCode);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
@@ -147,6 +152,15 @@ DecoderSurfaceFilter::~DecoderSurfaceFilter()
     }
     videoDecoder_->Release();
     MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
+}
+
+void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
+        static_cast<int32_t>(errorType), errorCode);
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    }
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
