@@ -600,7 +600,10 @@ extern const char *OH_MD_KEY_VIDEO_SAR;
  * @since 12
  */
 extern const char *OH_MD_KEY_START_TIME;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 87714323 (add info parse)
 /**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
