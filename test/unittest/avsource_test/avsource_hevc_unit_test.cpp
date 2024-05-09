@@ -852,4 +852,40 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1611, TestSize.Level1)
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
 }
+
+/**
+ * @tc.name: AVSource_GetFormat_1700
+ * @tc.desc: get mp4 265 format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1700, TestSize.Level1)
+{
+    if (access(g_mp4HevcPath.c_str(), F_OK) != 0) {
+        return;
+    }
+    printf("---- %s ------\n", g_mp4HevcPath.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcPath.data()));
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    int64_t startTime;
+    format_->GetLongValue(Media::Tag::MEDIA_CONTAINER_START_TIME, startTime);
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    double sar;
+    format_->GetDoubleValue(Media::Tag::VIDEO_SAR, sar);
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    int64_t sampleFormat;
+    format_->GetLongValue(Media::Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    int64_t bitsPerCodecSample;
+    format_->GetLongValue(Media::Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerCodecSample);
+}
 } // namespace

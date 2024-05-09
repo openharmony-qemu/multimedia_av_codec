@@ -115,6 +115,10 @@ const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT = "video_slice_height";
 const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY = "video_enable_low_latency";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX = "video_encoder_qp_max";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN = "video_encoder_qp_min";
+const char *OH_MD_KEY_DECODING_TIMESTAMP = "decoding_timestamp";
+const char *OH_MD_KEY_BUFFER_DURATION = "buffer_duration";
+const char *OH_MD_KEY_VIDEO_SAR = "video_sar";
+const char *OH_MD_KEY_START_TIME = "start_time";
 
 #ifdef __cplusplus
 }

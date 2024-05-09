@@ -266,6 +266,9 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     } else {
         format.Set<Tag::MEDIA_DURATION>(static_cast<int64_t>(duration));
     }
+    if (avFormatContext.start_time != AV_NOPTS_VALUE) {
+        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
+    }
     ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
         ParseInfoFromMetadata(avFormatContext.metadata, key, format);
@@ -461,6 +464,11 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
+    }
+
+    AVRational sar = avStream.sample_aspect_ratio;
+    if (sar.num && sar.den) {
+        format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
     }
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {

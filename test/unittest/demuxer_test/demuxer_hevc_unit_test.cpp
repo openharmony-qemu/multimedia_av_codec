@@ -101,7 +101,7 @@ void DemuxerUnitTest::InitResource(const std::string &path, bool local)
     ASSERT_NE(demuxer_, nullptr);
 }
 
-void DemuxerUnitTest::ReadSample(const std::string &path, bool local)
+void DemuxerUnitTest::ReadSample(const std::string &path, bool local, bool checkBufferInfo)
 {
     InitResource(path, local);
     SetInitValue();
@@ -113,7 +113,7 @@ void DemuxerUnitTest::ReadSample(const std::string &path, bool local)
 
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, checkBufferInfo), AV_ERR_OK);
             CountFrames(idx);
         }
     }
@@ -1311,5 +1311,24 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1611, TestSize.Level1)
     }
     ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1200
+ * @tc.desc: copy current sample to buffer, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1700, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_mp4HevcPath, LOCAL, true);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mp4Hevc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mp4Hevc"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 } // namespace
