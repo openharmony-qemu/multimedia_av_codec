@@ -135,6 +135,7 @@ MediaDemuxer::~MediaDemuxer()
     eosMap_.clear();
     requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
+    localDrmInfos_.clear();
 }
 
 
@@ -184,28 +185,30 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
 
 bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
 {
-    MEDIA_LOG_I("IsDrmInfosUpdate");
+    MEDIA_LOG_D("IsDrmInfosUpdate");
     bool isUpdated = false;
     std::unique_lock<std::shared_mutex> lock(drmMutex);
     for (auto &newItem : info) {
+        if (newItem.second.size() == 0) {
+            continue;
+        }
         auto pos = localDrmInfos_.equal_range(newItem.first);
         if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
-            MEDIA_LOG_D("IsDrmInfosUpdate this uuid not exists and update");
+            MEDIA_LOG_D("this uuid doesn't exist, and update");
             localDrmInfos_.insert(newItem);
             isUpdated = true;
             continue;
         }
-        MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists many times");
         bool isSame = false;
         for (; pos.first != pos.second; ++pos.first) {
             if (newItem.second == pos.first->second) {
-                MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists and same pssh");
+                MEDIA_LOG_D("this uuid exists and same pssh, not update");
                 isSame = true;
                 break;
             }
         }
         if (!isSame) {
-            MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists but pssh not same");
+            MEDIA_LOG_D("this uuid exists but pssh not same, update");
             localDrmInfos_.insert(newItem);
             isUpdated = true;
         }
@@ -660,6 +663,7 @@ Status MediaDemuxer::Reset()
         }
         bufferQueueMap_.clear();
         bufferMap_.clear();
+        localDrmInfos_.clear();
     }
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
@@ -1006,7 +1010,7 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
-    if (eventReceiver_ == nullptr) {
+    if (eventReceiver_ == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
         return;
     }

@@ -918,7 +918,6 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
             ssConverter << std::hex << static_cast<int32_t>(metaDrmInfo[index].uuid[i]);
             uuid = ssConverter.str();
         }
-        MEDIA_LOG_I("ParseDrmInfo:: uuid is %{public}s", uuid.c_str());
         drmInfo.insert({ uuid, std::vector<uint8_t>(metaDrmInfo[index].pssh,
             metaDrmInfo[index].pssh + metaDrmInfo[index].psshLen) });
     }
