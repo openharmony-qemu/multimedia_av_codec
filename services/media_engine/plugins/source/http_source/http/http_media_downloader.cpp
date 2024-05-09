@@ -124,7 +124,9 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         wantReadLength = remain < wantReadLength ? remain : wantReadLength;
     }
     while (buffer_->GetSize() < wantReadLength) {
-        isEos = downloadRequest_->IsEos();
+        if (downloadRequest_ != nullptr) {
+            isEos = downloadRequest_->IsEos();
+        };
         if (isEos && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
             realReadLength = 0;
@@ -142,7 +144,6 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                 MEDIA_LOG_I("Read time out, OnEvent");
                 callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             }
-            isEos = true;
             realReadLength = 0;
             return false;
         }
