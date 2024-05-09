@@ -141,6 +141,7 @@ PRIVATE:
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
+    std::atomic<bool> isInterruptNeeded_{false};
 
     struct BufferDownRecord {
         /* data */
