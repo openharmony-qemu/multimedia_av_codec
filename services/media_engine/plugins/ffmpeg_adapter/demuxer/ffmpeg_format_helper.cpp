@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 #include "libavutil/avutil.h"
-#include "libavutil/mastering_display_metadata.h"
+#include "libavutil/display.h"
 #ifdef __cplusplus
 }
 #endif
@@ -456,7 +456,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         valPtr = av_dict_get(avStream.metadata, "ROTATE", nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse rotate info failed.");
+        MEDIA_LOG_D("Parse rotate info from meta failed.");
+        ParseRotationFromMatrix(avStream, format);
     } else {
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
@@ -466,6 +467,29 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
+    }
+}
+
+void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
+{
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    if (displayMatrix) {
+        int rotation = (int)(-round(av_display_rotation_get(displayMatrix)));
+        MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_D32, rotation);
+        switch (rotation) {
+            case 90:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
+                break;
+            case 180:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["180"]);
+                break;
+            case 270:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["270"]);
+                break;
+            default:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
+                break;
+        }
     }
 }
 

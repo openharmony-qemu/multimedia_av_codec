@@ -528,7 +528,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
             .channels = static_cast<uint32_t>(avCodecContext_->channels),
             .sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate),
             .bitsPerSample = 0,
-            .channelLayout = static_cast<uint32_t>(avCodecContext_->channel_layout),
+            .channelLayout = avCodecContext_->ch_layout,
             .srcFfFmt = srcFmt_,
             .destSamplesPerFrame = static_cast<uint32_t>(destSamplesPerFrame),
             .destFmt = avCodecContext_->sample_fmt,

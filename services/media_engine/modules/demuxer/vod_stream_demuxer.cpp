@@ -261,6 +261,8 @@ Status VodStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>&
                 ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
             if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
+            } else if (0 == expectedLen) {
+                return Status::END_OF_STREAM;
             } else {
                 return Status::ERROR_NOT_ENOUGH_DATA;
             }
