@@ -213,7 +213,9 @@ inline void SetRepeatTimes(SampleInfo &info, const char * const value)
 inline void SetHdrVividVideo(SampleInfo &info, const char * const value)
 {
     info.isHDRVivid = std::stol(value);
-    info.hevcProfile = HEVC_PROFILE_MAIN_10;
+    if (info.isHDRVivid) {
+        info.hevcProfile = HEVC_PROFILE_MAIN_10;
+    }
 }
 
 inline void SetNeedDumpOutput(SampleInfo &info, const char * const value)
