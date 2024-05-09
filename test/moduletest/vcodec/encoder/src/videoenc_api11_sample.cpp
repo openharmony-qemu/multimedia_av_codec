@@ -80,7 +80,6 @@ static void onEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
     signal->outIdxQueue_.push(index);
     signal->outBufferQueue_.push(buffer);
     signal->outCond_.notify_all();
-
 }
 
 static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
@@ -842,7 +841,6 @@ void VEncAPI11Sample::DumpLtrInfo(OH_AVBuffer *buffer)
     int32_t framePoc = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR, &isLtr);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_POC, &framePoc);
-    //std::cout <<"frame index: " << frameCount << "  isLTR: " << isLtr << "  framePOC" << framePoc << std::endl;
 }
 
 void VEncAPI11Sample::OutputFunc()
