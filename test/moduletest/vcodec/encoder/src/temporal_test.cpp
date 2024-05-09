@@ -196,7 +196,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0020, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0030
- * @tc.name      : 未使能，配置相邻模式分层编码,h265 surface
+ * @tc.name      : 未使能，配置相邻模式分层编码,h265 surf
  * @tc.desc      : api test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0030, TestSize.Level1)
@@ -221,7 +221,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0030, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0040
- * @tc.name      : 配置跨帧模式分层编码,默认gopsize,h265 surface
+ * @tc.name      : 配置跨帧模式分层编码,默认gopsize,h265 surf
  * @tc.desc      : api test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0040, TestSize.Level1)
@@ -247,7 +247,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0040, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0440
- * @tc.name      : 配置相邻模式分层编码,默认gopsize,h265 surface
+ * @tc.name      : 配置相邻模式分层编码,默认gopsize,h265 surf
  * @tc.desc      : api test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0440, TestSize.Level1)
@@ -272,7 +272,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0440, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0050
- * @tc.name      : h265，surface相邻参考模式分层编码。时域gop size为2
+ * @tc.name      : h265，surf相邻参考模式分层编码。时域gop size为2
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0050, TestSize.Level1)
@@ -297,7 +297,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0050, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0060
- * @tc.name      : h265，surface相邻参考模式分层编码。时域gop size为I帧间隔-1
+ * @tc.name      : h265，surf相邻参考模式分层编码。时域gop size为I帧间隔-1
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0060, TestSize.Level1)
@@ -323,7 +323,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0060, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0070
- * @tc.name      : h265，surface跨帧参考模式分层编码。时域gop size为2
+ * @tc.name      : h265，surf跨帧参考模式分层编码。时域gop size为2
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0070, TestSize.Level1)
@@ -349,7 +349,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0070, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0080
- * @tc.name      : h265，surface跨帧参考模式分层编码  时域gop size为I帧间隔-1
+ * @tc.name      : h265，surf跨帧参考模式分层编码  时域gop size为I帧间隔-1
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0080, TestSize.Level1)
@@ -424,7 +424,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0100, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0110
- * @tc.name      : h264 surface 相邻参考模式分层编码 时域gop size为任意合法值
+ * @tc.name      : h264 surf 相邻参考模式分层编码 时域gop size为任意合法值
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0110, TestSize.Level1)
@@ -449,7 +449,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0110, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0120
- * @tc.name      : h264 surface 跨帧参考模式分层编码 时域gop size为5
+ * @tc.name      : h264 surf 跨帧参考模式分层编码 时域gop size为5
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0120, TestSize.Level1)
@@ -524,7 +524,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0140, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0150
- * @tc.name      : h265 surface 相邻参考模式分层编码 时域gop size为任意合法值
+ * @tc.name      : h265 surf 相邻参考模式分层编码 时域gop size为任意合法值
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0150, TestSize.Level1)
@@ -549,7 +549,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0150, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0160
- * @tc.name      : h265 surface 跨帧参考模式分层编码 时域gop size为12
+ * @tc.name      : h265 surf 跨帧参考模式分层编码 时域gop size为12
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0160, TestSize.Level1)
@@ -575,7 +575,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0160, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0170
- * @tc.name      : h265 surface分层编码过程中强制I帧，检查相邻分层结构是否刷新
+ * @tc.name      : h265 surf分层编码过程中强制I帧，检查相邻分层结构是否刷新
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0170, TestSize.Level1)
@@ -601,7 +601,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0170, TestSize.Lev
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_FUNCTION_0180
- * @tc.name      : h265 surface分层编码过程中强制I帧，检查跨帧分层结构是否刷新
+ * @tc.name      : h265 surf分层编码过程中强制I帧，检查跨帧分层结构是否刷新
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0180, TestSize.Level1)
@@ -668,7 +668,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_002, TestSize.Level0)
 
 /**
  * @tc.number    : LTR_FUNC_004
- * @tc.name      : h265 surface模式 count 1 ,mark 第5帧 ,后续帧标记use
+ * @tc.name      : h265 surf模式 count 1 ,mark 第5帧 ,后续帧标记use
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_004, TestSize.Level0)
@@ -693,7 +693,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_004, TestSize.Level0)
 
 /**
  * @tc.number    : LTR_FUNC_005
- * @tc.name      : h265 surface模式 count 1 ,mark 第5帧 ,后续帧标记use 但poc错误
+ * @tc.name      : h265 surf模式 count 1 ,mark 第5帧 ,后续帧标记use 但poc错误
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_005, TestSize.Level1)
@@ -719,7 +719,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_005, TestSize.Level1)
 
 /**
  * @tc.number    : LTR_FUNC_006
- * @tc.name      : h265 surface模式 count 10 ,每隔5帧mark一帧,每个参考帧后面都正确use当前参考帧
+ * @tc.name      : h265 surf模式 count 10 ,每隔5帧mark一帧,每个参考帧后面都正确use当前参考帧
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_006, TestSize.Level0)
@@ -746,7 +746,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_006, TestSize.Level0)
 
 /**
  * @tc.number    : LTR_FUNC_007
- * @tc.name      : h265 surface模式 count 10 ,每隔5帧mark一帧,不设置use帧
+ * @tc.name      : h265 surf模式 count 10 ,每隔5帧mark一帧,不设置use帧
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_007, TestSize.Level2)
@@ -772,7 +772,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_007, TestSize.Level2)
 
 /**
  * @tc.number    : LTR_FUNC_008
- * @tc.name      : h265 surface模式 count 2 ,每隔5帧mark一帧,所有帧都use第一个参考帧
+ * @tc.name      : h265 surf模式 count 2 ,每隔5帧mark一帧,所有帧都use第一个参考帧
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_008, TestSize.Level1)
@@ -799,7 +799,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_008, TestSize.Level1)
 
 /**
  * @tc.number    : LTR_FUNC_009
- * @tc.name      : h265 surface模式 ,不设置count ,mark一个参考帧 ,一个被标记为use ,poc正确
+ * @tc.name      : h265 surf模式 ,不设置count ,mark一个参考帧 ,一个被标记为use ,poc正确
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_009, TestSize.Level2)
@@ -823,7 +823,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_009, TestSize.Level2)
 
 /**
  * @tc.number    : LTR_FUNC_010
- * @tc.name      : h265 surface模式,分层编码 和LTR同时设置
+ * @tc.name      : h265 surf模式,分层编码 和LTR同时设置
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_010, TestSize.Level1)
@@ -876,7 +876,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_011, TestSize.Level0)
 
 /**
  * @tc.number    : LTR_FUNC_012
- * @tc.name      : h264 surface模式 每隔5帧mark参考帧
+ * @tc.name      : h264 surf模式 每隔5帧mark参考帧
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_012, TestSize.Level0)
@@ -930,7 +930,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_013, TestSize.Level0)
 
 /**
  * @tc.number    : LTR_FUNC_014
- * @tc.name      : h265 surface模式 每隔5帧mark参考帧
+ * @tc.name      : h265 surf模式 每隔5帧mark参考帧
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_014, TestSize.Level0)
@@ -1013,7 +1013,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_016, TestSize.Level1)
 
 /**
  * @tc.number    : LTR_FUNC_017
- * @tc.name      : 16个线程，8个为h265 surface普通编码，8个为h265 surface LTR编码
+ * @tc.name      : 16个线程，8个为h265 surf普通编码，8个为h265 surf LTR编码
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_017, TestSize.Level3)
@@ -1050,7 +1050,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_017, TestSize.Level3)
 
 /**
  * @tc.number    : LTR_FUNC_018
- * @tc.name      : 16个线程，8个为h264 buffer普通编码，8个为h265 surface LTR编码
+ * @tc.name      : 16个线程，8个为h264 buffer普通编码，8个为h265 surf LTR编码
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_018, TestSize.Level3)
@@ -1091,7 +1091,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_018, TestSize.Level3)
 
 /**
  * @tc.number    : LTR_FUNC_019
- * @tc.name      : 16个线程，8个为h264 surface普通编码，8个为h265 buffer LTR编码
+ * @tc.name      : 16个线程，8个为h264 surf普通编码，8个为h265 buffer LTR编码
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_019, TestSize.Level3)
