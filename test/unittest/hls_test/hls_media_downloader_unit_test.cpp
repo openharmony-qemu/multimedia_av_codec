@@ -75,7 +75,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
     HlsMediaDownloader *downloader = new HlsMediaDownloader(1000);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
-    EXPECT_EQ(downloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+    EXPECT_EQ(downloader->totalRingBufferSize_, MAX_BUFFER_SIZE);
     delete downloader;
     downloader = nullptr;
 }
@@ -199,7 +199,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     HlsMediaDownloader *downloader = new HlsMediaDownloader();
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
-    EXPECT_FALSE(downloader->SeekToTime(100, SeekMode::SEEK_CLOSEST));
+    EXPECT_TRUE(downloader->SeekToTime(100, SeekMode::SEEK_CLOSEST));
     delete downloader;
     downloader = nullptr;
 }

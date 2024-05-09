@@ -26,6 +26,7 @@ namespace {
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr int FIRST_TS_TIMEOUT = 400;
+constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
 }
 int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 {
@@ -265,15 +266,13 @@ void HlsPlayListDownloader::FirstTsUpdateLoop()
             break;
         }
         runTimes++;
-        OSAL::SleepFor(5); // 1
+        OSAL::SleepFor(FIRST_TS_TASK_SLEEP_MS); // 1
     }
-    if (runTimes >= FIRST_TS_TIMEOUT) { // 400: runtime above 400*5ms = 2s means timeout.
-        if (firstTsTask_ != nullptr) {
-            firstTsTask_->StopAsync();
-        }
-        firstTsTask_.reset();
-        MEDIA_LOG_I("first ts task stop, caused by timeout.");
+    if (firstTsTask_ != nullptr) {
+        firstTsTask_->StopAsync();
     }
+    firstTsTask_.reset();
+    MEDIA_LOG_I("first ts task stop, caused by timeout.");
 }
 
 std::string HlsPlayListDownloader::GetUrl()
