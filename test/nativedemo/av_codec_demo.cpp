@@ -174,8 +174,7 @@ static int RunAudioAVBufferDecoderDrm()
 static int RunAudioEncoder()
 {
     cout << "Please select number for format (default AAC Encoder): " << endl;
-    cout << "0: AAC" << endl;
-    cout << "1: FLAC" << endl;
+    cout << "0: AAC\n" << "1: FLAC" << endl;
     cout << "2: OPUS" << endl;
     cout << "3: G711MU" << endl;
     cout << "4: AAC-API11" << endl;
