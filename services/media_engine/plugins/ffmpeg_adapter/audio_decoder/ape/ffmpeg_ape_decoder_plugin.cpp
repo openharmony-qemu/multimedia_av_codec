@@ -31,7 +31,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 300000;
-constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 20000;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 50000;
 constexpr int32_t EXTRA_DATA_SIZE = 6;
 } // namespace
 
