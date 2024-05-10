@@ -18,7 +18,6 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_log.h"
 #include "avcodec_mime_type.h"
-#include "include/lame.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 
