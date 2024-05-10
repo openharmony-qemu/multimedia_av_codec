@@ -43,7 +43,7 @@ constexpr int64_t WAIT_TIME_US_THRESHOLD = 1500000; // max sleep time 1.5s
 
 constexpr int64_t SINK_TIME_US_THRESHOLD = 100000; // max sink time 100ms
 
-constexpr int64_t PER_SINK_TIME_THRESHOLD = 33000; // max sink time 100ms
+constexpr int64_t PER_SINK_TIME_THRESHOLD = 33000; // max per sink time 33ms
 
 VideoSink::VideoSink()
 {
