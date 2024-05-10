@@ -65,6 +65,7 @@ ohos_shared_library("media_plugin_Mp3AudioEncoder") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "lame:lame",
     "media_foundation:media_foundation",
   ]
 
