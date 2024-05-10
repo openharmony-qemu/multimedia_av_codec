@@ -60,6 +60,7 @@ public:
 
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
+    void OnDumpInfo(int32_t fd);
 
     void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName);
 
@@ -71,6 +72,7 @@ private:
     std::shared_ptr<MediaAVCodec::AVCodecVideoDecoder> mediaCodec_;
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> callback_;
     std::shared_ptr<AVBuffer> buffer_;
+    std::string mediaCodecName_;
 
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
 

@@ -121,6 +121,7 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 {
     auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
     std::string pluginName = "";
+    codecPluginName_ = pluginName;
     for (auto &name : names) {
         auto info = Plugins::PluginManager::Instance().GetPluginInfo(pluginType, name);
         if (info == nullptr) {
@@ -142,6 +143,7 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
     MEDIA_LOG_I("mime:%{public}s, pluginName:%{public}s", mime.c_str(), pluginName.c_str());
     if (!pluginName.empty()) {
         auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, pluginType);
+        codecPluginName_ = pluginName;
         return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
     } else {
         MEDIA_LOG_E("No plugins matching mime:%{public}s", mime.c_str());
@@ -762,6 +764,23 @@ std::string MediaCodec::StateToString(CodecState state)
         {CodecState::RELEASING, " RELEASING"},
     };
     return stateStrMap[state];
+}
+
+void MediaCodec::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("MediaCodec::OnDumpInfo called.");
+    std::string dumpString;
+    dumpString += "MediaCodec plugin name: " + codecPluginName_ + "\n";
+    dumpString += "MediaCodec buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
+    if (fd < 0) {
+        MEDIA_LOG_E("MediaCodec::OnDumpInfo fd is invalid.");
+        return;
+    }
+    int ret = write(fd, dumpString.c_str(), dumpString.size());
+    if (ret < 0) {
+        MEDIA_LOG_E("MediaCodec::OnDumpInfo write failed.");
+        return;
+    }
 }
 } // namespace Media
 } // namespace OHOS

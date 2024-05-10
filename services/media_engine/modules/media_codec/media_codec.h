@@ -123,6 +123,8 @@ public:
 
     Status ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta);
 
+    void OnDumpInfo(int32_t fd);
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
@@ -159,6 +161,7 @@ private:
     bool isSurfaceMode_;
     bool isBufferMode_;
     int32_t outputBufferCapacity_;
+    std::string codecPluginName_;
 
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::atomic<CodecState> state_ ;

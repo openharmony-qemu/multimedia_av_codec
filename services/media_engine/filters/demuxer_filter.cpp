@@ -537,6 +537,12 @@ Status DemuxerFilter::SetSpeed(float speed)
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "SetSpeed failed.");
     return demuxer_->SetSpeed(speed);
 }
+
+void DemuxerFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
+    demuxer_->OnDumpInfo(fd);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

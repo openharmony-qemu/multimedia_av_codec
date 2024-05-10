@@ -74,6 +74,8 @@ public:
     Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
+    void OnDumpInfo(int32_t fd);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

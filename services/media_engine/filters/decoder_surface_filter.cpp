@@ -680,6 +680,12 @@ void DecoderSurfaceFilter::ParseDecodeRateLimit()
         meta_->SetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, rateUpperLimit);
     }
 }
+
+void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("DecoderSurfaceFilter::OnDumpInfo called.");
+    videoDecoder_->OnDumpInfo(fd);
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
