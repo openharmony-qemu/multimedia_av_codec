@@ -60,6 +60,7 @@ public:
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
     Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
     int32_t GetMaxAmplitude();
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 private:
     void ReadLoop();
     Status PrepareAudioCapture();
@@ -74,6 +75,10 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
     std::atomic<bool> eos_{false};
+    std::string bundleName_;
+    uint64_t instanceId_{0};
+    int32_t appUid_ {0};
+    int32_t appPid_ {0};
 };
 } // namespace Pipeline
 } // namespace Media

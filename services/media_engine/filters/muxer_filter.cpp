@@ -13,16 +13,29 @@
  * limitations under the License.
  */
 
-#include "muxer_filter.h"
 #include <sys/timeb.h>
+#include <unordered_map>
+#include "muxer_filter.h"
 #include "common/log.h"
 #include "filter/filter_factory.h"
 #include "muxer/media_muxer.h"
 #include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
+
+namespace {
+static const std::unordered_map<OHOS::Media::Plugins::OutputFormat, std::string> FORMAT_TABLE = {
+    {OHOS::Media::Plugins::OutputFormat::DEFAULT, OHOS::Media::Plugins::MimeType::MEDIA_MP4},
+    {OHOS::Media::Plugins::OutputFormat::MPEG_4, OHOS::Media::Plugins::MimeType::MEDIA_MP4},
+    {OHOS::Media::Plugins::OutputFormat::M4A, OHOS::Media::Plugins::MimeType::MEDIA_M4A},
+    {OHOS::Media::Plugins::OutputFormat::AMR, OHOS::Media::Plugins::MimeType::MEDIA_AMR},
+    {OHOS::Media::Plugins::OutputFormat::MP3, OHOS::Media::Plugins::MimeType::MEDIA_MP3},
+};
+}
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int32_t NS_TO_US = 1000;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
@@ -76,7 +89,12 @@ Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t f
     PUBLIC_LOG_D32, static_cast<int32_t>(appUid), static_cast<int32_t>(appPid),
     static_cast<int32_t>(format));
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
-    return mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
+    Status ret = mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
+    outputFormat_ = (Plugins::OutputFormat)format;
+    if (ret != Status::OK) {
+        SetFaultEvent("MuxerFilter::SetOutputParameter, muxerFilter init error", (int32_t)ret);
+    }
+    return ret;
 }
 
 void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -102,7 +120,11 @@ Status MuxerFilter::DoStart()
     startCount_++;
     if (startCount_ == preFilterCount_) {
         startCount_ = 0;
-        return mediaMuxer_->Start();
+        Status ret = mediaMuxer_->Start();
+        if (ret != Status::OK) {
+            SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
+        }
+        return ret;
     } else {
         return Status::OK;
     }
@@ -134,6 +156,9 @@ Status MuxerFilter::DoStop()
         if (ret == Status::ERROR_WRONG_STATE) {
             return Status::OK;
         }
+    }
+    if (ret != Status::OK) {
+        SetFaultEvent("MuxerFilter::DoStop error", (int32_t)ret);
     }
     return ret;
 }
@@ -200,9 +225,17 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     MEDIA_LOG_I("OnLinked");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnLinked");
     int32_t trackIndex;
+    std::string mimeType;
+    meta->Get<Tag::MIME_TYPE>(mimeType);
+    if (mimeType.find("audio/") == 0) {
+        audioCodecMimeType_ = mimeType;
+    } else if (mimeType.find("video/") == 0) {
+        videoCodecMimeType_ = mimeType;
+    }
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK) {
         eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, ret});
+        SetFaultEvent("MuxerFilter::OnLinked error", (int32_t)ret);
         return ret;
     }
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
@@ -249,6 +282,39 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     inputBufferQueue->ReturnBuffer(inputBuffer, true);
 }
 
+void MuxerFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)
+{
+    SetFaultEvent(errMsg + ", ret = " + std::to_string(ret));
+}
+
+void MuxerFilter::SetFaultEvent(const std::string &errMsg)
+{
+    MuxerFaultInfo muxerFaultInfo;
+    muxerFaultInfo.appName = bundleName_;
+    muxerFaultInfo.instanceId = std::to_string(instanceId_);
+    muxerFaultInfo.callerType = "player_framework";
+    muxerFaultInfo.videoCodec = videoCodecMimeType_;
+    muxerFaultInfo.audioCodec = audioCodecMimeType_;
+    muxerFaultInfo.containerFormat = GetContainerFormat(outputFormat_);
+    muxerFaultInfo.errMsg = errMsg;
+    FaultMuxerEventWrite(muxerFaultInfo);
+}
+
+const std::string &MuxerFilter::GetContainerFormat(Plugins::OutputFormat format)
+{
+    FALSE_RETURN_V_MSG_E(FORMAT_TABLE.find(format) != FORMAT_TABLE.end(), "",
+        "The output format %{public}d is not supported!", format);
+    return FORMAT_TABLE.at(format);
+}
+
+void MuxerFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

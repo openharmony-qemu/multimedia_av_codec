@@ -55,6 +55,10 @@ public:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
     void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
         sptr<AVBufferQueueProducer> inputBufferQueue);
+    void SetFaultEvent(const std::string &errMsg);
+    void SetFaultEvent(const std::string &errMsg, int32_t ret);
+    const std::string &GetContainerFormat(Plugins::OutputFormat format);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 
 private:
     std::string name_;
@@ -68,6 +72,13 @@ private:
     int32_t startCount_{0};
     int32_t stopCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
+    std::string videoCodecMimeType_;
+    std::string audioCodecMimeType_;
+    std::string bundleName_;
+    uint64_t instanceId_{0};
+    int32_t appUid_ {0};
+    int32_t appPid_ {0};
+    Plugins::OutputFormat outputFormat_{Plugins::OutputFormat::DEFAULT};
 };
 } // namespace Pipeline
 } // namespace MEDIA

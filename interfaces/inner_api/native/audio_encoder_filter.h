@@ -50,6 +50,9 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+    void SetFaultEvent(const std::string &errMsg);
+    void SetFaultEvent(const std::string &errMsg, int32_t ret);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -73,6 +76,10 @@ private:
     std::shared_ptr<Meta> configureParameter_;
 
     std::shared_ptr<Filter> nextFilter_;
+    std::string bundleName_;
+    uint64_t instanceId_{0};
+    int32_t appUid_ {0};
+    int32_t appPid_ {0};
 };
 } // namespace Pipeline
 } // namespace MEDIA
