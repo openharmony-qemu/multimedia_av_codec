@@ -707,7 +707,11 @@ int32_t VDecNdkSample::Stop()
 
 int32_t VDecNdkSample::Start()
 {
-    return OH_VideoDecoder_Start(vdec_);
+    int32_t ret = OH_VideoDecoder_Start(vdec_);
+    if (ret == AV_ERR_OK) {
+        isRunning_.store(true);
+    }
+    return ret;
 }
 
 void VDecNdkSample::StopOutloop()
