@@ -94,10 +94,20 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
 Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
 {
     MEDIA_LOG_I("mediaCodec_->Init.");
+
+    Format format;
+    int32_t ret;
+    std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, appPid_);
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID, appUid_);
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, bundleName_);
+    format.SetMeta(callerInfo);
     if (isMimeType) {
-        mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(name);
+        ret = MediaAVCodec::VideoDecoderFactory::CreateByMime(name, format, mediaCodec_);
+        MEDIA_LOG_I("VideoDecoderAdapter::Init CreateByMime errorCode %{public}d", ret);
     } else {
-        mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByName(name);
+        ret = MediaAVCodec::VideoDecoderFactory::CreateByName(name, format, mediaCodec_);
+        MEDIA_LOG_I("VideoDecoderAdapter::Init CreateByName errorCode %{public}d", ret);
     }
 
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
@@ -332,6 +342,13 @@ int32_t VideoDecoderAdapter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
 void VideoDecoderAdapter::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     eventReceiver_ = receiver;
+}
+
+void VideoDecoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
 }
 } // namespace Media
 } // namespace OHOS

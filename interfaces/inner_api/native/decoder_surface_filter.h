@@ -81,6 +81,8 @@ public:
     void SetSeekTime(int64_t seekTimeUs);
     Status HandleInputBuffer();
 
+    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -136,6 +138,10 @@ private:
     std::atomic<bool> doPrepareFrame_{false};
     std::atomic<bool> isNeedStartDecoder_{true};
     bool renderFirstFrame_{false};
+
+    int32_t appUid_;
+    int32_t appPid_;
+    std::string bundleName_;
 };
 } // namespace Pipeline
 } // namespace Media
