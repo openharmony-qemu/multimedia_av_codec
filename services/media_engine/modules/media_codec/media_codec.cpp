@@ -679,9 +679,11 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
-    do {
-        ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-    } while (ret != Status::OK && state_ == CodecState::RUNNING);
+    ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
+    if (ret != Status::OK) {
+        MEDIA_LOG_D("HandleOutputBuffer RequestBuffer failed. ret = %{public}d", ret);
+        return ret;
+    }
 
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
