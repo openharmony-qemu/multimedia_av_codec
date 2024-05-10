@@ -652,6 +652,7 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
 
 void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
 {
+    MEDIA_LOG_I("SetSeekTime enter.");
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
 }

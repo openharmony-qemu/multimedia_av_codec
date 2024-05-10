@@ -174,11 +174,13 @@ Status AudioSink::SetVolume(float volume)
 
 int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 {
+    MEDIA_LOG_I("AudioSink::SetVolumeWithRamp entered. ");
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
+    MEDIA_LOG_I("AudioSink::SetIsTransitent entered. ");
     isTransitent_ = isTransitent;
     return Status::OK;
 }

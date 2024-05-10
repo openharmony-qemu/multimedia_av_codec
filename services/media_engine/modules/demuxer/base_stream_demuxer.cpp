@@ -53,6 +53,7 @@ BaseStreamDemuxer::~BaseStreamDemuxer()
 
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
+    MEDIA_LOG_I("BaseStreamDemuxer::SetSource");
     source_ = source;
 }
 

@@ -325,6 +325,7 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 
 int32_t VideoDecoderAdapter::SetOutputSurface(sptr<Surface> videoSurface)
 {
+    MEDIA_LOG_I("VideoDecoderAdapter::SetOutputSurface");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return mediaCodec_->SetOutputSurface(videoSurface);
 }
