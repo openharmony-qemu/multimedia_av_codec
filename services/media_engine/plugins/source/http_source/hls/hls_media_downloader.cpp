@@ -210,7 +210,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         return false;
     }
     readTime_ = 0;
-    while (buffer_->GetSize() < wantReadLength) {
+    while (buffer_->GetSize() < wantReadLength && !isInterruptNeeded_.load()) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
                                downloadRequest_->IsEos()) || isStopped;
         if (downloadRequest_ != nullptr) {
@@ -825,6 +825,7 @@ void HlsMediaDownloader::OnFirstTsReady(const std::string& url, const double& du
 
 void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
+    isInterruptNeeded_ = isInterruptNeeded;
     if (playListDownloader_ != nullptr) {
         playListDownloader_->SetInterruptState(isInterruptNeeded);
     }

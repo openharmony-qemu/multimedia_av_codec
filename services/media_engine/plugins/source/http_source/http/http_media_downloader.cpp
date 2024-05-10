@@ -123,7 +123,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     if (remain > 0) {
         wantReadLength = remain < wantReadLength ? remain : wantReadLength;
     }
-    while (buffer_->GetSize() < wantReadLength) {
+    while (buffer_->GetSize() < wantReadLength && !isInterruptNeeded_.load()) {
         if (downloadRequest_ != nullptr) {
             isEos = downloadRequest_->IsEos();
         };
