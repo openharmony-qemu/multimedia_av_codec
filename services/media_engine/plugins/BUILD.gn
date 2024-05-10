@@ -24,6 +24,7 @@ group("av_codec_media_engine_plugins") {
     "ffmpeg_adapter/audio_encoder:media_plugin_FFmpegAudioEncoders",
     "ffmpeg_adapter/audio_encoder/g711mu:media_plugin_G711muAudioEncoder",
     "ffmpeg_adapter/audio_encoder/lbvc:media_plugin_LbvcAudioEncoder",
+    "ffmpeg_adapter/audio_encoder/mp3:media_plugin_Mp3AudioEncoder",
     "sink:media_plugin_AudioServerSink",
     "source:media_plugin_DataStreamSource",
     "source:media_plugin_FileFdSource",
