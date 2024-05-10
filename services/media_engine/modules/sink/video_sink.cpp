@@ -102,6 +102,8 @@ void VideoSink::ResetSyncInfo()
     lastTimeStamp_ = HST_TIME_NONE;
     lastBufferTime_ = HST_TIME_NONE;
     seekFlag_ = false;
+    lastPts_ = HST_TIME_NONE;
+    lastClockTime_ = HST_TIME_NONE;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -113,6 +115,13 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
 void VideoSink::SetSeekFlag()
 {
     seekFlag_ = true;
+}
+
+void VideoSink::SetLastPts(int64_t lastPts)
+{
+    lastPts_ = lastPts;
+    auto syncCenter = syncCenter_.lock();
+    lastClockTime_ = syncCenter->GetClockTimeNow();
 }
 
 int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -145,11 +154,16 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         uint64_t latency = 0;
         GetLatency(latency);
         auto diff = nowCt + (int64_t) latency - ct4Buffer + fixDelay_;
+        auto diff2 = (nowCt - lastClockTime_) - (buffer->pts_ - lastPts_);
         // use video first render time as anchor when first few times
         if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
             diff = (nowCt - firstFrameNowct_) - (buffer->pts_ - firstFramePts_);
             MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us", diff);
-        }
+        } else {
+            if (diff < 0 && diff2 < 100000 && diff < (diff2 - 33000)) {
+                diff = diff2 - 33000;
+            }
+         }
         MEDIA_LOG_D("VideoSink ct4Buffer: " PUBLIC_LOG_D64 " us, diff: " PUBLIC_LOG_D64
                 " us, nowCt: " PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
         // diff < 0 or 0 < diff < 40ms(25Hz) render it
