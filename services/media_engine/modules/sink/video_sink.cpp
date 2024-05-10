@@ -41,6 +41,10 @@ constexpr int VIDEO_SINK_START_FRAME = 4;
 
 constexpr int64_t WAIT_TIME_US_THRESHOLD = 1500000; // max sleep time 1.5s
 
+constexpr int64_t SINK_TIME_US_THRESHOLD = 100000; // max sink time 100ms
+
+constexpr int64_t PER_SINK_TIME_THRESHOLD = 33000; // max sink time 100ms
+
 VideoSink::VideoSink()
 {
     refreshTime_ = 0;
@@ -160,8 +164,8 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
             diff = (nowCt - firstFrameNowct_) - (buffer->pts_ - firstFramePts_);
             MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us", diff);
         } else {
-            if (diff < 0 && diff2 < 100000 && diff < (diff2 - 33000)) {
-                diff = diff2 - 33000;
+            if (diff < 0 && diff2 < SINK_TIME_US_THRESHOLD && diff < (diff2 - PER_SINK_TIME_THRESHOLD)) {
+                diff = diff2 - PER_SINK_TIME_THRESHOLD;
             }
          }
         MEDIA_LOG_D("VideoSink ct4Buffer: " PUBLIC_LOG_D64 " us, diff: " PUBLIC_LOG_D64
