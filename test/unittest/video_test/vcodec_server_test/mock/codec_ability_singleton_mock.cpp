@@ -40,7 +40,7 @@ std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
     return CodecAbilitySingletonImpl::GetCapabilityArray();
 }
 
-std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(std::string name)
+std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(const std::string &name)
 {
     return CodecAbilitySingletonImpl::GetCapabilityByName(name);
 }
