@@ -922,7 +922,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_VALID_TEST_1501, TestSize.
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 0));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, rotationAngle));
         OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
         ASSERT_EQ(ret, AV_ERR_OK);
 
