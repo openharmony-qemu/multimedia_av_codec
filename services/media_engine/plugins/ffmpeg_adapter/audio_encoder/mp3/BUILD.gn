@@ -62,6 +62,8 @@ ohos_shared_library("media_plugin_Mp3AudioEncoder") {
 
   sources = [ "audio_mp3_encoder_plugin.cpp" ]
 
+  public_external_deps = [ "lame:lame" ]
+
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
@@ -69,7 +71,6 @@ ohos_shared_library("media_plugin_Mp3AudioEncoder") {
     "media_foundation:media_foundation",
   ]
 
-  public_external_deps = [ "lame:lame" ]
   relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
