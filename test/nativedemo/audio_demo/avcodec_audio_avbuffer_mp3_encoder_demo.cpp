@@ -40,7 +40,6 @@ constexpr uint32_t FRAME_DURATION_US = 33000;
 constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr int32_t INPUT_FRAME_BYTES = 4608; // STEREO 1152samples*2ch*2=4608   MONO:2304
 constexpr int32_t BIT_RATE = 128000; // 128000
-// constexpr int32_t COMPRESSION_LEVEL = 1; // 1:CBR   2:VBR
 
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz.pcm"; // flac_2c_44100hz_261k.pcm
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz_afterEncode.mp3";
@@ -98,9 +97,7 @@ void AEncAvbufferMp3Demo::RunCase()
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BIT_RATE);
-    // OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL.data(), COMPRESSION_LEVEL);
 
-    // std::cout << "mp3 enoder 11111" << std::endl;
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
 
     auto fmt = OH_AudioCodec_GetOutputDescription(audioEnc_);
@@ -126,12 +123,10 @@ void AEncAvbufferMp3Demo::RunCase()
 
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
     auto start = chrono::steady_clock::now();
-    // std::cout << "mp3 enoder 2222" << std::endl;
     {
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
-    // std::cout << "mp3 enoder 3333" << std::endl;
 
     auto end = chrono::steady_clock::now();
     std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
