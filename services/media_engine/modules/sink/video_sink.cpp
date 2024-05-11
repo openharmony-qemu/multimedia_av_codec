@@ -164,6 +164,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
             diff = (nowCt - firstFrameNowct_) - (buffer->pts_ - firstFramePts_);
             MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us", diff);
         } else {
+            // per frame render time reduced by 33ms
             if (diff < 0 && diff2 < SINK_TIME_US_THRESHOLD && diff < (diff2 - PER_SINK_TIME_THRESHOLD)) {
                 diff = diff2 - PER_SINK_TIME_THRESHOLD;
             }
