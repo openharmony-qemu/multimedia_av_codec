@@ -600,7 +600,7 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
 
     string codecName = OH_AVCapability_GetName(capability);
     if (codecName == "OMX.hisi.video.encoder.avc") {
-        ASSERT_EQ(30, OH_AVCapability_GetMaxSupportedInstances(capability));
+        ASSERT_EQ(16, OH_AVCapability_GetMaxSupportedInstances(capability));
     } else {
         ASSERT_EQ(4, OH_AVCapability_GetMaxSupportedInstances(capability));
     }
