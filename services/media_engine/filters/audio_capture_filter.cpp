@@ -111,6 +111,7 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (audioCaptureModule_) {
         audioCaptureModule_->SetAudioSource(sourceType_);
         audioCaptureModule_->SetParameter(audioCaptureConfig_);
+        audioCaptureModule_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
@@ -425,6 +426,18 @@ void AudioCaptureFilter::OnUpdatedResult(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUpdatedResult");
     (void) meta;
+}
+
+void AudioCaptureFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+    if (audioCaptureModule_) {
+        audioCaptureModule_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    }
 }
 
 } // namespace Pipeline

@@ -91,6 +91,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hitrace:libhitracechain",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

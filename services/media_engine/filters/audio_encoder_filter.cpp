@@ -16,10 +16,12 @@
 #include "audio_encoder_filter.h"
 #include "filter/filter_factory.h"
 #include "media_codec/media_codec.h"
+#include "avcodec_sysevent.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+using namespace OHOS::MediaAVCodec;
 static AutoRegisterFilter<AudioEncoderFilter> g_registerAudioEncoderFilter("builtin.recorder.audioencoder",
     FilterType::FILTERTYPE_AENC,
     [](const std::string& name, const FilterType type) {
@@ -99,6 +101,7 @@ Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     configureParameter_ = parameter;
     int32_t ret = mediaCodec_->Configure(parameter);
     if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::Configure error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -129,6 +132,7 @@ Status AudioEncoderFilter::DoStart()
     MEDIA_LOG_I("Start");
     int32_t ret = mediaCodec_->Start();
     if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::DoStart error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -151,6 +155,7 @@ Status AudioEncoderFilter::DoStop()
     MEDIA_LOG_I("Stop");
     int32_t ret = mediaCodec_->Stop();
     if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::DoStop error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -161,6 +166,7 @@ Status AudioEncoderFilter::DoFlush()
     MEDIA_LOG_I("Flush");
     int32_t ret = mediaCodec_->Flush();
     if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::DoFlush error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -171,6 +177,7 @@ Status AudioEncoderFilter::DoRelease()
     MEDIA_LOG_I("Release");
     int32_t ret = mediaCodec_->Release();
     if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::DoRelease error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -181,6 +188,7 @@ Status AudioEncoderFilter::NotifyEos()
     MEDIA_LOG_I("NotifyEos");
     int32_t ret = mediaCodec_->NotifyEos();
     if (ret != 0) {
+        SetFaultEvent("AudioEncoderFilter::NotifyEos error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -205,6 +213,9 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioEncoderFilterLinkCallback>(shared_from_this());
     auto ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
+    if (ret != Status::OK) {
+        SetFaultEvent("AudioEncoderFilter::LinkNext error", (int32_t)ret);
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnLinked failed");
     return Status::OK;
 }
@@ -267,6 +278,31 @@ void AudioEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUnlinkedResult");
     (void) meta;
+}
+
+void AudioEncoderFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)
+{
+    SetFaultEvent(errMsg + ", ret = " + std::to_string(ret));
+}
+
+void AudioEncoderFilter::SetFaultEvent(const std::string &errMsg)
+{
+    AudioCodecFaultInfo audioCodecFaultInfo;
+    audioCodecFaultInfo.appName = bundleName_;
+    audioCodecFaultInfo.instanceId = std::to_string(instanceId_);
+    audioCodecFaultInfo.callerType ="player_framework";
+    audioCodecFaultInfo.audioCodec = codecMimeType_;
+    audioCodecFaultInfo.errMsg = errMsg;
+    FaultAudioCodecEventWrite(audioCodecFaultInfo);
+}
+
+void AudioEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 } // namespace Pipeline
 } // namespace MEDIA

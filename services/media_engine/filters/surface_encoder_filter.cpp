@@ -118,6 +118,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
                 std::make_shared<SurfaceEncoderAdapterCallback>();
             mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
+            mediaCodec_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
@@ -307,6 +308,18 @@ void SurfaceEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 void SurfaceEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUnlinkedResult");
+}
+
+void SurfaceEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+    if (mediaCodec_) {
+        mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

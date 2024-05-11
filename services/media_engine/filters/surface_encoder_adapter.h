@@ -67,11 +67,15 @@ public:
     Status SetParameter(const std::shared_ptr<Meta> &parameter);
     std::shared_ptr<Meta> GetOutputFormat();
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void SetFaultEvent(const std::string &errMsg);
+    void SetFaultEvent(const std::string &errMsg, int32_t ret);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
 
 private:
     void ReleaseBuffer();
+    void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
 
@@ -94,6 +98,11 @@ private:
     int64_t lastBufferTime_{-1};
     bool isStart_ = false;
     bool isResume_ = false;
+    std::string codecMimeType_;
+    std::string bundleName_;
+    uint64_t instanceId_{0};
+    int32_t appUid_ {0};
+    int32_t appPid_ {0};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
