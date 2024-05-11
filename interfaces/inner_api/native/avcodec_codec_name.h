@@ -42,6 +42,7 @@ public:
     static constexpr std::string_view AUDIO_ENCODER_AMRNB_NAME = "OH.Media.Codec.Encoder.Audio.Amrnb";
     static constexpr std::string_view AUDIO_ENCODER_AMRWB_NAME = "OH.Media.Codec.Encoder.Audio.Amrwb";
     static constexpr std::string_view AUDIO_ENCODER_API9_AAC_NAME = "avenc_aac";
+    static constexpr std::string_view AUDIO_ENCODER_MP3_NAME = "OH.Media.Codec.Encoder.Audio.Mp3";
 
     static constexpr std::string_view VIDEO_DECODER_AVC_NAME = "OH.Media.Codec.Decoder.Video.AVC";
 

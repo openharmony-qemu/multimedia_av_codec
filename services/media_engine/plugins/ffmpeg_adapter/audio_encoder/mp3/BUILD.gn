@@ -1,0 +1,77 @@
+# Copyright (C) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+config("mp3_encoder_config") {
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+  ]
+
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  include_dirs = [
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_encoder",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer",
+  ]
+}
+
+ohos_shared_library("media_plugin_Mp3AudioEncoder") {
+  install_enable = true
+  stack_protector_ret = true
+  sanitize = av_codec_sanitize
+
+  configs = [
+    ":mp3_encoder_config",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  sources = [ "audio_mp3_encoder_plugin.cpp" ]
+
+  public_external_deps = [ "lame:lame" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "lame:lame",
+    "media_foundation:media_foundation",
+  ]
+
+  relative_install_dir = "media/media_plugins"
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}

@@ -64,7 +64,8 @@
           "media_foundation",
           "audio_framework",
           "drm_framework",
-          "ffmpeg"
+          "ffmpeg",
+          "lame"
         ],
         "third_party": [
           "bounds_checking_function",
