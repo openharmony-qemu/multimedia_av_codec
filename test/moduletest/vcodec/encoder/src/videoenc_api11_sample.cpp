@@ -88,9 +88,7 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     if (!parameter || !userData) {
         return;
     }
-    if (enc_sample->frameCount == LTR_INTERVAL) {
-        OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
-    } else if (enc_sample->frameCount % enc_sample->ltrParam.ltrInterval == 0) {
+    if (enc_sample->frameCount > 0 && (enc_sample->frameCount % enc_sample->ltrParam.ltrInterval == 0)) {
         OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
     }
     if (!enc_sample->ltrParam.enableUseLtr) {
