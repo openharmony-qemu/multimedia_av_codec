@@ -123,12 +123,11 @@ void VideoSink::SetSeekFlag()
 
 void VideoSink::SetLastPts(int64_t lastPts)
 {
-    if (syncCenter_ == nullptr) {
-        return;
-    }
     lastPts_ = lastPts;
     auto syncCenter = syncCenter_.lock();
-    lastClockTime_ = syncCenter->GetClockTimeNow();
+    if (syncCenter != nullptr) {
+        lastClockTime_ = syncCenter->GetClockTimeNow();
+    } 
 }
 
 int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
