@@ -50,7 +50,7 @@ bool AudioAACSetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AAC, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -79,7 +79,7 @@ bool AudioFlacSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_FLAC, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -102,7 +102,7 @@ bool AudioFlacSetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_FLAC, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -131,7 +131,7 @@ bool AudioMP3SetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_MPEG, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -161,7 +161,7 @@ bool AudioVorbisSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_VORBIS, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -191,7 +191,7 @@ bool AudioLBVCSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_LBVC, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -214,7 +214,7 @@ bool AudioLBVCSetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_LBVC, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -243,7 +243,7 @@ bool AudioAMRNBSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -266,7 +266,7 @@ bool AudioAMRNBSetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -295,7 +295,7 @@ bool AudioAMRWBSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -318,7 +318,7 @@ bool AudioAMRWBSetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -347,7 +347,7 @@ bool AudioAPESetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_APE, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -370,7 +370,7 @@ bool AudioAPESetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_APE, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -399,7 +399,7 @@ bool AudioOPUSSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -422,7 +422,7 @@ bool AudioOPUSSetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -451,7 +451,7 @@ bool AudioG711SetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
@@ -474,7 +474,7 @@ bool AudioG711SetParameterFuzzTest(const uint8_t *data, size_t size)
     }
 
     OH_AVCodec *encodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU, false);
-    if(encodersource == nullptr) {
+    if (encodersource == nullptr) {
         return false;
     }
 
@@ -503,7 +503,7 @@ bool AudioVividSetParameterFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     OH_AVCodec *decodersource =  OH_AudioCodec_CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_VIVID, true);
-    if(decodersource == nullptr) {
+    if (decodersource == nullptr) {
         return false;
     }
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
