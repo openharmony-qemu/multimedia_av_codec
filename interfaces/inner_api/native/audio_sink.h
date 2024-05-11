@@ -98,6 +98,7 @@ private:
     float volume_ {-1.0f};
     float speed_ {-1.0f};
     int32_t effectMode_ {-1};
+    bool isApe_ {false};
 };
 }
 }
