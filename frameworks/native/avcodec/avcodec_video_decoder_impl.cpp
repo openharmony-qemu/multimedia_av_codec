@@ -17,6 +17,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "common/log.h"
 #include "i_avcodec_service.h"
 
 namespace {
@@ -156,6 +157,7 @@ int32_t AVCodecVideoDecoderImpl::Release()
 
 int32_t AVCodecVideoDecoderImpl::SetOutputSurface(sptr<Surface> surface)
 {
+    MEDIA_LOG_I("AVCodecVideoDecoderImpl::SetOutputSurface");
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;

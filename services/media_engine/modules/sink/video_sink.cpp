@@ -176,6 +176,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
 
 void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter)
 {
+    MEDIA_LOG_I("VideoSink::SetSyncCenter");
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
 }
