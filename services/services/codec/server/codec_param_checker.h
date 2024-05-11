@@ -26,7 +26,7 @@ namespace MediaAVCodec {
 enum class CodecScenario : int32_t {
     CODEC_SCENARIO_ENC_NORMAL = 0,
     CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
-    CODEC_SCENARIO_DEC_NORMAL = (1 << 31),
+    CODEC_SCENARIO_DEC_NORMAL = (1 << 30),
 };
 
 class CodecParamChecker {
