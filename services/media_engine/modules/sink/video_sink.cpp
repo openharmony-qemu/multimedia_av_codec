@@ -123,6 +123,9 @@ void VideoSink::SetSeekFlag()
 
 void VideoSink::SetLastPts(int64_t lastPts)
 {
+    if (syncCenter_ == nullptr) {
+        return;
+    }
     lastPts_ = lastPts;
     auto syncCenter = syncCenter_.lock();
     lastClockTime_ = syncCenter->GetClockTimeNow();
