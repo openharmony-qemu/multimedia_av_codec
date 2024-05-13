@@ -41,7 +41,7 @@ constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr int32_t INPUT_FRAME_BYTES = 4608; // STEREO 1152samples*2ch*2=4608   MONO:2304
 constexpr int32_t BIT_RATE = 128000; // 128000
 
-constexpr string_view INPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz.pcm"; // flac_2c_44100hz_261k.pcm
+constexpr string_view INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/mp3_2c_44100hz_afterEncode.mp3";
 }  // namespace
 
