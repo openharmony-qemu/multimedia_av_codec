@@ -76,19 +76,25 @@ Status FFmpegAPEDecoderPlugin::Stop()
     return Status::OK;
 }
 
-void FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
+bool FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
 {
     int32_t sampleRate;
     parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
-    if (sampleRate <= 0) {
+    if (sampleRate < 0) {
+        return false;
+    }
+    if (sampleRate = 0) {
         parameter->SetData(Tag::AUDIO_SAMPLE_RATE, 16000); // set 16000 sample rate
     }
+    return true;
 }
 
 Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     Status ret = basePlugin->AllocateContext("ape");
-    SetSamplerate(parameter);
+    if (!SetSamplerate(parameter)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     if (!CheckChannelCount(parameter)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
