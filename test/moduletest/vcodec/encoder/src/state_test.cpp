@@ -665,13 +665,13 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3400, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_ENCODE_STATE_3500
- * @tc.name      : Flush in surface encode callback function
+ * @tc.name      : Flush in surf encode callback function
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3500, TestSize.Level1)
 {
     vEncSample->outputCallbackFlush = true;
-    vEncSample->SURFACE_INPUT = true;
+    vEncSample->SURF_INPUT = true;
     int32_t ret = vEncSample->StartVideoEncoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vEncSample->WaitForEOS();
@@ -679,13 +679,13 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3500, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_ENCODE_STATE_3600
- * @tc.name      : Stop in surface encode callback function
+ * @tc.name      : Stop in surf encode callback function
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3600, TestSize.Level1)
 {
     vEncSample->outputCallbackStop = true;
-    vEncSample->SURFACE_INPUT = true;
+    vEncSample->SURF_INPUT = true;
     int32_t ret = vEncSample->StartVideoEncoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vEncSample->WaitForEOS();

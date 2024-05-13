@@ -2255,15 +2255,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8800, TestSize.Level2)
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
             break;
-        }       
+        }
         uint8_t *data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
-        cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl; 
+        cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl;
         ASSERT_EQ(srtSubtitle, srtIndex);
         srtIndex++;
-        
     }
-
 }
 
 /**
@@ -2288,7 +2286,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8900, TestSize.Level2)
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
 
-    for (int index = 0; index < 5; index++){
+    for (int index = 0; index < 5; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
@@ -2296,7 +2294,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8900, TestSize.Level2)
         ASSERT_EQ(srtSubtitle, srtIndex);
         srtIndex++;
     }
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 5400,SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 5400, SEEK_MODE_CLOSEST_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
     data = OH_AVMemory_GetAddr(memory);
     srtSubtitle = atoi(reinterpret_cast<const char*>(data));
@@ -2304,7 +2302,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8900, TestSize.Level2)
     srtIndex = 2;
     ASSERT_EQ(srtSubtitle, srtIndex);
 
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 21400,SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 21400, SEEK_MODE_CLOSEST_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
     data = OH_AVMemory_GetAddr(memory);
     srtSubtitle = atoi(reinterpret_cast<const char*>(data));
@@ -2312,7 +2310,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8900, TestSize.Level2)
     srtIndex = 7;
     ASSERT_EQ(srtSubtitle, srtIndex);
 
-    while (true){
+    while (true) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "   srt is end !!!!!!!!!!!!!!!" << endl;

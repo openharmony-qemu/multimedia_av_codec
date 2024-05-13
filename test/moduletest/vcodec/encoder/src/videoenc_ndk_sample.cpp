@@ -51,7 +51,7 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 
 VEncNdkSample::~VEncNdkSample()
 {
-    if (SURFACE_INPUT && nativeWindow) {
+    if (SURF_INPUT && nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
     }
@@ -343,7 +343,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURFACE_INPUT) {
+    if (SURF_INPUT) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;
@@ -361,7 +361,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
     if (OpenFile() != AV_ERR_OK) {
         return AV_ERR_UNKNOWN;
     }
-    if (SURFACE_INPUT) {
+    if (SURF_INPUT) {
         inputLoop_ = make_unique<thread>(&VEncNdkSample::InputFuncSurface, this);
     } else {
         inputLoop_ = make_unique<thread>(&VEncNdkSample::InputFunc, this);

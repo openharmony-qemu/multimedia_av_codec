@@ -730,7 +730,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3800, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_HWDEC_STATE_3900
- * @tc.name      : Flush or stop in surface decoder callback function
+ * @tc.name      : Flush or stop in surf decoder callback function
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3900, TestSize.Level1)
