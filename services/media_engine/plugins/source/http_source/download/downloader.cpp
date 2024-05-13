@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define MEDIA_PLUGIN
 #define HST_LOG_TAG "Downloader"
 
 #include "avcodec_trace.h"
@@ -484,7 +486,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
-    MEDIA_LOGD_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
+    MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
 
