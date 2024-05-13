@@ -294,6 +294,12 @@ Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKey
     return Status::OK;
 }
 
+void AudioDecoderFilter::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
+    mediaCodec_->SetDumpFlag(isDump_);
+}
+
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
