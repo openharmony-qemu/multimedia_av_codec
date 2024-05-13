@@ -83,7 +83,7 @@ bool FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &paramete
     if (sampleRate < 0) {
         return false;
     }
-    if (sampleRate = 0) {
+    if (sampleRate == 0) {
         parameter->SetData(Tag::AUDIO_SAMPLE_RATE, 16000); // set 16000 sample rate
     }
     return true;
