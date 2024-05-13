@@ -14,7 +14,7 @@
  */
 
 #define MEDIA_PLUGIN
-#define HST_LOG_TAG "AudioServerSinkPlugin"
+#define HST_LOG_TAG "ASSP"
 
 #include "audio_server_sink_plugin.h"
 #include <functional>
