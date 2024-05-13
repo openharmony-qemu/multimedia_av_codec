@@ -258,7 +258,7 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
-extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT
+extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 
 /**
  * @brief The extra data's key of surface Buffer
