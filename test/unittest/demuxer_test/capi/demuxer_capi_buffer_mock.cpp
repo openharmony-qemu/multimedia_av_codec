@@ -81,14 +81,9 @@ int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemor
             } else {
                 int64_t duration;
                 int64_t dts;
-                ret = OH_AVFormat_GetLongValue(format, OH_MD_KEY_BUFFER_DURATION, &duration);
-                ret = OH_AVFormat_GetLongValue(format, OH_MD_KEY_DECODING_TIMESTAMP, &dts);
-                printf("duration %lld, dts %lld ", duration, dts);
-                if (flag & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_DISCARD) {
-                    printf("flag discard\n");
-                } else {
-                    printf("\n");
-                }
+                OH_AVFormat_GetLongValue(format, OH_MD_KEY_BUFFER_DURATION, &duration);
+                OH_AVFormat_GetLongValue(format, OH_MD_KEY_DECODING_TIMESTAMP, &dts);
+                printf("[track %d] duration %" PRId64 " dts %" PRId64 "\n", trackIndex, duration, dts);
             }
         }
         OH_AVBuffer_Destroy(avBuffer);

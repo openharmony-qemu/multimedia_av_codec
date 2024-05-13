@@ -16,6 +16,7 @@
 #ifndef DEMUXER_MOCK_H
 #define DEMUXER_MOCK_H
 
+#include <cinttypes>
 #include <string>
 #include <memory>
 #include "nocopyable.h"

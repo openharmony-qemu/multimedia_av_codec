@@ -81,12 +81,7 @@ int32_t DemuxerInnerMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemo
                 int64_t dts;
                 bufferMeta->GetData(Tag::BUFFER_DURATION, duration);
                 bufferMeta->GetData(Tag::BUFFER_DECODING_TIMESTAMP, dts);
-                printf("duration %lld, dts %lld ", duration, dts);
-                if (flag & static_cast<uint32_t>(AVBufferFlag::DISCARD)) {
-                    printf("flag discard\n");
-                } else {
-                    printf("\n");
-                }
+                printf("[track %d] duration %" PRId64 " dts %" PRId64 "\n", trackIndex, duration, dts);
             }
         }
         return ret;

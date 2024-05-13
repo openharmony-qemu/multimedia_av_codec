@@ -69,6 +69,7 @@ string g_DoubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -79,6 +80,11 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"tsHevcAac",  {{"frames", {303,  433}}, {"kFrames", {11, 433}}}},
     {"fmp4Hevc",  {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"doubleVivid",  {{"frames", {76,  116}}, {"kFrames", {3, 116}}}},
+    {"mp4265InfoParse",  {{"frames", {103,  174}}, {"kFrames", {5, 174}}}},
+};
+
+std::map<std::string, std::vector<int32_t>> discardFrameIndexMap = {
+    {g_mp4265InfoParsePath, {-1, 1}}
 };
 } // namespace
 
@@ -115,6 +121,11 @@ void DemuxerUnitTest::ReadSample(const std::string &path, bool local, bool check
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, checkBufferInfo), AV_ERR_OK);
             CountFrames(idx);
+            if (checkBufferInfo && discardFrameIndexMap.count(path) != 0 &&
+                flag_ & static_cast<uint32_t>(AVBufferFlag::DISCARD)) {
+                printf("[track %d] frame %d flag is discard\n", idx, frames_[idx]);
+                ASSERT_EQ(discardFrameIndexMap[path][idx], frames_[idx]);
+            }
         }
     }
 }
@@ -1323,10 +1334,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1700, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_mp4HevcPath, LOCAL, true);
+    ReadSample(g_mp4265InfoParsePath, LOCAL, true);
     for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(frames_[idx], infoMap["mp4Hevc"]["frames"][idx]);
-        ASSERT_EQ(keyFrames_[idx], infoMap["mp4Hevc"]["kFrames"][idx]);
+        ASSERT_EQ(frames_[idx], infoMap["mp4265InfoParse"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mp4265InfoParse"]["kFrames"][idx]);
     }
     RemoveValue();
     selectedTrackIds_.clear();

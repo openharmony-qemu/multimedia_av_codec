@@ -61,6 +61,7 @@ string g_DoubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4")
 string g_DoubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -860,11 +861,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1611, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1700, TestSize.Level1)
 {
-    if (access(g_mp4HevcPath.c_str(), F_OK) != 0) {
+    if (access(g_mp4265InfoParsePath.c_str(), F_OK) != 0) {
         return;
     }
-    printf("---- %s ------\n", g_mp4HevcPath.data());
-    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcPath.data()));
+    printf("---- %s ------\n", g_mp4265InfoParsePath.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4265InfoParsePath.data()));
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
