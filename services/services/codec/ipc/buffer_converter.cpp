@@ -170,6 +170,7 @@ BufferConverter::BufferConverter(bool isEncoder)
 
 int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (isSharedMemory_) {
         return AVCS_ERR_OK;
     }
@@ -197,6 +198,7 @@ int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::
 
 int32_t BufferConverter::WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (isSharedMemory_) {
         return AVCS_ERR_OK;
     }
@@ -220,11 +222,13 @@ int32_t BufferConverter::WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::s
 
 void BufferConverter::NeedToResetFormatOnce()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     needResetFormat_ = true;
 }
 
 void BufferConverter::GetFormat(Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (isSharedMemory_ || needResetFormat_) {
         return;
     }
@@ -244,7 +248,8 @@ void BufferConverter::GetFormat(Format &format)
 
 void BufferConverter::SetFormat(const Format &format)
 {
-    if (isSharedMemory_ || !needResetFormat_) {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isSharedMemory_) {
         return;
     }
     int32_t width = 0;
@@ -287,7 +292,11 @@ void BufferConverter::SetFormat(const Format &format)
 
 void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    if (!needResetFormat_ || !isEncoder_) {
+    if (!isEncoder_) {
+        return;
+    }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (!needResetFormat_) {
         return;
     }
     needResetFormat_ = !SetBufferFormat(buffer);
@@ -295,7 +304,11 @@ void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 
 void BufferConverter::SetOutputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    if (!needResetFormat_ || isEncoder_) {
+    if (isEncoder_) {
+        return;
+    }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (!needResetFormat_) {
         return;
     }
     needResetFormat_ = !SetBufferFormat(buffer);
