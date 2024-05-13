@@ -795,7 +795,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2800, TestSize.Level2)
             break;
         }
         uint8_t *data = OH_AVMemory_GetAddr(memory);
-        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;     
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
     }
 
     close(fd);
