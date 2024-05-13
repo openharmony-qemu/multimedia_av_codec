@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#define MEDIA_PLUGIN
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
+
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>

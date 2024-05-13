@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define MEDIA_PIPELINE
 #define HST_LOG_TAG "DemuxerFilter"
 
 #include "avcodec_common.h"
@@ -111,10 +112,10 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
-    MEDIA_LOG_I("DemuxerFilter Init");
+    MEDIA_LOG_I("Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
-    MEDIA_LOG_I("DemuxerFilter Init for drm callback");
+    MEDIA_LOG_D("DemuxerFilter Init for drm callback");
 
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
@@ -126,7 +127,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SetDataSource");
-    MEDIA_LOG_I("SetDataSource entered.");
+    MEDIA_LOG_D("SetDataSource entered.");
     if (source == nullptr) {
         MEDIA_LOG_E("Invalid source");
         return Status::ERROR_INVALID_PARAMETER;
@@ -145,7 +146,7 @@ void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
 void DemuxerFilter::SetBundleName(const std::string& bundleName)
 {
     if (demuxer_ != nullptr) {
-        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+        MEDIA_LOG_D("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         demuxer_->SetBundleName(bundleName);
     }
 }
@@ -212,7 +213,7 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 
 Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
 {
-    MEDIA_LOG_I("PrepareFrame enter.");
+    MEDIA_LOG_I("PrepareFrame");
     auto ret = demuxer_->PrepareFrame(renderFirstFrame);
     if (ret == Status::OK) {
         isPrepareFramed = true;
@@ -243,7 +244,7 @@ Status DemuxerFilter::DoStart()
         return Resume();
     }
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
-    MEDIA_LOG_I("Start called.");
+    MEDIA_LOG_I("Start in");
     isLoopStarted = true;
     if (isPrepareFramed.load()) {
         return demuxer_->Resume();
@@ -254,21 +255,21 @@ Status DemuxerFilter::DoStart()
 Status DemuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
-    MEDIA_LOG_I("Stop called.");
+    MEDIA_LOG_I("Stop in");
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
-    MEDIA_LOG_I("Pause called");
+    MEDIA_LOG_I("Pause in");
     return demuxer_->Pause();
 }
 
 Status DemuxerFilter::PauseForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
-    MEDIA_LOG_I("PauseForSeek called");
+    MEDIA_LOG_I("PauseForSeek in");
     // demuxer pause first for auido render immediatly
     demuxer_->Pause();
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -285,14 +286,14 @@ Status DemuxerFilter::PauseForSeek()
 Status DemuxerFilter::DoResume()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
-    MEDIA_LOG_I("Resume called");
+    MEDIA_LOG_I("Resume in");
     return demuxer_->Resume();
 }
 
 Status DemuxerFilter::ResumeForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
-    MEDIA_LOG_I("ResumeForSeek called size: %{public}d", nextFiltersMap_.size());
+    MEDIA_LOG_I("ResumeForSeek in size: %{public}d", nextFiltersMap_.size());
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();
@@ -307,14 +308,14 @@ Status DemuxerFilter::ResumeForSeek()
 Status DemuxerFilter::DoFlush()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Flush");
-    MEDIA_LOG_I("Flush entered");
+    MEDIA_LOG_D("Flush entered");
     return demuxer_->Flush();
 }
 
 Status DemuxerFilter::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Reset");
-    MEDIA_LOG_I("Reset called");
+    MEDIA_LOG_I("Reset in");
     {
         AutoLock lock(mapMutex_);
         track_id_map_.clear();
@@ -345,7 +346,7 @@ Status DemuxerFilter::PauseTaskByTrackId(int32_t trackId)
 Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
-    MEDIA_LOG_I("SeekTo called");
+    MEDIA_LOG_D("SeekTo in");
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
@@ -381,7 +382,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
-        MEDIA_LOG_I("LinkNext iter->first " PUBLIC_LOG_S, iter->first.c_str());
+        MEDIA_LOG_D("Link " PUBLIC_LOG_S, iter->first.c_str());
     }
     std::string mimeType;
     meta->GetData(Tag::MIME_TYPE, mimeType);

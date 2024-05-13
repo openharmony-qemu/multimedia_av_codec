@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define MEDIA_PLUGIN
 #define HST_LOG_TAG "Downloader"
 
 #include "avcodec_trace.h"
@@ -31,6 +33,7 @@ constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
+constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -405,7 +408,7 @@ void Downloader::HandleRetOK()
     int64_t remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
         currentRequest_->startPos_;
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // 检查是否播放结束
-        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
+        MEDIA_LOG_D("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
             currentRequest_->startPos_, currentRequest_->url_.c_str());
         currentRequest_->isEos_ = true;
         if (requestQue_->Empty()) {
@@ -483,8 +486,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
-    MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
-                mediaDownloader->currentRequest_->startPos_);
+    MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
+                     mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
 
     return dataLen;

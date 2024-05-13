@@ -141,7 +141,7 @@ std::string SwitchCase(const std::string& str)
             res += std::toupper(c);
         }
     }
-    MEDIA_LOG_W("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
+    MEDIA_LOG_D("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
     return res;
 }
 
