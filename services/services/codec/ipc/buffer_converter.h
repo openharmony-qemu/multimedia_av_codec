@@ -62,6 +62,7 @@ private:
     bool isEncoder_;
     bool isSharedMemory_;
     bool needResetFormat_;
+    std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
