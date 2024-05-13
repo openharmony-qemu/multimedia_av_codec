@@ -599,11 +599,11 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         if (ffmpegRet < 0) { // fail
             av_packet_free(&pkt);
             MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", timeout: " PUBLIC_LOG_D32,
-                AVStrError(ffmpegRet).c_str(), int(ioContext->timeout));
-            if (ffmpegRet == AVERROR(EAGAIN) || ioContext->timeout) { //Read data get 0 byte in seeking process, need retry
+                AVStrError(ffmpegRet).c_str(), int(ioContext_.timeout));
+            if (ffmpegRet == AVERROR(EAGAIN) || ioContext_.timeout) {
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
-                ioContext->timeout = false;
+                ioContext_.timeout = false;
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
