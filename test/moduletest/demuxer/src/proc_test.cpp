@@ -422,3 +422,537 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1900, TestSize.Level2)
     ASSERT_EQ(aKeyCount, 8);
     close(fd);
 }
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2000
+ * @tc.name      : demuxer h264+mp3 fmp4 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2000, TestSize.Level0)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *file = "/data/test/media/h264_mp3_3mevx_fmp4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    int audioFrame = 0;
+    bool audioIsEnd = false;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            } else if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 465);
+    ASSERT_EQ(aKeyCount, 465);
+    ASSERT_EQ(videoFrame, 369);
+    ASSERT_EQ(vKeyCount, 3);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2100
+ * @tc.name      : demuxer h265+aac fmp4 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2100, TestSize.Level0)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *file = "/data/test/media/h265_aac_1mvex_fmp4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    int audioFrame = 0;
+    bool audioIsEnd = false;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            } else if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 173);
+    ASSERT_EQ(aKeyCount, 173);
+    ASSERT_EQ(videoFrame, 242);
+    ASSERT_EQ(vKeyCount, 1);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2200
+ * @tc.name      : demuxer HDRVivid+AudioVivid fmp4 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2200, TestSize.Level0)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *file = "/data/test/media/audiovivid_hdrvivid_1s_fmp4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    int audioFrame = 0;
+    bool audioIsEnd = false;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            } else if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(videoFrame, 26);
+    ASSERT_EQ(vKeyCount, 1);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2300
+ * @tc.name      : demuxer M4A fmp4 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2300, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/m4a_fmp4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+    }
+    ASSERT_EQ(audioFrame, 352);
+    ASSERT_EQ(aKeyCount, 352);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2400
+ * @tc.name      : demuxer M4V fmp4 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2400, TestSize.Level0)
+{
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *file = "/data/test/media/m4v_fmp4.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    int audioFrame = 0;
+    bool audioIsEnd = false;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            } else if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 176);
+    ASSERT_EQ(aKeyCount, 176);
+    ASSERT_EQ(videoFrame, 123);
+    ASSERT_EQ(vKeyCount, 1);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2500
+ * @tc.name      : create hls demuxer with error uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2500, TestSize.Level0)
+{
+    const char *uri = "http://192.168.3.11:8080/share/index.m3u8";
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2600
+ * @tc.name      : create str demuxer with file and read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2600, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    int srtIndex = 1;
+    int srtSubtitle = 0;
+    const char *file = "/data/test/media/srt_test.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }       
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+        cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl; 
+        ASSERT_EQ(srtSubtitle, srtIndex);
+        srtIndex++;
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2700
+ * @tc.name      : create str demuxer with file and seek+read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    int srtIndex = 1;
+    int srtSubtitle = 0;   
+    uint8_t *data = nullptr;
+    const char *file = "/data/test/media/srt_test.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+
+    for (int index = 0; index < 5; index++){
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        data = OH_AVMemory_GetAddr(memory);
+        srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+        cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl;
+        ASSERT_EQ(srtSubtitle, srtIndex);
+        srtIndex++;
+    }
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 5400,SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+    data = OH_AVMemory_GetAddr(memory);
+    srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+    cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+    srtIndex = 2;
+    ASSERT_EQ(srtSubtitle, srtIndex);
+
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 21400,SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+    data = OH_AVMemory_GetAddr(memory);
+    srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+    cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+    srtIndex = 7;
+    ASSERT_EQ(srtSubtitle, srtIndex);
+
+    while (true){
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }       
+        data = OH_AVMemory_GetAddr(memory);
+        srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+        cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+        srtIndex++;
+        ASSERT_EQ(srtSubtitle, srtIndex);
+    }
+    
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2800
+ * @tc.name      : create str demuxer with error file -- no empty paragraphs
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2800, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/srt_2800.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;     
+    }
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_2900
+ * @tc.name      : create str demuxer with error file -- subtitle sequence error
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2900, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/srt_2900.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;   
+    }
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3000
+ * @tc.name      : create str demuxer with error file -- timeline format error
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3000, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/srt_3000.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount);
+    cout << "g_trackCount"<< "----------------" << g_trackCount << "-----------------" << endl;
+    OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr);
+    uint8_t *data = OH_AVMemory_GetAddr(memory);
+    cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3100
+ * @tc.name      : create str demuxer with error file -- subtitle is empty
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3100, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/srt_3100.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
+    }
+
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3200
+ * @tc.name      : create str demuxer with error file -- SRT file is empty
+ * @tc.desc      : function test
+ * fail
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3200, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/srt_3200.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount);
+    cout << "g_trackCount"<< "----------------" << g_trackCount << "-----------------" << endl;
+    OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr);
+    uint8_t *data = OH_AVMemory_GetAddr(memory);
+    cout << "subtitle"<< "----------------" << data << "-----------------" << endl;  
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3300
+ * @tc.name      : create str demuxer with error file -- alternating Up and Down Times
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3300, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *file = "/data/test/media/srt_3300.srt";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
+    }
+
+    close(fd);
+}

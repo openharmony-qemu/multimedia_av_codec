@@ -1752,4 +1752,675 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7500, TestSize.Level0)
     ASSERT_EQ(keyCount, 8);
 }
 
+/**
+ * @tc.number    : DEMUXER_RELI_7600
+ * @tc.name      : demuxer h264+mp3 fmp4 network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7600, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/h264_mp3_3mevx_fmp4.mp4";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 465);
+    ASSERT_EQ(videoFrame, 369);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_7700
+ * @tc.name      : demuxer h265+aac fmp4 network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7700, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/h265_aac_1mvex_fmp4.mp4";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 173);
+    ASSERT_EQ(videoFrame, 242);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_7800
+ * @tc.name      : create 16 instances repeat create-destory h265+aac fmp4 file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7800, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 1000) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_h265_aac_1mvex_fmp4.mp4", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_7900
+ * @tc.name      : create 16 instances create-destory h264+mp3 fmp4 network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7900, TestSize.Level3)
+{
+    int num = 0;
+    while (num < 1000) {
+        num++;
+        vector<std::thread> vecThread;
+        const char *uri = "http://192.168.3.11:8080/share/h264_mp3_3mevx_fmp4.mp4";
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8000
+ * @tc.name      : demuxer h264+aac ts hls network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8000, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/h264_aac.m3u8";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 528);
+    ASSERT_EQ(videoFrame, 369);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8100
+ * @tc.name      : demuxer h265+mp3 ts hls network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8100, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/h265_mp3.m3u8";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 465);
+    ASSERT_EQ(videoFrame, 726);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8200
+ * @tc.name      : demuxer first level index hls network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8200, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/first_level.m3u8";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    cout << audioFrame << "audioFrame" << endl;
+    cout << videoFrame << "videoFrame" << endl;
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8300
+ * @tc.name      : demuxer fixed path slicing hls network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8300, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/fixed_path.m3u8";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 465);
+    ASSERT_EQ(videoFrame, 726);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8400
+ * @tc.name      : demuxer different sharded videos hls network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8400, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/differemt_videos.m3u8";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8500
+ * @tc.name      : demuxer duration greater than TARGETDURATION hls network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8500, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    const char *uri = "http://192.168.3.11:8080/share/duration_error.m3u8";
+    cout << uri << "------" << endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+        }
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8600
+ * @tc.name      : create 16 instances repeat create-destory h264+aac ts file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8600, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 1000) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_h264_aac.m3u8", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8700
+ * @tc.name      : create 16 instances create-destory h265+mp3 ts network
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8700, TestSize.Level3)
+{
+    int num = 0;
+    while (num < 1000) {
+        num++;
+        vector<std::thread> vecThread;
+        const char *uri = "http://192.168.3.11:8080/share/h265_mp3.m3u8";
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8800
+ * @tc.name      : create srt demuxer with uri and read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8800, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    int srtIndex = 1;
+    int srtSubtitle = 0;
+    const char *uri = "http://192.168.3.11:8080/share/srt_test.srt";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    while (true) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }       
+        uint8_t *data = OH_AVMemory_GetAddr(memory);
+        srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+        cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl; 
+        ASSERT_EQ(srtSubtitle, srtIndex);
+        srtIndex++;
+        
+    }
+
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_8900
+ * @tc.name      : create srt demuxer with uri and seek+read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8900, TestSize.Level2)
+{
+    OH_AVCodecBufferAttr attr;
+    int srtIndex = 1;
+    int srtSubtitle = 0;
+    uint8_t *data;
+    const char *uri = "http://192.168.3.11:8080/share/srt_test.srt";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+
+    for (int index = 0; index < 5; index++){
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        data = OH_AVMemory_GetAddr(memory);
+        srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+        cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+        ASSERT_EQ(srtSubtitle, srtIndex);
+        srtIndex++;
+    }
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 5400,SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+    data = OH_AVMemory_GetAddr(memory);
+    srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+    cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+    srtIndex = 2;
+    ASSERT_EQ(srtSubtitle, srtIndex);
+
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 21400,SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+    data = OH_AVMemory_GetAddr(memory);
+    srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+    cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+    srtIndex = 7;
+    ASSERT_EQ(srtSubtitle, srtIndex);
+
+    while (true){
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
+            break;
+        }       
+        data = OH_AVMemory_GetAddr(memory);
+        srtSubtitle = atoi(reinterpret_cast<const char*>(data));
+        cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
+        srtIndex++;
+        ASSERT_EQ(srtSubtitle, srtIndex);
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_9000
+ * @tc.name      : create 16 instances repeat create-destory with srt file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9000, TestSize.Level3)
+{
+    int num = 0;
+    int len = 256;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            char file[256] = {};
+            sprintf_s(file, len, "/data/test/media/16/%d_srt_test.srt", i);
+            g_fdList[i] = open(file, O_RDONLY);
+            int64_t size = GetFileSize(file);
+            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+            ASSERT_NE(source_list[i], nullptr);
+
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxSrtFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+            close(g_fdList[i]);
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_9100
+ * @tc.name      : create 16 instances repeat create-destory with srt uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9100, TestSize.Level3)
+{
+    int num = 0;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        const char *uri = "http://192.168.3.11:8080/share/srt_test.srt";
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxSrtFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
 }
