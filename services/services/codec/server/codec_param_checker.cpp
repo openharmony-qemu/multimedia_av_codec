@@ -316,7 +316,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
     bool paramValid = IsSupported(capData.profiles, profile);
     if (!paramValid) {
         AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, please check codec capabilities",
-            MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);
+        MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);
     }
 
     return AVCS_ERR_OK;
@@ -336,7 +336,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
     // valid rotation: 0, 90, 180, 270
     if (!(rotation == 0 || rotation == 90 || rotation == 180 || rotation == 270)) {
         AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, only support {0, 90, 180, 270}",
-            MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);    //  Invalid rotation
+        MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);    //  Invalid rotation
     }
 
     return AVCS_ERR_OK;
