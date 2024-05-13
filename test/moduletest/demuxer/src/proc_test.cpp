@@ -705,7 +705,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2600, TestSize.Level0)
         }
         uint8_t *data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
-        cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl; 
+        cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl;
         ASSERT_EQ(srtSubtitle, srtIndex);
         srtIndex++;
     }
@@ -757,7 +757,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
             break;
-        }       
+        }
         data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
         cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl;
@@ -828,7 +828,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2900, TestSize.Level2)
             break;
         }
         uint8_t *data = OH_AVMemory_GetAddr(memory);
-        cout << "subtitle"<< "----------------" << data << "-----------------" << endl;   
+        cout << "subtitle" << "----------------" << data << "-----------------" << endl;   
     }
 
     close(fd);

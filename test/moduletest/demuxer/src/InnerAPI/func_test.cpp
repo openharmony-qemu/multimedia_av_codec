@@ -255,6 +255,4 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0500, TestSize.Level2)
     ":{camera-position-tag:2},param-use-tag:TypeNormalVideo}");
 }
 
-
-
 } // namespace

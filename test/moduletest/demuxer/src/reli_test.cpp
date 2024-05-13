@@ -2315,7 +2315,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8900, TestSize.Level2)
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
             break;
-        }       
+        }
         data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
         cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
