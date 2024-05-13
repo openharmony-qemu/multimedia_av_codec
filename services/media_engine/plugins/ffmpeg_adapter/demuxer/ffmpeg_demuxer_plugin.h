@@ -105,6 +105,7 @@ private:
         int64_t offset {0};
         uint64_t fileSize {0};
         bool eos {false};
+        std::atomic<bool> timeout {false};
     };
 
     std::mutex mutex_ {};
