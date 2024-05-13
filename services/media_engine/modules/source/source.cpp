@@ -14,6 +14,7 @@
  */
 
 #define HST_LOG_TAG "Source"
+#define MEDIA_ATOMIC_ABILITY
 
 #include "avcodec_trace.h"
 #include "cpp_ext/type_traits_ext.h"

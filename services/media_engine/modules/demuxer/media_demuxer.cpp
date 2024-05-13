@@ -14,6 +14,7 @@
  */
 
 #define HST_LOG_TAG "MediaDemuxer"
+#define MEDIA_ATOMIC_ABILITY
 
 #include "media_demuxer.h"
 
@@ -517,7 +518,7 @@ std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
 
 Status MediaDemuxer::Flush()
 {
-    MEDIA_LOG_I("Flush enter.");
+    MEDIA_LOG_I("Flush");
     if (streamDemuxer_) {
         streamDemuxer_->Flush();
     }
@@ -619,7 +620,7 @@ Status MediaDemuxer::ResumeAllTask()
 
 Status MediaDemuxer::Pause()
 {
-    MEDIA_LOG_I("Pause");
+    MEDIA_LOG_D("Pause");
     if (streamDemuxer_) {
         streamDemuxer_->Pause();
     }
@@ -656,7 +657,7 @@ Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 
 Status MediaDemuxer::Resume()
 {
-    MEDIA_LOG_I("Resume");
+    MEDIA_LOG_D("Resume");
     if (streamDemuxer_) {
         streamDemuxer_->Resume();
     }
@@ -902,7 +903,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
             taskMap_[trackId]->StopAsync();
-            MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
+            MEDIA_LOG_I("eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);

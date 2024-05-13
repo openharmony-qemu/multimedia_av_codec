@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MEDIA_PIPELINE
+
 #include "decoder_surface_filter.h"
 #include <sys/time.h>
 #include "filter/filter_factory.h"
