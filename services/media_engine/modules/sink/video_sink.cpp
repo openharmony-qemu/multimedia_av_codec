@@ -140,7 +140,6 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     auto ct4Buffer = syncCenter->GetClockTime(pts);
     MEDIA_LOG_D("VideoSink cur pts: " PUBLIC_LOG_D64 " us, ct4Buffer: " PUBLIC_LOG_D64 " us, buf_pts: " PUBLIC_LOG_D64
         " us, fixDelay: " PUBLIC_LOG_D64 " us", pts, ct4Buffer, buffer->pts_, fixDelay_);
-    
     FALSE_RETURN_V(ct4Buffer != Plugins::HST_TIME_NONE, 0);
     int64_t waitTimeUs = 0;
     if (lastBufferTime_ != HST_TIME_NONE && seekFlag_ == false) {
@@ -168,12 +167,11 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
             diff = diff2 - PER_SINK_TIME_THRESHOLD;
         }
     }
-    MEDIA_LOG_D("VideoSink ct4Buffer: " PUBLIC_LOG_D64 " us, diff: " PUBLIC_LOG_D64
-            " us, nowCt: " PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
+    MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 "us,diff:"PUBLIC_LOG_D64" us,nowCt:" PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
         waitTimeUs = 0 - diff;
+        MEDIA_LOG_W("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
         if (waitTimeUs > WAIT_TIME_US_THRESHOLD) {
-            MEDIA_LOG_W("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
             waitTimeUs = WAIT_TIME_US_THRESHOLD;
         }
     } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms, buffer is late
@@ -181,7 +179,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         MEDIA_LOG_D("buffer is too late");
     }
     lastBufferTime_ = ct4Buffer;
-    if (tooLate && (buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0) {// buffer is too late, drop it
+    if (tooLate && (buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0) { // buffer is too late, drop it
         return -1;
     }
     return waitTimeUs;
