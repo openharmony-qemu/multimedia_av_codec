@@ -108,22 +108,6 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         return ret;
     }
     auto codecCtx = basePlugin->GetCodecContext();
-    AudioSampleFormat samplefmt;
-    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt);
-
-    if (samplefmt == SAMPLE_S16LE) {
-        codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
-        codecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
-    }
-    if (samplefmt == SAMPLE_U8) {
-        codecCtx->bits_per_coded_sample = 8; // sample bit = 8 bit
-        codecCtx->sample_fmt = AV_SAMPLE_FMT_U8;
-    }
-    if (samplefmt == SAMPLE_S32LE) {
-        codecCtx->bits_per_coded_sample = 32; // sample bit = 32 bit
-        codecCtx->sample_fmt = AV_SAMPLE_FMT_S32;
-    }
-    AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     if (codecCtx->extradata == nullptr) {
         codecCtx->extradata_size = EXTRA_DATA_SIZE; // 6bits
         codecCtx->extradata = static_cast<uint8_t *>(av_mallocz(EXTRA_DATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE));
@@ -140,6 +124,18 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
+    AudioSampleFormat samplefmt;
+    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt);
+    if (samplefmt == SAMPLE_S16LE) {
+        codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
+    }
+    if (samplefmt == SAMPLE_U8) {
+        codecCtx->bits_per_coded_sample = 8; // sample bit = 8 bit
+    }
+    if (samplefmt == SAMPLE_S32LE) {
+        codecCtx->bits_per_coded_sample = 32; // sample bit = 32 bit
+    }
+    AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     ret = basePlugin->OpenContext();
     return ret;
 }
