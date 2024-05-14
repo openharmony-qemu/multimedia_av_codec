@@ -153,6 +153,7 @@ ohos_unittest("videoenc_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/frameworks/native/capi/common",
+    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
@@ -197,6 +198,7 @@ ohos_unittest("videoenc_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
     "./inner",
     "./sample/func_sample",
+    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
