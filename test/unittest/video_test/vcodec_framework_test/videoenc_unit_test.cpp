@@ -591,6 +591,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Start_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
+    videoEnc_->needCheckSHA_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
