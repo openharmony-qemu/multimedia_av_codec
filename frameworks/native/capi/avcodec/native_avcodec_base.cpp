@@ -116,6 +116,8 @@ const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT = "video_slice_height";
 const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY = "video_enable_low_latency";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX = "video_encoder_qp_max";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN = "video_encoder_qp_min";
+const char *OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE = "video_encoder_qp_average";
+const char *OH_MD_KEY_VIDEO_ENCODER_MSE = "video_encoder_mse";
 
 #ifdef __cplusplus
 }
