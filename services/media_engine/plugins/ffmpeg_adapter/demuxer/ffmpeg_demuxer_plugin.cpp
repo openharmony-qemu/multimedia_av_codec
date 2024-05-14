@@ -609,7 +609,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             return Status::ERROR_UNKNOWN;
         }
         auto trackId = pkt->stream_index;
-        if (!TrackIsSelected(trackId)) { // not in
+        if (!TrackIsSelected(trackId)) {
             av_packet_unref(pkt);
             continue;
         }
