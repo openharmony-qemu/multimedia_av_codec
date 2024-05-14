@@ -504,7 +504,7 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
     return tempPkt;
 }
 
-void FFmpegDemuxerPlugin::ConvertAvccToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
+void FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
     std::shared_ptr<SamplePacket> dstSamplePacket)
 {
     auto codecId = formatContext_->streams[srcAVPacket->stream_index]->codecpar->codec_id;
@@ -545,7 +545,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
-    ConvertAvccToAnnexb(sample, tempPkt, samplePacket);
+    ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
 
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
@@ -609,7 +609,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             return Status::ERROR_UNKNOWN;
         }
         auto trackId = pkt->stream_index;
-        if (!IsInSelectedTrack(trackId)) { // not in
+        if (!TrackIsSelected(trackId)) { // not in
             av_packet_unref(pkt);
             continue;
         }
@@ -622,7 +622,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::ReadEosSample(std::shared_ptr<AVBuffer> sample)
+Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
 {
     MEDIA_LOG_D("Set EOS buffer.");
     Status ret = WriteBuffer(sample, 0, (uint32_t)(AVBufferFlag::EOS), nullptr, 0);
@@ -1050,7 +1050,7 @@ void FFmpegDemuxerPlugin::ShowSelectedTracks()
     }
 }
 
-bool FFmpegDemuxerPlugin::IsInSelectedTrack(const uint32_t trackId)
+bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
 {
     return std::any_of(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                        [trackId](uint32_t id) { return id == trackId; });
@@ -1077,7 +1077,7 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    if (!IsInSelectedTrack(trackId)) {
+    if (!TrackIsSelected(trackId)) {
         selectedTrackIds_.push_back(trackId);
         trackMtx_[trackId] = std::make_shared<std::mutex>();
         return cacheQueue_.AddTrackQueue(trackId);
@@ -1097,7 +1097,7 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
         "Can not call this func before set data source.");
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
-    if (IsInSelectedTrack(trackId)) {
+    if (TrackIsSelected(trackId)) {
         selectedTrackIds_.erase(index);
         trackMtx_.erase(trackId);
         return cacheQueue_.RemoveTrackQueue(trackId);
@@ -1179,7 +1179,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
         "Read Sample failed due to no track has been selected.");
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to input sample is nullptr");
@@ -1195,20 +1195,19 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
         } else if (ret == Status::ERROR_AGAIN) {
-            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
         }
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
-    std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
+    auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Read failed, samplePacket is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_W("File is end, push EOS buffer to user queue.");
-        ret = ReadEosSample(sample);
+        ret = SetEosSample(sample);
         if (ret == Status::OK) {
             cacheQueue_.Pop(trackId);
         }
-        MEDIA_LOG_I("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
         return ret;
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
@@ -1216,7 +1215,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         return Status::OK;
     }
     if (ret == Status::OK) {
-        MEDIA_LOG_D("All partial sample has seend copied");
+        MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
     return ret;
@@ -1229,7 +1228,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "Have not set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected.");
 
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
     if (NeedCombineFrame(trackId)) {
@@ -1243,7 +1242,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
         } else if (ret == Status::ERROR_AGAIN) {
-            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
         }
     }

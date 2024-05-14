@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "FfmpegFormatHelper"
 
 #include <algorithm>
+#include <regex>
 #include <iconv.h>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
@@ -272,20 +273,6 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
 }
 
-std::vector<std::string> SplitByChar(const char* str, const char* pattern)
-{
-    std::vector<std::string> resultVec;
-    char* tmpStr = strtok(const_cast<char*>(str), pattern);
-    while (tmpStr != nullptr) {
-        resultVec.push_back(std::string(tmpStr));
-        tmpStr = strtok(nullptr,  pattern);
-    }
-    MEDIA_LOG_D("Split [" PUBLIC_LOG_S "] by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string",
-        str, pattern, resultVec.size());
-    delete[] tmpStr;
-    return resultVec;
-}
-
 void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
 {
     MEDIA_LOG_D("Parse location info.");
@@ -298,19 +285,18 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Parse failed.");
         return;
     }
-    MEDIA_LOG_D("Parse location info successfully: " PUBLIC_LOG_S, valPtr->value);
-    std::vector<std::string> values = SplitByChar(valPtr->value, "+");
-    if (values.size() < VALID_LOCATION_LEN) {
+    MEDIA_LOG_D("Get location string successfully: " PUBLIC_LOG_S, valPtr->value);
+    std::string locationStr = std::string(valPtr->value);
+    std::regex pattern(R"([\+\-]\d+\.\d+)");
+    std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
+    std::sregex_iterator end;
+    // at least contain latitude and longitude
+    if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Parse failed due to info format error.");
         return;
     }
-
-    format.Set<Tag::MEDIA_LATITUDE>(std::stof(values[0]));
-    if (values[1].find('/') != 0) {
-        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(SplitByChar(values[1].c_str(), "/")[0]));
-    } else {
-        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(values[1]));
-    }
+    format.Set<Tag::MEDIA_LATITUDE>(std::stof(numbers->str()));
+    format.Set<Tag::MEDIA_LONGITUDE>(std::stof((++numbers)->str()));
 }
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
