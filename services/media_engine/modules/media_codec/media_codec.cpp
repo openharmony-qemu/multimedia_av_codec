@@ -18,11 +18,14 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager.h"
+#include "osal/utils/dump_buffer.h"
 
 namespace {
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t TIME_OUT_MS = 500;
+const std::string DUMP_PARAM = "w";
+const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
 } // namespace
 
 namespace OHOS {
@@ -378,6 +381,11 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
     auto ret = codecPlugin_->SetParameter(parameter);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin set parameter failed");
     return (int32_t)ret;
+}
+
+void MediaCodec::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
 }
 
 int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
@@ -738,6 +746,9 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
 void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::OnOutputBufferDone");
+    if (isDump_) {
+        DumpAVBufferToFile(DUMP_PARAM, DUMP_FILE_NAME, outputBuffer);
+    }
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     if (mediaCodecCallback_) {
         mediaCodecCallback_->OnOutputBufferDone(outputBuffer);

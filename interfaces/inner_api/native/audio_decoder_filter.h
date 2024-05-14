@@ -51,6 +51,8 @@ public:
 
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
 
+    void SetDumpFlag(bool isDump);
+
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -104,7 +106,7 @@ private:
     bool isDrmProtected_ = false;
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
-
+    bool isDump_ = false;
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{HST_TIME_NONE};
     int64_t latestPausedTime_{HST_TIME_NONE};

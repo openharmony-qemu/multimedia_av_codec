@@ -118,6 +118,8 @@ public:
 
     void ProcessInputBuffer();
 
+    void SetDumpFlag(bool isDump);
+
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
@@ -160,6 +162,7 @@ private:
     bool isEncoder_;
     bool isSurfaceMode_;
     bool isBufferMode_;
+    bool isDump_ = false;
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
 

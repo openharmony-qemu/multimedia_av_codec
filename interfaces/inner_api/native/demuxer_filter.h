@@ -76,6 +76,7 @@ public:
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetSpeed(float speed);
     void SetInterruptState(bool isInterruptNeeded);
+    void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -107,6 +108,8 @@ private:
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
+
+    bool isDump_ = false;
 };
 } // namespace Pipeline
 } // namespace Media
