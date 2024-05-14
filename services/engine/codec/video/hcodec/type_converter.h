@@ -28,6 +28,7 @@
 #include "codec_omx_ext.h"
 #include "surface_type.h" // foundation/graphic/graphic_2d/interfaces/inner_api/surface/
 #include "meta/video_types.h" // foundation/multimedia/histreamer/interface/inner_api/
+#include "meta/mime_type.h"
 #include "v3_0/codec_types.h"
 
 namespace OHOS::MediaAVCodec {

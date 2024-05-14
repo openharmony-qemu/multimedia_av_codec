@@ -84,9 +84,9 @@ void TesterCapiNew::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBu
 
 bool TesterCapi::Create()
 {
-    const char* mime = (opt_.protocol == H264) ? OH_AVCODEC_MIMETYPE_VIDEO_AVC : OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+    string mime = GetCodecMime(opt_.protocol);
     auto begin = std::chrono::steady_clock::now();
-    codec_ = opt_.isEncoder ? OH_VideoEncoder_CreateByMime(mime) : OH_VideoDecoder_CreateByMime(mime);
+    codec_ = opt_.isEncoder ? OH_VideoEncoder_CreateByMime(mime.c_str()) : OH_VideoDecoder_CreateByMime(mime.c_str());
     if (codec_ == nullptr) {
         TLOGE("Create failed");
         return false;

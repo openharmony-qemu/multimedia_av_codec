@@ -36,6 +36,11 @@ vector<Protocol> g_protocolTable = {
         OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
         string(CodecMimeType::VIDEO_HEVC),
     },
+    {
+        static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingVVC),
+        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
+        string(OHOS::Media::Plugins::MimeType::VIDEO_VVC),
+    },
 };
 
 vector<PixelFmt> g_pixelFmtTable = {
@@ -82,6 +87,10 @@ vector<AVCLevelMapping> g_avcLevelTable = {
     { OMX_VIDEO_AVCLevel42, AVC_LEVEL_42 },
     { OMX_VIDEO_AVCLevel5,  AVC_LEVEL_5 },
     { OMX_VIDEO_AVCLevel51, AVC_LEVEL_51 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVCLevel52), AVC_LEVEL_52 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVCLevel6), AVC_LEVEL_6 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVCLevel61), AVC_LEVEL_61 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVCLevel62), AVC_LEVEL_62 },
 };
 
 struct HEVCProfileMapping {
