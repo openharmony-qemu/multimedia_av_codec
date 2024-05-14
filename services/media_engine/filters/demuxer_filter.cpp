@@ -333,6 +333,12 @@ void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_I("GetParameter enter");
 }
 
+void DemuxerFilter::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
+    demuxer_->SetDumpFlag(isDump_);
+}
+
 std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
 {
     return demuxer_->GetBufferQueueProducerMap();
@@ -510,6 +516,12 @@ void DemuxerFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 
 void DemuxerFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
+}
+
+bool DemuxerFilter::IsDrmProtected()
+{
+    MEDIA_LOG_I("IsDrmProtected");
+    return demuxer_->IsLocalDrmInfosExisted();
 }
 
 void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo)

@@ -39,6 +39,13 @@
 #include "live_stream_demuxer.h"
 #include "vod_stream_demuxer.h"
 #include "media_core.h"
+#include "osal/utils/dump_buffer.h"
+
+namespace {
+const std::string DUMP_PARAM = "w";
+const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
+const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+} // namespace
 
 namespace OHOS {
 namespace Media {
@@ -175,6 +182,11 @@ void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceive
 void MediaDemuxer::SetPlayerId(std::string playerId)
 {
     playerId_ = playerId;
+}
+
+void MediaDemuxer::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
 }
 
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
@@ -867,6 +879,19 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     return ret == Status::OK;
 }
 
+void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer)
+{
+    std::string mimeType;
+    if (isDump_) {
+        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") != 0) {
+                DumpAVBufferToFile(DUMP_PARAM, DUMP_DEMUXER_AUDIO_FILE_NAME, buffer);
+        }
+        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") != 0) {
+                DumpAVBufferToFile(DUMP_PARAM, DUMP_DEMUXER_VIDEO_FILE_NAME, buffer);
+        }
+    }
+}
+
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
@@ -1111,6 +1136,8 @@ Status MediaDemuxer::SetFrameRate(double frameRate, uint32_t trackId)
 
 bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
 {
+    DumpBufferToFile(trackId, sample);
+
     if (trackId != videoTrackId_) {
         return false;
     }
