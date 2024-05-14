@@ -234,7 +234,7 @@ bool StartCodeDetectorH265::IsPrefixSEI(uint8_t nalType)
 
 uint8_t StartCodeDetectorH266::GetNalType(uint8_t, uint8_t secondByte)
 {
-    return (secondByte & 0b1111'1000) >> 3;
+    return (secondByte & 0b1111'1000) >> 3; // 3: The higher 5 bits of this byte indicate the NalType.
 }
 
 bool StartCodeDetectorH266::IsPPS(uint8_t nalType)
