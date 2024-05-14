@@ -127,7 +127,7 @@ void VideoSink::SetLastPts(int64_t lastPts)
     auto syncCenter = syncCenter_.lock();
     if (syncCenter != nullptr) {
         lastClockTime_ = syncCenter->GetClockTimeNow();
-    } 
+    }
 }
 
 int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -181,8 +181,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         MEDIA_LOG_D("buffer is too late");
     }
     lastBufferTime_ = ct4Buffer;
-    // buffer is too late and is not key frame drop it
-    if (tooLate && (buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0) {
+    if (tooLate && (buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0) {// buffer is too late, drop it
         return -1;
     }
     return waitTimeUs;
