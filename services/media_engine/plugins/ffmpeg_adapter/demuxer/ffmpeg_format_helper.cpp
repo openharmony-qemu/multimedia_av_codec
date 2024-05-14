@@ -474,15 +474,9 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
 {
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
     if (displayMatrix) {
-        float rotation = -round(av_display_rotation_get(displayMatrix));
-        MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_F, rotation);
-        if (isnan(rotation)) {
-            format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
-            return;
-        } else if (rotation < 0) {
-            rotation += 360;
-        }
-        switch (int(rotation)) {
+        int rotation = (int)(-round(av_display_rotation_get(displayMatrix)));
+        MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_D32, rotation);
+        switch (rotation) {
             case 90:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
                 break;
