@@ -96,6 +96,8 @@ public:
     Status SetFrameRate(double frameRate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
+
+    bool IsLocalDrmInfosExisted();
 private:
     class DataSourceImpl;
 
@@ -127,7 +129,6 @@ private:
     Status ProcessDrmInfos();
     Status ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
-    bool IsLocalDrmInfosExisted();
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
     bool HasVideo();

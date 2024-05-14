@@ -518,6 +518,12 @@ void DemuxerFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
 
+bool DemuxerFilter::IsDrmProtected()
+{
+    MEDIA_LOG_I("IsDrmProtected");
+    return demuxer_->IsLocalDrmInfosExisted();
+}
+
 void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo)
 {
     MEDIA_LOG_I("OnDrmInfoUpdated");
