@@ -221,7 +221,7 @@ Status AudioCaptureFilter::DoStop()
         taskPtr_->StopAsync();
     }
     // stop audioCaptureModule secondly
-    Status ret = Status::ERROR_INVALID_OPERATION;
+    Status ret = Status::OK;
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Stop();
     }
