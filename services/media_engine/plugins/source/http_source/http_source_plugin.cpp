@@ -19,6 +19,7 @@
 #include "download/http_curl_client.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
+#include "dash/dash_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
 #undef ERROR_INVALID_OPERATION
@@ -104,6 +105,14 @@ Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    MEDIA_LOG_D("GetStreamInfo entered");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->GetStreamInfo(streams);
+    return Status::OK;
+}
+
 Status HttpSourcePlugin::Start()
 {
     MEDIA_LOG_D("Start enter.");
@@ -156,14 +165,21 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         httpHeader_["Referer"].c_str());
 
     PlayStrategy* playStrategy = source->GetPlayStrategy();
+<<<<<<< HEAD
     mimeType_ = source->GetMimeType();
     if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+=======
+    if (uri_.find(".m3u8") != std::string::npos) {
+>>>>>>> 45e52f50 (httpplugin支持dash播放)
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         }
+        delayReady = false;
+    } else if (uri_.find(".mpd") != std::string::npos) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
@@ -188,14 +204,23 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
+<<<<<<< HEAD
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         return uri_.find(".m3u8") != std::string::npos;
     }
     MEDIA_LOG_D("IsSeekToTimeSupported return true");
     return true;
+=======
+    return uri_.find(".m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
+>>>>>>> 45e52f50 (httpplugin支持dash播放)
 }
 
 Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
+    return Read(0, buffer, offset, expectedLen);
+}
+
+Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     MEDIA_LOG_D("Read enter.");
     AutoLock lock(mutex_);
@@ -215,9 +240,13 @@ Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, 
 
     bool isEos = false;
     unsigned int realReadSize = 0;
-    bool result = downloader_->Read(bufData->GetWritableAddr(expectedLen), expectedLen, realReadSize, isEos);
+    bool result = false;
+    int32_t realStreamId = streamId;
+    result = downloader_->Read(streamId, bufData->GetWritableAddr(expectedLen), expectedLen, realReadSize, realStreamId, isEos);
+    buffer->streamID = realStreamId;
+    
     bufData->UpdateDataSize(realReadSize);
-    MEDIA_LOG_D("Read finished, read size = " PUBLIC_LOG_ZU ", isEos " PUBLIC_LOG_D32, bufData->GetSize(), isEos);
+    MEDIA_LOG_I("Read finished, read size = " PUBLIC_LOG_ZU "realStreamId = " PUBLIC_LOG_D32 ", isEos " PUBLIC_LOG_D32, bufData->GetSize(), realStreamId, isEos);
     return result ? Status::OK : Status::END_OF_STREAM;
 }
 

@@ -81,10 +81,10 @@ void DownloadMonitor::Close(bool isAsync)
     isPlaying_ = false;
 }
 
-bool DownloadMonitor::Read(unsigned char *buff, unsigned int wantReadLength,
-                           unsigned int &realReadLength, bool &isEos)
+bool DownloadMonitor::Read(int32_t streamId, unsigned char *buff, unsigned int wantReadLength,
+                           unsigned int &realReadLength, int32_t& realStreamId, bool &isEos)
 {
-    bool ret = downloader_->Read(buff, wantReadLength, realReadLength, isEos);
+    bool ret = downloader_->Read(streamId, buff, wantReadLength, realReadLength, realStreamId, isEos);
     time(&lastReadTime_);
     return ret;
 }
@@ -213,6 +213,7 @@ void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
         downloader_->SetInterruptState(isInterruptNeeded);
     }
 }
+<<<<<<< HEAD
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {
@@ -220,6 +221,14 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
         downloader_->GetDownloadInfo(downloadInfo);
     }
 }
+=======
+
+Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    return downloader_->GetStreamInfo(streams);
+}
+
+>>>>>>> 45e52f50 (httpplugin支持dash播放)
 }
 }
 }

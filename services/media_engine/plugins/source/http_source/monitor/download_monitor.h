@@ -44,7 +44,7 @@ public:
     ~DownloadMonitor() override = default;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
-    bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
+    bool Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, int32_t& realStreamId, bool& isEos) override;
     bool SeekToPos(int64_t offset) override;
     void Pause() override;
     void Resume() override;
@@ -61,8 +61,12 @@ public:
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
+<<<<<<< HEAD
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
+=======
+    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+>>>>>>> 45e52f50 (httpplugin支持dash播放)
 private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);

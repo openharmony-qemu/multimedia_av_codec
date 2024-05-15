@@ -259,8 +259,8 @@ bool HlsMediaDownloader::CheckReadTimeOut()
     return false;
 }
 
-bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
-                              unsigned int& realReadLength, bool& isEos)
+bool HlsMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength,
+                              unsigned int& realReadLength, int32_t& realStreamId, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     if (CheckReadStatus()) {

@@ -41,6 +41,7 @@ public:
     Status SetCallback(Callback* cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
+    Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
@@ -50,6 +51,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
