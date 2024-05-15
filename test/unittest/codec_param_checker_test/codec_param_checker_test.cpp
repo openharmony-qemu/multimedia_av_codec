@@ -20,6 +20,7 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcapability.h"
+#include "avcodec_errors.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -313,7 +314,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0402, TestS
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, frameRate));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -327,7 +328,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0403, TestS
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, frameRate));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -438,7 +439,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0506,
     if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CQ)) {
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ));
         OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-        ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+        ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
     }
 }
 
@@ -452,7 +453,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0507,
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, INT64_MAX));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -465,7 +466,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0508,
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, INT64_MIN));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -479,7 +480,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0509,
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -509,7 +510,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0511,
     if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_VBR)) {
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR));
         OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-        ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+        ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
     }
 }
 
@@ -527,7 +528,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0512,
     if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CBR)) {
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR));
         OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-        ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+        ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
     }
 }
 
@@ -559,7 +560,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0514,
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, INT32_MIN));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -572,7 +573,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0515,
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, INT32_MAX));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -601,7 +602,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0517,
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, INT32_MIN));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -659,7 +660,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0602, TestSize
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PROFILE, INT32_MIN));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -672,7 +673,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0603, TestSize
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PROFILE, INT32_MAX));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -873,7 +874,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1402, TestS
     SetFormatBasicParam(true);
     ASSERT_EQ(true, OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, frameRate));
     OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -887,7 +888,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1403, TestS
     SetFormatBasicParam(true);
     ASSERT_EQ(true, OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, frameRate));
     OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 }
 
 /**
@@ -955,7 +956,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSiz
             ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
             ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, rotationAngle));
             OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
-            ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+            ASSERT_EQ(ret, AVCS_ERR_CODEC_PARAM_INCORRECT);
 
             OH_AVFormat_Destroy(format);
             OH_VideoEncoder_Destroy(videoDec);
