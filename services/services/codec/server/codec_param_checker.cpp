@@ -239,12 +239,12 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType co
     double framerate;
     bool paramExist = format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
     PrintParam(paramExist, MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
-    if (paramExist == false || codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+    if (paramExist == false) {
         return AVCS_ERR_OK;
     }
 
     bool paramValid = framerate > 0 ? true : false;
-    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_CODEC_PARAM_INCORRECT,
         "Param invalid, %{public}s: %{public}.2f, should be greater than 0",
         MediaDescriptionKey::MD_KEY_FRAME_RATE.data(), framerate);     // Invalid framerate
 
@@ -264,31 +264,32 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     PrintParam(qualityExist, MediaDescriptionKey::MD_KEY_QUALITY, quality);
     PrintParam(bitrateModeExist, MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
 
-    CHECK_AND_RETURN_RET_LOG(!(bitrateExist && qualityExist), AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(!(bitrateExist && qualityExist), AVCS_ERR_CODEC_PARAM_INCORRECT,
         "Param invalid, bitrate and quality mutually include");  // bitrate and quality mutually include
 
     if (bitrateExist) {
         bool bitrateValid = capData.bitrate.InRange(bitrate);
-        CHECK_AND_RETURN_RET_LOG(bitrateValid, AVCS_ERR_INVALID_VAL,
+        CHECK_AND_RETURN_RET_LOG(bitrateValid, AVCS_ERR_CODEC_PARAM_INCORRECT,
             "Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
             MediaDescriptionKey::MD_KEY_BITRATE.data(), static_cast<int32_t>(bitrate),
             capData.bitrate.minVal, capData.bitrate.maxVal);
     }
     if (qualityExist) {
         bool qualityValid = capData.encodeQuality.InRange(quality);
-        CHECK_AND_RETURN_RET_LOG(qualityValid, AVCS_ERR_INVALID_VAL,
+        CHECK_AND_RETURN_RET_LOG(qualityValid, AVCS_ERR_CODEC_PARAM_INCORRECT,
             "Param invalid, %{public}s: %{public}d, range: %{public}d-%{public}d",
             MediaDescriptionKey::MD_KEY_QUALITY.data(), quality,
             capData.encodeQuality.minVal, capData.encodeQuality.maxVal);
     }
     if (bitrateModeExist) {
         bool bitrateModeValid = IsSupported(capData.bitrateMode, bitrateMode);
-        CHECK_AND_RETURN_RET_LOG(bitrateModeValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
+        CHECK_AND_RETURN_RET_LOG(bitrateModeValid, AVCS_ERR_CODEC_PARAM_INCORRECT,
+            "Param invalid, %{public}s: %{public}d",
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE.data(), bitrateMode);     // Invalid bitrate mode
         CHECK_AND_RETURN_RET_LOG(!(bitrateExist && bitrateMode == VideoEncodeBitrateMode::CQ),
-            AVCS_ERR_INVALID_VAL, "Param invalid, in CQ mode but set bitrate!");
+            AVCS_ERR_CODEC_PARAM_INCORRECT, "Param invalid, in CQ mode but set bitrate!");
         CHECK_AND_RETURN_RET_LOG(!(qualityExist && bitrateMode != VideoEncodeBitrateMode::CQ),
-            AVCS_ERR_INVALID_VAL, "Param invalid, not in CQ mode but set quality!");
+            AVCS_ERR_CODEC_PARAM_INCORRECT, "Param invalid, not in CQ mode but set quality!");
         if (!qualityExist && bitrateMode == VideoEncodeBitrateMode::CQ) {
             format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, DEFAULT_QUALITY);
             AVCODEC_LOGW("In CQ mode but not set quality, set default quality: %{public}d", DEFAULT_QUALITY);
@@ -314,10 +315,9 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
     PrintParam(paramExist, MediaDescriptionKey::MD_KEY_PROFILE, profile);
 
     bool paramValid = IsSupported(capData.profiles, profile);
-    if (!paramValid) {
-        AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, please check codec capabilities",
-            MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);
-    }
+    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_CODEC_PARAM_INCORRECT,
+        "Param invalid, %{public}s: %{public}d, please check codec capabilities",
+        MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);     // Invalid profile
 
     return AVCS_ERR_OK;
 }
@@ -334,10 +334,9 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
     PrintParam(paramExist, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotation);
 
     // valid rotation: 0, 90, 180, 270
-    if (!(rotation == 0 || rotation == 90 || rotation == 180 || rotation == 270)) {
-        AVCODEC_LOGW("Param invalid, %{public}s: %{public}d, only support {0, 90, 180, 270}",
-            MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);    //  Invalid rotation
-    }
+    CHECK_AND_RETURN_RET_LOG(rotation == 0 || rotation == 90 || rotation == 180 || rotation == 270,
+        AVCS_ERR_CODEC_PARAM_INCORRECT, "Param invalid, %{public}s: %{public}d, only support {0, 90, 180, 270}",
+        MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);    //  Invalid rotation
 
     return AVCS_ERR_OK;
 }
@@ -443,11 +442,16 @@ int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecTyp
     CHECK_AND_RETURN_RET_LOG(checkers != CONFIGURE_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
         "This scenario can not find any checkers");
 
+    int32_t result = AVCS_ERR_OK;
     for (const auto &checker : checkers->second) {
         auto ret = checker(capData.value(), format, codecType);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
+        if (ret == AVCS_ERR_CODEC_PARAM_INCORRECT) {
+            result = AVCS_ERR_CODEC_PARAM_INCORRECT;
+        }
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && ret == AVCS_ERR_CODEC_PARAM_INCORRECT,
+            ret, "Param check failed");
     }
-    return AVCS_ERR_OK;
+    return result;
 }
 
 int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Media::Format &oldFormat,
