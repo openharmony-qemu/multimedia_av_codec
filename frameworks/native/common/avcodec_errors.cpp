@@ -67,6 +67,7 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_MISMATCH_BIT_RATE,                     "missing bit rate attribute in configure"},
     {AVCS_ERR_CONFIGURE_ERROR,                       "compression level incorrect in flac encoder"},
     {AVCS_ERR_DECRYPT_FAILED,                        "decrypt protected content failed"},
+    {AVCS_ERR_CODEC_PARAM_INCORRECT,                 "video codec param check failed"},
     {AVCS_ERR_EXTEND_START,                          "extend start error code"}};
 
 const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRCODE = {
@@ -117,6 +118,7 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_CONFIGURE_ERROR,                     AV_ERR_UNSUPPORT},
     {AVCS_ERR_EXTEND_START,                        AV_ERR_EXTEND_START},
     {AVCS_ERR_DECRYPT_FAILED,                      AV_ERR_DRM_DECRYPT_FAILED},
+    {AVCS_ERR_CODEC_PARAM_INCORRECT,               AV_ERR_INVALID_VAL},
     };
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
