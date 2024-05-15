@@ -18,6 +18,8 @@
 #include "iconsumer_surface.h"
 #include "meta/meta_key.h"
 #include "native_buffer_inner.h"
+#include "openssl/crypto.h"
+#include "openssl/sha.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_window.h"
@@ -32,7 +34,40 @@ namespace {
 constexpr bool NEED_DUMP = false;
 constexpr int32_t REQUEST_I_FRAME = 1;
 constexpr int32_t REQUEST_I_FRAME_NUM = 13;
+constexpr uint32_t BUFFER_COUNT = 59;
+constexpr uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {
+    0x3d, 0xc4, 0x3f, 0x67, 0x74, 0x18, 0xc6, 0xfb, 0xf3, 0x03, 0x56, 0x52, 0xf8, 0xa9, 0xf2, 0x7f,
+    0x54, 0xdb, 0xfc, 0x69, 0x82, 0xeb, 0x30, 0x34, 0x62, 0x2f, 0x87, 0x92, 0xcc, 0x31, 0xa2, 0xd3,
+    0x79, 0xa8, 0xc8, 0xc1, 0xae, 0x2e, 0x93, 0x58, 0x5f, 0x65, 0xf7, 0xab, 0x64, 0x32, 0xb3, 0x40,
+    0xf3, 0x3b, 0x01, 0x1a, 0x75, 0xfa, 0x0e, 0x57, 0xde, 0x48, 0x40, 0xc7, 0x92, 0x7d, 0x14, 0xe8};
+constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
+    0x09, 0x48, 0x29, 0x0f, 0xe3, 0x2a, 0xe6, 0x27, 0x33, 0xb1, 0x02, 0x84, 0x57, 0xbd, 0x8a, 0x4d,
+    0xd1, 0xab, 0x3b, 0xa4, 0x1a, 0x33, 0xdd, 0x53, 0x3a, 0x0f, 0x16, 0x82, 0xea, 0xa6, 0x32, 0x6b,
+    0xef, 0x2f, 0x67, 0xaa, 0x70, 0xd6, 0xae, 0xd9, 0xbe, 0x87, 0x1b, 0x4e, 0xb6, 0x4b, 0x66, 0x6e,
+    0xaa, 0xbb, 0x15, 0x24, 0xc1, 0xb0, 0x17, 0xd2, 0x47, 0xf0, 0x19, 0x27, 0xbd, 0xfb, 0xfa, 0x9f};
+
+uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
+std::atomic<uint32_t> g_shaBufferCount = 0;
+SHA512_CTX g_ctxTest;
+
+void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
+{
+    if (needCheckSHA) {
+        ++g_shaBufferCount;
+    }
+    if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
+        SHA512_Update(&g_ctxTest, addr, size);
+    }
+    if (NEED_DUMP) {
+        if (!outFile->is_open()) {
+            cout << "output data fail" << endl;
+            continue;
+        }
+        (void)outFile->write(addr + i, size);
+    }
 }
+}//namespace
+
 namespace OHOS {
 namespace MediaAVCodec {
 VEncCallbackTest::VEncCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
@@ -544,6 +579,10 @@ void VideoEncSample::PrepareInner()
         inFile_->open(inPath_, std::ios::in | std::ios::binary);
         ASSERT_TRUE(inFile_->is_open());
     }
+    if (needCheckSHA_) {
+        g_shaBufferCount = 0;
+        SHA512_Init(&g_ctxTest);
+    }
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
@@ -750,14 +789,18 @@ int32_t VideoEncSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
+    char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
+    int32_t size = attr.size;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
+                                     "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
-
     if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
-            outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+            outFile_->write(bufferAddr, size);
         } else {
             UNITTEST_INFO_LOG("output data fail");
         }
@@ -769,7 +812,13 @@ int32_t VideoEncSample::OutputLoopInnerExt()
         if (NEED_DUMP && outFile_->is_open()) {
             outFile_->close();
         }
-        cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
+        if (needCheckSHA_) {
+            (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
+            SHA512_Final(g_mdTest, &g_ctxTest);
+            OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
+            CheckSHA();
+        }
+        cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endokokl;
         cout << "Get EOS Frame, output func exit" << endl;
         unique_lock<mutex> lock(signal_->mutex_);
         EXPECT_LE(frameOutputCount_, frameInputCount_);
@@ -923,6 +972,32 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
         return ret;
     }
     return ret;
+}
+
+void VideoEncSample::CheckSHA()
+{
+    const uint8_t *sha = nullptr;
+    switch (testParam_) {
+        case VCodecTestParam::SW_AVC:
+        case VCodecTestParam::HW_AVC:
+            sha = SHA_AVC;
+            break;
+        case VCodecTestParam::HW_HEVC:
+            sha = SHA_HEVC;
+            break;
+        default:
+            return;
+    }
+    cout << std::hex << "========================================";
+    for (uint32_t i = 0; i < SHA512_DIGEST_LENGTH; ++i) {
+        if ((i % 8) == 0) { // 8: print width
+            cout << "\n";
+        }
+        cout << "0x" << setw(2) << setfill('0') << static_cast<int32_t>(g_mdTest[i]) << ","; // 2: append print zero
+        cout << "0x" << setw(2) << setfill('0') << static_cast<int32_t>(sha[i]) << ",";
+        ASSERT_EQ(g_mdTest[i], sha[i]) << "i: " << i;
+    }
+    cout << std::dec << "\n========================================\n";
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

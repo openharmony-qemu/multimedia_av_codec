@@ -654,6 +654,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Start_005, TestSize.Level1)
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
+
 /**
  * @tc.name: VideoEncoder_Start_Buffer_001
  * @tc.desc: correct flow 1
@@ -665,6 +666,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Start_Buffer_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
+   // #ifdef HMOS_TEST 
+    videoEnc_->needCheckSHA_ = true;
+   /* #else 
+    videoEnc_->needCheckSHA_ = false;
+    #endif */
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
