@@ -343,7 +343,6 @@ bool Downloader::BeginDownload()
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
-        client_->Close();
         client_->Open(url, httpHeader);
     }
 
