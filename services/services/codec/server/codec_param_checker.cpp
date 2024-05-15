@@ -449,7 +449,7 @@ int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecTyp
         if (ret == AVCS_ERR_CODEC_PARAM_INCORRECT) {
             result = AVCS_ERR_CODEC_PARAM_INCORRECT;
         }
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && ret == AVCS_ERR_CODEC_PARAM_INCORRECT,
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || ret == AVCS_ERR_CODEC_PARAM_INCORRECT,
             ret, "Param check failed");
     }
     return result;
