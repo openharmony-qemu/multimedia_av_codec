@@ -18,6 +18,7 @@
 
 #include <string>
 #include "plugin/plugin_base.h"
+#include "plugin/source_plugin.h"
 #include "download/downloader.h"
 
 namespace OHOS {
@@ -31,7 +32,7 @@ public:
     virtual void Close(bool isAsync) = 0;
     virtual void Pause() = 0;
     virtual void Resume() = 0;
-    virtual bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) = 0;
+    virtual bool Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, int32_t& realStreamId, bool& isEos) = 0;
     virtual bool SeekToPos(int64_t offset)
     {
         MEDIA_LOG_E("SeekToPos is unimplemented.");
@@ -75,6 +76,11 @@ public:
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
     }
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
+    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    {
+        MEDIA_LOG_W("GetStreamInfo is unimplemented.");
+        return Status::OK;
+    }
 };
 }
 }

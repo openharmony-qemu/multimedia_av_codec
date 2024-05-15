@@ -157,8 +157,8 @@ void HttpMediaDownloader::Resume()
     cvReadWrite_.NotifyOne();
 }
 
-bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
-                               unsigned int& realReadLength, bool& isEos)
+bool HttpMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength,
+                               unsigned int& realReadLength, int32_t& realStreamId, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
