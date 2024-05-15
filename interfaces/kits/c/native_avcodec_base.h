@@ -619,10 +619,6 @@ typedef enum OH_HEVCProfile {
     HEVC_PROFILE_MAIN_STILL = 2,
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
-    /** Hdr vivid profile.
-     * @since 12
-     */
-    HEVC_PROFILE_MAIN_10_HDR_VIVID = 5,
 } OH_HEVCProfile;
 
 /**
