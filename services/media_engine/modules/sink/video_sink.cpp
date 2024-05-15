@@ -167,7 +167,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
             diff = diff2 - PER_SINK_TIME_THRESHOLD;
         }
     }
-    MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 "us,diff:" PUBLIC_LOG_D64 "us,nowCt:" PUBLIC_LOG_D64,ct4Buffer,diff,nowCt);
+    MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 "diff:" PUBLIC_LOG_D64 "nowCt:" PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
         waitTimeUs = 0 - diff;
         MEDIA_LOG_W("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
