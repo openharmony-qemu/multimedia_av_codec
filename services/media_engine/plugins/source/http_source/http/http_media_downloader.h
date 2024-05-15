@@ -91,6 +91,8 @@ private:
     bool isDownloadFinish_ {false};
     int32_t avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
+    int64_t lastReportUsageTime_ {0};
+    uint64_t dataUsage_ {0};
 };
 }
 }
