@@ -236,6 +236,7 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
 int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)capData;
+    (void)codecType;
     double framerate;
     bool paramExist = format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
     PrintParam(paramExist, MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
