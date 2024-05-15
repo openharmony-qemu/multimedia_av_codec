@@ -36,6 +36,7 @@ constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int RECORD_TIME_INTERVAL = 3000;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
+constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -117,6 +118,8 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
         auto downloadTime = (nowTime - startDownloadTime_) / 1000;
         avgDownloadSpeed_ = totalBits_ / downloadTime;
         MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+        MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+            totalBits_, downloadTime * 1000);
     };
     MediaSouce mediaSouce;
     mediaSouce.url = url;
@@ -139,6 +142,8 @@ void HttpMediaDownloader::Close(bool isAsync)
         auto downloadTime = (nowTime - startDownloadTime_) / 1000;
         avgDownloadSpeed_ = totalBits_ / downloadTime;
         MEDIA_LOG_D("Download close, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+        MEDIA_LOG_D("Download close, Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+            totalBits_, downloadTime * 1000);
     }
 }
 
@@ -296,10 +301,13 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 void HttpMediaDownloader::OnWriteRingBuffer(uint32_t len)
 {
     if (startDownloadTime_ == 0) {
-        startDownloadTime_ = steadyClock_.ElapsedMilliseconds();
+        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+        startDownloadTime_ = nowTime;
+        lastReportUsageTime_ = nowTime;
     }
     uint32_t writeBits = len * 8;
     totalBits_ += writeBits;
+    dataUsage_ += writeBits;
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
         auto startPlayTime = steadyClock_.ElapsedMilliseconds();
         playDelayTime_ = startPlayTime - openTime_;
@@ -329,6 +337,12 @@ void HttpMediaDownloader::DownloadReportLoop()
             uint64_t remainingBuffer = buffer_->GetSize() * 8;
             MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
         }
+    }
+
+    if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
+        MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
+        dataUsage_ = 0;
+        lastReportUsageTime_ = now;
     }
 }
 
