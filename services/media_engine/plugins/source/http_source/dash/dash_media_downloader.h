@@ -26,6 +26,11 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+struct DashPreparedAction {
+    int64_t seekPosition_ {-1};
+    DashMpdBitrateParam preparedBitrateParam_;
+};
+
 class DashMediaDownloader : public MediaDownloader, public DashMpdCallback {
 public:
     DashMediaDownloader() noexcept;
@@ -62,7 +67,12 @@ private:
     void ReceiveMpdParseOkEvent();
     void VideoSegmentDownloadFinished(int streamId);
     void GetSegmentToDownload(int downloadStreamId, bool streamSwitchFlag);
+    bool SelectBitrateInternal(uint32_t bitrate);
+    void SeekInternal(int64_t seekTimeMs);
+    bool DoPreparedAction();
+    void ResetBitrateParam();
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloader(int32_t streamId);
+    std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type);
 
 private:
 
@@ -76,6 +86,7 @@ private:
     bool downloadErrorState_ {false};
     int64_t breakpoint_ {0};
     DashMpdBitrateParam bitrateParam_;
+    DashPreparedAction preparedAction_;
     std::mutex switchMutex_;
 };
 }

@@ -798,10 +798,10 @@ void DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr
             }
 
             totalDuration += mediaSegment->duration_;
-            MEDIA_LOG_I("Dash SeekToTs segment totalDuration:" PUBLIC_LOG_D64 ", segNum:" PUBLIC_LOG_D64 ", duration:" PUBLIC_LOG_U32,
-                        totalDuration, mediaSegment->numberSeq_, mediaSegment->duration_);
-            if (totalDuration >= seekTime) {
+            if (totalDuration > seekTime) {
                 seg = mediaSegment;
+                MEDIA_LOG_I("Dash SeekToTs segment totalDuration:" PUBLIC_LOG_D64 ", segNum:" PUBLIC_LOG_D64 ", duration:" PUBLIC_LOG_U32,
+                    totalDuration, mediaSegment->numberSeq_, mediaSegment->duration_);
                 return;
             }
         }
