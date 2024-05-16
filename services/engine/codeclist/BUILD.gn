@@ -28,6 +28,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$av_codec_root_dir/services/engine/codec/include/video/",
     "$av_codec_root_dir/services/engine/codec/video/fcodec",
     "$av_codec_root_dir/services/engine/common/include/",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
   ]
   defines = []
   if (av_codec_enable_special_codec) {
@@ -39,6 +40,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "codec_ability_singleton.cpp",
     "codeclist_builder.cpp",
     "codeclist_core.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
   ]
 
   deps = [
@@ -52,6 +54,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "media_foundation:media_foundation",
+    "drivers_interface_codec:libcodec_proxy_3.0",
   ]
 
   subsystem_name = "multimedia"

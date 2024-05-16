@@ -16,6 +16,7 @@
 #include "audio_codeclist_info.h"
 #include "avcodec_mime_type.h"
 #include "avcodec_codec_name.h"
+#include "hdi_codec.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -238,6 +239,62 @@ CapabilityData AudioCodeclistInfo::GetAmrwbEncoderCapability()
     audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAmrwbCapability;
 }
+
+CapabilityData AudioCodeclistInfo::GetLbvcDecoderCapability()
+{
+    CapabilityData audioLbvcCapability;
+
+    std::shared_ptr<Media::Plugins::Hdi::HdiCodec> hdiCodec_;
+    hdiCodec_ = std::make_shared<Media::Plugins::Hdi::HdiCodec>();
+    if (!hdiCodec_->IsSupportCodecType("OMX.audio.decoder.lbvc")) {
+        audioLbvcCapability.codecName = "";
+        audioLbvcCapability.mimeType = "";
+        audioLbvcCapability.maxInstance = 0;
+        audioLbvcCapability.codecType = AVCODEC_TYPE_NONE;
+        audioLbvcCapability.isVendor = false;
+        audioLbvcCapability.bitrate = Range(0, 0);
+        audioLbvcCapability.channels = Range(0, 0);
+        audioLbvcCapability.sampleRate = {0};
+        return audioLbvcCapability;
+    }
+    audioLbvcCapability.codecName = AVCodecCodecName::AUDIO_DECODER_LBVC_NAME;
+    audioLbvcCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioLbvcCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC;
+    audioLbvcCapability.isVendor = true;
+    audioLbvcCapability.bitrate = Range(MAX_BIT_RATE_LBVC, MAX_BIT_RATE_LBVC);
+    audioLbvcCapability.channels = Range(1, 1);
+    audioLbvcCapability.sampleRate = AUDIO_LBVC_SAMPLE_RATE;
+    audioLbvcCapability.maxInstance = 1;
+    return audioLbvcCapability;
+}
+
+CapabilityData AudioCodeclistInfo::GetLbvcEncoderCapability()
+{
+    CapabilityData audioLbvcCapability;
+
+    std::shared_ptr<Media::Plugins::Hdi::HdiCodec> hdiCodec_;
+    hdiCodec_ = std::make_shared<Media::Plugins::Hdi::HdiCodec>();
+    if (!hdiCodec_->IsSupportCodecType("OMX.audio.encoder.lbvc")) {
+        audioLbvcCapability.codecName = "";
+        audioLbvcCapability.mimeType = "";
+        audioLbvcCapability.maxInstance = 0;
+        audioLbvcCapability.codecType = AVCODEC_TYPE_NONE;
+        audioLbvcCapability.isVendor = false;
+        audioLbvcCapability.bitrate = Range(0, 0);
+        audioLbvcCapability.channels = Range(0, 0);
+        audioLbvcCapability.sampleRate = {0};
+        return audioLbvcCapability;
+    }
+    audioLbvcCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_LBVC_NAME;
+    audioLbvcCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioLbvcCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC;
+    audioLbvcCapability.isVendor = true;
+    audioLbvcCapability.bitrate = Range(MAX_BIT_RATE_LBVC, MAX_BIT_RATE_LBVC);
+    audioLbvcCapability.channels = Range(1, 1);
+    audioLbvcCapability.sampleRate = AUDIO_LBVC_SAMPLE_RATE;
+    audioLbvcCapability.maxInstance = 1;
+    return audioLbvcCapability;
+}
 #endif
 
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
@@ -311,44 +368,16 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
     return audioG711muEncoderCapability;
 }
 
-CapabilityData AudioCodeclistInfo::GetLbvcDecoderCapability()
-{
-    CapabilityData audioLbvcCapability;
-    audioLbvcCapability.codecName = AVCodecCodecName::AUDIO_DECODER_LBVC_NAME;
-    audioLbvcCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
-    audioLbvcCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC;
-    audioLbvcCapability.isVendor = true;
-    audioLbvcCapability.bitrate = Range(MAX_BIT_RATE_LBVC, MAX_BIT_RATE_LBVC);
-    audioLbvcCapability.channels = Range(1, 1);
-    audioLbvcCapability.sampleRate = AUDIO_LBVC_SAMPLE_RATE;
-    audioLbvcCapability.maxInstance = 1;
-    return audioLbvcCapability;
-}
-
-CapabilityData AudioCodeclistInfo::GetLbvcEncoderCapability()
-{
-    CapabilityData audioLbvcCapability;
-    audioLbvcCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_LBVC_NAME;
-    audioLbvcCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
-    audioLbvcCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_LBVC;
-    audioLbvcCapability.isVendor = true;
-    audioLbvcCapability.bitrate = Range(MAX_BIT_RATE_LBVC, MAX_BIT_RATE_LBVC);
-    audioLbvcCapability.channels = Range(1, 1);
-    audioLbvcCapability.sampleRate = AUDIO_LBVC_SAMPLE_RATE;
-    audioLbvcCapability.maxInstance = 1;
-    return audioLbvcCapability;
-}
-
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetOpusDecoderCapability(),  GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
                           GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(),  GetOpusEncoderCapability(),   GetG711muEncoderCapability(),
-                          GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetAPEDecoderCapability(),
-                          GetMP3EncoderCapability(),
+                          GetAPEDecoderCapability(),   GetMP3EncoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
-                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability()
+                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
+                          GetLbvcDecoderCapability(),  GetLbvcEncoderCapability(),
 #endif
     };
 }

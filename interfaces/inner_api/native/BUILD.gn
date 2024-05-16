@@ -130,6 +130,7 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/services/engine/codec/include/audio/",
     "$av_codec_root_dir/services/engine/common/include/",
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
   ]
 }
 
@@ -231,6 +232,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
       "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
+      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
     ]
   }
   if (av_codec_support_demuxer) {
@@ -290,6 +292,7 @@ ohos_shared_library("av_codec_client") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "samgr:samgr_proxy",
+    "drivers_interface_codec:libcodec_proxy_3.0",
   ]
 
   if (av_codec_support_drm) {
