@@ -188,10 +188,15 @@ public:
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     virtual void SetInterruptState(bool isInterruptNeeded) {}
 
 =======
 >>>>>>> fa713842 (提交source_plugin公共定义)
+=======
+    virtual void SetInterruptState(bool isInterruptNeeded) {}
+
+>>>>>>> b02fc0f2 (httpplugin支持dash播放编译失败)
     virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
     {
         return Status::OK;
