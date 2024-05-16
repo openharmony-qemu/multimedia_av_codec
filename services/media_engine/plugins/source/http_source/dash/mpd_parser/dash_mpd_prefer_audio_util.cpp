@@ -132,7 +132,10 @@ int32_t GetAudioRepresentationPreferScore(const PreferAudioFilter &filter, const
         matchScore += static_cast<int32_t>(PreferAudioWeight::VOLUME_ADJUST_WEIGHT);
     }
 
-    MEDIA_LOG_D("Audio representation [" PUBLIC_LOG_S "] prefer score is " PUBLIC_LOG_D32, representation->id_.c_str(), matchScore);
+    MEDIA_LOG_D("Audio representation ["
+    PUBLIC_LOG_S
+    "] prefer score is "
+    PUBLIC_LOG_D32, representation->id_.c_str(), matchScore);
     return matchScore;
 }
 } // namespace HttpPluginLite

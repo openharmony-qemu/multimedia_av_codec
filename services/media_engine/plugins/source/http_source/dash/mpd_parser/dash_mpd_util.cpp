@@ -57,29 +57,33 @@ void DashAppendBaseUrl(std::string &srcUrl, std::string baseUrl)
         srcUrl = baseUrl;
     } else {
         if (baseUrl.find('/') == 0) {
-            // absolute path, strip path in srcUrl
-            if (DashUrlIsAbsolute(srcUrl)) {
-                std::string urlSchem;
-                size_t urlSchemIndex = srcUrl.find("://");
-                if (urlSchemIndex != std::string::npos) {
-                    size_t urlSchemLength = strlen("://");
-                    urlSchem = srcUrl.substr(0, urlSchemIndex + urlSchemLength);
-                    srcUrl = srcUrl.substr(urlSchemIndex + urlSchemLength);
-                }
-
-                size_t urlPathIndex = srcUrl.find('/');
-                if (urlPathIndex != std::string::npos) {
-                    srcUrl = srcUrl.substr(0, urlPathIndex);
-                }
-
-                srcUrl = urlSchem.append(srcUrl).append(baseUrl);
-            } else {
-                srcUrl = baseUrl;
-            }
+            BuildSrcUrl(srcUrl, baseUrl);
         } else {
             // relative path
             srcUrl.append(baseUrl);
         }
+    }
+}
+
+void BuildSrcUrl(std::string &srcUrl, std::string &baseUrl)// absolute path, strip path in srcUrl
+{
+    if (DashUrlIsAbsolute(srcUrl)) {
+        std::string urlSchem;
+        size_t urlSchemIndex = srcUrl.find("://");
+        if (urlSchemIndex != std::string::npos) {
+            size_t urlSchemLength = strlen("://");
+            urlSchem = srcUrl.substr(0, urlSchemIndex + urlSchemLength);
+            srcUrl = srcUrl.substr(urlSchemIndex + urlSchemLength);
+        }
+
+        size_t urlPathIndex = srcUrl.find('/');
+        if (urlPathIndex != std::string::npos) {
+            srcUrl = srcUrl.substr(0, urlPathIndex);
+        }
+
+        srcUrl = urlSchem.append(srcUrl).append(baseUrl);
+    } else {
+        srcUrl = baseUrl;
     }
 }
 
@@ -116,9 +120,10 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, std::string segTmpltIde
             }
 
             segTmpltStr =
-                ReplaceSubStr(segTmpltStr, (uint32_t)pos, (uint32_t)(posEnd + identifierLength + 1), substitutionStr);
+                    ReplaceSubStr(segTmpltStr, (uint32_t) pos, (uint32_t) (posEnd + identifierLength + 1),
+                                  substitutionStr);
         } else if (str[0] == '$') {
-            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t)pos, identifierLength + 1, substitutionStr);
+            segTmpltStr = ReplaceSubStr(segTmpltStr, (uint32_t) pos, identifierLength + 1, substitutionStr);
         } else {
             // error format, should drop the representation
             return -1;
@@ -217,7 +222,12 @@ void DashParseRange(const std::string rangeStr, int64_t &startRange, int64_t &en
             std::string lastRange = rangeStr.substr(separatePosition + 1, rangeStr.length() - separatePosition - 1);
             endRange = atoll(lastRange.c_str());
         }
-        MEDIA_LOG_D("startRange=" PUBLIC_LOG_D64 ", endRange=" PUBLIC_LOG_D64 ", range=" PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
+        MEDIA_LOG_D("startRange="
+        PUBLIC_LOG_D64
+        ", endRange="
+        PUBLIC_LOG_D64
+        ", range="
+        PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
     }
 }
 

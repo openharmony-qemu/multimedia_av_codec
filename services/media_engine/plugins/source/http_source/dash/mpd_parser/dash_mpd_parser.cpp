@@ -14,7 +14,7 @@
  */
 #define HST_LOG_TAG "DashMpdParser"
 
-#include <time.h>
+#include <ctime>
 #include "common/log.h"
 #include "securec.h"
 #include "dash_mpd_parser.h"
@@ -25,7 +25,11 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
+namespace {
+    constexpr unsigned int DEFAULT_YEAR = 1900;
+    constexpr unsigned int DEFAULT_YEAR_LEN = 70;
+    constexpr unsigned int DEFAULT_DAY = 2;
+}
 
 DashMpdParser::~DashMpdParser()
 {
@@ -50,15 +54,15 @@ time_t DashMpdParser::String2Time(const std::string szTime)
        MEDIA_LOG_E("String2Time format error " PUBLIC_LOG_S, szTime.c_str());
     }
 
-    tm1.tm_year -= 1900;
+    tm1.tm_year -= DEFAULT_YEAR;
     tm1.tm_mon--;
     // day + 1 for as 1970/1/1 00:00:00.000 in windows(return -1) and mac(return -28800) return different
     tm1.tm_mday += 1;
 
     tm1.tm_isdst = -1;
 
-    tmBase.tm_mday = 2;
-    tmBase.tm_year = 70;
+    tmBase.tm_mday = DEFAULT_DAY;
+    tmBase.tm_year = DEFAULT_YEAR_LEN;
     tmBase.tm_isdst = -1;
 
     t1 = mktime(&tm1);
@@ -153,7 +157,8 @@ void DashMpdParser::GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *peri
     }
 }
 
-void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo)
+void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                     DashPeriodInfo *periodInfo)
 {
    DashList<std::shared_ptr<XmlElement>> adptSetElementList;
    std::shared_ptr<XmlElement> segBaseElement = nullptr;
@@ -220,7 +225,8 @@ void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::
     }
 }
 
-void DashMpdParser::ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo)
+void DashMpdParser::ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                       DashPeriodInfo *periodInfo)
 {
     DashAdptSetInfo *adptSetInfo = new DashAdptSetInfo;
     if (adptSetInfo != nullptr) {
@@ -306,7 +312,8 @@ void DashMpdParser::GetAdaptationSetAttr(IDashMpdNode *adptSetNode, DashAdptSetI
     }
 }
 
-void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser,
+                                            std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
                                             DashAdptSetInfo *adptSetInfo)
 {
     // parse element in AdaptationSet
@@ -400,7 +407,8 @@ void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser
     }
 }
 
-void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashList<DashSegUrl *> &segUrlList)
+void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                    DashList<DashSegUrl *> &segUrlList)
 {
     DashSegUrl *segUrl = new (std::nothrow) DashSegUrl;
     if (segUrl == nullptr) {
@@ -447,7 +455,8 @@ void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, 
     }
 }
 
-void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashSegBaseInfo **segBaseInfo)
+void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                     DashSegBaseInfo **segBaseInfo)
 {
     if (segBaseInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentBase segBaseInfo == nullptr");
@@ -504,7 +513,8 @@ void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::
     }
 }
 
-void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashSegListInfo **segListInfo)
+void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                     DashSegListInfo **segListInfo)
 {
     if (segListInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentList segListInfo == nullptr");
@@ -590,7 +600,8 @@ void DashMpdParser::InheritSegBase(DashSegBaseInfo *lowerSegBaseInfo, const Dash
     }
 }
 
-void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashSegTmpltInfo **segTmpltInfo)
+void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                         DashSegTmpltInfo **segTmpltInfo)
 {
     if (segTmpltInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentTemplate segTmpltInfo == nullptr");
@@ -653,7 +664,8 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
     }
 }
 
-void DashMpdParser::ParseRepresentation(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+void DashMpdParser::ParseRepresentation(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                        const DashPeriodInfo *periodInfo,
                                         DashAdptSetInfo *adptSetInfo)
 {
     DashRepresentationInfo *representationInfo = new (std::nothrow) DashRepresentationInfo;
@@ -848,7 +860,8 @@ void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,
     }
 }
 
-void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser,
+                                                   std::shared_ptr<XmlElement> rootElement,
                                                    DashList<DashDescriptor *> &propertyList)
 {
     DashDescriptor *channelProperty = new (std::nothrow) DashDescriptor;
@@ -912,7 +925,8 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
     }
 }
 
-void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, const std::string urlTypeName,
+void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                 const std::string urlTypeName,
                                  DashUrlType **urlTypeInfo)
 {
     if (urlTypeInfo == nullptr) {

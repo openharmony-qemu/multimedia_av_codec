@@ -51,8 +51,6 @@ void DashMediaDownloader::Close(bool isAsync)
     for (unsigned int index = 0; index < segmentDownloaders_.size(); index++) {
         segmentDownloaders_[index]->Close(isAsync, true);
     }
-    
-    //mpdDownloader_->Close();
 }
 
 void DashMediaDownloader::Pause()

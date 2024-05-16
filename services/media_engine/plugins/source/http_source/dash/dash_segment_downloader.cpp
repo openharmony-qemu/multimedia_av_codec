@@ -131,13 +131,13 @@ void DashSegmentDownloader::CloseRequest()
     }
 }
 
-DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t* buff, uint32_t wantReadLength, uint32_t& realReadLength, int32_t& realStreamId)
+DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_t wantReadLength,
+                                        uint32_t &realReadLength, int32_t &realStreamId)
 {
     if (buff == nullptr) {
         return DASH_READ_FAILED;
     }
 
-    //MEDIA_LOG_I("Read: wantReadLength " PUBLIC_LOG_D32 ", streamId: "  PUBLIC_LOG_D32, wantReadLength, streamId);
     DashReadRet ret = DASH_READ_OK;
     if ((downloadRequest_ != nullptr) && downloadRequest_->IsEos()) {
         ret = DASH_READ_SEGMENT_DOWNLOAD_FINISH;
@@ -501,7 +501,8 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
     return writeRet;
 }
 
-void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, std::string url)
+void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos,
+                                                     std::string url)
 {
     auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
                                      std::shared_ptr<DownloadRequest> &request) {

@@ -22,7 +22,16 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-#define BEM_FOURCC(a, b, c, d) ((d) | ((c) << 8) | ((b) << 16) | ((a) << 24))
+namespace {
+    constexpr unsigned int SHIFT_NUM_2 = 2;
+    constexpr unsigned int SHIFT_NUM_4 = 4;
+    constexpr unsigned int SHIFT_NUM_8 = 8;
+    constexpr unsigned int SHIFT_NUM_16 = 16;
+    constexpr unsigned int SHIFT_NUM_24 = 24;
+    constexpr unsigned int SHIFT_NUM_31 = 31;
+    constexpr unsigned int SHIFT_NUM_32 = 32;
+}
+#define BEM_FOURCC(a, b, c, d) ((d) | ((c) << SHIFT_NUM_8) | ((b) << SHIFT_NUM_16) | ((a) << SHIFT_NUM_24))
 
 static inline unsigned short Get2Bytes(char *buffer, uint32_t &currPos);
 static inline uint32_t Get4Bytes(char *buffer, uint32_t &currPos);
@@ -71,7 +80,7 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
             int64_t mediaSegOffset = firstOffset + sidxEndOffset + 1;
 
             // skip reserved
-            ForwardBytes(currPos, 2);
+            ForwardBytes(currPos, SHIFT_NUM_2);
 
             uint32_t referenceCount = Get2Bytes(bitStream, currPos);
             for (uint32_t i = 0; i < referenceCount; i++) {
@@ -93,8 +102,10 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
             }
             MEDIA_LOG_D("sidx box reference count " PUBLIC_LOG_U32, referenceCount);
         } else {
-            MEDIA_LOG_W("sdix box error box=(%c %c %c %c), typeSize=" PUBLIC_LOG_D32, (boxType >> 24) & 0x000000ff,
-                      (boxType >> 16) & 0x000000ff, (boxType >> 8) & 0x000000ff, boxType & 0x000000ff, currPos);
+            MEDIA_LOG_W("sdix box error box=(%c %c %c %c), typeSize="
+            PUBLIC_LOG_D32, (boxType >> SHIFT_NUM_24) & 0x000000ff,
+                    (boxType >> SHIFT_NUM_16) & 0x000000ff, (boxType >> SHIFT_NUM_8) & 0x000000ff, boxType &
+                                                                                                   0x000000ff, currPos);
             return -1;
         }
     }
@@ -105,32 +116,32 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
 unsigned short Get2Bytes(char *buffer, uint32_t &currPos)
 {
     unsigned char *tmpBuff = (unsigned char *)(buffer + currPos);
-    currPos += 2;
-    return (tmpBuff[0] << 8) | tmpBuff[1];
+    currPos += SHIFT_NUM_2;
+    return (tmpBuff[0] << SHIFT_NUM_8) | tmpBuff[1];
 }
 
 uint32_t Get4Bytes(char *buffer, uint32_t &currPos)
 {
     unsigned char *tmpBuff = (unsigned char *)(buffer + currPos);
-    currPos += 4;
-    return (tmpBuff[0] << 24) | (tmpBuff[1] << 16) | (tmpBuff[2] << 8) | tmpBuff[3];
+    currPos += SHIFT_NUM_4;
+    return (tmpBuff[0] << SHIFT_NUM_24) | (tmpBuff[1] << SHIFT_NUM_16) | (tmpBuff[2] << SHIFT_NUM_8) | tmpBuff[3];
 }
 
 int64_t Get8Bytes(char *buffer, uint32_t &currPos)
 {
     uint64_t tmp = Get4Bytes(buffer, currPos);
-    tmp = (tmp << 32) | Get4Bytes(buffer, currPos);
+    tmp = (tmp << SHIFT_NUM_32) | Get4Bytes(buffer, currPos);
     return static_cast<int64_t>(tmp);
 }
 
 uint32_t GetVersion(uint32_t vflag)
 {
-    return (vflag >> 24) & 0xff;
+    return (vflag >> SHIFT_NUM_24) & 0xff;
 }
 
 uint32_t GetReferenceType(uint32_t typeAndSize)
 {
-    return (typeAndSize >> 31) & 0xff;
+    return (typeAndSize >> SHIFT_NUM_31) & 0xff;
 }
 
 uint32_t GetReferenceSize(uint32_t typeAndSize)
