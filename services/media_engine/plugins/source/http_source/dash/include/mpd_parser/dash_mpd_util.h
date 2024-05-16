@@ -27,6 +27,7 @@ namespace HttpPlugin {
 bool DashUrlIsAbsolute(const std::string url);
 void DashAppendBaseUrl(std::string &srcUrl, DashList<std::string> baseUrlList);
 void DashAppendBaseUrl(std::string &srcUrl, std::string baseUrl);
+void BuildSrcUrl(std::string &srcUrl, std::string &baseUrl);
 
 /**
  * @brief    Replace SegmentTemplate Identifier By Substitute Parameter

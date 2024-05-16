@@ -14,7 +14,7 @@
  */
 
 #include "utils/time_utils.h"
-#include <time.h>
+#include <ctime>
 
 namespace OHOS {
 namespace Media {

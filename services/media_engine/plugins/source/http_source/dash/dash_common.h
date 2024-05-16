@@ -23,8 +23,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-static constexpr const char *const DRM_URN_UUID_PREFIX = "urn:uuid:";
+constexpr const char *const DRM_URN_UUID_PREFIX = "urn:uuid:";
 
 using DashSegmentInitValue = enum DashSegmentInitValue {
     DASH_SEGMENT_INIT_FAILED = -1,
@@ -61,6 +60,22 @@ struct DashSegment {
         endRangeValue_ = srcSegment.endRangeValue_;
         url_ = srcSegment.url_;
         byteRange_ = srcSegment.byteRange_;
+    }
+
+    DashSegment& operator=(const DashSegment& srcSegment)
+    {
+        if (this != &srcSegment) {
+            streamId_ = srcSegment.streamId_;
+            duration_ = srcSegment.duration_;
+            bandwidth_ = srcSegment.bandwidth_;
+            startNumberSeq_ = srcSegment.startNumberSeq_;
+            numberSeq_ = srcSegment.numberSeq_;
+            startRangeValue_ = srcSegment.startRangeValue_;
+            endRangeValue_ = srcSegment.endRangeValue_;
+            url_ = srcSegment.url_;
+            byteRange_ = srcSegment.byteRange_;
+        }
+        return *this;
     }
 
     int32_t streamId_;
@@ -136,6 +151,27 @@ struct DashStreamDescription {
         inUse_ = desc.inUse_;
         isHdr_ = desc.isHdr_;
         currentNumberSeq_ = desc.currentNumberSeq_;
+    }
+
+    DashStreamDescription& operator=(const DashStreamDescription& desc)
+    {
+        if (this != &desc) {
+            streamId_ = desc.streamId_;
+            periodIndex_ = desc.periodIndex_;
+            adptSetIndex_ = desc.adptSetIndex_;
+            representationIndex_ = desc.representationIndex_;
+            duration_ = desc.duration_;
+            width_ = desc.width_;
+            height_ = desc.height_;
+            bandwidth_ = desc.bandwidth_;
+            startNumberSeq_ = desc.startNumberSeq_;
+            type_ = desc.type_;
+            segsState_ = desc.segsState_;
+            inUse_ = desc.inUse_;
+            isHdr_ = desc.isHdr_;
+            currentNumberSeq_ = desc.currentNumberSeq_;
+        }
+        return *this;
     }
 
     DashSegsState segsState_ = DASH_SEGS_STATE_NONE;

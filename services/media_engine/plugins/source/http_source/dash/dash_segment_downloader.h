@@ -113,7 +113,8 @@ public:
     void Pause();
     void Resume();
     void CloseRequest();
-    DashReadRet Read(int32_t streamId, uint8_t* buff, uint32_t wantReadLength, uint32_t& realReadLength, int32_t& realStreamId);
+    DashReadRet Read(int32_t streamId, uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
+                     int32_t &realStreamId);
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);

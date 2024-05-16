@@ -248,18 +248,18 @@ void DashPeriodManager::GetBaseUrlList(std::list<std::string> &baseUrlList)
 void DashPeriodManager::GetAdptSetsByStreamType(DashVector<DashAdptSetInfo *> &adptSetInfo, MediaAVCodec::MediaType streamType)
 {
     switch (streamType) {
-    case MediaAVCodec::MediaType::MEDIA_TYPE_VID:
-        adptSetInfo = videoAdptSetsVector_;
-        break;
-    case MediaAVCodec::MediaType::MEDIA_TYPE_AUD:
-        adptSetInfo = audioAdptSetsVector_;
-        break;
-    case MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE:
-        adptSetInfo = subtitleAdptSetsVector_;
-        break;
-    default:
-        adptSetInfo = videoAdptSetsVector_;
-        break;
+        case MediaAVCodec::MediaType::MEDIA_TYPE_VID:
+            adptSetInfo = videoAdptSetsVector_;
+            break;
+        case MediaAVCodec::MediaType::MEDIA_TYPE_AUD:
+            adptSetInfo = audioAdptSetsVector_;
+            break;
+        case MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE:
+            adptSetInfo = subtitleAdptSetsVector_;
+            break;
+        default:
+            adptSetInfo = videoAdptSetsVector_;
+            break;
     }
 }
 

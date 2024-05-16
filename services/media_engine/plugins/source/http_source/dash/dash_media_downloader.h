@@ -39,7 +39,6 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    //bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
     bool Read(int32_t streamId, unsigned char *buff, unsigned int wantReadLength, unsigned int &realReadLength,
               int32_t &realStreamId, bool &isEos) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
@@ -55,7 +54,6 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void SetDownloadErrorState() override;
-    //void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;
