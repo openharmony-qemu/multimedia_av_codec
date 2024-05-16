@@ -163,6 +163,15 @@ Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vecto
     return Status::OK;
 }
 
+Status MediaDemuxer::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+{
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("GetDownloadInfo failed, source_ is null");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
+}
+
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
 {
     MEDIA_LOG_I("SetDrmCallback called");

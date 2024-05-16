@@ -30,12 +30,11 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByMime(const std
 {
     std::shared_ptr<AVCodecVideoDecoder> impl = nullptr;
     Format format;
-
+    
     int32_t ret = CreateByMime(mime, format, impl);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
         "AVCodec video decoder impl init failed, %{public}s",
         AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
-
     return impl;
 }
 

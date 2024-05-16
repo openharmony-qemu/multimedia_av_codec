@@ -28,11 +28,14 @@
 #include "meta/meta_key.h"
 #include "meta/meta.h"
 #include "video_decoder_adapter.h"
+#include "avcodec_sysevent.h"
 
 namespace OHOS {
 namespace Media {
 using namespace MediaAVCodec;
 const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
+//Threshold for frame lag detection, set to 100 milliseconds.
+const int64_t LAG_LIMIT_TIME = 100;
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
@@ -115,6 +118,7 @@ Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType
 
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     mediaCodecName_ = name;
+    currentTime_ = -1;
     return Status::OK;
 }
 
@@ -140,6 +144,17 @@ Status VideoDecoderAdapter::Start()
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     int32_t ret = mediaCodec_->Start();
+    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        std::string instanceId = std::to_string(instanceId_);
+        struct VideoCodecFaultInfo videoCodecFaultInfo;
+        videoCodecFaultInfo.appName = bundleName_;
+        videoCodecFaultInfo.instanceId = instanceId;
+        videoCodecFaultInfo.callerType = "player_framework";
+        videoCodecFaultInfo.videoCodec = mediaCodecName_;
+        videoCodecFaultInfo.errMsg = "mediaCodec_ start failed";
+        FaultVideoCodecEventWrite(videoCodecFaultInfo);
+    }
+    currentTime_ = GetCurrentMillisecond();
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
@@ -149,6 +164,7 @@ Status VideoDecoderAdapter::Stop()
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(isConfigured_, Status::ERROR_INVALID_STATE, "mediaCodec_ is not configured");
     mediaCodec_->Stop();
+    currentTime_ = -1;
     return Status::OK;
 }
 
@@ -192,6 +208,11 @@ Status VideoDecoderAdapter::Release()
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Release();
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE; 
+}
+
+void VideoDecoderAdapter::ResetRenderTime()
+{
+    currentTime_ = -1;
 }
 
 int32_t VideoDecoderAdapter::SetCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback)
@@ -321,8 +342,38 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
 
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 {
+    MEDIA_LOG_I("VideoDecoderAdapter::ReleaseOutputBuffer");
     mediaCodec_->ReleaseOutputBuffer(index, render);
+    if (render && currentTime_ != -1) {
+        int64_t currentTime = GetCurrentMillisecond();
+        int64_t diffTime = currentTime - currentTime_;
+        if (diffTime > LAG_LIMIT_TIME) {
+            lagTimes_++;
+            maxLagDuration_ = maxLagDuration_ > diffTime ? maxLagDuration_ : diffTime;
+            totalLagDuration_ += diffTime;
+        }
+        currentTime_ = currentTime;
+    }
     return 0;
+}
+
+Status VideoDecoderAdapter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
+{
+    lagTimes = lagTimes_;
+    maxLagDuration = static_cast<int32_t>(maxLagDuration_);
+    if (lagTimes_ != 0) {
+        avgLagDuration = static_cast<int32_t>(totalLagDuration_ / lagTimes_);
+    } else {
+        avgLagDuration = 0;
+    }
+    return Status::OK;
+}
+
+int64_t VideoDecoderAdapter::GetCurrentMillisecond()
+{
+    std::chrono::system_clock::duration duration = std::chrono::system_clock::now().time_since_epoch();
+    int64_t time = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    return time;
 }
 
 int32_t VideoDecoderAdapter::SetOutputSurface(sptr<Surface> videoSurface)
@@ -349,11 +400,12 @@ void VideoDecoderAdapter::SetEventReceiver(const std::shared_ptr<Pipeline::Event
     eventReceiver_ = receiver;
 }
 
-void VideoDecoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName)
+void VideoDecoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId)
 {
     appUid_ = appUid;
     appPid_ = appPid;
     bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 
 void VideoDecoderAdapter::OnDumpInfo(int32_t fd)

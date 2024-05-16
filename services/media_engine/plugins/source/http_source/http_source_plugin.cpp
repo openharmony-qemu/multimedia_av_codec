@@ -309,6 +309,16 @@ Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
     return Status::ERROR_UNKNOWN;
 }
 
+Status HttpSourcePlugin::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+{
+    MEDIA_LOG_I("HttpSourcePlugin::GetDownloadInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    auto downloadInfo = downloader_->GetDownloadInfo();
+    avgDownloadRate = downloadInfo.first;
+    avgDownloadSpeed = downloadInfo.second;
+    return Status::OK;
+}
+
 void HttpSourcePlugin::SetDemuxerState()
 {
     downloader_->SetDemuxerState();

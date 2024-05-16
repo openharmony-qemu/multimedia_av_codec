@@ -192,6 +192,16 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
     }
 }
 
+Status Source::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+{
+    MEDIA_LOG_I("GetDownloadInfo");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetDownloadInfo failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
+}
+
 bool Source::IsNeedPreDownload()
 {
     if (plugin_ == nullptr) {
