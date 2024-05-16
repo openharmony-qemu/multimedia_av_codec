@@ -64,18 +64,9 @@ ohos_shared_library("media_plugin_HttpSource") {
 
   sources = [
     "base64/base64_utils.cpp",
-    "xml/xml_element.cpp",
-    "xml/xml_parser.cpp",
-    "download/downloader.cpp",
-    "download/http_curl_client.cpp",
-    "hls/hls_media_downloader.cpp",
-    "hls/hls_playlist_downloader.cpp",
-    "hls/hls_tags.cpp",
-    "hls/m3u8.cpp",
-    "hls/playlist_downloader.cpp",
-    "http/http_media_downloader.cpp",
-    "http_source_plugin.cpp",
-    "monitor/download_monitor.cpp",
+    "dash/dash_media_downloader.cpp",
+    "dash/dash_mpd_downloader.cpp",
+    "dash/dash_segment_downloader.cpp",
     "dash/mpd_parser/dash_adpt_set_manager.cpp",
     "dash/mpd_parser/dash_adpt_set_node.cpp",
     "dash/mpd_parser/dash_com_attrs_elements.cpp",
@@ -101,9 +92,19 @@ ohos_shared_library("media_plugin_HttpSource") {
     "dash/mpd_parser/i_dash_mpd_node.cpp",
     "dash/mpd_parser/sidx_box_parser.cpp",
     "dash/utils/time_utils.cpp",
-    "dash/dash_segment_downloader.cpp",
-    "dash/dash_media_downloader.cpp",
-    "dash/dash_mpd_downloader.cpp",
+    "dash/utils/url_utils.cpp",
+    "download/downloader.cpp",
+    "download/http_curl_client.cpp",
+    "hls/hls_media_downloader.cpp",
+    "hls/hls_playlist_downloader.cpp",
+    "hls/hls_tags.cpp",
+    "hls/m3u8.cpp",
+    "hls/playlist_downloader.cpp",
+    "http/http_media_downloader.cpp",
+    "http_source_plugin.cpp",
+    "monitor/download_monitor.cpp",
+    "xml/xml_element.cpp",
+    "xml/xml_parser.cpp",
   ]
 
   deps = [
@@ -118,10 +119,10 @@ ohos_shared_library("media_plugin_HttpSource") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
-    "libxml2:libxml2",
   ]
 
   relative_install_dir = "media/media_plugins"
