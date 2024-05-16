@@ -520,6 +520,7 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer)
 {
     videoDecoder_->ReleaseOutputBuffer(index, render);
+    videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
