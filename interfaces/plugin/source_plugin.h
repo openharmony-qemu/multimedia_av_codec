@@ -187,8 +187,11 @@ public:
         return Status::OK;
     }
 
+<<<<<<< HEAD
     virtual void SetInterruptState(bool isInterruptNeeded) {}
 
+=======
+>>>>>>> fa713842 (提交source_plugin公共定义)
     virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
     {
         return Status::OK;
