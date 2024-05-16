@@ -1085,6 +1085,13 @@ void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, st
         return;
     }
 
+    GetStreamDescriptions(periodBaseUrl, streamDesc, adptSetBaseUrl, repList);
+}
+
+void DashMpdDownloader::GetStreamDescriptions(std::string &periodBaseUrl, DashStreamDescription &streamDesc,
+                                              std::string &adptSetBaseUrl,
+                                              std::list<DashRepresentationInfo *> &repList)
+{
     std::string repBaseUrl;
     unsigned int repIndex = 0;
     for (std::list<DashRepresentationInfo*>::iterator it = repList.begin(); it != repList.end(); it++, repIndex++) {
@@ -1784,7 +1791,7 @@ bool DashMpdDownloader::GetInitSegFromPeriod(std::string periodBaseUrl, std::str
 {
     int segTmpltFlag = 0;
     DashUrlType *initSegment = periodManager_->GetInitSegment(
-            segTmpltFlag); // should SetPeriodInfo before GetInitSegment
+        segTmpltFlag); // should SetPeriodInfo before GetInitSegment
     if (initSegment != nullptr) {
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
@@ -1804,7 +1811,7 @@ bool DashMpdDownloader::GetInitSegFromAdptSet(std::string adptSetBaseUrl, std::s
 {
     int segTmpltFlag = 0;
     DashUrlType *initSegment = adptSetManager_->GetInitSegment(
-            segTmpltFlag); // should SetAdptSetInfo before GetInitSegment
+        segTmpltFlag); // should SetAdptSetInfo before GetInitSegment
     if (initSegment != nullptr) {
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);

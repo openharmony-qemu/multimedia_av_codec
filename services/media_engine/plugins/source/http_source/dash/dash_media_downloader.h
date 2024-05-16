@@ -72,6 +72,8 @@ private:
     void ResetBitrateParam();
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloader(int32_t streamId);
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type);
+    void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
+                                                            const std::shared_ptr<DashSegment> &seg);
 
 private:
 

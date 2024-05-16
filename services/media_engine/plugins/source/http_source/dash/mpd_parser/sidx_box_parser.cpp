@@ -61,49 +61,8 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
         uint32_t boxType = Get4Bytes(bitStream, currPos);
         if (boxType == BEM_SIDX) {
             MEDIA_LOG_D("it is a sidx box");
-            uint32_t vFlag = Get4Bytes(bitStream, currPos);
-            uint32_t version = GetVersion(vFlag);
-
-            Get4Bytes(bitStream, currPos);
-            uint32_t timescale = Get4Bytes(bitStream, currPos);
-
-            int64_t firstOffset;
-
-            if (version == 0) {
-                // 先跳过earliestPresentationTime
-                Get4Bytes(bitStream, currPos);
-                firstOffset = Get4Bytes(bitStream, currPos);
-            } else {
-                // 先跳过earliestPresentationTime
-                Get8Bytes(bitStream, currPos);
-                firstOffset = Get8Bytes(bitStream, currPos);
-            }
-
-            // In the file containing the Segment Index box, the anchor point for a Segment Index box is the first byte
-            // after that box
-            int64_t mediaSegOffset = firstOffset + sidxEndOffset + 1;
-
-            // skip reserved
-            ForwardBytes(currPos, SHIFT_NUM_2);
-
-            uint32_t referenceCount = Get2Bytes(bitStream, currPos);
-            for (uint32_t i = 0; i < referenceCount; i++) {
-                SubSegmentIndex *subSegIndex = new (std::nothrow) SubSegmentIndex();
-                if (subSegIndex == nullptr) {
-                    break;
-                }
-
-                uint32_t typeAndSize = Get4Bytes(bitStream, currPos);
-                subSegIndex->referenceType_ = static_cast<int32_t>(GetReferenceType(typeAndSize));
-                subSegIndex->referencedSize_ = static_cast<int32_t>(GetReferenceSize(typeAndSize));
-                subSegIndex->startPos_ = mediaSegOffset;
-                subSegIndex->endPos_ = mediaSegOffset + subSegIndex->referencedSize_ - 1;
-                mediaSegOffset = subSegIndex->endPos_ + 1;
-                subSegIndex->duration_ = Get4Bytes(bitStream, currPos);
-                subSegIndex->timeScale_ = timescale;
-                Get4Bytes(bitStream, currPos); // uint32_t sapInfo
-                subSegIndexTable.push_back(std::shared_ptr<SubSegmentIndex>(subSegIndex));
-            }
+            uint32_t referenceCount;
+            BuildSubSegmentIndexes(bitStream, sidxEndOffset, subSegIndexTable, currPos, referenceCount);
             MEDIA_LOG_D("sidx box reference count " PUBLIC_LOG_U32, referenceCount);
         } else {
             MEDIA_LOG_W("sdix box error box=(%c %c %c %c), typeSize="
@@ -115,6 +74,54 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
     }
 
     return 0;
+}
+
+void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffset,
+                                           DashList <std::shared_ptr<SubSegmentIndex>> &subSegIndexTable,
+                                           uint32_t &currPos, uint32_t &referenceCount)
+{
+    referenceCount= Get2Bytes(bitStream, currPos);
+    uint32_t vFlag = Get4Bytes(bitStream, currPos);
+    uint32_t version = GetVersion(vFlag);
+
+    Get4Bytes(bitStream, currPos);
+    uint32_t timescale = Get4Bytes(bitStream, currPos);
+
+    int64_t firstOffset;
+
+    if (version == 0) {
+        // 先跳过earliestPresentationTime
+        Get4Bytes(bitStream, currPos);
+        firstOffset = Get4Bytes(bitStream, currPos);
+    } else {
+        // 先跳过earliestPresentationTime
+        Get8Bytes(bitStream, currPos);
+        firstOffset = Get8Bytes(bitStream, currPos);
+    }
+
+    // In the file containing the Segment Index box, the anchor point for a Segment Index box is the first byte
+    // after that box
+    int64_t mediaSegOffset = firstOffset + sidxEndOffset + 1;
+
+    // skip reserved
+    ForwardBytes(currPos, SHIFT_NUM_2);
+    for (uint32_t i = 0; i < referenceCount; i++) {
+        SubSegmentIndex *subSegIndex = new (std::nothrow) SubSegmentIndex();
+        if (subSegIndex == nullptr) {
+            break;
+        }
+
+        uint32_t typeAndSize = Get4Bytes(bitStream, currPos);
+        subSegIndex->referenceType_ = static_cast<int32_t>(GetReferenceType(typeAndSize));
+        subSegIndex->referencedSize_ = static_cast<int32_t>(GetReferenceSize(typeAndSize));
+        subSegIndex->startPos_ = mediaSegOffset;
+        subSegIndex->endPos_ = mediaSegOffset + subSegIndex->referencedSize_ - 1;
+        mediaSegOffset = subSegIndex->endPos_ + 1;
+        subSegIndex->duration_ = Get4Bytes(bitStream, currPos);
+        subSegIndex->timeScale_ = timescale;
+        Get4Bytes(bitStream, currPos); // uint32_t sapInfo
+        subSegIndexTable.push_back(std::shared_ptr<SubSegmentIndex>(subSegIndex));
+    }
 }
 
 unsigned short Get2Bytes(char *buffer, uint32_t &currPos)

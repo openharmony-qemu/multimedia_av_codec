@@ -189,6 +189,9 @@ private:
     void GetDrmInfos(const std::string &periodId, DashList<DashDescriptor *> &contentProtections,
                      std::vector<DashDrmInfo> &drmInfoList);
     void BuildDashSegment(std::list<std::shared_ptr<SubSegmentIndex>> &subSegIndexList) const;
+    void GetStreamDescriptions(std::string &periodBaseUrl, DashStreamDescription &streamDesc,
+                               std::string &adptSetBaseUrl,
+                               std::list<DashRepresentationInfo *> &repList);
 
 private:
     std::string url_ {};

@@ -326,31 +326,37 @@ void DashMediaDownloader::ReceiveMpdStreamInitEvent()
                 continue;
             }
 
-            std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
-                    streamDesc->streamId_, streamDesc->type_);
-            if (downloader != nullptr) {
-                if (statusCallback_ != nullptr) {
-                    downloader->SetStatusCallback(statusCallback_);
-                }
-                auto doneCallback = [this] (int streamId) {
-                    UpdateDownloadFinished(streamId);
-                };
-                downloader->SetDownloadDoneCallback(doneCallback);
-                segmentDownloaders_.push_back(downloader);
-                std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
-                        streamDesc->streamId_);
-                if (initSeg != nullptr) {
-                    downloader->SetInitSegment(initSeg);
-                }
-                downloader->Open(seg);
-                MEDIA_LOG_I("dash first get segment in streamId "
-                PUBLIC_LOG_D32
-                ", type "
-                PUBLIC_LOG_D32
-                ", url:"
-                PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->type_, seg->url_.c_str());
-            }
+            OpenInitSegment(streamDesc, seg);
         }
+    }
+}
+
+void DashMediaDownloader::OpenInitSegment(
+        const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
+{
+    std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
+            streamDesc->streamId_, streamDesc->type_);
+    if (downloader != nullptr) {
+        if (statusCallback_ != nullptr) {
+            downloader->SetStatusCallback(statusCallback_);
+        }
+        auto doneCallback = [this] (int streamId) {
+            UpdateDownloadFinished(streamId);
+        };
+        downloader->SetDownloadDoneCallback(doneCallback);
+        segmentDownloaders_.push_back(downloader);
+        std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
+            streamDesc->streamId_);
+        if (initSeg != nullptr) {
+            downloader->SetInitSegment(initSeg);
+        }
+        downloader->Open(seg);
+        MEDIA_LOG_I("dash first get segment in streamId "
+        PUBLIC_LOG_D32
+        ", type "
+        PUBLIC_LOG_D32
+        ", url:"
+        PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->type_, seg->url_.c_str());
     }
 }
 
@@ -548,7 +554,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
         ", duration:"
         PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
         std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
-                segmentDownloader->GetStreamId());
+            segmentDownloader->GetStreamId());
         if (!isSwitching && segmentDownloader->SeekToTime(segment)) {
             MEDIA_LOG_I("Dash SeekToTs of buffered streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
                         segmentDownloader->GetStreamId(), segmentDownloader->GetStreamType());
