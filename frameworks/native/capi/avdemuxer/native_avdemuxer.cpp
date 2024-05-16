@@ -80,7 +80,12 @@ struct DemuxerObject : public OH_AVDemuxer {
 class NativeDemuxerCallback : public AVDemuxerCallback {
 public:
     explicit NativeDemuxerCallback(OH_AVDemuxer *demuxer,
-        DRM_MediaKeySystemInfoCallback cb) : demuxer_(demuxer), callback_(cb)
+        DRM_MediaKeySystemInfoCallback cb) : demuxer_(demuxer), callback_(cb), callbackObj_(nullptr)
+    {
+    }
+
+    explicit NativeDemuxerCallback(OH_AVDemuxer *demuxer,
+        Demuxer_MediaKeySystemInfoCallback cbObj) : demuxer_(demuxer), callback_(nullptr), callbackObj_(cbObj)
     {
     }
 
@@ -96,14 +101,20 @@ public:
         int32_t ret = NativeDrmTools::ProcessApplicationDrmInfo(&info, drmInfo);
         CHECK_AND_RETURN_LOG(ret == AV_ERR_OK, "ProcessApplicationDrmInfo failed");
 
-        CHECK_AND_RETURN_LOG(callback_ != nullptr, "DrmInfoChanged Callback is nullptr");
-        callback_(&info);
+        CHECK_AND_RETURN_LOG(callback_ != nullptr || callbackObj_ != nullptr, "hasn't register any drm callback!");
+        if (callback_ != nullptr) {
+            callback_(&info);
+        }
+        if (callbackObj_ != nullptr) {
+            callbackObj_(demuxer_, &info);
+        }
     }
 
 private:
     std::shared_mutex mutex_;
     struct OH_AVDemuxer *demuxer_;
     DRM_MediaKeySystemInfoCallback callback_;
+    Demuxer_MediaKeySystemInfoCallback callbackObj_;
 };
 
 struct OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source)
@@ -242,6 +253,23 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
 
 OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
     DRM_MediaKeySystemInfoCallback callback)
+{
+    CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
+
+    struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
+    CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL,
+        "New DemuxerObject failed when set callback!");
+
+    demuxerObj->callback_ = std::make_shared<NativeDemuxerCallback>(demuxer, callback);
+    int32_t ret = demuxerObj->demuxer_->SetCallback(demuxerObj->callback_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        "demuxer_ set callback failed!");
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
+    Demuxer_MediaKeySystemInfoCallback callback)
 {
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
