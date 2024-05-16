@@ -37,6 +37,7 @@ namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBase, protected StateMachine {
 public:
     static std::shared_ptr<HCodec> Create(const std::string &name);
+    int32_t Init(Media::Meta &callerInfo) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     sptr<Surface> CreateInputSurface() override;
@@ -176,7 +177,7 @@ protected:
     virtual void UpdateColorAspects() {}
     void PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t SetFrameRateAdaptiveMode(const Format &format);
-    int32_t SetProcessName(const Format &format);
+    int32_t SetProcessName();
     int32_t SetLowLatency(const Format &format);
 
     virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) { return AVCS_ERR_UNSUPPORT; }
@@ -188,6 +189,7 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
+    virtual void SetCallerToBuffer(bool isInput) {}
     virtual void UpdateFormatFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
@@ -305,6 +307,11 @@ protected:
     uint32_t componentId_ = 0;
     std::string componentName_;
     std::string compUniqueStr_;
+    struct CallerInfo {
+        int32_t pid = -1;
+        std::string processName;
+    } playerCaller_, avcodecCaller_;
+    bool calledByAvcodec_ = true;
     bool debugMode_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
     sptr<OHOS::HDI::Codec::V3_0::ICodecCallback> compCb_ = nullptr;
@@ -371,7 +378,7 @@ private:
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
-        int32_t OnAllocateComponent(const std::string &name);
+        int32_t OnAllocateComponent();
         void OnShutDown(const MsgInfo &info) override;
     };
 
@@ -468,7 +475,7 @@ private:
 private:
     int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper);
     int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply);
-    int32_t InitWithName(const std::string &name);
+    void PrintCaller();
     void ReleaseComponent();
     void CleanUpOmxNode();
     void ChangeOmxToTargetState(OHOS::HDI::Codec::V3_0::CodecStateType &state,

@@ -158,9 +158,7 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::INIT: {
-            string name;
-            (void)info.param->GetValue("name", name);
-            int32_t err = OnAllocateComponent(name);
+            int32_t err = OnAllocateComponent();
             ReplyErrorCode(info.id, err);
             if (err == AVCS_ERR_OK) {
                 codec_->ChangeStateTo(codec_->initializedState_);
@@ -182,17 +180,17 @@ static bool IsSecureMode(const string &name)
     return (name.rfind(prefix) == (name.length() - prefix.length()));
 }
 
-int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
+int32_t HCodec::UninitializedState::OnAllocateComponent()
 {
-    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + name);
-    codec_->isSecure_ = IsSecureMode(name);
+    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + codec_->componentName_);
+    codec_->isSecure_ = IsSecureMode(codec_->componentName_);
     codec_->compMgr_ = GetManager();
     if (codec_->compMgr_ == nullptr) {
         SLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
     }
     codec_->compCb_ = new HdiCallback(codec_);
-    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, name,
+    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, codec_->componentName_,
                                                     0, codec_->compCb_);
     if (ret != HDF_SUCCESS || codec_->compNode_ == nullptr) {
         codec_->compCb_ = nullptr;
@@ -200,9 +198,9 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
         SLOGE("CreateComponent failed, ret=%d", ret);
         return AVCS_ERR_UNKNOWN;
     }
-    codec_->componentName_ = name;
     codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + codec_->shortName_ + "]";
-    SLOGI("create omx node %s succ", name.c_str());
+    SLOGI("create omx node %s succ", codec_->componentName_.c_str());
+    codec_->PrintCaller();
     return AVCS_ERR_OK;
 }
 
