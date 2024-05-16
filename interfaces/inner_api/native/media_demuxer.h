@@ -44,8 +44,7 @@ namespace {
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class BaseStreamDemuxer;
-class DataPacker;
-class TypeFinder;
+class DemuxerPluginManager;
 class Source;
 
 class AVBufferQueueProducer;
@@ -78,7 +77,11 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
+<<<<<<< HEAD
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+=======
+
+>>>>>>> 471a48d1 (add1)
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -88,7 +91,10 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
+<<<<<<< HEAD
     void SetDumpInfo(bool isDump, uint64_t instanceId);
+=======
+>>>>>>> 471a48d1 (add1)
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
@@ -96,11 +102,7 @@ public:
     Status SetFrameRate(double frameRate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
-
-    bool IsLocalDrmInfosExisted();
 private:
-    class DataSourceImpl;
-
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
@@ -110,15 +112,11 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    bool CreatePlugin(std::string pluginName);
-    bool InitPlugin(std::string pluginName);
-
     void ReportIsLiveStreamEvent();
-    void MediaTypeFound(std::string pluginName);
-    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
+    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId, std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
-    void HandleFrame(const AVBuffer& bufferPtr, uint32_t trackId);
+    Status AddDemuxerCopyTask(int32_t trackId, TaskType type);
 
     Status StopTask(uint32_t trackId);
     Status StopAllTask();
@@ -139,9 +137,6 @@ private:
     std::string uri_;
     uint64_t mediaDataSize_;
 
-    std::string pluginName_;
-    std::shared_ptr<Plugins::DemuxerPlugin> plugin_;
-    std::shared_ptr<DataSourceImpl> dataSource_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<Source> source_;
     MediaMetaData mediaMetaData_;
@@ -191,6 +186,8 @@ private:
 
     bool isDump_ = false;
     std::string dumpPrefix_ = "";
+	std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
+    std::atomic<bool> isSelectBitRate_ = false;
 };
 } // namespace Media
 } // namespace OHOS
