@@ -198,6 +198,10 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         }
 
         if (!info.uri.empty()) {
+            if (!isFirstFragmentReady_) {
+                firstFragment_ = info;
+                isFirstFragmentReady_ = true;
+            }
             // add key_ and iv_ to M3U8Fragment(file)
             if (isDecryptAble_) {
                 auto m3u8 = M3U8Fragment(info.uri, info.title, info.duration, sequence_++, info.discontinuity);

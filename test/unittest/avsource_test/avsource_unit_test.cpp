@@ -1346,7 +1346,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1160, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 30020000);
+    ASSERT_EQ(formatVal_.duration, 30988375);
     ASSERT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
@@ -1366,7 +1366,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1160, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 8000);
     ASSERT_EQ(formatVal_.channelCount, 1);
     ASSERT_EQ(formatVal_.codecMime, "audio/3gpp");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32LE);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
 }
 
 /**
@@ -1386,7 +1386,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1170, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 30000000);
+    ASSERT_EQ(formatVal_.duration, 30937500);
     ASSERT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
@@ -1410,7 +1410,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1170, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 16000);
     ASSERT_EQ(formatVal_.channelCount, 1);
     ASSERT_EQ(formatVal_.codecMime, "audio/amr-wb");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32LE);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
 }
 
 /**

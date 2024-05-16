@@ -58,6 +58,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
+    void OnFirstTsReady(const std::string& url, const double& duration) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
@@ -73,6 +74,7 @@ public:
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -140,6 +142,7 @@ PRIVATE:
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
+    std::atomic<bool> isInterruptNeeded_{false};
 
     struct BufferDownRecord {
         /* data */
@@ -168,6 +171,20 @@ PRIVATE:
     uint64_t downloadDuringTime_ {0};    // 累计有效下载时长 ms
 
     uint64_t downloadBits_ {0};          // 累计有效时间内下载数据量 bit
+    uint32_t changeBitRateCount_ {0};  // 设置码率次数
+    int32_t seekFailedCount_ {0};   // seek失败次数
+    int64_t openTime_ {0};
+    int64_t playDelayTime_ {0};
+    int64_t startDownloadTime_ {0};
+    int64_t lastCheckTime_ {0};
+    uint32_t recordCount_ {0};
+    int64_t lastRecordTime_ {0};
+    int32_t avgDownloadSpeed_ {0};
+    bool isDownloadFinish_ {false};
+    int32_t avgSpeedSum_ {0};
+    uint32_t recordSpeedCount_ {0};
+    int64_t lastReportUsageTime_ {0};
+    uint64_t dataUsage_ {0};
 
     struct RecordData {
         double downloadRate {0};
@@ -177,6 +194,7 @@ PRIVATE:
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
+    Mutex firstTsMutex_ {};
 };
 }
 }

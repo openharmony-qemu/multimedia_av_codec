@@ -114,6 +114,13 @@ public:
 
     virtual void SetBundleName(const std::string& bundleName) {}
 
+    virtual Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+    {
+        avgDownloadRate = 0;
+        avgDownloadSpeed = 0;
+        return Status::OK;
+    }
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;

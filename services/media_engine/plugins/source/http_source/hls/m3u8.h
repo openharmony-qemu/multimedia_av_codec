@@ -111,6 +111,8 @@ struct M3U8 {
     bool isDecryptAble_ { false };
     bool isDecryptKeyReady_ { false };
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
+    M3U8Info firstFragment_;
+    std::atomic<bool> isFirstFragmentReady_ {false};
 };
 
 struct M3U8Media {

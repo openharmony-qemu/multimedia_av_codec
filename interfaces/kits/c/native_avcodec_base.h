@@ -253,6 +253,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_APE;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
 
 /**
+ * @brief Enumerates the MIME type of srt subtitle demuxer
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -547,6 +555,24 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX;
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN;
 /**
+ * @brief Key for describing the video frame averge quantization parameter, value type is int32_t.
+ * This is a part of a video encoder statistics export feature. This value is emitted from video encoder for a video
+ * frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE;
+/**
+ * @brief Key for describing video frame mean squared error, value type is double.
+ * This is a part of a video encoder statistics export feature. This value is emitted from video encoder for a video
+ * frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MSE;
+/**
  * @brief Key for decoding timestamp of the buffer in microseconds, value type is int64_t.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -771,6 +797,10 @@ typedef enum OH_AVCLevel {
     AVC_LEVEL_42 = 13,
     AVC_LEVEL_5 = 14,
     AVC_LEVEL_51 = 15,
+    AVC_LEVEL_52 = 16,
+    AVC_LEVEL_6 = 17,
+    AVC_LEVEL_61 = 18,
+    AVC_LEVEL_62 = 19,
 } OH_AVCLevel;
 
 /**

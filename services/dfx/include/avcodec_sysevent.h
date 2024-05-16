@@ -46,12 +46,60 @@ struct CodecDfxInfo {
     int32_t audioSampleRate;
 };
 
+struct DemuxerFaultInfo {
+    std::string appName;
+    std::string instanceId;
+    std::string callerType;
+    int8_t sourceType;
+    std::string containerFormat;
+    std::string streamType;
+    std::string errMsg;
+};
+
+struct MuxerFaultInfo {
+    std::string appName;
+    std::string instanceId;
+    std::string callerType;
+    std::string videoCodec;
+    std::string audioCodec;
+    std::string containerFormat;
+    std::string errMsg;
+};
+
+struct AudioCodecFaultInfo {
+    std::string appName;
+    std::string instanceId;
+    std::string callerType;
+    std::string audioCodec;
+    std::string errMsg;
+};
+
+struct VideoCodecFaultInfo {
+    std::string appName;
+    std::string instanceId;
+    std::string callerType;
+    std::string videoCodec;
+    std::string errMsg;
+};
+
+struct AudioSourceFaultInfo {
+    std::string appName;
+    std::string instanceId;
+    int32_t audioSourceType;
+    std::string errMsg;
+};
+
 __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType, const std::string& msg,
                                                             const std::string& module);
 __attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
 __attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
 __attribute__((visibility("default"))) void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid,
                                                                 uint32_t codecInstanceId);
+__attribute__((visibility("default"))) void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo);
+__attribute__((visibility("default"))) void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo);
+__attribute__((visibility("default"))) void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo);
+__attribute__((visibility("default"))) void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo);
+__attribute__((visibility("default"))) void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // AVCODEC_SYSEVENT_H

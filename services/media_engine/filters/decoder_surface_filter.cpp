@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MEDIA_PIPELINE
+
 #include "decoder_surface_filter.h"
 #include <sys/time.h>
 #include "filter/filter_factory.h"
@@ -81,6 +83,11 @@ public:
 
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnError(errorType, errorCode);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
@@ -149,6 +156,15 @@ DecoderSurfaceFilter::~DecoderSurfaceFilter()
     MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
 }
 
+void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
+        static_cast<int32_t>(errorType), errorCode);
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    }
+}
+
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -177,6 +193,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     Status ret;
     // create secure decoder for drm.
     MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
+    }
     if (isDrmProtected_ && svpFlag_) {
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
         std::string baseName = GetCodecName(codecMimeType_);
@@ -286,6 +305,9 @@ Status DecoderSurfaceFilter::DoPause()
     }
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->ResetRenderTime();
+    }
     return Status::OK;
 }
 
@@ -380,9 +402,25 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     videoDecoder_->SetParameter(format);
 }
 
+Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
+{
+    if (videoDecoder_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return videoDecoder_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+}
+
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter enter parameter is valid:  %{public}i", parameter != nullptr);
+}
+
+void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -630,6 +668,7 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
 
 void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
 {
+    MEDIA_LOG_I("SetSeekTime enter.");
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
 }
@@ -657,6 +696,12 @@ void DecoderSurfaceFilter::ParseDecodeRateLimit()
     if (rateUpperLimit > 0) {
         meta_->SetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, rateUpperLimit);
     }
+}
+
+void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("DecoderSurfaceFilter::OnDumpInfo called.");
+    videoDecoder_->OnDumpInfo(fd);
 }
 } // namespace Pipeline
 } // namespace MEDIA

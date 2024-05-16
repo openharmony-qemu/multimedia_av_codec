@@ -192,20 +192,21 @@ int32_t CodecServer::Configure(const Format &format)
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
 
-    int32_t ret;
+    int32_t paramCheckRet = AVCS_ERR_OK;
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_, codecName_);
         CHECK_AND_RETURN_RET_LOG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL, "Failed to get codec scenario");
         scenario_ = scenario.value();
-        ret = CodecParamChecker::CheckConfigureValid(config, codecType_, codecName_, scenario_);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
+        paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecType_, codecName_, scenario_);
+        CHECK_AND_RETURN_RET_LOG(paramCheckRet == AVCS_ERR_OK || paramCheckRet == AVCS_ERR_CODEC_PARAM_INCORRECT,
+            paramCheckRet, "Params in format is not valid.");
         CodecScenarioInit(config);
     }
 
-    ret = codecBase_->Configure(config);
+    int32_t ret = codecBase_->Configure(config);
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     StatusChanged(newStatus);
-    return ret;
+    return (ret == AVCS_ERR_OK && paramCheckRet == AVCS_ERR_CODEC_PARAM_INCORRECT) ? paramCheckRet : ret;
 }
 
 int32_t CodecServer::CodecScenarioInit(Format &config)
@@ -406,6 +407,8 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     if (surface != nullptr) {
         isSurfaceMode_ = true;
     }
+    GSError gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_VIDEO);
+    EXPECT_AND_LOGW(gsRet != GSERROR_OK, "Set surface source type failed, %{public}s", GSErrorStr(gsRet).c_str());
     int32_t ret = codecBase_->SetOutputSurface(surface);
 #ifdef EMULATOR_ENABLED
     Format config_emulator;

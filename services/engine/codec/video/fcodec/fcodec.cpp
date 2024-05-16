@@ -43,6 +43,7 @@ constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
+constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 33;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
@@ -145,9 +146,10 @@ void FCodec::ConfigureSurface(const Format &format, const std::string_view &form
                              "Set parameter failed: scale type value %{public}d invalid", val);
         format_.PutIntValue(formatKey, val);
     } else {
-        AVCODEC_LOGW("Set parameter failed: size: %{public}zu  %{public}s, please check your parameter key",
-                     formatKey.size(), formatKey.data());
+        AVCODEC_LOGW("Set parameter failed: %{public}s, please check your parameter key", formatKey.data());
+        return;
     }
+    AVCODEC_LOGI("Set parameter  %{public}s success, val %{public}d", formatKey.data(), val);
 }
 
 int32_t FCodec::ConfigureContext(const Format &format)
@@ -272,7 +274,7 @@ int32_t FCodec::Start()
     isSendEos_ = false;
     sendTask_->Start();
     receiveTask_->Start();
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderTask_->Start();
     }
     AVCODEC_LOGI("Start codec successful, state: Running");
@@ -283,7 +285,7 @@ void FCodec::InitBuffers()
 {
     inputAvailQue_->SetActive(true);
     codecAvailQue_->SetActive(true);
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_->SetActive(true);
     }
     if (buffers_[INDEX_INPUT].size() > 0) {
@@ -297,7 +299,7 @@ void FCodec::InitBuffers()
     if (buffers_[INDEX_OUTPUT].size() <= 0) {
         return;
     }
-    if (surface_ == nullptr) {
+    if (sInfo_.surface == nullptr) {
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             buffers_[INDEX_OUTPUT][i]->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
             codecAvailQue_->Push(i);
@@ -338,7 +340,7 @@ void FCodec::ResetBuffers()
     synIndex_ = std::nullopt;
     iLock.unlock();
     codecAvailQue_->Clear();
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_->Clear();
     }
     ResetData();
@@ -362,7 +364,7 @@ void FCodec::StopThread()
         codecAvailQue_->SetActive(false, false);
         receiveTask_->Stop();
     }
-    if (surface_ != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
+    if (sInfo_.surface != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
         renderAvailQue_->SetActive(false, false);
         renderTask_->Stop();
     }
@@ -379,7 +381,7 @@ int32_t FCodec::Stop()
     inputAvailQue_->SetActive(false, false);
     sendTask_->Stop();
 
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_->SetActive(false, false);
         renderTask_->Stop();
     }
@@ -408,7 +410,7 @@ int32_t FCodec::Flush()
     inputAvailQue_->SetActive(false, false);
     sendTask_->Pause();
 
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_->SetActive(false, false);
         renderTask_->Pause();
     }
@@ -447,11 +449,11 @@ void FCodec::ReleaseResource()
     }
     ReleaseBuffers();
     format_ = Format();
-    if (surface_ != nullptr) {
-        surface_->CleanCache();
+    if (sInfo_.surface != nullptr) {
+        sInfo_.surface->CleanCache();
         AVCODEC_LOGI("surface cleancache success");
     }
-    surface_ = nullptr;
+    sInfo_.surface = nullptr;
 }
 
 int32_t FCodec::Release()
@@ -478,7 +480,7 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
         GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        FSurfaceMemory::SetConfig(width_, height_, surfacePixelFmt);
+        sInfo_.requestConfig.format = surfacePixelFmt;
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
         VideoRotation sr = static_cast<VideoRotation>(val);
         CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
@@ -486,7 +488,7 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
                              "Set parameter failed: rotation angle value %{public}d invalid", val);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        surface_->SetTransform(TranslateSurfaceRotation(sr));
+        sInfo_.surface->SetTransform(TranslateSurfaceRotation(sr));
     } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
         ScalingMode scaleMode = static_cast<ScalingMode>(val);
         CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
@@ -494,17 +496,19 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
                              "Set parameter failed: scale type value %{public}d invalid", val);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
-        FSurfaceMemory::SetScaleType(scaleMode);
+        sInfo_.scalingMode = scaleMode;
     } else {
-        AVCODEC_LOGW("Set parameter failed: size: %{public}s", formatKey.data());
+        AVCODEC_LOGW("Set parameter failed: %{public}s", formatKey.data());
+        return;
     }
+    AVCODEC_LOGI("Set parameter %{public}s success, val %{publid}d", formatKey.data(), val);
 }
 
 int32_t FCodec::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     for (auto &it : format.GetFormatMap()) {
-        if (surface_ != nullptr && it.second.type == FORMAT_TYPE_INT32) {
+        if (sInfo_.surface != nullptr && it.second.type == FORMAT_TYPE_INT32) {
             if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                 it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
                 it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
@@ -560,7 +564,9 @@ void FCodec::CalculateBufferSize()
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
-    AVCODEC_LOGI("Input buffer size = %{public}d, output buffer size=%{public}d", inputBufferSize_, outputBufferSize_);
+    AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d, output "
+                 "buffer size=%{public}d",
+                 width_, height_, stride, inputBufferSize_, outputBufferSize_);
 }
 
 int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
@@ -573,7 +579,8 @@ int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
         CHECK_AND_CONTINUE_LOG(allocator != nullptr, "input buffer %{public}d allocator is nullptr", i);
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, inBufferSize);
         CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate input buffer failed, index=%{public}d", i);
-
+        AVCODEC_LOGI("Allocate input buffer success: index=%{public}d, addr=%{public}p, size=%{public}d", i,
+                     buf->avBuffer_->memory_->GetAddr(), buf->avBuffer_->memory_->GetCapacity());
         buffers_[INDEX_INPUT].emplace_back(buf);
         valBufferCnt++;
     }
@@ -585,40 +592,53 @@ int32_t FCodec::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
     return AVCS_ERR_OK;
 }
 
+int32_t FCodec::SetSurfaceCfg(int32_t bufferCnt)
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
+                             AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
+    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    }
+    int32_t val32 = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
+    GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(val32));
+    CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
+                             "Failed to allocate output buffer: unsupported surface format");
+    sInfo_.requestConfig.width = width_;
+    sInfo_.requestConfig.height = height_;
+    sInfo_.requestConfig.format = surfacePixelFmt;
+
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32);
+    sInfo_.scalingMode = static_cast<ScalingMode>(val32);
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32);
+    sInfo_.surface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    return AVCS_ERR_OK;
+}
+
 int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
 {
     int32_t valBufferCnt = 0;
-    if (surface_) {
-        CHECK_AND_RETURN_RET_LOG(surface_->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
-                                 AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
-        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-                                static_cast<int32_t>(VideoPixelFormat::YUV420P));
-        }
-        int32_t val32 = 0;
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(val32));
-        CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
-                                 "Failed to allocate output buffer: unsupported surface format");
-        FSurfaceMemory::SetSurface(surface_);
-        FSurfaceMemory::SetConfig(static_cast<int32_t>(width_), static_cast<int32_t>(height_), surfacePixelFmt);
-
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32);
-        FSurfaceMemory::SetScaleType(static_cast<ScalingMode>(val32));
-        format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val32);
-        surface_->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(val32)));
+    if (sInfo_.surface) {
+        CHECK_AND_RETURN_RET_LOG(SetSurfaceCfg(bufferCnt) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "SetSurfaceCfg failed");
     }
     for (int i = 0; i < bufferCnt; i++) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
-        if (surface_ == nullptr) {
+        if (sInfo_.surface == nullptr) {
             std::shared_ptr<AVAllocator> allocator =
                 AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outBufferSize);
+            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, addr=%{public}p, size=%{public}d", i,
+                         buf->avBuffer_->memory_->GetAddr(), buf->avBuffer_->memory_->GetCapacity());
         } else {
-            buf->sMemory_ = FSurfaceMemory::Create();
-            CHECK_AND_CONTINUE_LOG(buf->sMemory_ != nullptr, "output surface memory %{public}d create fail", i);
+            buf->sMemory_ = std::make_shared<FSurfaceMemory>(&sInfo_);
+            CHECK_AND_CONTINUE_LOG(buf->sMemory_->GetSurfaceBuffer() != nullptr,
+                                   "output surface memory %{public}d create fail", i);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(buf->sMemory_->GetBase(), buf->sMemory_->GetSize());
+            AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, addr=%{public}p, size=%{public}d, "
+                         "stride=%{public}d",
+                         i, buf->sMemory_->GetBase(), buf->sMemory_->GetSize(),
+                         buf->sMemory_->GetSurfaceBufferStride());
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr, "Allocate output buffer failed, index=%{public}d", i);
 
@@ -643,7 +663,7 @@ int32_t FCodec::AllocateBuffers()
     CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
                              "Allocate buffer with input size=%{public}d, output size=%{public}d failed",
                              inputBufferSize_, outputBufferSize_);
-    if (surface_ != nullptr && isOutBufSetted_ == false) {
+    if (sInfo_.surface != nullptr && isOutBufSetted_ == false) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_SURFACE_CNT);
     }
     int32_t inputBufferCnt = 0;
@@ -652,7 +672,7 @@ int32_t FCodec::AllocateBuffers()
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
     inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", inputBufferCnt);
     codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", outputBufferCnt);
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("renderAvailQue", outputBufferCnt);
     }
     if (AllocateInputBuffer(inputBufferCnt, inputBufferSize_) == AVCS_ERR_NO_MEMORY ||
@@ -675,6 +695,9 @@ int32_t FCodec::UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t buffe
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, bufferSize);
         CHECK_AND_RETURN_RET_LOG(buf->avBuffer_ != nullptr, AVCS_ERR_NO_MEMORY,
                                  "Buffer allocate failed, index=%{public}d", index);
+        AVCODEC_LOGI(
+            "update share buffer success: bufferType=%{public}u, index=%{public}d, addr=%{public}p, size=%{public}d",
+            bufferType, index, buf->avBuffer_->memory_->GetAddr(), buf->avBuffer_->memory_->GetCapacity());
 
         if (bufferType == INDEX_INPUT) {
             buf->owner_ = FBuffer::Owner::OWNED_BY_USER;
@@ -703,7 +726,7 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
             if (surfaceBuffer != nullptr) {
                 break;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_REQ_TIME));
         }
 
         outputBuffer->avBuffer_ =
@@ -726,16 +749,14 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
         CalculateBufferSize();
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-        if (surface_) {
-            int32_t val32 = 0;
-            format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
-            GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(static_cast<VideoPixelFormat>(val32));
+        if (sInfo_.surface) {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
-            FSurfaceMemory::SetConfig(static_cast<int32_t>(width_), static_cast<int32_t>(height_), surfacePixelFmt);
+            sInfo_.requestConfig.width = width_;
+            sInfo_.requestConfig.height = height_;
         }
         callback_->OnOutputFormatChanged(format_);
     }
-    if (surface_ == nullptr) {
+    if (sInfo_.surface == nullptr) {
         std::lock_guard<std::mutex> oLock(outputMutex_);
         CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index, outputBufferSize_, INDEX_OUTPUT) == AVCS_ERR_OK),
                                  AVCS_ERR_NO_MEMORY, "Update  output buffer failed, index=%{public}u", index);
@@ -761,7 +782,7 @@ void FCodec::ReleaseBuffers()
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
-    if (surface_ != nullptr) {
+    if (sInfo_.surface != nullptr) {
         renderAvailQue_->Clear();
         for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
@@ -883,7 +904,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
                              "Recevie frame from codec failed: decoded frame is corrupt");
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-        targetPixelFmt = surface_ ? VideoPixelFormat::YUV420P : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
+        targetPixelFmt = sInfo_.surface ? VideoPixelFormat::NV12 : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     int32_t ret;
@@ -901,7 +922,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
     bufferMemory->SetSize(0);
-    if (surface_) {
+    if (sInfo_.surface) {
         struct SurfaceInfo surfaceInfo;
         surfaceInfo.surfaceStride = frameBuffer->sMemory_->GetSurfaceBufferStride();
         surfaceInfo.surfaceFence = frameBuffer->sMemory_->GetFence();
@@ -921,7 +942,7 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();
         frameBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
-        if (surface_) {
+        if (sInfo_.surface) {
             outAVBuffer4Surface_->pts_ = frameBuffer->avBuffer_->pts_;
             outAVBuffer4Surface_->flag_ = frameBuffer->avBuffer_->flag_;
         }
@@ -936,7 +957,7 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
                 sendCv_.notify_one();
             }
         }
-        callback_->OnOutputBufferAvailable(index, surface_ ? outAVBuffer4Surface_ : frameBuffer->avBuffer_);
+        callback_->OnOutputBufferAvailable(index, sInfo_.surface ? outAVBuffer4Surface_ : frameBuffer->avBuffer_);
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT);
@@ -1015,7 +1036,7 @@ void FCodec::RenderFrame()
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         sLock.unlock();
         if (surfaceBuffer == nullptr) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_REQ_TIME));
             continue;
         }
         int queSize = renderAvailQue_->Size();
@@ -1074,7 +1095,7 @@ int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemor
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()}, pts};
     surfaceMemory->SetNeedRender(true);
     surfaceMemory->UpdateSurfaceBufferScaleMode();
-    auto res = surface_->FlushBuffer(surfaceBuffer, -1, flushConfig);
+    auto res = sInfo_.surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
         surfaceMemory->SetNeedRender(false);
@@ -1115,7 +1136,11 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED), AVCS_ERR_INVALID_STATE,
                              "set output surface fail:  not in Initialized or Configured state");
-    surface_ = surface;
+    if (surface == nullptr || surface->IsConsumer()) {
+        AVCODEC_LOGE("Set surface fail");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    sInfo_.surface = surface;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE,
                             static_cast<int32_t>(ScalingMode::SCALING_MODE_SCALE_TO_WINDOW));

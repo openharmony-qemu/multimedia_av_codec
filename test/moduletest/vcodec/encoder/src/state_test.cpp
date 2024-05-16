@@ -662,4 +662,84 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3400, TestSize.Level2)
     int32_t ret = vEncSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_3500
+ * @tc.name      : Flush in surf encode callback function
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3500, TestSize.Level1)
+{
+    vEncSample->outputCallbackFlush = true;
+    vEncSample->SURF_INPUT = true;
+    int32_t ret = vEncSample->StartVideoEncoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_3600
+ * @tc.name      : Stop in surf encode callback function
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3600, TestSize.Level1)
+{
+    vEncSample->outputCallbackStop = true;
+    vEncSample->SURF_INPUT = true;
+    int32_t ret = vEncSample->StartVideoEncoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_3700
+ * @tc.name      : Flush or stop in buffer encode callback function
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3700, TestSize.Level1)
+{
+    vEncSample->inputCallbackFlush = true;
+    int32_t ret = vEncSample->StartVideoEncoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_3800
+ * @tc.name      : Flush or stop in buffer encode callback function
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3800, TestSize.Level1)
+{
+    vEncSample->inputCallbackStop = true;
+    int32_t ret = vEncSample->StartVideoEncoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_3900
+ * @tc.name      : Flush or stop in buffer encode callback function
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3900, TestSize.Level1)
+{
+    vEncSample->outputCallbackFlush = true;
+    int32_t ret = vEncSample->StartVideoEncoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_4000
+ * @tc.name      : Flush or stop in buffer encode callback function
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_4000, TestSize.Level1)
+{
+    vEncSample->outputCallbackStop = true;
+    int32_t ret = vEncSample->StartVideoEncoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    vEncSample->WaitForEOS();
+}
 } // namespace

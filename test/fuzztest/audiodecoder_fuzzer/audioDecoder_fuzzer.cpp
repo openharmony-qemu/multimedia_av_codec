@@ -26,8 +26,8 @@ namespace OHOS {
 bool AudioDecoderFuzzTest(const uint8_t *data, size_t size)
 {
     // FUZZ OH_AudioCodec_CreateByMime
-    const char *codecdata = reinterpret_cast<const char *>(data);
-    OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata, false);
+    std::string codecdata((const char*) data, size);
+    OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata.c_str(), false);
     if (source) {
         OH_AudioCodec_Destroy(source);
     }

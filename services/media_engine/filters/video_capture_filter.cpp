@@ -92,47 +92,42 @@ private:
 
 VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "video capture filter create", logTag_.c_str());
+    MEDIA_LOG_I("video capture filter create");
 }
 
 VideoCaptureFilter::~VideoCaptureFilter()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "video capture filter destroy", logTag_.c_str());
+    MEDIA_LOG_I("video capture filter destroy");
 }
 
 Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetCodecFormat", logTag_.c_str());
+    MEDIA_LOG_I("SetCodecFormat");
     return Status::OK;
 }
 
 void VideoCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Init", logTag_.c_str());
+    MEDIA_LOG_I("Init");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
 }
 
-void VideoCaptureFilter::SetLogTag(std::string logTag)
-{
-    logTag_ = std::move(logTag);
-}
-
 Status VideoCaptureFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Configure", logTag_.c_str());
+    MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     return Status::OK;
 }
 
 Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetInputSurface", logTag_.c_str());
+    MEDIA_LOG_I("SetInputSurface");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::SetInputSurface");
     if (surface == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "surface is nullptr", logTag_.c_str());
+        MEDIA_LOG_E("surface is nullptr");
         return Status::ERROR_UNKNOWN;
     }
     inputSurface_ = surface;
@@ -143,27 +138,27 @@ Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
 
 sptr<Surface> VideoCaptureFilter::GetInputSurface()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetInputSurface", logTag_.c_str());
+    MEDIA_LOG_I("GetInputSurface");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::GetInputSurface");
     sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("EncoderSurface");
     if (consumerSurface == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "Create the surface consumer fail", logTag_.c_str());
+        MEDIA_LOG_E("Create the surface consumer fail");
         return nullptr;
     }
     GSError err = consumerSurface->SetDefaultUsage(ENCODE_USAGE);
     if (err == GSERROR_OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "set consumer usage 0x%{public}x succ", logTag_.c_str(), ENCODE_USAGE);
+        MEDIA_LOG_E("set consumer usage 0x%{public}x succ", ENCODE_USAGE);
     } else {
-        MEDIA_LOG_E(PUBLIC_LOG_S "set consumer usage 0x%{public}x fail", logTag_.c_str(), ENCODE_USAGE);
+        MEDIA_LOG_E("set consumer usage 0x%{public}x fail", ENCODE_USAGE);
     }
     sptr<IBufferProducer> producer = consumerSurface->GetProducer();
     if (producer == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "Get the surface producer fail", logTag_.c_str());
+        MEDIA_LOG_E("Get the surface producer fail");
         return nullptr;
     }
     sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
     if (producerSurface == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "CreateSurfaceAsProducer fail", logTag_.c_str());
+        MEDIA_LOG_E("CreateSurfaceAsProducer fail");
         return nullptr;
     }
     inputSurface_ = consumerSurface;
@@ -174,7 +169,7 @@ sptr<Surface> VideoCaptureFilter::GetInputSurface()
 
 Status VideoCaptureFilter::DoPrepare()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Prepare", logTag_.c_str());
+    MEDIA_LOG_I("Prepare");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Prepare");
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -183,7 +178,7 @@ Status VideoCaptureFilter::DoPrepare()
 
 Status VideoCaptureFilter::DoStart()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Start", logTag_.c_str());
+    MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Start");
     isStop_ = false;
     return Status::OK;
@@ -191,7 +186,7 @@ Status VideoCaptureFilter::DoStart()
 
 Status VideoCaptureFilter::DoPause()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Pause", logTag_.c_str());
+    MEDIA_LOG_I("Pause");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Pause");
     isStop_ = true;
     latestPausedTime_ = latestBufferTime_;
@@ -200,7 +195,7 @@ Status VideoCaptureFilter::DoPause()
 
 Status VideoCaptureFilter::DoResume()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Resume", logTag_.c_str());
+    MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Resume");
     isStop_ = false;
     refreshTotalPauseTime_ = true;
@@ -209,7 +204,7 @@ Status VideoCaptureFilter::DoResume()
 
 Status VideoCaptureFilter::DoStop()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Stop", logTag_.c_str());
+    MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Stop");
     isStop_ = true;
     latestBufferTime_ = TIME_NONE;
@@ -221,38 +216,38 @@ Status VideoCaptureFilter::DoStop()
 
 Status VideoCaptureFilter::DoFlush()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Flush", logTag_.c_str());
+    MEDIA_LOG_I("Flush");
     return Status::OK;
 }
 
 Status VideoCaptureFilter::DoRelease()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "Release", logTag_.c_str());
+    MEDIA_LOG_I("Release");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::Release");
     return Status::OK;
 }
 
 Status VideoCaptureFilter::NotifyEos()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "NotifyEos", logTag_.c_str());
+    MEDIA_LOG_I("NotifyEos");
     return Status::OK;
 }
 
 void VideoCaptureFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "SetParameter", logTag_.c_str());
+    MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::SetParameter");
 }
 
 void VideoCaptureFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter", logTag_.c_str());
+    MEDIA_LOG_I("GetParameter");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::GetParameter");
 }
 
 Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "LinkNext", logTag_.c_str());
+    MEDIA_LOG_I("LinkNext");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::LinkNext");
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
@@ -264,63 +259,63 @@ Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
 
 Status VideoCaptureFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "UpdateNext", logTag_.c_str());
+    MEDIA_LOG_I("UpdateNext");
     return Status::OK;
 }
 
 Status VideoCaptureFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "UnLinkNext", logTag_.c_str());
+    MEDIA_LOG_I("UnLinkNext");
     return Status::OK;
 }
 
 FilterType VideoCaptureFilter::GetFilterType()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "GetFilterType", logTag_.c_str());
+    MEDIA_LOG_I("GetFilterType");
     return filterType_;
 }
 
 Status VideoCaptureFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnLinked", logTag_.c_str());
+    MEDIA_LOG_I("OnLinked");
     return Status::OK;
 }
 
 Status VideoCaptureFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUpdated", logTag_.c_str());
+    MEDIA_LOG_I("OnUpdated");
     return Status::OK;
 }
 
 Status VideoCaptureFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUnLinked", logTag_.c_str());
+    MEDIA_LOG_I("OnUnLinked");
     return Status::OK;
 }
 
 void VideoCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnLinkedResult", logTag_.c_str());
+    MEDIA_LOG_I("OnLinkedResult");
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::OnLinkedResult");
     outputBufferQueueProducer_ = outputBufferQueue;
 }
 
 void VideoCaptureFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUpdatedResult", logTag_.c_str());
+    MEDIA_LOG_I("OnUpdatedResult");
 }
 
 void VideoCaptureFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnUnlinkedResult", logTag_.c_str());
+    MEDIA_LOG_I("OnUnlinkedResult");
 }
 
 void VideoCaptureFilter::OnBufferAvailable()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnBufferAvailable", logTag_.c_str());
+    MEDIA_LOG_I("OnBufferAvailable");
     sptr<SurfaceBuffer> buffer;
     sptr<SyncFence> fence;
     int64_t timestamp;
@@ -328,7 +323,7 @@ void VideoCaptureFilter::OnBufferAvailable()
     OHOS::Rect damage;
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
     if (ret != GSERROR_OK || buffer == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "AcquireBuffer failed", logTag_.c_str());
+        MEDIA_LOG_E("AcquireBuffer failed");
         return;
     }
     constexpr uint32_t waitForEver = -1;
@@ -351,13 +346,13 @@ void VideoCaptureFilter::OnBufferAvailable()
     int32_t timeOutMs = 100;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
     if (status != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "RequestBuffer fail.", logTag_.c_str());
+        MEDIA_LOG_E("RequestBuffer fail.");
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     if (emptyOutputBuffer->memory_ == nullptr) {
-        MEDIA_LOG_I(PUBLIC_LOG_S "emptyOutputBuffer->memory_ is nullptr.", logTag_.c_str());
+        MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr.");
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
@@ -366,7 +361,7 @@ void VideoCaptureFilter::OnBufferAvailable()
     UpdateBufferConfig(emptyOutputBuffer, timestamp);
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     if (status != Status::OK) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "PushBuffer fail", logTag_.c_str());
+        MEDIA_LOG_E("PushBuffer fail");
     }
     inputSurface_->ReleaseBuffer(buffer, -1);
 }
@@ -387,7 +382,7 @@ void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, in
     }
     buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::UpdateBufferConfig");
-    MEDIA_LOG_I(PUBLIC_LOG_S "UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), buffer->pts_);
+    MEDIA_LOG_I("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }
 
 } // namespace Pipeline

@@ -381,7 +381,7 @@ Status FfmpegBaseDecoder::InitResample()
         ResamplePara resamplePara;
         resamplePara.channels = static_cast<uint32_t>(avCodecContext_->channels);
         resamplePara.sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate);
-        resamplePara.channelLayout = static_cast<uint32_t>(avCodecContext_->channel_layout);
+        resamplePara.channelLayout = avCodecContext_->ch_layout;
         resamplePara.destSamplesPerFrame = 0;
         resamplePara.bitsPerSample = 0;
         resamplePara.srcFfFmt = avCodecContext_->sample_fmt;

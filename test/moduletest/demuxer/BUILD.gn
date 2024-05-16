@@ -60,6 +60,7 @@ ohos_unittest("demuxer_native_module_test") {
       #"./src/perf_test.cpp",
       #"./src/reli_test.cpp",
       "./src/InnerAPI/api_test.cpp",
+      "./src/InnerAPI/func_test.cpp",
       "./src/api_test.cpp",
       "./src/func_test.cpp",
       "./src/proc_test.cpp",

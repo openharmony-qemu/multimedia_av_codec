@@ -366,7 +366,7 @@ int32_t AudioFFMpegAacEncoderPlugin::OpenContext()
             .channels = avCodecContext_->channels,
             .sampleRate = avCodecContext_->sample_rate,
             .bitsPerSample = 0,
-            .channelLayout = avCodecContext_->channel_layout,
+            .channelLayout = avCodecContext_->ch_layout,
             .srcFmt = srcFmt_,
             .destSamplesPerFrame = avCodecContext_->frame_size,
             .destFmt = avCodecContext_->sample_fmt,

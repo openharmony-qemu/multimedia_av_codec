@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "FfmpegFormatHelper"
 
 #include <algorithm>
+#include <regex>
 #include <iconv.h>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
@@ -30,7 +31,7 @@
 extern "C" {
 #endif
 #include "libavutil/avutil.h"
-#include "libavutil/mastering_display_metadata.h"
+#include "libavutil/display.h"
 #ifdef __cplusplus
 }
 #endif
@@ -141,7 +142,7 @@ std::string SwitchCase(const std::string& str)
             res += std::toupper(c);
         }
     }
-    MEDIA_LOG_W("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
+    MEDIA_LOG_D("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
     return res;
 }
 
@@ -275,20 +276,6 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
 }
 
-std::vector<std::string> SplitByChar(const char* str, const char* pattern)
-{
-    std::vector<std::string> resultVec;
-    char* tmpStr = strtok(const_cast<char*>(str), pattern);
-    while (tmpStr != nullptr) {
-        resultVec.push_back(std::string(tmpStr));
-        tmpStr = strtok(nullptr,  pattern);
-    }
-    MEDIA_LOG_D("Split [" PUBLIC_LOG_S "] by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string",
-        str, pattern, resultVec.size());
-    delete[] tmpStr;
-    return resultVec;
-}
-
 void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
 {
     MEDIA_LOG_D("Parse location info.");
@@ -301,19 +288,18 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Parse failed.");
         return;
     }
-    MEDIA_LOG_D("Parse location info successfully: " PUBLIC_LOG_S, valPtr->value);
-    std::vector<std::string> values = SplitByChar(valPtr->value, "+");
-    if (values.size() < VALID_LOCATION_LEN) {
+    MEDIA_LOG_D("Get location string successfully: " PUBLIC_LOG_S, valPtr->value);
+    std::string locationStr = std::string(valPtr->value);
+    std::regex pattern(R"([\+\-]\d+\.\d+)");
+    std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
+    std::sregex_iterator end;
+    // at least contain latitude and longitude
+    if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Parse failed due to info format error.");
         return;
     }
-
-    format.Set<Tag::MEDIA_LATITUDE>(std::stof(values[0]));
-    if (values[1].find('/') != 0) {
-        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(SplitByChar(values[1].c_str(), "/")[0]));
-    } else {
-        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(values[1]));
-    }
+    format.Set<Tag::MEDIA_LATITUDE>(std::stof(numbers->str()));
+    format.Set<Tag::MEDIA_LONGITUDE>(std::stof((++numbers)->str()));
 }
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
@@ -459,7 +445,8 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         valPtr = av_dict_get(avStream.metadata, "ROTATE", nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse rotate info failed.");
+        MEDIA_LOG_D("Parse rotate info from meta failed.");
+        ParseRotationFromMatrix(avStream, format);
     } else {
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
@@ -474,6 +461,35 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
+    }
+}
+
+void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
+{
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    if (displayMatrix) {
+        float rotation = -round(av_display_rotation_get(displayMatrix));
+        MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_F, rotation);
+        if (isnan(rotation)) {
+            format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
+            return;
+        } else if (rotation < 0) {
+            rotation += 360;
+        }
+        switch (int(rotation)) {
+            case 90:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
+                break;
+            case 180:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["180"]);
+                break;
+            case 270:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["270"]);
+                break;
+            default:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
+                break;
+        }
     }
 }
 

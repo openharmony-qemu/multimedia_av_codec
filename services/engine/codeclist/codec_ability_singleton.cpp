@@ -111,14 +111,12 @@ std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
     return capabilityDataArray_;
 }
 
-std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(std::string name)
+std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(const std::string &name)
 {
-    for (const auto &it : capabilityDataArray_) {
-        if (it.codecName == name) {
-            return it;
-        }
-    }
-    return std::nullopt;
+    auto it = std::find_if(capabilityDataArray_.begin(), capabilityDataArray_.end(), [&](const CapabilityData &cap) {
+        return cap.codecName == name;
+    });
+    return it == capabilityDataArray_.end() ? std::nullopt : std::make_optional<CapabilityData>(*it);
 }
 
 std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()

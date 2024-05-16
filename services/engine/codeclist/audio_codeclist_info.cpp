@@ -27,6 +27,7 @@ constexpr int MAX_SUPPORT_AUDIO_INSTANCE = 16;
 constexpr int MIN_BIT_RATE_MP3 = 32000;
 constexpr int MAX_BIT_RATE_MP3 = 320000;
 constexpr int MAX_BIT_RATE_OPUS = 510000;
+constexpr int MIN_BIT_RATE_MP3_ENCODE = 8000;
 constexpr int MAX_CHANNEL_COUNT_MP3 = 2;
 constexpr int MAX_CHANNEL_COUNT_APE = 2;
 
@@ -42,6 +43,8 @@ const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
 
 const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
                                                      44100, 48000, 64000, 88200, 96000, 192000};
+
+const std::vector<int32_t> AUDIO_MP3_EN_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
 
 const std::vector<int32_t> AUDIO_LBVC_SAMPLE_RATE = {16000};
 
@@ -77,6 +80,20 @@ CapabilityData AudioCodeclistInfo::GetMP3DecoderCapability()
     audioMp3Capability.bitrate = Range(MIN_BIT_RATE_MP3, MAX_BIT_RATE_MP3);
     audioMp3Capability.channels = Range(1, MAX_CHANNEL_COUNT_MP3);
     audioMp3Capability.sampleRate = AUDIO_SAMPLE_RATE;
+    audioMp3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioMp3Capability;
+}
+
+CapabilityData AudioCodeclistInfo::GetMP3EncoderCapability()
+{
+    CapabilityData audioMp3Capability;
+    audioMp3Capability.codecName = AVCodecCodecName::AUDIO_ENCODER_MP3_NAME;
+    audioMp3Capability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioMp3Capability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_MPEG;
+    audioMp3Capability.isVendor = false;
+    audioMp3Capability.bitrate = Range(MIN_BIT_RATE_MP3_ENCODE, MAX_BIT_RATE_MP3);
+    audioMp3Capability.channels = Range(1, MAX_CHANNEL_COUNT_MP3);
+    audioMp3Capability.sampleRate = AUDIO_MP3_EN_SAMPLE_RATE;
     audioMp3Capability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioMp3Capability;
 }
@@ -329,6 +346,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetAmrwbDecoderCapability(), GetG711muDecoderCapability(), GetAacEncoderCapability(),
                           GetFlacEncoderCapability(),  GetOpusEncoderCapability(),   GetG711muEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetAPEDecoderCapability(),
+                          GetMP3EncoderCapability(),
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
                           GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability()
 #endif

@@ -78,7 +78,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
-
+    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -88,12 +88,16 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
+    void SetDumpFlag(bool isDump);
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
     Status SetFrameRate(double frameRate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
+    void OnDumpInfo(int32_t fd);
+
+    bool IsLocalDrmInfosExisted();
 private:
     class DataSourceImpl;
 
@@ -125,10 +129,10 @@ private:
     Status ProcessDrmInfos();
     Status ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
-    bool IsLocalDrmInfosExisted();
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
     bool HasVideo();
+    void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
 
     Plugins::Seekable seekable_;
@@ -184,6 +188,8 @@ private:
     std::atomic<float> speed_ {1.0f};
     std::atomic<double> frameRate_ {0.0};
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
+
+    bool isDump_ = false;
 };
 } // namespace Media
 } // namespace OHOS

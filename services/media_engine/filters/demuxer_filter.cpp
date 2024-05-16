@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define MEDIA_PIPELINE
 #define HST_LOG_TAG "DemuxerFilter"
 
 #include "avcodec_common.h"
@@ -23,13 +24,14 @@
 #include "common/media_core.h"
 #include "demuxer_filter.h"
 #include "media_types.h"
+#include "avcodec_sysevent.h"
+
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-
+using namespace MediaAVCodec;
 using MediaType = OHOS::Media::Plugins::MediaType;
-
 namespace {
     const std::string MIME_IMAGE = "image";
 }
@@ -111,10 +113,10 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
-    MEDIA_LOG_I("DemuxerFilter Init");
+    MEDIA_LOG_I("Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
-    MEDIA_LOG_I("DemuxerFilter Init for drm callback");
+    MEDIA_LOG_D("DemuxerFilter Init for drm callback");
 
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
@@ -126,7 +128,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SetDataSource");
-    MEDIA_LOG_I("SetDataSource entered.");
+    MEDIA_LOG_D("SetDataSource entered.");
     if (source == nullptr) {
         MEDIA_LOG_E("Invalid source");
         return Status::ERROR_INVALID_PARAMETER;
@@ -145,9 +147,15 @@ void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
 void DemuxerFilter::SetBundleName(const std::string& bundleName)
 {
     if (demuxer_ != nullptr) {
-        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+        MEDIA_LOG_D("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         demuxer_->SetBundleName(bundleName);
     }
+}
+
+void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appName)
+{
+    instanceId_ = instanceId;
+    bundleName_ = appName;
 }
 
 Status DemuxerFilter::DoPrepare()
@@ -193,9 +201,57 @@ Status DemuxerFilter::DoPrepare()
             continue;
         }
         auto ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        if (ret != Status::OK) {
+            FaultDemuxerEventInfoWrite(streamType);
+        }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
     }
     return Status::OK;
+}
+
+void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
+{
+    MEDIA_LOG_I("FaultDemuxerEventInfoWrite enter.");
+    struct DemuxerFaultInfo demuxerInfo;
+        demuxerInfo.appName = bundleName_;
+        demuxerInfo.instanceId = std::to_string(instanceId_);
+        demuxerInfo.callerType = "player_framework";
+        demuxerInfo.sourceType = static_cast<int8_t>(mediaSource_->GetSourceType());
+        demuxerInfo.containerFormat = CollectVideoAndAudioMime();
+        demuxerInfo.streamType = std::to_string(static_cast<int32_t>(streamType));
+        demuxerInfo.errMsg = "OnCallback Link Filter Fail.";
+        FaultDemuxerEventWrite(demuxerInfo);
+}
+
+std::string DemuxerFilter::CollectVideoAndAudioMime()
+{
+    MEDIA_LOG_I("CollectVideoAndAudioInfo entered.");
+    std::string mime;
+    std::string videoMime = "";
+    std::string audioMime = "";
+    std::vector<std::shared_ptr<Meta>> metaInfo = demuxer_->GetStreamMetaInfo();
+    for (const auto& trackInfo : metaInfo) {
+        if (!(trackInfo->GetData(Tag::MIME_TYPE, mime))) {
+            MEDIA_LOG_W("Get MIME fail");
+            continue;
+        }
+        if (IsVideoMime(mime)) {
+            videoMime = mime;
+        } else if (IsAudioMime(mime)) {
+            audioMime = mime;
+        }
+    }
+    return videoMime + " : " + audioMime;
+}
+
+bool DemuxerFilter::IsVideoMime(const std::string& mime)
+{
+    return mime.find("video/") == 0;
+}
+
+bool DemuxerFilter::IsAudioMime(const std::string& mime)
+{
+    return mime.find("audio/") == 0;
 }
 
 void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
@@ -212,7 +268,7 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 
 Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
 {
-    MEDIA_LOG_I("PrepareFrame enter.");
+    MEDIA_LOG_I("PrepareFrame");
     auto ret = demuxer_->PrepareFrame(renderFirstFrame);
     if (ret == Status::OK) {
         isPrepareFramed = true;
@@ -243,7 +299,7 @@ Status DemuxerFilter::DoStart()
         return Resume();
     }
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
-    MEDIA_LOG_I("Start called.");
+    MEDIA_LOG_I("Start in");
     isLoopStarted = true;
     if (isPrepareFramed.load()) {
         return demuxer_->Resume();
@@ -254,21 +310,21 @@ Status DemuxerFilter::DoStart()
 Status DemuxerFilter::DoStop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
-    MEDIA_LOG_I("Stop called.");
+    MEDIA_LOG_I("Stop in");
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::DoPause()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
-    MEDIA_LOG_I("Pause called");
+    MEDIA_LOG_I("Pause in");
     return demuxer_->Pause();
 }
 
 Status DemuxerFilter::PauseForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
-    MEDIA_LOG_I("PauseForSeek called");
+    MEDIA_LOG_I("PauseForSeek in");
     // demuxer pause first for auido render immediatly
     demuxer_->Pause();
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -285,14 +341,14 @@ Status DemuxerFilter::PauseForSeek()
 Status DemuxerFilter::DoResume()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
-    MEDIA_LOG_I("Resume called");
+    MEDIA_LOG_I("Resume in");
     return demuxer_->Resume();
 }
 
 Status DemuxerFilter::ResumeForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
-    MEDIA_LOG_I("ResumeForSeek called size: %{public}d", nextFiltersMap_.size());
+    MEDIA_LOG_I("ResumeForSeek in size: %{public}d", nextFiltersMap_.size());
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();
@@ -307,14 +363,14 @@ Status DemuxerFilter::ResumeForSeek()
 Status DemuxerFilter::DoFlush()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Flush");
-    MEDIA_LOG_I("Flush entered");
+    MEDIA_LOG_D("Flush entered");
     return demuxer_->Flush();
 }
 
 Status DemuxerFilter::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Reset");
-    MEDIA_LOG_I("Reset called");
+    MEDIA_LOG_I("Reset in");
     {
         AutoLock lock(mapMutex_);
         track_id_map_.clear();
@@ -332,6 +388,12 @@ void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_I("GetParameter enter");
 }
 
+void DemuxerFilter::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
+    demuxer_->SetDumpFlag(isDump_);
+}
+
 std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
 {
     return demuxer_->GetBufferQueueProducerMap();
@@ -345,7 +407,7 @@ Status DemuxerFilter::PauseTaskByTrackId(int32_t trackId)
 Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
-    MEDIA_LOG_I("SeekTo called");
+    MEDIA_LOG_D("SeekTo in");
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
@@ -381,7 +443,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     std::shared_ptr<Meta> meta = trackInfos[trackId];
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
-        MEDIA_LOG_I("LinkNext iter->first " PUBLIC_LOG_S, iter->first.c_str());
+        MEDIA_LOG_D("Link " PUBLIC_LOG_S, iter->first.c_str());
     }
     std::string mimeType;
     meta->GetData(Tag::MIME_TYPE, mimeType);
@@ -402,6 +464,14 @@ Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
         MEDIA_LOG_E("GetBitRates failed, mediaSource = nullptr");
     }
     return demuxer_->GetBitRates(bitRates);
+}
+
+Status DemuxerFilter::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+{
+    if (demuxer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return demuxer_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
 }
 
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
@@ -511,6 +581,12 @@ void DemuxerFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
 
+bool DemuxerFilter::IsDrmProtected()
+{
+    MEDIA_LOG_I("IsDrmProtected");
+    return demuxer_->IsLocalDrmInfosExisted();
+}
+
 void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo)
 {
     MEDIA_LOG_I("OnDrmInfoUpdated");
@@ -536,6 +612,12 @@ Status DemuxerFilter::SetSpeed(float speed)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "SetSpeed failed.");
     return demuxer_->SetSpeed(speed);
+}
+
+void DemuxerFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
+    demuxer_->OnDumpInfo(fd);
 }
 } // namespace Pipeline
 } // namespace Media

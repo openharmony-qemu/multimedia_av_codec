@@ -60,7 +60,13 @@ public:
 
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
+    void OnDumpInfo(int32_t fd);
 
+    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
+
+    int64_t GetCurrentMillisecond();
+    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+    void ResetRenderTime();
 private:
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
@@ -69,13 +75,21 @@ private:
     std::shared_ptr<MediaAVCodec::AVCodecVideoDecoder> mediaCodec_;
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> callback_;
     std::shared_ptr<AVBuffer> buffer_;
+    std::string mediaCodecName_;
 
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
 
     std::mutex mutex_;
     std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
-
+    int32_t lagTimes_ = 0;
+    int64_t currentTime_ = 0;
+    int64_t maxLagDuration_ = 0;
+    int64_t totalLagDuration_ = 0;
     bool isConfigured_ {false};
+    uint64_t instanceId_ = 0;
+    int32_t appUid_;
+    int32_t appPid_;
+    std::string bundleName_;
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {

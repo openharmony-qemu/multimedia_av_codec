@@ -32,8 +32,8 @@ ohos_fuzztest("SwdecoderConfigureFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "videodec_sample.cpp",
     "swdecoderconfigure_fuzzer.cpp",
+    "videodec_sample.cpp",
   ]
 
   external_deps = [
