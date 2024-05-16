@@ -30,6 +30,7 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr uint32_t DRM_INFO_BASE64_DATA_MULTIPLE = 4;
 constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
+constexpr uint64_t BAND_WIDTH_LIMIT = 3*1024*1024;
 
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 
@@ -198,7 +199,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         }
 
         if (!info.uri.empty()) {
-            if (!isFirstFragmentReady_) {
+            if (!isFirstFragmentReady_ && !isDecryptAble_) {
                 firstFragment_ = info;
                 isFirstFragmentReady_ = true;
             }
@@ -481,6 +482,9 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                     auto name = uriAttribute->QuotedString();
                     auto uri = UriJoin(uri_, name);
                     auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name));
+                    if (minimumVariant_ == nullptr) {
+                        minimumVariant_ = stream;
+                    }
                     if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
                         stream->iframe_ = true;
                     }
@@ -494,7 +498,9 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                         stream->height_ = resolutionAttribute->GetResolution().second;
                     }
                     variants_.emplace_back(stream);
-                    defaultVariant_ = stream; // play last stream
+                    if (stream->bandWidth_ <= BAND_WIDTH_LIMIT) {
+                        defaultVariant_ = stream; // play last stream
+                    }
                 }
                 break;
             }
@@ -502,6 +508,9 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                 break;
         }
     });
+    if (defaultVariant_ == nullptr) {
+        defaultVariant_ = minimumVariant_;
+    }
     tags.clear();
 }
 }

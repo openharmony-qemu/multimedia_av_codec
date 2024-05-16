@@ -254,7 +254,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             realReadLength = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
             return true;
         }
-        if (isFinishedPlay && buffer_->GetSize() == 0) {
+        if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
             realReadLength = 0;
             return false;
         }
