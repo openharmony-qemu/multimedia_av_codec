@@ -992,8 +992,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3400, TestSize.Level0)
     ASSERT_EQ(audioSampleFormat, 9);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitsPreCodedSample));
     ASSERT_EQ(bitsPreCodedSample, 16);
-    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_PROFILE, &profile)); 
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_PROFILE, &profile));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_COLOR_PRIMARIES, &colorPrimaries));
-    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));  
-    close(fd);  
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+    close(fd);
 }
