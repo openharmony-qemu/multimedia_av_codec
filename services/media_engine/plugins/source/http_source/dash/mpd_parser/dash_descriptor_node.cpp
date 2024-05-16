@@ -33,7 +33,7 @@ DashDescriptorNode::DashDescriptorNode()
 
 DashDescriptorNode::~DashDescriptorNode() {}
 
-void DashDescriptorNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashDescriptorNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_DESCRIPTOR_ATTR_NUM; index++) {

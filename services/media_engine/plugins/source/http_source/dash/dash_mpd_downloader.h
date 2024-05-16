@@ -117,7 +117,7 @@ private:
     bool CheckToDownloadSidxWithInitSeg(std::shared_ptr<DashStreamDescription> streamDesc);
     bool GetStreamsInfoInMpd();
     void GetStreamsInfoInPeriod(DashPeriodInfo* periodInfo, unsigned int periodIndex, std::string mpdBaseUrl);
-    void GetStreamsInfoInAdptSet(DashAdptSetInfo* adptSetInfo, std::string periodBaseUrl,  DashStreamDescription& streamDesc);
+    void GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, std::string periodBaseUrl, DashStreamDescription &streamDesc);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsInPeriod(DashPeriodInfo* periodInfo, std::string mpdBaseUrl, std::shared_ptr<DashStreamDescription> streamDesc);
@@ -132,8 +132,9 @@ private:
     DashSegmentInitValue GetSegmentsWithTmpltStatic(const DashSegTmpltInfo* segTmpltInfo, std::string mediaUrl, std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsWithTmpltDurationStatic(const DashSegTmpltInfo* segTmpltInfo, std::string mediaUrl, unsigned int timeScale,
         std::shared_ptr<DashStreamDescription> streamDesc);
-    DashSegmentInitValue GetSegmentsWithTmpltTimelineStatic(const DashSegTmpltInfo* segTmpltInfo, std::string mediaUrl, unsigned int timeScale,
-        std::shared_ptr<DashStreamDescription> streamDesc);
+    DashSegmentInitValue GetSegmentsWithTmpltTimelineStatic(const DashSegTmpltInfo *segTmpltInfo, std::string mediaUrl,
+                                                            unsigned int timeScale,
+                                                            std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsInOneTimeline(const DashSegTimeline* timeline, int segCount, unsigned int segDuration, std::string mediaUrl,
         int64_t& segmentSeq, uint64_t& startTime, std::shared_ptr<DashStreamDescription> streamDesc);
 

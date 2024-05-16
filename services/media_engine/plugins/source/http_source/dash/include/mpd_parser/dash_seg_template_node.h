@@ -30,7 +30,7 @@ public:
     DashSegTemplateNode();
     ~DashSegTemplateNode() override;
 
-    void ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement) override;
+    void ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement) override;
     void GetAttr(const std::string &attrName, std::string &sAttrVal) override;
     void GetAttr(const std::string &attrName, uint32_t &uiAttrVal) override;
     void GetAttr(const std::string &attrName, int32_t &iAttrVal) override;

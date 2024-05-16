@@ -32,7 +32,7 @@ DashRepresentationNode::DashRepresentationNode()
 
 DashRepresentationNode::~DashRepresentationNode() {}
 
-void DashRepresentationNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashRepresentationNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         comAttrsElements_.ParseAttrs(xmlParser, rootElement);

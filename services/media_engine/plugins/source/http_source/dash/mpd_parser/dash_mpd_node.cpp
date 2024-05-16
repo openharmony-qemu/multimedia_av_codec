@@ -32,7 +32,7 @@ DashMpdNode::DashMpdNode()
 
 DashMpdNode::~DashMpdNode() {}
 
-void DashMpdNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashMpdNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t i = 0; i < DASH_MPD_ATTR_NUM; i++) {

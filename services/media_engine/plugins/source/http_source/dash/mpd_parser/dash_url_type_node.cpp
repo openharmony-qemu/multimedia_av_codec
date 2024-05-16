@@ -32,7 +32,7 @@ DashUrlTypeNode::DashUrlTypeNode()
 
 DashUrlTypeNode::~DashUrlTypeNode() {}
 
-void DashUrlTypeNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashUrlTypeNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_URL_TYPE_ATTR_NUM; index++) {

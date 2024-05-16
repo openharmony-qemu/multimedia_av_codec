@@ -32,7 +32,7 @@ DashSegUrlNode::DashSegUrlNode()
 
 DashSegUrlNode::~DashSegUrlNode() {}
 
-void DashSegUrlNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashSegUrlNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_SEG_URL_ATTR_NUM; index++) {

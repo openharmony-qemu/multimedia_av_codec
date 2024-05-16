@@ -35,27 +35,33 @@ public:
     void StopParseMpd();
 
 private:
-    void ParsePeriod(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement);
-    void ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo);
-    void ParseRepresentation(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+    void ParsePeriod(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement);
+    void ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                            DashPeriodInfo *periodInfo);
+    void ParseRepresentation(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                             const DashPeriodInfo *periodInfo,
                              DashAdptSetInfo *adptSetInfo);
-    void ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashSegBaseInfo **segBaseInfo);
-    void ParseSegmentList(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashSegListInfo **segListInfo);
-    void ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashSegTmpltInfo **segTmpltInfo);
-    void ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+    void ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                          DashSegBaseInfo **segBaseInfo);
+    void ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                          DashSegListInfo **segListInfo);
+    void ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                              DashSegTmpltInfo **segTmpltInfo);
+    void ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                               DashList<DashSegTimeline *> &segTmlineList);
-    void ParseUrlType(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const std::string urlTypeName,
+    void ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                      const std::string urlTypeName,
                       DashUrlType **urlTypeInfo);
-    void ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+    void ParseContentProtection(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                 DashList<DashDescriptor *> &contentProtectionList);
-    void ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+    void ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                 DashList<DashDescriptor *> &essentialPropertyList);
-    void ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+    void ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                         DashList<DashDescriptor *> &propertyList);
-    void ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashList<DashSegUrl *> &segUrlList);
-    void ParseContentComponent(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+    void ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                         DashList<DashSegUrl *> &segUrlList);
+    void ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                DashList<DashContentCompInfo *> &contentCompInfoList);
-
     void ParseProgramInfo(std::list<std::string> &programStrList) const;
     void ParseBaseUrl(std::list<std::string> &baseUrlStrList) const;
     void ParseLocation(std::list<std::string> &locationStrlist) const;
@@ -73,14 +79,17 @@ private:
     void ClearRoleList(DashList<DashDescriptor *> &roleList);
 
     void GetMpdAttr(IDashMpdNode *mpdNode);
-    void GetMpdElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement);
+    void GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement);
     void GetAdaptationSetAttr(IDashMpdNode *adptSetNode, DashAdptSetInfo *adptSetInfo);
-    void GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+    void GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                 const DashPeriodInfo *periodInfo,
                                  DashAdptSetInfo *adptSetInfo);
     void GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *periodInfo);
-    void GetPeriodElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo);
+    void GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                          DashPeriodInfo *periodInfo);
     void GetRepresentationAttr(IDashMpdNode *representationNode, DashRepresentationInfo *representationInfo);
-    void GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+    void GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+                                  const DashPeriodInfo *periodInfo,
                                   const DashAdptSetInfo *adptSetInfo, DashRepresentationInfo *representationInfo);
 
     void InheritMultSegBase(DashMultSegBaseInfo *lowerMultSegBaseInfo,

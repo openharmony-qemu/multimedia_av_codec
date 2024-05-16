@@ -39,7 +39,7 @@ DashMultSegBaseNode::~DashMultSegBaseNode()
     }
 }
 
-void DashMultSegBaseNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashMultSegBaseNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_MULT_SEG_BASE_ATTR_NUM; index++) {

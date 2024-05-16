@@ -112,7 +112,7 @@ void DashMpdParser::InitPeriodDuration(DashMpdInfo *mpdInfo)
     }
 }
 
-void DashMpdParser::ParsePeriod(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashMpdParser::ParsePeriod(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     DashPeriodInfo *periodInfo = new DashPeriodInfo;
     if (periodInfo != nullptr) {
@@ -153,7 +153,7 @@ void DashMpdParser::GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *peri
     }
 }
 
-void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo)
+void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo)
 {
    DashList<std::shared_ptr<XmlElement>> adptSetElementList;
    std::shared_ptr<XmlElement> segBaseElement = nullptr;
@@ -220,7 +220,7 @@ void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser,std::s
     }
 }
 
-void DashMpdParser::ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo)
+void DashMpdParser::ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashPeriodInfo *periodInfo)
 {
     DashAdptSetInfo *adptSetInfo = new DashAdptSetInfo;
     if (adptSetInfo != nullptr) {
@@ -306,7 +306,7 @@ void DashMpdParser::GetAdaptationSetAttr(IDashMpdNode *adptSetNode, DashAdptSetI
     }
 }
 
-void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
                                             DashAdptSetInfo *adptSetInfo)
 {
     // parse element in AdaptationSet
@@ -400,7 +400,7 @@ void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser
     }
 }
 
-void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashList<DashSegUrl *> &segUrlList)
+void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashList<DashSegUrl *> &segUrlList)
 {
     DashSegUrl *segUrl = new (std::nothrow) DashSegUrl;
     if (segUrl == nullptr) {
@@ -423,7 +423,7 @@ void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser,std::sh
     IDashMpdNode::DestroyNode(segUrlNode);
 }
 
-void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                           DashList<DashContentCompInfo *> &contentCompInfoList)
 {
     DashContentCompInfo *contentCompInfo = new (std::nothrow) DashContentCompInfo;
@@ -447,7 +447,7 @@ void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser,s
     }
 }
 
-void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashSegBaseInfo **segBaseInfo)
+void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashSegBaseInfo **segBaseInfo)
 {
     if (segBaseInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentBase segBaseInfo == nullptr");
@@ -504,7 +504,7 @@ void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser,std::s
     }
 }
 
-void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashSegListInfo **segListInfo)
+void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashSegListInfo **segListInfo)
 {
     if (segListInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentList segListInfo == nullptr");
@@ -590,7 +590,7 @@ void DashMpdParser::InheritSegBase(DashSegBaseInfo *lowerSegBaseInfo, const Dash
     }
 }
 
-void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, DashSegTmpltInfo **segTmpltInfo)
+void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, DashSegTmpltInfo **segTmpltInfo)
 {
     if (segTmpltInfo == nullptr) {
         MEDIA_LOG_E("ParseSegmentTemplate segTmpltInfo == nullptr");
@@ -653,7 +653,7 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser,st
     }
 }
 
-void DashMpdParser::ParseRepresentation(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
+void DashMpdParser::ParseRepresentation(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, const DashPeriodInfo *periodInfo,
                                         DashAdptSetInfo *adptSetInfo)
 {
     DashRepresentationInfo *representationInfo = new (std::nothrow) DashRepresentationInfo;
@@ -691,7 +691,7 @@ void DashMpdParser::GetRepresentationAttr(IDashMpdNode *representationNode, Dash
     representationNode->GetAttr("cuvvVersion", representationInfo->commonAttrsAndElements_.cuvvVersion_);
 }
 
-void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                              const DashPeriodInfo *periodInfo, const DashAdptSetInfo *adptSetInfo,
                                              DashRepresentationInfo *representationInfo)
 {
@@ -779,7 +779,7 @@ void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParse
     }
 }
 
-void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                            DashList<DashDescriptor *> &contentProtectionList)
 {
     DashDescriptor *contentProtection = new (std::nothrow) DashDescriptor;
@@ -826,7 +826,7 @@ void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,
     }
 }
 
-void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                            DashList<DashDescriptor *> &essentialPropertyList)
 {
     DashDescriptor *essentialProperty = new (std::nothrow) DashDescriptor;
@@ -848,7 +848,7 @@ void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,
     }
 }
 
-void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                                    DashList<DashDescriptor *> &propertyList)
 {
     DashDescriptor *channelProperty = new (std::nothrow) DashDescriptor;
@@ -870,7 +870,7 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
     }
 }
 
-void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                          DashList<DashSegTimeline *> &segTmlineList)
 {
     // parse element SegmentTimeliness
@@ -912,7 +912,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser,st
     }
 }
 
-void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement, const std::string urlTypeName,
+void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement, const std::string urlTypeName,
                                  DashUrlType **urlTypeInfo)
 {
     if (urlTypeInfo == nullptr) {

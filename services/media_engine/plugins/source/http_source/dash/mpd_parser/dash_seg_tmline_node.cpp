@@ -32,7 +32,7 @@ DashSegTmlineNode::DashSegTmlineNode()
 
 DashSegTmlineNode::~DashSegTmlineNode() {}
 
-void DashSegTmlineNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashSegTmlineNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_SEG_TIMELINE_ATTR_NUM; index++) {

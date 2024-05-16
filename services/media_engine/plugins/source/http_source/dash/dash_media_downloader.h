@@ -40,7 +40,8 @@ public:
     void Pause() override;
     void Resume() override;
     //bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
-    bool Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, int32_t& realStreamId, bool& isEos) override;
+    bool Read(int32_t streamId, unsigned char *buff, unsigned int wantReadLength, unsigned int &realReadLength,
+              int32_t &realStreamId, bool &isEos) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
     size_t GetContentLength() const override;
