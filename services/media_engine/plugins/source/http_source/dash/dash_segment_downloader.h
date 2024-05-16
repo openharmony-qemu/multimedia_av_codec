@@ -69,7 +69,27 @@ struct DashBufferSegment {
         isEos_ = srcSegment.isEos_;
     }
 
-    DashBufferSegment(const std::shared_ptr<DashSegment> &dashSegment)
+    DashBufferSegment& operator=(const DashBufferSegment& srcSegment)
+    {
+        if (this != &srcSegment) {
+            streamId_ = srcSegment.streamId_;
+            duration_ = srcSegment.duration_;
+            bandwidth_ = srcSegment.bandwidth_;
+            startNumberSeq_ = srcSegment.startNumberSeq_;
+            numberSeq_ = srcSegment.numberSeq_;
+            startRangeValue_ = srcSegment.startRangeValue_;
+            endRangeValue_ = srcSegment.endRangeValue_;
+            url_ = srcSegment.url_;
+            byteRange_ = srcSegment.byteRange_;
+            bufferPosHead_ = srcSegment.bufferPosHead_;
+            bufferPosTail_ = srcSegment.bufferPosTail_;
+            contentLength_ = srcSegment.contentLength_;
+            isEos_ = srcSegment.isEos_;
+        }
+        return *this;
+    }
+
+    explicit DashBufferSegment(const std::shared_ptr<DashSegment> &dashSegment)
     {
         streamId_ = dashSegment->streamId_;
         duration_ = dashSegment->duration_;

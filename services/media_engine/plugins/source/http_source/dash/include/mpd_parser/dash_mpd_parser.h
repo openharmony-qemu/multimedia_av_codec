@@ -97,6 +97,8 @@ private:
     void InheritSegBase(DashSegBaseInfo *lowerSegBaseInfo, const DashSegBaseInfo *higherSegBaseInfo) const;
     time_t String2Time(const std::string szTime);
     void InitPeriodDuration(DashMpdInfo *mpdInfo);
+    void ParseElement(std::shared_ptr<XmlParser> &xmlParser, DashSegTmpltInfo *segTmplt,
+                      std::shared_ptr<XmlElement> &childElement);
 
 private:
     static constexpr const char *MPD_LABEL_MPD = "MPD";

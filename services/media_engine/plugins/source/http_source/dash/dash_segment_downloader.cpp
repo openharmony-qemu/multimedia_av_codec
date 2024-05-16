@@ -28,10 +28,9 @@ constexpr uint32_t AUD_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr int32_t TIME_OUT = 3 * 1000;
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
-        {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
-        {MediaAVCodec::MediaType::MEDIA_TYPE_AUD,      AUD_RING_BUFFER_SIZE},
-        {MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, DEFAULT_RING_BUFFER_SIZE}
-};
+    {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
+    {MediaAVCodec::MediaType::MEDIA_TYPE_AUD,      AUD_RING_BUFFER_SIZE},
+    {MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, DEFAULT_RING_BUFFER_SIZE}};
 
 DashSegmentDownloader::DashSegmentDownloader(int streamId, MediaAVCodec::MediaType streamType)
 {
@@ -82,7 +81,10 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& seg)
 
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_UNUSE) {
-        MEDIA_LOG_I("Open streamId:" PUBLIC_LOG_D32 ", writeState:" PUBLIC_LOG_D32, streamId_, initSegment->writeState_);
+        MEDIA_LOG_I("Open streamId:"
+        PUBLIC_LOG_D32
+        ", writeState:"
+        PUBLIC_LOG_D32, streamId_, initSegment->writeState_);
         initSegment->writeState_ = INIT_SEGMENT_STATE_USING;
         if (!initSegment->isDownloadFinish_) {
             int64_t startPos = initSegment->rangeBegin_;
@@ -215,7 +217,8 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
         ", flag:"
         PUBLIC_LOG_D32
         ", readState:"
-        PUBLIC_LOG_D32, currentStreamId, contentLen, initSegment->readIndex_, initSegment->isDownloadFinish_, initSegment->readState_);
+        PUBLIC_LOG_D32, currentStreamId, contentLen, initSegment->readIndex_,
+        initSegment->isDownloadFinish_, initSegment->readState_);
         if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
             // init segment read finish
             initSegment->readState_ = INIT_SEGMENT_STATE_USED;
@@ -330,7 +333,8 @@ void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> init
     ", readState_="
     PUBLIC_LOG_D32
     ", writeState_="
-    PUBLIC_LOG_D32, streamId, dashInitSegment->isDownloadFinish_, dashInitSegment->readState_, dashInitSegment->writeState_);
+    PUBLIC_LOG_D32
+    "", streamId, dashInitSegment->isDownloadFinish_, dashInitSegment->readState_, dashInitSegment->writeState_);
 }
 
 void DashSegmentDownloader::UpdateStreamId(int streamId)
@@ -436,7 +440,8 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     return false;
 }
 
-bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment) {
+bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment)
+{
     std::lock_guard<std::mutex> lock(segmentMutex_);
     std::shared_ptr<DashBufferSegment> desSegment;
     for (auto &it: segmentList_) {

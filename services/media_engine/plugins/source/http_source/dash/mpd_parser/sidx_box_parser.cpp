@@ -30,6 +30,10 @@ namespace {
     constexpr unsigned int SHIFT_NUM_24 = 24;
     constexpr unsigned int SHIFT_NUM_31 = 31;
     constexpr unsigned int SHIFT_NUM_32 = 32;
+    constexpr unsigned int BUFF_INDEX_0 = 0;
+    constexpr unsigned int BUFF_INDEX_1 = 1;
+    constexpr unsigned int BUFF_INDEX_2 = 2;
+    constexpr unsigned int BUFF_INDEX_3 = 3;
 }
 #define BEM_FOURCC(a, b, c, d) ((d) | ((c) << SHIFT_NUM_8) | ((b) << SHIFT_NUM_16) | ((a) << SHIFT_NUM_24))
 
@@ -117,14 +121,15 @@ unsigned short Get2Bytes(char *buffer, uint32_t &currPos)
 {
     unsigned char *tmpBuff = (unsigned char *)(buffer + currPos);
     currPos += SHIFT_NUM_2;
-    return (tmpBuff[0] << SHIFT_NUM_8) | tmpBuff[1];
+    return (tmpBuff[BUFF_INDEX_0] << SHIFT_NUM_8) | tmpBuff[BUFF_INDEX_1];
 }
 
 uint32_t Get4Bytes(char *buffer, uint32_t &currPos)
 {
     unsigned char *tmpBuff = (unsigned char *)(buffer + currPos);
     currPos += SHIFT_NUM_4;
-    return (tmpBuff[0] << SHIFT_NUM_24) | (tmpBuff[1] << SHIFT_NUM_16) | (tmpBuff[2] << SHIFT_NUM_8) | tmpBuff[3];
+    return (tmpBuff[BUFF_INDEX_0] << SHIFT_NUM_24) | (tmpBuff[BUFF_INDEX_1] << SHIFT_NUM_16) |
+           (tmpBuff[BUFF_INDEX_2] << SHIFT_NUM_8) | tmpBuff[BUFF_INDEX_3];
 }
 
 int64_t Get8Bytes(char *buffer, uint32_t &currPos)

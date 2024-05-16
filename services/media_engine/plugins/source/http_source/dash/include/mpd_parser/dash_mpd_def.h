@@ -127,7 +127,6 @@ struct DashRepresentationInfo {
     DashCommonAttrsAndElements commonAttrsAndElements_;
 };
 
-// ContentComponent Element Infomation. <Accessibility> <Rating> <Viewpoint> are not support
 struct DashContentCompInfo {
     uint32_t id_{0};
     std::string lang_;
@@ -136,7 +135,6 @@ struct DashContentCompInfo {
     DashList<DashDescriptor *> roleList_;
 };
 
-// AdaptationSet Element Infomation. <href> <actuate> <Accessibility> <Rating> <Viewpoint> are not support
 struct DashAdptSetInfo {
     bool segmentAlignment_{false};
     bool subSegmentAlignment_{false};
