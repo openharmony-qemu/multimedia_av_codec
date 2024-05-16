@@ -106,7 +106,8 @@ bool DashMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned i
     return true;
 }
 
-std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId) {
+std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
+{
     std::shared_ptr<DashSegmentDownloader> segmentDownloader;
     std::shared_ptr<DashStreamDescription> streamDescription = mpdDownloader_->GetStreamByStreamId(streamId);
     if (streamDescription == nullptr) {
@@ -435,7 +436,7 @@ void DashMediaDownloader::GetSegmentToDownload(int downloadStreamId, bool stream
     }
 
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
-            MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
     if (segmentDownloader == nullptr) {
         return;
     }
@@ -526,7 +527,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
         PUBLIC_LOG_D32, bitrateParam_.streamId_, bitrateParam_.bitrate_, (int) bitrateParam_.type_);
         int streamId = bitrateParam_.streamId_;
         std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
-                MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+            MediaAVCodec::MediaType::MEDIA_TYPE_VID);
         if (segmentDownloader != nullptr && segmentDownloader->GetStreamId() != streamId) {
             segmentDownloader->UpdateStreamId(streamId);
         }

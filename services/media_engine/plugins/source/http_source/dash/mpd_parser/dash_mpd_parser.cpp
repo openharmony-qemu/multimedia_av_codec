@@ -51,7 +51,8 @@ time_t DashMpdParser::String2Time(const std::string szTime)
 
     if (-1 == sscanf_s(szTime.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
                        &tm1.tm_min, &tm1.tm_sec)) {
-       MEDIA_LOG_E("String2Time format error " PUBLIC_LOG_S, szTime.c_str());
+        MEDIA_LOG_E("String2Time format error "
+        PUBLIC_LOG_S, szTime.c_str());
     }
 
     tm1.tm_year -= DEFAULT_YEAR;
@@ -134,7 +135,7 @@ void DashMpdParser::ParsePeriod(std::shared_ptr<XmlParser> xmlParser, std::share
         dashMpdInfo_.periodInfoList_.push_back(periodInfo);
         IDashMpdNode::DestroyNode(periodNode);
     } else {
-       MEDIA_LOG_E("ParsePeriod periodInfo == nullptr");
+        MEDIA_LOG_E("ParsePeriod periodInfo == nullptr");
     }
 }
 
@@ -160,17 +161,17 @@ void DashMpdParser::GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *peri
 void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                      DashPeriodInfo *periodInfo)
 {
-   DashList<std::shared_ptr<XmlElement>> adptSetElementList;
-   std::shared_ptr<XmlElement> segBaseElement = nullptr;
-   std::shared_ptr<XmlElement> segListElement = nullptr;
-   std::shared_ptr<XmlElement> segTmplElement = nullptr;
-   std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    DashList<std::shared_ptr<XmlElement>> adptSetElementList;
+    std::shared_ptr<XmlElement> segBaseElement = nullptr;
+    std::shared_ptr<XmlElement> segListElement = nullptr;
+    std::shared_ptr<XmlElement> segTmplElement = nullptr;
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
         if (this->stopFlag_) {
             break;
         }
 
-        std::string elementNameStr= childElement->GetName();
+        std::string elementNameStr = childElement->GetName();
         if (!elementNameStr.empty()) {
             xmlParser->SkipElementNameSpace(elementNameStr);
 
@@ -216,7 +217,7 @@ void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::
             break;
         }
 
-       std::shared_ptr<XmlElement> adptSetElement = adptSetElementList.front();
+        std::shared_ptr<XmlElement> adptSetElement = adptSetElementList.front();
         if (adptSetElement != nullptr) {
             ParseAdaptationSet(xmlParser, adptSetElement, periodInfo);
         }
@@ -317,11 +318,11 @@ void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser
                                             DashAdptSetInfo *adptSetInfo)
 {
     // parse element in AdaptationSet
-   DashList<std::shared_ptr<XmlElement>> representationElementList;
-   std::shared_ptr<XmlElement> segBaseElement = nullptr;
-   std::shared_ptr<XmlElement> segListElement = nullptr;
-   std::shared_ptr<XmlElement> segTmplElement = nullptr;
-   std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    DashList<std::shared_ptr<XmlElement>> representationElementList;
+    std::shared_ptr<XmlElement> segBaseElement = nullptr;
+    std::shared_ptr<XmlElement> segListElement = nullptr;
+    std::shared_ptr<XmlElement> segTmplElement = nullptr;
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
         if (this->stopFlag_) {
             break;
@@ -398,7 +399,7 @@ void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser
             break;
         }
 
-       std::shared_ptr<XmlElement> representationElement = representationElementList.front();
+        std::shared_ptr<XmlElement> representationElement = representationElementList.front();
         if (representationElement != nullptr) {
             ParseRepresentation(xmlParser, representationElement, periodInfo, adptSetInfo);
         }
@@ -483,7 +484,7 @@ void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::
         }
 
         // parse element SegmentBase
-       std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+        std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
             if (this->stopFlag_) {
                 break;
@@ -535,7 +536,7 @@ void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::
         segListNode->GetAttr("presentationTimeOffset",
                              segList->multSegBaseInfo_.segBaseInfo_.presentationTimeOffset_);
         // parse element SegmentList
-       std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+        std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
             if (this->stopFlag_) {
                 break;
@@ -628,39 +629,44 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
         segTmpltNode->GetAttr("bitstreamSwitching", segTmplt->segTmpltBitstreamSwitching_);
 
         // parse element SegmentTemplate
-       std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+        std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
             if (this->stopFlag_) {
                 break;
             }
 
-            std::string elementNameStr = childElement->GetName();
-            if (!elementNameStr.empty()) {
-                xmlParser->SkipElementNameSpace(elementNameStr);
-
-                if (elementNameStr == MPD_LABEL_SEGMENT_TIMELINE) {
-                    // parse element SegmentTimeline
-                    ParseSegmentTimeline(xmlParser, childElement, segTmplt->multSegBaseInfo_.segTimeline_);
-                } else if (elementNameStr == MPD_LABEL_BITSTREAM_SWITCHING) {
-                    // parse element BitstreamSwitching
-                    ParseUrlType(xmlParser, childElement, elementNameStr,
-                                 &segTmplt->multSegBaseInfo_.bitstreamSwitching_);
-                } else if (elementNameStr == MPD_LABEL_INITIALIZATION) {
-                    // parse element Initialization
-                    ParseUrlType(xmlParser, childElement, elementNameStr,
-                                 &segTmplt->multSegBaseInfo_.segBaseInfo_.initialization_);
-                } else if (elementNameStr == MPD_LABEL_REPRESENTATION_INDEX) {
-                    // parse element RepresentationIndex
-                    ParseUrlType(xmlParser, childElement, elementNameStr,
-                                 &segTmplt->multSegBaseInfo_.segBaseInfo_.representationIndex_);
-                }
-            }
-
+            ParseElement(xmlParser, segTmplt, childElement);
             childElement = childElement->GetSiblingNext();
         }
 
         *segTmpltInfo = segTmplt;
         IDashMpdNode::DestroyNode(segTmpltNode);
+    }
+}
+
+void DashMpdParser::ParseElement(std::shared_ptr<XmlParser> &xmlParser, DashSegTmpltInfo *segTmplt,
+                                 std::shared_ptr<XmlElement> &childElement)
+{
+    std::string elementNameStr = childElement->GetName();
+    if (!elementNameStr.empty()) {
+        xmlParser->SkipElementNameSpace(elementNameStr);
+
+        if (elementNameStr == MPD_LABEL_SEGMENT_TIMELINE) {
+            // parse element SegmentTimeline
+            ParseSegmentTimeline(xmlParser, childElement, segTmplt->multSegBaseInfo_.segTimeline_);
+        } else if (elementNameStr == MPD_LABEL_BITSTREAM_SWITCHING) {
+            // parse element BitstreamSwitching
+            ParseUrlType(xmlParser, childElement, elementNameStr,
+                         &segTmplt->multSegBaseInfo_.bitstreamSwitching_);
+        } else if (elementNameStr == MPD_LABEL_INITIALIZATION) {
+            // parse element Initialization
+            ParseUrlType(xmlParser, childElement, elementNameStr,
+                         &segTmplt->multSegBaseInfo_.segBaseInfo_.initialization_);
+        } else if (elementNameStr == MPD_LABEL_REPRESENTATION_INDEX) {
+            // parse element RepresentationIndex
+            ParseUrlType(xmlParser, childElement, elementNameStr,
+                         &segTmplt->multSegBaseInfo_.segBaseInfo_.representationIndex_);
+        }
     }
 }
 
@@ -703,15 +709,16 @@ void DashMpdParser::GetRepresentationAttr(IDashMpdNode *representationNode, Dash
     representationNode->GetAttr("cuvvVersion", representationInfo->commonAttrsAndElements_.cuvvVersion_);
 }
 
-void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParser,
+                                             std::shared_ptr<XmlElement> rootElement,
                                              const DashPeriodInfo *periodInfo, const DashAdptSetInfo *adptSetInfo,
                                              DashRepresentationInfo *representationInfo)
 {
     // parse element Representation
-   std::shared_ptr<XmlElement> segBaseElement = nullptr;
-   std::shared_ptr<XmlElement> segListElement = nullptr;
-   std::shared_ptr<XmlElement> segTmplElement = nullptr;
-   std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    std::shared_ptr<XmlElement> segBaseElement = nullptr;
+    std::shared_ptr<XmlElement> segListElement = nullptr;
+    std::shared_ptr<XmlElement> segTmplElement = nullptr;
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
         if (this->stopFlag_) {
             break;
@@ -791,7 +798,8 @@ void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParse
     }
 }
 
-void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,
+                                           std::shared_ptr<XmlElement> rootElement,
                                            DashList<DashDescriptor *> &contentProtectionList)
 {
     DashDescriptor *contentProtection = new (std::nothrow) DashDescriptor;
@@ -806,7 +814,7 @@ void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,
         contentProtectionNode->GetAttr("value", contentProtection->value_);
         contentProtectionNode->GetAttr(MPD_LABEL_DEFAULT_KID, contentProtection->defaultKid_);
 
-       std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+        std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
             if (this->stopFlag_) {
                 break;
@@ -838,7 +846,8 @@ void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,
     }
 }
 
-void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
+void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,
+                                           std::shared_ptr<XmlElement> rootElement,
                                            DashList<DashDescriptor *> &essentialPropertyList)
 {
     DashDescriptor *essentialProperty = new (std::nothrow) DashDescriptor;
@@ -887,7 +896,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
                                          DashList<DashSegTimeline *> &segTmlineList)
 {
     // parse element SegmentTimeliness
-   std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
         if (this->stopFlag_) {
             break;
@@ -1010,7 +1019,7 @@ void DashMpdParser::GetMpdAttr(IDashMpdNode *mpdNode)
 void DashMpdParser::GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     DashList<std::shared_ptr<XmlElement>> periodElementList;
-   std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
+    std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
         if (this->stopFlag_) {
             break;
@@ -1057,7 +1066,7 @@ void DashMpdParser::ParseMPD(const char *mpdData, uint32_t length)
     std::shared_ptr<XmlParser> xmlParser = std::make_shared<XmlParser>();
     if (xmlParser != nullptr) {
         int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
-       std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
+        std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
         if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) || this->stopFlag_ || rootElement == nullptr) {
             MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
             return;

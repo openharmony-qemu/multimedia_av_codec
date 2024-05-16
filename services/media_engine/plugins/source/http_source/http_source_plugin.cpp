@@ -242,11 +242,17 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     unsigned int realReadSize = 0;
     bool result = false;
     int32_t realStreamId = streamId;
-    result = downloader_->Read(streamId, bufData->GetWritableAddr(expectedLen), expectedLen, realReadSize, realStreamId, isEos);
+    result = downloader_->Read(streamId, bufData->GetWritableAddr(expectedLen), expectedLen, realReadSize, realStreamId,
+                               isEos);
     buffer->streamID = realStreamId;
     
     bufData->UpdateDataSize(realReadSize);
-    MEDIA_LOG_I("Read finished, read size = " PUBLIC_LOG_ZU "realStreamId = " PUBLIC_LOG_D32 ", isEos " PUBLIC_LOG_D32, bufData->GetSize(), realStreamId, isEos);
+    MEDIA_LOG_I("Read finished, read size = "
+    PUBLIC_LOG_ZU
+    "realStreamId = "
+    PUBLIC_LOG_D32
+    ", isEos "
+    PUBLIC_LOG_D32, bufData->GetSize(), realStreamId, isEos);
     return result ? Status::OK : Status::END_OF_STREAM;
 }
 

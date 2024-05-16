@@ -245,7 +245,8 @@ void DashPeriodManager::GetBaseUrlList(std::list<std::string> &baseUrlList)
     }
 }
 
-void DashPeriodManager::GetAdptSetsByStreamType(DashVector<DashAdptSetInfo *> &adptSetInfo, MediaAVCodec::MediaType streamType)
+void DashPeriodManager::GetAdptSetsByStreamType(DashVector<DashAdptSetInfo *> &adptSetInfo,
+                                                MediaAVCodec::MediaType streamType)
 {
     switch (streamType) {
         case MediaAVCodec::MediaType::MEDIA_TYPE_VID:

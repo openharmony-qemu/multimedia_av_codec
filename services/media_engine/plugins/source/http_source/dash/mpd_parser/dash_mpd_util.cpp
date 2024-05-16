@@ -65,7 +65,7 @@ void DashAppendBaseUrl(std::string &srcUrl, std::string baseUrl)
     }
 }
 
-void BuildSrcUrl(std::string &srcUrl, std::string &baseUrl)// absolute path, strip path in srcUrl
+void BuildSrcUrl(std::string &srcUrl, std::string &baseUrl)
 {
     if (DashUrlIsAbsolute(srcUrl)) {
         std::string urlSchem;
@@ -104,7 +104,6 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, std::string segTmpltIde
         // contain format %0[width]d
         if (str[0] == '%' && str[1] == '0') {
             std::string::size_type posEnd = str.find("$");
-
             // not find end '$', drop the representation
             if (posEnd == std::string::npos) {
                 return -1;
@@ -155,27 +154,27 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         }
 
         switch (*start) {
-        case 'M':
-            if (secondTime) {
-                coefficient = M_2_S;
-            }
-            break;
-        case 'Y':
-            break;
-        case 'D':
-            coefficient = D_2_H * H_2_M * M_2_S;
-            break;
-        case 'T':
-            secondTime = 1;
-            break;
-        case 'H':
-            coefficient = H_2_M * M_2_S;
-            break;
-        case 'S':
-            coefficient = 1;
-            break;
-        default:
-            break;
+            case 'M':
+                if (secondTime) {
+                    coefficient = M_2_S;
+                }
+                break;
+            case 'Y':
+                break;
+            case 'D':
+                coefficient = D_2_H * H_2_M * M_2_S;
+                break;
+            case 'T':
+                secondTime = 1;
+                break;
+            case 'H':
+                coefficient = H_2_M * M_2_S;
+                break;
+            case 'S':
+                coefficient = 1;
+                break;
+            default:
+                break;
         }
 
         time += (int64_t)(num * S_2_MS) * coefficient;

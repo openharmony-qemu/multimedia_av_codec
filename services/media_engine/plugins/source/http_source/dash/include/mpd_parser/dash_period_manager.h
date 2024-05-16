@@ -56,7 +56,6 @@ private:
     static constexpr const char *const AUDIO_MIME_TYPE = "audio";
     static constexpr const char *const VIDEO_MIME_TYPE = "video";
 
-
     DashPeriodInfo *periodInfo_{nullptr};
     DashPeriodInfo *previousPeriodInfo_{nullptr};
     DashUrlType *initSegment_{nullptr};

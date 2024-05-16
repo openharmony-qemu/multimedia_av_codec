@@ -75,6 +75,19 @@ using DashMpdBitrateParam = struct DashMpdBitrateParam {
     int64_t position_;
 };
 
+struct MediaSegSampleInfo {
+    MediaSegSampleInfo()
+    {
+        segCount_ = 0;
+        segDuration_ = 0;
+        mediaUrl_ = "";
+    }
+
+    int segCount_;
+    unsigned int segDuration_;
+    std::string mediaUrl_;
+};
+
 struct DashMpdCallback {
     virtual ~DashMpdCallback() = default;
     virtual void OnMpdInfoUpdate(DashMpdEvent mpdEvent) = 0;
@@ -142,12 +155,11 @@ private:
                                                     std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsWithTmpltDurationStatic(const DashSegTmpltInfo *segTmpltInfo, std::string mediaUrl,
                                                             unsigned int timeScale,
-                                                            std::shared_ptr<DashStreamDescription> streamDesc);
+                                                            std::shared_ptr<DashStreamDescription> desc);
     DashSegmentInitValue GetSegmentsWithTmpltTimelineStatic(const DashSegTmpltInfo *segTmpltInfo, std::string mediaUrl,
                                                             unsigned int timeScale,
-                                                            std::shared_ptr<DashStreamDescription> streamDesc);
-    DashSegmentInitValue GetSegmentsInOneTimeline(const DashSegTimeline *timeline, int segCount,
-                                                  unsigned int segDuration, std::string mediaUrl,
+                                                            std::shared_ptr<DashStreamDescription> desc);
+    DashSegmentInitValue GetSegmentsInOneTimeline(const DashSegTimeline *timeline, const MediaSegSampleInfo &sampleInfo,
                                                   int64_t &segmentSeq, uint64_t &startTime,
                                                   std::shared_ptr<DashStreamDescription> streamDesc);
 

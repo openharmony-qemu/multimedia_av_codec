@@ -92,7 +92,6 @@ DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string mineType,
         }
 
         int32_t matchScore = GetAudioRepresentationPreferScore(filter, representation);
-
         // 根据偏好设置与音轨的匹配度，选择分数最高的音轨
         if (highestScoreRep == nullptr || matchScore > highestScore) {
             highestScore = matchScore;

@@ -169,7 +169,8 @@ void DownloadRequest::SetStartTimePos(int64_t startTimePos)
     }
 }
 
-void DownloadRequest::SetRangePos(int64_t startPos, int64_t endPos) {
+void DownloadRequest::SetRangePos(int64_t startPos, int64_t endPos)
+{
     startPos_ = startPos;
     endPos_ = endPos;
 }

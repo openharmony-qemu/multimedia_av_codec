@@ -193,8 +193,7 @@ struct DashStreamDescription {
     std::vector<std::shared_ptr<DashSegment>> mediaSegments_;
 };
 
-struct DashDrmInfo
-{
+struct DashDrmInfo {
     std::string drmId_;
     std::string uuid_;
     std::string pssh_;
