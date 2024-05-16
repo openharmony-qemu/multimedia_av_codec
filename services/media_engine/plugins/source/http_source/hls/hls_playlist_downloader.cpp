@@ -24,7 +24,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr unsigned int SLEEP_TIME = 1;
-constexpr size_t RETRY_TIMES = 15000;
+constexpr size_t RETRY_TIMES = 1000;
 constexpr int FIRST_TS_TIMEOUT = 400;
 constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
 }
