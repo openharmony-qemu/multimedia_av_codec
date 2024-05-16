@@ -495,7 +495,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
                              mediaSegment->contentLength_)) {
                 mediaSegment->isEos_ = true;
                 MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
-                PUBLIC_LOG_D64 ", bufferPosHead:" PUBLIC_LOG_D64  " ,bufferPosEnd:" PUBLIC_LOG_D64,
+                PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
                 streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
                 mediaSegment->bufferPosTail_);
             }
@@ -567,7 +567,7 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
         mediaSegment_->isEos_ = true;
     }
     MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
-    PUBLIC_LOG_D64
+    PUBLIC_LOG_ZU
     ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_, isCleaningBuffer_);
     if (downloadDoneCbFunc_ && !isCleaningBuffer_) {
         downloadDoneCbFunc_(streamId_);

@@ -189,6 +189,8 @@ public:
         return Status::OK;
     }
 
+    virtual void SetInterruptState(bool isInterruptNeeded) {}
+
     virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
     {
         return Status::OK;
