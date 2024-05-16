@@ -1048,7 +1048,7 @@ void DashMpdParser::GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::sha
             break;
         }
 
-       std::shared_ptr<XmlElement> periodElement = periodElementList.front();
+        std::shared_ptr<XmlElement> periodElement = periodElementList.front();
         if (periodElement != nullptr) {
             ParsePeriod(xmlParser, periodElement);
         }

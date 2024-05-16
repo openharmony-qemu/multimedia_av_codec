@@ -92,7 +92,6 @@ ohos_shared_library("media_plugin_HttpSource") {
     "dash/mpd_parser/i_dash_mpd_node.cpp",
     "dash/mpd_parser/sidx_box_parser.cpp",
     "dash/utils/time_utils.cpp",
-    "dash/utils/url_utils.cpp",
     "download/downloader.cpp",
     "download/http_curl_client.cpp",
     "hls/hls_media_downloader.cpp",

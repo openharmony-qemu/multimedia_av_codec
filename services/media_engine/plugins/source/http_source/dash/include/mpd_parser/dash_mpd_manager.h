@@ -44,6 +44,7 @@ public:
     std::string GetBaseUrl();
     void GetDuration(uint32_t *duration);
     const DashList<DashPeriodInfo *> &GetPeriods() const;
+    void MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem);
 
 private:
     DashMpdInfo *mpdInfo_{nullptr};

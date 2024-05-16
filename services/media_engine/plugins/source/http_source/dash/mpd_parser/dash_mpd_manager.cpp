@@ -114,8 +114,14 @@ std::string DashMpdManager::GetBaseUrl()
         mpdUrlBase = mpdUrlBase.substr(0, end + 1);
     }
 
-    if (!this->mpdInfo_->baseUrl_.empty()) {
-        std::string baseUrl = this->mpdInfo_->baseUrl_.front();
+    MakeBaseUrl(mpdUrlBase, urlSchem);
+    return urlSchem.append(mpdUrlBase);
+}
+
+void DashMpdManager::MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem)
+{
+    if (!mpdInfo_->baseUrl_.empty()) {
+        std::string baseUrl = mpdInfo_->baseUrl_.front();
         if (DashUrlIsAbsolute(baseUrl)) {
             urlSchem.clear();
             mpdUrlBase = baseUrl;
@@ -131,8 +137,6 @@ std::string DashMpdManager::GetBaseUrl()
             mpdUrlBase.append(baseUrl);
         }
     }
-
-    return urlSchem.append(mpdUrlBase);
 }
 
 DashMpdInfo *DashMpdManager::GetMpdInfo()
