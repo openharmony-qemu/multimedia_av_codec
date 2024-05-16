@@ -116,7 +116,6 @@ int32_t CodecClient::Configure(const Format &format)
 
     Format format_ = format;
     int32_t isSetParameterCb = (codecMode_ & CODEC_SET_PARAMETER_CALLBACK) != 0;
-    format_.PutStringValue(Tag::PROCESS_NAME, program_invocation_name);
     format_.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
 
     int32_t ret = codecProxy_->Configure(format_);
