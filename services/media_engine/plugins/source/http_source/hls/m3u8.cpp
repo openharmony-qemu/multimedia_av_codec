@@ -498,7 +498,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                         stream->height_ = resolutionAttribute->GetResolution().second;
                     }
                     variants_.emplace_back(stream);
-                    if(stream->bandWidth_ <= BAND_WIDTH_LIMIT) {
+                    if (stream->bandWidth_ <= BAND_WIDTH_LIMIT) {
                         defaultVariant_ = stream; // play last stream
                     }
                 }
