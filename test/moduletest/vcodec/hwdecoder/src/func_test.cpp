@@ -591,22 +591,26 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_006, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_007, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/resolutionChange.h264";
-    vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
-    vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->isResChangeStream = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/resolutionChange.h264";
+        vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
+        vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->isResChangeStream = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 } // namespace

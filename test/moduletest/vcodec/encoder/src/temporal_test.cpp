@@ -646,6 +646,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_001, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
     vEncSample->ltrParam.ltrCount = 11;
     ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
 }
@@ -810,6 +811,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_009, TestSize.Level2)
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->ltrParam.ltrCount = -1;
     vEncSample->SURF_INPUT = true;
     vEncSample->ltrParam.enableUseLtr = true;
     vEncSample->enableLTR = true;

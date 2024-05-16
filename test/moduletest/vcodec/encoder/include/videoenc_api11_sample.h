@@ -58,7 +58,7 @@ typedef struct LtrTestParameter {
     bool useLtrOnce = false;
     uint32_t useLtrIndex = 0;
     bool markAndUseSelf = false;
-    uint32_t ltrCount = 0;
+    int32_t ltrCount = 0;
 }LtrTestParameter;
 
 class VEncAPI11Sample : public NoCopyable {
