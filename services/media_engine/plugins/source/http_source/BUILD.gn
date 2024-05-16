@@ -49,7 +49,6 @@ config("http_source_plugin_config") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "//third_party/curl/include",
     "//third_party/openssl/include",
-    "//third_party/libxml2/include",
   ]
 }
 
@@ -111,7 +110,6 @@ ohos_shared_library("media_plugin_HttpSource") {
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
-    "//third_party/libxml2:xml2",
   ]
 
   external_deps = [
@@ -123,6 +121,7 @@ ohos_shared_library("media_plugin_HttpSource") {
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
+    "libxml2:libxml2",
   ]
 
   relative_install_dir = "media/media_plugins"

@@ -65,13 +65,13 @@
           "audio_framework",
           "drm_framework",
           "ffmpeg",
-          "lame"
+          "lame",
+          "libxml2"
         ],
         "third_party": [
           "bounds_checking_function",
           "curl",
-          "openssl",
-          "libxml2"
+          "openssl"
         ]
       },
       "build": {
