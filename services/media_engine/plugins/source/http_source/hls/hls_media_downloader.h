@@ -74,7 +74,7 @@ public:
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
-    std::pair<int32_t, int32_t> getDownloadRateAndSpeed();
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -183,6 +183,8 @@ PRIVATE:
     bool isDownloadFinish_ {false};
     int32_t avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
+    int64_t lastReportUsageTime_ {0};
+    uint64_t dataUsage_ {0};
 
     struct RecordData {
         double downloadRate {0};

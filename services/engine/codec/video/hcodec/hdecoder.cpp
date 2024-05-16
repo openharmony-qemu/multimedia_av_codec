@@ -15,6 +15,8 @@
 
 #include "hdecoder.h"
 #include <cassert>
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
 #include "utils/hdf_base.h"
 #include "codec_omx_ext.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
@@ -47,7 +49,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     }
     SaveTransform(format);
     SaveScaleMode(format);
-    (void)SetProcessName(format);
+    (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     return SetupPort(format);
 }
@@ -392,6 +394,24 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     return ret;
 }
 
+void HDecoder::SetCallerToBuffer(bool isInput)
+{
+    if (currSurface_.surface_ == nullptr) {
+        return; // only set on surface mode
+    }
+    string pid = std::to_string(calledByAvcodec_ ? avcodecCaller_.pid : playerCaller_.pid);
+    vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
+    for (BufferInfo& info : pool) {
+        int fd = isInput ? info.avBuffer->memory_->GetFileDescriptor() : info.surfaceBuffer->GetFileDescriptor();
+        int ret = ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
+        if (ret != 0) {
+            HLOGW("set pid %s to fd %d failed", pid.c_str(), fd);
+            return;
+        }
+    }
+    HLOGI("set pid %s to fd succ", pid.c_str());
+}
+
 void HDecoder::UpdateFormatFromSurfaceBuffer()
 {
     if (outputBufferPool_.empty()) {
@@ -547,6 +567,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     }
     SetTransform();
     SetScaleMode();
+    SetCallerToBuffer(false);
     return AVCS_ERR_OK;
 }
 

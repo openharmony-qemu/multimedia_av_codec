@@ -17,10 +17,12 @@
 #include "audio_decoder_filter.h"
 #include "filter/filter_factory.h"
 #include "common/media_core.h"
+#include "avcodec_sysevent.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+using namespace MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
     FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
@@ -137,7 +139,20 @@ Status AudioDecoderFilter::PrepareFrame(bool renderFirstFrame)
 Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Start.");
-    return (Status)mediaCodec_->Start();
+    auto ret = (Status)mediaCodec_->Start();
+    if (ret != Status::OK) {
+        std::string mime;
+        meta_->GetData(Tag::MIME_TYPE, mime);
+        std::string instanceId = std::to_string(instanceId_);
+        struct AudioCodecFaultInfo audioCodecFaultInfo;
+        audioCodecFaultInfo.appName = appName_;
+        audioCodecFaultInfo.instanceId = instanceId;
+        audioCodecFaultInfo.callerType = "player_framework";
+        audioCodecFaultInfo.audioCodec = mime;
+        audioCodecFaultInfo.errMsg = "AudioDecoder start failed";
+        FaultAudioCodecEventWrite(audioCodecFaultInfo);
+    }
+    return ret;
 }
 
 Status AudioDecoderFilter::DoPause()
@@ -339,6 +354,12 @@ void AudioDecoderFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("AudioDecoderFilter::OnDumpInfo called.");
     mediaCodec_->OnDumpInfo(fd);
+}
+
+void AudioDecoderFilter::SetCallerInfo(uint64_t instanceId, const std::string& appName)
+{
+    instanceId_ = instanceId;
+    appName_ = appName;
 }
 } // namespace Pipeline
 } // namespace MEDIA

@@ -193,7 +193,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     Status ret;
     // create secure decoder for drm.
     MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
-    videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_);
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
+    }
     if (isDrmProtected_ && svpFlag_) {
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
         std::string baseName = GetCodecName(codecMimeType_);
@@ -303,6 +305,9 @@ Status DecoderSurfaceFilter::DoPause()
     }
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->ResetRenderTime();
+    }
     return Status::OK;
 }
 
@@ -397,16 +402,25 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     videoDecoder_->SetParameter(format);
 }
 
+Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
+{
+    if (videoDecoder_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return videoDecoder_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+}
+
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter enter parameter is valid:  %{public}i", parameter != nullptr);
 }
 
-void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName)
+void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId)
 {
     appUid_ = appUid;
     appPid_ = appPid;
     bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -506,6 +520,7 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer)
 {
     videoDecoder_->ReleaseOutputBuffer(index, render);
+    videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),

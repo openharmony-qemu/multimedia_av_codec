@@ -148,7 +148,7 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
         (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
-    if (enableLTR && (ltrParam.ltrCount > 0)) {
+    if (enableLTR && (ltrParam.ltrCount >= 0)) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
     }
     int ret = OH_VideoEncoder_Configure(venc_, format);

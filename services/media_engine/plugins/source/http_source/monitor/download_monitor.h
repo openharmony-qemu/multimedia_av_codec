@@ -61,6 +61,8 @@ public:
     void SetDemuxerState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+
 private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);

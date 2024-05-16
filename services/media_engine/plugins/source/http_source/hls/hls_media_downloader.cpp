@@ -41,6 +41,7 @@ constexpr int RECORD_TIME_INTERVAL = 3000;
 constexpr uint32_t SAMPLE_INTERVAL = 6000;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
+constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -56,7 +57,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
 }
@@ -74,7 +75,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
 
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
     playListDownloader_->SetPlayListCallback(this);
 }
 
@@ -174,6 +175,10 @@ void HlsMediaDownloader::Close(bool isAsync)
     isStopped = true;
     if (!isDownloadFinish_) {
         MEDIA_LOG_D("Download close, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+        auto downloadTime = nowTime - startDownloadTime_;
+        MEDIA_LOG_D("Download close, Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+            totalBits_, downloadTime);
     }
 }
 
@@ -412,11 +417,13 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
     int64_t nowTime = steadyClock_.ElapsedMilliseconds();
     if (startDownloadTime_ == 0) {
         startDownloadTime_ = nowTime;
+        lastReportUsageTime_ = nowTime;
     }
     uint32_t writeBits = len * 8;
     bufferedDuration_ += writeBits;
     totalBits_ += writeBits;
     lastWriteBit_ += writeBits;
+    dataUsage_ += writeBits;
 
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
         auto startPlayTime = steadyClock_.ElapsedMilliseconds();
@@ -508,6 +515,11 @@ void HlsMediaDownloader::DownloadReportLoop()
         downloadDuringTime_ = 0;
         downloadBits_ = 0;
         lastRecordTime_ = now;
+    }
+    if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
+        MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
+        dataUsage_ = 0;
+        lastReportUsageTime_ = now;
     }
 }
 
@@ -635,6 +647,10 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
         isDownloadStarted_ = false;
         isDownloadFinish_ = true;
         MEDIA_LOG_D("Download done, average download speed : " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+        auto downloadTime = (nowTime - startDownloadTime_) / 1000;
+        MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+            totalBits_, downloadTime * 1000);
     }
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_) {
         AutoSelectBitrate(bitRate);
@@ -884,8 +900,13 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-std::pair<int32_t, int32_t> HlsMediaDownloader::getDownloadRateAndSpeed()
+std::pair<int32_t, int32_t> HlsMediaDownloader::GetDownloadInfo()
 {
+    MEDIA_LOG_I("HlsMediaDownloader::GetDownloadInfo.");
+    if (recordSpeedCount_ == 0) {
+        MEDIA_LOG_E("recordSpeedCount_ is 0, can't get avgDownloadRate");
+        return std::make_pair(0, avgDownloadSpeed_);
+    }
     auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, avgDownloadSpeed_);
     return rateAndSpeed;
 }

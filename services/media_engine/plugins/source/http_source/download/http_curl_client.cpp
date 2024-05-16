@@ -236,7 +236,10 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
 
 Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    easyHandle_ = curl_easy_init();
+    if (easyHandle_ == nullptr) {
+        MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
+        easyHandle_ = curl_easy_init();
+    }
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     std::map<std::string, std::string> header = httpHeader;
     HttpHeaderParse(header);

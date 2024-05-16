@@ -60,6 +60,12 @@ bool TesterCodecBase::Create()
         TLOGE("Create failed");
         return false;
     }
+    Media::Meta meta{};
+    int32_t err = codec_->Init(meta);
+    if (err != AVCS_ERR_OK) {
+        TLOGE("Init failed");
+        return false;
+    }
     CostRecorder::Instance().Update(begin, "Create");
     return true;
 }

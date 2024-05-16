@@ -163,6 +163,15 @@ Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vecto
     return Status::OK;
 }
 
+Status MediaDemuxer::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+{
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("GetDownloadInfo failed, source_ is null");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
+}
+
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
 {
     MEDIA_LOG_I("SetDrmCallback called");
@@ -868,7 +877,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
-        MEDIA_LOG_D("Request buffer failed, wait for 5ms and retry again, user queue: "
+        MEDIA_LOG_D("Request buffer failed, wait for 5ms and try again, user queue: "
             PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
         if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Request buffer failed from buffer queue too many times in one minute.");

@@ -82,8 +82,9 @@ public:
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
 
-    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
 
+    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -143,6 +144,7 @@ private:
     int32_t appUid_;
     int32_t appPid_;
     std::string bundleName_;
+    uint64_t instanceId_ = 0;
 };
 } // namespace Pipeline
 } // namespace Media
