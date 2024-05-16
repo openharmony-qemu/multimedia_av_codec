@@ -258,13 +258,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             }
         }
     }
-    if (duration <= 0) {
-        for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-            if (avFormatContext.streams[i]->duration > duration) {
-                duration = avFormatContext.streams[i]->duration;
-            }
-        }
-    } else {
+    if (duration > 0 && duration != AV_NOPTS_VALUE) {
         format.Set<Tag::MEDIA_DURATION>(static_cast<int64_t>(duration));
     }
     if (avFormatContext.start_time != AV_NOPTS_VALUE) {
