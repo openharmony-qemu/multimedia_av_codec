@@ -30,7 +30,7 @@ public:
     DashComAttrsElements();
     virtual ~DashComAttrsElements();
 
-    void ParseAttrs(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement);
+    void ParseAttrs(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement);
     void GetAttr(const std::string &attrName, std::string &sAttrVal) const;
     void GetAttr(const std::string &attrName, uint32_t &uiAttrVal) const;
     void GetAttr(const std::string &attrName, int32_t &iAttrVal) const;

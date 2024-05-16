@@ -32,7 +32,7 @@ DashContentCompNode::DashContentCompNode()
 
 DashContentCompNode::~DashContentCompNode() {}
 
-void DashContentCompNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashContentCompNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_CONTENT_COMP_ATTR_NUM; index++) {

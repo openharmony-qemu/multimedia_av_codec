@@ -33,7 +33,7 @@ DashSegBaseNode::DashSegBaseNode()
 
 DashSegBaseNode::~DashSegBaseNode() {}
 
-void DashSegBaseNode::ParseNode(std::shared_ptr<XmlParser> xmlParser,std::shared_ptr<XmlElement> rootElement)
+void DashSegBaseNode::ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
 {
     if (xmlParser != nullptr) {
         for (uint32_t index = 0; index < DASH_SEG_BASE_ATTR_NUM; index++) {
