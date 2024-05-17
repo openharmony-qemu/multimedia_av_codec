@@ -114,7 +114,9 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
             OH_AVDemuxer_SelectTrackByID(demuxer_, index);
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_WIDTH, &info.videoWidth);
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_HEIGHT, &info.videoHeight);
-            OH_AVFormat_GetDoubleValue(trackFormat.get(), OH_MD_KEY_FRAME_RATE, &info.frameRate);
+            if (info.frameRate == SAMPLE_DEFAULT_FRAMERATE) {
+                OH_AVFormat_GetDoubleValue(trackFormat.get(), OH_MD_KEY_FRAME_RATE, &info.frameRate);
+            }
             int32_t isHDRVivid = 0;
             OH_AVFormat_GetIntValue(trackFormat.get(), "video_is_hdr_vivid", &isHDRVivid);
             if (isHDRVivid == 1) {

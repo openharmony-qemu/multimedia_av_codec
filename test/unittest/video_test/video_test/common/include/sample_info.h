@@ -36,6 +36,8 @@ constexpr int32_t BITRATE_10M = 10 * 1024 * 1024; // 10Mbps
 constexpr int32_t BITRATE_20M = 20 * 1024 * 1024; // 20Mbps
 constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
 
+constexpr double SAMPLE_DEFAULT_FRAMERATE = 999;
+
 /*   CodecType description
  *   +-----+-----------+------------+
  *   | Bit |     1     |     0      |
@@ -104,7 +106,7 @@ struct SampleInfo {
     std::string codecMime = MIME_VIDEO_AVC.data();
     int32_t videoWidth = 0;
     int32_t videoHeight = 0;
-    double frameRate = 30.0;
+    double frameRate = SAMPLE_DEFAULT_FRAMERATE;
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
     CodecRunMode codecRunMode = SURFACE_ORIGIN;
