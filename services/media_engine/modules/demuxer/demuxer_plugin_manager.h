@@ -100,7 +100,8 @@ public:
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StopAllPlugin();
-    Status UpdateDefaultVideoStreamID(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, Plugins::MediaInfo& mediaInfo);
+    Status UpdateDefaultVideoStreamID(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+        Plugins::MediaInfo& mediaInfo);
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId);
     std::shared_ptr<Meta> GetUserMeta();
 private:
@@ -108,7 +109,8 @@ private:
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
     Status InitDefaultPlay();
-    Status AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack, bool isAddTempTrack);
+    Status AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
+        bool isAddTempTrack);
     Status AddGeneral(const Meta& format, Meta& formatNew);
     void ClearTempTrackInfo();
 

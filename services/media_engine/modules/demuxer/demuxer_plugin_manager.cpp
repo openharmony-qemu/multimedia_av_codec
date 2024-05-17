@@ -114,7 +114,7 @@ DemuxerPluginManager::DemuxerPluginManager()
 DemuxerPluginManager::~DemuxerPluginManager()
 {
     MEDIA_LOG_I("~DemuxerPluginManager called");
-    for (auto & iter : streamInfoMap_) {
+    for (auto& iter : streamInfoMap_) {
         if (iter.second.plugin) {
             iter.second.plugin->Deinit();
         }
@@ -126,8 +126,8 @@ DemuxerPluginManager::~DemuxerPluginManager()
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
     MEDIA_LOG_I("InitDefaultPlay begin");
-    int32_t streamIndex = 0;
     for (auto& iter : streams) {
+        int32_t streamIndex =iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
         if (iter.type == MIXED) {  // 存在混合流则只请求该流
             curVideoStreamID_ = streamIndex;
@@ -162,7 +162,6 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
         } else {
             MEDIA_LOG_W("streaminfo invalid type");
         }
-        streamIndex++;
     }
     MEDIA_LOG_I("InitDefaultPlay end");
     return Status::OK;
@@ -269,7 +268,8 @@ Status DemuxerPluginManager::AddTempTrackInfo(const Plugins::MediaInfo& mediaInf
 }
 
 
-Status DemuxerPluginManager::AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack, bool isAddTempTrack)
+Status DemuxerPluginManager::AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo,
+    bool isAddTrack, bool isAddTempTrack)
 {
     MEDIA_LOG_I("AddMediaInfo enter");
     if (ret != Status::OK) {

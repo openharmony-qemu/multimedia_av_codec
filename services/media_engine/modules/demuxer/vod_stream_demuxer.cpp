@@ -39,6 +39,9 @@
 
 namespace OHOS {
 namespace Media {
+
+const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
+const int32_t TRY_READ_TIMES = 10;
 VodStreamDemuxer::VodStreamDemuxer() :
     position_(0)
 {
@@ -63,30 +66,10 @@ bool VodStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t
     return Status::OK == ret;
 }
 
-bool VodStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+bool VodStreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
-    bufferPtr->streamID = streamID;
-    if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-        if (IsDash()) { 
-            if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
-                MEDIA_LOG_I("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
-                if (cacheDataMap_[streamID].CheckCacheExist(offset)) {
-                    auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
-                    if (memory != nullptr && memory->GetSize() > 0) {
-                        MEDIA_LOG_I("GetPeekRange read cache, Read data from cache data.");
-                        return PullDataWithCache(streamID, offset, size, bufferPtr);
-                    }
-                }
-            }
-        }
-        if (bufferPtr == nullptr) {
-            MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
-            return false;
-        }
-        return GetPeekRangeSub(streamID, offset, size, bufferPtr);
-    }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
-        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
+        MEDIA_LOG_I("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
         if (cacheDataMap_[streamID].CheckCacheExist(offset)) {
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
             if (memory != nullptr && memory->GetSize() > 0) {
@@ -94,6 +77,30 @@ bool VodStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t si
                 return PullDataWithCache(streamID, offset, size, bufferPtr);
             }
         }
+    }
+    return false;
+}
+
+bool VodStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+{
+    if (bufferPtr == nullptr) {
+        MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
+        return false;
+    }
+    bool ret = false;
+    bufferPtr->streamID = streamID;
+    if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
+        if (IsDash()) { 
+            ret = TryReadCache(streamID, offset, size, bufferPtr);
+            if (ret == true) {
+                return ret;
+            }
+        }
+        return GetPeekRangeSub(streamID, offset, size, bufferPtr);
+    }
+    ret = TryReadCache(streamID, offset, size, bufferPtr);
+    if (ret == true) {
+        return ret;
     }
     return PullDataWithoutCache(streamID, offset, size, bufferPtr);
 }
@@ -113,7 +120,8 @@ Status VodStreamDemuxer::Init(std::string uri)
     return Status::OK;
 }
 
-bool VodStreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+bool VodStreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
 
@@ -208,16 +216,17 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
     return ret == Status::OK;
 }
 
-Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data)
+Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size, 
+    std::shared_ptr<Plugins::Buffer>& data)
 {
     Status err = Status::OK;
     int32_t retryTimes = 0;
     while (true) {
         err = source_->Read(streamID, data, offset, size);
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
-            OSAL::SleepFor(10);
+            OSAL::SleepFor(TRY_READ_SLEEP_TIME);
             retryTimes++;
-            if (retryTimes > 10){
+            if (retryTimes > TRY_READ_TIMES){
                 break;
             }
             continue;
@@ -227,7 +236,8 @@ Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t siz
     return err;
 }
 
-Status VodStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data)
+Status VodStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size, 
+    std::shared_ptr<Plugins::Buffer>& data)
 {
     MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU
         ", position: " PUBLIC_LOG_U64, offset, size, position_);
@@ -321,59 +331,73 @@ Status VodStreamDemuxer::Flush()
     return Status::OK;
 }
 
+Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+{
+    MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
+        ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
+    auto ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
+    if (ret) {
+        if (IsDash()) {
+            if (buffer->streamID != streamID) {
+                SetNewVideoStreamID(buffer->streamID);
+                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32,
+                   streamID, buffer->streamID);
+                return Status::END_OF_STREAM;
+            }
+        }
+        DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
+        return Status::OK;
+    }
+    if (0 == expectedLen) {
+        return Status::END_OF_STREAM;
+    }
+    return Status::ERROR_NOT_ENOUGH_DATA;
+}
+
+Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+{
+    MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
+    auto ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
+    if (ret) {
+        if (IsDash()) {
+            if (buffer->streamID != streamID) {
+                SetNewVideoStreamID(buffer->streamID);
+                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32,
+                    streamID, buffer->streamID);
+                return Status::END_OF_STREAM;
+            }
+        }
+        DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
+        DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
+        if (isIgnoreParse_.load() && buffer != nullptr && buffer->GetMemory() != nullptr &&
+            buffer->GetMemory()->GetSize() == 0) {
+            MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
+                        " Read fail and try again");
+            return Status::ERROR_AGAIN;
+        }
+        return Status::OK;
+    }
+    MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
+    return Status::END_OF_STREAM;
+}
+
 Status VodStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;
         case DemuxerState::DEMUXER_STATE_PARSE_HEADER: {
-            MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
-                ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
-            if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
-                if (IsDash()) {
-                    if (buffer->streamID != streamID) {
-                        SetNewVideoStreamID(buffer->streamID);
-                        MEDIA_LOG_I("subenhui Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, Status::END_OF_STREAM, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                        return Status::END_OF_STREAM;
-                    }
-                }
-                DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
-            } else if (0 == expectedLen) {
-                return Status::END_OF_STREAM;
-            } else {
-                return Status::ERROR_NOT_ENOUGH_DATA;
+            auto ret = HandleReadHeader(streamID, offset, buffer, expectedLen);
+            if (ret != Status::OK) {
+                return ret;
             }
             break;
         }
         case DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME:
         case DemuxerState::DEMUXER_STATE_PARSE_FRAME: {
-            MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
-            if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
-                if (IsDash()) {
-                    if (buffer->streamID != streamID) {
-                        SetNewVideoStreamID(buffer->streamID);
-                        MEDIA_LOG_I("subenhui Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, Status::END_OF_STREAM, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                        return Status::END_OF_STREAM;
-                    }
-                }
-                DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
-                DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
-                if (IsDash()) {
-                    if (buffer->streamID != streamID) {
-                        SetNewVideoStreamID(buffer->streamID);
-                        MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, Status::END_OF_STREAM, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                        return Status::END_OF_STREAM;
-                    }
-                }
-                if (isIgnoreParse_.load() && buffer != nullptr && buffer->GetMemory() != nullptr &&
-                    buffer->GetMemory()->GetSize() == 0) {
-                    MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
-                                " Read fail and try again");
-                    return Status::ERROR_AGAIN;
-                }
-            } else {
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
-                return Status::END_OF_STREAM;
+            auto ret = HandleReadPacket(streamID, offset, buffer, expectedLen);
+            if (ret != Status::OK) {
+                return ret;
             }
             if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
                 SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
