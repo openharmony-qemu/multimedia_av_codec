@@ -35,7 +35,6 @@ namespace {
     constexpr unsigned int BUFF_INDEX_2 = 2;
     constexpr unsigned int BUFF_INDEX_3 = 3;
 }
-#define BEM_FOURCC(a, b, c, d) ((d) | ((c) << SHIFT_NUM_8) | ((b) << SHIFT_NUM_16) | ((a) << SHIFT_NUM_24))
 
 static inline unsigned short Get2Bytes(char *buffer, uint32_t &currPos);
 static inline uint32_t Get4Bytes(char *buffer, uint32_t &currPos);
@@ -44,6 +43,7 @@ static inline uint32_t GetVersion(uint32_t vflag);
 static inline uint32_t GetReferenceType(uint32_t typeAndSize);
 static inline uint32_t GetReferenceSize(uint32_t typeAndSize);
 static inline void ForwardBytes(uint32_t &currPos, uint32_t skipSize);
+static inline uint32_t BemSource(char s, char i, char d, char x);
 
 SidxBoxParser::~SidxBoxParser()
 {
@@ -53,7 +53,7 @@ SidxBoxParser::~SidxBoxParser()
 int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
                                     DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable)
 {
-    const uint32_t BEM_SIDX = BEM_FOURCC('s', 'i', 'd', 'x');
+    const uint32_t BEM_SIDX = BemSource('s', 'i', 'd', 'x');
     uint32_t currPos = 0;
 
     while (streamSize > currPos && BASE_BOX_HEAD_SIZE < streamSize - currPos) {
@@ -61,9 +61,7 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
         uint32_t boxType = Get4Bytes(bitStream, currPos);
         if (boxType == BEM_SIDX) {
             MEDIA_LOG_D("it is a sidx box");
-            uint32_t referenceCount;
-            BuildSubSegmentIndexes(bitStream, sidxEndOffset, subSegIndexTable, currPos, referenceCount);
-            MEDIA_LOG_D("sidx box reference count " PUBLIC_LOG_U32, referenceCount);
+            BuildSubSegmentIndexes(bitStream, sidxEndOffset, subSegIndexTable, currPos);
         } else {
             MEDIA_LOG_W("sdix box error box=(%c %c %c %c), typeSize="
             PUBLIC_LOG_D32, (boxType >> SHIFT_NUM_24) & 0x000000ff,
@@ -77,10 +75,9 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
 }
 
 void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffset,
-                                           DashList <std::shared_ptr<SubSegmentIndex>> &subSegIndexTable,
-                                           uint32_t &currPos, uint32_t &referenceCount)
+                                           DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable,
+                                           uint32_t &currPos)
 {
-    referenceCount= Get2Bytes(bitStream, currPos);
     uint32_t vFlag = Get4Bytes(bitStream, currPos);
     uint32_t version = GetVersion(vFlag);
 
@@ -105,6 +102,8 @@ void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffse
 
     // skip reserved
     ForwardBytes(currPos, SHIFT_NUM_2);
+
+    uint32_t referenceCount = Get2Bytes(bitStream, currPos);
     for (uint32_t i = 0; i < referenceCount; i++) {
         SubSegmentIndex *subSegIndex = new (std::nothrow) SubSegmentIndex();
         if (subSegIndex == nullptr) {
@@ -122,6 +121,7 @@ void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffse
         Get4Bytes(bitStream, currPos); // uint32_t sapInfo
         subSegIndexTable.push_back(std::shared_ptr<SubSegmentIndex>(subSegIndex));
     }
+    MEDIA_LOG_D("sidx box reference count " PUBLIC_LOG_U32, referenceCount);
 }
 
 unsigned short Get2Bytes(char *buffer, uint32_t &currPos)
@@ -164,6 +164,11 @@ uint32_t GetReferenceSize(uint32_t typeAndSize)
 void ForwardBytes(uint32_t &currPos, uint32_t skipSize)
 {
     currPos += skipSize;
+}
+
+uint32_t BemSource(char s, char i, char d, char x)
+{
+    return (x) | ((d) << SHIFT_NUM_8) | ((i) << SHIFT_NUM_16) | ((s) << SHIFT_NUM_24);
 }
 } // namespace HttpPluginLite
 } // namespace Plugin

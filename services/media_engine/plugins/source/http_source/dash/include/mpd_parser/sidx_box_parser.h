@@ -33,8 +33,7 @@ public:
 
 private:
     static void BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffset,
-                                       DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable, uint32_t &currPos,
-                                       uint32_t &referenceCount);
+                                       DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable, uint32_t &currPos);
 
 private:
     static constexpr uint32_t BASE_BOX_HEAD_SIZE = 8;
