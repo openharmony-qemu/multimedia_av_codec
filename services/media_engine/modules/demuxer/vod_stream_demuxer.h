@@ -46,7 +46,8 @@ public:
     {
         Reset();
     }
-    void Reset() {
+    void Reset()
+    {
         data = nullptr;
         offset = 0;
     }

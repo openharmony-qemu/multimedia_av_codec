@@ -126,7 +126,8 @@ private:
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
     void ReportIsLiveStreamEvent();
-    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId, std::string& videoMime);
+    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
+        std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(int32_t trackId, TaskType type);

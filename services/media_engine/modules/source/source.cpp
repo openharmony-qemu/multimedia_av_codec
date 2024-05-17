@@ -332,7 +332,8 @@ Status Source::SeekTo(uint64_t offset)
 
 Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "GetStreamInfo, Source plugin is nullptr");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "GetStreamInfo, Source plugin is nullptr");
     Status ret = plugin_->GetStreamInfo(streams);
     if (ret == Status::OK && streams.size() == 0) {
         MEDIA_LOG_I("GetStreamInfo empty, MIX Stream");
@@ -340,6 +341,10 @@ Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
         info.streamId = 0;
         info.type = Plugins::MIXED;
         streams.push_back(info);
+    }
+    for (auto& iter : streams) {
+        MEDIA_LOG_I("Source GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
+            iter.streamId, iter.type);
     }
     return ret;
 }

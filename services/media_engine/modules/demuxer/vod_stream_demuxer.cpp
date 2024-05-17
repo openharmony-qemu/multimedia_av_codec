@@ -237,7 +237,7 @@ Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t siz
     return err;
 }
 
-Status VodStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size, 
+Status VodStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Plugins::Buffer>& data)
 {
     MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU

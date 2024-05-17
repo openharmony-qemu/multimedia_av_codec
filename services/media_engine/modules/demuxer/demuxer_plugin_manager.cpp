@@ -262,8 +262,8 @@ Status DemuxerPluginManager::AddTempTrackInfo(const Plugins::MediaInfo& mediaInf
             }
         }
         int32_t tempIndex = tempTrackInfoMap_.size();
-        MEDIA_LOG_I("AddTempTrackInfo index =  "  PUBLIC_LOG_D32 " id = " PUBLIC_LOG_D32 " innerIndex = " PUBLIC_LOG_D32,
-            tempIndex, streamId, index);
+        MEDIA_LOG_I("AddTempTrackInfo index =  "  PUBLIC_LOG_D32 " id = " PUBLIC_LOG_D32
+            " innerIndex = " PUBLIC_LOG_D32, tempIndex, streamId, index);
         tempTrackInfoMap_[tempIndex].streamID = streamId;
         tempTrackInfoMap_[tempIndex].innerTrackIndex = index;
     }

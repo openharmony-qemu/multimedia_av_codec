@@ -297,10 +297,6 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams);
-    for (auto& iter : streams) {
-        MEDIA_LOG_I("SetDataSource GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
-            iter.streamId, iter.type);
-    }
     demuxerPluginManager_->InitDefaultPlay(streams);
 
     ReportIsLiveStreamEvent();
@@ -880,6 +876,37 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     return ret == Status::OK;
 }
 
+bool MediaDemuxer::ChangeStream(uint32_t trackId)
+{
+    int32_t videoStreamID = demuxerPluginManager_->GetStreamID(videoTrackId_);
+    int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
+    if (newStreamID >= 0 && videoStreamID != newStreamID) {
+        MEDIA_LOG_I("ChangeStream dash, END_OF_STREAM begin");
+        streamDemuxer_->ResetCache(videoStreamID);
+        Plugins::MediaInfo mediaInfo;
+        streamDemuxer_->SetDemuxerState(videoStreamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+        demuxerPluginManager_->UpdateDefaultVideoStreamID(streamDemuxer_, mediaInfo);
+
+        uint32_t tempVideoTrack = TRACK_ID_DUMMY;
+        uint32_t tempAudioTrack = TRACK_ID_DUMMY;
+        InitMediaMetaData(mediaInfo, tempVideoTrack, tempAudioTrack, videoMime_);
+        if (tempVideoTrack != TRACK_ID_DUMMY) {
+            demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, tempVideoTrack);
+        }
+        if (tempAudioTrack != TRACK_ID_DUMMY) {
+            demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, tempAudioTrack);
+        }
+        MEDIA_LOG_I("ChangeStream dash, UpdateTempTrackMapInfo done");
+        InnerSelectTrack(videoTrackId_);
+        MEDIA_LOG_I("ChangeStream dash, InnerSelectTrack video done");
+        streamDemuxer_->SetDemuxerState(videoStreamID, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+        isSelectBitRate_.store(false);
+        MEDIA_LOG_I("ChangeStream dash, END_OF_STREAM end");
+        return true;
+    }
+    return false;
+}
+
 void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer)
 {
     std::string mimeType;
@@ -909,30 +936,8 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (trackId == videoTrackId_ && demuxerPluginManager_->IsDash() && isSelectBitRate_.load() == true)  {
-        int32_t videoStreamID = demuxerPluginManager_->GetStreamID(videoTrackId_);
-        int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
-        if (newStreamID >= 0 && videoStreamID != newStreamID) {
-            MEDIA_LOG_I("CopyFrameToUserQueue dash, END_OF_STREAM begin");
-            streamDemuxer_->ResetCache(videoStreamID);
-            Plugins::MediaInfo mediaInfo;
-            streamDemuxer_->SetDemuxerState(videoStreamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
-            demuxerPluginManager_->UpdateDefaultVideoStreamID(streamDemuxer_, mediaInfo);
-
-            uint32_t tempVideoTrack = TRACK_ID_DUMMY;
-            uint32_t tempAudioTrack = TRACK_ID_DUMMY;
-            InitMediaMetaData(mediaInfo, tempVideoTrack, tempAudioTrack, videoMime_);
-            if (tempVideoTrack != TRACK_ID_DUMMY) {
-                demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, tempVideoTrack);
-            }
-            if (tempAudioTrack != TRACK_ID_DUMMY) {
-                demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, tempAudioTrack);
-            }
-            MEDIA_LOG_I("CopyFrameToUserQueue dash, UpdateTempTrackMapInfo done");
-            InnerSelectTrack(videoTrackId_);
-            MEDIA_LOG_I("CopyFrameToUserQueue dash, InnerSelectTrack video done");
-            streamDemuxer_->SetDemuxerState(videoStreamID, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
-            isSelectBitRate_.store(false);
-            MEDIA_LOG_I("CopyFrameToUserQueue dash, END_OF_STREAM end");
+        auto result = ChangeStream(trackId);
+        if (result) {
             return Status::OK;
         }
     }
