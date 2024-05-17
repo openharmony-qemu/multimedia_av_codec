@@ -118,10 +118,14 @@ public:
 
     void ProcessInputBuffer();
 
+    void SetDumpFlag(bool isDump);
+
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
     Status ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta);
+
+    void OnDumpInfo(int32_t fd);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
@@ -158,7 +162,9 @@ private:
     bool isEncoder_;
     bool isSurfaceMode_;
     bool isBufferMode_;
+    bool isDump_ = false;
     int32_t outputBufferCapacity_;
+    std::string codecPluginName_;
 
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::atomic<CodecState> state_ ;

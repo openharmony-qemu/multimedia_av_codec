@@ -57,8 +57,8 @@ string g_tsHevcAacUri = TEST_URI_PATH + string("hevc_aac_1920x1080_g30_30fps.ts"
 string g_flvPath = TEST_FILE_PATH + string("h265_enhanced.flv");
 string g_fmp4HevcPath = TEST_FILE_PATH + string("h265_fmp4.mp4");
 string g_fmp4HevcUri = TEST_URI_PATH + string("h265_fmp4.mp4");
-string g_DoubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
-string g_DoubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
+string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
+string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 
@@ -536,7 +536,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1312, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 127406);
+    ASSERT_EQ(formatVal_.bitRate, 127407);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
@@ -597,7 +597,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1313, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 127406);
+    ASSERT_EQ(formatVal_.bitRate, 127407);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
@@ -614,7 +614,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1314, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    InitResource(g_DoubleVividPath, LOCAL);
+    InitResource(g_doubleVividPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
@@ -658,7 +658,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1314, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 64083);
     ASSERT_EQ(formatVal_.codecMime, "audio/av3a");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
     ASSERT_EQ(formatVal_.channelLayout, 3);
@@ -675,7 +675,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1315, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    InitResource(g_DoubleVividUri, URI);
+    InitResource(g_doubleVividUri, URI);
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
@@ -719,7 +719,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1315, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.bitRate, 64083);
     ASSERT_EQ(formatVal_.codecMime, "audio/av3a");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
     ASSERT_EQ(formatVal_.channelLayout, 3);

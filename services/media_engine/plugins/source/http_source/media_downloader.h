@@ -19,6 +19,7 @@
 #include <string>
 #include "plugin/plugin_base.h"
 #include "download/downloader.h"
+#include "common/media_source.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,6 +44,10 @@ public:
     virtual void SetCallback(Callback* cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
+    virtual void GetDownloadInfo(DownloadInfo& downloadInfo)
+    {
+        MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+    }
     virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");

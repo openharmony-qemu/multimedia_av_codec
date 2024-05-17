@@ -37,6 +37,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC = "video/vvc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_APE = "audio/x-ape";
+const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT = "application/x-subrip";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -115,6 +116,8 @@ const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT = "video_slice_height";
 const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY = "video_enable_low_latency";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX = "video_encoder_qp_max";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN = "video_encoder_qp_min";
+const char *OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE = "video_encoder_qp_average";
+const char *OH_MD_KEY_VIDEO_ENCODER_MSE = "video_encoder_mse";
 
 #ifdef __cplusplus
 }

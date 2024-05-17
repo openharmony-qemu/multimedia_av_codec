@@ -130,8 +130,12 @@ public:
     int64_t end_time = 0;
     bool autoSwitchSurface = false;
     int32_t switchSurfaceFlag = 0;
-private:
     std::atomic<bool> isRunning_ { false };
+    bool inputCallbackFlush = false;
+    bool inputCallbackStop = false;
+    bool outputCallbackFlush = false;
+    bool outputCallbackStop = false;
+private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;

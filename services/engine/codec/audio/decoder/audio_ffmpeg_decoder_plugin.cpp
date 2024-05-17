@@ -350,7 +350,7 @@ int32_t AudioFfmpegDecoderPlugin::InitResample()
             .channels = avCodecContext_->channels,
             .sampleRate = avCodecContext_->sample_rate,
             .bitsPerSample = 0,
-            .channelLayout = avCodecContext_->channel_layout,
+            .channelLayout = avCodecContext_->ch_layout,
             .srcFmt = avCodecContext_->sample_fmt,
             .destSamplesPerFrame = 0,
             .destFmt = destFmt_,

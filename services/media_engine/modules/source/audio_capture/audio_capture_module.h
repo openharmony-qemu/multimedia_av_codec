@@ -41,7 +41,6 @@ public:
     explicit AudioCaptureModule();
     ~AudioCaptureModule();
     Status Init();
-    void SetLogTag(std::string logTag);
     Status Deinit();
     Status Prepare();
     Status Reset();
@@ -57,6 +56,10 @@ public:
     Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
     int32_t GetMaxAmplitude();
     void SetAudioSource(AudioStandard::SourceType source);
+    void SetFaultEvent(const std::string &errMsg);
+    void SetFaultEvent(const std::string &errMsg, int32_t ret);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+
 private:
     Status DoDeinit();
     bool AssignSampleRateIfSupported(const int32_t value);
@@ -79,8 +82,8 @@ private:
     size_t bufferSize_ {0};
     int32_t maxAmplitude_ {0};
     bool isTrackMaxAmplitude {false};
-
-    std::string logTag_ = "";
+    std::string bundleName_;
+    uint64_t instanceId_{0};
 };
 } // namespace AudioCaptureModule
 } // namespace Media

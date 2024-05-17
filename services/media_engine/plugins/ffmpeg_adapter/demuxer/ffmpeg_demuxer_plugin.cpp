@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#define MEDIA_PLUGIN
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
+
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -50,6 +52,8 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 const uint32_t DEFAULT_READ_SIZE = 4096;
+const uint32_t MP3_PROBE_SIZE = DEFAULT_READ_SIZE * 2;
+const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
@@ -382,11 +386,9 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
 
 void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
-    int cencInfoSize = 0;
-    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
-        &cencInfoSize);
-    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
-        static_cast<size_t>(cencInfoSize), false);
+    size_t cencInfoSize = 0;
+    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
+    streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo, cencInfoSize, false);
     if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
         streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
         pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
@@ -426,7 +428,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
     FALSE_RETURN_V_MSG_E((samplePacket->pkts[0] != nullptr && samplePacket->pkts[0]->size >= 0),
         Status::ERROR_INVALID_OPERATION, "Convert packet info failed due to input packet is empty.");
 
-    int cencInfoSize = 0;
+    size_t cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkts[0],
         AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
     if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
@@ -502,7 +504,7 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
     return tempPkt;
 }
 
-void FFmpegDemuxerPlugin::ConvertAvccToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
+void FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
     std::shared_ptr<SamplePacket> dstSamplePacket)
 {
     auto codecId = formatContext_->streams[srcAVPacket->stream_index]->codecpar->codec_id;
@@ -543,7 +545,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
-    ConvertAvccToAnnexb(sample, tempPkt, samplePacket);
+    ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
 
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
@@ -596,16 +598,18 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         }
         if (ffmpegRet < 0) { // fail
             av_packet_free(&pkt);
-            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S, AVStrError(ffmpegRet).c_str());
-            if (ffmpegRet == AVERROR(EAGAIN)) { //Read data get 0 byte in seeking process, need retry
+            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", timeout: " PUBLIC_LOG_D32,
+                AVStrError(ffmpegRet).c_str(), int(ioContext_.timeout));
+            if (ffmpegRet == AVERROR(EAGAIN) || ioContext_.timeout) {
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
+                ioContext_.timeout = false;
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
         }
         auto trackId = pkt->stream_index;
-        if (!IsInSelectedTrack(trackId)) { // not in
+        if (!TrackIsSelected(trackId)) {
             av_packet_unref(pkt);
             continue;
         }
@@ -618,7 +622,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::ReadEosSample(std::shared_ptr<AVBuffer> sample)
+Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
 {
     MEDIA_LOG_D("Set EOS buffer.");
     Status ret = WriteBuffer(sample, 0, (uint32_t)(AVBufferFlag::EOS), nullptr, 0);
@@ -674,6 +678,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::ERROR_AGAIN) {
             MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
+            ioContext->timeout = true;
             ret = AVERROR(EAGAIN);
         } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
@@ -916,7 +921,6 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
             ssConverter << std::hex << static_cast<int32_t>(metaDrmInfo[index].uuid[i]);
             uuid = ssConverter.str();
         }
-        MEDIA_LOG_I("ParseDrmInfo:: uuid is %{public}s", uuid.c_str());
         drmInfo.insert({ uuid, std::vector<uint8_t>(metaDrmInfo[index].pssh,
             metaDrmInfo[index].pssh + metaDrmInfo[index].psshLen) });
     }
@@ -937,7 +941,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
             continue;
         }
         MEDIA_LOG_D("GetDrmInfo by stream side data");
-        int drmInfoSize = 0;
+        size_t drmInfoSize = 0;
         MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
             AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
         if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
@@ -1046,7 +1050,7 @@ void FFmpegDemuxerPlugin::ShowSelectedTracks()
     }
 }
 
-bool FFmpegDemuxerPlugin::IsInSelectedTrack(const uint32_t trackId)
+bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
 {
     return std::any_of(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                        [trackId](uint32_t id) { return id == trackId; });
@@ -1073,7 +1077,7 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    if (!IsInSelectedTrack(trackId)) {
+    if (!TrackIsSelected(trackId)) {
         selectedTrackIds_.push_back(trackId);
         trackMtx_[trackId] = std::make_shared<std::mutex>();
         return cacheQueue_.AddTrackQueue(trackId);
@@ -1093,7 +1097,7 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
         "Can not call this func before set data source.");
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
-    if (IsInSelectedTrack(trackId)) {
+    if (TrackIsSelected(trackId)) {
         selectedTrackIds_.erase(index);
         trackMtx_.erase(trackId);
         return cacheQueue_.RemoveTrackQueue(trackId);
@@ -1175,7 +1179,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
         "Read Sample failed due to no track has been selected.");
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to input sample is nullptr");
@@ -1191,20 +1195,19 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
         } else if (ret == Status::ERROR_AGAIN) {
-            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
         }
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
-    std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
+    auto samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER, "Read failed, samplePacket is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_W("File is end, push EOS buffer to user queue.");
-        ret = ReadEosSample(sample);
+        ret = SetEosSample(sample);
         if (ret == Status::OK) {
             cacheQueue_.Pop(trackId);
         }
-        MEDIA_LOG_I("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
         return ret;
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
@@ -1212,7 +1215,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         return Status::OK;
     }
     if (ret == Status::OK) {
-        MEDIA_LOG_D("All partial sample has seend copied");
+        MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
     return ret;
@@ -1225,7 +1228,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "Have not set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected.");
 
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
     if (NeedCombineFrame(trackId)) {
@@ -1239,7 +1242,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
         } else if (ret == Status::ERROR_AGAIN) {
-            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
         }
     }
@@ -1319,7 +1322,7 @@ bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
 namespace { // plugin set
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
-    MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ".", pluginName.c_str());
+    MEDIA_LOG_I("Sniff: plugin name " PUBLIC_LOG_S ".", pluginName.c_str());
 
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Sniff failed due to plugin name is empty.");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "Sniff failed due to dataSource invalid.");
@@ -1329,9 +1332,16 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
 
     size_t bufferSize = DEFAULT_READ_SIZE;
+    if (StartWith(plugin->name, "mp3")) {
+        bufferSize = MP3_PROBE_SIZE; // mp3 needs more data to probe, refer to ffmpeg
+        MEDIA_LOG_I("Sniff: expend probe data size to " PUBLIC_LOG_ZU " for mp3", bufferSize);
+    }
     uint64_t fileSize = 0;
     if (dataSource->GetSize(fileSize) == Status::OK) {
         bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
+        if (bufferSize == fileSize) {
+            MEDIA_LOG_I("Sniff: file data is not enough, reset probe size to file size");
+        }
     }
     // fix ffmpeg probe crash,refer to ffmpeg/tools/probetest.c
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
@@ -1347,8 +1357,11 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
     AVProbeData probeData{"", buff.data(), static_cast<int>(bufferInfo->GetMemory()->GetSize()), ""};
     int confidence = plugin->read_probe(&probeData);
-
-    MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
+    if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
+        MEDIA_LOG_W("Sniff: probe score " PUBLIC_LOG_D32 " is too low, may misdetection, reset to 0", confidence);
+        confidence = 0;
+    }
+    MEDIA_LOG_I("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
         plugin->name, confidence);
 
     return confidence;

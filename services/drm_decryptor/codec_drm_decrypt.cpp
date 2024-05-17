@@ -406,7 +406,8 @@ int CodecDrmDecrypt::DrmFindCeiPos(const uint8_t *data, uint32_t dataSize, uint3
             i += DRM_LEGACY_LEN;
         }
     }
-    if ((ceiStartPos != DRM_INVALID_START_POS) && (ceiEndPos != DRM_INVALID_START_POS)) {
+    if ((ceiStartPos != DRM_INVALID_START_POS) && (ceiEndPos != DRM_INVALID_START_POS) &&
+        (ceiStartPos < ceiEndPos) && (ceiEndPos <= dataSize)) {
         return 1; // 1 true
     }
     return 0;
@@ -426,7 +427,9 @@ void CodecDrmDecrypt::DrmFindEncryptionFlagPos(const uint8_t *data, uint32_t dat
             }
         }
     }
-    pos = offset;
+    if (offset < dataSize) {
+        pos = offset;
+    }
     return;
 }
 
@@ -566,6 +569,7 @@ void CodecDrmDecrypt::DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t d
     uint32_t ceiEndPos = DRM_INVALID_START_POS;
     if (inBuf->memory_ == nullptr || inBuf->memory_->GetAddr() == nullptr || dataSize == 0 ||
         dataSize > DRM_MAX_STREAM_DATA_SIZE) {
+        AVCODEC_LOGE("DrmGetCencInfo parameter err");
         return;
     }
     uint8_t *data = inBuf->memory_->GetAddr();
@@ -751,6 +755,9 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
     std::lock_guard<std::mutex> drmLock(configMutex_);
     int32_t retCode = AVCS_ERR_INVALID_VAL;
     DrmStandard::IMediaDecryptModuleService::CryptInfo cryptInfo;
+    CHECK_AND_RETURN_RET_LOG(((cencInfo->keyIdLen <= static_cast<uint32_t>(META_DRM_KEY_ID_SIZE)) &&
+        (cencInfo->ivLen <= static_cast<uint32_t>(META_DRM_IV_SIZE)) &&
+        (cencInfo->subSampleNum <= static_cast<uint32_t>(META_DRM_MAX_SUB_SAMPLE_NUM))), retCode, "parameter err");
     cryptInfo.type = static_cast<DrmStandard::IMediaDecryptModuleService::CryptAlgorithmType>(cencInfo->algo);
     std::vector<uint8_t> keyIdVector(cencInfo->keyId, cencInfo->keyId + cencInfo->keyIdLen);
     cryptInfo.keyId = keyIdVector;
@@ -769,6 +776,7 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
     DrmBuffer outDrmBuffer;
     retCode = SetDrmBuffer(inBuf, outBuf, inDrmBuffer, outDrmBuffer);
     CHECK_AND_RETURN_RET_LOG((retCode == AVCS_ERR_OK), retCode, "SetDecryptConfig failed cause SetDrmBuffer failed");
+    retCode = AVCS_ERR_INVALID_VAL;
     CHECK_AND_RETURN_RET_LOG((decryptModuleProxy_ != nullptr), retCode,
         "SetDecryptConfig decryptModuleProxy_ nullptr");
     retCode = decryptModuleProxy_->DecryptMediaData(svpFlag_, cryptInfo, inDrmBuffer, outDrmBuffer);

@@ -51,6 +51,8 @@ public:
 
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
 
+    void SetDumpFlag(bool isDump);
+
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -74,6 +76,9 @@ public:
     Status SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
+    void OnDumpInfo(int32_t fd);
+
+    void SetCallerInfo(uint64_t instanceId, const std::string& appName);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -102,11 +107,13 @@ private:
     bool isDrmProtected_ = false;
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
-
+    bool isDump_ = false;
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{HST_TIME_NONE};
     int64_t latestPausedTime_{HST_TIME_NONE};
     int64_t totalPausedTime_{0};
+    uint64_t instanceId_ = 0;
+    std::string appName_;
 };
 } // namespace Pipeline
 } // namespace MEDIA

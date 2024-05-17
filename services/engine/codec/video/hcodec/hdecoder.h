@@ -46,6 +46,7 @@ private:
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
+    void SetCallerToBuffer(bool isInput) override;
     void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocateOutputBuffersFromSurface();
     int32_t SetMinQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
@@ -66,6 +67,7 @@ private:
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
+    int32_t PushBlankBufferToCurrSurface();
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;

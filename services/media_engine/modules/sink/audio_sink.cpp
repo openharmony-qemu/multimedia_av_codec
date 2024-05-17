@@ -19,6 +19,9 @@
 namespace OHOS {
 namespace Media {
 
+const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
+const int32_t APE_BUFFER_QUEUE_SIZE = 32;
+
 int64_t GetAudioLatencyFixDelay()
 {
     constexpr uint64_t defaultValue = 120 * HST_USECOND;
@@ -54,6 +57,14 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->Prepare();
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
+
+    std::string mime;
+    bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
+    if (mimeGetRes && mime == "audio/x-ape") {
+        isApe_ = true;
+        MEDIA_LOG_I("AudioSink::Init is ape");
+    }
+
     return Status::OK;
 }
 
@@ -174,11 +185,13 @@ Status AudioSink::SetVolume(float volume)
 
 int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 {
+    MEDIA_LOG_I("AudioSink::SetVolumeWithRamp entered. ");
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
+    MEDIA_LOG_I("AudioSink::SetIsTransitent entered. ");
     isTransitent_ = isTransitent;
     return Status::OK;
 }
@@ -189,7 +202,7 @@ Status AudioSink::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
-    int inputBufferSize = 8;
+    int32_t inputBufferSize = isApe_ ? APE_BUFFER_QUEUE_SIZE : DEFAULT_BUFFER_QUEUE_SIZE;
     MemoryType memoryType = MemoryType::SHARED_MEMORY;
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;

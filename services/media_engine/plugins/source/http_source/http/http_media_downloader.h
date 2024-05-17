@@ -19,8 +19,11 @@
 #include <string>
 #include <memory>
 #include "osal/utils/ring_buffer.h"
+#include "osal/utils/steady_clock.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
+#include "common/media_source.h"
+#include "timer.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -48,12 +51,14 @@ public:
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
-
+    void OnWriteRingBuffer(uint32_t len);
+    void DownloadReportLoop();
 private:
     bool SaveData(uint8_t* data, uint32_t len);
 
@@ -73,6 +78,21 @@ private:
     bool downloadErrorState_ {false};
     std::atomic<bool> isInterruptNeeded_{false};
     int totalBufferSize_ {0};
+    SteadyClock steadyClock_;
+    int32_t seekFailedCount_ {0};
+    uint64_t totalBits_ {0};
+    uint64_t lastBits_ {0};
+    uint64_t downloadBits_ {0};
+    int64_t openTime_ {0};
+    int64_t startDownloadTime_ {0};
+    int64_t playDelayTime_ {0};
+    int64_t lastCheckTime_ {0};
+    int32_t avgDownloadSpeed_ {0};
+    bool isDownloadFinish_ {false};
+    int32_t avgSpeedSum_ {0};
+    uint32_t recordSpeedCount_ {0};
+    int64_t lastReportUsageTime_ {0};
+    uint64_t dataUsage_ {0};
 };
 }
 }

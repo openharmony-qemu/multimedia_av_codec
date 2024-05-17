@@ -53,11 +53,18 @@ void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::sha
 
 bool TesterCodecBase::Create()
 {
-    string name = GetCodecName(opt_.isEncoder, (opt_.protocol == H264) ? "video/avc" : "video/hevc");
+    string mime = GetCodecMime(opt_.protocol);
+    string name = GetCodecName(opt_.isEncoder, mime);
     auto begin = std::chrono::steady_clock::now();
     CreateHCodecByName(name, codec_);
     if (codec_ == nullptr) {
         TLOGE("Create failed");
+        return false;
+    }
+    Media::Meta meta{};
+    int32_t err = codec_->Init(meta);
+    if (err != AVCS_ERR_OK) {
+        TLOGE("Init failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "Create");
@@ -238,9 +245,12 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.qpRange->qpMax));
     }
     if (param.ltrParam.has_value()) {
-        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, param.ltrParam->markAsLTR);
-        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, param.ltrParam->useLTR);
-        meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, param.ltrParam->useLTRPoc);
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR,
+            static_cast<int32_t>(param.ltrParam->markAsLTR));
+        if (param.ltrParam->useLTR > 0) {
+            meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR,
+                static_cast<int32_t>(param.ltrParam->useLTRPoc));
+        }
     }
     return true;
 }

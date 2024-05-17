@@ -14,6 +14,7 @@
  */
 
 #define HST_LOG_TAG "Source"
+#define MEDIA_ATOMIC_ABILITY
 
 #include "avcodec_trace.h"
 #include "cpp_ext/type_traits_ext.h"
@@ -189,6 +190,16 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
     } else {
         return Status::ERROR_INVALID_PARAMETER;
     }
+}
+
+Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    MEDIA_LOG_I("GetDownloadInfo");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetDownloadInfo failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetDownloadInfo(downloadInfo);
 }
 
 bool Source::IsNeedPreDownload()

@@ -14,6 +14,7 @@
  */
 
 #define HST_LOG_TAG "MediaDemuxer"
+#define MEDIA_ATOMIC_ABILITY
 
 #include "media_demuxer.h"
 
@@ -38,6 +39,13 @@
 #include "live_stream_demuxer.h"
 #include "vod_stream_demuxer.h"
 #include "media_core.h"
+#include "osal/utils/dump_buffer.h"
+
+namespace {
+const std::string DUMP_PARAM = "w";
+const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
+const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+} // namespace
 
 namespace OHOS {
 namespace Media {
@@ -75,7 +83,6 @@ MediaDemuxer::DataSourceImpl::DataSourceImpl(MediaDemuxer& demuxer) : demuxer_(d
 Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
     MediaAVCodec::AVCodecTrace trace("DataSourceImpl::ReadAt");
-    FALSE_RETURN_V(expectedLen != 0, Status::OK);
     if (!buffer || !demuxer_.IsOffsetValid(offset)) {
         MEDIA_LOG_E("ReadAt failed, buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_D32
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
@@ -135,6 +142,7 @@ MediaDemuxer::~MediaDemuxer()
     eosMap_.clear();
     requestBufferErrorCountMap_.clear();
     streamDemuxer_ = nullptr;
+    localDrmInfos_.clear();
 }
 
 
@@ -153,6 +161,15 @@ Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vecto
     std::shared_lock<std::shared_mutex> lock(drmMutex);
     infos = localDrmInfos_;
     return Status::OK;
+}
+
+Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("GetDownloadInfo failed, source_ is null");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->GetDownloadInfo(downloadInfo);
 }
 
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
@@ -176,6 +193,11 @@ void MediaDemuxer::SetPlayerId(std::string playerId)
     playerId_ = playerId;
 }
 
+void MediaDemuxer::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
+}
+
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
 {
     AutoLock lock(mapMetaMutex_);
@@ -184,28 +206,30 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
 
 bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
 {
-    MEDIA_LOG_I("IsDrmInfosUpdate");
+    MEDIA_LOG_D("IsDrmInfosUpdate");
     bool isUpdated = false;
     std::unique_lock<std::shared_mutex> lock(drmMutex);
     for (auto &newItem : info) {
+        if (newItem.second.size() == 0) {
+            continue;
+        }
         auto pos = localDrmInfos_.equal_range(newItem.first);
         if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
-            MEDIA_LOG_D("IsDrmInfosUpdate this uuid not exists and update");
+            MEDIA_LOG_D("this uuid doesn't exist, and update");
             localDrmInfos_.insert(newItem);
             isUpdated = true;
             continue;
         }
-        MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists many times");
         bool isSame = false;
         for (; pos.first != pos.second; ++pos.first) {
             if (newItem.second == pos.first->second) {
-                MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists and same pssh");
+                MEDIA_LOG_D("this uuid exists and same pssh, not update");
                 isSame = true;
                 break;
             }
         }
         if (!isSame) {
-            MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists but pssh not same");
+            MEDIA_LOG_D("this uuid exists but pssh not same, update");
             localDrmInfos_.insert(newItem);
             isUpdated = true;
         }
@@ -362,6 +386,24 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
     return ret;
 }
 
+void MediaDemuxer::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("MediaDemuxer::OnDumpInfo called.");
+    std::string dumpString;
+    dumpString += "MediaDemuxer plugin name: " + pluginName_ + "\n";
+    dumpString += "MediaDemuxer buffer queue map size: " + std::to_string(bufferQueueMap_.size()) + "\n";
+    dumpString += "MediaDemuxer buffer map size: " + std::to_string(bufferMap_.size()) + "\n";
+    if (fd < 0) {
+        MEDIA_LOG_E("MediaDemuxer::OnDumpInfo fd is invalid.");
+        return;
+    }
+    int ret = write(fd, dumpString.c_str(), dumpString.size());
+    if (ret < 0) {
+        MEDIA_LOG_E("MediaDemuxer::OnDumpInfo write failed.");
+        return;
+    }
+}
+
 std::map<uint32_t, sptr<AVBufferQueueProducer>> MediaDemuxer::GetBufferQueueProducerMap()
 {
     return bufferQueueMap_;
@@ -388,6 +430,9 @@ Status MediaDemuxer::SelectTrack(int32_t trackId)
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select trackId error.");
+    if (!useBufferQueue_) {
+        return InnerSelectTrack(trackId);
+    }
     std::string mimeType;
     Status ret = Status::OK;
     if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
@@ -494,7 +539,7 @@ std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
 
 Status MediaDemuxer::Flush()
 {
-    MEDIA_LOG_I("Flush enter.");
+    MEDIA_LOG_I("Flush");
     if (streamDemuxer_) {
         streamDemuxer_->Flush();
     }
@@ -596,7 +641,7 @@ Status MediaDemuxer::ResumeAllTask()
 
 Status MediaDemuxer::Pause()
 {
-    MEDIA_LOG_I("Pause");
+    MEDIA_LOG_D("Pause");
     if (streamDemuxer_) {
         streamDemuxer_->Pause();
     }
@@ -633,7 +678,7 @@ Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 
 Status MediaDemuxer::Resume()
 {
-    MEDIA_LOG_I("Resume");
+    MEDIA_LOG_D("Resume");
     if (streamDemuxer_) {
         streamDemuxer_->Resume();
     }
@@ -657,6 +702,7 @@ Status MediaDemuxer::Reset()
         }
         bufferQueueMap_.clear();
         bufferMap_.clear();
+        localDrmInfos_.clear();
     }
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
@@ -831,7 +877,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
-        MEDIA_LOG_D("Request buffer failed, wait for 5ms and retry again, user queue: "
+        MEDIA_LOG_D("Request buffer failed, wait for 5ms and try again, user queue: "
             PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, queueIndex, (int32_t)(ret));
         if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Request buffer failed from buffer queue too many times in one minute.");
@@ -840,6 +886,19 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         requestBufferErrorCountMap_[queueIndex] = 0;
     }
     return ret == Status::OK;
+}
+
+void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer)
+{
+    std::string mimeType;
+    if (isDump_) {
+        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") != 0) {
+                DumpAVBufferToFile(DUMP_PARAM, DUMP_DEMUXER_AUDIO_FILE_NAME, buffer);
+        }
+        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") != 0) {
+                DumpAVBufferToFile(DUMP_PARAM, DUMP_DEMUXER_VIDEO_FILE_NAME, buffer);
+        }
+    }
 }
 
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
@@ -878,7 +937,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
             taskMap_[trackId]->StopAsync();
-            MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
+            MEDIA_LOG_I("eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
@@ -1003,7 +1062,7 @@ void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
-    if (eventReceiver_ == nullptr) {
+    if (eventReceiver_ == nullptr && event.type != PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
         return;
     }
@@ -1086,6 +1145,8 @@ Status MediaDemuxer::SetFrameRate(double frameRate, uint32_t trackId)
 
 bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId)
 {
+    DumpBufferToFile(trackId, sample);
+
     if (trackId != videoTrackId_) {
         return false;
     }

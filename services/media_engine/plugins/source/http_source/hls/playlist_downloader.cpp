@@ -36,10 +36,25 @@ PlayListDownloader::PlayListDownloader()
     updateTask_->RegisterJob([this] { return PlayListUpdateLoop(); });
 }
 
+PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
+{
+    downloader_ = downloader;
+    dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    };
+    // this is default callback
+    statusCallback_ = [this] (DownloadStatus&& status, std::shared_ptr<Downloader> d,
+            std::shared_ptr<DownloadRequest>& request) {
+        OnDownloadStatus(std::forward<decltype(status)>(status), downloader_,
+                         std::forward<decltype(request)>(request));
+    };
+    updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"), "", TaskType::SINGLETON);
+    updateTask_->RegisterJob([this] { return PlayListUpdateLoop(); });
+}
+
 PlayListDownloader::~PlayListDownloader()
 {
     updateTask_->Stop();
-    downloader_->Stop();
 }
 
 void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -129,7 +144,6 @@ void PlayListDownloader::Close()
         MEDIA_LOG_I("updateTask_ Close.");
         updateTask_->Stop();
     }
-    downloader_->Stop();
 }
 
 void PlayListDownloader::Stop()
@@ -145,7 +159,6 @@ void PlayListDownloader::Start()
 void PlayListDownloader::Cancel()
 {
     playList_.clear();
-    downloader_->Cancel();
     playList_.clear();
 }
 

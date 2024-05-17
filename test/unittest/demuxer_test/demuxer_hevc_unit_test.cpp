@@ -64,8 +64,8 @@ string g_flvPath = TEST_FILE_PATH + string("h265_enhanced.flv");
 string g_flvUri = TEST_URI_PATH + string("h265_enhanced.flv");
 string g_fmp4HevcPath = TEST_FILE_PATH + string("h265_fmp4.mp4");
 string g_fmp4HevcUri = TEST_URI_PATH + string("h265_fmp4.mp4");
-string g_DoubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
-string g_DoubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
+string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
+string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
@@ -404,7 +404,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1231, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_DoubleVividPath, LOCAL);
+    ReadSample(g_doubleVividPath, LOCAL);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["doubleVivid"]["frames"][idx]);
         ASSERT_EQ(keyFrames_[idx], infoMap["doubleVivid"]["kFrames"][idx]);
@@ -423,7 +423,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1232, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_DoubleVividUri, URI);
+    ReadSample(g_doubleVividUri, URI);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["doubleVivid"]["frames"][idx]);
         ASSERT_EQ(keyFrames_[idx], infoMap["doubleVivid"]["kFrames"][idx]);
@@ -954,7 +954,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1207, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    InitResource(g_DoubleVividPath, LOCAL);
+    InitResource(g_doubleVividPath, LOCAL);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -995,7 +995,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1208, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    InitResource(g_DoubleVividUri, URI);
+    InitResource(g_doubleVividUri, URI);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);

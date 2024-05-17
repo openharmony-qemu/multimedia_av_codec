@@ -64,10 +64,29 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
         LOGE("cannot find %s", name.c_str());
         return nullptr;
     }
-    if (codec->InitWithName(name) != AVCS_ERR_OK) {
-        return nullptr;
-    }
+    codec->componentName_ = name;
     return codec;
+}
+
+int32_t HCodec::Init(Media::Meta &callerInfo)
+{
+    if (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, playerCaller_.pid) &&
+        callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, playerCaller_.processName)) {
+        calledByAvcodec_ = false;
+    } else if (callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, avcodecCaller_.pid) &&
+               callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, avcodecCaller_.processName)) {
+        calledByAvcodec_ = true;
+    }
+    return DoSyncCall(MsgWhat::INIT, nullptr);
+}
+
+void HCodec::PrintCaller()
+{
+    if (calledByAvcodec_) {
+        HLOGI("[pid %d][%s] -> avcodec", avcodecCaller_.pid, avcodecCaller_.processName.c_str());
+    } else {
+        HLOGI("[pid %d][%s] -> player -> avcodec", playerCaller_.pid, playerCaller_.processName.c_str());
+    }
 }
 
 int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
@@ -123,10 +142,9 @@ int32_t HCodec::Reset()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    string previouslyConfiguredName = componentName_;
     int32_t ret = Release();
     if (ret == AVCS_ERR_OK) {
-        ret = InitWithName(previouslyConfiguredName);
+        ret = DoSyncCall(MsgWhat::INIT, nullptr);
     }
     return ret;
 }
@@ -269,6 +287,9 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         case CODEC_OMX_VIDEO_CodingHEVC:
             shortName_ = isEncoderStr + "hevc";
             break;
+        case CODEC_OMX_VIDEO_CodingVVC:
+            shortName_ = isEncoderStr + "vvc";
+            break;
         default:
             shortName_ = isEncoderStr;
             break;
@@ -289,14 +310,6 @@ HCodec::~HCodec()
     HLOGI(">>");
     MsgHandleLoop::Stop();
     ReleaseComponent();
-}
-
-int32_t HCodec::InitWithName(const std::string &name)
-{
-    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
-        msg->SetValue("name", name);
-    };
-    return DoSyncCall(MsgWhat::INIT, proc);
 }
 
 int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
@@ -351,13 +364,10 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t HCodec::SetProcessName(const Format &format)
+int32_t HCodec::SetProcessName()
 {
-    std::string processName;
-    if (!format.GetStringValue(OHOS::Media::Tag::PROCESS_NAME, processName)) {
-        return AVCS_ERR_UNKNOWN;
-    }
-    HLOGI("processName name is %s", processName.c_str());
+    const std::string& processName = calledByAvcodec_ ? avcodecCaller_.processName : playerCaller_.processName;
+    HLOGI("processName is %s", processName.c_str());
 
     ProcessNameParam param {};
     InitOMXParamExt(param);
@@ -567,6 +577,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         bufInfo.CleanUpUnusedInfo();
         pool.push_back(bufInfo);
     }
+    SetCallerToBuffer(true);
     return AVCS_ERR_OK;
 }
 
@@ -1280,7 +1291,6 @@ void HCodec::ReleaseComponent()
     compCb_ = nullptr;
     compMgr_ = nullptr;
     componentId_ = 0;
-    componentName_.clear();
 }
 
 const char* HCodec::ToString(MsgWhat what)

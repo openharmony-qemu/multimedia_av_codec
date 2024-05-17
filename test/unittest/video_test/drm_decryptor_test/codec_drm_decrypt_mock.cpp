@@ -21,9 +21,8 @@
 namespace OHOS {
 namespace MediaAVCodec {
 
-CodecDrmDecryptorMock::CodecDrmDecryptorMock()
+CodecDrmDecryptorMock::CodecDrmDecryptorMock() : decryptor_(std::make_shared<MediaAVCodec::CodecDrmDecrypt>())
 {
-    decryptor_ = std::make_shared<MediaAVCodec::CodecDrmDecrypt>();
 }
 
 int32_t CodecDrmDecryptorMock::DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, std::shared_ptr<AVBuffer> &outBuf,

@@ -32,7 +32,7 @@ public:
     static CodecAbilitySingletonImpl &GetInstance();
     void RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType);
     std::vector<CapabilityData> GetCapabilityArray();
-    std::optional<CapabilityData> GetCapabilityByName(std::string name);
+    std::optional<CapabilityData> GetCapabilityByName(const std::string &name);
     std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
     std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
 
@@ -49,7 +49,7 @@ public:
     static CodecAbilitySingleton &GetInstance();
     void RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType);
     std::vector<CapabilityData> GetCapabilityArray();
-    std::optional<CapabilityData> GetCapabilityByName(std::string name);
+    std::optional<CapabilityData> GetCapabilityByName(const std::string &name);
     std::unordered_map<std::string, CodecType> GetNameCodecTypeMap();
     std::unordered_map<std::string, std::vector<size_t>> GetMimeCapIdxMap();
 };

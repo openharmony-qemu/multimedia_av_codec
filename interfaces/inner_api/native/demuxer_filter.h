@@ -61,6 +61,7 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status GetDownloadInfo(DownloadInfo& downloadInfo);
 
     FilterType GetFilterType();
 
@@ -70,12 +71,16 @@ public:
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
 
+    bool IsDrmProtected();
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetSpeed(float speed);
     void SetInterruptState(bool isInterruptNeeded);
+    void SetDumpFlag(bool isdump);
+    void OnDumpInfo(int32_t fd);
+    void SetCallerInfo(uint64_t instanceId, const std::string& appName);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -94,6 +99,10 @@ private:
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     void UpdateTrackIdMap(StreamType streamType, int32_t index);
+    void FaultDemuxerEventInfoWrite(StreamType& streamType);
+    bool IsVideoMime(const std::string& mime);
+    bool IsAudioMime(const std::string& mime);
+    std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
     std::atomic<bool> isPrepareFramed{false};
@@ -106,6 +115,12 @@ private:
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
+
+    bool isDump_ = false;
+    std::string bundleName_;
+    uint64_t instanceId_ = 0;
+    std::string videoMime_;
+    std::string audioMime_;
 };
 } // namespace Pipeline
 } // namespace Media

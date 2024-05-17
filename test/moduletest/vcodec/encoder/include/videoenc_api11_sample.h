@@ -51,6 +51,16 @@ public:
     std::queue<OH_AVBuffer *> outBufferQueue_;
 };
 
+typedef struct LtrTestParameter {
+    uint32_t ltrInterval = 0;
+    bool enableUseLtr = false;
+    bool useBadLtr = false;
+    bool useLtrOnce = false;
+    uint32_t useLtrIndex = 0;
+    bool markAndUseSelf = false;
+    int32_t ltrCount = 0;
+}LtrTestParameter;
+
 class VEncAPI11Sample : public NoCopyable {
 public:
     VEncAPI11Sample() = default;
@@ -76,6 +86,7 @@ public:
     int32_t StartVideoEncoder();
     int32_t SetParameter(OH_AVFormat *format);
     void SetBufferParameter(OH_AVBuffer *buffer);
+    void SetLTRParameter(OH_AVBuffer *buffer);
     void SetForceIDR();
     void GetStride();
     void testApi();
@@ -108,7 +119,7 @@ public:
     void ReleaseInFile();
     void StopInloop();
     void StopOutloop();
-
+    void DumpLtrInfo(OH_AVBuffer *buffer);
     VEncSignal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -124,13 +135,14 @@ public:
     bool needResetQP = false;
     bool repeatRun = false;
     bool showLog = false;
+    bool enableLTR = false;
     int64_t encode_count = 0;
     bool enable_random_eos = false;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     int64_t start_time = 0;
     int64_t end_time = 0;
-
+    LtrTestParameter ltrParam;
     bool TEMPORAL_CONFIG = false;
     bool TEMPORAL_ENABLE = false;
     bool TEMPORAL_JUMP_MODE = false;

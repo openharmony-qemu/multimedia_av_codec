@@ -19,10 +19,10 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("DrmDecryptorFuzzTest") {
+ohos_fuzztest("AvCencInfoFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/drm_decryptor_fuzzer"
-  include_dirs = [ "$MEDIA_ROOT_DIR/services/drm_decryptor" ]
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/avcencinfo_fuzzer"
+  include_dirs = [ "$MEDIA_ROOT_DIR/interfaces/kits/c" ]
   defines = av_codec_defines
   cflags = [
     "-g",
@@ -32,19 +32,13 @@ ohos_fuzztest("DrmDecryptorFuzzTest") {
   ]
   cflags_cc = [ "-fno-rtti" ]
 
-  sources = [ "drm_decryptor_fuzzer.cpp" ]
+  sources = [ "avcencinfo_fuzzer.cpp" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
-  if (av_codec_support_drm) {
-    external_deps += [
-      "drm_framework:drm_framework",
-      "drm_framework:native_drm",
-    ]
-  }
-  deps = [ "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client" ]
+  deps = [ "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avcencinfo" ]
 }
 
 ###############################################################################
@@ -53,7 +47,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":DrmDecryptorFuzzTest",
+    ":AvCencInfoFuzzTest",
   ]
 }
 ###############################################################################

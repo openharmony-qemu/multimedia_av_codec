@@ -640,8 +640,16 @@ void VDecNdkSample::SetEOS(uint32_t index)
 
 int32_t VDecNdkSample::state_EOS()
 {
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inCond_.wait(lock, [this]() {
+        if (!isRunning_.load()) {
+            return true;
+        }
+        return signal_->inIdxQueue_.size() > 0;
+    });
+    uint32_t index = signal_->inIdxQueue_.front();
+    signal_->inIdxQueue_.pop();
     OH_AVCodecBufferAttr attr;
-    int32_t index = 0;
     attr.pts = 0;
     attr.size = 0;
     attr.offset = 0;
@@ -699,7 +707,11 @@ int32_t VDecNdkSample::Stop()
 
 int32_t VDecNdkSample::Start()
 {
-    return OH_VideoDecoder_Start(vdec_);
+    int32_t ret = OH_VideoDecoder_Start(vdec_);
+    if (ret == AV_ERR_OK) {
+        isRunning_.store(true);
+    }
+    return ret;
 }
 
 void VDecNdkSample::StopOutloop()

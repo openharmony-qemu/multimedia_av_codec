@@ -114,6 +114,11 @@ public:
 
     virtual void SetBundleName(const std::string& bundleName) {}
 
+    virtual Status GetDownloadInfo(DownloadInfo& downloadInfo)
+    {
+        return Status::OK;
+    }
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;

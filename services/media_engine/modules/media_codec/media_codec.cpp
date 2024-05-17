@@ -18,11 +18,14 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager.h"
+#include "osal/utils/dump_buffer.h"
 
 namespace {
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t TIME_OUT_MS = 500;
+const std::string DUMP_PARAM = "w";
+const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
 } // namespace
 
 namespace OHOS {
@@ -121,6 +124,7 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 {
     auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
     std::string pluginName = "";
+    codecPluginName_ = pluginName;
     for (auto &name : names) {
         auto info = Plugins::PluginManager::Instance().GetPluginInfo(pluginType, name);
         if (info == nullptr) {
@@ -142,6 +146,7 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
     MEDIA_LOG_I("mime:%{public}s, pluginName:%{public}s", mime.c_str(), pluginName.c_str());
     if (!pluginName.empty()) {
         auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, pluginType);
+        codecPluginName_ = pluginName;
         return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
     } else {
         MEDIA_LOG_E("No plugins matching mime:%{public}s", mime.c_str());
@@ -376,6 +381,11 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
     auto ret = codecPlugin_->SetParameter(parameter);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin set parameter failed");
     return (int32_t)ret;
+}
+
+void MediaCodec::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
 }
 
 int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
@@ -736,6 +746,9 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
 void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::OnOutputBufferDone");
+    if (isDump_) {
+        DumpAVBufferToFile(DUMP_PARAM, DUMP_FILE_NAME, outputBuffer);
+    }
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     if (mediaCodecCallback_) {
         mediaCodecCallback_->OnOutputBufferDone(outputBuffer);
@@ -762,6 +775,23 @@ std::string MediaCodec::StateToString(CodecState state)
         {CodecState::RELEASING, " RELEASING"},
     };
     return stateStrMap[state];
+}
+
+void MediaCodec::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("MediaCodec::OnDumpInfo called.");
+    std::string dumpString;
+    dumpString += "MediaCodec plugin name: " + codecPluginName_ + "\n";
+    dumpString += "MediaCodec buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
+    if (fd < 0) {
+        MEDIA_LOG_E("MediaCodec::OnDumpInfo fd is invalid.");
+        return;
+    }
+    int ret = write(fd, dumpString.c_str(), dumpString.size());
+    if (ret < 0) {
+        MEDIA_LOG_E("MediaCodec::OnDumpInfo write failed.");
+        return;
+    }
 }
 } // namespace Media
 } // namespace OHOS

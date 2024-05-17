@@ -47,6 +47,14 @@ FFmpegBaseEncoder::~FFmpegBaseEncoder()
 Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     auto memory = inputBuffer->memory_;
+    if (memory == nullptr) {
+        AVCODEC_LOGE("memory is nullptr");
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (memory->GetSize() <= 0 && !(inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
+        AVCODEC_LOGE("size is %{public}d, but flag is not 1 ", memory->GetSize());
+        return Status::ERROR_INVALID_DATA;
+    }
     Status ret;
     {
         std::lock_guard<std::mutex> lock(avMutext_);
@@ -56,6 +64,10 @@ Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &input
         ret = SendBuffer(inputBuffer);
         if (ret == Status::OK || ret == Status::END_OF_STREAM) {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
+            if (inputBuffer->meta_ == nullptr) {
+                AVCODEC_LOGE("encoder input buffer or meta is nullptr");
+                return Status::ERROR_INVALID_DATA;
+            }
             bufferMeta_ = inputBuffer->meta_;
             dataCallback_->OnInputBufferDone(inputBuffer);
             ret = Status::OK;
@@ -93,10 +105,6 @@ Status FFmpegBaseEncoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
     auto memory = inputBuffer->memory_;
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
     if (!isEos) {
-        if (memory->GetSize() > memory->GetCapacity()) {
-            AVCODEC_LOGE("GetSize():%{public}d, GetCapacity():%{public}d", memory->GetSize(), memory->GetCapacity());
-            return Status::ERROR_UNKNOWN;
-        }
         auto errCode = PcmFillFrame(inputBuffer);
         if (errCode != Status::OK) {
             AVCODEC_LOGE("SendBuffer PcmFillFrame error");
@@ -122,7 +130,14 @@ Status FFmpegBaseEncoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
 
 Status FFmpegBaseEncoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    if (!outputBuffer) {
+        AVCODEC_LOGE("queue out buffer is nullptr.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     std::lock_guard<std::mutex> lock(avMutext_);
+    if (avCodecContext_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
     outBuffer_ = outputBuffer;
     Status ret = SendOutputBuffer(outputBuffer);
     return ret;
@@ -180,10 +195,6 @@ Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuff
     if (status == Status::OK || status == Status::END_OF_STREAM) {
         {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
-            if (outBuffer_ == nullptr) {
-                AVCODEC_LOGE("SendOutputBuffer ERROR_NULL_POINTER");
-                return Status::ERROR_NULL_POINTER;
-            }
             outBuffer_->meta_ = bufferMeta_;
         }
         dataCallback_->OnOutputBufferDone(outBuffer_);

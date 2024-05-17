@@ -38,6 +38,7 @@ public:
     void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
     void SetFirstPts(int64_t pts);
     void SetSeekFlag();
+    void SetLastPts(int64_t lastPts);
 private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
@@ -47,7 +48,6 @@ private:
     int64_t lastTimeStamp_ {HST_TIME_NONE};
     int64_t lastBufferTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
-    bool forceRenderNextFrame_ {false};
     VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
     void CalcFrameRate();
@@ -58,6 +58,9 @@ private:
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
     bool seekFlag_{false};
+    std::atomic<bool> lastFrameDropped_ {false};
+    int64_t lastPts_;
+    int64_t lastClockTime_;
 };
 } // namespace Pipeline
 } // namespace Media

@@ -34,10 +34,12 @@ struct PlayListChangeCallback {
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
+    virtual void OnFirstTsReady(const std::string& url, const double& duration) = 0;
 };
 class PlayListDownloader {
 public:
     PlayListDownloader();
+    explicit PlayListDownloader(std::shared_ptr<Downloader> downloader);
     virtual ~PlayListDownloader();
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
