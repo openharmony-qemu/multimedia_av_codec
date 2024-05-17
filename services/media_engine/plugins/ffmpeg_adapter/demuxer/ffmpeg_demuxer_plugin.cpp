@@ -765,7 +765,11 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
     FALSE_RETURN_MSG(formatContext->pb != nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
-    formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
+    if (std::string(pluginImpl_->name) == "mp3") {
+        formatContext->flags =
+            static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
+        MEDIA_LOG_D("Set fast seek flag for mp3.");
+    }
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), nullptr);
     FALSE_RETURN_MSG((ret == 0),
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
