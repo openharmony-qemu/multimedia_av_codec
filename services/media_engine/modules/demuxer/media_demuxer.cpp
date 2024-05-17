@@ -920,28 +920,9 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
     }
 }
 
-Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
+Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
-    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
-    MEDIA_LOG_D("CopyFrameToUserQueue enter, copy frame for track: " PUBLIC_LOG_U32, trackId);
-    int32_t size = 0;
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
-    int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackID(trackId);
-    Status ret = pluginTemp->GetNextSampleSize(innerTrackId, size);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
-        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
-        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
-    if (!GetBufferFromUserQueue(trackId, size)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    if (trackId == videoTrackId_ && demuxerPluginManager_->IsDash() && isSelectBitRate_.load() == true)  {
-        auto result = ChangeStream(trackId);
-        if (result) {
-            return Status::OK;
-        }
-    }
-    ret = InnerReadSample(trackId, bufferMap_[trackId]);
+    Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
             !IsContainIdrFrame(bufferMap_[trackId]->memory_->GetAddr(), bufferMap_[trackId]->memory_->GetSize())) {
@@ -964,7 +945,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
             taskMap_[trackId]->StopAsync();
-            MEDIA_LOG_I("eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
+            MEDIA_LOG_I("CopyFrameToUserQueue track eos, trackId: " PUBLIC_LOG_U32 ", bufferId: " PUBLIC_LOG_U64
                 ", pts: " PUBLIC_LOG_U64 ", flag: " PUBLIC_LOG_U32, trackId, bufferMap_[trackId]->GetUniqueId(),
                 bufferMap_[trackId]->pts_, bufferMap_[trackId]->flag_);
             ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
@@ -976,6 +957,31 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
         MEDIA_LOG_E("ReadSample failed, track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
+    return ret;
+}
+
+Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
+{
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
+    MEDIA_LOG_D("CopyFrameToUserQueue enter, copy frame for track: " PUBLIC_LOG_U32, trackId);
+    int32_t size = 0;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
+    int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackID(trackId);
+    Status ret = pluginTemp->GetNextSampleSize(innerTrackId, size);
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
+        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
+        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
+    if (!GetBufferFromUserQueue(trackId, size)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (trackId == videoTrackId_ && demuxerPluginManager_->IsDash() && isSelectBitRate_.load() == true)  {
+        auto result = ChangeStream(trackId);
+        if (result) {
+            return Status::OK;
+        }
+    }
+    ret = HandleRead(trackId);
     MEDIA_LOG_D("CopyFrameToUserQueue exit, copy frame for track: " PUBLIC_LOG_U32, trackId);
     return ret;
 }

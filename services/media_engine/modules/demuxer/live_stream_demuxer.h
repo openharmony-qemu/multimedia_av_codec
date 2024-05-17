@@ -51,7 +51,8 @@ public:
     Status Start() override;
     Status Stop() override;
     Status Flush() override;
-    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override;
+    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+	    size_t expectedLen) override;
     Status ResetCache(int32_t streamID) override;
     Status ResetAllCache() override;
 private:

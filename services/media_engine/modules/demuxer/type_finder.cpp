@@ -95,7 +95,8 @@ bool TypeFinder::IsSniffNeeded(std::string uri)
     return uri_ != uri;
 }
 
-void TypeFinder::Init(std::string uri, uint64_t mediaDataSize, std::function<bool(int32_t, uint64_t, size_t)> checkRange,
+void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
+    std::function<bool(int32_t, uint64_t, size_t)> checkRange,
     std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId)
 {
     streamID_ = streamId;

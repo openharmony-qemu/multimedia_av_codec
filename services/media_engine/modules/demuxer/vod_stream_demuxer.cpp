@@ -217,7 +217,7 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
     return ret == Status::OK;
 }
 
-Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size, 
+Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Plugins::Buffer>& data)
 {
     Status err = Status::OK;
@@ -332,12 +332,12 @@ Status VodStreamDemuxer::Flush()
     return Status::OK;
 }
 
-Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+    size_t expectedLen)
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
         ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
-    auto ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
-    if (ret) {
+    if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
             if (buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
@@ -359,8 +359,7 @@ Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std:
     size_t expectedLen)
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
-    auto ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
-    if (ret) {
+    if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
             if (buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);

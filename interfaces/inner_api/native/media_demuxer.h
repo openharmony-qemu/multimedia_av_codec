@@ -149,6 +149,7 @@ private:
 
     Status SeekToTimePre(bool jumperRestartPlugin);
     Status SeekToTimeAfter(bool jumperRestartPlugin);
+    bool ChangeStream(uint32_t trackId);
 
     Plugins::Seekable seekable_;
     std::string uri_;
@@ -163,6 +164,7 @@ private:
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
+    Status HandleRead(uint32_t trackId);
 
     Mutex mapMetaMutex_{};
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
