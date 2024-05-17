@@ -61,7 +61,7 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
-    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
+    Status GetDownloadInfo(DownloadInfo& downloadInfo);
 
     FilterType GetFilterType();
 
