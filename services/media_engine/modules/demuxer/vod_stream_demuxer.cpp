@@ -42,8 +42,7 @@ namespace Media {
 
 const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
 const int32_t TRY_READ_TIMES = 10;
-VodStreamDemuxer::VodStreamDemuxer() :
-    position_(0)
+VodStreamDemuxer::VodStreamDemuxer() : position_(0)
 {
     MEDIA_LOG_I("VodStreamDemuxer called");
 }
@@ -165,7 +164,8 @@ bool VodStreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size
     return ret == Status::OK;
 }
 
-bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     Status ret = PullData(streamID, offset, size, bufferPtr);
     if (ret != Status::OK) {
@@ -341,8 +341,8 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
         if (IsDash()) {
             if (buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32,
-                   streamID, buffer->streamID);
+                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32
+                    ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
                 return Status::END_OF_STREAM;
             }
         }
@@ -364,8 +364,8 @@ Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std:
         if (IsDash()) {
             if (buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32 ", newStreamID = " PUBLIC_LOG_D32,
-                    streamID, buffer->streamID);
+                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32
+                    ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
                 return Status::END_OF_STREAM;
             }
         }
@@ -383,7 +383,8 @@ Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std:
     return Status::END_OF_STREAM;
 }
 
-Status VodStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+Status VodStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+    size_t expectedLen)
 {
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:

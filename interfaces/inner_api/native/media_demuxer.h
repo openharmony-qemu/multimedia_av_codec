@@ -97,12 +97,16 @@ public:
     void SetPlayerId(std::string playerId);
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 =======
 >>>>>>> 471a48d1 (add1)
 =======
 	void SetDumpFlag(bool isDump);
 >>>>>>> 5f2cb426 (add16)
+=======
+    void SetDumpFlag(bool isDump);
+>>>>>>> 104e3026 (add17)
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
@@ -110,6 +114,7 @@ public:
     Status SetFrameRate(double frameRate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
+    bool IsLocalDrmInfosExisted();
 private:
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;

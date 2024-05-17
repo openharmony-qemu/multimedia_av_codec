@@ -203,7 +203,8 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
     return ret;
 }
 
-Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, Plugins::MediaInfo& mediaInfo)
+Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+    Plugins::MediaInfo& mediaInfo)
 {
     if (curAudioStreamID_ != -1) {
         MEDIA_LOG_I("LoadCurrentAllPlugin audio plugin");
@@ -238,7 +239,8 @@ void DemuxerPluginManager::ClearTempTrackInfo()
 
 void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId)
 {
-    MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32, oldTrackId, newTrackId);
+    MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32,
+        oldTrackId, newTrackId);
     temp2TrackInfoMap_[oldTrackId].trackID = tempTrackInfoMap_[newTrackId].trackID;
     temp2TrackInfoMap_[oldTrackId].streamID = tempTrackInfoMap_[newTrackId].streamID;
     temp2TrackInfoMap_[oldTrackId].innerTrackIndex = tempTrackInfoMap_[newTrackId].innerTrackIndex;
@@ -337,7 +339,8 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
     return true;
 }
 
-bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id)
+bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName,
+    int32_t id)
 {
     if (pluginName.empty()) {
         return false;
@@ -438,7 +441,8 @@ Status DemuxerPluginManager::StopPlugin(int32_t streamId)
     return Status::OK;
 }
 
-void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id)
+void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName,
+    int32_t id)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::MediaTypeFound");
     if (!InitPlugin(streamDemuxer, pluginName, id)) {
@@ -536,11 +540,13 @@ Status DemuxerPluginManager::UpdateDefaultVideoStreamID(std::shared_ptr<BaseStre
 {
     int32_t newStreamID = streamDemuxer->GetNewVideoStreamID();
     if (curVideoStreamID_ == newStreamID) {
-        MEDIA_LOG_E("UpdateDefaultVideoStreamID failed, streamid is same. newStreamID = " PUBLIC_LOG_D32, newStreamID);
+        MEDIA_LOG_E("UpdateDefaultVideoStreamID failed, streamid is same. newStreamID = " PUBLIC_LOG_D32,
+            newStreamID);
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (streamInfoMap_.find(newStreamID) == streamInfoMap_.end()) {
-        MEDIA_LOG_E("UpdateDefaultVideoStreamID failed, streamid not exist. newStreamID = " PUBLIC_LOG_D32, newStreamID);
+        MEDIA_LOG_E("UpdateDefaultVideoStreamID failed, streamid not exist. newStreamID = " PUBLIC_LOG_D32,
+            newStreamID);
         return Status::ERROR_INVALID_PARAMETER;
     }
 
