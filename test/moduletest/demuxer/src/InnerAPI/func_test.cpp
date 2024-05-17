@@ -40,11 +40,11 @@ const int64_t SOURCE_OFFSET = 0;
 static std::shared_ptr<AVSource> source = nullptr;
 static std::shared_ptr<AVDemuxer> demuxer = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-string g_double_hevc_path = TEST_FILE_PATH + string("double_hevc.mp4");
-string g_single_hevc_path = TEST_FILE_PATH + string("single_60.mp4");
-string g_single_rk_path = TEST_FILE_PATH + string("single_rk.mp4");
-string g_xm_path = TEST_FILE_PATH + string("xm.mp4");
-string g_double_vivid_path = TEST_FILE_PATH + string("double_vivid.mp4");
+string g_doubleHevcPath = TEST_FILE_PATH + string("double_hevc.mp4");
+string g_singleHevcPath = TEST_FILE_PATH + string("single_60.mp4");
+string g_singleRkPath = TEST_FILE_PATH + string("single_rk.mp4");
+string g_xmPath = TEST_FILE_PATH + string("xm.mp4");
+string g_doubleVividPath = TEST_FILE_PATH + string("double_vivid.mp4");
 } // namespace
 
 namespace {
@@ -92,9 +92,9 @@ namespace {
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0100, TestSize.Level0)
 {
-    fd_ = open(g_double_hevc_path.c_str(), O_RDONLY);
+    fd_ = open(g_doubleHevcPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_double_hevc_path.c_str(), &fileStatus) == 0) {
+    if (stat(g_doubleHevcPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -124,9 +124,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0100, TestSize.Level0)
     std::string manufacturer;
     ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.manufacturer", manufacturer));
     ASSERT_EQ(manufacturer, "ABCDEF");
-    std::string marketing_name;
-    ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.marketing_name", marketing_name));
-    ASSERT_EQ(marketing_name, "AABBAABBAABBAABBAA");
+    std::string marketingName;
+    ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.marketing_name", marketingName));
+    ASSERT_EQ(marketingName, "AABBAABBAABBAABBAA");
     std::string model;
     ASSERT_TRUE(metaFormat_.GetStringValue("com.abababa.model", model));
     ASSERT_EQ(model, "ABABABAB");
@@ -142,9 +142,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0100, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0200, TestSize.Level0)
 {
-    fd_ = open(g_single_hevc_path.c_str(), O_RDONLY);
+    fd_ = open(g_singleHevcPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_single_hevc_path.c_str(), &fileStatus) == 0) {
+    if (stat(g_singleHevcPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -174,9 +174,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0200, TestSize.Level0)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0300, TestSize.Level2)
 {
-    fd_ = open(g_single_rk_path.c_str(), O_RDONLY);
+    fd_ = open(g_singleRkPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_single_rk_path.c_str(), &fileStatus) == 0) {
+    if (stat(g_singleRkPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -201,9 +201,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0300, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0400, TestSize.Level2)
 {
-    fd_ = open(g_xm_path.c_str(), O_RDONLY);
+    fd_ = open(g_xmPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_xm_path.c_str(), &fileStatus) == 0) {
+    if (stat(g_xmPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);
@@ -229,9 +229,9 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0400, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0500, TestSize.Level2)
 {
-    fd_ = open(g_double_vivid_path.c_str(), O_RDONLY);
+    fd_ = open(g_doubleVividPath.c_str(), O_RDONLY);
     struct stat fileStatus {};
-    if (stat(g_double_vivid_path.c_str(), &fileStatus) == 0) {
+    if (stat(g_doubleVividPath.c_str(), &fileStatus) == 0) {
         size = static_cast<int64_t>(fileStatus.st_size);
     }
     source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size);

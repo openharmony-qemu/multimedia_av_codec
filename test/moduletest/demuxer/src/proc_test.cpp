@@ -46,9 +46,11 @@ static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
+
 
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
@@ -670,9 +672,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2500, TestSize.Level0)
 {
     const char *uri = "http://192.168.3.11:8080/share/index.m3u8";
     source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
-    ASSERT_NE(source, nullptr);
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
+    ASSERT_EQ(nullptr, source);
 }
 
 /**
@@ -946,5 +946,54 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3300, TestSize.Level2)
         cout << "subtitle"<< "----------------" << data << "-----------------" << endl;
     }
 
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3400
+ * @tc.name      : demuxer MP4 ,OH_MD_KEY_DURATION,OH_MD_KEY_CODEC_CONFIG
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3400, TestSize.Level0)
+{
+    int64_t duration;
+    static OH_AVFormat *trackFormatFirst = nullptr;
+    static OH_AVFormat *trackFormatSecond = nullptr;
+    uint8_t *codecConfig = nullptr;
+    double frameRate;
+    int32_t rotation;
+    int64_t channelLayout;
+    int32_t audioSampleFormat;
+    int32_t bitsPreCodedSample;
+    int32_t profile;
+    int32_t colorPrimaries;
+    int32_t videoIsHdrvivid;
+    size_t bufferSize;
+    const char *file = "/data/test/media/01_video_audio.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    trackFormatFirst = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormatFirst, nullptr);
+    trackFormatSecond = OH_AVSource_GetTrackFormat(source, 1);
+    ASSERT_NE(trackFormatSecond, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
+    ASSERT_EQ(duration, 10032000);
+    ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormatSecond, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormatSecond, OH_MD_KEY_FRAME_RATE, &frameRate));
+    ASSERT_EQ(frameRate, 25.1);
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatSecond, OH_MD_KEY_ROTATION, &rotation));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormatFirst, OH_MD_KEY_CHANNEL_LAYOUT, &channelLayout));
+    ASSERT_EQ(channelLayout, 3);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &audioSampleFormat));
+    ASSERT_EQ(audioSampleFormat, 9);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitsPreCodedSample));
+    ASSERT_EQ(bitsPreCodedSample, 16);
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_PROFILE, &profile));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_COLOR_PRIMARIES, &colorPrimaries));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
     close(fd);
 }
