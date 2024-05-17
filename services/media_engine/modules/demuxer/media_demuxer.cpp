@@ -565,7 +565,7 @@ std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
 std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-    return demuxerPluginManager_->GetUserMeta(meta);
+    return demuxerPluginManager_->GetUserMeta();
 }
 
 Status MediaDemuxer::Flush()
