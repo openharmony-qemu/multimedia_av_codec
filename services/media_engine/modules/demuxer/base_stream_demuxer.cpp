@@ -53,6 +53,8 @@ void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
     MEDIA_LOG_I("BaseStreamDemuxer::SetSource");
     source_ = source;
+    source_->GetSize(mediaDataSize_);
+    seekable_ = source_->GetSeekable();
 }
 
 std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)

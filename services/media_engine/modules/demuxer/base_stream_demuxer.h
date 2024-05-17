@@ -69,6 +69,7 @@ public:
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
+    Plugins::Seekable GetSeekable();
     std::string SnifferMediaType(int32_t streamID);
     bool IsDash();
     void SetIsDash(bool flag);
@@ -84,6 +85,9 @@ protected:
     std::atomic<bool> isIgnoreRead_{false};
     std::string bundleName_ {};
     std::string uri_ {};
+public:
+    uint64_t mediaDataSize_{0};
+    Plugins::Seekable seekable_;
 private:
     bool isDash_ = {false};
     std::atomic<int32_t> newVideoStreamID_ = -1;
