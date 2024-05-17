@@ -76,6 +76,8 @@ private:
                                              const std::shared_ptr<Media::Meta> &meta);
     void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
                                        const std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+                                           std::shared_ptr<Media::Meta> &meta) override;
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
