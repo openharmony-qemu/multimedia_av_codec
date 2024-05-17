@@ -298,7 +298,8 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams);
     for (auto& iter : streams) {
-        MEDIA_LOG_I("SetDataSource GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32, iter.streamId, iter.type);
+        MEDIA_LOG_I("SetDataSource GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
+            iter.streamId, iter.type);
     }
     demuxerPluginManager_->InitDefaultPlay(streams);
 
@@ -812,7 +813,8 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
     return Pause();
 }
 
-void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId, std::string& videoMime)
+void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
+    uint32_t& audioTrackId, std::string& videoMime)
 {
     AutoLock lock(mapMetaMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);

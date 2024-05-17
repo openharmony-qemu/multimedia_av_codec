@@ -54,7 +54,8 @@ VodStreamDemuxer::~VodStreamDemuxer()
     Reset();
 }
 
-bool VodStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+bool VodStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     auto ret = PullData(streamID, offset, size, bufferPtr);
     if (ret == Status::ERROR_AGAIN) {
@@ -144,7 +145,7 @@ bool VodStreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size
         bufferPtr->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
             tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-            MEDIA_LOG_W("subenhui PullDataWithCache, not cache begin.");
+            MEDIA_LOG_W("PullDataWithCache, not cache begin.");
             return ret == Status::OK;
         }
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
@@ -168,7 +169,7 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
 {
     Status ret = PullData(streamID, offset, size, bufferPtr);
     if (ret != Status::OK) {
-        MEDIA_LOG_E("subenhui PullDataWithoutCache, PullData error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
+        MEDIA_LOG_E("PullDataWithoutCache, PullData error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
         return false;
     }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
@@ -179,7 +180,7 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
             std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
                 bufferPtr->GetMemory()->GetSize() + memory->GetSize());
             if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
-                MEDIA_LOG_W("subenhui dash PullDataWithoutCache, Read data from cache data success. update cache data fail.");
+                MEDIA_LOG_W("dash PullDataWithoutCache, Read data from cache data success. update cache data fail.");
                 return true;
             }
             MEDIA_LOG_I("dash PullDataWithoutCache merge before: cache offset: " PUBLIC_LOG_U64
@@ -226,7 +227,7 @@ Status VodStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t siz
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
             OSAL::SleepFor(TRY_READ_SLEEP_TIME);
             retryTimes++;
-            if (retryTimes > TRY_READ_TIMES){
+            if (retryTimes > TRY_READ_TIMES) {
                 break;
             }
             continue;
@@ -273,7 +274,7 @@ Status VodStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size
         position_ = offset;
     }
 
-   err = ReadRetry(streamID, offset, readSize, data);
+    err = ReadRetry(streamID, offset, readSize, data);
     if (err == Status::OK) {
         position_ += data->GetMemory()->GetSize();
     }
@@ -354,7 +355,8 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
     return Status::ERROR_NOT_ENOUGH_DATA;
 }
 
-Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+    size_t expectedLen)
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     auto ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);

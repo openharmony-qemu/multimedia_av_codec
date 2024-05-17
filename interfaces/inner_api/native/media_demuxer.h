@@ -78,10 +78,14 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
 <<<<<<< HEAD
+<<<<<<< HEAD
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
 =======
 
 >>>>>>> 471a48d1 (add1)
+=======
+    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
+>>>>>>> 5f2cb426 (add16)
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -92,9 +96,13 @@ public:
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
 <<<<<<< HEAD
+<<<<<<< HEAD
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 =======
 >>>>>>> 471a48d1 (add1)
+=======
+	void SetDumpFlag(bool isDump);
+>>>>>>> 5f2cb426 (add16)
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
@@ -188,8 +196,12 @@ private:
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
     bool isDump_ = false;
+<<<<<<< HEAD
     std::string dumpPrefix_ = "";
 	std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
+=======
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
+>>>>>>> 5f2cb426 (add16)
     std::atomic<bool> isSelectBitRate_ = false;
 };
 } // namespace Media

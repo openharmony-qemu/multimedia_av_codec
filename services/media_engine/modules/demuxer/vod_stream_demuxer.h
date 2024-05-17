@@ -42,27 +42,33 @@ namespace Media {
 class CacheData {
 public:
     CacheData() {}
-    ~CacheData() {
+    ~CacheData()
+    {
         Reset();
     }
     void Reset() {
         data = nullptr;
         offset = 0;
     }
-    bool CheckCacheExist(uint64_t len) {
+    bool CheckCacheExist(uint64_t len)
+    {
         return data != nullptr && data->GetMemory() != nullptr &&
             len >= offset && len < (offset + data->GetMemory()->GetSize());
     }
-    uint64_t GetOffset() {
+    uint64_t GetOffset()
+    {
         return offset;
     }
-    std::shared_ptr<Buffer> GetData() {
+    std::shared_ptr<Buffer> GetData()
+    {
         return data;
     }
-    void SetData(std::shared_ptr<Buffer>& buffer) {
+    void SetData(std::shared_ptr<Buffer>& buffer)
+    {
         data = buffer;
     }
-    void Init(std::shared_ptr<Buffer>& buffer, uint64_t bufferOffset) {
+    void Init(std::shared_ptr<Buffer>& buffer, uint64_t bufferOffset)
+    {
         data = buffer;
         offset = bufferOffset;
     }

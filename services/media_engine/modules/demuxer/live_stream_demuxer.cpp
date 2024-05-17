@@ -221,7 +221,8 @@ Status LiveStreamDemuxer::ResetAllCache()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+Status LiveStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+    size_t expectedLen)
 {
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
