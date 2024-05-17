@@ -655,7 +655,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
-    int ret = 0;
+    int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     if (ioContext && ioContext->dataSource) {
@@ -673,13 +673,13 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
         MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
             bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
-        if (result == Status::OK) {
+        if (result == Status::OK || buffer->GetMemory()->GetSize() > 0) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::ERROR_AGAIN) {
             MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
             ioContext->timeout = true;
-            ret = AVERROR(EAGAIN);
+            ret = 0;
         } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
