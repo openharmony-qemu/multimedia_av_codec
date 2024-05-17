@@ -36,11 +36,11 @@ ohos_static_library("av_codec_engine_codeclist") {
   }
 
   sources = [
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
     "audio_codeclist_info.cpp",
     "codec_ability_singleton.cpp",
     "codeclist_builder.cpp",
     "codeclist_core.cpp",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
   ]
 
   deps = [
@@ -49,12 +49,12 @@ ohos_static_library("av_codec_engine_codeclist") {
   ]
 
   external_deps = [
+    "drivers_interface_codec:libcodec_proxy_3.0",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "media_foundation:media_foundation",
-    "drivers_interface_codec:libcodec_proxy_3.0",
   ]
 
   subsystem_name = "multimedia"
