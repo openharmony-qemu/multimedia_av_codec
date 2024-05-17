@@ -1894,7 +1894,12 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
             info.type = VIDEO;
         }
 
-        streams.push_back(info);
+        if (streamDescriptions_[index]->inUse_ && streams.size() > 0) {
+            // 首选播放的流放在首位
+            streams.insert(streams.begin(), info);
+        } else {
+            streams.push_back(info);
+        }
     }
     return Status::OK;
 }
