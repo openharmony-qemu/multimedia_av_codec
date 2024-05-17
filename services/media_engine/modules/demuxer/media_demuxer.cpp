@@ -488,10 +488,19 @@ Status MediaDemuxer::SeekToTimeAfter(bool jumperRestartPlugin)
         if (jumperRestartPlugin == true) {
             if (audioTrackId_ != TRACK_ID_DUMMY) {
                 int32_t streamID = demuxerPluginManager_->GetStreamID(audioTrackId_);
+                streamDemuxer_->SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
                 demuxerPluginManager_->StartPlugin(streamID, streamDemuxer_);
                 streamDemuxer_->SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
             }
         } else {
+            if (videoTrackId_ != TRACK_ID_DUMMY) {
+                int32_t streamID = demuxerPluginManager_->GetStreamID(videoTrackId_);
+                streamDemuxer_->SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+            }
+            if (audioTrackId_ != TRACK_ID_DUMMY) {
+                int32_t streamID = demuxerPluginManager_->GetStreamID(audioTrackId_);
+                streamDemuxer_->SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+            }
             demuxerPluginManager_->StartAllPlugin(streamDemuxer_);
             if (videoTrackId_ != TRACK_ID_DUMMY) {
                 InnerSelectTrack(videoTrackId_);

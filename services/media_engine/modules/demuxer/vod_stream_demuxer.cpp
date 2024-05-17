@@ -90,7 +90,7 @@ bool VodStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t si
     bool ret = false;
     bufferPtr->streamID = streamID;
     if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-        if (IsDash()) { 
+        if (IsDash()) {
             ret = TryReadCache(streamID, offset, size, bufferPtr);
             if (ret == true) {
                 return ret;
