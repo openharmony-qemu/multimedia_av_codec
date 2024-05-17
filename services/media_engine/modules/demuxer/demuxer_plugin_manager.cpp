@@ -560,9 +560,23 @@ Status DemuxerPluginManager::UpdateDefaultVideoStreamID(std::shared_ptr<BaseStre
     return Status::OK;
 }
 
-Status DemuxerPluginManager::GetUserMeta(std::shared_ptr<Meta> meta)
+std::shared_ptr<Meta> DemuxerPluginManager::GetUserMeta()
 {
-    return Status::OK;
+    if (IsDash()) {
+        MEDIA_LOG_W("GetUserMeta dash not support.");
+        return nullptr;
+    }
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    FALSE_RETURN_V_MSG_E(meta != nullptr, nullptr, "Create meta failed.");
+    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin) {
+        Status ret = streamInfoMap_[curVideoStreamID_].plugin->GetUserMeta(meta);
+        if (ret != Status::OK) {
+            MEDIA_LOG_W("No valid user data");
+        }
+    } else {
+        MEDIA_LOG_W("Demuxer plugin is not exist.");
+    }
+    return meta;
 }
 
 } // namespace Media

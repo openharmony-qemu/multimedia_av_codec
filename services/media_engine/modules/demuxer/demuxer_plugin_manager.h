@@ -102,7 +102,7 @@ public:
     Status StopAllPlugin();
     Status UpdateDefaultVideoStreamID(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, Plugins::MediaInfo& mediaInfo);
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId);
-    Status GetUserMeta(std::shared_ptr<Meta> meta);
+    std::shared_ptr<Meta> GetUserMeta();
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);

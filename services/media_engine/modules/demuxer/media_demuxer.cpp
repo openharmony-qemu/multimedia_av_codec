@@ -565,13 +565,7 @@ std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
 std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    FALSE_RETURN_V_MSG_E(meta != nullptr, nullptr, "Create meta failed.");
-    Status ret = demuxerPluginManager_->GetUserMeta(meta);
-    if (ret != Status::OK) {
-        MEDIA_LOG_W("No valid user data");
-    }
-    return meta;
+    return demuxerPluginManager_->GetUserMeta(meta);
 }
 
 Status MediaDemuxer::Flush()
