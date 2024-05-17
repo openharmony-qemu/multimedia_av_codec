@@ -26,6 +26,8 @@ std::shared_ptr<StartCodeDetector> StartCodeDetector::Create(CodeType type)
             return make_shared<StartCodeDetectorH264>();
         case H265:
             return make_shared<StartCodeDetectorH265>();
+        case H266:
+            return make_shared<StartCodeDetectorH266>();
         default:
             return nullptr;
     }
@@ -49,8 +51,7 @@ size_t StartCodeDetector::SetSource(const uint8_t* pStart, size_t bufSize)
     if (pStart == nullptr) {
         return 0;
     }
-    using FirstByteInNalu = uint8_t;
-    list<pair<size_t, FirstByteInNalu>> posOfFile;
+    list<tuple<size_t, uint8_t, uint8_t>> posOfFile;
     size_t pos = 0;
     while (pos < bufSize) {
         auto pFound = search(pStart + pos, pStart + bufSize, begin(START_CODE), end(START_CODE));
@@ -58,15 +59,15 @@ size_t StartCodeDetector::SetSource(const uint8_t* pStart, size_t bufSize)
         if (pos == bufSize || pos + START_CODE_LEN >= bufSize) { // 没找到或找到的起始码正好在文件末尾
             break;
         }
-        posOfFile.emplace_back(pos, pStart[pos + START_CODE_LEN]);
+        posOfFile.emplace_back(pos, pStart[pos + START_CODE_LEN], pStart[pos + START_CODE_LEN + 1]);
         pos += START_CODE_LEN;
     }
     for (auto it = posOfFile.begin(); it != posOfFile.end(); ++it) {
         auto nex = next(it);
         NALUInfo nal {
-            .startPos = it->first,
-            .endPos = (nex == posOfFile.end()) ? (bufSize) : (nex->first),
-            .nalType = GetNalType(it->second),
+            .startPos = get<0>(*it),
+            .endPos = (nex == posOfFile.end()) ? (bufSize) : (get<0>(*nex)),
+            .nalType = GetNalType(get<1>(*it), get<2>(*it)),
         };
         SaveVivid(nal, pStart);
         nals_.push_back(nal);
@@ -184,9 +185,9 @@ void StartCodeDetector::MoveToNext()
     nextSampleIdx_++;
 }
 
-uint8_t StartCodeDetectorH264::GetNalType(uint8_t byte)
+uint8_t StartCodeDetectorH264::GetNalType(uint8_t firstByte, uint8_t)
 {
-    return byte & 0b0001'1111;
+    return firstByte & 0b0001'1111;
 }
 
 bool StartCodeDetectorH264::IsPPS(uint8_t nalType)
@@ -204,9 +205,9 @@ bool StartCodeDetectorH264::IsIDR(uint8_t nalType)
     return nalType == H264NalType::IDR;
 }
 
-uint8_t StartCodeDetectorH265::GetNalType(uint8_t byte)
+uint8_t StartCodeDetectorH265::GetNalType(uint8_t firstByte, uint8_t)
 {
-    return (byte & 0b0111'1110) >> 1;
+    return (firstByte & 0b0111'1110) >> 1;
 }
 
 bool StartCodeDetectorH265::IsPPS(uint8_t nalType)
@@ -229,4 +230,32 @@ bool StartCodeDetectorH265::IsIDR(uint8_t nalType)
 bool StartCodeDetectorH265::IsPrefixSEI(uint8_t nalType)
 {
     return nalType == H265NalType::HEVC_PREFIX_SEI_NUT;
+}
+
+uint8_t StartCodeDetectorH266::GetNalType(uint8_t, uint8_t secondByte)
+{
+    return (secondByte & 0b1111'1000) >> 3; // 3: The higher 5 bits of this byte indicate the NalType.
+}
+
+bool StartCodeDetectorH266::IsPPS(uint8_t nalType)
+{
+    return nalType == H266NalType::VVC_PPS_NUT;
+}
+
+bool StartCodeDetectorH266::IsVCL(uint8_t nalType)
+{
+    return nalType >= H266NalType::VVC_TRAIL_NUT && nalType <= H266NalType::VVC_RSV_IRAP_11;
+}
+
+bool StartCodeDetectorH266::IsIDR(uint8_t nalType)
+{
+    return nalType == H266NalType::VVC_IDR_W_RADL ||
+           nalType == H266NalType::VVC_IDR_N_LP ||
+           nalType == H266NalType::VVC_CRA_NUT;
+;
+}
+
+bool StartCodeDetectorH266::IsPrefixSEI(uint8_t nalType)
+{
+    return nalType == H266NalType::VVC_PREFIX_SEI_NUT;
 }
