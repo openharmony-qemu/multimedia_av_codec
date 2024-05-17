@@ -27,6 +27,8 @@ constexpr uint32_t VID_RING_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr uint32_t AUD_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr int32_t TIME_OUT = 3 * 1000;
+constexpr int DEFAULT_WAIT_TIME = 2;
+
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
     {MediaAVCodec::MediaType::MEDIA_TYPE_AUD,      AUD_RING_BUFFER_SIZE},
@@ -263,7 +265,8 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
                 currentStreamId, buffer_->GetHead(), buffer_->GetTail(), maxReadLength);
     }
 
-    realReadLength = buffer_->ReadBuffer(buff, maxReadLength > wantReadLength ? wantReadLength : maxReadLength, 2);
+    realReadLength = buffer_->ReadBuffer(buff, maxReadLength > wantReadLength ? wantReadLength : maxReadLength,
+                                         DEFAULT_WAIT_TIME);
     if (realReadLength <= 0) {
         MEDIA_LOG_W(
                 "after Read: streamId:"
