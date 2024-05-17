@@ -32,7 +32,8 @@ typedef struct OH_AVSource OH_AVSource;
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param dataSource User customized media resource.
  * @return Returns a pointer to an OH_AVSource instance if the execution is successful, otherwise returns nullptr.
- * Possible failure causes: 1. dataSource is nullptr. 2. dataSource->size == 0. 3. create AVSource failed.
+ * Possible failure causes: 1. dataSource is nullptr. 2. dataSource->size == 0. 3. set data source failed.
+ * 4. out of memory. 5. demuxer engine is nullptr.
  * @since 12
 */
 OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource);
