@@ -112,7 +112,6 @@ MsgId MsgHandleLoop::GenerateMsgId()
 
 void MsgHandleLoop::MainLoop()
 {
-    LOGI("increase thread priority");
     pthread_setname_np(pthread_self(), "OS_HCodecLoop");
     OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     while (true) {

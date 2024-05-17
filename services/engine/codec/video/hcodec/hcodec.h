@@ -331,6 +331,7 @@ protected:
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
+    bool gotFirstInput_ = false;
     bool gotFirstOutput_ = false;
 
     struct TotalCntAndCost {
