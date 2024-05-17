@@ -20,6 +20,7 @@
 #include "plugin/plugin_base.h"
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
+#include "common/media_source.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,10 +46,9 @@ public:
     virtual void SetCallback(Callback* cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
-    virtual std::pair<int32_t, int32_t> GetDownloadInfo()
+    virtual void GetDownloadInfo(DownloadInfo& downloadInfo)
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
-        return std::make_pair(0, 0);
     }
     virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {

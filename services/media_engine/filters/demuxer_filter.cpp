@@ -466,12 +466,12 @@ Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
     return demuxer_->GetBitRates(bitRates);
 }
 
-Status DemuxerFilter::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+Status DemuxerFilter::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (demuxer_ == nullptr) {
         return Status::ERROR_INVALID_OPERATION;
     }
-    return demuxer_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
+    return demuxer_->GetDownloadInfo(downloadInfo);
 }
 
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)

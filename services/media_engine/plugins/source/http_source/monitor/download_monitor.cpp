@@ -219,13 +219,10 @@ Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
     return downloader_->GetStreamInfo(streams);
 }
 
-std::pair<int32_t, int32_t> DownloadMonitor::GetDownloadInfo()
+void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
-    if (downloader_ == nullptr) {
-        return std::make_pair(0, 0);
-    }
-    return downloader_->GetDownloadInfo();
+    downloader_->GetDownloadInfo(downloadInfo);
 }
 }
 }

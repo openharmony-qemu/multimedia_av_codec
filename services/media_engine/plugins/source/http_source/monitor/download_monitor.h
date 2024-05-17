@@ -27,6 +27,7 @@
 #include "plugin/plugin_base.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
+#include "common/media_source.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,7 +63,7 @@ public:
     void SetDemuxerState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
-    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 private:
     int64_t HttpMonitorLoop();

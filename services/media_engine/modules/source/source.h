@@ -81,7 +81,7 @@ public:
     Status ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
-    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
+    Status GetDownloadInfo(DownloadInfo& downloadInfo);
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

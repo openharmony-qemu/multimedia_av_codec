@@ -43,19 +43,16 @@ std::string ToString(const std::list<std::string> &lists, char tab = ',')
     return str;
 }
 
-std::string InsertCharBefore(const std::string input, char from, char preChar, char nextChar)
+std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
 {
     std::string output = input;
     char arr[] = {preChar, from};
     unsigned long strSize = sizeof(arr) / sizeof(arr[0]);
     std::string str(arr, strSize);
-    int64_t pos = static_cast<int64_t>(output.find(from));
+    std::size_t pos = output.find(from);
     std::size_t length = output.length();
-    if (length == 0) {
-        return output;
-    }
-    while (pos > 0 && pos <= length - 1 && pos != std::string::npos) {
-        char nextCharTemp = pos >= (length - 1) ? '\0' : output[pos + 1];
+    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
+        char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
             length += (strSize - 1);
@@ -70,13 +67,13 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while ((!str.empty()) && std::isspace(str[0])) {
+    while (std::isspace(str[0])) {
         str.erase(0, 1);
     }
     if (str.empty()) {
         return str;
     }
-    while ((!str.empty()) && std::isspace(str[str.size() - 1])) {
+    while (std::isspace(str[str.size() - 1])) {
             str.erase(str.size() - 1, 1);
     }
     return str;

@@ -391,15 +391,17 @@ StatusCallbackFunc HttpMediaDownloader::GetStatusCallbackFunc()
     return statusCallback_;
 }
 
-std::pair<int32_t, int32_t> HttpMediaDownloader::GetDownloadInfo()
+void HttpMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    MEDIA_LOG_I("HttpMediaDownloader::GetDownloadInfo.");
     if (recordSpeedCount_ == 0) {
-        MEDIA_LOG_E("recordSpeedCount_ is 0, can't get avgDownloadRate");
-        return std::make_pair(0, avgDownloadSpeed_);
+        MEDIA_LOG_E("HttpMediaDownloader is 0, can't get avgDownloadRate");
+        downloadInfo.avgDownloadRate = 0;
+    } else {
+        downloadInfo.avgDownloadRate = avgSpeedSum_ / recordSpeedCount_;
     }
-    auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, avgDownloadSpeed_);
-    return rateAndSpeed;
+    downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
+    downloadInfo.totalDownLoadBits = totalBits_;
+    downloadInfo.isTimeOut = isTimeOut_;
 }
 }
 }

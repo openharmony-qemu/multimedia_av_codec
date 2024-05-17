@@ -24,6 +24,7 @@
 #include "osal/utils/steady_clock.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include "common/media_source.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -75,7 +76,7 @@ public:
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
-    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
