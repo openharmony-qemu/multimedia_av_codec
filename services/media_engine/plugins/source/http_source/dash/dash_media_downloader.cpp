@@ -92,7 +92,8 @@ bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         return false;
     }
 
-    DashReadRet ret = segmentDownloader->Read(readDataInfo.streamId_, buff, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.nextStreamId_);
+    DashReadRet ret = segmentDownloader->Read(readDataInfo.streamId_, buff, readDataInfo.wantReadLength_,
+                                              readDataInfo.realReadLength_, readDataInfo.nextStreamId_);
     if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_)) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;

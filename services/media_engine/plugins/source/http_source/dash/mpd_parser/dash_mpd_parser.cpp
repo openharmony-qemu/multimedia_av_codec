@@ -826,7 +826,7 @@ void DashMpdParser::GetContentProtection(const std::shared_ptr<XmlParser> &xmlPa
             if (!psshValue.empty()) {
                 std::string pssh(MPD_LABEL_PSSH);
                 contentProtection->elementMap_.insert(
-                        std::map<std::string, std::string>::value_type(pssh, psshValue));
+                    std::map<std::string, std::string>::value_type(pssh, psshValue));
             }
         }
     }

@@ -246,7 +246,7 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
 }
 
 bool DashSegmentDownloader::ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
-                                             int32_t currentStreamId)
+                                            int32_t currentStreamId)
 {
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(currentStreamId);
     if (initSegment != nullptr && initSegment->readState_ != INIT_SEGMENT_STATE_USED) {

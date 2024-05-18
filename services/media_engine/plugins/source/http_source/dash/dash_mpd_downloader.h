@@ -195,6 +195,8 @@ private:
     void GetStreamDescriptions(std::string &periodBaseUrl, DashStreamDescription &streamDesc,
                                std::string &adptSetBaseUrl,
                                std::list<DashRepresentationInfo *> &repList);
+    void GetAdpDrmInfos(std::vector<DashDrmInfo> &drmInfos, DashPeriodInfo *const &periodInfo,
+                        const std::string &periodDrmId);
 
 private:
     std::string url_ {};

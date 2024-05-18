@@ -39,8 +39,7 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool Read(int32_t streamId, unsigned char *buff, unsigned int wantReadLength, unsigned int &realReadLength,
-              int32_t &realStreamId, bool &isEos) override;
+    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
