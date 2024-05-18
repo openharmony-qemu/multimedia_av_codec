@@ -79,6 +79,23 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     playListDownloader_->SetPlayListCallback(this);
 }
 
+HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
+{
+    mimeType_ = mimeType;
+    buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+    buffer_->Init();
+    totalRingBufferSize_ = RING_BUFFER_SIZE;
+    downloader_ = std::make_shared<Downloader>("hlsMedia");
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
+
+    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    };
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
+    playListDownloader_->SetPlayListCallback(this);
+    steadyClock_.Reset();
+}
+
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -136,6 +153,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
         MEDIA_LOG_D("Open url ip: %{public}s", ip);
     }
     SaveHttpHeader(httpHeader);
+    playListDownloader_->SetMimeType(mimeType_);
     playListDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();
     openTime_ = steadyClock_.ElapsedMilliseconds();

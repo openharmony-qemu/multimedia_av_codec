@@ -16,6 +16,7 @@
 #include <mutex>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
+#include "common/media_source.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -50,7 +51,11 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
     url_ = url;
     master_ = nullptr;
     SaveHttpHeader(httpHeader);
-    DoOpen(url);
+    if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
+        DoOpenNative(url_);
+    } else {
+        DoOpen(url_);
+    }
 }
 
 void HlsPlayListDownloader::UpdateManifest()
@@ -298,6 +303,11 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
 void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+}
+
+void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
+{
+    mimeType_ = mimeType;
 }
 }
 }
