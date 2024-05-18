@@ -158,6 +158,10 @@ private:
     void ClearReadSegmentList();
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
                           int32_t currentStreamId);
+    std::shared_ptr<DashBufferSegment> GetCurrentSegment();
+    bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret);
+    uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
+                              int32_t currentStreamId) const;
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
