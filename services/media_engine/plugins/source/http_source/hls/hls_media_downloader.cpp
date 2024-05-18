@@ -42,6 +42,8 @@ constexpr uint32_t SAMPLE_INTERVAL = 6000;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
+constexpr int AVG_SPEED_SUM_SCALE = 10000;
+constexpr double ZERO_THRESHOLD = 1e-9;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -131,9 +133,11 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     std::string hostname = extractHostname(url);
     if (!hostname.empty()) {
         struct hostent* he = gethostbyname(hostname.c_str());
-        char ip[INET_ADDRSTRLEN];
-        inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
-        MEDIA_LOG_D("Open url ip: %{public}s", ip);
+        if (he != nullptr) {
+            char ip[INET_ADDRSTRLEN];
+            inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
+            MEDIA_LOG_D("Open url ip: %{public}s", ip);
+        }
     }
     SaveHttpHeader(httpHeader);
     playListDownloader_->Open(url, httpHeader);
@@ -479,10 +483,13 @@ void HlsMediaDownloader::DownloadReportLoop()
             downloadDuringTime_ += (now - lastCheckTime_)<0? 0 : static_cast<uint64_t>(now - lastCheckTime_);
             // 有效下载数据量
             downloadBits_ += curDownloadBits;
-            auto downloadSpeed = downloadBits_ / ((now - lastCheckTime_) / 1000);
-            avgSpeedSum_ += downloadSpeed;
-            recordSpeedCount_ ++;
-            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_U64 " bit/s", downloadSpeed);
+            double downloadDuration = static_cast<double>(now - lastCheckTime_) / 1000;
+            if (downloadDuration > ZERO_THRESHOLD) {
+                double downloadSpeed = downloadBits_ / downloadDuration;
+                avgSpeedSum_ += downloadSpeed / AVG_SPEED_SUM_SCALE;
+                recordSpeedCount_ ++;
+                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadSpeed));
+            }
         }
         // 下载总数据量
         lastBits_ = totalBits_;
@@ -496,7 +503,7 @@ void HlsMediaDownloader::DownloadReportLoop()
             double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
             double downloadRate = tmpNumerator / tmpDenominator;
             recordBuff->downloadRate = downloadRate;
-            if (downloadRate != 0) {
+            if (downloadRate > ZERO_THRESHOLD) {
                 avgDownloadSpeed_ = downloadRate;
             }
         } else {
@@ -907,7 +914,7 @@ void HlsMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
         MEDIA_LOG_E("recordSpeedCount_ is 0, can't get avgDownloadRate");
         downloadInfo.avgDownloadRate = 0;
     } else {
-        downloadInfo.avgDownloadRate = avgSpeedSum_ / recordSpeedCount_;
+        downloadInfo.avgDownloadRate = (avgSpeedSum_ / recordSpeedCount_) * AVG_SPEED_SUM_SCALE;
     }
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
