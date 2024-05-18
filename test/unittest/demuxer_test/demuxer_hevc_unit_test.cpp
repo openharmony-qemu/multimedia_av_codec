@@ -1331,7 +1331,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1611, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1700, TestSize.Level1)
 {
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+    if (access(g_mp4265InfoParsePath.c_str(), F_OK) != 0) {
         return;
     }
     ReadSample(g_mp4265InfoParsePath, LOCAL, true);
