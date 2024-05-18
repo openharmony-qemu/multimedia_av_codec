@@ -91,9 +91,9 @@ public:
      */
     void ReportPrerolled(IMediaSynchronizer* supplier) override;
 
-    void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId) override;
+    void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
 
-    void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId) override;
+    void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
 
     void SetStartingTimeMediaUs(int64_t startingTimeMediaUs);
 
@@ -121,6 +121,8 @@ private:
     OHOS::Media::Mutex clockMutex_ {};
     State clockState_ {State::PAUSED};
     int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
+    int8_t currentRangeStartPriority_ {IMediaSynchronizer::NONE};
+    int8_t currentRangeEndPriority_ {IMediaSynchronizer::NONE};
     int64_t currentAnchorClockTime_ {HST_TIME_NONE};
     int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
     int64_t currentAbsMediaTime_ {HST_TIME_NONE};

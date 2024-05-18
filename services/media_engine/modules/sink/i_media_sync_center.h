@@ -80,9 +80,9 @@ struct IMediaSyncCenter {
      */
     virtual void ReportPrerolled(IMediaSynchronizer* supplier) = 0;
 
-    virtual void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId) = 0;
+    virtual void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) = 0;
 
-    virtual void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId) = 0;
+    virtual void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) = 0;
 
     virtual int64_t GetSeekTime() = 0;
 };

@@ -204,6 +204,12 @@ void VideoSink::SetFirstPts(int64_t pts)
         MEDIA_LOG_I("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
 }
+
+Status VideoSink::SetParameter(const std::shared_ptr<Meta>& meta)
+{
+    UpdateMediaTimeRange(meta);
+    return Status::OK;
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

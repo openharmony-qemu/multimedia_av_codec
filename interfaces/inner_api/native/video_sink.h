@@ -39,6 +39,7 @@ public:
     void SetFirstPts(int64_t pts);
     void SetSeekFlag();
     void SetLastPts(int64_t lastPts);
+    Staus SetParameter(const std::shared_ptr<Meta>& meta);
 private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
