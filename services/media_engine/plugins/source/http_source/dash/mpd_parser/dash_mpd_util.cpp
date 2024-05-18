@@ -109,15 +109,7 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, std::string segTmpltIde
                 return -1;
             }
 
-            size_t strLength = strlen("%0");
-            str = str.substr(strLength);
-            int32_t formatWidth = atoi(str.c_str());
-            if (static_cast<int32_t>(substitutionStr.length()) < formatWidth) {
-                for (int32_t i = formatWidth - static_cast<int32_t>(substitutionStr.length()); i > 0; i--) {
-                    substitutionStr = "0" + substitutionStr;
-                }
-            }
-
+            GetSubstitutionStr(substitutionStr, str);
             segTmpltStr =
                     ReplaceSubStr(segTmpltStr, (uint32_t) pos, (uint32_t) (posEnd + identifierLength + 1),
                                   substitutionStr);
@@ -132,6 +124,18 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, std::string segTmpltIde
     }
 
     return 0;
+}
+
+void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
+{
+    size_t strLength = strlen("%0");
+    str = str.substr(strLength);
+    int32_t formatWidth = atoi(str.c_str());
+    if (static_cast<int32_t>(substitutionStr.length()) < formatWidth) {
+        for (int32_t i = formatWidth - static_cast<int32_t>(substitutionStr.length()); i > 0; i--) {
+            substitutionStr = "0" + substitutionStr;
+        }
+    }
 }
 
 int32_t DashStrToDuration(const std::string &str, uint32_t &duration)

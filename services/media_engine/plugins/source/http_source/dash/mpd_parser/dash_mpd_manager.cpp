@@ -120,22 +120,24 @@ std::string DashMpdManager::GetBaseUrl()
 
 void DashMpdManager::MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem)
 {
-    if (!mpdInfo_->baseUrl_.empty()) {
-        std::string baseUrl = mpdInfo_->baseUrl_.front();
-        if (DashUrlIsAbsolute(baseUrl)) {
-            urlSchem.clear();
-            mpdUrlBase = baseUrl;
-        } else {
-            if (baseUrl.find('/') == 0) {
-                // absolute path, strip path in mpdUrl
-                size_t beginPathIndex = mpdUrlBase.find('/');
-                if (beginPathIndex != std::string::npos) {
-                    mpdUrlBase = mpdUrlBase.substr(0, beginPathIndex);
-                }
-            }
+    if (mpdInfo_->baseUrl_.empty()) {
+        return;
+    }
 
-            mpdUrlBase.append(baseUrl);
+    std::string baseUrl = mpdInfo_->baseUrl_.front();
+    if (DashUrlIsAbsolute(baseUrl)) {
+        urlSchem.clear();
+        mpdUrlBase = baseUrl;
+    } else {
+        if (baseUrl.find('/') == 0) {
+            // absolute path, strip path in mpdUrl
+            size_t beginPathIndex = mpdUrlBase.find('/');
+            if (beginPathIndex != std::string::npos) {
+                mpdUrlBase = mpdUrlBase.substr(0, beginPathIndex);
+            }
         }
+
+        mpdUrlBase.append(baseUrl);
     }
 }
 

@@ -138,10 +138,6 @@ void DashSegmentDownloader::CloseRequest()
 DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_t wantReadLength,
                                         uint32_t &realReadLength, int32_t &realStreamId)
 {
-    if (buff == nullptr) {
-        return DASH_READ_FAILED;
-    }
-
     DashReadRet ret = DASH_READ_OK;
     if ((downloadRequest_ != nullptr) && downloadRequest_->IsEos()) {
         ret = DASH_READ_SEGMENT_DOWNLOAD_FINISH;
@@ -207,43 +203,7 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
         return ret;
     }
 
-    std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(currentStreamId);
-    if (initSegment != nullptr && initSegment->readState_ != INIT_SEGMENT_STATE_USED) {
-        unsigned int contentLen = initSegment->content_.length();
-        MEDIA_LOG_I("Read: streamId:"
-        PUBLIC_LOG_D32
-        ", contentLen:"
-        PUBLIC_LOG_U32
-        ", readIndex:"
-        PUBLIC_LOG_D32
-        ", flag:"
-        PUBLIC_LOG_D32
-        ", readState:"
-        PUBLIC_LOG_D32, currentStreamId, contentLen, initSegment->readIndex_,
-        initSegment->isDownloadFinish_, initSegment->readState_);
-        if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
-            // init segment read finish
-            initSegment->readState_ = INIT_SEGMENT_STATE_USED;
-            initSegment->readIndex_ = 0;
-            return DASH_READ_OK;
-        }
-
-        unsigned int unReadSize = contentLen - initSegment->readIndex_;
-        if (unReadSize > 0) {
-            realReadLength = unReadSize > wantReadLength ? wantReadLength : unReadSize;
-            std::string readStr = initSegment->content_.substr(initSegment->readIndex_);
-            memcpy_s(buff, wantReadLength, readStr.c_str(), realReadLength);
-            initSegment->readIndex_ += realReadLength;
-            if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
-                // init segment read finish
-                initSegment->readState_ = INIT_SEGMENT_STATE_USED;
-                initSegment->readIndex_ = 0;
-            }
-        }
-
-        MEDIA_LOG_I("after Read: streamId:" PUBLIC_LOG_D32 ", contentLen:" PUBLIC_LOG_U32 ", readIndex_:"
-        PUBLIC_LOG_D32 ", flag:"
-        PUBLIC_LOG_D32, currentStreamId, contentLen, initSegment->readIndex_, initSegment->isDownloadFinish_);
+    if (ReadInitSegment(buff, wantReadLength, realReadLength, currentStreamId)) {
         return DASH_READ_OK;
     }
 
@@ -281,6 +241,57 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
         return ret;
     }
 
+    ClearReadSegmentList();
+    return ret;
+}
+
+bool DashSegmentDownloader::ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
+                                             int32_t currentStreamId)
+{
+    std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(currentStreamId);
+    if (initSegment != nullptr && initSegment->readState_ != INIT_SEGMENT_STATE_USED) {
+        unsigned int contentLen = initSegment->content_.length();
+        MEDIA_LOG_I("Read: streamId:"
+        PUBLIC_LOG_D32
+        ", contentLen:"
+        PUBLIC_LOG_U32
+        ", readIndex:"
+        PUBLIC_LOG_D32
+        ", flag:"
+        PUBLIC_LOG_D32
+        ", readState:"
+        PUBLIC_LOG_D32, currentStreamId, contentLen, initSegment->readIndex_,
+        initSegment->isDownloadFinish_, initSegment->readState_);
+        if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
+            // init segment read finish
+            initSegment->readState_ = INIT_SEGMENT_STATE_USED;
+            initSegment->readIndex_ = 0;
+            return true;
+        }
+
+        unsigned int unReadSize = contentLen - initSegment->readIndex_;
+        if (unReadSize > 0) {
+            realReadLength = unReadSize > wantReadLength ? wantReadLength : unReadSize;
+            std::string readStr = initSegment->content_.substr(initSegment->readIndex_);
+            memcpy_s(buff, wantReadLength, readStr.c_str(), realReadLength);
+            initSegment->readIndex_ += realReadLength;
+            if (initSegment->readIndex_ == contentLen && initSegment->isDownloadFinish_) {
+                // init segment read finish
+                initSegment->readState_ = INIT_SEGMENT_STATE_USED;
+                initSegment->readIndex_ = 0;
+            }
+        }
+
+        MEDIA_LOG_I("after Read: streamId:" PUBLIC_LOG_D32 ", contentLen:" PUBLIC_LOG_U32 ", readIndex_:"
+        PUBLIC_LOG_D32 ", flag:"
+        PUBLIC_LOG_D32, currentStreamId, contentLen, initSegment->readIndex_, initSegment->isDownloadFinish_);
+        return true;
+    }
+    return false;
+}
+
+void DashSegmentDownloader::ClearReadSegmentList()
+{
     std::lock_guard<std::mutex> lock(segmentMutex_);
     for (auto it = segmentList_.begin(); it != segmentList_.end(); ++it) {
         if (buffer_->GetHead() != 0 && (*it)->isEos_ && buffer_->GetHead() >= (*it)->bufferPosTail_) {
@@ -293,7 +304,6 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
             break;
         }
     }
-    return ret;
 }
 
 void DashSegmentDownloader::SetStatusCallback(StatusCallbackFunc statusCallbackFunc)
@@ -381,14 +391,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     if (isCleanAll) {
-        MEDIA_LOG_I("CleanSegmentBuffer clean all");
-        isCleaningBuffer_ = true;
-        Close(true, true);
-        CloseRequest();
-        downloader_ = std::make_shared<Downloader>("dashSegment");
-        buffer_->Clear();
-        segmentList_.clear();
-        buffer_->SetActive(true);
+        ClearSegmentAll();
         return true;
     }
 
@@ -441,6 +444,18 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         return true;
     }
     return false;
+}
+
+void DashSegmentDownloader::ClearSegmentAll()
+{
+    MEDIA_LOG_I("CleanSegmentBuffer clean all");
+    isCleaningBuffer_ = true;
+    Close(true, true);
+    CloseRequest();
+    downloader_ = std::make_shared<Downloader>("dashSegment");
+    buffer_->Clear();
+    segmentList_.clear();
+    buffer_->SetActive(true);
 }
 
 bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment)

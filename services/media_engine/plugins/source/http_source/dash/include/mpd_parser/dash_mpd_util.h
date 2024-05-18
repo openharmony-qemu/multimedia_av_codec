@@ -44,6 +44,7 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration);
 uint32_t DashGetAttrIndex(const std::string &attrName, const char *const *nodeAttrs, uint32_t attrNums);
 void DashParseRange(const std::string rangeStr, int64_t &startRange, int64_t &endRange);
 bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList);
+void GetSubstitutionStr(std::string &substitutionStr, std::string &str);
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

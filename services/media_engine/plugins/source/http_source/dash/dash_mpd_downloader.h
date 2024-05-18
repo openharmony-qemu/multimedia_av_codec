@@ -122,6 +122,7 @@ public:
 private:
     void ParseManifest();
     void ParseSidx();
+    void OpenStream(std::shared_ptr<DashStreamDescription> stream);
     void DoOpen(const std::string &url, int64_t startRange = -1, int64_t endRange = -1);
     bool SaveData(uint8_t *data, uint32_t len);
     void SetOndemandSegBase();
@@ -180,11 +181,13 @@ private:
                                std::shared_ptr<DashStreamDescription> streamDesc);
     bool GetInitSegFromRepresentation(std::string repBaseUrl, std::string repId,
                                       std::shared_ptr<DashStreamDescription> streamDesc);
+    DashMpdGetRet GetSegmentsInNewStream(std::shared_ptr<DashStreamDescription> destStream);
     void UpdateInitSegUrl(std::shared_ptr<DashStreamDescription> streamDesc, const DashUrlType *urlType,
                           int segTmpltFlag,
                           std::string representationID);
 
     bool PutStreamToDownload();
+    void GetDrmInfos(std::vector<DashDrmInfo>& drmInfos);
     void ProcessDrmInfos();
     void GetDrmInfos(const std::string &periodId, DashList<DashDescriptor *> &contentProtections,
                      std::vector<DashDrmInfo> &drmInfoList);
