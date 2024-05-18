@@ -21,6 +21,7 @@
 #include "common/log.h"
 #include "osal/utils/util.h"
 #include "common/media_source.h"
+#include "plugin/plugin_manager_v2.h"
 #include "source.h"
 
 namespace OHOS {
@@ -399,31 +400,10 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
         MEDIA_LOG_E("protocol_ is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    PluginManager& pluginManager = PluginManager::Instance();
-    auto nameList = pluginManager.ListPlugins(PluginType::SOURCE);
-    for (const std::string& name : nameList) {
-        std::shared_ptr<PluginInfo> info = pluginManager.GetPluginInfo(PluginType::SOURCE, name);
-        if (info == nullptr) {
-            MEDIA_LOG_W("info is null.");
-            continue;
-        }
-        MEDIA_LOG_I("name: " PUBLIC_LOG_S ", info->name: " PUBLIC_LOG_S, name.c_str(), info->name.c_str());
-        auto val = info->extra[PLUGIN_INFO_EXTRA_PROTOCOL];
-        if (Any::IsSameTypeWith<std::vector<ProtocolType>>(val)) {
-            MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S,
-                            protocol_.c_str(), name.c_str());
-            auto supportProtocols = AnyCast<std::vector<ProtocolType>>(val);
-            bool result = std::any_of(supportProtocols.begin(), supportProtocols.end(),
-                [&](const auto& supportProtocol) {
-                return supportProtocol == g_protocolStringToType[protocol_] && CreatePlugin(info,
-                    name, pluginManager) == Status::OK;
-            });
-            if (result) {
-                MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
-                    protocol_.c_str(), name.c_str());
-                return Status::OK;
-            }
-        }
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(Plugins::PluginType::SOURCE, protocol_);
+    if (plugin != nullptr) {
+        plugin_ = std::static_pointer_cast<SourcePlugin>(plugin);
+        return Status::OK;
     }
     MEDIA_LOG_E("Cannot find any plugin");
     return Status::ERROR_UNSUPPORTED_FORMAT;

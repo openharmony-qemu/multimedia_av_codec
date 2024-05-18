@@ -34,6 +34,7 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager.h"
+#include "plugin/plugin_manager_v2.h"
 #include "plugin/plugin_buffer.h"
 #include "source/source.h"
 #include "live_stream_demuxer.h"
@@ -766,8 +767,11 @@ bool MediaDemuxer::CreatePlugin(std::string pluginName)
     if (plugin_) {
         plugin_->Deinit();
     }
-    auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::DEMUXER);
-    plugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(plugin);
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
+    if (plugin == nullptr) {
+        return false;
+    }
+    plugin_ = std::reinterpret_pointer_cast<Plugins::DemuxerPlugin>(plugin);
     if (!plugin_ || plugin_->Init() != Status::OK) {
         MEDIA_LOG_E("CreatePlugin " PUBLIC_LOG_S " failed.", pluginName.c_str());
         return false;
