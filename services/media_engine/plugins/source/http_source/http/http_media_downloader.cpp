@@ -172,12 +172,12 @@ void HttpMediaDownloader::Resume()
     cvReadWrite_.NotifyOne();
 }
 
-bool HttpMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength,
-                               unsigned int& realReadLength, int32_t& realStreamId, bool& isEos)
+bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    isEos = false;
+    readDataInfo.isEos_ = false;
     readTime_ = 0;
+<<<<<<< HEAD
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     uint64_t mediaOffset = buffer_->GetMediaOffset();
     if (fileContentLength > mediaOffset) {
@@ -186,12 +186,19 @@ bool HttpMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned i
     }
 
     while (buffer_->GetSize() < wantReadLength && !isInterruptNeeded_.load()) {
+=======
+    uint32_t remain = downloadRequest_->GetFileContentLength() - buffer_->GetMediaOffset();
+    if (remain > 0) {
+        readDataInfo.wantReadLength_ = remain < readDataInfo.wantReadLength_ ? remain : readDataInfo.wantReadLength_;
+    }
+    while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
+>>>>>>> aab9d152 (codecheck修改编译bug修复)
         if (downloadRequest_ != nullptr) {
-            isEos = downloadRequest_->IsEos();
+            readDataInfo.isEos_ = downloadRequest_->IsEos();
         };
-        if (isEos && buffer_->GetSize() == 0) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
-            realReadLength = 0;
+        if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+            readDataInfo.realReadLength_ = 0;
             return false;
         }
         if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
@@ -209,21 +216,21 @@ bool HttpMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned i
                 MEDIA_LOG_I("Read time out, OnEvent");
                 callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             }
-            realReadLength = 0;
+            readDataInfo.realReadLength_ = 0;
             return false;
         }
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
-            realReadLength = 0;
+            readDataInfo.realReadLength_ = 0;
             return false;
         }
         Task::SleepInTask(5); // 5
         readTime_ += 5;    // 5
     }
-    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
+    readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
-                PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
+                PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
     return true;
 }
 

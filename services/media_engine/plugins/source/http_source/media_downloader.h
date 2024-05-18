@@ -26,6 +26,14 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+struct ReadDataInfo {
+    int32_t streamId_ = 0;
+    int32_t nextStreamId_ = 0; // streamId will change after switch in dash
+    unsigned int wantReadLength_ = 0;
+    unsigned int realReadLength_ = 0;
+    bool isEos_ = false;
+};
+
 class MediaDownloader {
 public:
     virtual ~MediaDownloader() = default;
@@ -33,8 +41,7 @@ public:
     virtual void Close(bool isAsync) = 0;
     virtual void Pause() = 0;
     virtual void Resume() = 0;
-    virtual bool Read(int32_t streamId, unsigned char *buff, unsigned int wantReadLength, unsigned int &realReadLength,
-                      int32_t &realStreamId, bool &isEos) = 0;
+    virtual bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) = 0;
     virtual bool SeekToPos(int64_t offset)
     {
         MEDIA_LOG_E("SeekToPos is unimplemented.");

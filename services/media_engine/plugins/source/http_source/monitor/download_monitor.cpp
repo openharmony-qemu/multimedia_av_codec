@@ -81,10 +81,9 @@ void DownloadMonitor::Close(bool isAsync)
     isPlaying_ = false;
 }
 
-bool DownloadMonitor::Read(int32_t streamId, unsigned char *buff, unsigned int wantReadLength,
-                           unsigned int &realReadLength, int32_t& realStreamId, bool &isEos)
+bool DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    bool ret = downloader_->Read(streamId, buff, wantReadLength, realReadLength, realStreamId, isEos);
+    bool ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
     return ret;
 }
