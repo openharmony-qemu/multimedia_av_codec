@@ -154,6 +154,10 @@ private:
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
+    void ClearSegmentAll();
+    void ClearReadSegmentList();
+    bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
+                          int32_t currentStreamId);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;

@@ -67,9 +67,9 @@ void DashMediaDownloader::Resume()
     }
 }
 
-bool DashMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned int wantReadLength,
-                               unsigned int& realReadLength, int32_t& realStreamId, bool& isEos)
+bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
+    FALSE_RETURN_V(buff != nullptr, false);
     if (segmentDownloaders_.empty()) {
         MEDIA_LOG_W("dash read, segmentDownloaders size is 0");
         return false;
@@ -86,16 +86,16 @@ bool DashMediaDownloader::Read(int32_t streamId, unsigned char* buff, unsigned i
         return false;
     }
 
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(streamId);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(readDataInfo.streamId_);
     if (segmentDownloader == nullptr) {
-        MEDIA_LOG_E("GetSegmentDownloader failed when Read, streamId " PUBLIC_LOG_D32, streamId);
+        MEDIA_LOG_E("GetSegmentDownloader failed when Read, streamId " PUBLIC_LOG_D32, readDataInfo.streamId_);
         return false;
     }
 
-    DashReadRet ret = segmentDownloader->Read(streamId, buff, wantReadLength, realReadLength, realStreamId);
-    if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(streamId)) {
-        MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", streamId);
-        isEos = true;
+    DashReadRet ret = segmentDownloader->Read(readDataInfo.streamId_, buff, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.nextStreamId_);
+    if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_)) {
+        MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
+        readDataInfo.isEos_ = true;
     } else if (ret == DASH_READ_TIMEOUT) {
         if (callback_ != nullptr) {
             MEDIA_LOG_I("Read time out, OnEvent");
@@ -332,7 +332,7 @@ void DashMediaDownloader::ReceiveMpdStreamInitEvent()
 }
 
 void DashMediaDownloader::OpenInitSegment(
-        const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
+    const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
             streamDesc->streamId_, streamDesc->type_);
@@ -616,7 +616,6 @@ void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     return;
 }
-
 }
 }
 }
