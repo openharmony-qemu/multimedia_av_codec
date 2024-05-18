@@ -98,6 +98,7 @@ public:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 =======
 >>>>>>> 471a48d1 (add1)
@@ -107,6 +108,9 @@ public:
 =======
     void SetDumpFlag(bool isDump);
 >>>>>>> 104e3026 (add17)
+=======
+    void SetDumpInfo(bool isDump, uint64_t instanceId);
+>>>>>>> d23f6287 (optimize player dfx)
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
@@ -211,6 +215,7 @@ private:
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
 >>>>>>> 5f2cb426 (add16)
     std::atomic<bool> isSelectBitRate_ = false;
+    std::string dumpPrefix_ = "";
 };
 } // namespace Media
 } // namespace OHOS
