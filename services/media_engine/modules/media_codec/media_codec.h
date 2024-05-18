@@ -118,7 +118,7 @@ public:
 
     void ProcessInputBuffer();
 
-    void SetDumpFlag(bool isDump);
+    void SetDumpInfo(bool isDump, uint64_t instanceId);
 
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
@@ -163,6 +163,7 @@ private:
     bool isSurfaceMode_;
     bool isBufferMode_;
     bool isDump_ = false;
+    std::string dumpPrefix_ = "";
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
 
