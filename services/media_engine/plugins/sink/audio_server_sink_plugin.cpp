@@ -296,10 +296,12 @@ Status AudioServerSinkPlugin::Init()
 void AudioServerSinkPlugin::ReleaseRender()
 {
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
+        MEDIA_LOG_I_T("AudioRenderer::Release start");
         if (!audioRenderer_->Release()) {
-            MEDIA_LOG_W("release audio render failed");
+            MEDIA_LOG_E_T("AudioRenderer::Release failed");
             return;
         }
+        MEDIA_LOG_I_T("AudioRenderer::Release end");
     }
     audioRenderer_.reset();
 }
@@ -393,18 +395,28 @@ Status AudioServerSinkPlugin::Start()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Start");
     MEDIA_LOG_D_T("Start entered.");
-    bool ret = false;
-    {
-        if (audioRenderer_ == nullptr) {
-            return Status::ERROR_WRONG_STATE;
-        }
-        ret = audioRenderer_->Start();
-        audioRenderer_->SetVolume(0.0);
-        audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
+    if (audioRenderer_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
     }
-    if (ret) {
-        MEDIA_LOG_I_T("start renderer success");
+    bool ret = audioRenderer_->Start();
+    if (!ret) {
+        MEDIA_LOG_E_T("AudioRenderer::Start failed")
+        return Status::ERROR_UNKNOWN;
+    }
+    MEDIA_LOG_I_T("AudioRenderer::Start end");
+    {
+        audioRenderer_->SetVolume(0.0);
+        MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp start");
+        audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
+        MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp end");
+    }
         return Status::OK;
+        return Status::OK;
+    } else {
+        MEDIA_LOG_E_T("start renderer fail");
+    }
+    return Status::ERROR_UNKNOWN;
+    return Status::OK;
     } else {
         MEDIA_LOG_E_T("start renderer fail");
     }
@@ -435,7 +447,9 @@ int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t dur
         if (duration == 0) {
             ret = audioRenderer_->SetVolume(targetVolume);
         } else {
+            MEDIA_LOG_I_T("plugin set vol AudioRenderer::SetVolumeWithRamp start");
             ret = audioRenderer_->SetVolumeWithRamp(targetVolume, duration);
+            MEDIA_LOG_I_T("plugin set vol AudioRenderer::SetVolumeWithRamp end");
         }
     }
     OHOS::Media::SleepInJob(duration + 40); // fade out sleep more 40 ms
