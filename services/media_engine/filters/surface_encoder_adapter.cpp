@@ -130,7 +130,7 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
     if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
         int64_t mediaBitrate;
         meta->Get<Tag::MEDIA_BITRATE>(mediaBitrate);
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
+        format.PutLongValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
     }
     if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
         double videoFrameRate;
