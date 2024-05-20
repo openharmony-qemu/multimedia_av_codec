@@ -187,9 +187,9 @@ Status MediaSyncManager::Pause()
     }
     pausedClockTime_ = GetSystemClock();
     if (currentAnchorMediaTime_ != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE) {
-        pausedMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+        pausedMediaTime_ = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, pausedClockTime_,
             currentAnchorMediaTime_, playRate_);
-        pausedAbsMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+        pausedAbsMediaTime_ = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, pausedClockTime_,
             currentAbsMediaTime_, playRate_);
     } else {
         pausedMediaTime_ = HST_TIME_NONE;
