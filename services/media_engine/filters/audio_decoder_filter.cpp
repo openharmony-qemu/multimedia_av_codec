@@ -313,7 +313,9 @@ Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKey
 void AudioDecoderFilter::SetDumpFlag(bool isDump)
 {
     isDump_ = isDump;
-    mediaCodec_->SetDumpFlag(isDump_);
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->SetDumpInfo(isDump_, instanceId_);
+    }
 }
 
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
@@ -353,7 +355,9 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 void AudioDecoderFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("AudioDecoderFilter::OnDumpInfo called.");
-    mediaCodec_->OnDumpInfo(fd);
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->OnDumpInfo(fd);
+    }
 }
 
 void AudioDecoderFilter::SetCallerInfo(uint64_t instanceId, const std::string& appName)

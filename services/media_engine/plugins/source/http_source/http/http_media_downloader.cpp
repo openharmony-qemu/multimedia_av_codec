@@ -37,6 +37,8 @@ constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int RECORD_TIME_INTERVAL = 3000;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
+constexpr int AVG_SPEED_SUM_SCALE = 10000;
+constexpr double ZERO_THRESHOLD = 1e-9;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -98,9 +100,11 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     std::string hostname = extractHostname(url);
     if (!hostname.empty()) {
         struct hostent* he = gethostbyname(hostname.c_str());
-        char ip[INET_ADDRSTRLEN];
-        inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
-        MEDIA_LOG_D("Open url ip: %{public}s", ip);
+        if (he != nullptr) {
+            char ip[INET_ADDRSTRLEN];
+            inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
+            MEDIA_LOG_D("Open url ip: %{public}s", ip);
+        }
     }
 
     openTime_ = steadyClock_.ElapsedMilliseconds();
@@ -115,11 +119,14 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
         isDownloadFinish_= true;
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-        auto downloadTime = (nowTime - startDownloadTime_) / 1000;
-        avgDownloadSpeed_ = totalBits_ / downloadTime;
-        MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
+        double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) / 1000;
+        if (downloadTime > ZERO_THRESHOLD) {
+            avgDownloadSpeed_ = totalBits_ / downloadTime;
+        }
+        MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
+            static_cast<int32_t>(avgDownloadSpeed_));
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
-            totalBits_, downloadTime * 1000);
+            totalBits_, static_cast<int64_t>(downloadTime * 1000));
     };
     MediaSouce mediaSouce;
     mediaSouce.url = url;
@@ -139,11 +146,14 @@ void HttpMediaDownloader::Close(bool isAsync)
     cvReadWrite_.NotifyOne();
     if (!isDownloadFinish_) {
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-        auto downloadTime = (nowTime - startDownloadTime_) / 1000;
-        avgDownloadSpeed_ = totalBits_ / downloadTime;
-        MEDIA_LOG_D("Download close, average download speed: " PUBLIC_LOG_D32 " bit/s", avgDownloadSpeed_);
-        MEDIA_LOG_D("Download close, Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
-            totalBits_, downloadTime * 1000);
+        double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) / 1000;
+        if (downloadTime > ZERO_THRESHOLD) {
+            avgDownloadSpeed_ = totalBits_ / downloadTime;
+        }
+        MEDIA_LOG_D("Download close, average download speed: " PUBLIC_LOG_D32 " bit/s",
+            static_cast<int32_t>(avgDownloadSpeed_));
+        MEDIA_LOG_D("Download close, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+            totalBits_, static_cast<int64_t>(downloadTime * 1000));
     }
 }
 
@@ -324,10 +334,14 @@ void HttpMediaDownloader::DownloadReportLoop()
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             // 有效下载数据量
             downloadBits_ += curDownloadBits;
-            auto downloadSpeed = downloadBits_ / ((now - lastCheckTime_) / 1000);
-            avgSpeedSum_ += downloadSpeed;
+            double downloadDuration = static_cast<double>(now - lastCheckTime_) / 1000;
+            double downloadSpeed = 0;
+            if (downloadDuration > ZERO_THRESHOLD) {
+                downloadSpeed = downloadBits_ / downloadDuration;
+            }
+            avgSpeedSum_ += downloadSpeed / AVG_SPEED_SUM_SCALE;
             recordSpeedCount_ ++;
-            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_U64 " bit/s", downloadSpeed);
+            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadSpeed));
         }
         // 下载总数据量
         lastBits_ = totalBits_;
@@ -396,7 +410,7 @@ void HttpMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
         MEDIA_LOG_E("HttpMediaDownloader is 0, can't get avgDownloadRate");
         downloadInfo.avgDownloadRate = 0;
     } else {
-        downloadInfo.avgDownloadRate = avgSpeedSum_ / recordSpeedCount_;
+        downloadInfo.avgDownloadRate = (avgSpeedSum_ / recordSpeedCount_) * AVG_SPEED_SUM_SCALE;
     }
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;

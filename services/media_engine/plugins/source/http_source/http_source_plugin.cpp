@@ -165,6 +165,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         httpHeader_["Referer"].c_str());
 
     PlayStrategy* playStrategy = source->GetPlayStrategy();
+    std::string mimeType = source->GetMimeType();
     if (uri_.find(".m3u8") != std::string::npos) {
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
@@ -183,6 +184,8 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
         }
+    } else if (mimeType == AVMimeTypes::APPLICATION_M3U8) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType));
     }
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
 

@@ -702,7 +702,9 @@ void DecoderSurfaceFilter::ParseDecodeRateLimit()
 void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("DecoderSurfaceFilter::OnDumpInfo called.");
-    videoDecoder_->OnDumpInfo(fd);
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->OnDumpInfo(fd);
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

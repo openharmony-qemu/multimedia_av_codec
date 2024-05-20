@@ -655,7 +655,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
-    int ret = 0;
+    int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     if (ioContext && ioContext->dataSource) {
@@ -673,13 +673,13 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
         MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
             bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
-        if (result == Status::OK) {
+        if (result == Status::OK || buffer->GetMemory()->GetSize() > 0) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::ERROR_AGAIN) {
             MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
             ioContext->timeout = true;
-            ret = AVERROR(EAGAIN);
+            ret = 0;
         } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
@@ -765,7 +765,11 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
     FALSE_RETURN_MSG(formatContext->pb != nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
-    formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
+    if (std::string(pluginImpl_->name) == "mp3") {
+        formatContext->flags =
+            static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
+        MEDIA_LOG_D("Set fast seek flag for mp3.");
+    }
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), nullptr);
     FALSE_RETURN_MSG((ret == 0),
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",

@@ -87,9 +87,9 @@ private:
     int64_t startDownloadTime_ {0};
     int64_t playDelayTime_ {0};
     int64_t lastCheckTime_ {0};
-    int32_t avgDownloadSpeed_ {0};
+    double avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
-    int32_t avgSpeedSum_ {0};
+    double avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};

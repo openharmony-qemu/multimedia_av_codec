@@ -849,6 +849,10 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
+    if (!gotFirstInput_) {
+        LOGI("got first input");
+        gotFirstInput_ = true;
+    }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
         (bufferInfo->avBuffer->memory_->GetSize());
     bufferInfo->omxBuffer->offset = static_cast<uint32_t>(bufferInfo->avBuffer->memory_->GetOffset());
@@ -980,7 +984,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
     if (!gotFirstOutput_) {
-        LOGI("decrease thread priority");
+        LOGI("got first output");
         OHOS::QOS::ResetThreadQos();
         gotFirstOutput_ = true;
     }
