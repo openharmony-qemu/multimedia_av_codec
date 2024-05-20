@@ -143,6 +143,7 @@ void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
     }
 }
 
+
 void FileFdSourcePlugin::PauseTimerTask()
 {
     if (timerTask_ != nullptr) {
@@ -318,12 +319,12 @@ int64_t FileFdSourcePlugin::ReadTimer()
             MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
             isBuffering_ = true;
             isTaskCallback_ = true;
-            if (timerTask_ != nullptr) {
-                timerTask_->PauseAsync();
-            }
             std::unique_lock<std::shared_mutex> lock(mutex_);
             if (!isEnd_) {
                 callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
+                if (timerTask_ != nullptr) {
+                    timerTask_->PauseAsync();
+                }
             }
         } else {
             MEDIA_LOG_D("BUFFERING_START callback_ is nullptr or isTaskCallback_ is null.");
