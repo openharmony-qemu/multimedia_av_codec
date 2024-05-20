@@ -180,8 +180,8 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
         AVCODEC_LOGE("write packet data failed, len = %{public}d", len);
         return Status::ERROR_UNKNOWN;
     }
-
-    outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
+    // pts us
+    outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / AV_CODEC_USECOND;
     outputBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration) ?
                     (outputBuffer->duration_ - (INT64_MAX - prevPts_)) :
                     (prevPts_ + outputBuffer->duration_);

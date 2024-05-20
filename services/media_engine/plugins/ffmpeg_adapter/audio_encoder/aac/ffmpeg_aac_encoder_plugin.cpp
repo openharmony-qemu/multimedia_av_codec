@@ -324,8 +324,8 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
         return Status::ERROR_UNKNOWN;
     }
 
-    // how get perfect pts with upstream pts
-    outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
+    // how get perfect pts with upstream pts(us)
+    outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / AV_CODEC_USECOND;
     // adjust ffmpeg duration with sample rate
     outBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration)
                           ? (outBuffer->duration_ - (INT64_MAX - prevPts_))

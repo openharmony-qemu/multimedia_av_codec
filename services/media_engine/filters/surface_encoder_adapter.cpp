@@ -26,6 +26,7 @@
 #include "avcodec_sysevent.h"
 
 constexpr uint32_t TIME_OUT_MS = 1000;
+constexpr uint32_t US_TO_NS = 1000;
 
 namespace OHOS {
 namespace Media {
