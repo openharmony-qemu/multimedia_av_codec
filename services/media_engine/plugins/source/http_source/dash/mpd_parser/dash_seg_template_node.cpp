@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashSegTemplateNode::DashSegTemplateNode()
 {
     for (uint32_t index = 0; index < DASH_SEG_TEMPLATE_ATTR_NUM; index++) {

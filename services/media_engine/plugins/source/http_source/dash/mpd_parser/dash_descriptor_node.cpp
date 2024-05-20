@@ -21,8 +21,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashDescriptorNode::DashDescriptorNode()
 {
     for (uint32_t index = 0; index < DASH_DESCRIPTOR_ATTR_NUM; index++) {

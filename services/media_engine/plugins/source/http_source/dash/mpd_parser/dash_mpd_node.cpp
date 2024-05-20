@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashMpdNode::DashMpdNode()
 {
     for (uint32_t i = 0; i < DASH_MPD_ATTR_NUM; i++) {
