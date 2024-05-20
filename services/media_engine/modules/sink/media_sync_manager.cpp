@@ -71,9 +71,9 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
         return Status::OK;
     }
     int64_t now = GetSystemClock();
-    int64_t currentMedia = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
+    int64_t currentMedia = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, now,
         currentAnchorMediaTime_, playRate_);
-    int64_t currentAbsMedia = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
+    int64_t currentAbsMedia = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, now,
         currentAbsMediaTime_, playRate_);
     SimpleUpdateTimeAnchor(now, currentMedia, currentAbsMedia);
     SimpleUpdatePlayRate(rate);
@@ -187,9 +187,9 @@ Status MediaSyncManager::Pause()
     }
     pausedClockTime_ = GetSystemClock();
     if (currentAnchorMediaTime_ != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE) {
-        pausedMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+        pausedMediaTime_ = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, pausedClockTime_,
             currentAnchorMediaTime_, playRate_);
-        pausedAbsMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+        pausedAbsMediaTime_ = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, pausedClockTime_,
             currentAbsMediaTime_, playRate_);
     } else {
         pausedMediaTime_ = HST_TIME_NONE;
@@ -328,6 +328,19 @@ int64_t MediaSyncManager::SimpleGetMediaTime(int64_t anchorClockTime, int64_t de
         return HST_TIME_NONE;
     }
     return anchorMediaTime;
+}
+
+int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
+    int64_t anchorMediaTime, float playRate)
+{
+    if (std::fabs(playRate - 0) < 1e-9) { // 0 threshold
+        return HST_TIME_NONE;
+    }
+    if (anchorClockTime == HST_TIME_NONE || nowClockTime == HST_TIME_NONE
+        || anchorMediaTime == HST_TIME_NONE || delayTime== HST_TIME_NONE) {
+        return HST_TIME_NONE;
+    }
+    return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
 int64_t MediaSyncManager::GetMediaTimeNow()
