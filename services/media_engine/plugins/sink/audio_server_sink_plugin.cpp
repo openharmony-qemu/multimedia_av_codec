@@ -410,17 +410,7 @@ Status AudioServerSinkPlugin::Start()
         audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
         MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp end");
     }
-        return Status::OK;
-        return Status::OK;
-    } else {
-        MEDIA_LOG_E_T("start renderer fail");
-    }
-    return Status::ERROR_UNKNOWN;
     return Status::OK;
-    } else {
-        MEDIA_LOG_E_T("start renderer fail");
-    }
-    return Status::ERROR_UNKNOWN;
 }
 
 Status AudioServerSinkPlugin::Stop()
