@@ -944,6 +944,7 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
+    info.omxBuffer->alongParam = std::move(omxBuffer.alongParam);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -997,6 +998,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
+    ExtractPerFrameParamFromOmxBuffer(omxBuffer, info.avBuffer->meta_);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
