@@ -62,10 +62,11 @@ private:
     Callback* callback_ {nullptr};
     bool isTaskCallback_ {false};
     std::atomic<bool> isBuffering_ {false};
+    std::atomic<bool> isEnd_ {false};
     uint64_t readTime_ {0};
     std::shared_ptr<Task> timerTask_;
     std::shared_ptr<Task> downloadTask_;
-
+    std::shared_mutex mutex_;
     bool isReadFrame_ {false};
     std::string bundleName_ {};
     bool isReadSuccess_ {false};
