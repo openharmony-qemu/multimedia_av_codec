@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashSegBaseNode::DashSegBaseNode()
 {
     uint32_t index = 0;

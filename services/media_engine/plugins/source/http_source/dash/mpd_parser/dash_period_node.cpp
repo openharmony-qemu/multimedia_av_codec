@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashPeriodNode::DashPeriodNode()
 {
     for (uint32_t index = 0; index < DASH_PERIOD_ATTR_NUM; index++) {

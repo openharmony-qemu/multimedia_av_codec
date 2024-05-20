@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashRepresentationNode::DashRepresentationNode()
 {
     for (uint32_t index = 0; index < DASH_REPRESENTATION_ATTR_NUM; index++) {

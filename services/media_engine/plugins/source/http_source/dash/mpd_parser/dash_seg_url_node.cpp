@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashSegUrlNode::DashSegUrlNode()
 {
     for (uint32_t index = 0; index < DASH_SEG_URL_ATTR_NUM; index++) {

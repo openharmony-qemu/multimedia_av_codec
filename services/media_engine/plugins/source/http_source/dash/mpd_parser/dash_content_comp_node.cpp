@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashContentCompNode::DashContentCompNode()
 {
     for (uint32_t index = 0; index < DASH_CONTENT_COMP_ATTR_NUM; index++) {

@@ -20,8 +20,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-
-
 DashComAttrsElements::DashComAttrsElements()
 {
     for (int32_t index = 0; index < DASH_COMMON_ATTR_NUM; index++) {
