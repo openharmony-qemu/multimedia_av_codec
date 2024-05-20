@@ -102,8 +102,8 @@ void AVCodecParamCheckerTest::SetUp(void)
 void AVCodecParamCheckerTest::TearDown(void)
 {
     OH_AVFormat_Destroy(g_format);
-    OH_VideoEncoder_Destroy(g_videoEnc);
-    OH_VideoDecoder_Destroy(g_videoDec);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(g_videoEnc));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(g_videoDec));
 }
 
 void SetFormatBasicParam(bool isDecoder)
@@ -274,7 +274,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0302, Tes
         ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoEncoder_Destroy(videoEnc);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
     }
 }
 
@@ -645,7 +645,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_VALID_TEST_0601, TestSize.L
         ASSERT_EQ(ret, AV_ERR_OK);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoEncoder_Destroy(videoEnc);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
     }
 }
 
@@ -834,7 +834,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1302, TestS
         ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoDecoder_Destroy(videoDec);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
     }
 }
 
@@ -927,7 +927,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_VALID_TEST_1501, TestSize.
         ASSERT_EQ(ret, AV_ERR_OK);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoEncoder_Destroy(videoDec);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
     }
 }
 
@@ -958,7 +958,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSiz
             ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 
             OH_AVFormat_Destroy(format);
-            OH_VideoEncoder_Destroy(videoDec);
+            ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
         }
     }
 }
