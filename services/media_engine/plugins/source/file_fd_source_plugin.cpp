@@ -251,12 +251,14 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
 
 Status FileFdSourcePlugin::Stop();
 {
+    MEDIA_LOG_I("Stop enter.");
     if (downloadTask_ != nullptr) {
         downloadTask_->Stop();
     }
     if (timerTask_ != nullptr) {
         timerTask_->Stop();
     }
+    return Status::OK;
 }
 
 Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
