@@ -49,6 +49,12 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
     std::queue<OH_AVCodecBufferAttr> empty;
     swap(empty, q);
 }
+
+void clearAvBufferQueue(std::queue<OH_AVMemory *> &q)
+{
+    std::queue<OH_AVMemory *> empty;
+    swap(empty, q);
+}
 } // namespace
 
 VDecFuzzSample::~VDecFuzzSample()
@@ -515,8 +521,9 @@ int32_t VDecFuzzSample::Release()
         ret = OH_VideoDecoder_Destroy(vdec_);
         vdec_ = nullptr;
     }
-
     if (signal_ != nullptr) {
+        clearAvBufferQueue(signal_->inBufferQueue_);
+        clearAvBufferQueue(signal_->outBufferQueue_);
         delete signal_;
         signal_ = nullptr;
     }
