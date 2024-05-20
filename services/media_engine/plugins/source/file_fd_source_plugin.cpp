@@ -249,6 +249,16 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
+Status FileFdSourcePlugin::Stop();
+{
+    if (downloadTask_ != nullptr) {
+        downloadTask_->Stop();
+    }
+    if (timerTask_ != nullptr) {
+        timerTask_->Stop();
+    }
+}
+
 Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 {
     if (uri.empty()) {

@@ -37,6 +37,7 @@ public:
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
+    Status Stop() override;
     void SetDemuxerState() override;
     void SetBundleName(const std::string& bundleName) override;
     void SubmitBufferingStart();
