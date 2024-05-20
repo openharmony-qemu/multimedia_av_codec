@@ -215,8 +215,10 @@ void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
 }
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
-    downloader_->GetDownloadInfo(downloadInfo);
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+        downloader_->GetDownloadInfo(downloadInfo);
+    }
 }
 }
 }
