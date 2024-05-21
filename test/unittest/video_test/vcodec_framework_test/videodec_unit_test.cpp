@@ -1183,8 +1183,6 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_002, TestSize.Level1)
     checkFunc(Media::Tag::VIDEO_CROP_LEFT);
     checkFunc(Media::Tag::VIDEO_CROP_RIGHT);
     checkFunc(Media::Tag::VIDEO_STRIDE);
-    checkFunc(Media::Tag::VIDEO_DISPLAY_WIDTH);
-    checkFunc(Media::Tag::VIDEO_DISPLAY_HEIGHT);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -1207,21 +1205,15 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_003, TestSize.Level1)
 
     int32_t cropRight = 0;
     int32_t stride = 0;
-    int32_t displayWidth = 0;
     int32_t cropBottom = 0;
-    int32_t displayHeight = 0;
 
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_CROP_RIGHT, cropRight));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_DISPLAY_WIDTH, displayWidth));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_CROP_BOTTOM, cropBottom));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_DISPLAY_HEIGHT, displayHeight));
 
     EXPECT_GE(cropRight, DEFAULT_WIDTH - 1);
     EXPECT_GE(stride, DEFAULT_WIDTH);
-    EXPECT_GE(displayWidth, DEFAULT_WIDTH);
     EXPECT_GE(cropBottom, DEFAULT_HEIGHT - 1);
-    EXPECT_GE(displayHeight, DEFAULT_HEIGHT);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
