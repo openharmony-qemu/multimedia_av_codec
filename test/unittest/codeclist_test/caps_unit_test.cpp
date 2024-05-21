@@ -966,13 +966,13 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_001, TestSize.Level1)
         EXPECT_LE(profile, AVC_PROFILE_MAIN);
         const int32_t *levels = nullptr;
         uint32_t levelsNum = -1;
-        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);c
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(levelsNum, AVC_LEVEL_51 + 1);
+        EXPECT_LE(levelsNum, AVC_LEVEL_62 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, AVC_LEVEL_1);
-            EXPECT_LE(level, AVC_LEVEL_51);
+            EXPECT_LE(level, AVC_LEVEL_62);
         }
     }
 }
@@ -1030,11 +1030,11 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_003, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(levelsNum, AVC_LEVEL_51 + 1);
+        EXPECT_LE(levelsNum, AVC_LEVEL_62 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, AVC_LEVEL_1);
-            EXPECT_LE(level, AVC_LEVEL_51);
+            EXPECT_LE(level, AVC_LEVEL_62);
         }
     }
 }
@@ -1092,11 +1092,11 @@ HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
         uint32_t levelsNum = -1;
         EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
         EXPECT_GT(levelsNum, 0);
-        EXPECT_LE(levelsNum, AVC_LEVEL_51 + 1);
+        EXPECT_LE(levelsNum, AVC_LEVEL_62 + 1);
         for (int32_t j = 0; j < levelsNum; j++) {
             int32_t level = levels[j];
             EXPECT_GE(level, AVC_LEVEL_1);
-            EXPECT_LE(level, AVC_LEVEL_51);
+            EXPECT_LE(level, AVC_LEVEL_62);
         }
     }
 }
