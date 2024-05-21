@@ -253,7 +253,7 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
-Status FileFdSourcePlugin::Stop();
+Status FileFdSourcePlugin::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
     {

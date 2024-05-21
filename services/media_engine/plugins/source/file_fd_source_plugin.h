@@ -21,6 +21,8 @@
 #include "plugin/source_plugin.h"
 #include "plugin/plugin_buffer.h"
 #include "osal/task/task.h"
+#include <mutex>
+#include <shared_mutex>
 
 namespace OHOS {
 namespace Media {
