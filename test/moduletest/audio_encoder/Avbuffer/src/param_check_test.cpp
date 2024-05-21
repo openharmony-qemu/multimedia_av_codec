@@ -718,8 +718,9 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_015, TestSize.Level2)
     result0 = audioBufferAacEncDemo->Start(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetInputIndex();
+    index = -1;
     result0 = audioBufferAacEncDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    ASSERT_NE(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetOutputIndex();
     index = -1;
     result0 = audioBufferAacEncDemo->FreeOutputData(codec, index);
@@ -737,8 +738,9 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_015, TestSize.Level2)
     result0 = audioBufferAacEncDemo->Start(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetInputIndex();
+    index = -1;
     result0 = audioBufferAacEncDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    ASSERT_NE(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetOutputIndex();
     index = 8;
     result0 = audioBufferAacEncDemo->FreeOutputData(codec, index);
