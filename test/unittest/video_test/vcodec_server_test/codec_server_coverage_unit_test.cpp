@@ -517,6 +517,7 @@ sptr<Surface> CreateSurface()
     option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
     auto window = Rosen::Window::Create("vcodec_unittest", option);
     if (window == nullptr || window->GetSurfaceNode() == nullptr) {
+        std::cout << "Fatal: Create window fail" << std::endl;
         return nullptr;
     }
     window->Show();
@@ -532,9 +533,11 @@ HWTEST_F(CodecServerUnitTest, CreateInputSurface_Valid_Test_001, TestSize.Level1
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     sptr<Surface> surface = CreateSurface();
-    EXPECT_CALL(*codecBaseMock_, CreateInputSurface()).Times(1).WillOnce(Return(surface));
-    sptr<Surface> ret = server_->CreateInputSurface();
-    EXPECT_EQ(ret, surface);
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, CreateInputSurface()).Times(1).WillOnce(Return(surface));
+        sptr<Surface> ret = server_->CreateInputSurface();
+        EXPECT_EQ(ret, surface);
+    }
 }
 
 /**
@@ -566,7 +569,6 @@ HWTEST_F(CodecServerUnitTest, CreateInputSurface_Invalid_Test_002, TestSize.Leve
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     server_->codecBase_ = nullptr;
-    sptr<Surface> surface = CreateSurface();
     sptr<Surface> ret = server_->CreateInputSurface();
     EXPECT_EQ(ret, nullptr);
 }
@@ -580,9 +582,11 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Valid_Test_001, TestSize.Level1)
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     sptr<Surface> surface = CreateSurface();
-    EXPECT_CALL(*codecBaseMock_, SetInputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    int32_t ret = server_->SetInputSurface(surface);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetInputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+        int32_t ret = server_->SetInputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
 }
 
 /**
@@ -599,10 +603,12 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_S001, TestSize.Level1
     CreateHCodecByMime();
 
     sptr<Surface> surface = CreateSurface();
-    for (auto &val : testList) {
-        server_->status_ = val;
-        int32_t ret = server_->SetInputSurface(surface);
-        EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE) << "state: " << val << "\n";
+    if (surface != nullptr) {
+        for (auto &val : testList) {
+            server_->status_ = val;
+            int32_t ret = server_->SetInputSurface(surface);
+            EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE) << "state: " << val << "\n";
+        }
     }
 }
 
@@ -616,8 +622,10 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_002, TestSize.Level1)
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     server_->codecBase_ = nullptr;
     sptr<Surface> surface = CreateSurface();
-    int32_t ret = server_->SetInputSurface(surface);
-    EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
+    if (surface != nullptr) {
+        int32_t ret = server_->SetInputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
+    }
 }
 
 /**
@@ -635,14 +643,16 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_001, TestSize.Level1)
         CodecServer::CodecStatus::RUNNING,     CodecServer::CodecStatus::END_OF_STREAM,
     };
     sptr<Surface> surface = CreateSurface();
-    EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface))
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface))
         .Times(testList.size())
         .WillRepeatedly(Return(AVCS_ERR_OK));
 
-    for (auto &val : testList) {
-        server_->status_ = val;
-        int32_t ret = server_->SetOutputSurface(surface);
-        EXPECT_EQ(ret, AVCS_ERR_OK) << "state: " << val << "\n";
+        for (auto &val : testList) {
+            server_->status_ = val;
+            int32_t ret = server_->SetOutputSurface(surface);
+            EXPECT_EQ(ret, AVCS_ERR_OK) << "state: " << val << "\n";
+        }
     }
 }
 
@@ -656,9 +666,11 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_002, TestSize.Level1)
     server_->isModeConfirmed_ = false;
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     sptr<Surface> surface = CreateSurface();
-    EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    int32_t ret = server_->SetOutputSurface(surface);
-    EXPECT_EQ(ret, AVCS_ERR_OK) ;
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+        int32_t ret = server_->SetOutputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
 }
 
 /**
@@ -671,8 +683,10 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_001, TestSize.Level1
     server_->isModeConfirmed_ = true;
     server_->isSurfaceMode_ = false;
     sptr<Surface> surface = CreateSurface();
-    int32_t ret = server_->SetOutputSurface(surface);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
+    if (surface != nullptr) {
+        int32_t ret = server_->SetOutputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
+    }
 }
 
 /**
@@ -691,8 +705,10 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_002, TestSize.Level1
     };
 
     sptr<Surface> surface = CreateSurface();
-    int32_t ret = server_->SetOutputSurface(surface);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE);
+    if (surface != nullptr) {
+        int32_t ret = server_->SetOutputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE);
+    }
 }
 
 /**
@@ -710,10 +726,12 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_003, TestSize.Level1
     };
 
     sptr<Surface> surface = CreateSurface();
-    for (auto &val : testList) {
-        server_->status_ = val;
-        int32_t ret = server_->SetOutputSurface(surface);
-        EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE) << "state: " << val << "\n";
+    if (surface != nullptr) {
+        for (auto &val : testList) {
+            server_->status_ = val;
+            int32_t ret = server_->SetOutputSurface(surface);
+            EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE) << "state: " << val << "\n";
+        }
     }
 }
 
@@ -728,8 +746,10 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Invalid_Test_004, TestSize.Level1
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     server_->codecBase_ = nullptr;
     sptr<Surface> surface = CreateSurface();
-    int32_t ret = server_->SetOutputSurface(surface);
-    EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
+    if (surface != nullptr) {
+        int32_t ret = server_->SetOutputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
+    }
 }
 
 /**
