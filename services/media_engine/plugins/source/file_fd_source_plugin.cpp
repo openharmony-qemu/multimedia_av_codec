@@ -148,6 +148,7 @@ void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
 
 void FileFdSourcePlugin::PauseTimerTask()
 {
+    MEDIA_LOG_I("PauseTimerTask in.");
     if (timerTask_ != nullptr) {
         timerTask_->Pause();
     }
