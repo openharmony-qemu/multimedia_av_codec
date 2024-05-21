@@ -112,7 +112,7 @@ void FileFdSourcePlugin::SubmitReadFail()
 {
     if (callback_ != nullptr) {
         MEDIA_LOG_I("Read OnEvent read fail");
-        std::unique_lock<std::shared_mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         if(!isEnd_) {
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
@@ -319,7 +319,7 @@ int64_t FileFdSourcePlugin::ReadTimer()
             MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
             isBuffering_ = true;
             isTaskCallback_ = true;
-            std::unique_lock<std::shared_mutex> lock(mutex_);
+            std::shared_lock<std::shared_mutex> lock(mutex_);
             if (!isEnd_) {
                 callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
                 if (timerTask_ != nullptr) {
@@ -399,7 +399,7 @@ void FileFdSourcePlugin::CacheData()
 
     if (callback_ != nullptr && isReadSuccess_) {
         MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_END.");
-        std::unique_lock<std::shared_mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         if(!isEnd_) {
             callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         }
