@@ -705,7 +705,6 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_015, TestSize.Level2)
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
-    uint32_t index;
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
@@ -717,7 +716,7 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_015, TestSize.Level2)
     ASSERT_EQ(result0, AV_ERR_OK);
     result0 = audioBufferAacEncDemo->Start(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
-    index = audioBufferAacEncDemo->GetInputIndex();
+    uint32_t index = audioBufferAacEncDemo->GetInputIndex();
     index = -1;
     result0 = audioBufferAacEncDemo->PushInputDataEOS(codec, index);
     ASSERT_NE(result0, AV_ERR_OK);
