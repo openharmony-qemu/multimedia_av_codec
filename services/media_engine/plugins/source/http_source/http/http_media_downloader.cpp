@@ -194,7 +194,10 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
             isTimeOut_ = true;
             if (downloader_ != nullptr) {
-                downloader_->Pause();
+                // avoid deadlock caused by ringbuffer write stall
+                buffer_->SetActive(false);
+                // the downloader is unavailable after this
+                downloader_->Stop();
             }
             if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
                 downloadRequest_->Close();
