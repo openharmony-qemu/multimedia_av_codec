@@ -400,16 +400,14 @@ Status AudioServerSinkPlugin::Start()
     }
     bool ret = audioRenderer_->Start();
     if (!ret) {
-        MEDIA_LOG_E_T("AudioRenderer::Start failed")
+        MEDIA_LOG_E_T("AudioRenderer::Start failed");
         return Status::ERROR_UNKNOWN;
     }
     MEDIA_LOG_I_T("AudioRenderer::Start end");
-    {
-        audioRenderer_->SetVolume(0.0);
-        MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp start");
-        audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
-        MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp end");
-    }
+    audioRenderer_->SetVolume(0.0);
+    MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp start");
+    audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
+    MEDIA_LOG_I_T("plugin start AudioRenderer::SetVolumeWithRamp end");
     return Status::OK;
 }
 
