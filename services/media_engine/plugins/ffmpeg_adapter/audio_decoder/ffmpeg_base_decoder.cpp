@@ -149,7 +149,7 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
     return ReceiveBuffer(outBuffer);
 }
 
-void FfmpegBaseDecoder::DisableNeedResamp()
+void FfmpegBaseDecoder::DisableNeedResample()
 {
     needResample_ = 0;
 }

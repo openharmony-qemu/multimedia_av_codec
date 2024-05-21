@@ -75,7 +75,7 @@ public:
 
     bool CheckSampleFormat(const std::shared_ptr<Meta> &format, int32_t channels);
 
-    void DisableNeedResamp();
+    void DisableNeedResample();
 private:
     bool isFirst;
     bool hasExtra_;
