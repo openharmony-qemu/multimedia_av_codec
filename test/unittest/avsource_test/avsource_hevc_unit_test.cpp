@@ -61,6 +61,7 @@ string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4")
 string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -851,5 +852,41 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1611, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     ASSERT_EQ(formatVal_.width, 640);
     ASSERT_EQ(formatVal_.height, 360);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1700
+ * @tc.desc: get mp4 265 format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1700, TestSize.Level1)
+{
+    if (access(g_mp4265InfoParsePath.c_str(), F_OK) != 0) {
+        return;
+    }
+    printf("---- %s ------\n", g_mp4265InfoParsePath.data());
+    source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4265InfoParsePath.data()));
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    int64_t startTime;
+    format_->GetLongValue(Media::Tag::MEDIA_CONTAINER_START_TIME, startTime);
+
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    double sar;
+    format_->GetDoubleValue(Media::Tag::VIDEO_SAR, sar);
+
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    int64_t sampleFormat;
+    format_->GetLongValue(Media::Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
+    int64_t bitsPerCodecSample;
+    format_->GetLongValue(Media::Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerCodecSample);
 }
 } // namespace

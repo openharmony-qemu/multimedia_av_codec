@@ -42,7 +42,7 @@ public:
     void CountFrames(uint32_t index);
 
     void InitResource(const std::string &path, bool local);
-    void ReadSample(const std::string &path, bool local);
+    void ReadSample(const std::string &path, bool local, bool checkBufferInfo = false);
 
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;

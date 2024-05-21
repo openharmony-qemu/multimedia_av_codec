@@ -572,6 +572,34 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE;
  * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_MSE;
+/**
+ * @brief Key for decoding timestamp of the buffer in microseconds, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_DECODING_TIMESTAMP;
+/**
+ * @brief Key for duration of the buffer in microseconds, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_BUFFER_DURATION;
+/**
+ * @brief Key for sample aspect ratio, value type is double.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_SAR;
+/**
+ * @brief Key for start time of file, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_START_TIME;
 
 /**
  * @brief Media type.
