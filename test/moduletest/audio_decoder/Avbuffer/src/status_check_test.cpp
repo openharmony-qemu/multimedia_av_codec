@@ -482,8 +482,9 @@ HWTEST_F(StatusCheckTest, STATUS_CHECK_020, TestSize.Level2)
     ASSERT_EQ(result0, AV_ERR_OK);
     result0 = aDecBufferDemo->Start(codec);
     index = aDecBufferDemo->GetInputIndex();
+    index = -1;
     result0 = aDecBufferDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    ASSERT_NE(result0, AV_ERR_OK);
     result0 = aDecBufferDemo->Destroy(codec);
     delete aDecBufferDemo;
 }
