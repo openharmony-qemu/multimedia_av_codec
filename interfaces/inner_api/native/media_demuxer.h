@@ -87,6 +87,7 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
+    void SetDumpInfo(bool isDump, uint64_t instanceId);
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
