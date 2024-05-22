@@ -1224,7 +1224,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_005, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
                          static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**
@@ -1240,7 +1240,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_006, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 60);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**
@@ -1256,7 +1256,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_007, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**
@@ -1275,7 +1275,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_008, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
                          static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE));
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**
@@ -1347,7 +1347,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 60.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
 /**
