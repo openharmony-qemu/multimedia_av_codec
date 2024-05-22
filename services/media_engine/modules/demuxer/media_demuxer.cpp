@@ -841,7 +841,7 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
         std::string trackType;
         std::unique_ptr<Task> tempTask;
         if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0 &&
-            !IsTrackDisable(Plugins::MediaType::VIDEO)) {
+            !IsTrackDisabled(Plugins::MediaType::VIDEO)) {
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime_ = mimeType;
             videoTrackId_ = index;
@@ -850,7 +850,7 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             }
             tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0 &&
-            !IsTrackDisable(Plugins::MediaType::AUDIO)) {
+            !IsTrackDisabled(Plugins::MediaType::AUDIO)) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             if (audioTrackId_ == TRACK_ID_DUMMY) {
                 audioTrackId_ = index;
@@ -1186,7 +1186,7 @@ Status MediaDemuxer::DisableMediaTrack(Plugins::MediaType mediaType)
     return Status::OK;
 }
  
-bool MediaDemuxer::IsTrackDisable(Plugins::MediaType mediaType)
+bool MediaDemuxer::IsTrackDisabled(Plugins::MediaType mediaType)
 {
     return !disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end();
 }
