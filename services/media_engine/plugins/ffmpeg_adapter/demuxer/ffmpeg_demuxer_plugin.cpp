@@ -773,7 +773,7 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ);
     FALSE_RETURN_MSG(formatContext->pb != nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
-    formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
+    formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
     if (std::string(pluginImpl_->name) == "mp3") {
         formatContext->flags =
             static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
