@@ -65,7 +65,8 @@
           "audio_framework",
           "drm_framework",
           "ffmpeg",
-          "lame"
+          "lame",
+          "libxml2"
         ],
         "third_party": [
           "bounds_checking_function",
