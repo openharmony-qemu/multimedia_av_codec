@@ -149,7 +149,7 @@ public:
 
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
     void Start();
-    void Pause();
+    void Pause(bool isAsync = false);
     void Resume();
     void Stop(bool isAsync = false);
     bool Seek(int64_t offset);
