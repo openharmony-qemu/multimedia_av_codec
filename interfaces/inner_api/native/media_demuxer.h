@@ -129,7 +129,7 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
-    bool IsTrackDisable(Plugins::MediaType mediaType);
+    bool IsTrackDisabled(Plugins::MediaType mediaType);
 
     Status SeekToTimePre(bool jumperRestartPlugin);
     Status SeekToTimeAfter(bool jumperRestartPlugin);
