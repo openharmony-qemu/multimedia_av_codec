@@ -842,23 +842,8 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32
             if (!trackMeta.GetData(Tag::MEDIA_START_TIME, videoStartTime_)) {
                 MEDIA_LOG_W("Get media start time failed");
             }
-<<<<<<< HEAD
-<<<<<<< HEAD
-        } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
-=======
-            tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
-        } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0 &&
-<<<<<<< HEAD
-            !IsTrackDisable(Plugins::MediaType::AUDIO)) {
->>>>>>> 6bdd03c6 (不设置surface播放视频流程走通)
-=======
-            !IsTrackDisabled(Plugins::MediaType::AUDIO)) {
->>>>>>> e287187c (不设置surface播放视频流程走通)
-=======
-            tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0 &&
             !IsTrackDisabled(Plugins::MediaType::AUDIO)) {
->>>>>>> e4702be057aca67465b360eca2aca98384528b16
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             if (audioTrackId_ == TRACK_ID_DUMMY) {
                 audioTrackId = index;
