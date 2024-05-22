@@ -230,7 +230,7 @@ DashMpdGetRet DashMpdDownloader::GetNextSegmentByStreamId(int streamId, std::sha
         if (streamDescription->segsState_ == DASH_SEGS_STATE_FINISH) {
             int64_t segmentIndex = (streamDescription->currentNumberSeq_ == -1) ? 0 :
                 streamDescription->currentNumberSeq_ - streamDescription->startNumberSeq_ + 1;
-            MEDIA_LOG_I("get segment index :"
+            MEDIA_LOG_D("get segment index :"
             PUBLIC_LOG_D64
             ", id:"
             PUBLIC_LOG_D32
@@ -239,7 +239,7 @@ DashMpdGetRet DashMpdDownloader::GetNextSegmentByStreamId(int streamId, std::sha
             if (segmentIndex >= 0 && (unsigned int) segmentIndex < streamDescription->mediaSegments_.size()) {
                 seg = streamDescription->mediaSegments_[segmentIndex];
                 streamDescription->currentNumberSeq_ = seg->numberSeq_;
-                MEDIA_LOG_I("after get segment index :"
+                MEDIA_LOG_D("after get segment index :"
                 PUBLIC_LOG_D64, streamDescription->currentNumberSeq_);
                 ret = DASH_MPD_GET_DONE;
             } else {
@@ -403,6 +403,12 @@ void DashMpdDownloader::SetCurrentNumberSeqByStreamId(int streamId, int64_t numb
             break;
         }
     }
+}
+
+void DashMpdDownloader::SetHdrStart(bool isHdrStart)
+{
+    MEDIA_LOG_I("SetHdrStart:" PUBLIC_LOG_D32, isHdrStart);
+    isHdrStart_ = isHdrStart;
 }
 
 void DashMpdDownloader::ParseManifest()
@@ -691,7 +697,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 
 bool DashMpdDownloader::SaveData(uint8_t* data, uint32_t len)
 {
-    MEDIA_LOG_I("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
+    MEDIA_LOG_D("SaveData:size=%{public}u len=%{public}u", (unsigned int)downloadContent_.size(), len);
     downloadContent_.append(reinterpret_cast<const char*>(data), len);
     return true;
 }
@@ -1035,7 +1041,7 @@ void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, st
     DashAppendBaseUrl(adptSetBaseUrl, adptSetInfo->baseUrl_);
     adptSetManager_->SetAdptSetInfo(adptSetInfo);
     streamDesc.isHdr_ = adptSetManager_->IsHdr();
-    MEDIA_LOG_I("GetStreamsInfoInAdptSet isHdr " PUBLIC_LOG_U32, streamDesc.isHdr_);
+    MEDIA_LOG_D("GetStreamsInfoInAdptSet isHdr " PUBLIC_LOG_U32, streamDesc.isHdr_);
 
     std::list<DashRepresentationInfo*> repList = adptSetInfo->representationList_;
     if (repList.size() == 0) {
@@ -1756,7 +1762,7 @@ bool DashMpdDownloader::GetInitSegFromPeriod(std::string periodBaseUrl, std::str
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, periodBaseUrl);
-        MEDIA_LOG_I("GetInitSegFromPeriod:streamId:"
+        MEDIA_LOG_D("GetInitSegFromPeriod:streamId:"
         PUBLIC_LOG_D32
         ", init seg url "
         PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
@@ -1776,7 +1782,7 @@ bool DashMpdDownloader::GetInitSegFromAdptSet(std::string adptSetBaseUrl, std::s
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, adptSetBaseUrl);
-        MEDIA_LOG_I("GetInitSegFromAdptSet:streamId:"
+        MEDIA_LOG_D("GetInitSegFromAdptSet:streamId:"
         PUBLIC_LOG_D32
         ", init seg url "
         PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
@@ -1796,7 +1802,7 @@ bool DashMpdDownloader::GetInitSegFromRepresentation(std::string repBaseUrl, std
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, repBaseUrl);
-        MEDIA_LOG_I("GetInitSegFromRepresentation:streamId:"
+        MEDIA_LOG_D("GetInitSegFromRepresentation:streamId:"
         PUBLIC_LOG_D32
         ", init seg url "
         PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());

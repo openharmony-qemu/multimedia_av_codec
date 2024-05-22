@@ -88,6 +88,10 @@ public:
     {
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
     }
+    virtual void SetPlayStrategy(PlayStrategy* playStrategy)
+    {
+        MEDIA_LOG_W("SetPlayStrategy is unimplemented.");
+    }
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
     {

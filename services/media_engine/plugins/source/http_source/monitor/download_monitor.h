@@ -60,6 +60,7 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
+    void SetPlayStrategy(PlayStrategy* playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;

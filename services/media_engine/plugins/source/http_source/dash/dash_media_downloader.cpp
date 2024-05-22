@@ -287,6 +287,14 @@ void DashMediaDownloader::SetDownloadErrorState()
     downloadErrorState_ = true;
 }
 
+void DashMediaDownloader::SetPlayStrategy(PlayStrategy* playStrategy)
+{
+    if (playStrategy != nullptr) {
+        mpdDownloader_->SetHdrStart(playStrategy->preferHDR);
+        expectDuration_ = static_cast<uint64_t>(playStrategy->duration);
+    }
+}
+
 Status DashMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
     return mpdDownloader_->GetStreamInfo(streams);
@@ -336,7 +344,7 @@ void DashMediaDownloader::OpenInitSegment(
     const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
-            streamDesc->streamId_, streamDesc->type_);
+            streamDesc->streamId_, streamDesc->type_, expectDuration_);
     if (downloader != nullptr) {
         if (statusCallback_ != nullptr) {
             downloader->SetStatusCallback(statusCallback_);

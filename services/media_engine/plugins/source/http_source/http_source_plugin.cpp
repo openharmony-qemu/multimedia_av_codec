@@ -176,6 +176,9 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         delayReady = false;
     } else if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
+        if (playStrategy != nullptr) {
+            downloader_->SetPlayStrategy(playStrategy);
+        }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
