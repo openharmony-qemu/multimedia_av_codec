@@ -20,6 +20,7 @@
 #include <limits>
 #include <string>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
@@ -98,6 +99,7 @@ public:
     void OnDumpInfo(int32_t fd);
 
     bool IsLocalDrmInfosExisted();
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
 private:
     class DataSourceImpl;
 
@@ -134,6 +136,7 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    bool IsTrackDisabled(Plugins::MediaType mediaType);
 
     Plugins::Seekable seekable_;
     std::string uri_;
@@ -191,6 +194,7 @@ private:
 
     bool isDump_ = false;
     std::string dumpPrefix_ = "";
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 };
 } // namespace Media
 } // namespace OHOS
