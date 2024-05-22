@@ -156,8 +156,8 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         httpHeader_["Referer"].c_str());
 
     PlayStrategy* playStrategy = source->GetPlayStrategy();
-    std::string mimeType = source->GetMimeType();
-    if (IsSeekToTimeSupported()) {
+    mimeType_ = source->GetMimeType();
+    if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
@@ -172,8 +172,8 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
         }
-    } else if (mimeType == AVMimeTypes::APPLICATION_M3U8) {
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType));
+    } else if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
     }
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
 
@@ -188,7 +188,11 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
-    return uri_.find(".m3u8") != std::string::npos;
+    if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        return uri_.find(".m3u8") != std::string::npos;
+    }
+    MEDIA_LOG_D("IsSeekToTimeSupported return true");
+    return true;
 }
 
 Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
