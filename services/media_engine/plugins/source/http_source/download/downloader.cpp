@@ -231,7 +231,7 @@ void Downloader::Start()
     MEDIA_LOG_I("start End");
 }
 
-void Downloader::Pause()
+void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     {
@@ -239,7 +239,11 @@ void Downloader::Pause()
         MEDIA_LOG_I("pause Begin");
         requestQue_->SetActive(false, false);
     }
-    task_->Pause();
+    if (isAsync) {
+        task_->PauseAsync();
+    } else {
+        task_->Pause();
+    }
     MEDIA_LOG_I("pause End");
 }
 

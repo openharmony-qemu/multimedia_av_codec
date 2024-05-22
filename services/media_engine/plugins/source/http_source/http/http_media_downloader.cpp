@@ -197,7 +197,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                 // avoid deadlock caused by ringbuffer write stall
                 buffer_->SetActive(false);
                 // the downloader is unavailable after this
-                downloader_->Stop(true);
+                downloader_->Pause(true);
             }
             if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
                 downloadRequest_->Close();
