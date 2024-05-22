@@ -973,7 +973,6 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
         }
         case FREE_BUFFER:
             EraseBufferFromPool(OMX_DirOutput, bufferIdx);
-            EraseOutBuffersOwnedByOmx(info.bufferId);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -1117,21 +1116,6 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
             EraseBufferFromPool(OMX_DirOutput, i);
         }
     }
-}
-
-void HCodec::RecordOutBuffersOwnedByOmx()
-{
-    outBuffersOwnedByOmx_.clear();
-    for (const BufferInfo& info : outputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_OMX) {
-            outBuffersOwnedByOmx_.insert(info.bufferId);
-        }
-    }
-}
-
-void HCodec::EraseOutBuffersOwnedByOmx(uint32_t bufferId)
-{
-    outBuffersOwnedByOmx_.erase(bufferId);
 }
 
 int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)
