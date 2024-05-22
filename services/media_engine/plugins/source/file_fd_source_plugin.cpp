@@ -53,6 +53,7 @@ uint64_t GetFileSize(int32_t fd)
 }
 Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
 {
+    MEDIA_LOG_I("fileSourceRegister is started");
     SourcePluginDef definition;
     definition.name = "FileFdSource";
     definition.description = "File Fd source";
@@ -121,6 +122,7 @@ void FileFdSourcePlugin::SubmitReadFail()
 
 void FileFdSourcePlugin::StartTimerTask()
 {
+    MEDIA_LOG_I("fileSourcePlugin startTimer is called");
     readTime_ = 0;
     if (timerTask_ != nullptr) {
         timerTask_->Start();
