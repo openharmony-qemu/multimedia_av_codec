@@ -130,10 +130,13 @@ private:
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
+<<<<<<< HEAD
 
     Status SeekToTimePre(bool jumperRestartPlugin);
     Status SeekToTimeAfter(bool jumperRestartPlugin);
     bool ChangeStream(uint32_t trackId);
+=======
+>>>>>>> e4702be057aca67465b360eca2aca98384528b16
 
     Plugins::Seekable seekable_;
     std::string uri_;

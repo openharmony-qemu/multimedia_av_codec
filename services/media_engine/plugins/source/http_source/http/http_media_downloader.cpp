@@ -178,10 +178,14 @@ bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readDataInfo.isEos_ = false;
     readTime_ = 0;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e4702be057aca67465b360eca2aca98384528b16
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     uint64_t mediaOffset = buffer_->GetMediaOffset();
     if (fileContentLength > mediaOffset) {
         uint64_t remain = fileContentLength - mediaOffset;
+<<<<<<< HEAD
         wantReadLength = remain < wantReadLength ? remain : wantReadLength;
     }
 
@@ -193,6 +197,12 @@ bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     }
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
 >>>>>>> aab9d152 (codecheck修改编译bug修复)
+=======
+        readDataInfo.wantReadLength_ = remain < readDataInfo.wantReadLength_ ? remain : readDataInfo.wantReadLength_;
+    }
+
+    while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
+>>>>>>> e4702be057aca67465b360eca2aca98384528b16
         if (downloadRequest_ != nullptr) {
             readDataInfo.isEos_ = downloadRequest_->IsEos();
         };

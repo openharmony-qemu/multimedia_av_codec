@@ -220,6 +220,15 @@ void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
     }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    return downloader_->GetStreamInfo(streams);
+}
+
+>>>>>>> e4702be057aca67465b360eca2aca98384528b16
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {

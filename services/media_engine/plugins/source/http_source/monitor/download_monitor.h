@@ -63,6 +63,10 @@ public:
     void SetPlayStrategy(PlayStrategy* playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+>>>>>>> e4702be057aca67465b360eca2aca98384528b16
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 =======
