@@ -309,6 +309,7 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 
 Status FileFdSourcePlugin::Reset()
 {
+    MEDIA_LOG_I("Reset in");
     return Status::OK;
 }
 
