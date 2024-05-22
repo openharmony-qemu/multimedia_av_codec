@@ -178,10 +178,13 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
     readTime_ = 0;
-    uint32_t remain = downloadRequest_->GetFileContentLength() - buffer_->GetMediaOffset();
-    if (remain > 0) {
+    size_t fileContentLength = downloadRequest_->GetFileContentLength();
+    uint64_t mediaOffset = buffer_->GetMediaOffset();
+    if (fileContentLength > mediaOffset) {
+        uint64_t remain = fileContentLength - mediaOffset;
         wantReadLength = remain < wantReadLength ? remain : wantReadLength;
     }
+
     while (buffer_->GetSize() < wantReadLength && !isInterruptNeeded_.load()) {
         if (downloadRequest_ != nullptr) {
             isEos = downloadRequest_->IsEos();
