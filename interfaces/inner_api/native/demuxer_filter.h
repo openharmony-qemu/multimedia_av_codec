@@ -17,6 +17,7 @@
 #define MEDIA_PIPELINE_DEMUXER_FILTER_H
 
 #include <string>
+#include <unordered_set>
 #include "filter/filter.h"
 #include "media_demuxer.h"
 #include "meta/meta.h"
@@ -81,6 +82,7 @@ public:
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -121,6 +123,7 @@ private:
     uint64_t instanceId_ = 0;
     std::string videoMime_;
     std::string audioMime_;
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 };
 } // namespace Pipeline
 } // namespace Media
