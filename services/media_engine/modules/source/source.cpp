@@ -192,14 +192,14 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
     }
 }
 
-Status Source::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     MEDIA_LOG_I("GetDownloadInfo");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("GetDownloadInfo failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return plugin_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
+    return plugin_->GetDownloadInfo(downloadInfo);
 }
 
 bool Source::IsNeedPreDownload()
@@ -353,7 +353,12 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     MEDIA_LOG_D("sourceType = " PUBLIC_LOG_D32, CppExt::to_underlying(srcType));
     if (srcType == SourceType::SOURCE_TYPE_URI) {
         uri_ = source->GetSourceUri();
-        ret = GetProtocolByUri();
+        std::string mimeType = source->GetMimeType();
+        if (mimeType == AVMimeTypes::APPLICATION_M3U8) {
+            protocol_ = "http";
+        } else {
+            ret = GetProtocolByUri();
+        }
     } else if (srcType == SourceType::SOURCE_TYPE_FD) {
         protocol_.append("fd");
         uri_ = source->GetSourceUri();

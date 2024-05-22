@@ -22,6 +22,7 @@
 #include "osal/utils/steady_clock.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
+#include "common/media_source.h"
 #include "timer.h"
 #include <unistd.h>
 
@@ -50,7 +51,7 @@ public:
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
-    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
@@ -86,9 +87,9 @@ private:
     int64_t startDownloadTime_ {0};
     int64_t playDelayTime_ {0};
     int64_t lastCheckTime_ {0};
-    int32_t avgDownloadSpeed_ {0};
+    double avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
-    int32_t avgSpeedSum_ {0};
+    double avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};

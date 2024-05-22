@@ -42,7 +42,7 @@
 #include "osal/utils/dump_buffer.h"
 
 namespace {
-const std::string DUMP_PARAM = "w";
+const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
 } // namespace
@@ -163,13 +163,13 @@ Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vecto
     return Status::OK;
 }
 
-Status MediaDemuxer::GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed)
+Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (source_ == nullptr) {
         MEDIA_LOG_E("GetDownloadInfo failed, source_ is null");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return source_->GetDownloadInfo(avgDownloadRate, avgDownloadSpeed);
+    return source_->GetDownloadInfo(downloadInfo);
 }
 
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
@@ -193,8 +193,13 @@ void MediaDemuxer::SetPlayerId(std::string playerId)
     playerId_ = playerId;
 }
 
-void MediaDemuxer::SetDumpFlag(bool isDump)
+void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
+    if (isDump && instanceId == 0) {
+        MEDIA_LOG_W("Cannot dump with instanceId 0.");
+        return;
+    }
+    dumpPrefix_ = std::to_string(instanceId);
     isDump_ = isDump;
 }
 
@@ -389,14 +394,14 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
 void MediaDemuxer::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("MediaDemuxer::OnDumpInfo called.");
-    std::string dumpString;
-    dumpString += "MediaDemuxer plugin name: " + pluginName_ + "\n";
-    dumpString += "MediaDemuxer buffer queue map size: " + std::to_string(bufferQueueMap_.size()) + "\n";
-    dumpString += "MediaDemuxer buffer map size: " + std::to_string(bufferMap_.size()) + "\n";
     if (fd < 0) {
         MEDIA_LOG_E("MediaDemuxer::OnDumpInfo fd is invalid.");
         return;
     }
+    std::string dumpString;
+    dumpString += "MediaDemuxer plugin name: " + pluginName_ + "\n";
+    dumpString += "MediaDemuxer buffer queue map size: " + std::to_string(bufferQueueMap_.size()) + "\n";
+    dumpString += "MediaDemuxer buffer map size: " + std::to_string(bufferMap_.size()) + "\n";
     int ret = write(fd, dumpString.c_str(), dumpString.size());
     if (ret < 0) {
         MEDIA_LOG_E("MediaDemuxer::OnDumpInfo write failed.");
@@ -892,11 +897,11 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
 {
     std::string mimeType;
     if (isDump_) {
-        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") != 0) {
-                DumpAVBufferToFile(DUMP_PARAM, DUMP_DEMUXER_AUDIO_FILE_NAME, buffer);
+        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
+                DumpAVBufferToFile(DUMP_PARAM, dumpPrefix_ + DUMP_DEMUXER_AUDIO_FILE_NAME, buffer);
         }
-        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") != 0) {
-                DumpAVBufferToFile(DUMP_PARAM, DUMP_DEMUXER_VIDEO_FILE_NAME, buffer);
+        if (mediaMetaData_.trackMetas[trackId]->Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0) {
+                DumpAVBufferToFile(DUMP_PARAM, dumpPrefix_ + DUMP_DEMUXER_VIDEO_FILE_NAME, buffer);
         }
     }
 }

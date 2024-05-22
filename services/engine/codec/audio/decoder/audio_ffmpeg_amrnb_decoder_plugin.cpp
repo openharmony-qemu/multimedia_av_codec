@@ -68,7 +68,9 @@ int32_t AudioFFMpegAmrnbDecoderPlugin::Init(const Format &format)
         AVCODEC_LOGE("amrwb init error.");
         return ret;
     }
-    return basePlugin->OpenContext();
+    ret = basePlugin->OpenContext();
+    basePlugin->DisableNeedResample();
+    return ret;
 }
 
 int32_t AudioFFMpegAmrnbDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)

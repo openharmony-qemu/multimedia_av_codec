@@ -93,7 +93,9 @@ Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
-    return basePlugin->OpenContext();
+    ret = basePlugin->OpenContext();
+    basePlugin->DisableNeedResample();
+    return ret;
 }
 
 Status FFmpegAmrnbDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)

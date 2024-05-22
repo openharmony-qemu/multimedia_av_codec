@@ -24,6 +24,7 @@
 #include "osal/utils/steady_clock.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include "common/media_source.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -39,6 +40,7 @@ class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback
 public:
     HlsMediaDownloader() noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration);
+    explicit HlsMediaDownloader(std::string mimeType);
     ~HlsMediaDownloader() override = default;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -74,7 +76,7 @@ public:
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
-    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -181,7 +183,7 @@ PRIVATE:
     int64_t lastRecordTime_ {0};
     int32_t avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
-    int32_t avgSpeedSum_ {0};
+    double avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
@@ -195,6 +197,7 @@ PRIVATE:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     Mutex firstTsMutex_ {};
+    std::string mimeType_;
 };
 }
 }

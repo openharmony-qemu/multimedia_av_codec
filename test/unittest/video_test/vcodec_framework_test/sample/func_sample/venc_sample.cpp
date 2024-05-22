@@ -745,6 +745,14 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
+
+    std::shared_ptr<FormatMock> format = buffer->GetParameter();
+    int32_t qpAverage = 60;
+    double mse = 1.0;
+    EXPECT_EQ(AV_ERR_OK, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
+    EXPECT_EQ(AV_ERR_OK, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
+    format->Destroy();
+
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBuffer fail, exit. index: %d", index);
 

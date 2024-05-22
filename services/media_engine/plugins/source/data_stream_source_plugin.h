@@ -30,6 +30,7 @@ public:
     explicit DataStreamSourcePlugin(std::string name);
     ~DataStreamSourcePlugin() override;
 
+    Status SetCallback(Plugins::Callback* cb) override;
     Status SetSource(std::shared_ptr<Plugins::MediaSource> source) override;
     Status Read(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
@@ -41,11 +42,15 @@ private:
     std::shared_ptr<Plugins::Buffer> WrapAVSharedMemory(
         const std::shared_ptr<AVSharedMemory>& avSharedMemory, int32_t realLen);
     void InitPool();
+    void HandleBufferingStart();
+    void HandleBufferingEnd();
     std::shared_ptr<AVSharedMemory> GetMemory();
     void ResetPool();
     Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
     std::shared_ptr<IMediaDataSource> dataSrc_;
     std::shared_ptr<AVSharedMemoryPool> pool_;
+    std::atomic<bool> isBufferingStart{false};
+    Plugins::Callback* callback_ {nullptr};
     int64_t size_ {0};
     uint64_t offset_ {0};
     uint32_t retryTimes_ = 0;

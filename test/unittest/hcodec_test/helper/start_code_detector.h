@@ -25,7 +25,8 @@
 
 enum CodeType {
     H264,
-    H265
+    H265,
+    H266,
 };
 
 struct Sample {
@@ -62,7 +63,7 @@ private:
     void BuildSampleList();
     static size_t GetFileSizeInBytes(std::ifstream &ifs);
 
-    virtual uint8_t GetNalType(uint8_t byte) = 0;
+    virtual uint8_t GetNalType(uint8_t firstByte, uint8_t secondByte) = 0;
     virtual bool IsPPS(uint8_t nalType) = 0;
     virtual bool IsVCL(uint8_t nalType) = 0;
     virtual bool IsIDR(uint8_t nalType) = 0;
@@ -104,7 +105,7 @@ private:
         SUB_SPS = 15,
         DPS = 16,
     };
-    uint8_t GetNalType(uint8_t byte) override;
+    uint8_t GetNalType(uint8_t firstByte, uint8_t) override;
     bool IsPPS(uint8_t nalType) override;
     bool IsVCL(uint8_t nalType) override;
     bool IsIDR(uint8_t nalType) override;
@@ -143,7 +144,50 @@ private:
         HEVC_PREFIX_SEI_NUT = 39,
         HEVC_SUFFIX_SEI_NUT = 40,
     };
-    uint8_t GetNalType(uint8_t byte) override;
+    uint8_t GetNalType(uint8_t firstByte, uint8_t) override;
+    bool IsPPS(uint8_t nalType) override;
+    bool IsVCL(uint8_t nalType) override;
+    bool IsIDR(uint8_t nalType) override;
+    bool IsPrefixSEI(uint8_t nalType) override;
+};
+
+class StartCodeDetectorH266 : public StartCodeDetector {
+public:
+    StartCodeDetectorH266() = default;
+    ~StartCodeDetectorH266() override = default;
+
+private:
+    enum H266NalType : uint8_t {
+        // VCL
+        VVC_TRAIL_NUT = 0,
+        VVC_STSA_NUT = 1,
+        VVC_RADL_NUT = 2,
+        VVC_RASL_NUT = 3,
+        VVC_RSV_VCL_4 = 4,
+        VVC_RSV_VCL_5 = 5,
+        VVC_RSV_VCL_6 = 6,
+        VVC_IDR_W_RADL = 7,
+        VVC_IDR_N_LP = 8,
+        VVC_CRA_NUT = 9,
+        VVC_GDR_NUT = 10,
+        VVC_RSV_IRAP_11 = 11,
+        // non-VCL
+        VVC_OPI_NUT = 12,
+        VVC_DCI_NUT = 13,
+        VVC_VPS_NUT = 14,
+        VVC_SPS_NUT = 15,
+        VVC_PPS_NUT = 16,
+        VVC_PREFIX_APS_NUT = 17,
+        VVC_SUFFIX_APS_NUT = 18,
+        VVC_PH_NUT = 19,
+        VVC_AUD_NUT = 20,
+        VVC_EOS_NUT = 21,
+        VVC_EOB_NUT = 22,
+        VVC_PREFIX_SEI_NUT = 23,
+        VVC_SUFFIX_SEI_NUT = 24,
+        VVC_FD_NUT = 25,
+    };
+    uint8_t GetNalType(uint8_t, uint8_t secondByte) override;
     bool IsPPS(uint8_t nalType) override;
     bool IsVCL(uint8_t nalType) override;
     bool IsIDR(uint8_t nalType) override;

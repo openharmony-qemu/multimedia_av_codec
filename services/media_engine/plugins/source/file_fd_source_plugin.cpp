@@ -87,7 +87,7 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("IN");
     auto err = ParseUriInfo(source->GetSourceUri());
     if (err != Status::OK) {
-        MEDIA_LOG_E("Parse file name from uri fail, uri: " PUBLIC_LOG "s", source->GetSourceUri().c_str());
+        MEDIA_LOG_E("Parse file name from uri fail, uri: %{private}s", source->GetSourceUri().c_str());
         return err;
     }
     MEDIA_LOG_D("OUT");
@@ -112,7 +112,10 @@ void FileFdSourcePlugin::SubmitReadFail()
 {
     if (callback_ != nullptr) {
         MEDIA_LOG_I("Read OnEvent read fail");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (!isEnd_) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
     }
 }
 
@@ -139,6 +142,7 @@ void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
         downloadTask_->Pause();
     }
 }
+
 
 void FileFdSourcePlugin::PauseTimerTask()
 {
@@ -249,17 +253,33 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
+Status FileFdSourcePlugin::Stop()
+{
+    MEDIA_LOG_I("Stop enter.");
+    {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        isEnd_ = true;
+    }
+    if (downloadTask_ != nullptr) {
+        downloadTask_->StopAsync();
+    }
+    if (timerTask_ != nullptr) {
+        timerTask_->StopAsync();
+    }
+    return Status::OK;
+}
+
 Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 {
     if (uri.empty()) {
         MEDIA_LOG_E("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_D("uri: %{private}s", uri.c_str());
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: " PUBLIC_LOG_S, uri.c_str());
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
@@ -292,17 +312,25 @@ Status FileFdSourcePlugin::Reset()
     return Status::OK;
 }
 
+void FileFdSourcePlugin::PauseReadTimer()
+{
+    MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
+    isBuffering_ = true;
+    isTaskCallback_ = true;
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    if (!isEnd_) {
+        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
+        if (timerTask_ != nullptr) {
+            timerTask_->PauseAsync();
+        }
+    }
+}
+
 int64_t FileFdSourcePlugin::ReadTimer()
 {
     if (readTime_ > TEN_THOUSAND_MICROSECOUNDS) {   // 10ms
         if (callback_ != nullptr && !isTaskCallback_) {
-            MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
-            isBuffering_ = true;
-            isTaskCallback_ = true;
-            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
-            if (timerTask_ != nullptr) {
-                timerTask_->PauseAsync();
-            }
+            PauseReadTimer();
         } else {
             MEDIA_LOG_D("BUFFERING_START callback_ is nullptr or isTaskCallback_ is null.");
         }
@@ -376,7 +404,10 @@ void FileFdSourcePlugin::CacheData()
 
     if (callback_ != nullptr && isReadSuccess_) {
         MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_END.");
-        callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (!isEnd_) {
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
     } else {
         MEDIA_LOG_I("BUFFERING_END callback_ is nullptr or isReadFail is true.");
     }

@@ -39,5 +39,30 @@ void AppendToVector(std::vector<uint8_t>& vec, const T& param)
     const uint8_t* p = reinterpret_cast<const uint8_t*>(&param);
     std::copy(p, p + sizeof(T), vec.begin() + beforeSize);
 }
+
+struct BinaryReader {
+    BinaryReader(uint8_t* data, size_t size) : mData(data), mSize(size) {}
+
+    template<typename T>
+    T* Read()
+    {
+        if (mData == nullptr) {
+            return nullptr;
+        }
+        size_t oldPos = mCurrPos;
+        size_t newPos = mCurrPos + sizeof(T);
+        if (newPos > mSize) {
+            return nullptr;
+        }
+        mCurrPos = newPos;
+        return reinterpret_cast<T*>(mData + oldPos);
+    }
+
+private:
+    uint8_t* mData = nullptr;
+    size_t mSize;
+    size_t mCurrPos = 0;
+};
+
 }
 #endif // HCODEC_UTILS_H

@@ -48,6 +48,7 @@ public:
     int32_t GetVideoHeight() const override;
     void FirstTsUpdateLoop();
     void SetInterruptState(bool isInterruptNeeded) override;
+    void SetMimeType(const std::string& mimeType) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
@@ -61,6 +62,7 @@ private:
     std::shared_ptr<M3U8VariantStream> currentVariant_;
     std::shared_ptr<M3U8VariantStream> newVariant_;
     std::shared_ptr<Task> firstTsTask_;
+    std::string mimeType_;
 };
 }
 }

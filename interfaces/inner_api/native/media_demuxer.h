@@ -78,7 +78,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
-    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
+    Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -88,7 +88,7 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
-    void SetDumpFlag(bool isDump);
+    void SetDumpInfo(bool isDump, uint64_t instanceId);
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
@@ -190,6 +190,7 @@ private:
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
     bool isDump_ = false;
+    std::string dumpPrefix_ = "";
 };
 } // namespace Media
 } // namespace OHOS

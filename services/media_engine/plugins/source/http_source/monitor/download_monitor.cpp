@@ -213,13 +213,12 @@ void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
         downloader_->SetInterruptState(isInterruptNeeded);
     }
 }
-std::pair<int32_t, int32_t> DownloadMonitor::GetDownloadInfo()
+void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
-    if (downloader_ == nullptr) {
-        return std::make_pair(0, 0);
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+        downloader_->GetDownloadInfo(downloadInfo);
     }
-    return downloader_->GetDownloadInfo();
 }
 }
 }
