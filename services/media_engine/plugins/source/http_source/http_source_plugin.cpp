@@ -248,11 +248,11 @@ void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 
 Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
+    AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
     MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
-    AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     if (offset > downloader_->GetContentLength()) {
         MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);
