@@ -53,6 +53,7 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void SetDownloadErrorState() override;
+    void SetPlayStrategy(PlayStrategy* playStrategy) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;
@@ -88,6 +89,7 @@ private:
     DashMpdBitrateParam bitrateParam_;
     DashPreparedAction preparedAction_;
     std::mutex switchMutex_;
+    uint64_t expectDuration_{0};
 };
 }
 }

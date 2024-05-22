@@ -35,12 +35,7 @@ namespace HttpPlugin {
 using DashMpdEvent = enum DashMpdEvent {
     DASH_MPD_EVENT_OPEN_OK,
     DASH_MPD_EVENT_STREAM_INIT,
-    DASH_MPD_EVENT_PARSE_MPD_FAILED,
-    DASH_MPD_EVENT_PARSE_SIDX_FAILED,
-    DASH_MPD_EVENT_PARSE_ERROR,
-    DASH_MPD_EVENT_PARSE_SIDX_ERROR,
-    DASH_MPD_EVENT_PARSE_OK,
-    DASH_MPD_EVENT_INIT_SEG_PARSED
+    DASH_MPD_EVENT_PARSE_OK
 };
 
 enum DashMpdGetRet {
@@ -118,6 +113,7 @@ public:
     std::shared_ptr<DashStreamDescription> GetStreamByStreamId(int streamId);
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
+    void SetHdrStart(bool isHdrStart);
 
 private:
     void ParseManifest();

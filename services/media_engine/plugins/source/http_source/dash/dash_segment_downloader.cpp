@@ -25,25 +25,29 @@ namespace Plugins {
 namespace HttpPlugin {
 constexpr uint32_t VID_RING_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr uint32_t AUD_RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 2 * 1024 * 1024;
+constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 2 * 1024 * 1024;
+constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int DEFAULT_WAIT_TIME = 2;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
     {MediaAVCodec::MediaType::MEDIA_TYPE_AUD,      AUD_RING_BUFFER_SIZE},
-    {MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, DEFAULT_RING_BUFFER_SIZE}};
+    {MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, SUBTITLE_RING_BUFFER_SIZE}};
 
-DashSegmentDownloader::DashSegmentDownloader(int streamId, MediaAVCodec::MediaType streamType)
+DashSegmentDownloader::DashSegmentDownloader(int streamId, MediaAVCodec::MediaType streamType, uint64_t expectDuration)
 {
     streamId_ = streamId;
     streamType_ = streamType;
-    uint32_t ringBufferSize = DEFAULT_RING_BUFFER_SIZE;
-    auto ringBufferSizeItem = BUFFER_SIZE_MAP.find(streamType);
-    if (ringBufferSizeItem != BUFFER_SIZE_MAP.end()) {
-        ringBufferSize = ringBufferSizeItem->second;
+    expectDuration_ = expectDuration;
+    if (expectDuration_ > 0) {
+        userDefinedBufferDuration_ = true;
     }
-    MEDIA_LOG_I("DashSegmentDownloader ringBufferSize:" PUBLIC_LOG_U32, ringBufferSize);
+    size_t ringBufferSize = GetRingBufferSize(streamType_);
+    MEDIA_LOG_I("DashSegmentDownloader streamId:"
+    PUBLIC_LOG_D32
+    ", ringBufferSize:"
+    PUBLIC_LOG_ZU, streamId, ringBufferSize);
     buffer_ = std::make_shared<RingBuffer>(ringBufferSize);
     buffer_->Init();
 
@@ -193,7 +197,7 @@ uint32_t DashSegmentDownloader::GetMaxReadLength(uint32_t wantReadLength,
         }
     }
     maxReadLength = maxReadLength > wantReadLength ? wantReadLength : maxReadLength;
-    MEDIA_LOG_I(
+    MEDIA_LOG_D(
             "Read: streamId:"
     PUBLIC_LOG_D32
     " limit, bufferHead:"
@@ -327,6 +331,41 @@ void DashSegmentDownloader::SetDownloadDoneCallback(SegmentDownloadDoneCbFunc do
 int64_t DashSegmentDownloader::GetDownloadLength()
 {
     return downloadLength_;
+}
+
+size_t DashSegmentDownloader::GetRingBufferSize(MediaAVCodec::MediaType streamType)
+{
+    size_t ringBufferFixSize = DEFAULT_RING_BUFFER_SIZE;
+    auto ringBufferSizeItem = BUFFER_SIZE_MAP.find(streamType);
+    if (ringBufferSizeItem != BUFFER_SIZE_MAP.end()) {
+        ringBufferFixSize = ringBufferSizeItem->second;
+    }
+
+    if (streamType == MediaAVCodec::MediaType::MEDIA_TYPE_VID && userDefinedBufferDuration_) {
+        size_t ringBufferSize = expectDuration_ * currentBitrate_;
+        if (ringBufferSize < DEFAULT_RING_BUFFER_SIZE) {
+            MEDIA_LOG_I("Setting buffer size: "
+            PUBLIC_LOG_ZU
+            ", already lower than the min buffer size: "
+            PUBLIC_LOG_U32
+            ", setting buffer size: "
+            PUBLIC_LOG_U32,
+                    ringBufferSize, DEFAULT_RING_BUFFER_SIZE, DEFAULT_RING_BUFFER_SIZE);
+            ringBufferSize = DEFAULT_RING_BUFFER_SIZE;
+        } else if (ringBufferSize > ringBufferFixSize) {
+            MEDIA_LOG_I("Setting buffer size: "
+            PUBLIC_LOG_ZU
+            ", already exceed the max buffer size: "
+            PUBLIC_LOG_ZU
+            ", setting buffer size: "
+            PUBLIC_LOG_ZU,
+                    ringBufferSize, ringBufferFixSize, ringBufferFixSize);
+            ringBufferSize = ringBufferFixSize;
+        }
+        return ringBufferSize;
+    } else {
+        return ringBufferFixSize;
+    }
 }
 
 void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> initSegment)
@@ -485,7 +524,7 @@ bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segme
 
 bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
 {
-    MEDIA_LOG_I("SaveData:streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
+    MEDIA_LOG_D("SaveData:streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
     startedPlayStatus_ = true;
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
@@ -528,6 +567,8 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
             break;
         }
         downloadLength_ += len;
+    } else {
+        MEDIA_LOG_E("SaveData:error streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
     }
     return writeRet;
 }

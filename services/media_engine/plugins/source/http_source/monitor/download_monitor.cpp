@@ -206,6 +206,13 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
+void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetPlayStrategy(playStrategy);
+    }
+}
+
 void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
 {
     if (downloader_ != nullptr) {

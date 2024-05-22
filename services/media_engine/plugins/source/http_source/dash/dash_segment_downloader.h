@@ -125,7 +125,7 @@ using SegmentDownloadDoneCbFunc = std::function<void(int streamId)>;
 
 class DashSegmentDownloader {
 public:
-    DashSegmentDownloader(int streamId, MediaAVCodec::MediaType streamType);
+    DashSegmentDownloader(int streamId, MediaAVCodec::MediaType streamType, uint64_t expectDuration);
     virtual ~DashSegmentDownloader();
 
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
@@ -162,6 +162,7 @@ private:
     bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
+    size_t GetRingBufferSize(MediaAVCodec::MediaType streamType);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -181,6 +182,11 @@ private:
     MediaAVCodec::MediaType streamType_;
     uint64_t readTime_ {0};
     bool isCleaningBuffer_{false};
+
+    // support ringbuffer size of duration
+    uint64_t currentBitrate_{1 * 1024 * 1024};
+    bool userDefinedBufferDuration_{false};
+    uint64_t expectDuration_{0};
 };
 }
 }
