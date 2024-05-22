@@ -77,15 +77,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
-<<<<<<< HEAD
-<<<<<<< HEAD
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
-=======
-
->>>>>>> 471a48d1 (add1)
-=======
-    Status GetDownloadInfo(int32_t& avgDownloadRate, int32_t& avgDownloadSpeed);
->>>>>>> 5f2cb426 (add16)
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -95,22 +87,6 @@ public:
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
     void SetPlayerId(std::string playerId);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    void SetDumpInfo(bool isDump, uint64_t instanceId);
-=======
->>>>>>> 471a48d1 (add1)
-=======
-	void SetDumpFlag(bool isDump);
->>>>>>> 5f2cb426 (add16)
-=======
-    void SetDumpFlag(bool isDump);
->>>>>>> 104e3026 (add17)
-=======
-    void SetDumpInfo(bool isDump, uint64_t instanceId);
->>>>>>> d23f6287 (optimize player dfx)
 
     Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
@@ -208,12 +184,7 @@ private:
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
     bool isDump_ = false;
-<<<<<<< HEAD
-    std::string dumpPrefix_ = "";
-	std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
-=======
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
->>>>>>> 5f2cb426 (add16)
     std::atomic<bool> isSelectBitRate_ = false;
     std::string dumpPrefix_ = "";
 };
