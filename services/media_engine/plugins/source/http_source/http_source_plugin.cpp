@@ -166,16 +166,11 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
     PlayStrategy* playStrategy = source->GetPlayStrategy();
 <<<<<<< HEAD
-<<<<<<< HEAD
     mimeType_ = source->GetMimeType();
     if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
 =======
     if (uri_.find(".m3u8") != std::string::npos) {
 >>>>>>> 45e52f50 (httpplugin支持dash播放)
-=======
-    mimeType_ = source->GetMimeType();
-    if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
->>>>>>> e4702be057aca67465b360eca2aca98384528b16
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
@@ -185,9 +180,6 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         delayReady = false;
     } else if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
-        if (playStrategy != nullptr) {
-            downloader_->SetPlayStrategy(playStrategy);
-        }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
@@ -212,21 +204,11 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> e4702be057aca67465b360eca2aca98384528b16
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         return uri_.find(".m3u8") != std::string::npos;
     }
     MEDIA_LOG_D("IsSeekToTimeSupported return true");
     return true;
-<<<<<<< HEAD
-=======
-    return uri_.find(".m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
->>>>>>> 45e52f50 (httpplugin支持dash播放)
-=======
->>>>>>> e4702be057aca67465b360eca2aca98384528b16
 }
 
 Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)

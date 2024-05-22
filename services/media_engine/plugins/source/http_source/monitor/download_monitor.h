@@ -60,18 +60,9 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
-    void SetPlayStrategy(PlayStrategy* playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
->>>>>>> e4702be057aca67465b360eca2aca98384528b16
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
-=======
-    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
->>>>>>> 45e52f50 (httpplugin支持dash播放)
 private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);

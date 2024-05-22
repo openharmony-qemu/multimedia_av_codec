@@ -206,29 +206,12 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
-void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
-{
-    if (downloader_ != nullptr) {
-        downloader_->SetPlayStrategy(playStrategy);
-    }
-}
-
 void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
 {
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
-{
-    return downloader_->GetStreamInfo(streams);
-}
-
->>>>>>> e4702be057aca67465b360eca2aca98384528b16
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {
@@ -236,14 +219,6 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
         downloader_->GetDownloadInfo(downloadInfo);
     }
 }
-=======
-
-Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
-{
-    return downloader_->GetStreamInfo(streams);
-}
-
->>>>>>> 45e52f50 (httpplugin支持dash播放)
 }
 }
 }
