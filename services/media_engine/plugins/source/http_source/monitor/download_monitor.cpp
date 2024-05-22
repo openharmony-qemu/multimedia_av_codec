@@ -206,12 +206,25 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
+void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
+{
+    if (downloader_ != nullptr) {
+        downloader_->SetPlayStrategy(playStrategy);
+    }
+}
+
 void DownloadMonitor::SetInterruptState(bool isInterruptNeeded)
 {
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
 }
+
+Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    return downloader_->GetStreamInfo(streams);
+}
+
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {
