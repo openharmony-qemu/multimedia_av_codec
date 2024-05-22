@@ -778,7 +778,7 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
         formatContext->flags =
             static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
         MEDIA_LOG_D("Set fast seek flag for mp3.");
-    }   
+    }
     AVDictionary *options = nullptr;
     if (ioContext_.dataSource->IsDash()) {
         av_dict_set(&options, "use_tfdt", "true", 0);
