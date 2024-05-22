@@ -222,7 +222,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
-    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nulltr.");
+    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         return AVSEEK_FLAG_BACKWARD;
     }
@@ -538,11 +538,17 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
     } else {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
-        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            sample->duration_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
-        }
     }
-
+    if (samplePacket->pkts[0]->duration != AV_NOPTS_VALUE) {
+        int64_t duration = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
+        sample->duration_ = duration;
+        sample->meta_->SetData(Media::Tag::BUFFER_DURATION, duration);
+    }
+    if (samplePacket->pkts[0]->dts != AV_NOPTS_VALUE) {
+        int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->dts, avStream->time_base));
+        sample->dts_ = dts;
+        sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
+    }
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     ConvertPacketToAnnexb(sample, tempPkt, samplePacket);

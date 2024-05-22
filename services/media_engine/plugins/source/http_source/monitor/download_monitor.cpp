@@ -227,8 +227,10 @@ Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
 
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
-    downloader_->GetDownloadInfo(downloadInfo);
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+        downloader_->GetDownloadInfo(downloadInfo);
+    }
 }
 }
 }

@@ -53,6 +53,7 @@ uint64_t GetFileSize(int32_t fd)
 }
 Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
 {
+    MEDIA_LOG_I("fileSourceRegister is started");
     SourcePluginDef definition;
     definition.name = "FileFdSource";
     definition.description = "File Fd source";
@@ -112,12 +113,16 @@ void FileFdSourcePlugin::SubmitReadFail()
 {
     if (callback_ != nullptr) {
         MEDIA_LOG_I("Read OnEvent read fail");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (!isEnd_) {
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
     }
 }
 
 void FileFdSourcePlugin::StartTimerTask()
 {
+    MEDIA_LOG_I("fileSourcePlugin startTimer is called");
     readTime_ = 0;
     if (timerTask_ != nullptr) {
         timerTask_->Start();
@@ -140,8 +145,10 @@ void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
     }
 }
 
+
 void FileFdSourcePlugin::PauseTimerTask()
 {
+    MEDIA_LOG_I("PauseTimerTask in.");
     if (timerTask_ != nullptr) {
         timerTask_->Pause();
     }
@@ -249,6 +256,22 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
+Status FileFdSourcePlugin::Stop()
+{
+    MEDIA_LOG_I("Stop enter.");
+    {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        isEnd_ = true;
+    }
+    if (downloadTask_ != nullptr) {
+        downloadTask_->StopAsync();
+    }
+    if (timerTask_ != nullptr) {
+        timerTask_->StopAsync();
+    }
+    return Status::OK;
+}
+
 Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 {
     if (uri.empty()) {
@@ -289,20 +312,29 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 
 Status FileFdSourcePlugin::Reset()
 {
+    MEDIA_LOG_I("Reset in");
     return Status::OK;
+}
+
+void FileFdSourcePlugin::PauseReadTimer()
+{
+    MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
+    isBuffering_ = true;
+    isTaskCallback_ = true;
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    if (!isEnd_) {
+        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
+        if (timerTask_ != nullptr) {
+            timerTask_->PauseAsync();
+        }
+    }
 }
 
 int64_t FileFdSourcePlugin::ReadTimer()
 {
     if (readTime_ > TEN_THOUSAND_MICROSECOUNDS) {   // 10ms
         if (callback_ != nullptr && !isTaskCallback_) {
-            MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_START readTime_: " PUBLIC_LOG_U64, readTime_);
-            isBuffering_ = true;
-            isTaskCallback_ = true;
-            callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
-            if (timerTask_ != nullptr) {
-                timerTask_->PauseAsync();
-            }
+            PauseReadTimer();
         } else {
             MEDIA_LOG_D("BUFFERING_START callback_ is nullptr or isTaskCallback_ is null.");
         }
@@ -376,7 +408,10 @@ void FileFdSourcePlugin::CacheData()
 
     if (callback_ != nullptr && isReadSuccess_) {
         MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_END.");
-        callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        if (!isEnd_) {
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
     } else {
         MEDIA_LOG_I("BUFFERING_END callback_ is nullptr or isReadFail is true.");
     }

@@ -68,6 +68,7 @@ private:
     bool delayReady {true};
     std::string uri_ {};
     std::map<std::string, std::string> httpHeader_ {};
+    std::string mimeType_ {};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin
