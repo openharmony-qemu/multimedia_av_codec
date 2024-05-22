@@ -161,10 +161,7 @@ void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appNam
 Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
-    if (mediaSource_ == nullptr) {
-        MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    FALSE_RETURN_V_MSG_E(mediaSource_ != nullptr, Status::ERROR_INVALID_PARAMETER, "No valid media source");
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
@@ -188,6 +185,10 @@ Status DemuxerFilter::DoPrepare()
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
+            continue;
+        }
+        if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
+            MEDIA_LOG_W("mediaType disabled, index: %zu", index);
             continue;
         }
         StreamType streamType;
@@ -622,6 +623,12 @@ void DemuxerFilter::OnDumpInfo(int32_t fd)
     if (demuxer_ != nullptr) {
         demuxer_->OnDumpInfo(fd);
     }
+}
+
+Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
+{
+    disabledMediaTracks_.emplace(mediaType);
+    return demuxer_->DisableMediaTrack(mediaType);
 }
 } // namespace Pipeline
 } // namespace Media

@@ -834,14 +834,21 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32
         std::string mimeType;
         std::string trackType;
         std::unique_ptr<Task> tempTask;
-        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0) {
+        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0 &&
+            !IsTrackDisable(Plugins::MediaType::VIDEO)) {
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime = mimeType;
             videoTrackId = index;
             if (!trackMeta.GetData(Tag::MEDIA_START_TIME, videoStartTime_)) {
                 MEDIA_LOG_W("Get media start time failed");
             }
+<<<<<<< HEAD
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
+=======
+            tempTask = std::make_unique<Task>("DemuxerLoopV", playerId_, TaskType::VIDEO);
+        } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0 &&
+            !IsTrackDisable(Plugins::MediaType::AUDIO)) {
+>>>>>>> 6bdd03c6 (不设置surface播放视频流程走通)
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             if (audioTrackId_ == TRACK_ID_DUMMY) {
                 audioTrackId = index;
@@ -1211,6 +1218,17 @@ bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t 
         PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_U64, frameRate_.load(), speed_.load(),
         decodeFramerateUpperLimit_.load(), sample->pts_);
     return true;
+}
+
+Status MediaDemuxer::DisableMediaTrack(Plugins::MediaType mediaType)
+{
+    disabledMediaTracks_.emplace(mediaType);
+    return Status::OK;
+}
+ 
+bool MediaDemuxer::IsTrackDisable(Plugins::MediaType mediaType)
+{
+    return !disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end();
 }
 } // namespace Media
 } // namespace OHOS

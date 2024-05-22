@@ -20,6 +20,7 @@
 #include <limits>
 #include <string>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
@@ -96,6 +97,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
 private:
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
@@ -127,6 +129,7 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    bool IsTrackDisable(Plugins::MediaType mediaType);
 
     Status SeekToTimePre(bool jumperRestartPlugin);
     Status SeekToTimeAfter(bool jumperRestartPlugin);
@@ -188,6 +191,7 @@ private:
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
     std::atomic<bool> isSelectBitRate_ = false;
     std::string dumpPrefix_ = "";
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 };
 } // namespace Media
 } // namespace OHOS
