@@ -207,7 +207,7 @@ void VideoSink::SetFirstPts(int64_t pts)
 float VideoSink::GetSpeed(float speed)
 {
     if (std::fabs(speed - 0) < 1e-9) {
-        return 1.0f
+        return 1.0f;
     }
     return speed;
 }
