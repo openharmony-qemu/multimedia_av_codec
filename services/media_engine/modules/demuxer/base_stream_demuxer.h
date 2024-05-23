@@ -50,32 +50,47 @@ public:
     explicit BaseStreamDemuxer();
     virtual ~BaseStreamDemuxer();
 
-    virtual std::string Init(std::string uri, uint64_t mediaDataSize) = 0;
+    virtual Status Init(std::string uri) = 0;
     virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
     virtual Status Start() = 0;
     virtual Status Stop() = 0;
     virtual Status Flush() = 0;
+    virtual Status ResetCache(int32_t streamID) = 0;
+    virtual Status ResetAllCache() = 0;
 
     void InitTypeFinder();
     void SetSource(const std::shared_ptr<Source>& source);
 
-    virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) = 0;
-    void SetDemuxerState(DemuxerState state);
+    virtual Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+        size_t expectedLen) = 0;
+    void SetDemuxerState(int32_t streamId, DemuxerState state);
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
+    Plugins::Seekable GetSeekable();
+    std::string SnifferMediaType(int32_t streamID);
+    bool IsDash();
+    void SetIsDash(bool flag);
+    Status SetNewVideoStreamID(int32_t streamID);
+    int32_t GetNewVideoStreamID();
 protected:
-    std::shared_ptr<TypeFinder> typeFinder_;
     std::shared_ptr<Source> source_;
-    std::function<bool(uint64_t, size_t)> checkRange_;
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
-    std::atomic<DemuxerState> pluginState_{DemuxerState::DEMUXER_STATE_NULL};
+    std::function<bool(int32_t, uint64_t, size_t)> checkRange_;
+    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
+    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
+    std::map<int32_t, DemuxerState> pluginStateMap_;
     std::atomic<bool> isIgnoreParse_{false};
     std::atomic<bool> isIgnoreRead_{false};
     std::string bundleName_ {};
+    std::string uri_ {};
+public:
+    uint64_t mediaDataSize_{0};
+    Plugins::Seekable seekable_;
+private:
+    bool isDash_ = {false};
+    std::atomic<int32_t> newVideoStreamID_ = -1;
 };
 } // namespace Media
 } // namespace OHOS

@@ -522,7 +522,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         "Convert packet info failed due to input sample is nullptr.");
     int64_t pts = 0;
     AVStream *avStream = formatContext_->streams[samplePacket->pkts[0]->stream_index];
-    if (avStream->start_time == AV_NOPTS_VALUE) {
+    if (avStream->start_time == AV_NOPTS_VALUE || ioContext_.dataSource->IsDash()) {
         avStream->start_time = 0;
     }
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -708,6 +708,9 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
             break;
         case SEEK_END:
         case AVSEEK_SIZE: {
+            if (ioContext->dataSource->IsDash()) {
+                return -1;
+            }
             uint64_t mediaDataSize = 0;
             FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, newPos,
                 "AVSeek failed due to dataSource is nullptr.");
@@ -768,7 +771,11 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
             static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
         MEDIA_LOG_D("Set fast seek flag for mp3.");
     }
-    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), nullptr);
+    AVDictionary *options = nullptr;
+    if (ioContext_.dataSource->IsDash()) {
+        av_dict_set(&options, "use_tfdt", "true", 0);
+    }
+    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
     FALSE_RETURN_MSG((ret == 0),
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
         pluginImpl_->name, AVStrError(ret).c_str());
@@ -805,12 +812,18 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
-    if (source->GetSeekable() == Plugins::Seekable::SEEKABLE) {
+    if (ioContext_.dataSource->IsDash()) {
+        seekable_ = Plugins::Seekable::UNSEEKABLE;
+    } else {
+        seekable_ = source->GetSeekable();
+    }
+
+    if (seekable_ == Plugins::Seekable::SEEKABLE) {
         ioContext_.dataSource->GetSize(ioContext_.fileSize);
     } else {
         ioContext_.fileSize = -1;
     }
-    seekable_ = source->GetSeekable();
+
     MEDIA_LOG_D("FFmpegDemuxerPlugin SetDataSource, fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32,
         ioContext_.fileSize, seekable_);
     pluginImpl_ = g_pluginInputFormat[pluginName_];

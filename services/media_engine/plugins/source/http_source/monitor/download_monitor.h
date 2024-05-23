@@ -44,7 +44,7 @@ public:
     ~DownloadMonitor() override = default;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
-    bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
+    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset) override;
     void Pause() override;
     void Resume() override;
@@ -60,7 +60,9 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState() override;
+    void SetPlayStrategy(PlayStrategy* playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
+    Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
 
 private:

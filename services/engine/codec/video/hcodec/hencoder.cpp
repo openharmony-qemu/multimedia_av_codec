@@ -937,6 +937,7 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
     info.surfaceBuffer = entry.buffer;
 
     if (enableSurfaceModeInputCb_) {
+        info.avBuffer->pts_ = entry.timestamp;
         NotifyUserToFillThisInBuffer(info);
     } else {
         err = NotifyOmxToEmptyThisInBuffer(info);

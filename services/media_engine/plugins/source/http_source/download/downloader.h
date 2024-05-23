@@ -107,6 +107,7 @@ public:
     void Close();
     double GetDuration() const;
     void SetStartTimePos(int64_t startTimePos);
+    void SetRangePos(int64_t startPos, int64_t endPos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
     uint32_t GetBitRate() const;
@@ -125,6 +126,7 @@ private:
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
     int64_t startPos_ {0};
+    int64_t endPos_ {-1};
     int64_t startTimePos_ {0};
     bool isDownloading_ {false};
     bool requestWholeFile_ {false};
@@ -149,7 +151,7 @@ public:
 
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
     void Start();
-    void Pause();
+    void Pause(bool isAsync = false);
     void Resume();
     void Stop(bool isAsync = false);
     bool Seek(int64_t offset);

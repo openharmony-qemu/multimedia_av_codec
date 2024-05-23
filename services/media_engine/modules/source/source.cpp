@@ -76,7 +76,7 @@ void Source::ClearData()
     seekable_ = Seekable::INVALID;
     isPluginReady_ = false;
     isAboveWaterline_ = false;
-    isHls_ = false;
+    seekToTimeFlag_ = false;
 }
 
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
@@ -93,9 +93,9 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSource InitPlugin failed");
 
     if (plugin_ != nullptr) {
-        isHls_ = plugin_->IsSeekToTimeSupported();
+        seekToTimeFlag_ = plugin_->IsSeekToTimeSupported();
     }
-    MEDIA_LOG_I("SetSource isHls: " PUBLIC_LOG_D32, isHls_);
+    MEDIA_LOG_I("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
 
     ActivateMode();
 
@@ -153,7 +153,7 @@ Status Source::Prepare()
 
 bool Source::IsSeekToTimeSupported()
 {
-    return isHls_;
+    return seekToTimeFlag_;
 }
 
 Status Source::Start()
@@ -316,9 +316,12 @@ std::string Source::GetUriSuffix(const std::string& uri)
     return suffix;
 }
 
-Status Source::ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+Status Source::Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "ReadData, Source plugin is nullptr");
+    if (seekToTimeFlag_) {
+        return plugin_->Read(streamID, buffer, offset, expectedLen);
+    }
     return plugin_->Read(buffer, offset, expectedLen);
 }
 Status Source::SeekTo(uint64_t offset)
@@ -327,6 +330,24 @@ Status Source::SeekTo(uint64_t offset)
     return plugin_->SeekTo(offset);
 }
 
+Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "GetStreamInfo, Source plugin is nullptr");
+    Status ret = plugin_->GetStreamInfo(streams);
+    if (ret == Status::OK && streams.size() == 0) {
+        MEDIA_LOG_I("GetStreamInfo empty, MIX Stream");
+        Plugins::StreamInfo info;
+        info.streamId = 0;
+        info.type = Plugins::MIXED;
+        streams.push_back(info);
+    }
+    for (auto& iter : streams) {
+        MEDIA_LOG_I("Source GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
+            iter.streamId, iter.type);
+    }
+    return ret;
+}
 
 bool Source::GetProtocolByUri()
 {
@@ -436,7 +457,7 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 
 int64_t Source::GetDuration()
 {
-    FALSE_RETURN_V_MSG_W(isHls_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
+    FALSE_RETURN_V_MSG_W(seekToTimeFlag_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
     int64_t duration;
     Status ret = plugin_->GetDuration(duration);
     FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed.");

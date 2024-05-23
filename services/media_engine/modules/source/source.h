@@ -78,7 +78,8 @@ public:
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
     void SetDemuxerState();
-    Status ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
+    Status GetStreamInfo(std::vector<StreamInfo>& streams);
+    Status Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
@@ -95,7 +96,7 @@ private:
     void ClearData();
 
     std::string protocol_;
-    bool isHls_{false};
+    bool seekToTimeFlag_{false};
     std::string uri_;
     Plugins::Seekable seekable_;
 

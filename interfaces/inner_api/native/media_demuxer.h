@@ -20,6 +20,7 @@
 #include <limits>
 #include <string>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
@@ -44,8 +45,7 @@ namespace {
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class BaseStreamDemuxer;
-class DataPacker;
-class TypeFinder;
+class DemuxerPluginManager;
 class Source;
 
 class AVBufferQueueProducer;
@@ -96,11 +96,9 @@ public:
     Status SetFrameRate(double frameRate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
-
     bool IsLocalDrmInfosExisted();
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
 private:
-    class DataSourceImpl;
-
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
@@ -110,15 +108,12 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    bool CreatePlugin(std::string pluginName);
-    bool InitPlugin(std::string pluginName);
-
     void ReportIsLiveStreamEvent();
-    void MediaTypeFound(std::string pluginName);
-    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
+    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
+        std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
-    void HandleFrame(const AVBuffer& bufferPtr, uint32_t trackId);
+    Status AddDemuxerCopyTask(int32_t trackId, TaskType type);
 
     Status StopTask(uint32_t trackId);
     Status StopAllTask();
@@ -134,14 +129,16 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    bool IsTrackDisabled(Plugins::MediaType mediaType);
+
+    Status SeekToTimePre(bool jumperRestartPlugin);
+    Status SeekToTimeAfter(bool jumperRestartPlugin);
+    bool ChangeStream(uint32_t trackId);
 
     Plugins::Seekable seekable_;
     std::string uri_;
     uint64_t mediaDataSize_;
 
-    std::string pluginName_;
-    std::shared_ptr<Plugins::DemuxerPlugin> plugin_;
-    std::shared_ptr<DataSourceImpl> dataSource_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<Source> source_;
     MediaMetaData mediaMetaData_;
@@ -151,6 +148,7 @@ private:
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
+    Status HandleRead(uint32_t trackId);
 
     Mutex mapMetaMutex_{};
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
@@ -190,7 +188,10 @@ private:
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
     bool isDump_ = false;
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
+    std::atomic<bool> isSelectBitRate_ = false;
     std::string dumpPrefix_ = "";
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 };
 } // namespace Media
 } // namespace OHOS

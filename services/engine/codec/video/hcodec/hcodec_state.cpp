@@ -592,7 +592,6 @@ void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
 /**************************** OutputPortChangedState Start ********************************/
 void HCodec::OutputPortChangedState::OnStateEntered()
 {
-    codec_->RecordOutBuffersOwnedByOmx();
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
@@ -659,7 +658,10 @@ void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
     if (generation != codec_->stateGeneration_) {
         return;
     }
-    if (codec_->outBuffersOwnedByOmx_.empty()) {
+
+    if (std::none_of(codec_->outputBufferPool_.begin(), codec_->outputBufferPool_.end(), [](const BufferInfo& info) {
+            return info.owner == BufferOwner::OWNED_BY_OMX;
+        })) {
         SLOGI("output buffers owned by omx has been returned");
         return;
     }
