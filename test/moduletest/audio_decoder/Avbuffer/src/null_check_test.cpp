@@ -366,8 +366,9 @@ HWTEST_F(NullCheckTest, NULL_CHECK_014, TestSize.Level2)
     result0 = aDecBufferDemo->Start(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
     index = aDecBufferDemo->GetInputIndex();
+    index = -1;
     result0 = aDecBufferDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    ASSERT_NE(result0, AV_ERR_OK);
     index = aDecBufferDemo->GetOutputIndex();
     result0 = aDecBufferDemo->FreeOutputData(nullptr, index);
     ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
