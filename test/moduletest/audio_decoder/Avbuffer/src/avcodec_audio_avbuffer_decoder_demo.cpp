@@ -831,8 +831,10 @@ OH_AVErrCode ADecBufferDemo::PushInputDataEOS(OH_AVCodec *codec, uint32_t index)
     info.flags = AVCODEC_BUFFER_FLAGS_EOS;
 
     if (!signal_->inBufferQueue_.empty()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
         auto buffer = signal_->inBufferQueue_.front();
         OH_AVBuffer_SetBufferAttr(buffer, &info);
+        signal_->inBufferQueue_.pop();
     }
     return OH_AudioCodec_PushInputBuffer(codec, index);
 }

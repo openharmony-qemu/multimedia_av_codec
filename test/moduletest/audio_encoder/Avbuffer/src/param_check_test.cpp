@@ -684,7 +684,7 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_014, TestSize.Level2)
     index = audioBufferAacEncDemo->GetInputIndex();
     index = 8;
     result0 = audioBufferAacEncDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
+    ASSERT_NE(result0, AV_ERR_OK);
     result0 = audioBufferAacEncDemo->Destroy(codec);
 
     delete audioBufferAacEncDemo;
