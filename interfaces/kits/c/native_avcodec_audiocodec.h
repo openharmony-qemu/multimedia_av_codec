@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+/**
+ * @brief MediaKeySession field.
+ * @since 12
+ * @version 1.0
+ */
 typedef struct MediaKeySession MediaKeySession;
 
 /**
@@ -205,18 +210,17 @@ OH_AVErrCode OH_AudioCodec_IsValid(OH_AVCodec *codec, bool *isValid);
 
 /**
  * @brief Set decryption info.
- *
  * @syscap SystemCapability.Multimedia.Media.AudioCodec
  * @param codec Pointer to an OH_AVCodec instance
  * @param mediaKeySession A media key session instance with decryption function.
- * @param secureVideoPath Require secure decoder or not.
+ * @param secureAudio Require secure decoder or not.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
  * @since 12
  * @version 1.0
 */
 OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
-    bool secureVideoPath);
+    bool secureAudio);
 #ifdef __cplusplus
 }
 #endif
