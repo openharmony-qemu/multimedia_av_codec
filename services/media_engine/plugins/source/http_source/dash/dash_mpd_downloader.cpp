@@ -1131,6 +1131,7 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
                 continue;
             }
             choosedStream = stream;
+            break;
         }
     }
 

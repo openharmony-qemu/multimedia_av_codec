@@ -384,13 +384,12 @@ void DashMediaDownloader::ReceiveMpdParseOkEvent()
                 return;
             }
 
-            // 是否下载分片，要根据前面切换码流执行的过程判断，如果缓存是出于等待分片下载的场景，此时不能直接下载
+            // 是否下载分片，要根据前面切换码流执行的过程判断，如果缓存是处于等待分片下载的场景，此时不能直接下载
             if (bitrateParam_.waitSegmentFinish_) {
                 MEDIA_LOG_I("wait segment download finish, should not get next segment");
                 return;
             }
             
-            // reset bitrateParam_
             streamId = bitrateParam_.streamId_;
             ResetBitrateParam();
         } else {
