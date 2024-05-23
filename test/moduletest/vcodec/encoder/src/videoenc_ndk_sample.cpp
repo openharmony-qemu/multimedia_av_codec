@@ -31,6 +31,7 @@ constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
+constexpr uint32_t TEST_FRAME_COUNT = 25;
 constexpr uint32_t DOUBLE = 2;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
@@ -388,7 +389,7 @@ int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     enc_sample = this;
-    randomEos = rand() % 25;
+    randomEos = rand() % TEST_FRAME_COUNT;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
