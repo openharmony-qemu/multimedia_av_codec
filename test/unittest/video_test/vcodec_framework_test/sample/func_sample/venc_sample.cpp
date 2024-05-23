@@ -791,7 +791,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     int32_t size = attr.size;
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
-    UpdateSHA(outFile_, bufferAddr, , needCheckSHA_);
+    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
