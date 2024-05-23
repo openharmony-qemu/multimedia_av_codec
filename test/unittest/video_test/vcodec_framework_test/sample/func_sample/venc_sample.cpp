@@ -65,7 +65,7 @@ void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_
         (void)outFile->write(addr, size);
     }
 }
-}//namespace
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -785,15 +785,13 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBuffer fail, exit. index: %d", index);
-
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
     char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
     int32_t size = attr.size;
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                     "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
-
+                                      "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
+    UpdateSHA(outFile_, bufferAddr, , needCheckSHA_);
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
@@ -812,10 +810,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
             outFile_->close();
         }
         if (needCheckSHA_) {
-            (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
-            SHA512_Final(g_mdTest, &g_ctxTest);
-            OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
-            CheckSHA();
+            VerifiedSHA();
         }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
         cout << "Get EOS Frame, output func exit" << endl;
@@ -996,6 +991,14 @@ void VideoEncSample::CheckSHA()
         ASSERT_EQ(g_mdTest[i], sha[i]) << "i: " << i;
     }
     cout << std::dec << "\n========================================\n";
+}
+
+void VideoEncSample::VerifiedSHA()
+{
+    (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
+    SHA512_Final(g_mdTest, &g_ctxTest);
+    OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
+    CheckSHA();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
