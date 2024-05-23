@@ -388,6 +388,7 @@ int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     enc_sample = this;
+    randomEos = rand() % 25;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -549,8 +550,7 @@ void VEncNdkSample::RepeatStartBeforeEOS()
 
 bool VEncNdkSample::RandomEOS(uint32_t index)
 {
-    uint32_t random_eos = rand() % 25;
-    if (enable_random_eos && random_eos == frameCount) {
+    if (enable_random_eos && randomEos == frameCount) {
         OH_AVCodecBufferAttr attr;
         attr.pts = 0;
         attr.size = 0;
@@ -694,6 +694,7 @@ void VEncNdkSample::InputDataNormal(bool &runningFlag, uint32_t index, OH_AVMemo
     if (!inFile_->eof()) {
         bool isRandomEosSuccess = RandomEOS(index);
         if (isRandomEosSuccess) {
+            runningFlag = false;
             return;
         }
         int32_t pushResult = 0;
