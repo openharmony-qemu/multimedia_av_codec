@@ -156,16 +156,15 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     auto nowCt = syncCenter->GetClockTimeNow();
     uint64_t latency = 0;
     GetLatency(latency);
-    auto diff = nowCt + (int64_t) latency - ct4Buffer + fixDelay_;
-    auto diff2 = (nowCt - lastClockTime_) - (buffer->pts_ - lastPts_);
-    // use video first render time as anchor when first few times
+    float speed = GetSpeed(syncCenter->GetPlaybackRate());
+    auto diff = nowCt + (int64_t) latency - ct4Buffer + fixDelay_; // anhor diff
+    auto diff2 = (nowCt - lastClockTime_) - static_cast<int64_t>((buffer->pts_ - lastPts_) / speed); // video diff
+    auto diff3 = diff2 - PER_SINK_TIME_THRESHOLD; // video diff with PER_SINK_TIME_THRESHOLD
     if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
         diff = (nowCt - firstFrameNowct_) - (buffer->pts_ - firstFramePts_);
         MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us", diff);
-    } else { // per frame render time reduced by 33ms
-        if (diff < 0 && diff2 < SINK_TIME_US_THRESHOLD && diff < (diff2 - PER_SINK_TIME_THRESHOLD)) {
-            diff = diff2 - PER_SINK_TIME_THRESHOLD;
-        }
+    } else if (diff < 0 && diff2 < SINK_TIME_US_THRESHOLD && diff < diff3) { // per frame render time reduced by 33ms
+        diff = diff3;
     }
     MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 "diff:" PUBLIC_LOG_D64 "nowCt:" PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
@@ -203,6 +202,14 @@ void VideoSink::SetFirstPts(int64_t pts)
         firstPts_ = pts;
         MEDIA_LOG_I("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
+}
+
+float VideoSink::GetSpeed(float speed)
+{
+    if (std::fabs(speed - 0) < 1e-9) {
+        return 1.0f;
+    }
+    return speed;
 }
 } // namespace Pipeline
 } // namespace MEDIA
