@@ -234,8 +234,6 @@ protected:
     bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
     bool IsAllBufferOwnedByUsOrSurface();
     void EraseOutBuffersOwnedByUsOrSurface();
-    void RecordOutBuffersOwnedByOmx();
-    void EraseOutBuffersOwnedByOmx(uint32_t bufferId);
     void ClearBufferPool(OMX_DIRTYPE portIndex);
     virtual void OnClearBufferPool(OMX_DIRTYPE portIndex) {}
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
@@ -330,7 +328,6 @@ protected:
 
     std::vector<BufferInfo> inputBufferPool_;
     std::vector<BufferInfo> outputBufferPool_;
-    std::unordered_set<uint32_t> outBuffersOwnedByOmx_;
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
