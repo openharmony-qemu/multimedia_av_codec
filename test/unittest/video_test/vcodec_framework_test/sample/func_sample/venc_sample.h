@@ -142,6 +142,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void CheckSHA();
+    void VerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
