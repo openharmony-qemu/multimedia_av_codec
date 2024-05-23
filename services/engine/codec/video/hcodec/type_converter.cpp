@@ -36,11 +36,6 @@ vector<Protocol> g_protocolTable = {
         OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
         string(CodecMimeType::VIDEO_HEVC),
     },
-    {
-        static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingVVC),
-        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_VVC,
-        string(OHOS::Media::Plugins::MimeType::VIDEO_VVC),
-    },
 };
 
 vector<PixelFmt> g_pixelFmtTable = {
