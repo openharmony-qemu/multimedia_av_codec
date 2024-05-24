@@ -468,16 +468,16 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
             return;
         } else if (rotation < 0) {
-            rotation += 360;
+            rotation += 360; // reset rotation to non-negative
         }
         switch (int(rotation)) {
-            case 90:
+            case VIDEO_ROTATION_90:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
                 break;
-            case 180:
+            case VIDEO_ROTATION_180:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["180"]);
                 break;
-            case 270:
+            case VIDEO_ROTATION_270:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["270"]);
                 break;
             default:
