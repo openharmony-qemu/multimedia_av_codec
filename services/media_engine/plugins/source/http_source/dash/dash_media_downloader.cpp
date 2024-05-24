@@ -109,26 +109,14 @@ bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader;
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = nullptr;
     std::shared_ptr<DashStreamDescription> streamDescription = mpdDownloader_->GetStreamByStreamId(streamId);
     if (streamDescription == nullptr) {
         MEDIA_LOG_E("stream " PUBLIC_LOG_D32 " not exist", streamId);
         return segmentDownloader;
     }
 
-    for (auto &downloader : segmentDownloaders_) {
-        if ((streamDescription->type_ == MediaAVCodec::MEDIA_TYPE_VID ||
-             streamDescription->type_ == MediaAVCodec::MEDIA_TYPE_AUD) &&
-            (streamDescription->type_ == downloader->GetStreamType())) {
-            segmentDownloader = downloader;
-            break;
-        } else if (streamDescription->type_ == MediaAVCodec::MEDIA_TYPE_SUBTITLE &&
-                   downloader->GetStreamId() == streamId) {
-            segmentDownloader = downloader;
-            break;
-        }
-    }
-    return segmentDownloader;
+    return GetSegmentDownloaderByType(streamDescription->type_);
 }
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(MediaAVCodec::MediaType type)
