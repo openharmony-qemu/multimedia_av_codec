@@ -47,7 +47,7 @@ OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource);
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param uri An URI for a remote media resource.
  * @return Returns a pointer to an OH_AVSource instance if the execution is successful, otherwise returns nullptr.
- * Possible failure causes: 
+ * Possible failure causes:
  *  1. network anomaly.
  *  2. resource is invalid.
  *  3. file format is not supported.
