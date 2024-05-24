@@ -50,7 +50,7 @@ OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource);
  * Possible failure causes: 
  *  1. network anomaly.
  *  2. resource is invalid.
- *  3. file format is unsupported.
+ *  3. file format is not supported.
  * @since 10
 */
 OH_AVSource *OH_AVSource_CreateWithURI(char *uri);
@@ -67,7 +67,7 @@ OH_AVSource *OH_AVSource_CreateWithURI(char *uri);
  *  2. offset is not start pos of resource.
  *  3. size error.
  *  4. resource is invalid.
- *  5. file format is unsupported.
+ *  5. file format is not supported.
  * @since 10
 */
 OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t size);
