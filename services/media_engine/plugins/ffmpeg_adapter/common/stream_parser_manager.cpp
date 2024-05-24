@@ -21,7 +21,6 @@
 
 namespace {
 const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
-const std::string VVC_LIB_PATH = "libav_codec_vvc_parser.z.so";
 }
 
 namespace OHOS {
@@ -47,8 +46,6 @@ bool StreamParserManager::Init(StreamType streamType)
         std::string streamParserPath;
         if (streamType == StreamType::HEVC) {
             streamParserPath = HEVC_LIB_PATH;
-        } else if (streamType == StreamType::VVC) {
-            streamParserPath = VVC_LIB_PATH;
         } else {
             MEDIA_LOG_E("Unsupport stream parser type");
             return false;

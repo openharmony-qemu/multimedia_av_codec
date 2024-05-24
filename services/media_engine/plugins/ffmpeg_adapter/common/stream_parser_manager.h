@@ -26,7 +26,6 @@ namespace Media {
 namespace Plugins {
 enum StreamType {
     HEVC = 0,
-    VVC  = 1,
 };
 
 class StreamParserManager {
