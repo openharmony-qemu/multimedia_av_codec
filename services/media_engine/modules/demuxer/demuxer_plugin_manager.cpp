@@ -221,6 +221,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
 
 Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackIndex)
 {
+    MEDIA_LOG_I("DemuxerPluginManager::AddTrackMapInfo in");
     for (auto& iter : trackInfoMap_) {
         if (iter.second.streamID == streamID && iter.second.innerTrackIndex == trackIndex) {
             return Status::OK;
