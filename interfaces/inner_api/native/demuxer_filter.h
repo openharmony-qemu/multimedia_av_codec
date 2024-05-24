@@ -100,6 +100,7 @@ private:
 
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
+    bool IsSkipThisTrack(Plugins::MediaType mediaType, std::string mime);
     void UpdateTrackIdMap(StreamType streamType, int32_t index);
     void FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
