@@ -282,7 +282,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Parse failed.");
         return;
     }
-    MEDIA_LOG_D("Get location string successfully: " PUBLIC_LOG_S, valPtr->value);
+    MEDIA_LOG_D("Get location string successfully: %{private}s", valPtr->value);
     std::string locationStr = std::string(valPtr->value);
     std::regex pattern(R"([\+\-]\d+\.\d+)");
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
