@@ -193,6 +193,9 @@ Status DemuxerFilter::DoPrepare()
         }
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
+        if (mediaType == MediaType::SUBTITLE) {
+            continue;
+        }
         if (!FindStreamType(streamType, mediaType, mime)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
