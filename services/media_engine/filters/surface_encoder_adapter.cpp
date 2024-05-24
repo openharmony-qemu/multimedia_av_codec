@@ -420,6 +420,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     lastBufferTime_ = buffer->pts_;
     emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
+    emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / US_TO_NS;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
