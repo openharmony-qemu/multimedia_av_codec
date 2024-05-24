@@ -218,7 +218,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
                                 FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
             auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
             AVCODEC_LOGI("recode output description,layout:%{public}s",
-                        FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
+                         FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
             format_.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, static_cast<uint64_t>(layout));
             if (InitResample() != AVCodecServiceErrCode::AVCS_ERR_OK) {
                 return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -320,7 +320,8 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
     int64_t channelLayout = 0;
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout);
-    auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
+    auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
+        static_cast<AudioChannelLayout>(channelLayout));
     if (channelLayout != UNKNOWN) {
         if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
             AVCODEC_LOGE("the value of channelLayout is not supported");
@@ -328,10 +329,10 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
         } else {
             avCodecContext_->channel_layout = ffChannelLayout;
         }
-    } else if (avCodecContext_->channels == 1) { // mono
+    } else if (avCodecContext_->channels == 1) { // 1 channel: mono
         AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
         avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
-    } else if (avCodecContext_->channels == 2) { // stereo
+    } else if (avCodecContext_->channels == 2) { // 2 channel: stereo
         AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
         avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
     } else {

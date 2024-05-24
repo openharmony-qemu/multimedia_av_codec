@@ -221,18 +221,16 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         format_->SetData(Tag::AUDIO_SAMPLE_FORMAT,
                          FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
         auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
-        if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 1) { // mono
+        if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 1) { // 1 channel: mono
             layout = AudioChannelLayout::MONO;
             avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
-        } else if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 2) { // stereo
+        } else if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 2) { // 2 channel: stereo
             layout = AudioChannelLayout::STEREO;
             avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
         }
-        AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d \
-                     nb_channels:%{public}d mask:%{public}ld",
+        AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d nb_channels:%{public}d",
                      FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(),
-                     avCodecContext_->channels, avCodecContext_->ch_layout.nb_channels,
-                     avCodecContext_->ch_layout.u.mask);
+                     avCodecContext_->channels, avCodecContext_->ch_layout.nb_channels);
         format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
         if (InitResample() != Status::OK) {
             return Status::ERROR_UNKNOWN;
@@ -343,10 +341,10 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
         } else {
             avCodecContext_->channel_layout = ffChannelLayout;
         }
-    } else if (avCodecContext_->channels == 1) { // mono
+    } else if (avCodecContext_->channels == 1) { // 1 channel: mono
         AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
         avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
-    } else if (avCodecContext_->channels == 2) { // stereo
+    } else if (avCodecContext_->channels == 2) { // 2 channel: stereo
         AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
         avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
     } else {
