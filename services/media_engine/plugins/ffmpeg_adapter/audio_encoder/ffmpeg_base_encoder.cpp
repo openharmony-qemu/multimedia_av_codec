@@ -21,6 +21,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegBaseEncoder"};
+constexpr int32_t USECOND_TO_NSECOND = 1000;
 }  // namespace
 
 namespace OHOS {
@@ -181,7 +182,7 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
         return Status::ERROR_UNKNOWN;
     }
     // pts us
-    outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / AV_CODEC_USECOND;
+    outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / USECOND_TO_NSECOND;
     outputBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration) ?
                     (outputBuffer->duration_ - (INT64_MAX - prevPts_)) :
                     (prevPts_ + outputBuffer->duration_);
