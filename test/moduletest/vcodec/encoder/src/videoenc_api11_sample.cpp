@@ -121,6 +121,16 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     OH_VideoEncoder_PushInputParameter(codec, index);
 }
 
+static void DumpInfo(OH_AVCodecBufferAttr *attr, OH_AVBuffer *buffer)
+{
+    if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
+        DumpLtrInfo(buffer);
+    }
+    if (getQpMse && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
+        DumpQPInfo(buffer);
+    }
+}
+
 int64_t VEncAPI11Sample::GetSystemTimeUs()
 {
     struct timespec now;
@@ -872,12 +882,7 @@ void VEncAPI11Sample::OutputFunc()
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         lock.unlock();
-        if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
-            DumpLtrInfo(buffer);
-        }
-        if (getQpMse && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
-            DumpQPInfo(buffer);
-        }
+        DumpInfo(attr,buffer);
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;
         }
