@@ -46,6 +46,7 @@ public:
 
 private:
     void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
+    void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
@@ -59,6 +60,7 @@ private:
     mutable Mutex mutex_;
     std::string userAgent_ {"Harmony OS UA"};
     std::string referer_ {};
+    std::string cookie_ {};
 };
 }
 }

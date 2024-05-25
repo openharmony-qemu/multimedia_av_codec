@@ -36,8 +36,8 @@ public:
     MediaSyncManager() = default;
     virtual ~MediaSyncManager();
     // interfaces called by hiplayer hirecoder etc.
-    Status SetPlaybackRate(float rate);
-    float GetPlaybackRate();
+    Status SetPlaybackRate(float rate) override;
+    float GetPlaybackRate() override;
     void WaitAllPrerolled(bool prerolled = true);
     Status Stop();
     Status Resume();
