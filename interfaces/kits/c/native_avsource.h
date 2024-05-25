@@ -62,7 +62,7 @@ OH_AVSource *OH_AVSource_CreateWithURI(char *uri);
  * @param offset The offset into the file to start reading.
  * @param size The file size in bytes.
  * @return Returns a pointer to an OH_AVSource instance if the execution is successful, otherwise returns nullptr.
- * Possible failure causes: 
+ * Possible failure causes:
  *  1. fd is invalid.
  *  2. offset is not start pos of resource.
  *  3. size error.
