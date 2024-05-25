@@ -529,6 +529,26 @@ extern const char *OH_MD_KEY_VIDEO_STRIDE;
  */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
 /**
+ * @brief Key for describing the picture width of the video, value type is int32_t.
+ * It is available when video decoding or the output stream changes.
+ * refer to {@link OH_VideoDecoder_GetOutputDescription}
+ * or {@link OH_AVCodecOnStreamChanged}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_PIC_WIDTH;
+/**
+ * @brief Key for describing the picture height of the video, value type is int32_t.
+* It is available when video decoding or the output stream changes.
+ * refer to {@link OH_VideoDecoder_GetOutputDescription}
+ * or {@link OH_AVCodecOnStreamChanged}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_PIC_HEIGHT;
+/**
  * @brief Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  * If enabled, the video encoder or video decoder doesn't hold input and output data more than required by
  * the codec standards. This is an optional key that applies only to video encoder or video decoder.
