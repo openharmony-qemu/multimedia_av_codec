@@ -26,6 +26,7 @@
 #include "avcodec_sysevent.h"
 
 constexpr uint32_t TIME_OUT_MS = 1000;
+constexpr uint32_t NS_PER_US = 1000;
 
 namespace OHOS {
 namespace Media {
@@ -419,6 +420,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     lastBufferTime_ = buffer->pts_;
     emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
+    emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
