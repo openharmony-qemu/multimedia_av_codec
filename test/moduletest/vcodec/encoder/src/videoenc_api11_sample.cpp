@@ -774,7 +774,6 @@ void VEncAPI11Sample::InputFunc()
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-
         lock.unlock();
         if (!inFile_->eof()) {
             bool isRandomEosSuccess = RandomEOS(index);
