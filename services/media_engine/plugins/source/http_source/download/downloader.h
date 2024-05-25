@@ -39,11 +39,11 @@ struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
-    size_t maxRetryTimes {100};
+    const static size_t maxRetryTimes {100};
+    const static int sleepTime {10};
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
-    unsigned int sleepTime {10};
 
     void Update(const HeaderInfo* info)
     {
