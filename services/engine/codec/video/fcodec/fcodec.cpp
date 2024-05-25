@@ -166,6 +166,11 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
+
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
@@ -539,14 +544,6 @@ int32_t FCodec::GetOutputFormat(Format &format)
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
 
-    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_STRIDE)) {
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
-    }
-
-    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT)) {
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
-    }
-
     format = format_;
     AVCODEC_LOGI("Get outputFormat successful");
     return AVCS_ERR_OK;
@@ -726,6 +723,10 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
         CalculateBufferSize();
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
         if (surface_) {
             int32_t val32 = 0;
             format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
