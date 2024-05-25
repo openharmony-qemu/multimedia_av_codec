@@ -109,26 +109,14 @@ bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader;
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = nullptr;
     std::shared_ptr<DashStreamDescription> streamDescription = mpdDownloader_->GetStreamByStreamId(streamId);
     if (streamDescription == nullptr) {
         MEDIA_LOG_E("stream " PUBLIC_LOG_D32 " not exist", streamId);
         return segmentDownloader;
     }
 
-    for (auto &downloader : segmentDownloaders_) {
-        if ((streamDescription->type_ == MediaAVCodec::MEDIA_TYPE_VID ||
-             streamDescription->type_ == MediaAVCodec::MEDIA_TYPE_AUD) &&
-            (streamDescription->type_ == downloader->GetStreamType())) {
-            segmentDownloader = downloader;
-            break;
-        } else if (streamDescription->type_ == MediaAVCodec::MEDIA_TYPE_SUBTITLE &&
-                   downloader->GetStreamId() == streamId) {
-            segmentDownloader = downloader;
-            break;
-        }
-    }
-    return segmentDownloader;
+    return GetSegmentDownloaderByType(streamDescription->type_);
 }
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(MediaAVCodec::MediaType type)
@@ -238,9 +226,10 @@ bool DashMediaDownloader::SelectBitRate(uint32_t bitrate)
         return true;
     }
 
-    // 当前正在切换码率，需要等待sidx完成下载解析
+    // The bit rate is being switched. Wait until the sidx download and parsing are complete.
     if (bitrateParam_.waitSidxFinish_) {
-        // 保存目标码流信息，再收到sidx解析完成的回调时更新下载码流信息
+        // Save the target stream information and update the downloaded stream information
+        // when the callback indicating that the sidx parsing is complete is received.
         MEDIA_LOG_I("wait last switch bitrate:"
         PUBLIC_LOG_U32
         " sidx parse finish, switch type:"
@@ -379,18 +368,19 @@ void DashMediaDownloader::ReceiveMpdParseOkEvent()
             bitrateParam_.waitSidxFinish_ = false;
             
             if (DoPreparedAction()) {
-                // 正在处理prepared动作，不需要下载上一次切换对应的分片
+                // The prepared action is being processed.
+                // The segment corresponding to the last switchover does not need to be downloaded.
                 MEDIA_LOG_I("DoPreparedAction, just return");
                 return;
             }
 
-            // 是否下载分片，要根据前面切换码流执行的过程判断，如果缓存是出于等待分片下载的场景，此时不能直接下载
+            // Whether to download segments depends on the process of switching streams.
+            // If the cache is waiting for segment download, the segments cannot be directly downloaded.
             if (bitrateParam_.waitSegmentFinish_) {
                 MEDIA_LOG_I("wait segment download finish, should not get next segment");
                 return;
             }
             
-            // reset bitrateParam_
             streamId = bitrateParam_.streamId_;
             ResetBitrateParam();
         } else {

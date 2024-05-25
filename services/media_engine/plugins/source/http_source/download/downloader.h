@@ -75,6 +75,7 @@ using DownloadDoneCbFunc = std::function<void(const std::string&, const std::str
 struct MediaSouce {
     std::string url;
     std::map<std::string, std::string> httpHeader;
+    int32_t timeoutMs{-1};
 };
 
 class DownloadRequest {
