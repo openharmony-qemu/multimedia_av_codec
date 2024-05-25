@@ -529,7 +529,7 @@ extern const char *OH_MD_KEY_VIDEO_STRIDE;
  */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
 /**
- * @brief Key for describing the picture width of the video, value type is int32_t.
+ * @brief Key for describing the valid picture width of the video, value type is int32_t.
  * Get the value from an OH_AVFormat instance, which obtained by calling {@link OH_VideoDecoder_GetOutputDescription}
  * or {@link OH_AVCodecOnStreamChanged}.
  *
@@ -538,7 +538,7 @@ extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
  */
 extern const char *OH_MD_KEY_VIDEO_PIC_WIDTH;
 /**
- * @brief Key for describing the picture height of the video, value type is int32_t.
+ * @brief Key for describing the valid picture height of the video, value type is int32_t.
  * Get the value from an OH_AVFormat instance, which obtained by calling {@link OH_VideoDecoder_GetOutputDescription}
  * or {@link OH_AVCodecOnStreamChanged}.
  *
