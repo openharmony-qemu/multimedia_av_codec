@@ -121,7 +121,7 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     OH_VideoEncoder_PushInputParameter(codec, index);
 }
 
-static void DumpInfo(OH_AVCodecBufferAttr *attr, OH_AVBuffer *buffer)
+static void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer)
 {
     if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
         DumpLtrInfo(buffer);
@@ -882,7 +882,7 @@ void VEncAPI11Sample::OutputFunc()
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         lock.unlock();
-        DumpInfo(attr,buffer);
+        DumpInfo(attr, buffer);
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;
         }
