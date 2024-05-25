@@ -178,7 +178,7 @@ Status DemuxerFilter::DoPrepare()
         }
         std::string mime;
         MediaType mediaType;
-        if (GetMediaTypeAndIsSkip(meta, mediaType, mime)) {
+        if (GetMediaTypeAndIsSkipThisTrack(meta, mediaType, mime)) {
             continue;
         }
         StreamType streamType;
@@ -507,7 +507,8 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
     return true;
 }
 
-bool DemuxerFilter::GetMediaTypeAndIsSkip(const std::shared_ptr<Meta> &meta, Plugins::MediaType &mediaType, std::string &mime)
+bool DemuxerFilter::GetMediaTypeAndIsSkipThisTrack(const std::shared_ptr<Meta> &meta,
+    Plugins::MediaType &mediaType, std::string &mime)
 {
     meta->GetData(Tag::MIME_TYPE, mime);
     if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
