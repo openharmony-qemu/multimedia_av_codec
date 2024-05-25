@@ -213,7 +213,7 @@ void DashMpdParser::GetAdaptationSetAttr(IDashMpdNode *adptSetNode, DashAdptSetI
 
     double dValue;
     adptSetNode->GetAttr("maxPlayoutRate", dValue);
-    const double eps = 1e-8; // 限定误差范围
+    const double eps = 1e-8; // Limiting the Error Range
     if (fabs(dValue) > eps) {
         adptSetInfo->commonAttrsAndElements_.maxPlayoutRate_ = dValue;
     }

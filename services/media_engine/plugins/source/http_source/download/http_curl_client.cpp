@@ -231,7 +231,8 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         httpHeader["Referer"].c_str());
 }
 
-Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
+Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
+                            int32_t timeoutMs)
 {
     if (easyHandle_ == nullptr) {
         MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
@@ -240,7 +241,7 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     std::map<std::string, std::string> header = httpHeader;
     HttpHeaderParse(header);
-    InitCurlEnvironment(url);
+    InitCurlEnvironment(url, timeoutMs);
     return Status::OK;
 }
 
@@ -266,7 +267,7 @@ Status HttpCurlClient::Deinit()
     return Status::OK;
 }
 
-void HttpCurlClient::InitCurlEnvironment(const std::string& url)
+void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeoutMs)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
     curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 2); // 2
@@ -286,9 +287,10 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    if (url.find(".ts") == std::string::npos) {
-        MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " .", url.c_str());
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 5000L);
+    if (url.find(".ts") == std::string::npos || timeoutMs >= 0) {
+        int32_t timeout = timeoutMs >= 0 ? timeoutMs : 5000L;
+        MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeout);
+        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeout);
     }
     std::string host;
     std::string exclusions;

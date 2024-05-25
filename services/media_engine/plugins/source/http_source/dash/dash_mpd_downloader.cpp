@@ -788,7 +788,7 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRatesByHdr(bool isHdr)
     std::vector<uint32_t> bitRates;
     for (const auto &item : streamDescriptions_) {
         if (item->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID &&
-            item->bandwidth_ &&
+            item->bandwidth_ > 0 &&
             item->isHdr_ == isHdr) {
             bitRates.push_back(item->bandwidth_);
         }
