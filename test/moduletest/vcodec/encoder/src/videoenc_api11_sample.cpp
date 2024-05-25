@@ -88,7 +88,7 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     if (!parameter || !userData) {
         return;
     }
-    if (enc_sample->frameCount > 0 && ((enc_sample->frameCount + 1) % enc_sample->ltrParam.ltrInterval == 0)) {
+    if (enc_sample->frameCount > 0 && (enc_sample->frameCount % enc_sample->ltrParam.ltrInterval == 0)) {
         OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
     }
     if (!enc_sample->ltrParam.enableUseLtr) {
@@ -841,6 +841,15 @@ void VEncAPI11Sample::DumpLtrInfo(OH_AVBuffer *buffer)
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_POC, &framePoc);
 }
 
+void VEncAPI11Sample::DumpQPInfo(OH_AVBuffer *buffer)
+{
+    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
+    int32_t qp_average = 0;
+    double mse = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE, &qp_average);
+    OH_AVFormat_GetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_MSE, &mse);
+}
+
 void VEncAPI11Sample::OutputFunc()
 {
     FILE *outFile = fopen(OUT_DIR, "wb");
@@ -866,6 +875,9 @@ void VEncAPI11Sample::OutputFunc()
         lock.unlock();
         if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
             DumpLtrInfo(buffer);
+        }
+        if (getQpMse && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
+            DumpQPInfo(buffer);
         }
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;

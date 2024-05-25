@@ -120,6 +120,7 @@ public:
     void StopInloop();
     void StopOutloop();
     void DumpLtrInfo(OH_AVBuffer *buffer);
+    void DumpQPInfo(OH_AVBuffer *buffer);
     VEncSignal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
@@ -147,6 +148,7 @@ public:
     bool TEMPORAL_ENABLE = false;
     bool TEMPORAL_JUMP_MODE = false;
     bool TEMPORAL_DEFAULT = false;
+    bool getQpMse = false;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
