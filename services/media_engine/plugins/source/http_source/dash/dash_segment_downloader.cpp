@@ -74,6 +74,10 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& seg)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     mediaSegment_ = std::make_shared<DashBufferSegment>(seg);
+    if (mediaSegment_->byteRange_.length() > 0) {
+        DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
+    }
+
     if (mediaSegment_->startRangeValue_ >= 0 && mediaSegment_->endRangeValue_ > 0) {
         mediaSegment_->contentLength_ = mediaSegment_->endRangeValue_ - mediaSegment_->startRangeValue_ + 1;
     }
