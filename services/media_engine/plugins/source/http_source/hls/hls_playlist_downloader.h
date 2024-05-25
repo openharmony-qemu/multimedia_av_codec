@@ -31,7 +31,6 @@ public:
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;
     void ParseManifest(const std::string& location) override;
-    int64_t PlayListUpdateLoop() override;
     void SetPlayListCallback(PlayListChangeCallback* callback) override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
