@@ -40,7 +40,7 @@ ohos_fuzztest("AudioencoderFuzzTest") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
-    ]
+  ]
   cflags = [
     "-g",
     "-O0",
@@ -48,8 +48,8 @@ ohos_fuzztest("AudioencoderFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "audioencoder_fuzzer.cpp",
     "audio_encoder_demo.cpp",
+    "audioencoder_fuzzer.cpp",
   ]
 
   defines = []

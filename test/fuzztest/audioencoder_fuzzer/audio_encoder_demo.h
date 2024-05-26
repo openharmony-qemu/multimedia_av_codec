@@ -37,7 +37,7 @@ enum class AudioBufferFormatType : int32_t {
     TYPE_VORBIS = 3,
     TYPE_AMRNB = 4,
     TYPE_AMRWB = 5,
-    TYPE_vivid = 6,
+    TYPE_VIVID = 6,
     TYPE_OPUS = 7,
     TYPE_G711MU = 8,
     TYPE_LBVC = 10,
@@ -69,10 +69,8 @@ public:
     OH_AVCodec* CreateByName(const char* mime);
 
     OH_AVErrCode Destroy(OH_AVCodec* codec);
-    OH_AVErrCode SetCallback(OH_AVCodec* codec);
 
-    OH_AVErrCode Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate,
-    int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
+    OH_AVErrCode SetCallback(OH_AVCodec* codec);
 
     OH_AVErrCode Prepare(OH_AVCodec* codec);
 
@@ -98,9 +96,6 @@ public:
 
     uint32_t GetOutputIndex();
 
-    OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate,
-    int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
-
     bool InitFile(std::string inputFile);
 private:
     void ClearQueue();
@@ -113,6 +108,7 @@ private:
     int32_t Release();
     void InputFunc();
     void OutputFunc();
+    void Setformat(OH_AVFormat *format);
     void HandleEOS(const uint32_t &index);
     int32_t GetFileSize(const std::string &filePath);
     

@@ -123,7 +123,7 @@ bool AudioBufferAacEncDemo::InitFile(std::string inputFile)
 {
     if (inputFile.find("mp4") != std::string::npos || inputFile.find("m4a") != std::string::npos ||
         inputFile.find("vivid") != std::string::npos) {
-        audioType_ = AudioBufferFormatType::TYPE_vivid;
+        audioType_ = AudioBufferFormatType::TYPE_VIVID;
     } else if (inputFile.find("opus") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_OPUS;
     } else if (inputFile.find("g711") != std::string::npos) {
@@ -146,6 +146,22 @@ bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
     inputdatasize = size;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
     OH_AVFormat *format = OH_AVFormat_Create();
+    Setformat(format);
+    DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
+    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
+    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
+    OH_AVFormat_Destroy(format);
+    sleep(1);
+    return true;
+}
+
+void AudioBufferAacEncDemo::Setformat(OH_AVFormat *format)
+{
     int32_t channelCount;
     int32_t sampleRate;
     long bitrate;
@@ -175,8 +191,8 @@ bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
                                 AudioSampleFormat::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         channelCount = CHANNEL_COUNT_1;
-        sampleRate = 16000;//采样率16000
-        bitrate = 6000;// 码率 6000
+        sampleRate = 16000; //采样率16000
+        bitrate = 6000; // 码率 6000
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
         OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
@@ -184,8 +200,8 @@ bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
                                 AudioSampleFormat::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
         channelCount = CHANNEL_COUNT_1;
-        sampleRate = SAMPLE_RATE;//采样率8000
-        bitrate = BIT_RATE_64000;// 码率 64000
+        sampleRate = SAMPLE_RATE;
+        bitrate = BIT_RATE_64000;
         uint64_t channelLayout = GetChannelLayout(channelCount);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, channelLayout);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
@@ -195,17 +211,7 @@ bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 AudioSampleFormat::SAMPLE_S16LE);
     }
-    DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    sleep(1);
-    return true;
+    return;
 }
 
 AudioBufferAacEncDemo::AudioBufferAacEncDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0)
@@ -265,17 +271,15 @@ int32_t AudioBufferAacEncDemo::Start()
     isRunning_.store(true);
 
     inputLoop_ = make_unique<thread>(&AudioBufferAacEncDemo::InputFunc, this);
-	if(inputLoop_ == nullptr)
-	{
-		std::cout << "inputLoop_ is nullptr" << std::endl;
-	}
+    if (inputLoop_ == nullptr) {
+        std::cout << "inputLoop_ is nullptr" << std::endl;
+    }
     DEMO_CHECK_AND_RETURN_RET_LOG(inputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
 
     outputLoop_ = make_unique<thread>(&AudioBufferAacEncDemo::OutputFunc, this);
-	if(outputLoop_ == nullptr)
-	{
-		std::cout << "outputLoop_ is nullptr" << std::endl;
-	}
+    if (outputLoop_ == nullptr) {
+        std::cout << "outputLoop_ is nullptr" << std::endl;
+    }
     DEMO_CHECK_AND_RETURN_RET_LOG(outputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
     return OH_AudioCodec_Start(audioEnc_);
 }
@@ -370,15 +374,16 @@ void AudioBufferAacEncDemo::HandleEOS(const uint32_t &index)
 
 void AudioBufferAacEncDemo::InputFunc()
 {
-    int64_t g77mu_size = 320;
-    double time_20ms = 0.02;
-    size_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time_20ms;
+    size_t g77mu_size = 320;
+    size_t lbvc_size = 640;
+    double time20ms = 0.02;
+    size_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = channels_ * sizeof(short) * sampleRate_ * time_20ms;
+        frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = g77mu_size;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
-        frameBytes = 640;
+        frameBytes = lbvc_size;
     }
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -390,9 +395,9 @@ void AudioBufferAacEncDemo::InputFunc()
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         if (inputdatasize < frameBytes) {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer),inputdatasize,inputdata.c_str(),inputdatasize);
+            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), inputdatasize, inputdata.c_str(), inputdatasize);
         } else {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer),frameBytes,inputdata.c_str(),frameBytes);
+            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), frameBytes, inputdata.c_str(), frameBytes);
         }
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
@@ -458,13 +463,13 @@ void AudioBufferAacEncDemo::OutputFunc()
 OH_AVCodec *AudioBufferAacEncDemo::CreateByMime(const char *mime)
 {
     if (mime != nullptr) {
-        if (0 == strcmp(mime, "audio/mp4a-latm")) {
+        if (strcmp(mime, "audio/mp4a-latm") == 0) {
             audioType_ = AudioBufferFormatType::TYPE_AAC;
             cout << "creat, aac" << endl;
-        } else if (0 == strcmp(mime, "audio/flac")) {
+        } else if (strcmp(mime, "audio/flac") == 0) {
             audioType_ = AudioBufferFormatType::TYPE_FLAC;
             cout << "creat, flac" << endl;
-        } else if (0 == strcmp(mime, "audio/lbvc")) {
+        } else if (strcmp(mime, "audio/lbvc") == 0) {
             audioType_ = AudioBufferFormatType::TYPE_LBVC;
             cout << "creat, LBVC" << endl;
         } else {
@@ -497,40 +502,6 @@ OH_AVErrCode AudioBufferAacEncDemo::SetCallback(OH_AVCodec *codec)
     }
     cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
     return OH_AudioCodec_RegisterCallback(codec, cb_, signal_);
-}
-
-OH_AVErrCode AudioBufferAacEncDemo::Configure(OH_AVCodec *codec, OH_AVFormat *format, int32_t channel,
-                                              int32_t sampleRate, int64_t bitRate, int32_t sampleFormat,
-                                              int32_t sampleBit, int32_t complexity)
-{
-    if (format == nullptr) {
-        return OH_AudioCodec_Configure(codec, format);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitRate);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, sampleBit);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
-        uint64_t channelLayout = GetChannelLayout(channel);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, channelLayout);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitRate);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, sampleBit);
-    } else {
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitRate);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, sampleBit);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, complexity);
-    }
-    OH_AVErrCode ret = OH_AudioCodec_Configure(codec, format);
-    return ret;
 }
 
 OH_AVErrCode AudioBufferAacEncDemo::Prepare(OH_AVCodec *codec)
@@ -570,11 +541,12 @@ OH_AVFormat *AudioBufferAacEncDemo::GetOutputDescription(OH_AVCodec *codec)
 OH_AVErrCode AudioBufferAacEncDemo::PushInputData(OH_AVCodec *codec, uint32_t index)
 {
     OH_AVCodecBufferAttr info;
+    int64_t size = 100;
     if (!signal_->inBufferQueue_.empty()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         auto buffer = signal_->inBufferQueue_.front();
         OH_AVBuffer_GetBufferAttr(buffer, &info);
-        info.size = 100;
+        info.size = size;
         OH_AVErrCode ret = OH_AVBuffer_SetBufferAttr(buffer, &info);
         if (ret != AV_ERR_OK) {
             return ret;
@@ -648,35 +620,19 @@ uint32_t AudioBufferAacEncDemo::GetOutputIndex()
 
 void AudioBufferAacEncDemo::ClearQueue()
 {
-    while (!signal_->inQueue_.empty())
+    while (!signal_->inQueue_.empty()) {
         signal_->inQueue_.pop();
-    while (!signal_->outQueue_.empty())
+    }
+        
+    while (!signal_->outQueue_.empty()) {
         signal_->outQueue_.pop();
-    while (!signal_->inBufferQueue_.empty())
+    }
+        
+    while (!signal_->inBufferQueue_.empty()) {
         signal_->inBufferQueue_.pop();
-    while (!signal_->outBufferQueue_.empty())
+    }
+        
+    while (!signal_->outBufferQueue_.empty()) {
         signal_->outBufferQueue_.pop();
-}
-
-OH_AVErrCode AudioBufferAacEncDemo::SetParameter(OH_AVCodec *codec, OH_AVFormat *format, int32_t channel,
-                                                 int32_t sampleRate, int64_t bitRate, int32_t sampleFormat,
-                                                 int32_t sampleBit, int32_t complexity)
-{
-    if (format == nullptr) {
-        return OH_AudioCodec_SetParameter(codec, format);
-    }
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitRate);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, sampleBit);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, complexity);
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
-        uint64_t channelLayout = GetChannelLayout(channel);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, channelLayout);
-    }
-    OH_AVErrCode ret = OH_AudioCodec_SetParameter(codec, format);
-    return ret;
+    }  
 }
