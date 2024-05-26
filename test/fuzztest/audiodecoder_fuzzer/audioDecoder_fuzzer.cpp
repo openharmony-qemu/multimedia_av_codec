@@ -185,8 +185,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     /* Run your code on data */
     OHOS::AudioDecoderFuzzTest(data, size);
     OHOS::AudioDecoderAACFuzzTest(data, size);
-	OHOS::AudioDecoderFlacFuzzTest(data, size);
-	OHOS::AudioDecoderAPEFuzzTest(data, size);
+    OHOS::AudioDecoderFlacFuzzTest(data, size);
+    OHOS::AudioDecoderAPEFuzzTest(data, size);
     OHOS::AudioDecoderG711FuzzTest(data, size);
     OHOS::AudioDecoderOPUSFuzzTest(data, size);
     OHOS::AudioDecoderLBVCFuzzTest(data, size);

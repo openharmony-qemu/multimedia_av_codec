@@ -38,7 +38,7 @@ enum class AudioBufferFormatType : int32_t {
     TYPE_VORBIS = 3,
     TYPE_AMRNB = 4,
     TYPE_AMRWB = 5,
-    TYPE_vivid = 6,
+    TYPE_VIVID = 6,
     TYPE_OPUS = 7,
     TYPE_G711MU = 8,
     TYPE_APE = 9,
@@ -90,7 +90,6 @@ public:
     uint32_t GetOutputIndex();
     OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate);
 	
-
 private:
     int32_t CreateDec();
     int32_t Configure(OH_AVFormat *format);
@@ -116,9 +115,7 @@ private:
     AudioBufferFormatType audioType_;
     size_t inputdatasize;
     std::string inputdata;
-    bool longtimeFlag = false;
     bool eosFlag = false;
-
 };
 } // namespace AudioBufferDemo
 } // namespace MediaAVCodec

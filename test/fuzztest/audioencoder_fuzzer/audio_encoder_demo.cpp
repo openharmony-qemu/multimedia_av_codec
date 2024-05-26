@@ -371,16 +371,16 @@ void AudioBufferAacEncDemo::HandleEOS(const uint32_t &index)
 
 void AudioBufferAacEncDemo::InputFunc()
 {
-    size_t g77mu_size = 320;
-    size_t lbvc_size = 640;
+    size_t gmusize = 320;
+    size_t lbvcsize = 640;
     double time20ms = 0.02;
     size_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
         frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
-        frameBytes = g77mu_size;
+        frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
-        frameBytes = lbvc_size;
+        frameBytes = lbvcsize;
     }
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
