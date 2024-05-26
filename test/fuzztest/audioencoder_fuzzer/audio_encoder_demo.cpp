@@ -623,16 +623,16 @@ void AudioBufferAacEncDemo::ClearQueue()
     while (!signal_->inQueue_.empty()) {
         signal_->inQueue_.pop();
     }
-        
+
     while (!signal_->outQueue_.empty()) {
         signal_->outQueue_.pop();
     }
-        
+
     while (!signal_->inBufferQueue_.empty()) {
         signal_->inBufferQueue_.pop();
     }
-        
+
     while (!signal_->outBufferQueue_.empty()) {
         signal_->outBufferQueue_.pop();
-    }  
+    }
 }

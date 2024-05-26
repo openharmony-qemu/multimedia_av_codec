@@ -22,7 +22,7 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 ohos_fuzztest("AudioDecoderFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoder_fuzzer"
-  include_dirs = [ 
+  include_dirs = [
     "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoder_fuzzer",
     "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
@@ -40,18 +40,18 @@ ohos_fuzztest("AudioDecoderFuzzTest") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
-    ]
+  ]
   cflags = [
     "-g",
     "-O0",
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ 
-    "audiodecoder_fuzzer.cpp",
+  sources = [
     "audio_decoder_demo.cpp",
+    "audiodecoder_fuzzer.cpp",
   ]
-    
+
   defines = []
 
   if (av_codec_enable_special_codec) {

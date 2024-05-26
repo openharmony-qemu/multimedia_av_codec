@@ -31,11 +31,18 @@ namespace OHOS{
 
 bool AudioDecoderFuzzTest(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
     // FUZZ OH_AudioCodec_CreateByMime
     std::string codecdata((const char*) data, size);
-    OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata.c_str(), false);
+    OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata.c_str(), true);
     if (source) {
         OH_AudioCodec_Destroy(source);
+    }
+    OH_AVCodec *sourcename =  OH_AudioCodec_CreateByName(codecdata.c_str());
+    if (sourcename) {
+        OH_AudioCodec_Destroy(sourcename);
     }
     return true;
 }
@@ -176,18 +183,14 @@ bool AudioDecoderLBVCFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-     OHOS::AudioDecoderFuzzTest(data, size);
-      OHOS::AudioDecoderAACFuzzTest(data, size);
-	  OHOS::AudioDecoderFlacFuzzTest(data, size);
-	  //OHOS::AudioDecoderVORBISFuzzTest(data, size);
-	 // //OHOS::AudioDecoderAMRNBFuzzTest(data, size);
-	 // //OHOS::AudioDecoderAMRWBFuzzTest(data, size);
-	  OHOS::AudioDecoderAPEFuzzTest(data, size);
-     OHOS::AudioDecoderG711FuzzTest(data, size);
-
-      OHOS::AudioDecoderOPUSFuzzTest(data, size);
-      //OHOS::AudioDecoderLBVCFuzzTest(data, size);
-      OHOS::AudioDecoderVividFuzzTest(data, size); 
+    OHOS::AudioDecoderFuzzTest(data, size);
+    OHOS::AudioDecoderAACFuzzTest(data, size);
+	OHOS::AudioDecoderFlacFuzzTest(data, size);
+	OHOS::AudioDecoderAPEFuzzTest(data, size);
+    OHOS::AudioDecoderG711FuzzTest(data, size);
+    OHOS::AudioDecoderOPUSFuzzTest(data, size);
+    OHOS::AudioDecoderLBVCFuzzTest(data, size);
+    OHOS::AudioDecoderVividFuzzTest(data, size); 
 	 
     return 0;
 }

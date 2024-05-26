@@ -114,7 +114,7 @@ private:
     bool isFirstFrame_ = true;
     uint32_t frameCount_ = 0;
     AudioBufferFormatType audioType_;
-	size_t inputdatasize;
+    size_t inputdatasize;
     std::string inputdata;
     bool longtimeFlag = false;
     bool eosFlag = false;
