@@ -69,7 +69,7 @@ public:
       * @input inputFile
       * @output outputFile
     **/
-	bool InitFile(std::string inputFile);
+    bool InitFile(std::string inputFile);
     bool RunCase(const uint8_t *data, size_t size);
     OH_AVCodec* CreateByMime(const char* mime);
     OH_AVCodec* CreateByName(const char* name);
@@ -102,7 +102,7 @@ private:
     void InputFunc();
     void OutputFunc();
     void HandleInputEOS(const uint32_t index);
-	bool InitFormat(OH_AVFormat *format);
+    bool InitFormat(OH_AVFormat *format);
 
 
     std::atomic<bool> isRunning_ = false;
