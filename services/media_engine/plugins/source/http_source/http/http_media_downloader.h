@@ -39,7 +39,7 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
+    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
@@ -87,9 +87,9 @@ private:
     int64_t startDownloadTime_ {0};
     int64_t playDelayTime_ {0};
     int64_t lastCheckTime_ {0};
-    int32_t avgDownloadSpeed_ {0};
+    double avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
-    int32_t avgSpeedSum_ {0};
+    double avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};

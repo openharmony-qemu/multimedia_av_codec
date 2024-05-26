@@ -45,7 +45,6 @@ public:
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
     virtual void ParseManifest(const std::string& location) = 0;
-    virtual int64_t PlayListUpdateLoop() = 0;
     virtual void SetPlayListCallback(PlayListChangeCallback* callback) = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
@@ -60,6 +59,7 @@ public:
     virtual int32_t GetVideoWidth() const = 0;
     virtual int32_t GetVideoHeight() const = 0;
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
+    virtual void SetMimeType(const std::string& mimeType) = 0;
     void Resume();
     void Pause();
     void Close();
@@ -68,6 +68,7 @@ public:
     void Cancel();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
+    void PlayListDownloaderInit();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
 
@@ -76,7 +77,11 @@ protected:
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                           std::shared_ptr<DownloadRequest>& request);
     void DoOpen(const std::string& url);
+    void DoOpenNative(const std::string& url);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
+    bool ParseUriInfo(const std::string& uri);
+    bool SeekTo(uint64_t offset);
+    uint64_t GetFileSize(int32_t fd);
 
 protected:
     std::shared_ptr<Downloader> downloader_;
@@ -87,6 +92,12 @@ protected:
     std::string playList_;
     bool startedDownloadStatus_ {false};
     std::map<std::string, std::string> httpHeader_ {};
+    int32_t fd_ {-1};
+    int64_t offset_ {0};
+    uint64_t size_ {0};
+    uint64_t fileSize_ {0};
+    Seekable seekable_ {Seekable::SEEKABLE};
+    uint64_t position_ {0};
 };
 }
 }

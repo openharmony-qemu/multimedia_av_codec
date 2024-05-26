@@ -37,7 +37,6 @@ namespace Media {
 namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
-constexpr int32_t NS_TO_US = 1000;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -277,7 +276,7 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
         MEDIA_LOG_I("OnBufferFilled pts time interval is greater than 3 seconds");
     }
-    inputBuffer->pts_ = inputBuffer->pts_ / NS_TO_US;
+    inputBuffer->pts_ = inputBuffer->pts_; // us
     MEDIA_LOG_D("OnBufferFilled buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
     inputBufferQueue->ReturnBuffer(inputBuffer, true);
 }

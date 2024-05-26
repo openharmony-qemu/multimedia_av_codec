@@ -172,7 +172,9 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
         }
         Range horizontalBlockNum = horizontalBlockRange_.Intersect(
             Range(blockPerFrameRange_.minVal / verticalBlockNum, blockPerFrameRange_.maxVal / verticalBlockNum));
-        ret = ret.Intersect(Range(horizontalBlockNum.minVal * blockWidth_, horizontalBlockNum.maxVal * blockWidth_));
+        ret = ret.Intersect(
+            Range((horizontalBlockNum.minVal - 1) * blockWidth_ + data_->alignment.width,
+                horizontalBlockNum.maxVal * blockWidth_));
     }
     return ret;
 }
@@ -191,7 +193,9 @@ Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
         }
         Range verticalBlockNum = verticalBlockRange_.Intersect(
             Range(blockPerFrameRange_.minVal / horizontalBlockNum, blockPerFrameRange_.maxVal / horizontalBlockNum));
-        ret = ret.Intersect(Range(verticalBlockNum.minVal * blockHeight_, verticalBlockNum.maxVal * blockHeight_));
+        ret = ret.Intersect(
+            Range((verticalBlockNum.minVal - 1) * blockHeight_ + data_->alignment.height,
+                verticalBlockNum.maxVal * blockHeight_));
     }
     return ret;
 }

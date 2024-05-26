@@ -49,6 +49,7 @@ const uint32_t DOUBLE_BYTES = 2;
 const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
+const int32_t VIDEO_ROTATION_360 = 360;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -258,14 +259,11 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             }
         }
     }
-    if (duration <= 0) {
-        for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-            if (avFormatContext.streams[i]->duration > duration) {
-                duration = avFormatContext.streams[i]->duration;
-            }
-        }
-    } else {
+    if (duration > 0 && duration != AV_NOPTS_VALUE) {
         format.Set<Tag::MEDIA_DURATION>(static_cast<int64_t>(duration));
+    }
+    if (avFormatContext.start_time != AV_NOPTS_VALUE) {
+        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
     }
     ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
@@ -285,7 +283,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Parse failed.");
         return;
     }
-    MEDIA_LOG_D("Get location string successfully: " PUBLIC_LOG_S, valPtr->value);
+    MEDIA_LOG_D("Get location string successfully: %{private}s", valPtr->value);
     std::string locationStr = std::string(valPtr->value);
     std::regex pattern(R"([\+\-]\d+\.\d+)");
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
@@ -450,6 +448,11 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         }
     }
 
+    AVRational sar = avStream.sample_aspect_ratio;
+    if (sar.num && sar.den) {
+        format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
+    }
+
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
@@ -466,16 +469,16 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
             return;
         } else if (rotation < 0) {
-            rotation += 360;
+            rotation += VIDEO_ROTATION_360;
         }
         switch (int(rotation)) {
-            case 90:
+            case VIDEO_ROTATION_90:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
                 break;
-            case 180:
+            case VIDEO_ROTATION_180:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["180"]);
                 break;
-            case 270:
+            case VIDEO_ROTATION_270:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["270"]);
                 break;
             default:

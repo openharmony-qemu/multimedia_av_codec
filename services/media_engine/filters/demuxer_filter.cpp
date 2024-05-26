@@ -161,10 +161,7 @@ void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appNam
 Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
-    if (mediaSource_ == nullptr) {
-        MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    FALSE_RETURN_V_MSG_E(mediaSource_ != nullptr, Status::ERROR_INVALID_PARAMETER, "No valid media source");
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
@@ -190,6 +187,10 @@ Status DemuxerFilter::DoPrepare()
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
             continue;
         }
+        if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
+            MEDIA_LOG_W("mediaType disabled, index: %zu", index);
+            continue;
+        }
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (!FindStreamType(streamType, mediaType, mime)) {
@@ -213,14 +214,14 @@ void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
 {
     MEDIA_LOG_I("FaultDemuxerEventInfoWrite enter.");
     struct DemuxerFaultInfo demuxerInfo;
-        demuxerInfo.appName = bundleName_;
-        demuxerInfo.instanceId = std::to_string(instanceId_);
-        demuxerInfo.callerType = "player_framework";
-        demuxerInfo.sourceType = static_cast<int8_t>(mediaSource_->GetSourceType());
-        demuxerInfo.containerFormat = CollectVideoAndAudioMime();
-        demuxerInfo.streamType = std::to_string(static_cast<int32_t>(streamType));
-        demuxerInfo.errMsg = "OnCallback Link Filter Fail.";
-        FaultDemuxerEventWrite(demuxerInfo);
+    demuxerInfo.appName = bundleName_;
+    demuxerInfo.instanceId = std::to_string(instanceId_);
+    demuxerInfo.callerType = "player_framework";
+    demuxerInfo.sourceType = static_cast<int8_t>(mediaSource_->GetSourceType());
+    demuxerInfo.containerFormat = CollectVideoAndAudioMime();
+    demuxerInfo.streamType = std::to_string(static_cast<int32_t>(streamType));
+    demuxerInfo.errMsg = "OnCallback Link Filter Fail.";
+    FaultDemuxerEventWrite(demuxerInfo);
 }
 
 std::string DemuxerFilter::CollectVideoAndAudioMime()
@@ -236,9 +237,9 @@ std::string DemuxerFilter::CollectVideoAndAudioMime()
             continue;
         }
         if (IsVideoMime(mime)) {
-            videoMime = mime;
+            videoMime += (mime + ",");
         } else if (IsAudioMime(mime)) {
-            audioMime = mime;
+            audioMime += (mime + ",");
         }
     }
     return videoMime + " : " + audioMime;
@@ -391,7 +392,9 @@ void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 void DemuxerFilter::SetDumpFlag(bool isDump)
 {
     isDump_ = isDump;
-    demuxer_->SetDumpFlag(isDump_);
+    if (demuxer_ != nullptr) {
+        demuxer_->SetDumpInfo(isDump_, instanceId_);
+    }
 }
 
 std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
@@ -617,7 +620,15 @@ Status DemuxerFilter::SetSpeed(float speed)
 void DemuxerFilter::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
-    demuxer_->OnDumpInfo(fd);
+    if (demuxer_ != nullptr) {
+        demuxer_->OnDumpInfo(fd);
+    }
+}
+
+Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
+{
+    disabledMediaTracks_.emplace(mediaType);
+    return demuxer_->DisableMediaTrack(mediaType);
 }
 } // namespace Pipeline
 } // namespace Media

@@ -24,7 +24,7 @@ namespace {
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t TIME_OUT_MS = 500;
-const std::string DUMP_PARAM = "w";
+const std::string DUMP_PARAM = "a";
 const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
 } // namespace
 
@@ -383,8 +383,13 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
     return (int32_t)ret;
 }
 
-void MediaCodec::SetDumpFlag(bool isDump)
+void MediaCodec::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
+    if (isDump && instanceId == 0) {
+        MEDIA_LOG_W("Cannot dump with instanceId 0.");
+        return;
+    }
+    dumpPrefix_ = std::to_string(instanceId);
     isDump_ = isDump;
 }
 
@@ -747,7 +752,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::OnOutputBufferDone");
     if (isDump_) {
-        DumpAVBufferToFile(DUMP_PARAM, DUMP_FILE_NAME, outputBuffer);
+        DumpAVBufferToFile(DUMP_PARAM, dumpPrefix_ + DUMP_FILE_NAME, outputBuffer);
     }
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     if (mediaCodecCallback_) {
@@ -780,13 +785,13 @@ std::string MediaCodec::StateToString(CodecState state)
 void MediaCodec::OnDumpInfo(int32_t fd)
 {
     MEDIA_LOG_D("MediaCodec::OnDumpInfo called.");
-    std::string dumpString;
-    dumpString += "MediaCodec plugin name: " + codecPluginName_ + "\n";
-    dumpString += "MediaCodec buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
     if (fd < 0) {
         MEDIA_LOG_E("MediaCodec::OnDumpInfo fd is invalid.");
         return;
     }
+    std::string dumpString;
+    dumpString += "MediaCodec plugin name: " + codecPluginName_ + "\n";
+    dumpString += "MediaCodec buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
     int ret = write(fd, dumpString.c_str(), dumpString.size());
     if (ret < 0) {
         MEDIA_LOG_E("MediaCodec::OnDumpInfo write failed.");

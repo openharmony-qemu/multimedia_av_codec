@@ -95,9 +95,11 @@ bool TypeFinder::IsSniffNeeded(std::string uri)
     return uri_ != uri;
 }
 
-void TypeFinder::Init(std::string uri, uint64_t mediaDataSize, std::function<bool(uint64_t, size_t)> checkRange,
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange)
+void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
+    std::function<bool(int32_t, uint64_t, size_t)> checkRange,
+    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId)
 {
+    streamID_ = streamId;
     mediaDataSize_ = mediaDataSize;
     checkRange_ = std::move(checkRange);
     peekRange_ = std::move(peekRange);
@@ -139,14 +141,14 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
 
     const int maxTryTimes = 3;
     int i = 0;
-    while (!checkRange_(offset, expectedLen) && (i++ < maxTryTimes)) {
+    while (!checkRange_(streamID_, offset, expectedLen) && (i++ < maxTryTimes)) {
         OSAL::SleepFor(5); // 5 ms
     }
     if (i == maxTryTimes) {
         MEDIA_LOG_E("ReadAt exceed maximum allowed try times and failed.");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    FALSE_LOG_MSG(peekRange_(static_cast<uint64_t>(offset), expectedLen, buffer), "peekRange failed.");
+    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer), "peekRange failed.");
     return Status::OK;
 }
 
@@ -238,5 +240,11 @@ void TypeFinder::SortPlugins(const std::string& uriSuffix)
             }
         });
 }
+
+int32_t TypeFinder::GetStreamID()
+{
+    return streamID_;
+}
+
 } // namespace Media
 } // namespace OHOS

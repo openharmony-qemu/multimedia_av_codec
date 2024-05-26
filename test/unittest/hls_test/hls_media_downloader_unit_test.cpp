@@ -118,9 +118,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[10];
-    unsigned int realReadLength;
-    bool isEos;
-    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
     delete downloader;
     downloader = nullptr;
 }
@@ -131,9 +133,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_002, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[10];
-    unsigned int realReadLength;
-    bool isEos {true};
-    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
     delete downloader;
     downloader = nullptr;
 }
@@ -146,9 +150,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_003, TestSize.Level1)
     downloader->readTime_ = 5 * 1000;
     downloader->SetDownloadErrorState();
     unsigned char buff[10];
-    unsigned int realReadLength;
-    bool isEos {true};
-    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
     delete downloader;
     downloader = nullptr;
 }
@@ -161,9 +167,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_004, TestSize.Level1)
     downloader->readTime_ = 5 * 1000;
     downloader->SetDownloadErrorState();
     unsigned char buff[10];
-    unsigned int realReadLength;
-    bool isEos {true};
-    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
     delete downloader;
     downloader = nullptr;
 }
@@ -174,9 +182,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_005, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[100];
-    unsigned int realReadLength;
-    bool isEos {true};
-    EXPECT_FALSE(downloader->Read(buff, 10*1024*1024, realReadLength, isEos));
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
     delete downloader;
     downloader = nullptr;
 }
@@ -187,9 +197,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_006, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     unsigned char buff[100];
-    unsigned int realReadLength;
-    bool isEos {true};
-    EXPECT_FALSE(downloader->Read(buff, 10, realReadLength, isEos));
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
     delete downloader;
     downloader = nullptr;
 }

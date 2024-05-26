@@ -741,8 +741,6 @@ std::string TesterCommon::GetCodecMime(const CodeType& type)
             return "video/avc";
         case H265:
             return "video/hevc";
-        case H266:
-            return "video/vvc";
         default:
             return "";
     }

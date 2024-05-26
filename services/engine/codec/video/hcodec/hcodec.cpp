@@ -287,9 +287,6 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         case CODEC_OMX_VIDEO_CodingHEVC:
             shortName_ = isEncoderStr + "hevc";
             break;
-        case CODEC_OMX_VIDEO_CodingVVC:
-            shortName_ = isEncoderStr + "vvc";
-            break;
         default:
             shortName_ = isEncoderStr;
             break;
@@ -849,6 +846,10 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
+    if (!gotFirstInput_) {
+        LOGI("got first input");
+        gotFirstInput_ = true;
+    }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
         (bufferInfo->avBuffer->memory_->GetSize());
     bufferInfo->omxBuffer->offset = static_cast<uint32_t>(bufferInfo->avBuffer->memory_->GetOffset());
@@ -940,6 +941,7 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
+    info.omxBuffer->alongParam = std::move(omxBuffer.alongParam);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -968,7 +970,6 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
         }
         case FREE_BUFFER:
             EraseBufferFromPool(OMX_DirOutput, bufferIdx);
-            EraseOutBuffersOwnedByOmx(info.bufferId);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -980,7 +981,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
     if (!gotFirstOutput_) {
-        LOGI("decrease thread priority");
+        LOGI("got first output");
         OHOS::QOS::ResetThreadQos();
         gotFirstOutput_ = true;
     }
@@ -993,6 +994,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
+    ExtractPerFrameParamFromOmxBuffer(omxBuffer, info.avBuffer->meta_);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
@@ -1111,21 +1113,6 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
             EraseBufferFromPool(OMX_DirOutput, i);
         }
     }
-}
-
-void HCodec::RecordOutBuffersOwnedByOmx()
-{
-    outBuffersOwnedByOmx_.clear();
-    for (const BufferInfo& info : outputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_OMX) {
-            outBuffersOwnedByOmx_.insert(info.bufferId);
-        }
-    }
-}
-
-void HCodec::EraseOutBuffersOwnedByOmx(uint32_t bufferId)
-{
-    outBuffersOwnedByOmx_.erase(bufferId);
 }
 
 int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)

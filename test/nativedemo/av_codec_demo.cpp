@@ -420,7 +420,7 @@ static void OptionPrint()
     cout << "7:Video Decoder" << endl;
     cout << "8:Video Inner Decoder" << endl;
     cout << "9:demuxer demo" << endl;
-    cout << "10:Audio AVBuffer Decoder with DRM" << endl;
+    cout << "10:Audio AVBuffer Decoder" << endl;
     cout << "11:Video Decoder DRM" << endl;
     cout << "12:E2E demo" << endl;
     cout << "13:Audio AVBuffer Decoder with DRM" << endl;

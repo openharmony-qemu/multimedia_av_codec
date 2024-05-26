@@ -16,6 +16,7 @@
 #include <mutex>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
+#include "common/media_source.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -28,12 +29,6 @@ constexpr size_t RETRY_TIMES = 1000;
 constexpr int FIRST_TS_TIMEOUT = 400;
 constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
 }
-int64_t HlsPlayListDownloader::PlayListUpdateLoop()
-{
-    UpdateManifest();
-    return 5000 * 1000;  // 5000 how often is playlist updated
-}
-
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
 // PlayListDownload thread: call ParseManifest
@@ -50,7 +45,11 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
     url_ = url;
     master_ = nullptr;
     SaveHttpHeader(httpHeader);
-    DoOpen(url);
+    if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
+        DoOpenNative(url_);
+    } else {
+        DoOpen(url_);
+    }
 }
 
 void HlsPlayListDownloader::UpdateManifest()
@@ -148,6 +147,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location)
             bool ret = currentVariant_->m3u8_->Update(playList_);
             if (ret) {
                 master_->isSimple_ = true;
+                master_->bLive_ = currentVariant_->m3u8_->IsLive();
                 master_->duration_ = currentVariant_->m3u8_->GetDuration();
                 NotifyListChange();
             }
@@ -298,6 +298,11 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
 void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+}
+
+void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
+{
+    mimeType_ = mimeType;
 }
 }
 }

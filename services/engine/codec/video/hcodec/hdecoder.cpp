@@ -754,7 +754,6 @@ void HDecoder::SurfaceItem::Release()
     if (surface_) {
         LOGI("before release surface(%" PRIu64 "), refCnt=%d",
              surface_->GetUniqueId(), surface_->GetSptrRefCount());
-        surface_->UnRegisterReleaseListener();
         if (originalTransform_.has_value()) {
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
@@ -793,8 +792,13 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    // since the old surface may be destroyed, we dont check any return values below
+    // 1. clear all buffers in bufferqueue because we need to attach all buffers to new surface
+    (void)currSurface_.surface_->CleanCache();
+    // 2. make the old window to be black (gobackground could replace these two steps)
+    (void)PushBlankBufferToCurrSurface();
+    // 3. attach all buffers to new surface
     for (BufferInfo& info : outputBufferPool_) {
-        (void)currSurface_.surface_->DetachBufferFromQueue(info.surfaceBuffer);
         GSError err = newSurface->AttachBufferToQueue(info.surfaceBuffer);
         if (err != GSERROR_OK) {
             HLOGE("surface(%" PRIu64 "), AttachBufferToQueue(seq=%u) failed, GSError=%d",
@@ -808,7 +812,6 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
             NotifyOmxToFillThisOutBuffer(info);
         }
     }
-    PushBlankBufferToCurrSurface();
     currSurface_.Release();
     currSurface_ = SurfaceItem(newSurface);
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
@@ -825,26 +828,26 @@ int32_t HDecoder::PushBlankBufferToCurrSurface()
         .usage = 0,
         .timeout = 0,
     };
-    for (uint32_t i = 0; i < currSurface_.surface_->GetQueueSize(); i++) {
-        sptr<SurfaceBuffer> buffer;
-        int32_t fence = -1;
-        GSError err = currSurface_.surface_->RequestBuffer(buffer, fence, reqCfg);
-        if (err != GSERROR_OK) {
-            HLOGW("i=%u, surface(%" PRIu64 "), RequestBuffer failed, GSError=%d",
-                  i, currSurface_.surface_->GetUniqueId(), err);
-            return AVCS_ERR_UNKNOWN;
-        }
-        BufferFlushConfig flushCfg {
-            .damage = {},
-            .timestamp = 0,
-        };
-        err = currSurface_.surface_->FlushBuffer(buffer, fence, flushCfg);
-        if (err != GSERROR_OK) {
-            HLOGW("i=%u, surface(%" PRIu64 "), FlushBuffer failed, GSError=%d",
-                  i, currSurface_.surface_->GetUniqueId(), err);
-            return AVCS_ERR_UNKNOWN;
-        }
+
+    sptr<SurfaceBuffer> buffer;
+    int32_t fence = -1;
+    GSError err = currSurface_.surface_->RequestBuffer(buffer, fence, reqCfg);
+    if (err != GSERROR_OK) {
+        HLOGW("surface(%" PRIu64 "), RequestBuffer failed, GSError=%d",
+                currSurface_.surface_->GetUniqueId(), err);
+        return AVCS_ERR_UNKNOWN;
     }
+    BufferFlushConfig flushCfg {
+        .damage = {},
+        .timestamp = 0,
+    };
+    err = currSurface_.surface_->FlushBuffer(buffer, fence, flushCfg);
+    if (err != GSERROR_OK) {
+        HLOGW("surface(%" PRIu64 "), FlushBuffer failed, GSError=%d",
+                currSurface_.surface_->GetUniqueId(), err);
+        return AVCS_ERR_UNKNOWN;
+    }
+
     return AVCS_ERR_OK;
 }
 } // namespace OHOS::MediaAVCodec
