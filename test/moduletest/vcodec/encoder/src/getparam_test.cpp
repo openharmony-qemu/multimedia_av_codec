@@ -103,7 +103,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_ENCODE_MSE_QP_0100, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_ENCODE_MSE_QP_0200
- * @tc.name      : encode Avbuffer h265 surface test,get QP and MSE
+ * @tc.name      : encode Avbuffer h265 surf,get QP and MSE
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_ENCODE_MSE_QP_0200, TestSize.Level0)
@@ -151,7 +151,7 @@ HWTEST_F(HwEncGetParamNdkTest, VIDEO_ENCODE_MSE_QP_0300, TestSize.Level0)
 
 /**
  * @tc.number    : VIDEO_ENCODE_MSE_QP_0400
- * @tc.name      : encode Avbuffer h264 surface test,get QP and MSE
+ * @tc.name      : encode Avbuffer h264 surf,get QP and MSE
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncGetParamNdkTest, VIDEO_ENCODE_MSE_QP_0400, TestSize.Level0)
