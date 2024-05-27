@@ -584,11 +584,11 @@ uint32_t AudioBufferAacEncDemo::GetInputIndex()
     uint32_t sleeptime = 0;
     uint32_t index;
     uint32_t timeout = 5;
-    while (signal_->inQueue_.empty() && sleep_time < timeout) {
+    while (signal_->inQueue_.empty() && sleeptime < timeout) {
         sleep(1);
-        sleep_time++;
+        sleeptime++;
     }
-    if (sleep_time >= timeout) {
+    if (sleeptime >= timeout) {
         return 0;
     } else {
         index = signal_->inQueue_.front();
@@ -602,11 +602,11 @@ uint32_t AudioBufferAacEncDemo::GetOutputIndex()
     uint32_t sleeptime = 0;
     uint32_t index;
     uint32_t timeout = 5;
-    while (signal_->outQueue_.empty() && sleep_time < timeout) {
+    while (signal_->outQueue_.empty() && sleeptime < timeout) {
         sleep(1);
-        sleep_time++;
+        sleeptime++;
     }
-    if (sleep_time >= timeout) {
+    if (sleeptime >= timeout) {
         return 0;
     } else {
         index = signal_->outQueue_.front();
