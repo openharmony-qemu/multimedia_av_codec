@@ -115,7 +115,7 @@ void VideoDecoderSample::OutputThread()
 int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 {
     if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
-        surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
+        surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer("VideoCodecDemo");
         OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
         surfaceConsumer_->RegisterConsumerListener(listener);
         auto producer = surfaceConsumer_->GetProducer();
@@ -124,6 +124,7 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
         CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
     } else if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
+        option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
         sptr<Rosen::Window> rosenWindow = Rosen::Window::Create("VideoCodecDemo", option);
         CHECK_AND_RETURN_RET_LOG(rosenWindow != nullptr && rosenWindow->GetSurfaceNode() != nullptr,
@@ -148,7 +149,7 @@ void VideoDecoderSample::OnBufferAvailable()
         CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
         DumpOutput(bufferInfo);
     }
-    surfaceConsumer_->ReleaseBuffer(buffer, -1);
+    surfaceConsumer_->ReleaseBuffer(buffer, flushFence);
 }
 } // Sample
 } // MediaAVCodec

@@ -125,7 +125,7 @@ void VideoSampleBase::Release()
     outputThread_.reset();
     videoCodec_.reset();
 
-    if (sampleInfo_.window != nullptr) {
+    if (sampleInfo_.window != nullptr && sampleInfo_.codecType == VIDEO_HW_ENCODER) {
         OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
         sampleInfo_.window = nullptr;
     }
