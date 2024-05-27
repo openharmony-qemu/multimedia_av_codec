@@ -151,11 +151,13 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB || audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), OH_BitsPerSample::SAMPLE_S16LE);
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+            OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB || audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         channelCount = 1;
         sampleRate = AMRWB_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), OH_BitsPerSample::SAMPLE_S16LE);
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+            OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
         int32_t channelCounttmp = 1;
         int32_t sampleRatetmp = 8000;
@@ -166,20 +168,20 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
     if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-		                        OH_BitsPerSample::SAMPLE_S16LE);
+		    OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
+            OH_BitsPerSample::SAMPLE_S16LE);
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-                                        "Fatal: Configure fail");
+            "Fatal: Configure fail");
     } else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-                                        "Fatal: Configure fail");
+            "Fatal: Configure fail");
     } else {
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-                                        "Fatal: Configure fail");
+            "Fatal: Configure fail");
     }
     return true;
 }
@@ -631,7 +633,7 @@ OH_AVErrCode ADecBufferDemo::SetParameter(OH_AVCodec* codec, OH_AVFormat* format
     }
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC ) {
+    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
     } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
     }
