@@ -121,6 +121,24 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     OH_VideoEncoder_PushInputParameter(codec, index);
 }
 
+void VEncAPI11Sample::DumpLtrInfo(OH_AVBuffer *buffer)
+{
+    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
+    int32_t isLtr = 0;
+    int32_t framePoc = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR, &isLtr);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_POC, &framePoc);
+}
+
+void VEncAPI11Sample::DumpQPInfo(OH_AVBuffer *buffer)
+{
+    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
+    int32_t qp_average = 0;
+    double mse = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE, &qp_average);
+    OH_AVFormat_GetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_MSE, &mse);
+}
+
 static void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer, bool enableLTR, bool getQpMse)
 {
     if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
@@ -839,24 +857,6 @@ void VEncAPI11Sample::OutputFuncFail()
     inLock.unlock();
     (void)Stop();
     Release();
-}
-
-void VEncAPI11Sample::DumpLtrInfo(OH_AVBuffer *buffer)
-{
-    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
-    int32_t isLtr = 0;
-    int32_t framePoc = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR, &isLtr);
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_POC, &framePoc);
-}
-
-void VEncAPI11Sample::DumpQPInfo(OH_AVBuffer *buffer)
-{
-    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
-    int32_t qp_average = 0;
-    double mse = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE, &qp_average);
-    OH_AVFormat_GetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_MSE, &mse);
 }
 
 void VEncAPI11Sample::OutputFunc()
