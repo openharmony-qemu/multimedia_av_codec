@@ -245,14 +245,6 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_APE;
 
 /**
- * @brief Enumerates the MIME type of versatile video coding.
- *
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 12
- */
-extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
-
-/**
  * @brief Enumerates the MIME type of srt subtitle demuxer
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -528,6 +520,24 @@ extern const char *OH_MD_KEY_VIDEO_STRIDE;
  * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
+/**
+ * @brief Key for describing the valid picture width of the video, value type is int32_t.
+ * Get the value from an OH_AVFormat instance, which obtained by calling {@link OH_VideoDecoder_GetOutputDescription}
+ * or {@link OH_AVCodecOnStreamChanged}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_PIC_WIDTH;
+/**
+ * @brief Key for describing the valid picture height of the video, value type is int32_t.
+ * Get the value from an OH_AVFormat instance, which obtained by calling {@link OH_VideoDecoder_GetOutputDescription}
+ * or {@link OH_AVCodecOnStreamChanged}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_PIC_HEIGHT;
 /**
  * @brief Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  * If enabled, the video encoder or video decoder doesn't hold input and output data more than required by

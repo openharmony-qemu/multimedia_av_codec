@@ -71,7 +71,6 @@ Status DataSourceImpl::SetStreamID(int32_t streamID)
 Status DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
     MediaAVCodec::AVCodecTrace trace("DataSourceImpl::ReadAt");
-    FALSE_RETURN_V(expectedLen != 0, Status::OK);
     if (!buffer || !IsOffsetValid(offset)) {
         MEDIA_LOG_E("ReadAt failed, buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_D32
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
