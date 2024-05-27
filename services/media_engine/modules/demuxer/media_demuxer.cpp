@@ -1130,15 +1130,9 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
-        case PluginEventType::VIDEO_SIZE_CHANGE: {
-            MEDIA_LOG_D("OnEvent video size change");
-            AutoLock lock(mapMetaMutex_);
-            mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_WIDTH>(
-                AnyCast<std::pair<int32_t, int32_t>>(event.param).first);
-            mediaMetaData_.trackMetas[videoTrackId_]->Set<Tag::VIDEO_HEIGHT>(
-                AnyCast<std::pair<int32_t, int32_t>>(event.param).second);
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
-                AnyCast<std::pair<int32_t, int32_t>>(event.param)});
+        case PluginEventType::SOURCE_BITRATE_START: {
+            MEDIA_LOG_D("OnEvent source bitrate start");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
             break;
         }
         default:

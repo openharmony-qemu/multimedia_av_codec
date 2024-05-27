@@ -237,22 +237,6 @@ bool HlsPlayListDownloader::IsLive() const
     return master_->bLive_;
 }
 
-int32_t HlsPlayListDownloader::GetVideoWidth() const
-{
-    if (currentVariant_==nullptr) {
-        return 0;
-    }
-    return static_cast<int32_t>(currentVariant_->width_);
-}
-
-int32_t HlsPlayListDownloader::GetVideoHeight() const
-{
-    if (currentVariant_==nullptr) {
-        return 0;
-    }
-    return static_cast<int32_t>(currentVariant_->height_);
-}
-
 void HlsPlayListDownloader::FirstTsUpdateLoop()
 {
     int runTimes = 0;

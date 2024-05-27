@@ -584,6 +584,9 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     if (playListDownloader_->IsBitrateSame(bitRate)) {
         return 1;
     }
+    // report change bitrate start
+    ReportBitrateStart(bitRate);
+
     playListDownloader_->Cancel();
 
     // clear request queue
@@ -598,9 +601,6 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     playListDownloader_->Start();
     isSelectingBitrate_ = true;
     playListDownloader_->UpdateManifest();
-
-    // report video size change
-    ReportVideoSizeChange();
     return 1;
 }
 
@@ -706,21 +706,6 @@ void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
-}
-void HlsMediaDownloader::ReportVideoSizeChange()
-{
-    if (callback_ == nullptr) {
-        MEDIA_LOG_I("callback_ == nullptr dont report video size change");
-        return;
-    }
-    int32_t videoWidth = playListDownloader_->GetVideoWidth();
-    int32_t videoHeight = playListDownloader_->GetVideoHeight();
-    MEDIA_LOG_I("ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
-        PUBLIC_LOG_D32, videoWidth, videoHeight);
-    changeBitRateCount_ ++;
-    MEDIA_LOG_I("Change bit rate count : " PUBLIC_LOG_U32, changeBitRateCount_);
-    std::pair<int32_t, int32_t> videoSize {videoWidth, videoHeight};
-    callback_->OnEvent({PluginEventType::VIDEO_SIZE_CHANGE, {videoSize}, "video_size_change"});
 }
 
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
@@ -939,6 +924,16 @@ void HlsMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
     downloadInfo.isTimeOut = isTimeOut_;
+}
+
+void HlsMediaDownloader::ReportBitrateStart(uint32_t bitRate)
+{
+    if (callback_ == nullptr) {
+        MEDIA_LOG_I("callback_ == nullptr dont report bitrate start");
+        return;
+    }
+    MEDIA_LOG_I("ReportBitrateStart bitRate : " PUBLIC_LOG_U32, bitRate);
+    callback_->OnEvent({PluginEventType::SOURCE_BITRATE_START, {bitRate}, "source_bitrate_start"});
 }
 }
 }
