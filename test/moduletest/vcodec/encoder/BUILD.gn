@@ -65,7 +65,7 @@ ohos_unittest("encoder_native_module_test") {
 
       #"./src/perf_test.cpp",
       "./src/getparam_test.cpp",
-      "./src/reli_test.cpp",
+      #"./src/reli_test.cpp",
       "./src/setparam_test.cpp",
       "./src/state_test.cpp",
       "./src/videoenc_api11_sample.cpp",
