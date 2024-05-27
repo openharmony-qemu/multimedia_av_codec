@@ -139,7 +139,6 @@ public:
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
-    int64_t GetDownloadLength();
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment);
     void UpdateStreamId(int streamId);
     int GetStreamId();
@@ -177,7 +176,6 @@ private:
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;
     bool startedPlayStatus_{false};
-    int64_t downloadLength_{0};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;
     uint64_t readTime_ {0};

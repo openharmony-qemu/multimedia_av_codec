@@ -776,7 +776,7 @@ std::vector<uint32_t> DashMpdDownloader::GetBitRates()
 {
     std::vector<uint32_t> bitRates;
     for (const auto &item : streamDescriptions_) {
-        if (item->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID && item->bandwidth_) {
+        if (item->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID && item->bandwidth_ > 0) {
             bitRates.push_back(item->bandwidth_);
         }
     }
@@ -810,7 +810,6 @@ bool DashMpdDownloader::IsBitrateSame(uint32_t bitRate)
 
         if (item->inUse_) {
             currentStream = item;
-            continue;
         }
 
         uint32_t tempGap = (item->bandwidth_ > bitRate) ? (item->bandwidth_ - bitRate) : (bitRate - item->bandwidth_);

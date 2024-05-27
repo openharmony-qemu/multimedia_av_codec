@@ -333,11 +333,6 @@ void DashSegmentDownloader::SetDownloadDoneCallback(SegmentDownloadDoneCbFunc do
     downloadDoneCbFunc_ = doneCbFunc;
 }
 
-int64_t DashSegmentDownloader::GetDownloadLength()
-{
-    return downloadLength_;
-}
-
 size_t DashSegmentDownloader::GetRingBufferSize(MediaAVCodec::MediaType streamType)
 {
     size_t ringBufferFixSize = DEFAULT_RING_BUFFER_SIZE;
@@ -571,7 +566,6 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
             }
             break;
         }
-        downloadLength_ += len;
     } else {
         MEDIA_LOG_E("SaveData:error streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
     }
@@ -613,7 +607,6 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     isCleaningBuffer_ = false;
     downloader_->Download(downloadRequest_, -1); // -1
     downloader_->Start();
-    downloadLength_ = 0;
 }
 
 void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
