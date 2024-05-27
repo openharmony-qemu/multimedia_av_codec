@@ -14,6 +14,7 @@
 #####################hydra-fuzz###################
 import("//build/config/features.gni")
 import("//build/test.gni")
+import("//foundation/multimedia/av_codec/config.gni")
 module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
@@ -21,19 +22,48 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 ohos_fuzztest("AudioDecoderFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoder_fuzzer"
-  include_dirs = [ "$MEDIA_ROOT_DIR/interfaces/kits/c" ]
+  include_dirs = [
+    "$MEDIA_ROOT_DIR/test/fuzztest/audiodecoder_fuzzer",
+    "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c",
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
+    "$MEDIA_ROOT_DIR/services/services/factory",
+    "$MEDIA_ROOT_DIR/services/engine/plugin/common",
+    "$MEDIA_ROOT_DIR/services/engine/plugin/core",
+    "$MEDIA_ROOT_DIR/services/engine/plugin/interface",
+    "$MEDIA_ROOT_DIR/frameworks/native/capi/common",
+    "$MEDIA_ROOT_DIR/services/dfx/include",
+    "$MEDIA_ROOT_DIR/services/engine/base/include",
+    "$MEDIA_ROOT_DIR/services/engine/codec/include/video",
+    "$MEDIA_ROOT_DIR/services/engine/common/include",
+    "$MEDIA_ROOT_DIR/services/engine/source/hst_releated",
+    "$MEDIA_ROOT_DIR/services/services/factory",
+    "$MEDIA_ROOT_DIR/services/utils/include",
+    "$MEDIA_ROOT_DIR/test/nativedemo/include",
+  ]
   cflags = [
     "-g",
     "-O0",
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "audioDecoder_fuzzer.cpp" ]
+  sources = [
+    "audio_decoder_demo.cpp",
+    "audiodecoder_fuzzer.cpp",
+  ]
+
+  defines = []
+
+  if (av_codec_enable_special_codec) {
+    defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
+  }
+
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_core",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
   deps = [
