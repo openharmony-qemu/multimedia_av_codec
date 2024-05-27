@@ -139,7 +139,7 @@ void VEncAPI11Sample::DumpQPInfo(OH_AVBuffer *buffer)
     OH_AVFormat_GetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_MSE, &mse);
 }
 
-static void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer, bool enableLTR, bool getQpMse)
+void VEncAPI11Sample::DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer)
 {
     if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
         DumpLtrInfo(buffer);
@@ -882,7 +882,7 @@ void VEncAPI11Sample::OutputFunc()
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         lock.unlock();
-        DumpInfo(attr, buffer, enableLTR, getQpMse);
+        DumpInfo(attr, buffer);
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;
         }

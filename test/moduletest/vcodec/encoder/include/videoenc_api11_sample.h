@@ -121,6 +121,7 @@ public:
     void StopOutloop();
     void DumpLtrInfo(OH_AVBuffer *buffer);
     void DumpQPInfo(OH_AVBuffer *buffer);
+    void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer);
     VEncSignal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
