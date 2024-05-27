@@ -378,7 +378,7 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
  * Index should be given by {@link OH_VideoEncoder_OnNeedInputParameter}.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
- * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state. 
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 12
  */
 OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t index);
