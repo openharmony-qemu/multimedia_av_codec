@@ -114,6 +114,8 @@ public:
                 (const std::string &extension, std::vector<sptr<IRemoteObject>> &saList));
     MOCK_METHOD(int32_t, GetRunningSaExtensionInfoList,
                 (const std::string &extension, std::vector<SaExtensionInfo> &infoList));
+    MOCK_METHOD(int32_t, GetCommonEventExtraDataIdlist,
+                (int32_t systemAbilityId, std::vector<int64_t>& extraDataIdList, const std::string& eventName));
 };
 } // namespace OHOS
 #endif // SYSTEM_ABILITY_MOCK_H
