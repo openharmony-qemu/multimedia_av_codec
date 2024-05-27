@@ -60,9 +60,11 @@ ohos_unittest("sa_avcodec_unit_test") {
   sources = [
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/server/mem_mgr_client.cpp",
     "./mock/avcodec_service_stub_mock.cpp",
     "./mock/codec_service_stub_mock.cpp",
     "./mock/codeclist_service_stub_mock.cpp",
+    "./mock/mem_mgr_proxy_mock.cpp",
     "./mock/system_ability_mock.cpp",
     "./sa_avcodec_unit_test.cpp",
   ]

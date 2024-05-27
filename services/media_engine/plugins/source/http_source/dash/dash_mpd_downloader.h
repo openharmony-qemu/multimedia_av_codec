@@ -101,6 +101,7 @@ public:
     Seekable GetSeekable() const;
     void SelectBitRate(uint32_t bitRate);
     std::vector<uint32_t> GetBitRates();
+    std::vector<uint32_t> GetBitRatesByHdr(bool isHdr);
     bool IsBitrateSame(uint32_t bitRate);
     void SeekToTs(int streamId, int64_t seekTime, std::shared_ptr<DashSegment>& seg);
     void UpdateDownloadFinished(const std::string& url);

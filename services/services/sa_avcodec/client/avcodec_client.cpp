@@ -131,7 +131,11 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 
     sptr<IRemoteObject> object = nullptr;
     CLIENT_COLLIE_LISTEN(object = samgr->GetSystemAbility(OHOS::AV_CODEC_SERVICE_ID), "AVCodecClient GetAVCodecProxy");
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "avcodec object is nullptr.");
+    if (object == nullptr) {
+        CLIENT_COLLIE_LISTEN(object = samgr->LoadSystemAbility(OHOS::AV_CODEC_SERVICE_ID, 30), // 30: timeout
+                             "AVCodecClient LoadSystemAbility");
+        CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "avcodec object is nullptr.");
+    }
 
     avCodecProxy_ = iface_cast<IStandardAVCodecService>(object);
     CHECK_AND_RETURN_RET_LOG(avCodecProxy_ != nullptr, nullptr, "avcodec proxy is nullptr.");

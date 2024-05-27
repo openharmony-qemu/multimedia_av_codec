@@ -29,6 +29,7 @@
 #include "meta/meta.h"
 #include "video_decoder_adapter.h"
 #include "avcodec_sysevent.h"
+#include "media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -264,10 +265,15 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             tmpBuffer->memory_->SetSize(0);
         }
         FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr.");
-        if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
+        int32_t ret = mediaCodec_->QueueInputBuffer(index);
+        if (ret != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
-                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
-                tmpBuffer->pts_, tmpBuffer->flag_);
+                ", pts: %{public}" PRIu64", flag: %{public}u, errCode: %{public}d", index, tmpBuffer->GetUniqueId(),
+                tmpBuffer->pts_, tmpBuffer->flag_, ret);
+            if (ret == AVCS_ERR_DECRYPT_FAILED) {
+                eventReceiver_->OnEvent({"video_decoder_adapter", EventType::EVENT_ERROR,
+                    MSERR_DRM_VERIFICATION_FAILED});
+            }
         } else {
             MEDIA_LOG_D("QueueInputBuffer success, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),

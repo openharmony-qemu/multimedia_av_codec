@@ -34,7 +34,8 @@ public:
 
     Status Init() override;
 
-    Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
+    Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
+                int32_t timeoutMs) override;
 
     Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
                        NetworkClientErrorCode& clientCode) override;
@@ -44,7 +45,7 @@ public:
     Status Deinit() override;
 
 private:
-    void InitCurlEnvironment(const std::string& url);
+    void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
     void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);

@@ -49,6 +49,7 @@ const uint32_t DOUBLE_BYTES = 2;
 const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
+const int32_t VIDEO_ROTATION_360 = 360;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -468,16 +469,16 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
             return;
         } else if (rotation < 0) {
-            rotation += 360;
+            rotation += VIDEO_ROTATION_360;
         }
         switch (int(rotation)) {
-            case 90:
+            case VIDEO_ROTATION_90:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
                 break;
-            case 180:
+            case VIDEO_ROTATION_180:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["180"]);
                 break;
-            case 270:
+            case VIDEO_ROTATION_270:
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["270"]);
                 break;
             default:

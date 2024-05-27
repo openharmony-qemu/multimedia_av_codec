@@ -133,12 +133,12 @@ HWTEST_F(BufferConverterUnitTest, SetInputBufferFormat_001, TestSize.Level1)
     const std::vector<GraphicPixelFormat> testList = {GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P,
                                                       GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
                                                       GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP};
-    for (const auto &pixcelFormat : testList) {
+    for (const auto &pixelFormat : testList) {
         converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_ENCODER);
-        buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-        UNITTEST_CHECK_AND_CONTINUE_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                        static_cast<int32_t>(pixcelFormat));
-        UNITTEST_INFO_LOG("pixcel format:%d", static_cast<int32_t>(pixcelFormat));
+        buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+        UNITTEST_CHECK_AND_CONTINUE_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                        static_cast<int32_t>(pixelFormat));
+        UNITTEST_INFO_LOG("pixel format:%d", static_cast<int32_t>(pixelFormat));
         converter_->SetInputBufferFormat(buffer_);
         EXPECT_EQ(converter_->rect_.wStride, DEFAULT_WIDTH);
         EXPECT_EQ(converter_->rect_.hStride, DEFAULT_HEIGHT);
@@ -158,18 +158,18 @@ HWTEST_F(BufferConverterUnitTest, SetInputBufferFormat_002, TestSize.Level1)
 {
     const std::vector<GraphicPixelFormat> testList = {GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010,
                                                       GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010};
-    for (const auto &pixcelFormat : testList) {
+    for (const auto &pixelFormat : testList) {
         converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_ENCODER);
-        buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-        UNITTEST_CHECK_AND_CONTINUE_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                        static_cast<int32_t>(pixcelFormat));
-        UNITTEST_INFO_LOG("pixcel format:%d", static_cast<int32_t>(pixcelFormat));
+        buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+        UNITTEST_CHECK_AND_CONTINUE_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                        static_cast<int32_t>(pixelFormat));
+        UNITTEST_INFO_LOG("pixel format:%d", static_cast<int32_t>(pixelFormat));
         converter_->SetInputBufferFormat(buffer_);
-        EXPECT_EQ(converter_->rect_.wStride, DEFAULT_WIDTH * 2); // 2: pixcelSize
+        EXPECT_EQ(converter_->rect_.wStride, DEFAULT_WIDTH * 2); // 2: pixelSize
         EXPECT_EQ(converter_->rect_.hStride, DEFAULT_HEIGHT);
-        EXPECT_LE(converter_->hwRect_.wStride, DEFAULT_WIDTH_64_ALIGN * 2); // 2: pixcelSize
+        EXPECT_LE(converter_->hwRect_.wStride, DEFAULT_WIDTH_64_ALIGN * 2); // 2: pixelSize
         EXPECT_EQ(converter_->hwRect_.hStride, DEFAULT_HEIGHT);
-        EXPECT_EQ(converter_->usrRect_.wStride, DEFAULT_WIDTH_16_ALIGN * 2); // 2: pixcelSize
+        EXPECT_EQ(converter_->usrRect_.wStride, DEFAULT_WIDTH_16_ALIGN * 2); // 2: pixelSize
         EXPECT_EQ(converter_->usrRect_.hStride, DEFAULT_HEIGHT);
         EXPECT_EQ(converter_->needResetFormat_, false);
     }
@@ -182,17 +182,17 @@ HWTEST_F(BufferConverterUnitTest, SetInputBufferFormat_002, TestSize.Level1)
 HWTEST_F(BufferConverterUnitTest, SetInputBufferFormat_003, TestSize.Level1)
 {
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_ENCODER);
-    GraphicPixelFormat pixcelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                  static_cast<int32_t>(pixcelFormat));
-    UNITTEST_INFO_LOG("pixcel format:%d", static_cast<int32_t>(pixcelFormat));
+    GraphicPixelFormat pixelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                  static_cast<int32_t>(pixelFormat));
+    UNITTEST_INFO_LOG("pixel format:%d", static_cast<int32_t>(pixelFormat));
     converter_->SetInputBufferFormat(buffer_);
-    EXPECT_EQ(converter_->rect_.wStride, DEFAULT_WIDTH * 4); // 4: pixcelSize
+    EXPECT_EQ(converter_->rect_.wStride, DEFAULT_WIDTH * 4); // 4: pixelSize
     EXPECT_EQ(converter_->rect_.hStride, DEFAULT_HEIGHT);
-    EXPECT_LE(converter_->hwRect_.wStride, DEFAULT_WIDTH_64_ALIGN * 4); // 4: pixcelSize
+    EXPECT_LE(converter_->hwRect_.wStride, DEFAULT_WIDTH_64_ALIGN * 4); // 4: pixelSize
     EXPECT_EQ(converter_->hwRect_.hStride, DEFAULT_HEIGHT);
-    EXPECT_EQ(converter_->usrRect_.wStride, DEFAULT_WIDTH_16_ALIGN * 4); // 4: pixcelSize
+    EXPECT_EQ(converter_->usrRect_.wStride, DEFAULT_WIDTH_16_ALIGN * 4); // 4: pixelSize
     EXPECT_EQ(converter_->usrRect_.hStride, DEFAULT_HEIGHT);
     EXPECT_EQ(converter_->needResetFormat_, false);
 }
@@ -222,10 +222,10 @@ HWTEST_F(BufferConverterUnitTest, SetInputBufferFormat_004, TestSize.Level1)
 HWTEST_F(BufferConverterUnitTest, Invalid_SetInputBufferFormat_001, TestSize.Level1)
 {
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_DECODER);
-    GraphicPixelFormat pixcelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                  static_cast<int32_t>(pixcelFormat));
+    GraphicPixelFormat pixelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                  static_cast<int32_t>(pixelFormat));
     converter_->SetInputBufferFormat(buffer_);
     EXPECT_EQ(converter_->rect_.wStride, 0);
     EXPECT_EQ(converter_->rect_.hStride, 0);
@@ -243,10 +243,10 @@ HWTEST_F(BufferConverterUnitTest, Invalid_SetInputBufferFormat_001, TestSize.Lev
 HWTEST_F(BufferConverterUnitTest, Invalid_SetInputBufferFormat_002, TestSize.Level1)
 {
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_ENCODER);
-    GraphicPixelFormat pixcelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                  static_cast<int32_t>(pixcelFormat));
+    GraphicPixelFormat pixelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                  static_cast<int32_t>(pixelFormat));
     converter_->needResetFormat_ = false;
     converter_->SetInputBufferFormat(buffer_);
     EXPECT_EQ(converter_->rect_.wStride, 0);
@@ -283,10 +283,10 @@ HWTEST_F(BufferConverterUnitTest, SetOutputBufferFormat_001, TestSize.Level1)
 HWTEST_F(BufferConverterUnitTest, Invalid_SetOutputBufferFormat_001, TestSize.Level1)
 {
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_ENCODER);
-    GraphicPixelFormat pixcelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                  static_cast<int32_t>(pixcelFormat));
+    GraphicPixelFormat pixelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                  static_cast<int32_t>(pixelFormat));
     converter_->SetOutputBufferFormat(buffer_);
     EXPECT_EQ(converter_->rect_.wStride, 0);
     EXPECT_EQ(converter_->rect_.hStride, 0);
@@ -304,10 +304,10 @@ HWTEST_F(BufferConverterUnitTest, Invalid_SetOutputBufferFormat_001, TestSize.Le
 HWTEST_F(BufferConverterUnitTest, Invalid_SetOutputBufferFormat_002, TestSize.Level1)
 {
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_DECODER);
-    GraphicPixelFormat pixcelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixcelFormat);
-    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixcel format:%d",
-                                  static_cast<int32_t>(pixcelFormat));
+    GraphicPixelFormat pixelFormat = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelFormat);
+    UNITTEST_CHECK_AND_RETURN_LOG(buffer_ != nullptr, "not support this pixel format:%d",
+                                  static_cast<int32_t>(pixelFormat));
     converter_->needResetFormat_ = false;
     converter_->SetOutputBufferFormat(buffer_);
     EXPECT_EQ(converter_->rect_.wStride, 0);
@@ -354,7 +354,7 @@ HWTEST_F(BufferConverterUnitTest, ReadFromBuffer_002, TestSize.Level1)
  */
 HWTEST_F(BufferConverterUnitTest, ReadFromBuffer_003, TestSize.Level1)
 {
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 4; // 4: pixcelSize
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 4; // 4: pixelSize
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_DECODER);
     buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888);
     memory_ = CreateAVSharedMemory(testSize);
@@ -398,7 +398,7 @@ HWTEST_F(BufferConverterUnitTest, WriteToBuffer_002, TestSize.Level1)
  */
 HWTEST_F(BufferConverterUnitTest, WriteToBuffer_003, TestSize.Level1)
 {
-    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 4; // 4: pixcelSize
+    int32_t testSize = DEFAULT_HEIGHT * DEFAULT_WIDTH * 4; // 4: pixelSize
     converter_ = BufferConverter::Create(AVCODEC_TYPE_VIDEO_DECODER);
     buffer_ = CreateSurfaceAVBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888);
     memory_ = CreateAVSharedMemory(testSize);

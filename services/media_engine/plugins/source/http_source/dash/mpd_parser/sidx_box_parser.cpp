@@ -87,11 +87,11 @@ void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffse
     int64_t firstOffset;
 
     if (version == 0) {
-        // 先跳过earliestPresentationTime
+        // skip earliestPresentationTime
         Get4Bytes(bitStream, currPos);
         firstOffset = Get4Bytes(bitStream, currPos);
     } else {
-        // 先跳过earliestPresentationTime
+        // skip earliestPresentationTime
         Get8Bytes(bitStream, currPos);
         firstOffset = Get8Bytes(bitStream, currPos);
     }

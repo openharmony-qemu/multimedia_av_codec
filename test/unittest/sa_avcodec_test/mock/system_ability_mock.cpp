@@ -81,4 +81,32 @@ void SystemAbility::OnStop()
 {
     UNITTEST_INFO_LOG("");
 }
+
+void SystemAbility::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
+{
+    UNITTEST_INFO_LOG("systemAbilityId: %{public}d, deviceId: %{public}s", systemAbilityId, deviceId.c_str());
+}
+
+bool SystemAbility::AddSystemAbilityListener(int32_t systemAbilityId)
+{
+    UNITTEST_INFO_LOG("systemAbilityId: %{public}d", systemAbilityId);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, false, "mock object is nullptr");
+    return mock->AddSystemAbilityListener(systemAbilityId);
+}
+
+SystemAbilityManagerClient &SystemAbilityManagerClient::GetInstance()
+{
+    static SystemAbilityManagerClient client;
+    return client;
+}
+
+sptr<ISystemAbilityManager> SystemAbilityManagerClient::GetSystemAbilityManager()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->GetSystemAbilityManager();
+}
 } // namespace OHOS

@@ -29,12 +29,6 @@ constexpr size_t RETRY_TIMES = 1000;
 constexpr int FIRST_TS_TIMEOUT = 400;
 constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
 }
-int64_t HlsPlayListDownloader::PlayListUpdateLoop()
-{
-    UpdateManifest();
-    return 5000 * 1000;  // 5000 how often is playlist updated
-}
-
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
 // PlayListDownload thread: call ParseManifest
@@ -153,6 +147,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location)
             bool ret = currentVariant_->m3u8_->Update(playList_);
             if (ret) {
                 master_->isSimple_ = true;
+                master_->bLive_ = currentVariant_->m3u8_->IsLive();
                 master_->duration_ = currentVariant_->m3u8_->GetDuration();
                 NotifyListChange();
             }

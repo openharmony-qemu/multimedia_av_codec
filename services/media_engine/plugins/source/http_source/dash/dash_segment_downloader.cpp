@@ -29,6 +29,7 @@ constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int DEFAULT_WAIT_TIME = 2;
+constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
@@ -74,6 +75,10 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& seg)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     mediaSegment_ = std::make_shared<DashBufferSegment>(seg);
+    if (mediaSegment_->byteRange_.length() > 0) {
+        DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
+    }
+
     if (mediaSegment_->startRangeValue_ >= 0 && mediaSegment_->endRangeValue_ > 0) {
         mediaSegment_->contentLength_ = mediaSegment_->endRangeValue_ - mediaSegment_->startRangeValue_ + 1;
     }
@@ -588,8 +593,11 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     if (startPos >= 0 && endPos > 0) {
         requestWholeFile = false;
     }
-    downloadRequest_ = std::make_shared<DownloadRequest>(url, duration, dataSave_,
-                                                         realStatusCallback, requestWholeFile);
+    MediaSouce mediaSouce;
+    mediaSouce.url = url;
+    mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
+    downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
+                                                         realStatusCallback, mediaSouce, requestWholeFile);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (!requestWholeFile && (endPos > startPos)) {
         downloadRequest_->SetRangePos(startPos, endPos);

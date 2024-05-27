@@ -14,15 +14,16 @@
  */
 
 #include "avcodec_server_manager.h"
-#include <thread>
-#include <unistd.h>
 #include <codecvt>
 #include <locale>
-#include "avcodec_trace.h"
+#include <thread>
+#include <unistd.h>
+#include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
-#include "avcodec_dump_utils.h"
+#include "mem_mgr_client.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
 #endif
@@ -168,6 +169,7 @@ int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &obj
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     codecListStubMap_[object] = pid;
+    MemMgrClient::GetInstance().SetCritical(true);
     AVCODEC_LOGD("The number of codeclist services(%{public}zu).", codecListStubMap_.size());
     return AVCS_ERR_OK;
 }
@@ -192,6 +194,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     dumper.remoteObject_ = object;
     dumperTbl_[StubType::CODEC].emplace_back(dumper);
 
+    MemMgrClient::GetInstance().SetCritical(true);
     AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
     return AVCS_ERR_OK;
 }
@@ -203,7 +206,7 @@ void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>::ite
                                        const std::string& stubName)
 {
     if (iter != stubMap.end()) {
-        AVCODEC_LOGD("destroy %{public}s stub services(%{public}zu) pid(%{public}d).", stubName.c_str(),
+        AVCODEC_LOGI("destroy %{public}s stub services(%{public}zu) pid(%{public}d).", stubName.c_str(),
                      stubMap.size(), pid);
         (void)stubMap.erase(iter);
         return;
@@ -224,17 +227,20 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
         case CODEC: {
             auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(), compare_func);
             EraseObject(it, codecStubMap_, pid, "codec");
-            return;
+            break;
         }
         case CODECLIST: {
             auto it = find_if(codecListStubMap_.begin(), codecListStubMap_.end(), compare_func);
             EraseObject(it, codecListStubMap_, pid, "codeclist");
-            return;
+            break;
         }
         default: {
             AVCODEC_LOGE("default case, av_codec server manager failed, pid(%{public}d).", pid);
             break;
         }
+    }
+    if (codecStubMap_.size() == 0 && codecListStubMap_.size() == 0) {
+        MemMgrClient::GetInstance().SetCritical(false);
     }
 }
 
@@ -255,13 +261,17 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     DestroyDumperForPid(pid);
-    AVCODEC_LOGD("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
+    AVCODEC_LOGI("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
     EraseObject(codecStubMap_, pid);
-    AVCODEC_LOGD("codec stub services(%{public}zu).", codecStubMap_.size());
-    AVCODEC_LOGD("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
+    AVCODEC_LOGI("codec stub services(%{public}zu).", codecStubMap_.size());
+
+    AVCODEC_LOGI("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
     EraseObject(codecListStubMap_, pid);
-    AVCODEC_LOGD("codeclist stub services(%{public}zu).", codecListStubMap_.size());
+    AVCODEC_LOGI("codeclist stub services(%{public}zu).", codecListStubMap_.size());
     executor_.Clear();
+    if (codecStubMap_.size() == 0 && codecListStubMap_.size() == 0) {
+        MemMgrClient::GetInstance().SetCritical(false);
+    }
 }
 
 void AVCodecServerManager::DestroyDumper(StubType type, sptr<IRemoteObject> object)

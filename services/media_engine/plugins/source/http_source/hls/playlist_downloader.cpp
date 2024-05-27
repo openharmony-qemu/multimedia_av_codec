@@ -25,9 +25,9 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-PlayListDownloader::PlayListDownloader()
+constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
+void PlayListDownloader::PlayListDownloaderInit()
 {
-    downloader_ = std::make_shared<Downloader>("hlsPlayList");
     dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
@@ -38,23 +38,22 @@ PlayListDownloader::PlayListDownloader()
                          std::forward<decltype(request)>(request));
     };
     updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"), "", TaskType::SINGLETON);
-    updateTask_->RegisterJob([this] { return PlayListUpdateLoop(); });
+    updateTask_->RegisterJob([this] {
+        UpdateManifest();
+        return PLAYLIST_UPDATE_RATE;
+    });
+}
+
+PlayListDownloader::PlayListDownloader()
+{
+    downloader_ = std::make_shared<Downloader>("hlsPlayList");
+    PlayListDownloaderInit();
 }
 
 PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
 {
     downloader_ = downloader;
-    dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
-        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
-    };
-    // this is default callback
-    statusCallback_ = [this] (DownloadStatus&& status, std::shared_ptr<Downloader> d,
-            std::shared_ptr<DownloadRequest>& request) {
-        OnDownloadStatus(std::forward<decltype(status)>(status), downloader_,
-                         std::forward<decltype(request)>(request));
-    };
-    updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"), "", TaskType::SINGLETON);
-    updateTask_->RegisterJob([this] { return PlayListUpdateLoop(); });
+    PlayListDownloaderInit();
 }
 
 PlayListDownloader::~PlayListDownloader()
