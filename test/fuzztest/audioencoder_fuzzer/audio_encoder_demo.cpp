@@ -581,7 +581,7 @@ OH_AVErrCode AudioBufferAacEncDemo::IsValid(OH_AVCodec *codec, bool *isValid)
 
 uint32_t AudioBufferAacEncDemo::GetInputIndex()
 {
-    uint32_t sleep_time = 0;
+    uint32_t sleeptime = 0;
     uint32_t index;
     uint32_t timeout = 5;
     while (signal_->inQueue_.empty() && sleep_time < timeout) {
@@ -599,7 +599,7 @@ uint32_t AudioBufferAacEncDemo::GetInputIndex()
 
 uint32_t AudioBufferAacEncDemo::GetOutputIndex()
 {
-    uint32_t sleep_time = 0;
+    uint32_t sleeptime = 0;
     uint32_t index;
     uint32_t timeout = 5;
     while (signal_->outQueue_.empty() && sleep_time < timeout) {
