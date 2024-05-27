@@ -89,7 +89,7 @@ public:
     OH_AVErrCode PushInputDataEOS(OH_AVCodec* codec, uint32_t index);
     uint32_t GetOutputIndex();
     OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate);
-	
+    
 private:
     int32_t CreateDec();
     int32_t Configure(OH_AVFormat *format);
