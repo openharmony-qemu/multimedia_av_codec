@@ -42,6 +42,7 @@ class StreamInfo {
 public:
     int32_t streamId;
     StreamType type;
+    uint32_t bitRate;
 };
 
 /**

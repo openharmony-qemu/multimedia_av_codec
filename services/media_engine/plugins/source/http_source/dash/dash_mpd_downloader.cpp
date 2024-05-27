@@ -1902,14 +1902,21 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
         StreamInfo info;
         info.streamId = streamDescriptions_[index]->streamId_;
+        info.bitRate = 0;
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
             info.type = SUBTITLE;
         } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             info.type = AUDIO;
         } else {
             info.type = VIDEO;
+            info.bitRate = streamDescriptions_[index]->bandwidth_;
         }
-
+        MEDIA_LOG_D("GetStreamInfo streamId:"
+        PUBLIC_LOG_D32
+        ", type:"
+        PUBLIC_LOG_D32
+        ", bitRate:"
+        PUBLIC_LOG_U32, info.streamId, info.type, info.bitRate);
         if (streamDescriptions_[index]->inUse_ && streams.size() > 0) {
             // 首选播放的流放在首位
             streams.insert(streams.begin(), info);
