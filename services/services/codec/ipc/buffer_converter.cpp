@@ -50,7 +50,7 @@ VideoPixelFormat TranslateSurfaceFormat(GraphicPixelFormat surfaceFormat)
             return VideoPixelFormat::NV21;
         }
         default:
-            AVCODEC_LOGE("Invalid graphic pixcel format:%{public}d", static_cast<int32_t>(surfaceFormat));
+            AVCODEC_LOGE("Invalid graphic pixel format:%{public}d", static_cast<int32_t>(surfaceFormat));
             return VideoPixelFormat::UNKNOWN;
     }
 }
@@ -233,7 +233,7 @@ void BufferConverter::GetFormat(Format &format)
         return;
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_WIDTH)) {
-        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride / pixcelSize_);
+        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride / pixelSize_);
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.hStride);
@@ -377,7 +377,7 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 
     auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, false, "surface buffer is nullptr");
-    // pixcelFormat
+    // pixelFormat
     VideoPixelFormat pixelFormat = TranslateSurfaceFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     SetPixFormat(pixelFormat);
     // width
@@ -400,7 +400,7 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
                                  planesInfo->planeCount);
         SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
     }
-    // pixcelSize
+    // pixelSize
     CHECK_AND_RETURN_RET_LOG(width != 0, false, "width is 0");
     SetFormatInner(width);
     AVCODEC_LOGI(
@@ -412,11 +412,11 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 void BufferConverter::SetFormatInner(const int32_t &width)
 {
     CHECK_AND_RETURN_LOG(width != 0, "width is 0");
-    const int32_t tempPixcelSize = hwRect_.wStride / width;
-    pixcelSize_ = tempPixcelSize == 0 ? 1 : tempPixcelSize;
+    const int32_t tempPixelSize = hwRect_.wStride / width;
+    pixelSize_ = tempPixelSize == 0 ? 1 : tempPixelSize;
 
-    rect_.wStride = width * pixcelSize_;
-    usrRect_.wStride *= pixcelSize_;
+    rect_.wStride = width * pixelSize_;
+    usrRect_.wStride *= pixelSize_;
 
     usrRect_.wStride = std::min(usrRect_.wStride, hwRect_.wStride);
     usrRect_.hStride = std::min(usrRect_.hStride, hwRect_.hStride);

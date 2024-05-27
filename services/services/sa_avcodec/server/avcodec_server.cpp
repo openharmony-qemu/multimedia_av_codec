@@ -15,18 +15,18 @@
 
 #include "avcodec_server.h"
 #include <sys/time.h>
-#include "avcodec_trace.h"
-#include "avcodec_sysevent.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "avcodec_sysevent.h"
+#include "avcodec_trace.h"
 #include "iservice_registry.h"
+#include "mem_mgr_client.h"
 #include "system_ability_definition.h"
-
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServer"};
 constexpr uint32_t SERVER_MAX_IPC_THREAD_NUM = 64;
-}
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -58,13 +58,24 @@ void AVCodecServer::OnStart()
     }
     (void)gettimeofday(&end, nullptr);
     uint32_t useTime = static_cast<uint32_t>((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec);
-    ServiceStartEventWrite(useTime, "AV_CODEC service");
     IPCSkeleton::SetMaxWorkThreadNum(SERVER_MAX_IPC_THREAD_NUM);
+    AddSystemAbilityListener(MEMORY_MANAGER_SA_ID);
+    ServiceStartEventWrite(useTime, "AV_CODEC service");
 }
 
 void AVCodecServer::OnStop()
 {
     AVCODEC_LOGD("AVCodecServer OnStop");
+    MemMgrClient::GetInstance().NotifyProcessStatus(0);
+}
+
+void AVCodecServer::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
+{
+    AVCODEC_LOGI("AVCodecServer OnAddSystemAbility, systemAbilityId:%{public}d, deviceId:%s", systemAbilityId,
+                 deviceId.c_str());
+    if (systemAbilityId == MEMORY_MANAGER_SA_ID) {
+        MemMgrClient::GetInstance().NotifyProcessStatus(1);
+    }
 }
 
 std::optional<AVCodecServerManager::StubType> AVCodecServer::SwitchSystemId(
