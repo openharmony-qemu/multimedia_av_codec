@@ -64,7 +64,7 @@ bool AudioDecoderFlacFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ flac
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("flac");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -77,7 +77,7 @@ bool AudioDecoderVORBISFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ vorbis
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("vorbis");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -90,7 +90,7 @@ bool AudioDecoderAMRNBFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ amrnb
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("amrnb");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -103,7 +103,7 @@ bool AudioDecoderAMRWBFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ amrwb
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("amrwb");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -116,7 +116,7 @@ bool AudioDecoderVividFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ vivid
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("vivid");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -129,7 +129,7 @@ bool AudioDecoderOPUSFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ opus
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("opus");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -142,7 +142,7 @@ bool AudioDecoderG711FuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ g711
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("g711mu");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -155,7 +155,7 @@ bool AudioDecoderAPEFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ ape
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("ape");
     auto res = aDecBufferDemo->RunCase(data, size);
@@ -168,7 +168,7 @@ bool AudioDecoderLBVCFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int64_t)) {
         return false;
     }
-    // FUZZ aac
+    // FUZZ lbvc
     ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
     aDecBufferDemo->InitFile("lbvc");
     auto res = aDecBufferDemo->RunCase(data, size);
