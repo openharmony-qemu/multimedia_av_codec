@@ -137,6 +137,9 @@ uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough)
         flags |= (uint32_t)(AVBufferFlag::SYNC_FRAME);
         flags |= (uint32_t)(AVBufferFlag::CODEC_DATA);
     }
+    if (static_cast<uint32_t>(pkt.flags) & static_cast<uint32_t>(AV_PKT_FLAG_DISCARD)) {
+        flags |= (uint32_t)(AVBufferFlag::DISCARD);
+    }
     if (memoryNotEnough) {
         flags |= (uint32_t)(AVBufferFlag::PARTIAL_FRAME);
     }

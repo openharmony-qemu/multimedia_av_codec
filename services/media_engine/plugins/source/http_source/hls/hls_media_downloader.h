@@ -40,12 +40,13 @@ class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback
 public:
     HlsMediaDownloader() noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration);
+    explicit HlsMediaDownloader(std::string mimeType);
     ~HlsMediaDownloader() override = default;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
+    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
     size_t GetContentLength() const override;
@@ -182,7 +183,7 @@ PRIVATE:
     int64_t lastRecordTime_ {0};
     int32_t avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
-    int32_t avgSpeedSum_ {0};
+    double avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
@@ -196,6 +197,7 @@ PRIVATE:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     Mutex firstTsMutex_ {};
+    std::string mimeType_;
 };
 }
 }

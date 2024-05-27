@@ -36,6 +36,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample->defaultWidth = DEFAULT_WIDTH;
         vDecSample->defaultHeight = DEFAULT_HEIGHT;
         vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
+        vDecSample->isSurfMode = true;
         vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
         vDecSample->ConfigureVideoDecoder();
         vDecSample->SetVideoDecoderCallback();
@@ -58,6 +59,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, doubleData);
 
     vDecSample->SetParameter(format);
+
     OH_AVFormat_Destroy(format);
     return true;
 }

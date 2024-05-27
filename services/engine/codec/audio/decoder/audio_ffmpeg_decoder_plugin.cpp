@@ -144,6 +144,11 @@ int32_t AudioFfmpegDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
     return ReceiveBuffer(outBuffer);
 }
 
+void AudioFfmpegDecoderPlugin::DisableNeedResample()
+{
+    needResample_ = 0;
+}
+
 int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
@@ -208,6 +213,17 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
 {
     auto outFrame = cachedFrame_;
     if (needResample_) {
+        if (resample_ == nullptr) {
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE,
+                                FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
+            auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
+            AVCODEC_LOGI("recode output description,layout:%{public}s",
+                         FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
+            format_.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, static_cast<uint64_t>(layout));
+            if (InitResample() != AVCodecServiceErrCode::AVCS_ERR_OK) {
+                return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+            }
+        }
         if (ConvertPlanarFrame(outBuffer) != AVCodecServiceErrCode::AVCS_ERR_OK) {
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
@@ -224,15 +240,6 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
     }
 
     ioInfoMem->Write(outFrame->data[0], outputSize);
-
-    if (outBuffer->CheckIsFirstFrame()) {
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE,
-                            FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
-        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
-        AVCODEC_LOGI("recode output description,layout:%{public}s",
-                     FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
-        format_.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, static_cast<uint64_t>(layout));
-    }
     auto attr = outBuffer->GetBufferAttr();
     attr.presentationTimeUs = static_cast<uint64_t>(cachedFrame_->pts);
     attr.size = outputSize;
@@ -311,7 +318,26 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
     }
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
-
+    int64_t channelLayout = 0;
+    format_.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout);
+    auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
+        static_cast<AudioChannelLayout>(channelLayout));
+    if (channelLayout != UNKNOWN) {
+        if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
+            AVCODEC_LOGE("the value of channelLayout is not supported");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        } else {
+            avCodecContext_->channel_layout = ffChannelLayout;
+        }
+    } else if (avCodecContext_->channels == 1) { // 1 channel: mono
+        AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
+        avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
+    } else if (avCodecContext_->channels == 2) { // 2 channel: stereo
+        AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
+        avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
+    } else {
+        AVCODEC_LOGW("channelLayout not set, unknow channelLayout");
+    }
     int32_t status = SetCodecExtradata();
     if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
         return status;
@@ -335,11 +361,8 @@ int32_t AudioFfmpegDecoderPlugin::OpenContext()
             AVCODEC_LOGE("avcodec open error %{public}s", AVStrError(res).c_str());
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
-
-        if (InitResample() != AVCodecServiceErrCode::AVCS_ERR_OK) {
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
     }
+    resample_ = nullptr;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 

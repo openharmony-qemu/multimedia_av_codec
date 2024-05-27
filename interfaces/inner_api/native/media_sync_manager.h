@@ -36,8 +36,8 @@ public:
     MediaSyncManager() = default;
     virtual ~MediaSyncManager();
     // interfaces called by hiplayer hirecoder etc.
-    Status SetPlaybackRate(float rate);
-    float GetPlaybackRate();
+    Status SetPlaybackRate(float rate) override;
+    float GetPlaybackRate() override;
     void WaitAllPrerolled(bool prerolled = true);
     Status Stop();
     Status Resume();
@@ -107,6 +107,8 @@ private:
     static int64_t GetSystemClock();
     static int64_t SimpleGetMediaTime(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
                                       int64_t anchorMediaTime, float playRate);
+    static int64_t SimpleGetMediaTimeExactly(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
+                                             int64_t anchorMediaTime, float playRate);
     static int64_t SimpleGetClockTime(int64_t anchorClockTime, int64_t nowMediaTime, int64_t anchorMediaTime,
                                       float playRate);
 

@@ -136,7 +136,7 @@ public:
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     int64_t start_time = 0;
     int64_t end_time = 0;
-
+    uint32_t randomEos = 0;
     bool TEMPORAL_CONFIG = false;
     bool TEMPORAL_ENABLE = false;
     bool TEMPORAL_JUMP_MODE = false;

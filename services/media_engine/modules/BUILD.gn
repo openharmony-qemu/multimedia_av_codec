@@ -62,6 +62,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "$av_codec_root_dir/services/drm_decryptor/codec_drm_decrypt.cpp",
     "demuxer/base_stream_demuxer.cpp",
     "demuxer/data_packer.cpp",
+    "demuxer/demuxer_plugin_manager.cpp",
     "demuxer/frame_detector.cpp",
     "demuxer/live_stream_demuxer.cpp",
     "demuxer/media_demuxer.cpp",

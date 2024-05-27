@@ -41,6 +41,11 @@ void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shar
 
 void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    int32_t aveQp {};
+    buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp);
+    double mse {};
+    buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse);
+    TLOGI("output buffer: aveQp[%d], mse[%f]", aveQp, mse);
     tester_->AfterGotOutput(OH_AVCodecBufferAttr {
         .pts = buffer->pts_,
         .size = buffer->memory_ ? buffer->memory_->GetSize() : 0,

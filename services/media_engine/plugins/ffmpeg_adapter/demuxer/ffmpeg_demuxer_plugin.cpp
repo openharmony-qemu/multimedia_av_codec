@@ -222,7 +222,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
-    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nulltr.");
+    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         return AVSEEK_FLAG_BACKWARD;
     }
@@ -530,7 +530,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         "Convert packet info failed due to input sample is nullptr.");
     int64_t pts = 0;
     AVStream *avStream = formatContext_->streams[samplePacket->pkts[0]->stream_index];
-    if (avStream->start_time == AV_NOPTS_VALUE) {
+    if (avStream->start_time == AV_NOPTS_VALUE || ioContext_.dataSource->IsDash()) {
         avStream->start_time = 0;
     }
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -538,11 +538,17 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
     } else {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
-        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            sample->duration_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
-        }
     }
-
+    if (samplePacket->pkts[0]->duration != AV_NOPTS_VALUE) {
+        int64_t duration = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
+        sample->duration_ = duration;
+        sample->meta_->SetData(Media::Tag::BUFFER_DURATION, duration);
+    }
+    if (samplePacket->pkts[0]->dts != AV_NOPTS_VALUE) {
+        int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->dts, avStream->time_base));
+        sample->dts_ = dts;
+        sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
+    }
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
@@ -673,13 +679,15 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
         MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
             bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
-        if (result == Status::OK || buffer->GetMemory()->GetSize() > 0) {
+
+        if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::ERROR_AGAIN) {
-            MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
+            MEDIA_LOG_I("Read data not enough, read again.");
             ioContext->timeout = true;
-            ret = 0;
+            ioContext->offset += buffer->GetMemory()->GetSize();
+            ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
@@ -710,6 +718,9 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
             break;
         case SEEK_END:
         case AVSEEK_SIZE: {
+            if (ioContext->dataSource->IsDash()) {
+                return -1;
+            }
             uint64_t mediaDataSize = 0;
             FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, newPos,
                 "AVSeek failed due to dataSource is nullptr.");
@@ -770,7 +781,11 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
             static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
         MEDIA_LOG_D("Set fast seek flag for mp3.");
     }
-    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), nullptr);
+    AVDictionary *options = nullptr;
+    if (ioContext_.dataSource->IsDash()) {
+        av_dict_set(&options, "use_tfdt", "true", 0);
+    }
+    int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
     FALSE_RETURN_MSG((ret == 0),
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
         pluginImpl_->name, AVStrError(ret).c_str());
@@ -807,12 +822,18 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
-    if (source->GetSeekable() == Plugins::Seekable::SEEKABLE) {
+    if (ioContext_.dataSource->IsDash()) {
+        seekable_ = Plugins::Seekable::UNSEEKABLE;
+    } else {
+        seekable_ = source->GetSeekable();
+    }
+
+    if (seekable_ == Plugins::Seekable::SEEKABLE) {
         ioContext_.dataSource->GetSize(ioContext_.fileSize);
     } else {
         ioContext_.fileSize = -1;
     }
-    seekable_ = source->GetSeekable();
+
     MEDIA_LOG_D("FFmpegDemuxerPlugin SetDataSource, fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32,
         ioContext_.fileSize, seekable_);
     pluginImpl_ = g_pluginInputFormat[pluginName_];

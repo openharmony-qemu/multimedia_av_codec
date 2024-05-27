@@ -751,6 +751,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_06, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_07, TestSize.Level1)
 {
+    signal_ = nullptr;
     if (!CheckSoFunc()) {
         return;
     }
@@ -763,7 +764,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_07, TestSize.Leve
                                 stoi(INPUT_OPUS_FILE_SOURCE_PATH[i][1]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
                                 stoi(INPUT_OPUS_FILE_SOURCE_PATH[i][2]));
-
+        EXPECT_NE(nullptr, signal_);
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
         isRunning_.store(true);

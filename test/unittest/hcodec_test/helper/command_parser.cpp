@@ -112,7 +112,7 @@ void ShowUsage()
     std::cout << " --ltrFrameCount      The number of long-term reference frames." << std::endl;
     std::cout << " --repeatCnt          repeat test, default is 1" << std::endl;
     std::cout << " --maxReadFrameCnt    read up to frame count from input file" << std::endl;
-    std::cout << " --protocol           video protocol. 0 is H264, 1 is H265, 2 is H266" << std::endl;
+    std::cout << " --protocol           video protocol. 0 is H264, 1 is H265" << std::endl;
     std::cout << " --pixelFmt           video pixel fmt. 1 is I420, 2 is NV12, 3 is NV21, 5 is RGBA" << std::endl;
     std::cout << " --frameRate          video frame rate." << std::endl;
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;

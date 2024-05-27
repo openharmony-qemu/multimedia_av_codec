@@ -180,6 +180,22 @@ const uint8_t H264_NONE_ENCRYPTED_BUFFER[] = {
 0xaa, 0x0d, 0x2a, 0x39, 0xc0, 0xae, 0x2d, 0x52, 0xef, 0x97, 0x6e, 0xd5, 0x78, 0xec, 0xa4, 0x25,
 0xee, 0xa7, 0xa6, 0xae, 0xed, 0xf3, 0xe7, 0xdf, 0xef, 0xd8, 0x84, 0xb4, 0x45, 0xd4, 0xfb, 0x67,
 0x8c, 0x6c}; //418
+uint32_t H264_CLEAR_BUFFER_SIZE = 215;
+const uint8_t H264_CLEAR_BUFFER[] = {
+0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x00, 0x1f, 0xac, 0xd3,
+0x01, 0xe0, 0x08, 0x9f, 0x97, 0x01, 0x10, 0x00, 0x00, 0x03, 0x00, 0x10, 0x00, 0x00, 0x03, 0x03,
+0xce, 0x64, 0x00, 0x01, 0x31, 0x2d, 0x00, 0x00, 0x2f, 0xaf, 0x0a, 0x27, 0x28, 0x07, 0x8c, 0x18,
+0x9c, 0x00, 0x00, 0x00, 0x01, 0x68, 0xea, 0xac, 0xb2, 0x2c, 0x00, 0x00, 0x01, 0x06, 0x00, 0x05,
+0x98, 0xb8, 0x00, 0xaf, 0xd4, 0x80, 0x00, 0x00, 0x01, 0x06, 0x05, 0x26, 0xdc, 0x45, 0xe9, 0xbd,
+0xe6, 0xd9, 0x48, 0xb7, 0x96, 0x2c, 0xd8, 0x20, 0xd9, 0x23, 0xee, 0xef, 0x73, 0x75, 0x6d, 0x61,
+0x20, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x2c, 0x76, 0x32, 0x30, 0x31, 0x36, 0x20, 0x2d, 0x31, 0x34,
+0x38, 0x00, 0x80, 0x00, 0x00, 0x01, 0x06, 0x01, 0x02, 0x00, 0x0a, 0x80, 0x00, 0x00, 0x01, 0x06,
+0x05, 0xc8, 0x70, 0xc1, 0xdb, 0x9f, 0x66, 0xae, 0x41, 0x27, 0xbf, 0xc0, 0xbb, 0x19, 0x81, 0x69,
+0x4b, 0x66, 0x10, 0x55, 0x44, 0x52, 0x4d, 0x5f, 0x54, 0x45, 0x53, 0x54, 0x5f, 0x43, 0x49, 0x44,
+0x5f, 0x30, 0x37, 0x55, 0x44, 0x52, 0x4d, 0x5f, 0x54, 0x45, 0x53, 0x54, 0x5f, 0x43, 0x49, 0x44,
+0x5f, 0x30, 0x37, 0x10, 0x00, 0x00, 0x01, 0x65, 0x88, 0x84, 0x00, 0xff, 0x9f, 0x97, 0x12, 0x77,
+0x55, 0x44, 0x52, 0x4d, 0x5f, 0x54, 0x45, 0x53, 0x54, 0x5f, 0x43, 0x49, 0x44, 0x5f, 0x30, 0x32,
+0x55, 0x44, 0x52, 0x4d, 0x5f, 0x54, 0x45}; //215
 
 // for H265
 const uint8_t H265_SM4C_KEY_ID[] = { 0x55, 0x44, 0x52, 0x4d, 0x5f, 0x54, 0x45, 0x53,
@@ -269,7 +285,7 @@ void CodecDrmDecryptorUnitTest::SetUp(void)
 void CodecDrmDecryptorUnitTest::TearDown(void)
 {}
 
-void CreateH264MediaCencInfo(MetaDrmCencInfo &cencInfo)
+void CreateH264MediaCencInfo(MetaDrmCencInfo &cencInfo, uint32_t method)
 {
     UNITTEST_INFO_LOG("CreateH264MediaCencInfo begin");
     cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_SM4_CBC;
@@ -283,16 +299,20 @@ void CreateH264MediaCencInfo(MetaDrmCencInfo &cencInfo)
     cencInfo.subSampleNum = 1;
     cencInfo.mode = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_NOT_SET;
 
-    cencInfo.subSamples[0].clearHeaderLen = H264_ENCRYPTED_BUFFER_SIZE;
+    if (method == 0xff) {
+        cencInfo.subSamples[0].clearHeaderLen = H264_CLEAR_BUFFER_SIZE;
+    } else {
+        cencInfo.subSamples[0].clearHeaderLen = H264_ENCRYPTED_BUFFER_SIZE;
+    }
     cencInfo.subSamples[0].payLoadLen = 0;
     UNITTEST_INFO_LOG("CreateH264MediaCencInfo done");
 }
 
-void SetH264MediaData(std::shared_ptr<AVBuffer> drmInBuf, MetaDrmCencInfo &cencInfo, uint32_t mode)
+void SetH264MediaData(std::shared_ptr<AVBuffer> drmInBuf, MetaDrmCencInfo &cencInfo, uint32_t method)
 {
     UNITTEST_INFO_LOG("SetH264MediaData begin");
     int32_t drmRes = 0;
-    switch (mode) {
+    switch (method) {
         case 0x1: // 0x1:SM4-SAMPL SM4S
             cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_SM4_CBC;
             drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), H264_ENCRYPTED_BUFFER_SIZE,
@@ -318,6 +338,11 @@ void SetH264MediaData(std::shared_ptr<AVBuffer> drmInBuf, MetaDrmCencInfo &cencI
             drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), H264_ENCRYPTED_BUFFER_SIZE,
                 H264_NONE_ENCRYPTED_BUFFER, H264_ENCRYPTED_BUFFER_SIZE);
             break;
+        case 0xff: // 0xff:CLEAR
+            cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED;
+            drmRes = memcpy_s(drmInBuf->memory_->GetAddr(), H264_CLEAR_BUFFER_SIZE,
+                H264_CLEAR_BUFFER, H264_CLEAR_BUFFER_SIZE);
+            break;
         default:
             break;
     }
@@ -326,18 +351,22 @@ void SetH264MediaData(std::shared_ptr<AVBuffer> drmInBuf, MetaDrmCencInfo &cencI
 }
 
 void H264MediaCencDecrypt(std::shared_ptr<AVBuffer> drmInBuf, std::shared_ptr<AVBuffer> drmOutBuf,
-    std::shared_ptr<MediaAVCodec::CodecDrmDecryptorMock> decryptorMock, uint32_t mode, int32_t flag)
+    std::shared_ptr<MediaAVCodec::CodecDrmDecryptorMock> decryptorMock, uint32_t method, int32_t flag)
 {
     UNITTEST_INFO_LOG("H264MediaCencDecrypt begin");
     MetaDrmCencInfo cencInfo;
-    CreateH264MediaCencInfo(cencInfo);
-    SetH264MediaData(drmInBuf, cencInfo, mode);
+    CreateH264MediaCencInfo(cencInfo, method);
+    SetH264MediaData(drmInBuf, cencInfo, method);
     if (flag == 1) {
         std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(&cencInfo),
             (reinterpret_cast<uint8_t *>(&cencInfo)) + sizeof(MetaDrmCencInfo));
         drmInBuf->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
     }
-    decryptorMock->DrmVideoCencDecrypt(drmInBuf, drmOutBuf, H264_ENCRYPTED_BUFFER_SIZE);
+    if (method == 0xff) {
+        decryptorMock->DrmVideoCencDecrypt(drmInBuf, drmOutBuf, H264_CLEAR_BUFFER_SIZE);
+    } else {
+        decryptorMock->DrmVideoCencDecrypt(drmInBuf, drmOutBuf, H264_ENCRYPTED_BUFFER_SIZE);
+    }
     UNITTEST_INFO_LOG("H264MediaCencDecrypt done");
 }
 
@@ -436,6 +465,8 @@ HWTEST_F(CodecDrmDecryptorUnitTest, Codec_Drm_Decryptor_SetDecryptionConfig_001,
     sptr<DrmStandard::IMediaKeySessionService> session = nullptr;
     bool svpFlag = false;
     decryptorMock_->SetDecryptionConfig(session, svpFlag);
+    svpFlag = true;
+    decryptorMock_->SetDecryptionConfig(session, svpFlag);
 }
 
 /**
@@ -477,6 +508,7 @@ HWTEST_F(CodecDrmDecryptorUnitTest, Codec_Drm_Decryptor_DrmVideoCencDecrypt_001,
     H264MediaCencDecrypt(drmInBuf, drmOutBuf, decryptorMock_, 0x5, 1); // 0x5:AES CBC1
     H264MediaCencDecrypt(drmInBuf, drmOutBuf, decryptorMock_, 0x3, 1); // 0x3:SM4-CBC SM4C
     H264MediaCencDecrypt(drmInBuf, drmOutBuf, decryptorMock_, 0x0, 1); // 0x0:NONE
+    H264MediaCencDecrypt(drmInBuf, drmOutBuf, decryptorMock_, 0xff, 1); // 0xff:CLEAR
 }
 
 /**
@@ -578,7 +610,7 @@ HWTEST_F(CodecDrmDecryptorUnitTest, Codec_Drm_Decryptor_DrmAudioCencDecrypt_001,
     EXPECT_NE(decryptorMock_, nullptr);
 
     if (decryptorMock_ != nullptr) {
-        decryptorMock_->SetCodecName("OH.Media.Codec.Decoder.Video.avc");
+        decryptorMock_->SetCodecName("OH.Media.Codec.Decoder.Audio.aac");
     }
 
     sptr<DrmStandard::IMediaKeySessionService> session = nullptr;

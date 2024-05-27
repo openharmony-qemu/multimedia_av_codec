@@ -32,7 +32,6 @@ constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
-constexpr uint32_t FRAME_INTERVAL = 16666;
 VDecFuzzSample *g_decSample = nullptr;
 constexpr uint8_t H264_NALU_TYPE = 0x1f;
 
@@ -49,7 +48,32 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
     std::queue<OH_AVCodecBufferAttr> empty;
     swap(empty, q);
 }
+
+void clearAvBufferQueue(std::queue<OH_AVMemory *> &q)
+{
+    std::queue<OH_AVMemory *> empty;
+    swap(empty, q);
+}
 } // namespace
+
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    TestConsumerListener(sptr<Surface> cs) : cs(cs) {};
+    ~TestConsumerListener() {}
+    void OnBufferAvailable() override
+    {
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    Rect damage = {};
+    sptr<Surface> cs {nullptr};
+};
 
 VDecFuzzSample::~VDecFuzzSample()
 {
@@ -102,6 +126,11 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
     signal->attrQueue_.push(*attr);
     signal->outBufferQueue_.push(data);
     signal->outCond_.notify_all();
+    if (g_decSample->isSurfMode) {
+        OH_VideoDecoder_RenderOutputData(codec, index);
+    } else {
+        OH_VideoDecoder_FreeOutputData(codec, index);
+    }
 }
 
 int64_t VDecFuzzSample::GetSystemTimeUs()
@@ -114,6 +143,15 @@ int64_t VDecFuzzSample::GetSystemTimeUs()
 
 int32_t VDecFuzzSample::ConfigureVideoDecoder()
 {
+    if (isSurfMode) {
+        cs = Surface::CreateSurfaceAsConsumer();
+        sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs);
+        cs->RegisterConsumerListener(listener);
+        auto p = cs->GetProducer();
+        ps = Surface::CreateSurfaceAsProducer(p);
+        nativeWindow = CreateNativeWindowFromSurface(&ps);
+        OH_VideoDecoder_SetSurface(vdec_, nativeWindow);
+    }
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
         cout << "Fatal: Failed to create format" << endl;
@@ -231,28 +269,27 @@ int32_t VDecFuzzSample::StartVideoDecoder()
         ReleaseInFile();
         return AV_ERR_UNKNOWN;
     }
-
-    outputLoop_ = make_unique<thread>(&VDecFuzzSample::OutputFunc, this);
-
-    if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
-        isRunning_.store(false);
-        (void)OH_VideoDecoder_Stop(vdec_);
-        ReleaseInFile();
-        StopInloop();
-        Release();
-        return AV_ERR_UNKNOWN;
-    }
     return AV_ERR_OK;
 }
 
 int32_t VDecFuzzSample::CreateVideoDecoder(string codeName)
 {
-    if (!codeName.empty()) {
-        vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
-    } else {
-        vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
+    vdec_ = OH_VideoDecoder_CreateByName("aabbcc");
+    if (vdec_) {
+        OH_VideoDecoder_Destroy(vdec_);
+        vdec_ = nullptr;
     }
+    OH_AVCodec *tmpDec = OH_VideoDecoder_CreateByMime("aabbcc");
+    if (tmpDec) {
+        OH_VideoDecoder_Destroy(tmpDec);
+        tmpDec = nullptr;
+    }
+    tmpDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    if (tmpDec) {
+        OH_VideoDecoder_Destroy(tmpDec);
+        tmpDec = nullptr;
+    }
+    vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
     g_decSample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
@@ -262,66 +299,6 @@ void VDecFuzzSample::WaitForEOS()
     if (inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
     }
-
-    if (outputLoop_ && outputLoop_->joinable()) {
-        outputLoop_->join();
-    }
-}
-
-void VDecFuzzSample::WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile)
-{
-    uint8_t *tmpBuffer = new uint8_t[attr.size];
-    if (memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size) != EOK) {
-        cout << "Fatal: memory copy failed" << endl;
-    }
-    uint32_t ret = fwrite(tmpBuffer, 1, attr.size, outFile);
-    if (!ret) {
-        cout << ret << endl;
-    }
-    delete[] tmpBuffer;
-    if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
-        cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-        errCount = errCount + 1;
-    }
-}
-
-void VDecFuzzSample::OutputFunc()
-{
-    FILE *outFile = fopen(outDir, "wb");
-    if (outFile == nullptr) {
-        return;
-    }
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
-        unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.wait(lock, [this]() {
-            if (!isRunning_.load()) {
-                cout << "quit out signal" << endl;
-                return true;
-            }
-            return signal_->outIdxQueue_.size() > 0;
-        });
-        if (!isRunning_.load()) {
-            break;
-        }
-        uint32_t index = signal_->outIdxQueue_.front();
-        OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();
-        OH_AVMemory *buffer = signal_->outBufferQueue_.front();
-        signal_->outBufferQueue_.pop();
-        signal_->outIdxQueue_.pop();
-        signal_->attrQueue_.pop();
-        lock.unlock();
-        if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            break;
-        }
-        WriteOutputFrame(index, buffer, attr, outFile);
-        if (errCount > 0) {
-            break;
-        }
-    }
-    (void)fclose(outFile);
 }
 
 void VDecFuzzSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr)
@@ -379,7 +356,6 @@ uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemo
         delete[] frameBuffer;
         cout << "ERROR:AVMemory not enough, buffer size" << attr.size << "   AVMemory Size " << size << endl;
         isRunning_.store(false);
-        StopOutloop();
         return 1;
     }
     uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
@@ -398,7 +374,6 @@ uint32_t VDecFuzzSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemo
     frameCount_ = frameCount_ + 1;
     if (inFile_->eof()) {
         isRunning_.store(false);
-        StopOutloop();
     }
     return 0;
 }
@@ -432,10 +407,6 @@ void VDecFuzzSample::InputFuncAVCC()
             if (ret == 1) {
                 break;
             }
-        }
-
-        if (sleepOnFPS) {
-            usleep(FRAME_INTERVAL);
         }
     }
 }
@@ -503,7 +474,6 @@ int32_t VDecFuzzSample::Reset()
 {
     isRunning_.store(false);
     StopInloop();
-    StopOutloop();
     ReleaseInFile();
     return OH_VideoDecoder_Reset(vdec_);
 }
@@ -515,8 +485,9 @@ int32_t VDecFuzzSample::Release()
         ret = OH_VideoDecoder_Destroy(vdec_);
         vdec_ = nullptr;
     }
-
     if (signal_ != nullptr) {
+        clearAvBufferQueue(signal_->inBufferQueue_);
+        clearAvBufferQueue(signal_->outBufferQueue_);
         delete signal_;
         signal_ = nullptr;
     }
@@ -535,17 +506,6 @@ int32_t VDecFuzzSample::Stop()
 int32_t VDecFuzzSample::Start()
 {
     return OH_VideoDecoder_Start(vdec_);
-}
-
-void VDecFuzzSample::StopOutloop()
-{
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->outMutex_);
-        clearIntqueue(signal_->outIdxQueue_);
-        clearBufferqueue(signal_->attrQueue_);
-        signal_->outCond_.notify_all();
-        lock.unlock();
-    }
 }
 
 int32_t VDecFuzzSample::SetParameter(OH_AVFormat *format)

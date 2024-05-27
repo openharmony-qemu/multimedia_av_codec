@@ -59,7 +59,7 @@ LiveStreamDemuxer::~LiveStreamDemuxer()
     taskPtr_ = nullptr;
 }
 
-std::string LiveStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
+Status LiveStreamDemuxer::Init(std::string uri)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {
@@ -74,21 +74,21 @@ std::string LiveStreamDemuxer::Init(std::string uri, uint64_t mediaDataSize)
 
     MediaAVCodec::AVCodecTrace trace("LiveStreamDemuxer::Init");
     MEDIA_LOG_I("LiveStreamDemuxer::Init called");
-    InitTypeFinder();
-    checkRange_ = [this](uint64_t offset, uint32_t size) {
+    checkRange_ = [this](int32_t streamID, uint64_t offset, uint32_t size) {
+        (void)streamID;
         return !dataPacker_->IsEmpty(); // True if there is some data
     };
-    peekRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
+    peekRange_ = [this](int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
+        (void)streamID;
         return dataPacker_->PeekRange(offset, size, bufferPtr);
     };
-    getRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
+    getRange_ = [this](int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
         // In push mode, ignore offset, always get data from the start of the data packer.
         return dataPacker_->GetRange(size, bufferPtr, offset,
-            pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+            pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
     };
-    typeFinder_->Init(uri, mediaDataSize, checkRange_, peekRange_);
-    std::string type = typeFinder_->FindMediaType();
-    return type;
+    uri_ = uri;
+    return Status::OK;
 }
 
 Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset)
@@ -104,7 +104,7 @@ Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uin
 void LiveStreamDemuxer::ReadLoop()
 {
     std::shared_ptr<Plugins::Buffer> data = std::make_shared<Plugins::Buffer>();
-    Status err = source_->ReadData(data, -1, DEFAULT_READ_SIZE);
+    Status err = source_->Read(-1, data, -1, DEFAULT_READ_SIZE);
     if (err == Status::END_OF_STREAM) {
         MEDIA_LOG_I("ReadLoop current is end of stream");
         if (taskPtr_) {
@@ -211,9 +211,20 @@ Status LiveStreamDemuxer::Flush()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
+Status LiveStreamDemuxer::ResetCache(int32_t streamID)
 {
-    switch (pluginState_.load()) {
+    return Status::OK;
+}
+
+Status LiveStreamDemuxer::ResetAllCache()
+{
+    return Status::OK;
+}
+
+Status LiveStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+    size_t expectedLen)
+{
+    switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;
         case DemuxerState::DEMUXER_STATE_PARSE_HEADER: {
@@ -222,10 +233,10 @@ Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>
 
             if (source_->IsNeedPreDownload() && source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
                 dataPacker_->GetOrWaitDataAvailable(offset, expectedLen);
-                auto ret = peekRange_(static_cast<uint64_t>(offset), expectedLen, buffer);
+                auto ret = peekRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
                 MEDIA_LOG_D("Demuxer parse header, peekRange finish, ret: " PUBLIC_LOG_D32, ret);
                 FALSE_RETURN_V(ret, Status::END_OF_STREAM);
-            } else if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
+            } else if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
             } else {
                 return Status::ERROR_NOT_ENOUGH_DATA;
@@ -235,7 +246,7 @@ Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>
         case DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME:
         case DemuxerState::DEMUXER_STATE_PARSE_FRAME: {
             MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
-            if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
+            if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
                 if ((isIgnoreRead_.load() || isIgnoreParse_.load()) && buffer != nullptr &&
@@ -246,13 +257,13 @@ Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>
                 }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
-                if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
-                    SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+                if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
+                    SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
                 }
                 return Status::END_OF_STREAM;
             }
-            if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
-                SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+            if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
+                SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
             }
             break;
         }

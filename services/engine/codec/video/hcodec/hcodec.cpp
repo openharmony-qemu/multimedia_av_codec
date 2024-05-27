@@ -287,9 +287,6 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         case CODEC_OMX_VIDEO_CodingHEVC:
             shortName_ = isEncoderStr + "hevc";
             break;
-        case CODEC_OMX_VIDEO_CodingVVC:
-            shortName_ = isEncoderStr + "vvc";
-            break;
         default:
             shortName_ = isEncoderStr;
             break;
@@ -944,6 +941,7 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
+    info.omxBuffer->alongParam = std::move(omxBuffer.alongParam);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -972,7 +970,6 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
         }
         case FREE_BUFFER:
             EraseBufferFromPool(OMX_DirOutput, bufferIdx);
-            EraseOutBuffersOwnedByOmx(info.bufferId);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -997,6 +994,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
+    ExtractPerFrameParamFromOmxBuffer(omxBuffer, info.avBuffer->meta_);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
@@ -1115,21 +1113,6 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
             EraseBufferFromPool(OMX_DirOutput, i);
         }
     }
-}
-
-void HCodec::RecordOutBuffersOwnedByOmx()
-{
-    outBuffersOwnedByOmx_.clear();
-    for (const BufferInfo& info : outputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_OMX) {
-            outBuffersOwnedByOmx_.insert(info.bufferId);
-        }
-    }
-}
-
-void HCodec::EraseOutBuffersOwnedByOmx(uint32_t bufferId)
-{
-    outBuffersOwnedByOmx_.erase(bufferId);
 }
 
 int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)

@@ -121,6 +121,34 @@ static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *para
     OH_VideoEncoder_PushInputParameter(codec, index);
 }
 
+void VEncAPI11Sample::DumpLtrInfo(OH_AVBuffer *buffer)
+{
+    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
+    int32_t isLtr = 0;
+    int32_t framePoc = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR, &isLtr);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_POC, &framePoc);
+}
+
+void VEncAPI11Sample::DumpQPInfo(OH_AVBuffer *buffer)
+{
+    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
+    int32_t qp_average = 0;
+    double mse = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE, &qp_average);
+    OH_AVFormat_GetDoubleValue(format, OH_MD_KEY_VIDEO_ENCODER_MSE, &mse);
+}
+
+void VEncAPI11Sample::DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer)
+{
+    if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
+        DumpLtrInfo(buffer);
+    }
+    if (getQpMse && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
+        DumpQPInfo(buffer);
+    }
+}
+
 int64_t VEncAPI11Sample::GetSystemTimeUs()
 {
     struct timespec now;
@@ -774,7 +802,6 @@ void VEncAPI11Sample::InputFunc()
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-
         lock.unlock();
         if (!inFile_->eof()) {
             bool isRandomEosSuccess = RandomEOS(index);
@@ -832,15 +859,6 @@ void VEncAPI11Sample::OutputFuncFail()
     Release();
 }
 
-void VEncAPI11Sample::DumpLtrInfo(OH_AVBuffer *buffer)
-{
-    OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer);
-    int32_t isLtr = 0;
-    int32_t framePoc = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR, &isLtr);
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PER_FRAME_POC, &framePoc);
-}
-
 void VEncAPI11Sample::OutputFunc()
 {
     FILE *outFile = fopen(OUT_DIR, "wb");
@@ -864,9 +882,7 @@ void VEncAPI11Sample::OutputFunc()
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         lock.unlock();
-        if (enableLTR && attr.flags == AVCODEC_BUFFER_FLAGS_NONE) {
-            DumpLtrInfo(buffer);
-        }
+        DumpInfo(attr, buffer);
         if (OH_AVBuffer_GetBufferAttr(buffer, &attr) != AV_ERR_OK) {
             errCount = errCount + 1;
         }
