@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr int PLAYLIST_UPDATE_RATE = 1000;
+constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 void PlayListDownloader::PlayListDownloaderInit()
 {
     dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
