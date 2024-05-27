@@ -144,21 +144,19 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     int32_t channelCount = CHANNEL_COUNT;
     int32_t sampleRate = SAMPLE_RATE;
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(),
+                                DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-    }
-    else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB || audioType_ == AudioBufferFormatType::TYPE_G711MU) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB || audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), OH_BitsPerSample::SAMPLE_S16LE);
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB || audioType_ == AudioBufferFormatType::TYPE_LBVC) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB || audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         channelCount = 1;
         sampleRate = AMRWB_SAMPLE_RATE;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), OH_BitsPerSample::SAMPLE_S16LE);
-    }
-    else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
         int32_t channelCounttmp = 1;
         int32_t sampleRatetmp = 8000;
         channelCount = channelCounttmp;
@@ -169,22 +167,19 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
 		                        OH_BitsPerSample::SAMPLE_S16LE);
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-		                        OH_BitsPerSample::SAMPLE_S16LE);
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-		                              "Fatal: Configure fail");
-    }
-    else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-		                              "Fatal: Configure fail");
-    }
-    else {
+                                        "Fatal: Configure fail");
+    } else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                OH_BitsPerSample::SAMPLE_S16LE);
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-		                              "Fatal: Configure fail");
+                                        "Fatal: Configure fail");
+    } else {
+        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
+                                        "Fatal: Configure fail");
     }
     return true;
 }
@@ -194,51 +189,29 @@ bool ADecBufferDemo::InitFile(std::string inputFile)
     if (inputFile.find("mp4") != std::string::npos || inputFile.find("m4a") != std::string::npos ||
         inputFile.find("vivid") != std::string::npos || inputFile.find("ts") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_VIVID;
-    } 
-    // TYPE_AAC = 0
-    else if (inputFile.find("aac") != std::string::npos) {
+    } else if (inputFile.find("aac") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_AAC;
-    } 
-    // TYPE_FLAC = 1
-    else if (inputFile.find("flac") != std::string::npos) {
+    } else if (inputFile.find("flac") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_FLAC;
-    } 
-    // TYPE_MP3 = 2
-    else if (inputFile.find("mp3") != std::string::npos) {
+    } else if (inputFile.find("mp3") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_MP3;
-    } 
-    // TYPE_VORBIS = 3
-    else if (inputFile.find("vorbis") != std::string::npos) {
+    } else if (inputFile.find("vorbis") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_VORBIS;
-    } 
-    // TYPE_AMRNB = 4
-    else if (inputFile.find("amrnb") != std::string::npos) {
+    } else if (inputFile.find("amrnb") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_AMRNB;
-    } 
-    // TYPE_AMRWB = 5
-    else if (inputFile.find("amrwb") != std::string::npos) {
+    } else if (inputFile.find("amrwb") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_AMRWB;
-    } 
-    // TYPE_OPUS = 7
-    else if (inputFile.find("opus") != std::string::npos) {
+    } else if (inputFile.find("opus") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_OPUS;
-    } 
-    // TYPE_G711MU = 8
-    else if (inputFile.find("g711mu") != std::string::npos) {
+    } else if (inputFile.find("g711mu") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_G711MU;
-    }
-    //TYPE_APE = 9
-    else if (inputFile.find("ape") != std::string::npos) {
+    } else if (inputFile.find("ape") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_APE;
-    }
-    // TYPE_LBVC = 10
-    else if (inputFile.find("lbvc") != std::string::npos) {
+    } else if (inputFile.find("lbvc") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_LBVC;
-    }
-    else {
+    } else {
         audioType_ = AudioBufferFormatType::TYPE_AAC;
     }
-    
     return true;
 }
 
@@ -260,38 +233,27 @@ int32_t ADecBufferDemo::CreateDec()
 {
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AAC_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_FLAC_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_MP3) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_MP3) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_MP3_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_VIVID_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_OPUS_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_G711MU_NAME).data());
-    } 
-    else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_APE_NAME).data());
-    }
-    else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_LBVC_NAME).data());
-    }
-    else {
+    } else {
         return AVCS_ERR_INVALID_VAL;
     }
     DEMO_CHECK_AND_RETURN_RET_LOG(audioDec_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: CreateByName fail");
@@ -482,7 +444,6 @@ void ADecBufferDemo::OutputFunc()
             cout << "Fatal: FreeOutputData fail" << endl;
             break;
         }
-
         if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "decode eos" << endl;
             isRunning_.store(false);
@@ -652,8 +613,7 @@ OH_AVErrCode ADecBufferDemo::Configure(OH_AVCodec* codec, OH_AVFormat* format, i
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
-    }
-	else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
     }
     std::cout<<" Configure format :"<< format << std::endl;
     if (format == nullptr) {
