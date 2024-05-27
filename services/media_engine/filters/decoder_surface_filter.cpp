@@ -726,7 +726,7 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     format.GetIntValue("video_picture_width", width);
     int32_t height = 0;
     format.GetIntValue("video_picture_height", height);
-    MEDIA_LOG_I("OnOutputFormatChanged curW=" PUBLIC_LOG_D32 " curH=" PUBLIC_LOG_D32 " nextW=" PUBLIC_LOG_D32 
+    MEDIA_LOG_I("OnOutputFormatChanged curW=" PUBLIC_LOG_D32 " curH=" PUBLIC_LOG_D32 " nextW=" PUBLIC_LOG_D32
         " nextH=" PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_, width, height);
     if (width <= 0 || height <= 0) {
         MEDIA_LOG_W("invaild video size");
