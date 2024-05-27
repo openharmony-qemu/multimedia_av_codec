@@ -51,11 +51,11 @@ public:
     virtual void SelectBitRate(uint32_t bitRate) = 0;
     virtual std::vector<uint32_t> GetBitRates() = 0;
     virtual uint64_t GetCurrentBitRate() = 0;
+    virtual int GetVedioHeight() = 0;
+    virtual int GetVedioWidth() = 0;
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
     virtual uint32_t GetCurBitrate() = 0;
     virtual bool IsLive() const = 0;
-    virtual int32_t GetVideoWidth() const = 0;
-    virtual int32_t GetVideoHeight() const = 0;
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
     void Resume();
