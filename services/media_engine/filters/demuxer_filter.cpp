@@ -177,8 +177,13 @@ Status DemuxerFilter::DoPrepare()
             return Status::ERROR_INVALID_PARAMETER;
         }
         std::string mime;
+        meta->GetData(Tag::MIME_TYPE, mime);
         MediaType mediaType;
-        if (GetMediaTypeAndIsSkipThisTrack(meta, mediaType, mime)) {
+        if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
+            MEDIA_LOG_E("mediaType not found, index: %zu", index);
+            continue;
+        }
+        if (ShouldTrackSkipped(mediaType, mime)) {
             continue;
         }
         StreamType streamType;
@@ -507,14 +512,8 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
     return true;
 }
 
-bool DemuxerFilter::GetMediaTypeAndIsSkipThisTrack(const std::shared_ptr<Meta> &meta,
-    Plugins::MediaType &mediaType, std::string &mime)
+bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime)
 {
-    meta->GetData(Tag::MIME_TYPE, mime);
-    if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
-        MEDIA_LOG_E("mediaType not found, index: %zu", index);
-        return true;
-    }
     if (mime.substr(0, MIME_IMAGE.size()).compare(MIME_IMAGE) == 0) {
         MEDIA_LOG_W("is image track, continue");
         return true;
