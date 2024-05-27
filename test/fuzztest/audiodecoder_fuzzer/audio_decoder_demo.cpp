@@ -168,7 +168,7 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
     if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-		    OH_BitsPerSample::SAMPLE_S16LE);
+            OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
             OH_BitsPerSample::SAMPLE_S16LE);
