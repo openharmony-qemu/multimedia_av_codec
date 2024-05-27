@@ -32,6 +32,7 @@ private:
     uint8_t GetNaluType(uint8_t value);
     uint8_t GetNaluType(const uint8_t *const bufferAddr);
     bool IsCodecData(uint8_t naluType);
+    bool IsIDR(uint8_t naluType);
 
     BitstreamType bitstreamType_;
     std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;

@@ -26,10 +26,11 @@ constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 constexpr uint8_t ANNEXB_FRAME_HEAD[] = {0, 0, 1};
 constexpr uint8_t ANNEXB_FRAME_HEAD_LEN = sizeof(ANNEXB_FRAME_HEAD);
 constexpr uint32_t PREREAD_BUFFER_SIZE = 1 * 1024 * 1024; // 1Mb, must greater than ANNEXB_FRAME_HEAD_LEN
-constexpr uint8_t RESERVE_SLICED_BUFFER_HEAD = ANNEXB_FRAME_HEAD_LEN;
 
+constexpr uint8_t AVC_NAL_IDR = 5;
 constexpr uint8_t AVC_NAL_SPS = 7;
 constexpr uint8_t AVC_NAL_PPS = 8;
+constexpr uint8_t HEVC_NAL_IDR = 19;
 constexpr uint8_t HEVC_NAL_VPS = 32;
 constexpr uint8_t HEVC_NAL_SPS = 33;
 constexpr uint8_t HEVC_NAL_PPS = 34;
@@ -52,7 +53,8 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
-    if ((frameCount_ > sampleInfo_.maxFrames) || (inputFile_->eof() && !Repeat())) {
+    if ((frameCount_ > sampleInfo_.maxFrames) ||
+        ((pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->eof() && !Repeat()))) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
@@ -79,6 +81,9 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
 
         if (IsCodecData(naluType)) {
             bufferInfo.attr.flags |= AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+        } else if (IsIDR(naluType)) {
+            bufferInfo.attr.flags |= AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+            keepRead = false;
         } else {
             keepRead = false;
         }
@@ -113,35 +118,33 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
 {
     if (pPrereadBuffer_ >= prereadBufferSize_) {
         PrereadFile();
+        CHECK_AND_RETURN_RET_LOG(prereadBufferSize_ > 0, AVCODEC_SAMPLE_ERR_ERROR, "Empty file, nothing to read");
     }
 
     bool keepRead = true;
+    auto pBuffer = bufferAddr;
     do {
-        auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + ANNEXB_FRAME_HEAD_LEN,
+        auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + (bufferSize > 0 ? 0 : ANNEXB_FRAME_HEAD_LEN),
             prereadBuffer_.get() + prereadBufferSize_, std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos);
-        CHECK_AND_RETURN_RET(size >= ANNEXB_FRAME_HEAD_LEN, AVCODEC_SAMPLE_ERR_OK);
-        memcpy_s(bufferAddr + bufferSize, size, prereadBuffer_.get() + pPrereadBuffer_, size);
+        memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
         pPrereadBuffer_ += size;
         bufferSize += size;
+        pBuffer += size;
 
-        if ((pos != (prereadBuffer_.get() + prereadBufferSize_)) || inputFile_->eof()) {
-            keepRead = false;
-        } else {
-            PrereadFile();
-            memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN,
-                (bufferAddr + bufferSize - ANNEXB_FRAME_HEAD_LEN), ANNEXB_FRAME_HEAD_LEN);
-            // 5: search 0~5 byte for start code
-            auto slicedHeadPos = std::search(prereadBuffer_.get(), prereadBuffer_.get() + 5,
-                std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
-            uint32_t slicedHeadDistance = std::distance(prereadBuffer_.get(), slicedHeadPos);
-            if (slicedHeadDistance >= 1 && slicedHeadDistance <= ANNEXB_FRAME_HEAD_LEN) {
-                keepRead = false;
-                pPrereadBuffer_ -= (ANNEXB_FRAME_HEAD_LEN - slicedHeadDistance);
-            }
+        if ((pPrereadBuffer_ != prereadBufferSize_) || inputFile_->eof()) {
+            break;
+        }
+
+        PrereadFile();
+        memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN, pBuffer - ANNEXB_FRAME_HEAD_LEN, ANNEXB_FRAME_HEAD_LEN);
+        if (std::search(pBuffer - ANNEXB_FRAME_HEAD_LEN, pBuffer,
+            std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD)) == pBuffer) {
+            bufferSize -= ANNEXB_FRAME_HEAD_LEN;
+            pBuffer -= ANNEXB_FRAME_HEAD_LEN;
+            pPrereadBuffer_ = 0;
         }
     } while (keepRead);
-    bufferSize += ANNEXB_FRAME_HEAD_LEN;
     if (prereadBuffer_.get()[pPrereadBuffer_ - 1] == 0) {
         bufferSize--;
         pPrereadBuffer_--;
@@ -152,13 +155,12 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
 void BitstreamReader::PrereadFile()
 {
     if (prereadBuffer_ == nullptr) {
-        prereadBuffer_ = std::unique_ptr<uint8_t []>(new uint8_t[PREREAD_BUFFER_SIZE + RESERVE_SLICED_BUFFER_HEAD]);
+        prereadBuffer_ = std::unique_ptr<uint8_t []>(new uint8_t[PREREAD_BUFFER_SIZE + ANNEXB_FRAME_HEAD_LEN]);
     }
     inputFile_->read(reinterpret_cast<char *>(
-        prereadBuffer_.get() + RESERVE_SLICED_BUFFER_HEAD), PREREAD_BUFFER_SIZE);
-    prereadBufferSize_ = inputFile_->gcount() + RESERVE_SLICED_BUFFER_HEAD;
-    CHECK_AND_RETURN(prereadBufferSize_ >= RESERVE_SLICED_BUFFER_HEAD);
-    pPrereadBuffer_ = RESERVE_SLICED_BUFFER_HEAD;
+        prereadBuffer_.get() + ANNEXB_FRAME_HEAD_LEN), PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount() + ANNEXB_FRAME_HEAD_LEN;
+    pPrereadBuffer_ = ANNEXB_FRAME_HEAD_LEN;
 }
 
 int32_t BitstreamReader::ToAnnexb(uint8_t *bufferAddr)
@@ -191,6 +193,16 @@ bool BitstreamReader::IsCodecData(uint8_t naluType)
         (!isH264Stream && ((naluType == HEVC_NAL_VPS) || (naluType == HEVC_NAL_SPS) || (naluType == HEVC_NAL_PPS) ||
                            (naluType == HEVC_NAL_FD_NUL) || (naluType == HEVC_NAL_SEI_PREFIX) ||
                            (naluType == HEVC_NAL_SEI_SUFFIX)))) {
+        return true;
+    }
+    return false;
+}
+
+bool BitstreamReader::IsIDR(uint8_t naluType)
+{
+    bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
+    if ((isH264Stream && (naluType == AVC_NAL_IDR)) ||
+        (!isH264Stream && (naluType == HEVC_NAL_IDR))) {
         return true;
     }
     return false;
