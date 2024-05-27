@@ -380,7 +380,9 @@ void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, in
         }
         refreshTotalPauseTime_ = false;
     }
+    constexpr int32_t NS_PER_US = 1000;
     buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
+    buffer->pts_ = buffer->pts_ / NS_PER_US; // the unit of pts is us
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::UpdateBufferConfig");
     MEDIA_LOG_I("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }
