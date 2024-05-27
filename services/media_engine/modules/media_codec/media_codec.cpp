@@ -156,6 +156,7 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 
 int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta)
 {
+    MEDIA_LOG_I("MediaCodec::configure in");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Configure");
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED, (int32_t)Status::ERROR_INVALID_STATE);
