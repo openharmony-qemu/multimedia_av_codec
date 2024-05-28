@@ -737,6 +737,16 @@ void VideoDecSample::OutputLoopFuncExt()
     signal_->cond_.notify_all();
 }
 
+void VideoDecSample::CheckFormatKey()
+{
+    std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
+    int32_t pictureWidth = 0;
+    int32_t pictureHeight = 0;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
+    format->Destroy();
+}
+
 int32_t VideoDecSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP || isSurfaceMode_, AV_ERR_INVALID_VAL,
@@ -746,14 +756,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     auto buffer = signal_->outBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-
-    std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
-    int32_t pictureWidth = 0;
-    int32_t pictureHeight = 0;
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-    format->Destroy();
-
+    CheckFormatKey();
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {

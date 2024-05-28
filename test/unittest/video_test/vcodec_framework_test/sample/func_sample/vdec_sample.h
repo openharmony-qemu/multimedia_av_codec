@@ -135,6 +135,7 @@ private:
     void RunInnerExt();
     void OutputLoopFuncExt();
     void InputLoopFuncExt();
+    void CheckFormatKey();
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void CheckSHA();
