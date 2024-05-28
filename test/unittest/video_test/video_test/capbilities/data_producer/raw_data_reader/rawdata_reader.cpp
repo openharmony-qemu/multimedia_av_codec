@@ -46,17 +46,13 @@ int32_t RawdataReader::ReadSample(uint8_t *bufferAddr, int32_t &bufferSize, uint
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
 
-    if (frameCount_ > sampleInfo_.maxFrames) {
+    if ((frameCount_ >= sampleInfo_.maxFrames) || (inputFile_->eof() && !Repeat())) {
         flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
 
     bufferSize = GetBufferSize();
     inputFile_->read(reinterpret_cast<char *>(bufferAddr), bufferSize);
-
-    if (inputFile_->eof() && !Repeat()) {
-        flags = AVCODEC_BUFFER_FLAGS_EOS;
-    }
 
     frameCount_++;
     return AVCODEC_SAMPLE_ERR_OK;

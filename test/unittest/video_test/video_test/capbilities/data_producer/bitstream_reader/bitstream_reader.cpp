@@ -53,7 +53,7 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
-    if ((frameCount_ > sampleInfo_.maxFrames) ||
+    if ((frameCount_ >= sampleInfo_.maxFrames) ||
         ((pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->eof() && !Repeat()))) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;

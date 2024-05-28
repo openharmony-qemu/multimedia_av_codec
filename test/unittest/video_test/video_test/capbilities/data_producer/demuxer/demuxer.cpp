@@ -51,7 +51,7 @@ int32_t Demuxer::Init(SampleInfo &info)
 
 int32_t Demuxer::ReadSample(CodecBufferInfo &bufferInfo)
 {
-    if ((frameCount_ > sampleInfo_.maxFrames) || (feof(file_) && !Repeat())) {
+    if ((frameCount_ >= sampleInfo_.maxFrames) || (feof(file_) && !Repeat())) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
