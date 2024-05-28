@@ -85,6 +85,8 @@ public:
     void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
 
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+    void SetBitrateStart();
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -145,6 +147,10 @@ private:
     int32_t appPid_;
     std::string bundleName_;
     uint64_t instanceId_ = 0;
+
+    std::atomic<int32_t> bitrateChange_{0};
+    int32_t surfaceWidth_{0};
+    int32_t surfaceHeight_{0};
 };
 } // namespace Pipeline
 } // namespace Media

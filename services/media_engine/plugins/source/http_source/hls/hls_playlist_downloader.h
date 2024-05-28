@@ -43,8 +43,6 @@ public:
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
-    int32_t GetVideoWidth() const override;
-    int32_t GetVideoHeight() const override;
     void FirstTsUpdateLoop();
     void SetInterruptState(bool isInterruptNeeded) override;
     void SetMimeType(const std::string& mimeType) override;

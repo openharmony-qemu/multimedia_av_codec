@@ -262,8 +262,8 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
-    } else if (event.type == PluginEventType::VIDEO_SIZE_CHANGE) {
-        MEDIA_LOG_I("video size change from source.");
+    } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
+        MEDIA_LOG_I("source bitrate start from source.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }

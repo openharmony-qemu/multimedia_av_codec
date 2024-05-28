@@ -68,7 +68,6 @@ public:
     uint64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
-    void ReportVideoSizeChange();
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState() override;
@@ -77,6 +76,7 @@ public:
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    void ReportBitrateStart(uint32_t bitRate);
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);

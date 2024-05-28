@@ -56,8 +56,6 @@ public:
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
     virtual uint32_t GetCurBitrate() = 0;
     virtual bool IsLive() const = 0;
-    virtual int32_t GetVideoWidth() const = 0;
-    virtual int32_t GetVideoHeight() const = 0;
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
     void Resume();

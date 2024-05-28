@@ -92,6 +92,11 @@ public:
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
     {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnOutputFormatChanged(format);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
@@ -708,6 +713,46 @@ void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
     if (videoDecoder_ != nullptr) {
         videoDecoder_->OnDumpInfo(fd);
     }
+}
+
+void DecoderSurfaceFilter::SetBitrateStart()
+{
+    bitrateChange_++;
+}
+ 
+void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
+{
+    int32_t width = 0;
+    format.GetIntValue("video_picture_width", width);
+    int32_t height = 0;
+    format.GetIntValue("video_picture_height", height);
+    MEDIA_LOG_I("OnOutputFormatChanged curW=" PUBLIC_LOG_D32 " curH=" PUBLIC_LOG_D32 " nextW=" PUBLIC_LOG_D32
+        " nextH=" PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_, width, height);
+    if (width <= 0 || height <= 0) {
+        MEDIA_LOG_W("invaild video size");
+        return;
+    }
+    if (surfaceWidth_ == 0 || surfaceWidth_ == 0) {
+        MEDIA_LOG_I("receive first output Format");
+        surfaceWidth_ = width;
+        surfaceHeight_ = height;
+        return;
+    }
+    if (surfaceWidth_ == width && surfaceHeight_ == height) {
+        MEDIA_LOG_W("receive the same output Format");
+        return;
+    }
+    surfaceWidth_ = width;
+    surfaceHeight_ = height;
+ 
+    if (bitrateChange_ <= 0) {
+        return;
+    }
+    MEDIA_LOG_I("ReportVideoSizeChange videoWidth: " PUBLIC_LOG_D32 " videoHeight: "
+        PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
+    std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
+    bitrateChange_--;
 }
 } // namespace Pipeline
 } // namespace MEDIA
