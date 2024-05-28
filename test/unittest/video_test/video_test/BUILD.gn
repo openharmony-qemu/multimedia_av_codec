@@ -90,8 +90,8 @@ ohos_source_set("video_sample") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "media_foundation:media_foundation",
-    "window_manager:libwm",
     "media_foundation:native_media_core",
+    "window_manager:libwm",
   ]
 
   subsystem_name = "multimedia"
