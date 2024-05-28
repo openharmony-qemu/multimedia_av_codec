@@ -65,6 +65,7 @@ string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
 string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
+string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -1954,5 +1955,83 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
             selectedTrackIds_.clear();
         }
     }
+}
+
+/**
+ * @tc.name: Demuxer_SetMediaKeySystemInfoCallback_4000
+ * @tc.desc: set normal drm callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SetMediaKeySystemInfoCallback_4000, TestSize.Level1)
+{
+    InitResource(g_drmSm4cPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    bool isNullCallback = false;
+    int32_t ret = demuxer_->SetMediaKeySystemInfoCallback(isNullCallback);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SetMediaKeySystemInfoCallback_4001
+ * @tc.desc: set null drm callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SetMediaKeySystemInfoCallback_4001, TestSize.Level1)
+{
+    InitResource(g_drmSm4cPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    bool isNullCallback = true;
+    int32_t ret = demuxer_->SetMediaKeySystemInfoCallback(isNullCallback);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SetDemuxerMediaKeySystemInfoCallback_4002
+ * @tc.desc: set normal drm callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SetDemuxerMediaKeySystemInfoCallback_4002, TestSize.Level1)
+{
+    InitResource(g_drmSm4cPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    bool isNullCallback = false;
+    int32_t ret = demuxer_->SetDemuxerMediaKeySystemInfoCallback(isNullCallback);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SetDemuxerMediaKeySystemInfoCallback_4003
+ * @tc.desc: set null drm callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SetDemuxerMediaKeySystemInfoCallback_4003, TestSize.Level1)
+{
+    InitResource(g_drmSm4cPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    bool isNullCallback = true;
+    int32_t ret = demuxer_->SetDemuxerMediaKeySystemInfoCallback(isNullCallback);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaKeySystemInfo_4004
+ * @tc.desc: get drm info when play drm
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
+{
+    InitResource(g_drmSm4cPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    int32_t ret = demuxer_->GetMediaKeySystemInfo();
+    ASSERT_EQ(ret, AV_ERR_OK);
 }
 } // namespace

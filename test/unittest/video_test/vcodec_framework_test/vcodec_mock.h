@@ -80,6 +80,7 @@ public:
     virtual int32_t RenderOutputBuffer(uint32_t index) = 0;
     virtual int32_t FreeOutputBuffer(uint32_t index) = 0;
     virtual bool IsValid() = 0;
+    virtual int32_t SetVideoDecryptionConfig() = 0;
 };
 
 class VideoEncMock : public NoCopyable {

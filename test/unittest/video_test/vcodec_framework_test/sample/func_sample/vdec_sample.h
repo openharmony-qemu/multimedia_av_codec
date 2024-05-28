@@ -112,6 +112,7 @@ public:
     int32_t RenderOutputBuffer(uint32_t index);
     int32_t FreeOutputBuffer(uint32_t index);
     bool IsValid();
+    int32_t SetVideoDecryptionConfig();
 
     void SetOutPath(const std::string &path);
     void SetSource(const std::string &path);

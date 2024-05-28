@@ -339,6 +339,13 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

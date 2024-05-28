@@ -101,5 +101,20 @@ int32_t DemuxerCapiMock::SeekToTime(int64_t mSeconds, Media::SeekMode mode)
     }
     return AV_ERR_UNKNOWN;
 }
+
+int32_t DemuxerCapiMock::SetMediaKeySystemInfoCallback(bool isNull)
+{
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t DemuxerCapiMock::SetDemuxerMediaKeySystemInfoCallback(bool isNull)
+{
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t DemuxerCapiMock::GetMediaKeySystemInfo()
+{
+    return AV_ERR_UNKNOWN;
+}
 }
 }
