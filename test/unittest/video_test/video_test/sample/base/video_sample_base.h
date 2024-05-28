@@ -36,6 +36,7 @@ public:
 
 protected:
     virtual int32_t Init();
+    virtual int32_t StartThread();
     virtual void Release();
     void StartRelease();
     void ThreadSleep(bool isValid = false);

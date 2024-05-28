@@ -89,7 +89,10 @@ int32_t VideoSampleBase::Start()
     CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
     int32_t ret = videoCodec_->Start();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder start failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec start failed");
+
+    ret = StartThread();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec thread start failed");
 
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
@@ -105,6 +108,11 @@ int32_t VideoSampleBase::WaitForDone()
 }
 
 int32_t VideoSampleBase::Init()
+{
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoSampleBase::StartThread()
 {
     return AVCODEC_SAMPLE_ERR_OK;
 }

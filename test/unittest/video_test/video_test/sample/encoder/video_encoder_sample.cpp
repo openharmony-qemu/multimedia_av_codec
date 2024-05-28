@@ -35,6 +35,11 @@ namespace MediaAVCodec {
 namespace Sample {
 int32_t VideoEncoderSample::Init()
 {
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderSample::StartThread()
+{
     inputThread_ = (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b01) ?  // 0b01: Buffer mode mask
         std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this) :
         std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);

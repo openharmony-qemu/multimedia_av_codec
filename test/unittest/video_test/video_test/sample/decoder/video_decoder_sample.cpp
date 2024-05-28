@@ -42,6 +42,11 @@ int32_t VideoDecoderSample::Init()
         int32_t ret = CreateWindow(sampleInfo_.window);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
     }
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderSample::StartThread()
+{
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
@@ -49,7 +54,6 @@ int32_t VideoDecoderSample::Init()
         StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
-
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

@@ -34,6 +34,7 @@ public:
 
 private:
     int32_t Init() override;
+    int32_t StartThread() override;
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(OHNativeWindow *&window);

@@ -28,7 +28,7 @@ void CodecCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *use
     (void)codec;
     (void)errorCode;
     (void)userData;
-    AVCODEC_LOGE("On decoder error, error code: %{public}d", errorCode);
+    AVCODEC_LOGE("On codec error, error code: %{public}d", errorCode);
 }
 
 void CodecCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
