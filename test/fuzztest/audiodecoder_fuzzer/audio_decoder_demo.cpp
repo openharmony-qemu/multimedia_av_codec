@@ -102,7 +102,7 @@ vector<string> SplitStringFully(const string& str, const string& separator)
     return dest;
 }
 
-void string_replace(std::string& strBig, const std::string& strsrc, const std::string& strdst)
+void StringReplace(std::string& strBig, const std::string& strsrc, const std::string& strdst)
 {
     std::string::size_type pos = 0;
     std::string::size_type srclen = strsrc.size();
