@@ -223,7 +223,7 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashRead
             ret = DASH_READ_END;
             realReadLength = 0;
             if (mediaSegment_ != nullptr) {
-                MEDIA_LOG_I("Read: streamId"
+                MEDIA_LOG_I("Read: streamId:"
                 PUBLIC_LOG_D32
                 " ,segment "
                 PUBLIC_LOG_D64
