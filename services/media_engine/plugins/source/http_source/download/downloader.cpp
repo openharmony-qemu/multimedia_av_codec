@@ -357,7 +357,7 @@ bool Downloader::BeginDownload()
         client_->Open(url, httpHeader, timeoutMs);
     }
 
-    if (currentRequest_->requestWholeFile_) {
+    if (currentRequest_->endPos_ <= 0) {
         currentRequest_->startPos_ = 0;
         currentRequest_->requestSize_ = 2; // 2
     } else {
@@ -421,7 +421,7 @@ void Downloader::HandleRetOK()
         currentRequest_->retryTimes_ = 0;
     }
     int64_t remaining = 0;
-    if (currentRequest_->requestWholeFile_) {
+    if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
                     currentRequest_->startPos_;
     } else {
