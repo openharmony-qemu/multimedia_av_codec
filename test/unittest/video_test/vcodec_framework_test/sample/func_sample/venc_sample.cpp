@@ -806,18 +806,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail. index: %d", index);
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
-        if (NEED_DUMP && outFile_->is_open()) {
-            outFile_->close();
-        }
-        if (needCheckSHA_) {
-            VerifiedSHA();
-        }
-        cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
-        cout << "Get EOS Frame, output func exit" << endl;
-        unique_lock<mutex> lock(signal_->mutex_);
-        EXPECT_LE(frameOutputCount_, frameInputCount_);
-        signal_->isRunning_.store(false);
-        signal_->cond_.notify_all();
+        PerformEosFrameAndVerifiedSHA();
         return AV_ERR_OK;
     }
     return AV_ERR_OK;
@@ -993,12 +982,23 @@ void VideoEncSample::CheckSHA()
     cout << std::dec << "\n========================================\n";
 }
 
-void VideoEncSample::VerifiedSHA()
+void VideoEncSample::PerformEosFrameAndVerifiedSHA()
 {
-    (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
-    SHA512_Final(g_mdTest, &g_ctxTest);
-    OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
-    CheckSHA();
+    if (NEED_DUMP && outFile_->is_open()) {
+        outFile_->close();
+    }
+    if (needCheckSHA_) {
+        (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
+        SHA512_Final(g_mdTest, &g_ctxTest);
+        OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
+        CheckSHA();
+    }
+    cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
+    cout << "Get EOS Frame, output func exit" << endl;
+    unique_lock<mutex> lock(signal_->mutex_);
+    EXPECT_LE(frameOutputCount_, frameInputCount_);
+    signal_->isRunning_.store(false);
+    signal_->cond_.notify_all();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
