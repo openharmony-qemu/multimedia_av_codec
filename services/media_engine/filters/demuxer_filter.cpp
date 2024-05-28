@@ -178,22 +178,16 @@ Status DemuxerFilter::DoPrepare()
         }
         std::string mime;
         meta->GetData(Tag::MIME_TYPE, mime);
-        if (mime.substr(0, MIME_IMAGE.size()).compare(MIME_IMAGE) == 0) {
-            MEDIA_LOG_W("is image track, continue");
-            continue;
-        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
             continue;
         }
-        if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
-            MEDIA_LOG_W("mediaType disabled, index: %zu", index);
+        if (ShouldTrackSkipped(mediaType, mime, index)) {
             continue;
         }
         StreamType streamType;
-        MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
-        if (!FindStreamType(streamType, mediaType, mime)) {
+        if (!FindStreamType(streamType, mediaType, mime, index)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
         UpdateTrackIdMap(streamType, static_cast<int32_t>(index));
@@ -500,8 +494,9 @@ bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
     return false;
 }
 
-bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime)
+bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime, size_t index)
 {
+    MEDIA_LOG_I("mediaType is %{public}d", static_cast<int32_t>(mediaType));
     if (mediaType == MediaType::AUDIO) {
         if (mime == std::string(MimeType::AUDIO_RAW)) {
             streamType = StreamType::STREAMTYPE_RAW_AUDIO;
@@ -515,6 +510,21 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
         return false;
     }
     return true;
+}
+
+bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index)
+{
+    if (mime.substr(0, MIME_IMAGE.size()).compare(MIME_IMAGE) == 0) {
+        MEDIA_LOG_W("is image track, continue");
+        return true;
+    } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
+        MEDIA_LOG_W("mediaType disabled, index: %zu", index);
+        return true;
+    } else if (mediaType == MediaType::SUBTITLE) {
+        MEDIA_LOG_W("is subtitle track, continue");
+        return true;
+    }
+    return false;
 }
 
 Status DemuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
