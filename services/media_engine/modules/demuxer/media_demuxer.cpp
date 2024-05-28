@@ -317,6 +317,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
             AddDemuxerCopyTask(videoTrackId_, TaskType::VIDEO);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_);
             int32_t streamId = demuxerPluginManager_->GetStreamID(videoTrackId_);
+            streamDemuxer_->SetNewVideoStreamID(streamId);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
@@ -554,10 +555,25 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
         "SelectBitRate failed, source_ is nullptr.");
     MEDIA_LOG_I("SelectBitRate begin");
     if (demuxerPluginManager_->IsDash()) {
+        if (isSelectBitRate_.load() == true) {
+            MEDIA_LOG_W("SelectBitRate is running, can not select");
+            return Status::OK;
+        }
         isSelectBitRate_.store(true);
     }
     streamDemuxer_->Reset();
-    return source_->SelectBitRate(bitRate);
+    Status ret = source_->SelectBitRate(bitRate);
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("MediaDemuxer SelectBitRate failed");
+        if (demuxerPluginManager_->IsDash()) {
+           isSelectBitRate_.store(false);
+        }
+    } else {
+        if (demuxerPluginManager_->IsDash() && bitRate == demuxerPluginManager_->GetCurrentBitRate()) {
+            isSelectBitRate_.store(false);
+        }
+    }
+    return ret;
 }
 
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
@@ -973,6 +989,8 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     MEDIA_LOG_D("CopyFrameToUserQueue enter, copy frame for track: " PUBLIC_LOG_U32, trackId);
     int32_t size = 0;
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
+    FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "CopyFrameToUserQueue failed, pluginTemp is nullptr.");
     int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackID(trackId);
     Status ret = pluginTemp->GetNextSampleSize(innerTrackId, size);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
@@ -982,7 +1000,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     if (!GetBufferFromUserQueue(trackId, size)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (trackId == videoTrackId_ && demuxerPluginManager_->IsDash() && isSelectBitRate_.load() == true)  {
+    if (trackId == videoTrackId_ && demuxerPluginManager_->IsDash()) {
         auto result = ChangeStream(trackId);
         if (result) {
             return Status::OK;

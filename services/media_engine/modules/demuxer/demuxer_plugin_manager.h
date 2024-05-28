@@ -64,6 +64,7 @@ public:
     int32_t streamID = -1;
     bool activated = false;
     StreamType type;
+    uint32_t bitRate;
     std::string pluginName = "";
     std::shared_ptr<Plugins::DemuxerPlugin> plugin = nullptr;
     std::shared_ptr<DataSourceImpl> dataSource = nullptr;
@@ -104,6 +105,7 @@ public:
         Plugins::MediaInfo& mediaInfo);
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId);
     std::shared_ptr<Meta> GetUserMeta();
+    uint32_t GetCurrentBitRate();
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
