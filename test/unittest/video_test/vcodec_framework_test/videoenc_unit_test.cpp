@@ -1134,6 +1134,33 @@ HWTEST_F(TEST_SUIT, VideoEncoder_HDR_Function_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
+/**
+ * @tc.name: VideoEncoder_GetInputDescription_001
+ * @tc.desc: video codec GetInputDescription
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    format_ = videoEnc_->GetInputDescription();
+
+    int32_t pictureWidth = 0;
+    int32_t pictureHeight = 0;
+
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
+
+    EXPECT_GE(pictureWidth, DEFAULT_WIDTH_VENC - 1);
+    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT_VENC - 1);
+
+    EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
 #ifdef HMOS_TEST
 /**
  * @tc.name: VideoEncoder_TemporalScalability_001
