@@ -126,7 +126,8 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + (bufferSize > 0 ? 0 : ANNEXB_FRAME_HEAD_LEN),
             prereadBuffer_.get() + prereadBufferSize_, std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos);
-        (void)memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
+        auto ret = memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCODEC_SAMPLE_ERR_ERROR, "Copy buffer failed");
         pPrereadBuffer_ += size;
         bufferSize += size;
         pBuffer += size;
@@ -136,7 +137,9 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         }
 
         PrereadFile();
-        (void)memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN, pBuffer - ANNEXB_FRAME_HEAD_LEN, ANNEXB_FRAME_HEAD_LEN);
+        ret = memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN,
+            pBuffer - ANNEXB_FRAME_HEAD_LEN, ANNEXB_FRAME_HEAD_LEN);
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AVCODEC_SAMPLE_ERR_ERROR, "Copy buffer failed");
         if (std::search(pBuffer - ANNEXB_FRAME_HEAD_LEN, pBuffer,
             std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD)) == pBuffer) {
             bufferSize -= ANNEXB_FRAME_HEAD_LEN;
