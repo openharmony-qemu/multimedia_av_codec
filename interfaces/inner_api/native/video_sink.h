@@ -39,7 +39,7 @@ public:
     void SetFirstPts(int64_t pts);
     void SetSeekFlag();
     void SetLastPts(int64_t lastPts);
-    Staus SetParameter(const std::shared_ptr<Meta>& meta);
+    Status SetParameter(const std::shared_ptr<Meta>& meta);
 private:
     float GetSpeed(float speed);
     int64_t refreshTime_ {0};
