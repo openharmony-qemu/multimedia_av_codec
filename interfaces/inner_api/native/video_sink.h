@@ -41,6 +41,7 @@ public:
     void SetLastPts(int64_t lastPts);
     Staus SetParameter(const std::shared_ptr<Meta>& meta);
 private:
+    float GetSpeed(float speed);
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};

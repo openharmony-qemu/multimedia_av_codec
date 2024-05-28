@@ -85,6 +85,10 @@ struct IMediaSyncCenter {
     virtual void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) = 0;
 
     virtual int64_t GetSeekTime() = 0;
+
+    virtual Status SetPlaybackRate(float rate) = 0;
+
+    virtual float GetPlaybackRate() = 0;
 };
 } // namespace Pipeline
 } // namespace Media

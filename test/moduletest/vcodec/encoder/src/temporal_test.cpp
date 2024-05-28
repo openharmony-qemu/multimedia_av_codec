@@ -177,21 +177,23 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0010, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0020, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0020.h264";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->TEMPORAL_ENABLE = false;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 2;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0020.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->TEMPORAL_ENABLE = false;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -201,22 +203,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0020, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0030, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0030.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = false;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 2;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0030.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = false;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -226,23 +230,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0030, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0040, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0040.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_DEFAULT = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 0;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0040.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_DEFAULT = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -252,22 +258,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0040, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0440, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0440.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_DEFAULT = true;
-    int32_t temporalGopSize = 0;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0440.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_DEFAULT = true;
+        int32_t temporalGopSize = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -277,22 +285,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0440, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0050, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0050.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 2;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0050.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -302,23 +312,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0050, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0060, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0060.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0060.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
 
-    int32_t temporalGopSize = vEncSample->DEFAULT_FRAME_RATE-1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        int32_t temporalGopSize = vEncSample->DEFAULT_FRAME_RATE-1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -328,23 +340,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0060, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0070, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0070.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 2;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0070.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -354,23 +368,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0070, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0080, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0080.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = vEncSample->DEFAULT_FRAME_RATE-1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0080.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = vEncSample->DEFAULT_FRAME_RATE-1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -380,21 +396,23 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0080, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0090, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0090.h264";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 3;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0090.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 3;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -404,22 +422,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0090, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0100, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0100.h264";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 3;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0100.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 3;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -429,22 +449,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0100, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0110, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0110.h264";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0110.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -454,23 +476,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0110, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0120, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0120.h264";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0120.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -480,21 +504,23 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0120, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0130, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0130.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 6;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0130.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 6;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -504,22 +530,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0130, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0140, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0140.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 8;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0140.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 8;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -529,22 +557,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0140, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0150, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0150.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 9;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0150.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 9;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -554,23 +584,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0150, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0160, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0160.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 12;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0160.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 12;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -580,23 +612,25 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0160, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0170, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0170.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporalGopSize = 3;
-    vEncSample->enableForceIDR = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0170.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        int32_t temporalGopSize = 3;
+        vEncSample->enableForceIDR = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -606,24 +640,26 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0170, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0180, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0180.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_CONFIG = true;
-    vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporalGopSize = 4;
-    vEncSample->enableForceIDR = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_TEMPORAL_ENCODE_FUNCTION_0180.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = 4;
+        vEncSample->enableForceIDR = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -633,22 +669,24 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0180, TestSize.Lev
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_001, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_001.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 0;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-    vEncSample->ltrParam.ltrCount = 11;
-    ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_001.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->ltrParam.ltrCount = 11;
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
 }
 
 /**
@@ -674,22 +712,24 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_002, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_004, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_004.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_004.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -699,23 +739,25 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_005, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_005.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.useBadLtr = true;
-    vEncSample->ltrParam.ltrCount = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_005.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.useBadLtr = true;
+        vEncSample->ltrParam.ltrCount = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -725,24 +767,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_005, TestSize.Level1)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_006, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_006.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 10;
-    vEncSample->ltrParam.ltrInterval = 5;
-    vEncSample->ltrParam.useLtrIndex = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_006.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 10;
+        vEncSample->ltrParam.ltrInterval = 5;
+        vEncSample->ltrParam.useLtrIndex = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -752,23 +796,25 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_006, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_007, TestSize.Level2)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_007.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = false;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 10;
-    vEncSample->ltrParam.ltrInterval = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_007.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = false;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 10;
+        vEncSample->ltrParam.ltrInterval = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -778,24 +824,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_007, TestSize.Level2)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_008, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_008.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 2;
-    vEncSample->ltrParam.ltrInterval = 5;
-    vEncSample->ltrParam.useLtrIndex = 0;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_008.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 2;
+        vEncSample->ltrParam.ltrInterval = 5;
+        vEncSample->ltrParam.useLtrIndex = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -805,22 +853,24 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_008, TestSize.Level1)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_009, TestSize.Level2)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_009.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->ltrParam.ltrCount = -1;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->enableLTR = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_009.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->ltrParam.ltrCount = -1;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->enableLTR = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -830,23 +880,25 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_009, TestSize.Level2)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_010, TestSize.Level1)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_010.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableLTR = true;
-    vEncSample->TEMPORAL_ENABLE = true;
-    vEncSample->TEMPORAL_DEFAULT = true;
-    int32_t temporalGopSize = 0;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_010.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableLTR = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_DEFAULT = true;
+        int32_t temporalGopSize = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -856,24 +908,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_010, TestSize.Level1)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_011, TestSize.Level0)
 {
-    auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
-    vEncApi11Sample->INP_DIR = INP_DIR_720;
-    vEncApi11Sample->DEFAULT_WIDTH = 1280;
-    vEncApi11Sample->DEFAULT_HEIGHT = 720;
-    vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
-    vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
-    vEncApi11Sample->SURF_INPUT = false;
-    vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
-    vEncApi11Sample->OUT_DIR = "/data/test/media/out/LTR_FUNC_011.h264";
-    vEncApi11Sample->ltrParam.enableUseLtr = true;
-    vEncApi11Sample->ltrParam.ltrCount = 5;
-    vEncApi11Sample->ltrParam.ltrInterval = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
-    vEncApi11Sample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
+        vEncApi11Sample->INP_DIR = INP_DIR_720;
+        vEncApi11Sample->DEFAULT_WIDTH = 1280;
+        vEncApi11Sample->DEFAULT_HEIGHT = 720;
+        vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
+        vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
+        vEncApi11Sample->SURF_INPUT = false;
+        vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
+        vEncApi11Sample->OUT_DIR = "/data/test/media/LTR_FUNC_011.h264";
+        vEncApi11Sample->ltrParam.enableUseLtr = true;
+        vEncApi11Sample->ltrParam.ltrCount = 5;
+        vEncApi11Sample->ltrParam.ltrInterval = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
+        vEncApi11Sample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    }
 }
 
 /**
@@ -883,24 +937,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_011, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_012, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_012.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 5;
-    vEncSample->ltrParam.ltrInterval = 5;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->ltrParam.useLtrIndex = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_012.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 5;
+        vEncSample->ltrParam.ltrInterval = 5;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->ltrParam.useLtrIndex = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -910,24 +966,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_012, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_013, TestSize.Level0)
 {
-    auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
-    vEncApi11Sample->INP_DIR = INP_DIR_720;
-    vEncApi11Sample->DEFAULT_WIDTH = 1280;
-    vEncApi11Sample->DEFAULT_HEIGHT = 720;
-    vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
-    vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
-    vEncApi11Sample->SURF_INPUT = false;
-    vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
-    vEncApi11Sample->OUT_DIR = "/data/test/media/out/LTR_FUNC_013.h265";
-    vEncApi11Sample->ltrParam.enableUseLtr = true;
-    vEncApi11Sample->ltrParam.ltrCount = 5;
-    vEncApi11Sample->ltrParam.ltrInterval = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
-    vEncApi11Sample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
+        vEncApi11Sample->INP_DIR = INP_DIR_720;
+        vEncApi11Sample->DEFAULT_WIDTH = 1280;
+        vEncApi11Sample->DEFAULT_HEIGHT = 720;
+        vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
+        vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
+        vEncApi11Sample->SURF_INPUT = false;
+        vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
+        vEncApi11Sample->OUT_DIR = "/data/test/media/LTR_FUNC_013.h265";
+        vEncApi11Sample->ltrParam.enableUseLtr = true;
+        vEncApi11Sample->ltrParam.ltrCount = 5;
+        vEncApi11Sample->ltrParam.ltrInterval = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
+        vEncApi11Sample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    }
 }
 
 /**
@@ -937,24 +995,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_013, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_014, TestSize.Level0)
 {
-    auto vEncSample = make_unique<VEncAPI11Sample>();
-    vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_014.h265";
-    vEncSample->INP_DIR = INP_DIR_720;
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
-    vEncSample->SURF_INPUT = true;
-    vEncSample->enableLTR = true;
-    vEncSample->ltrParam.ltrCount = 5;
-    vEncSample->ltrParam.ltrInterval = 5;
-    vEncSample->ltrParam.enableUseLtr = true;
-    vEncSample->ltrParam.useLtrIndex = 1;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-    vEncSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/LTR_FUNC_014.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->enableLTR = true;
+        vEncSample->ltrParam.ltrCount = 5;
+        vEncSample->ltrParam.ltrInterval = 5;
+        vEncSample->ltrParam.enableUseLtr = true;
+        vEncSample->ltrParam.useLtrIndex = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
 }
 
 /**
@@ -964,25 +1024,27 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_014, TestSize.Level0)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_015, TestSize.Level1)
 {
-    auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
-    vEncApi11Sample->INP_DIR = INP_DIR_720;
-    vEncApi11Sample->DEFAULT_WIDTH = 1280;
-    vEncApi11Sample->DEFAULT_HEIGHT = 720;
-    vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
-    vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
-    vEncApi11Sample->SURF_INPUT = false;
-    vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
-    vEncApi11Sample->OUT_DIR = "/data/test/media/out/LTR_FUNC_015.h264";
-    vEncApi11Sample->ltrParam.enableUseLtr = true;
-    vEncApi11Sample->ltrParam.markAndUseSelf = true;
-    vEncApi11Sample->ltrParam.ltrCount = 5;
-    vEncApi11Sample->ltrParam.ltrInterval = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
-    vEncApi11Sample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
+        vEncApi11Sample->INP_DIR = INP_DIR_720;
+        vEncApi11Sample->DEFAULT_WIDTH = 1280;
+        vEncApi11Sample->DEFAULT_HEIGHT = 720;
+        vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
+        vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
+        vEncApi11Sample->SURF_INPUT = false;
+        vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
+        vEncApi11Sample->OUT_DIR = "/data/test/media/LTR_FUNC_015.h264";
+        vEncApi11Sample->ltrParam.enableUseLtr = true;
+        vEncApi11Sample->ltrParam.markAndUseSelf = true;
+        vEncApi11Sample->ltrParam.ltrCount = 5;
+        vEncApi11Sample->ltrParam.ltrInterval = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
+        vEncApi11Sample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    }
 }
 
 /**
@@ -992,26 +1054,26 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_015, TestSize.Level1)
  */
 HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_016, TestSize.Level1)
 {
-    auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
-    vEncApi11Sample->INP_DIR = INP_DIR_720;
-    vEncApi11Sample->DEFAULT_WIDTH = 1280;
-    vEncApi11Sample->DEFAULT_HEIGHT = 720;
-    vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
-    vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
-    vEncApi11Sample->SURF_INPUT = false;
-    vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
-    vEncApi11Sample->OUT_DIR = "/data/test/media/out/LTR_FUNC_016.h265";
-    vEncApi11Sample->ltrParam.enableUseLtr = true;
-    vEncApi11Sample->ltrParam.markAndUseSelf = true;
-    vEncApi11Sample->ltrParam.ltrCount = 5;
-    vEncApi11Sample->ltrParam.ltrInterval = 5;
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
-    vEncApi11Sample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncApi11Sample = make_unique<VEncAPI11Sample>();
+        vEncApi11Sample->INP_DIR = INP_DIR_720;
+        vEncApi11Sample->DEFAULT_WIDTH = 1280;
+        vEncApi11Sample->DEFAULT_HEIGHT = 720;
+        vEncApi11Sample->DEFAULT_FRAME_RATE = 30;
+        vEncApi11Sample->DEFAULT_BITRATE_MODE = CBR;
+        vEncApi11Sample->SURF_INPUT = false;
+        vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
+        vEncApi11Sample->OUT_DIR = "/data/test/media/LTR_FUNC_016.h265";
+        vEncApi11Sample->ltrParam.enableUseLtr = true;
+        vEncApi11Sample->ltrParam.markAndUseSelf = true;
+        vEncApi11Sample->ltrParam.ltrCount = 5;
+        vEncApi11Sample->ltrParam.ltrInterval = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
+        vEncApi11Sample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
+    }
 }
-
-
 } // namespace

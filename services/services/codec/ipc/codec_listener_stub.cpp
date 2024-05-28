@@ -71,11 +71,11 @@ public:
         if (flag_ == CacheFlag::UPDATE_CACHE) {
             UpdateFunction(elem, parcel, filter);
             if (iter == caches_.end()) {
-                AVCODEC_LOGD("Add cache, index: %{public}u", index);
+                PrintLogOnUpdateBuffer(index);
                 caches_.emplace(index, elem);
             } else {
                 iter->second = elem;
-                AVCODEC_LOGD("Update cache, index: %{public}u", index);
+                PrintLogOnUpdateBuffer(index);
             }
             return;
         }
@@ -83,7 +83,7 @@ public:
         if (iter != caches_.end()) {
             caches_.erase(iter);
         }
-        AVCODEC_LOGD("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag_);
+        AVCODEC_LOGE("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag_);
         return;
     }
 
@@ -123,6 +123,15 @@ public:
         auto iter = MEMORYTYPE_MAP.find(buffer->memory_->GetMemoryType());
         CHECK_AND_RETURN_RET_LOG(iter != MEMORYTYPE_MAP.end(), "UNKNOWN_MEMORY", "unknown memory type");
         return iter->second;
+    }
+
+    inline void PrintLogOnUpdateBuffer(const uint32_t &index)
+    {
+        if (caches_.size() <= 1) {
+            AVCODEC_LOGI("index: %{public}u, isOutput: %{public}d", index, isOutput_);
+        } else {
+            AVCODEC_LOGD("index: %{public}u, isOutput: %{public}d", index, isOutput_);
+        }
     }
 
 private:

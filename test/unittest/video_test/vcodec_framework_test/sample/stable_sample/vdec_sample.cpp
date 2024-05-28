@@ -285,7 +285,7 @@ int32_t VideoDecSample::Configure()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixcel_);
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
     int32_t ret = OH_VideoDecoder_Configure(codec_, format);

@@ -36,7 +36,8 @@ constexpr int32_t DEFAULT_OUT_SURFACE_CNT = 4;
 constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr int32_t VIDEO_MIN_SIZE = 96;
+constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1024;
+constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
 constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
@@ -168,6 +169,11 @@ int32_t FCodec::ConfigureContext(const Format &format)
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
+
     avCodecContext_->width = width_;
     avCodecContext_->height = height_;
     avCodecContext_->thread_count = DEFAULT_THREAD_COUNT;
@@ -543,14 +549,6 @@ int32_t FCodec::GetOutputFormat(Format &format)
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
 
-    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_STRIDE)) {
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
-    }
-
-    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT)) {
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
-    }
-
     format = format_;
     AVCODEC_LOGI("Get outputFormat successful");
     return AVCS_ERR_OK;
@@ -559,8 +557,8 @@ int32_t FCodec::GetOutputFormat(Format &format)
 void FCodec::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-    inputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
-    outputBufferSize_ = inputBufferSize_;
+    outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
+    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
@@ -713,7 +711,7 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
     std::unique_lock<std::mutex> oLock(outputMutex_);
-    std::shared_ptr<FBuffer> &outputBuffer = buffers_[INDEX_OUTPUT][index];
+    std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     oLock.unlock();
     if (width_ != outputBuffer->width_ || height_ != outputBuffer->height_) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
@@ -749,6 +747,10 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
         CalculateBufferSize();
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
         if (sInfo_.surface) {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
             sInfo_.requestConfig.width = width_;
@@ -1107,6 +1109,8 @@ int32_t FCodec::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemor
 int32_t FCodec::RenderOutputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNSUPPORT,
+                             "RenderOutputBuffer fail, surface is nullptr");
     std::unique_lock<std::mutex> oLock(outputMutex_);
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Failed to render output buffer: invalid index");

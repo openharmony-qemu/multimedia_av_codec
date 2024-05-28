@@ -44,8 +44,8 @@ int32_t ReadYUV420SP(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int
     if (width == 0) {
         return 0;
     }
-    int32_t pixcelSize = int32_t(stride / width);
-    width *= pixcelSize;
+    int32_t pixelSize = int32_t(stride / width);
+    width *= pixelSize;
     for (int32_t i = 0; i < (height * 3 / 2); ++i) { // 3: nom, 2: denom
         signal->inFile_->read(reinterpret_cast<char *>(addr), width);
         addr += stride;
@@ -59,8 +59,8 @@ int32_t ReadYUV420P(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int3
     if (width == 0) {
         return 0;
     }
-    int32_t pixcelSize = int32_t(stride / width);
-    width *= pixcelSize;
+    int32_t pixelSize = int32_t(stride / width);
+    width *= pixelSize;
     // Y
     for (int32_t i = 0; i < height; ++i) {
         signal->inFile_->read(reinterpret_cast<char *>(addr), width);
@@ -81,8 +81,8 @@ int32_t ReadRGBA(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t
     if (width == 0) {
         return 0;
     }
-    int32_t pixcelSize = int32_t(stride / width);
-    width *= pixcelSize;
+    int32_t pixelSize = int32_t(stride / width);
+    width *= pixelSize;
     for (int32_t i = 0; i < height; ++i) {
         signal->inFile_->read(reinterpret_cast<char *>(addr), width);
         addr += stride;
@@ -90,9 +90,9 @@ int32_t ReadRGBA(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t
     return stride * height;
 }
 
-ReadFrame GetReadOneFrame(int32_t pixcelFormat)
+ReadFrame GetReadOneFrame(int32_t pixelFormat)
 {
-    switch (pixcelFormat) {
+    switch (pixelFormat) {
         case AV_PIXEL_FORMAT_YUVI420:
             return ReadYUV420P;
         case AV_PIXEL_FORMAT_NV21:
@@ -242,7 +242,7 @@ int32_t VideoEncSample::Configure()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixcel_);
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
     int32_t ret = OH_VideoEncoder_Configure(codec_, format);
@@ -519,7 +519,7 @@ int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_HEIGHT, &height);
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
 
-    attr.size = GetReadOneFrame(samplePixcel_)(signal_, addr, width, height, stride);
+    attr.size = GetReadOneFrame(samplePixel_)(signal_, addr, width, height, stride);
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     if (isFirstFrame_) {
         attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;

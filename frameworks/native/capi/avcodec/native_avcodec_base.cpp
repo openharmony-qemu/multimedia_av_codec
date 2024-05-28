@@ -34,7 +34,6 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS = "audio/opus";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
-const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC = "video/vvc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_APE = "audio/x-ape";
 const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT = "application/x-subrip";
@@ -113,11 +112,17 @@ const char *OH_MD_KEY_VIDEO_CROP_LEFT = "video_crop_left";
 const char *OH_MD_KEY_VIDEO_CROP_RIGHT = "video_crop_right";
 const char *OH_MD_KEY_VIDEO_STRIDE = "stride";
 const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT = "video_slice_height";
+const char *OH_MD_KEY_VIDEO_PIC_WIDTH = "video_picture_width";
+const char *OH_MD_KEY_VIDEO_PIC_HEIGHT = "video_picture_height";
 const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY = "video_enable_low_latency";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX = "video_encoder_qp_max";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN = "video_encoder_qp_min";
 const char *OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE = "video_encoder_qp_average";
 const char *OH_MD_KEY_VIDEO_ENCODER_MSE = "video_encoder_mse";
+const char *OH_MD_KEY_DECODING_TIMESTAMP = "decoding_timestamp";
+const char *OH_MD_KEY_BUFFER_DURATION = "buffer_duration";
+const char *OH_MD_KEY_VIDEO_SAR = "video_sar";
+const char *OH_MD_KEY_START_TIME = "start_time";
 
 #ifdef __cplusplus
 }

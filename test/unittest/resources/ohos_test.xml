@@ -268,6 +268,7 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media/audio"/>
             <option name="push" value="demuxer_res/test_264_B_Gop25_4sec_cover.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/test_265_B_Gop25_4sec.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/test_mpeg2_B_Gop25_4sec.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/test_suffix_mismatch.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/test_empty_file.mp4 -> /data/test/media" src="res"/>
@@ -310,6 +311,7 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media/audio"/>
             <option name="push" value="demuxer_res/test_264_B_Gop25_4sec_cover.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/test_265_B_Gop25_4sec.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/test_mpeg2_B_Gop25_4sec.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/test_suffix_mismatch.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/test_empty_file.mp4 -> /data/test/media" src="res"/>

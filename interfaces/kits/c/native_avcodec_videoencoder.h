@@ -43,7 +43,8 @@ typedef void (*OH_VideoEncoder_OnNeedInputParameter)(OH_AVCodec *codec, uint32_t
  * @brief Creates a video encoder instance from the mime type, which is recommended in most cases.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param mime mime type description string, refer to {@link AVCODEC_MIME_TYPE}
- * @return Returns a Pointer to an OH_AVCodec instance
+ * @return Returns a Pointer to an OH_AVCodec instance.
+ * Return nullptr if memory ran out or the mime type is not supported.
  * @since 9
  * @version 1.0
  */
@@ -54,7 +55,8 @@ OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime);
  * know the exact name of the encoder.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param name Video encoder name
- * @return Returns a Pointer to an OH_AVCodec instance
+ * @return Returns a Pointer to an OH_AVCodec instance.
+ * Return nullptr if memory ran out or the encoder name is not supported.
  * @since 9
  * @version 1.0
  */
@@ -65,7 +67,11 @@ OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, inner resource has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * @since 9
  * @version 1.0
  */
@@ -79,7 +85,12 @@ OH_AVErrCode OH_VideoEncoder_Destroy(OH_AVCodec *codec);
  * @param callback A collection of all callback functions, see {@link OH_AVCodecAsyncCallback}
  * @param userData User specific data
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, inner resource has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * @deprecated since 11
  * @useinstead OH_VideoEncoder_RegisterCallback
  * @since 9
@@ -94,8 +105,13 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
  * @param codec Pointer to an OH_AVCodec instance
  * @param callback A collection of all callback functions, see {@link OH_AVCodecCallback}
  * @param userData User specific data
- * @return Returns AV_ERR_OK if the execution is successful, otherwise returns a specific error code, refer to {@link
- * OH_AVErrCode}
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, inner resource has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * @since 11
  */
 OH_AVErrCode OH_VideoEncoder_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallback callback, void *userData);
@@ -109,8 +125,13 @@ OH_AVErrCode OH_VideoEncoder_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallb
  * @param codec Pointer to an OH_AVCodec instance
  * @param onInputParameter A callback functions, see {@link OH_VideoEncoder_OnNeedInputParameter}
  * @param userData User specific data
- * @return Returns AV_ERR_OK if the execution is successful, otherwise returns a specific error code, refer to {@link
- * OH_AVErrCode}
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, inner resource has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * @since 12
  */
 OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec,
@@ -124,7 +145,12 @@ OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec,
  * @param codec Pointer to an OH_AVCodec instance
  * @param format A pointer to an OH_AVFormat that gives the description of the video track to be encoded
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid. Invalid param in format.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * @since 9
  * @version 1.0
  */
@@ -136,7 +162,12 @@ OH_AVErrCode OH_VideoEncoder_Configure(OH_AVCodec *codec, OH_AVFormat *format);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -148,7 +179,12 @@ OH_AVErrCode OH_VideoEncoder_Prepare(OH_AVCodec *codec);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -159,7 +195,12 @@ OH_AVErrCode OH_VideoEncoder_Start(OH_AVCodec *codec);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -172,7 +213,12 @@ OH_AVErrCode OH_VideoEncoder_Stop(OH_AVCodec *codec);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -184,7 +230,12 @@ OH_AVErrCode OH_VideoEncoder_Flush(OH_AVCodec *codec);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -196,7 +247,8 @@ OH_AVErrCode OH_VideoEncoder_Reset(OH_AVCodec *codec);
  * be manually released by the caller.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
- * @return Returns a pointer to an OH_AVFormat instance
+ * @return Returns a pointer to an OH_AVFormat instance.
+ * Return nullptr if the codec is nullptr or invaild.
  * @since 9
  * @version 1.0
  */
@@ -209,7 +261,12 @@ OH_AVFormat *OH_VideoEncoder_GetOutputDescription(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @param format OH_AVFormat handle pointer
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid. Invalid param in format.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -222,7 +279,12 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(OH_AVCodec *codec, OH_AVFormat *format
  * @param window A pointer to a OHNativeWindow instance, see {@link OHNativeWindow}, the application is responsible for
  * managing the life cycle of the window, call OH_NativeWindow_DestroyNativeWindow() when done.
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, inner resource has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -234,7 +296,13 @@ OH_AVErrCode OH_VideoEncoder_GetSurface(OH_AVCodec *codec, OHNativeWindow **wind
  * @param codec Pointer to an OH_AVCodec instance
  * @param index The index value corresponding to the output Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * Buffer index should be given by {@link OH_AVCodecOnNewOutputData}.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @deprecated since 11
  * @useinstead OH_VideoEncoder_FreeOutputBuffer
  * @since 9
@@ -248,7 +316,12 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 9
  * @version 1.0
  */
@@ -261,7 +334,13 @@ OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec);
  * @param index Enter the index value corresponding to the Buffer
  * @param attr Information describing the data contained in the Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * Buffer index should be given by {@link OH_AVCodecOnNeedInputData}.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @deprecated since 11
  * @useinstead OH_VideoEncoder_PushInputBuffer
  * @since 10
@@ -274,7 +353,14 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH
  * @param codec Pointer to an OH_AVCodec instance
  * @param index Enter the index value corresponding to the Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * Buffer index should be given by {@link OH_AVCodecOnNeedInputBuffer}.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+
  * @since 11
  */
 OH_AVErrCode OH_VideoEncoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
@@ -286,7 +372,13 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
  * @param codec Pointer to an OH_AVCodec instance
  * @param index Enter the index value corresponding to the input parameter
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * Index should be given by {@link OH_VideoEncoder_OnNeedInputParameter}.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 12
  */
 OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t index);
@@ -297,7 +389,13 @@ OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t inde
  * @param codec Pointer to an OH_AVCodec instance
  * @param index The index value corresponding to the output Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * Buffer index should be given by {@link OH_AVCodecOnNewOutputBuffer}.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
+ * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
  * @since 11
  */
 OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
@@ -308,7 +406,8 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index)
  * instance pointed to by the return value needs to be manually released by the caller.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
- * @return Returns a pointer to an OH_AVFormat instance
+ * @return Returns a pointer to an OH_AVFormat instance.
+ * Return nullptr if the encoder is nullptr or invaild.
  * @since 10
  */
 OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
@@ -321,7 +420,11 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
  * @param isValid Output Parameter. A pointer to a boolean instance, it is true if the codec instance is valid,
  * false if the codec instance is invalid
  * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
+ * {@link AV_ERR_NO_MEMORY}, instance has already released.
+ * {@link AV_ERR_INVALID_VAL}, the encoder is nullptr or invalid.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * @since 10
  */
 OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid);

@@ -110,6 +110,7 @@ int32_t VEncFuzzSample::ConfigureVideoEncoder()
 
 int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
 {
+    OH_VideoEncoder_Reset(venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
     if (format == nullptr) {
         cout << "Fatal: Failed to create format" << endl;
@@ -216,6 +217,9 @@ int32_t VEncFuzzSample::StartVideoEncoder()
     isRunning_.store(true);
     int32_t ret = 0;
     ret = OH_VideoEncoder_Start(venc_);
+    OH_VideoEncoder_Stop(venc_);
+    Flush();
+    ret = OH_VideoEncoder_Start(venc_);
     GetStride();
     if (ret != AV_ERR_OK) {
         cout << "Failed to start codec" << endl;
@@ -250,6 +254,21 @@ int32_t VEncFuzzSample::StartVideoEncoder()
 
 int32_t VEncFuzzSample::CreateVideoEncoder(const char *codecName)
 {
+    venc_ = OH_VideoEncoder_CreateByMime("aabbcc");
+    if (venc_) {
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
+    venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    if (venc_) {
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
+    venc_ = OH_VideoEncoder_CreateByName("aabbcc");
+    if (venc_) {
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     g_encSample = this;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;

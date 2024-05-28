@@ -39,11 +39,11 @@ struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
-    size_t maxRetryTimes {100};
+    const static size_t maxRetryTimes {100};
+    const static int sleepTime {10};
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
-    unsigned int sleepTime {10};
 
     void Update(const HeaderInfo* info)
     {
@@ -75,6 +75,7 @@ using DownloadDoneCbFunc = std::function<void(const std::string&, const std::str
 struct MediaSouce {
     std::string url;
     std::map<std::string, std::string> httpHeader;
+    int32_t timeoutMs{-1};
 };
 
 class DownloadRequest {
@@ -107,6 +108,7 @@ public:
     void Close();
     double GetDuration() const;
     void SetStartTimePos(int64_t startTimePos);
+    void SetRangePos(int64_t startPos, int64_t endPos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
     uint32_t GetBitRate() const;
@@ -125,6 +127,7 @@ private:
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
     int64_t startPos_ {0};
+    int64_t endPos_ {-1};
     int64_t startTimePos_ {0};
     bool isDownloading_ {false};
     bool requestWholeFile_ {false};
@@ -149,7 +152,7 @@ public:
 
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
     void Start();
-    void Pause();
+    void Pause(bool isAsync = false);
     void Resume();
     void Stop(bool isAsync = false);
     bool Seek(int64_t offset);

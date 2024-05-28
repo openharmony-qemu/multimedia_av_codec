@@ -769,6 +769,39 @@ void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::
     HLOGI("pts=%" PRId64 ", qp=(%d~%d)", omxBuffer->pts, minQp, maxQp);
 }
 
+void HEncoder::ExtractPerFrameParamFromOmxBuffer(
+    const shared_ptr<OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
+{
+    meta->Clear();
+    BinaryReader reader(static_cast<uint8_t*>(omxBuffer->alongParam.data()), omxBuffer->alongParam.size());
+    int* index = nullptr;
+    while ((index = reader.Read<int>()) != nullptr) {
+        switch (*index) {
+            case OMX_IndexParamEncOutQp: {
+                auto *averageQp = reader.Read<OMX_S32>();
+                if (averageQp == nullptr) {
+                    return;
+                }
+                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
+                break;
+            }
+            case OMX_IndexParamEncOutMse: {
+                auto *averageMseLcu = reader.Read<OMX_S32>();
+                if (averageMseLcu == nullptr) {
+                    return;
+                }
+                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE,
+                              static_cast<double>(*averageMseLcu));
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+    omxBuffer->alongParam.clear();
+}
+
 int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
 {
     inputBufferPool_.clear();
@@ -904,6 +937,7 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
     info.surfaceBuffer = entry.buffer;
 
     if (enableSurfaceModeInputCb_) {
+        info.avBuffer->pts_ = entry.timestamp;
         NotifyUserToFillThisInBuffer(info);
     } else {
         err = NotifyOmxToEmptyThisInBuffer(info);

@@ -247,7 +247,10 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
     auto ret = DoStart();
-    if (ret == Status::OK) {
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
+    } else {
         isNeedStartDecoder_ = false;
     }
     return ret;

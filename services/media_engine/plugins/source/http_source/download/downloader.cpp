@@ -169,6 +169,12 @@ void DownloadRequest::SetStartTimePos(int64_t startTimePos)
     }
 }
 
+void DownloadRequest::SetRangePos(int64_t startPos, int64_t endPos)
+{
+    startPos_ = startPos;
+    endPos_ = endPos;
+}
+
 void DownloadRequest::SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback)
 {
     downloadDoneCallback_ = downloadDoneCallback;
@@ -231,7 +237,7 @@ void Downloader::Start()
     MEDIA_LOG_I("start End");
 }
 
-void Downloader::Pause()
+void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     {
@@ -239,7 +245,11 @@ void Downloader::Pause()
         MEDIA_LOG_I("pause Begin");
         requestQue_->SetActive(false, false);
     }
-    task_->Pause();
+    if (isAsync) {
+        task_->PauseAsync();
+    } else {
+        task_->Pause();
+    }
     MEDIA_LOG_I("pause End");
 }
 
@@ -327,7 +337,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
                 currentRequest_->retryTimes_++;
                 MEDIA_LOG_D("Do retry.");
             }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
             requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
         }
@@ -341,13 +351,19 @@ bool Downloader::BeginDownload()
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
+    int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
-        client_->Open(url, httpHeader);
+        client_->Open(url, httpHeader, timeoutMs);
     }
 
-    currentRequest_->requestSize_ = 2; // 2
-    currentRequest_->startPos_ = 0;
+    if (currentRequest_->requestWholeFile_) {
+        currentRequest_->startPos_ = 0;
+        currentRequest_->requestSize_ = 2; // 2
+    } else {
+        int64_t temp = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+        currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<int64_t>(PER_REQUEST_SIZE)));
+    }
     currentRequest_->isEos_ = false;
     currentRequest_->retryTimes_ = 0;
     currentRequest_->downloadStartTime_ = currentRequest_->GetNowTime();
@@ -404,10 +420,15 @@ void Downloader::HandleRetOK()
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
-    int64_t remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
-        currentRequest_->startPos_;
+    int64_t remaining = 0;
+    if (currentRequest_->requestWholeFile_) {
+        remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
+                    currentRequest_->startPos_;
+    } else {
+        remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+    }
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // 检查是否播放结束
-        MEDIA_LOG_D("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
+        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
             currentRequest_->startPos_, currentRequest_->url_.c_str());
         currentRequest_->isEos_ = true;
         if (requestQue_->Empty()) {

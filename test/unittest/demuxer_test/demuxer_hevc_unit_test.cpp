@@ -67,8 +67,7 @@ string g_fmp4HevcUri = TEST_URI_PATH + string("h265_fmp4.mp4");
 string g_doubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_doubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 string g_hls = TEST_URI_PATH2 + string("index_265.m3u8");
-string g_mp4VvcUri = TEST_URI_PATH + string("vvc.mp4");
-string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
+string g_mp4265InfoParsePath = TEST_FILE_PATH + string("test_265_B_Gop25_4sec.mp4");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -79,6 +78,11 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"tsHevcAac",  {{"frames", {303,  433}}, {"kFrames", {11, 433}}}},
     {"fmp4Hevc",  {{"frames", {604,  433}}, {"kFrames", {3, 433}}}},
     {"doubleVivid",  {{"frames", {76,  116}}, {"kFrames", {3, 116}}}},
+    {"mp4265InfoParse",  {{"frames", {103,  174}}, {"kFrames", {5, 174}}}},
+};
+
+std::map<std::string, std::vector<int32_t>> discardFrameIndexMap = {
+    {g_mp4265InfoParsePath, {-1, 1}}
 };
 } // namespace
 
@@ -101,7 +105,7 @@ void DemuxerUnitTest::InitResource(const std::string &path, bool local)
     ASSERT_NE(demuxer_, nullptr);
 }
 
-void DemuxerUnitTest::ReadSample(const std::string &path, bool local)
+void DemuxerUnitTest::ReadSample(const std::string &path, bool local, bool checkBufferInfo)
 {
     InitResource(path, local);
     SetInitValue();
@@ -113,8 +117,13 @@ void DemuxerUnitTest::ReadSample(const std::string &path, bool local)
 
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_, checkBufferInfo), AV_ERR_OK);
             CountFrames(idx);
+            if (checkBufferInfo && discardFrameIndexMap.count(path) != 0 &&
+                flag_ & static_cast<uint32_t>(AVBufferFlag::DISCARD)) {
+                printf("[track %d] frame %d flag is discard\n", idx, frames_[idx]);
+                ASSERT_EQ(discardFrameIndexMap[path][idx], frames_[idx]);
+            }
         }
     }
 }
@@ -1246,70 +1255,22 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1413, TestSize.Level1)
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
 
-
 /**
- * @tc.name: Demuxer_ReadSample_1611
- * @tc.desc: copy current sample to buffer(mp4 vvc)
+ * @tc.name: Demuxer_ReadSample_1200
+ * @tc.desc: copy current sample to buffer, local
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1611, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1700, TestSize.Level1)
 {
-    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
+    if (access(g_mp4265InfoParsePath.c_str(), F_OK) != 0) {
         return;
     }
-    InitResource(g_mp4VvcUri, URI);
-    ASSERT_NE(source_, nullptr);
-    ASSERT_NE(format_, nullptr);
-    ASSERT_NE(demuxer_, nullptr);
-    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    SetInitValue();
-    uint32_t idx = 0;
-    while (!isEOS(eosFlag_)) {
-        ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx);
-    }
-    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
-    ASSERT_EQ(frames_[0], 600);
-    ASSERT_EQ(keyFrames_[0], 10);
-    RemoveValue();
-}
-
-/**
- * @tc.name: Demuxer_SeekToTime_1611
- * @tc.desc: seek to the specified time(mpv vvc uri)
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1611, TestSize.Level1)
-{
-    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_mp4VvcUri, URI);
-    SetInitValue();
+    ReadSample(g_mp4265InfoParsePath, LOCAL, true);
     for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+        ASSERT_EQ(frames_[idx], infoMap["mp4265InfoParse"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mp4265InfoParse"]["kFrames"][idx]);
     }
-    list<int64_t> toPtsList = {0, 4500, 7000, 2000}; // ms
-    vector<int32_t> audioVals = {433, 433, 433, 240, 240, 240, 132, 132, 132, 348, 348, 348};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            ret_ = demuxer_->SeekToTime(*toPts, *mode);
-            if (ret_ != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                continue;
-            }
-            ReadData();
-            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
-            numbers_ += 1;
-            RemoveValue();
-            selectedTrackIds_.clear();
-        }
-    }
-    ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
-    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 } // namespace

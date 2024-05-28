@@ -35,8 +35,8 @@ public:
 
     ~TypeFinder() override;
 
-    void Init(std::string uri, uint64_t mediaDataSize, std::function<bool(uint64_t, size_t)> checkRange,
-        std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange);
+    void Init(std::string uri, uint64_t mediaDataSize, std::function<bool(int32_t, uint64_t, size_t)> checkRange,
+        std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId);
 
     std::string FindMediaType();
 
@@ -45,6 +45,10 @@ public:
     Status GetSize(uint64_t& size) override;
 
     Plugins::Seekable GetSeekable() override;
+
+    int32_t GetStreamID() override;
+
+    bool IsDash() override { return false; }
 
 private:
     std::string SniffMediaType();
@@ -66,9 +70,10 @@ private:
     std::vector<std::shared_ptr<Plugins::PluginInfo>> plugins_;
     std::atomic<bool> pluginRegistryChanged_;
     std::shared_ptr<Task> task_;
-    std::function<bool(uint64_t, size_t)> checkRange_;
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
+    std::function<bool(int32_t, uint64_t, size_t)> checkRange_;
+    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
+    int32_t streamID_ = -1;
 };
 } // namespace Media
 } // namespace OHOS
