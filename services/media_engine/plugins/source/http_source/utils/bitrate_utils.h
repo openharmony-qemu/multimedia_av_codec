@@ -20,11 +20,13 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
+constexpr double BUFFER_LIMIT_FACT = 0.8;
+
 uint32_t GetDesBitrate(std::vector<uint32_t> bitRates, uint64_t downloadSpeed)
 {
     uint32_t desBitrate = bitRates[0];
     for (size_t i = 0; i<bitRates.size(); ++i) {
-        if (bitRates[i] < downloadSpeed * 0.8) {
+        if (bitRates[i] < downloadSpeed * BUFFER_LIMIT_FACT) {
             desBitrate = bitRates[i];
         } else {
             break;
