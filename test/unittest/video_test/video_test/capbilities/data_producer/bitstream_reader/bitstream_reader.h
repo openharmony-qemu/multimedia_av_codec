@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#ifndef AVCODEC_SAMPLE_BITSTREAM_READER_H
+#define AVCODEC_SAMPLE_BITSTREAM_READER_H
 #include "data_producer_base.h"
 
 namespace OHOS {
@@ -20,7 +22,7 @@ namespace MediaAVCodec {
 namespace Sample {
 class BitstreamReader : public DataProducerBase {
 public:
-    BitstreamReader(BitstreamType &type);
+    explicit BitstreamReader(BitstreamType &type);
     int32_t ReadSample(CodecBufferInfo &bufferInfo) override;
 
 private:
@@ -42,3 +44,4 @@ private:
 } // Sample
 } // MediaAVCodec
 } // OHOS
+#endif // AVCODEC_SAMPLE_BITSTREAM_READER_H

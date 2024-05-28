@@ -16,7 +16,7 @@
 #ifndef AVCODEC_SAMPLE_DATA_PRODUCER_DEMUXER_H
 #define AVCODEC_SAMPLE_DATA_PRODUCER_DEMUXER_H
 
-#include <stdio.h>
+#include <cstdio>
 #include "data_producer_base.h"
 #include "native_avdemuxer.h"
 #include "native_avsource.h"

@@ -23,7 +23,6 @@ declare_args() {
   av_codec_support_test = true
   av_codec_support_xcollie = true
   av_codec_support_bitstream_dump = true
-  av_codec_support_codec_perf_test = false
   av_codec_support_drm = false
   av_codec_enable_special_codec = false
 }

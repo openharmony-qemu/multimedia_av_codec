@@ -31,21 +31,19 @@ public:
     static void OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 };
 
-static inline OH_AVCodecAsyncCallback AVCodecAsyncCallback {
+constexpr OH_AVCodecAsyncCallback AVCodecAsyncCallback {
     CodecCallback::OnCodecError,
     CodecCallback::OnCodecFormatChange,
     CodecCallback::OnInputBufferAvailable,
     CodecCallback::OnOutputBufferAvailable
 };
 
-static inline OH_AVCodecCallback AVCodecCallback {
+constexpr OH_AVCodecCallback AVCodecCallback {
     CodecCallback::OnCodecError,
     CodecCallback::OnCodecFormatChange,
     CodecCallback::OnNeedInputBuffer,
     CodecCallback::OnNewOutputBuffer
 };
-
-
 } // Sample
 } // MediaAVCodec
 } // OHOS

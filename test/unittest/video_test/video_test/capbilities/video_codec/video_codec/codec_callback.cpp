@@ -61,7 +61,7 @@ void CodecCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH
 }
 
 void CodecCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-                                             OH_AVCodecBufferAttr *attr, void *userData)
+                                            OH_AVCodecBufferAttr *attr, void *userData)
 {
     if (userData == nullptr) {
         return;

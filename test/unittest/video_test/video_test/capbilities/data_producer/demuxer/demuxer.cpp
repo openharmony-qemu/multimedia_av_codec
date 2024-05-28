@@ -80,11 +80,14 @@ int32_t Demuxer::Seek(int64_t position)
 int32_t Demuxer::Release()
 {
     fclose(file_);
+    file_ = nullptr;
     if (demuxer_ != nullptr) {
         OH_AVDemuxer_Destroy(demuxer_);
+        demuxer_ = nullptr;
     }
     if (source_ != nullptr) {
         OH_AVSource_Destroy(source_);
+        source_ = nullptr;
     }
     return AVCODEC_SAMPLE_ERR_OK;
 }

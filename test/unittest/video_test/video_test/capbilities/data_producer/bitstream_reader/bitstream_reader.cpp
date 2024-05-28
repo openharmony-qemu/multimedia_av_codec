@@ -99,11 +99,10 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
 
 int32_t BitstreamReader::ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize)
 {
-    char ch[AVCC_FRAME_HEAD_LEN] = {};
-    (void)inputFile_->read(ch, AVCC_FRAME_HEAD_LEN);
+    uint8_t len[AVCC_FRAME_HEAD_LEN] = {};
+    (void)inputFile_->read(reinterpret_cast<char *>(len), AVCC_FRAME_HEAD_LEN);
     // 0 1 2 3: avcc frame head byte offset; 8 16 24: avcc frame head bit offset
-    bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << 8) |
-        ((ch[1] & 0xFF) << 16) | ((ch[0] & 0xFF) << 24));
+    bufferSize = static_cast<uint32_t>((len[3]) | (len[2] << 8) | (len[1] << 16) | (len[0] << 24));
 
     (void)inputFile_->read(reinterpret_cast<char *>(bufferAddr + AVCC_FRAME_HEAD_LEN), bufferSize);
     if (ANNEXB_INPUT_ONLY) {
@@ -127,7 +126,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + (bufferSize > 0 ? 0 : ANNEXB_FRAME_HEAD_LEN),
             prereadBuffer_.get() + prereadBufferSize_, std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD));
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos);
-        memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
+        (void)memcpy_s(pBuffer, size, prereadBuffer_.get() + pPrereadBuffer_, size);
         pPrereadBuffer_ += size;
         bufferSize += size;
         pBuffer += size;
@@ -137,7 +136,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         }
 
         PrereadFile();
-        memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN, pBuffer - ANNEXB_FRAME_HEAD_LEN, ANNEXB_FRAME_HEAD_LEN);
+        (void)memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN, pBuffer - ANNEXB_FRAME_HEAD_LEN, ANNEXB_FRAME_HEAD_LEN);
         if (std::search(pBuffer - ANNEXB_FRAME_HEAD_LEN, pBuffer,
             std::begin(ANNEXB_FRAME_HEAD), std::end(ANNEXB_FRAME_HEAD)) == pBuffer) {
             bufferSize -= ANNEXB_FRAME_HEAD_LEN;
@@ -155,7 +154,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
 void BitstreamReader::PrereadFile()
 {
     if (prereadBuffer_ == nullptr) {
-        prereadBuffer_ = std::unique_ptr<uint8_t []>(new uint8_t[PREREAD_BUFFER_SIZE + ANNEXB_FRAME_HEAD_LEN]);
+        prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE + ANNEXB_FRAME_HEAD_LEN);
     }
     inputFile_->read(reinterpret_cast<char *>(
         prereadBuffer_.get() + ANNEXB_FRAME_HEAD_LEN), PREREAD_BUFFER_SIZE);

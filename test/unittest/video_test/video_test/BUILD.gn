@@ -98,25 +98,6 @@ ohos_source_set("video_sample") {
   part_name = "av_codec"
 }
 
-ohos_unittest("video_perf_test") {
-  sanitize = av_codec_test_sanitize
-  module_out_path = "av_codec/unittest/perf_test"
-
-  sources = [ "./test_suilt/video_perf_test_suilt.cpp" ]
-
-  deps = [ ":video_sample" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "hilog:libhilog",
-    "media_foundation:media_foundation",
-    "media_foundation:native_media_core",
-  ]
-
-  subsystem_name = "multimedia"
-  part_name = "av_codec"
-}
-
 ohos_executable("video_codec_demo") {
   sources = [ "./demo/video_codec_demo.cpp" ]
 
