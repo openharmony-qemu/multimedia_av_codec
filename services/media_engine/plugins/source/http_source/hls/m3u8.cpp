@@ -60,6 +60,9 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
         return uri;
     } else if (uri.find("//") == 0) { // start with "//"
         return baseUrl.substr(0, baseUrl.find('/')) + uri;
+    } else if (uri.find('/') == 0) {
+        auto pos = baseUrl.find('/', strlen("https://"));
+        return baseUrl.substr(0, pos) + uri;
     } else {
         std::string::size_type pos = baseUrl.rfind('/');
         return baseUrl.substr(0, pos + 1) + uri;
