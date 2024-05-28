@@ -423,6 +423,9 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             bitrateParam_.streamId_ = -1;
         } else {
             // auto switch
+            if (CheckAutoSelectBitrate(streamId)) {
+                return;
+            }
         }
     }
 
