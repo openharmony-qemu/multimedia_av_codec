@@ -18,6 +18,7 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager.h"
+#include "plugin/plugin_manager_v2.h"
 #include "osal/utils/dump_buffer.h"
 
 namespace {
@@ -122,36 +123,11 @@ int32_t MediaCodec::Init(const std::string &name)
 
 std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string &mime, Plugins::PluginType pluginType)
 {
-    auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
-    std::string pluginName = "";
-    codecPluginName_ = pluginName;
-    for (auto &name : names) {
-        auto info = Plugins::PluginManager::Instance().GetPluginInfo(pluginType, name);
-        if (info == nullptr) {
-            MEDIA_LOG_W("info is nullptr, mime:%{public}s name:%{public}s", mime.c_str(), name.c_str());
-            continue;
-        }
-        auto capSet = info->inCaps;
-        if (capSet.size() <= 0) {
-            MEDIA_LOG_W("capSet size is 0, mime:%{public}s name:%{public}s", mime.c_str(), name.c_str());
-            continue;
-        }
-        MEDIA_LOG_D("name::%{public}s mime:%{public}s mime:%{public}s", name.c_str(), mime.c_str(),
-                    capSet[0].mime.c_str());
-        if (mime.compare(capSet[0].mime) == 0) {
-            pluginName = name;
-            break;
-        }
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(pluginType, mime);
+    if (plugin == nullptr) {
+        return nullptr;
     }
-    MEDIA_LOG_I("mime:%{public}s, pluginName:%{public}s", mime.c_str(), pluginName.c_str());
-    if (!pluginName.empty()) {
-        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, pluginType);
-        codecPluginName_ = pluginName;
-        return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
-    } else {
-        MEDIA_LOG_E("No plugins matching mime:%{public}s", mime.c_str());
-    }
-    return nullptr;
+    return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
 }
 
 int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta)

@@ -23,6 +23,7 @@
 #include "meta/any.h"
 #include "osal/utils/util.h"
 #include "plugin/plugin_info.h"
+#include "plugin/plugin_manager_v2.h"
 
 namespace OHOS {
 namespace Media {
@@ -107,11 +108,6 @@ void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
     if (sniffNeeded_) {
         uri_.swap(uri);
         pluginName_.clear();
-        if (GetPlugins()) {
-            SortPlugins(GetUriSuffix(uri_));
-        } else {
-            MEDIA_LOG_E("TypeFinder Init failed due to no demuxer plugins...");
-        }
     }
 }
 
@@ -167,18 +163,8 @@ std::string TypeFinder::SniffMediaType()
 {
     MEDIA_LOG_I("SniffMediaType begin.");
     std::string pluginName;
-    int maxProb = 0;
     auto dataSource = shared_from_this();
-    int cnt = 0;
-    for (const auto& plugin : plugins_) {
-        auto prob = Plugins::PluginManager::Instance().Sniffer(plugin->name, dataSource);
-        ++cnt;
-        if (prob > maxProb) {
-            maxProb = prob;
-            pluginName = plugin->name;
-        }
-    }
-    MEDIA_LOG_I("SniffMediaType end, sniffed plugin num = " PUBLIC_LOG_D32, cnt);
+    pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
     return pluginName;
 }
 

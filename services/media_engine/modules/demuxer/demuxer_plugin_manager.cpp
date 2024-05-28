@@ -34,6 +34,7 @@
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager.h"
+#include "plugin/plugin_manager_v2.h"
 #include "plugin/plugin_time.h"
 #include "base_stream_demuxer.h"
 #include "media_demuxer.h"
@@ -327,8 +328,10 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
     if (streamInfoMap_[id].plugin != nullptr) {
         streamInfoMap_[id].plugin->Deinit();
     }
-
-    auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::DEMUXER);
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
+    if (plugin == nullptr) {
+        return false;
+    }
     streamInfoMap_[id].plugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(plugin);
     if (!streamInfoMap_[id].plugin || streamInfoMap_[id].plugin->Init() != Status::OK) {
         MEDIA_LOG_E("CreatePlugin " PUBLIC_LOG_S " failed.", pluginName.c_str());

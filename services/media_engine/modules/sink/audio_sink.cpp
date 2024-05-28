@@ -15,6 +15,7 @@
 
 #include "audio_sink.h"
 #include "syspara/parameters.h"
+#include "plugin/plugin_manager_v2.h"
 
 namespace OHOS {
 namespace Media {
@@ -216,22 +217,11 @@ Status AudioSink::PrepareInputBufferQueue()
 
 std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
 {
-    Plugins::PluginType pluginType = Plugins::PluginType::AUDIO_SINK;
-    auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
-    std::string pluginName = "";
-    for (auto& name : names) {
-        auto info = Plugins::PluginManager::Instance().GetPluginInfo(pluginType, name);
-        pluginName = name;
-        break;
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(Plugins::PluginType::AUDIO_SINK, "audio/raw");
+    if (plugin == nullptr) {
+        return nullptr;
     }
-    MEDIA_LOG_I("pluginName %{public}s", pluginName.c_str());
-    if (!pluginName.empty()) {
-        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, pluginType);
-        return std::reinterpret_pointer_cast<Plugins::AudioSinkPlugin>(plugin);
-    } else {
-        MEDIA_LOG_E("No plugins matching output format");
-    }
-    return nullptr;
+    return std::reinterpret_pointer_cast<Plugins::AudioSinkPlugin>(plugin);
 }
 
 void AudioSink::DrainOutputBuffer()
