@@ -22,6 +22,7 @@
 #include "dash_common.h"
 #include "download/downloader.h"
 #include "osal/utils/ring_buffer.h"
+#include "osal/utils/stead_clock.h"
 
 namespace OHOS {
 namespace Media {
@@ -147,6 +148,9 @@ public:
     size_t GetContentLength();
     bool GetStartedStatus();
     bool IsSegmentFinish();
+    uint64_t GetDownloadSpeed() const;
+    uint32_t GetRingBufferSize() const;
+    uint32_t GetRingBufferCapcity() const;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -163,6 +167,7 @@ private:
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
     size_t GetRingBufferSize(MediaAVCodec::MediaType streamType);
+    void OnWriteRingBuffer(uint32_t len);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -187,6 +192,15 @@ private:
     uint64_t currentBitrate_{1 * 1024 * 1024};
     bool userDefinedBufferDuration_{false};
     uint64_t expectDuration_{0};
+
+    uint32_t ringBufferCapcity_ {0}:
+    uint64_t lastCheckTime_ {0};
+    uint64_t totalBits_ {0};
+    uint64_t lastBits_ {0};
+    double downloadSpeed_ {0};
+    uint64_t downloadDuringTime_ {0};
+    uint64_t downloadBits_ {0};
+    SteadyClock steadyClock_;
 };
 }
 }

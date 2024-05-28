@@ -67,6 +67,9 @@ private:
     void VideoSegmentDownloadFinished(int streamId);
     void GetSegmentToDownload(int downloadStreamId, bool streamSwitchFlag);
     bool SelectBitrateInternal(uint32_t bitrate);
+    bool CheckAutoSelectBitrate(int streamId);
+    uint32_t GetNextBitrate(std::shared_ptr<DashSegmentDownloader> segmentDownloader)
+    bool AutoSelectBitrateInternal(uint32_t bitrate);
     void SeekInternal(int64_t seekTimeMs);
     bool DoPreparedAction();
     void ResetBitrateParam();

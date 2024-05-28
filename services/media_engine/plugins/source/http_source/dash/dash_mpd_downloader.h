@@ -112,6 +112,7 @@ public:
     DashMpdGetRet GetNextVideoStream(const DashMpdBitrateParam& param, int& streamId);
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     std::shared_ptr<DashStreamDescription> GetStreamByStreamId(int streamId);
+    std::shared_ptr<DashStreamDescription> GetUsingStreamByType(MediaAVCodec::MediaType type);
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
     void SetHdrStart(bool isHdrStart);

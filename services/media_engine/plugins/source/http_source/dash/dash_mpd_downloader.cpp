@@ -380,6 +380,16 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetStreamByStreamId(in
     return nullptr;
 }
 
+std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetUsingStreamByType(MediaAVCodec::MediaType type)
+{
+    for (auto streamDescription : streamDescriptions_) {
+        if (streamDescription->type_ = type && streamDescription->inUse_) {
+            return streamDescription;
+        }
+    }
+    return nullptr;
+}
+
 std::shared_ptr<DashInitSegment> DashMpdDownloader::GetInitSegmentByStreamId(int streamId)
 {
     for (auto &streamDescription : streamDescriptions_) {
@@ -387,7 +397,6 @@ std::shared_ptr<DashInitSegment> DashMpdDownloader::GetInitSegmentByStreamId(int
             return streamDescription->initSegment_;
         }
     }
-
     return nullptr;
 }
 
