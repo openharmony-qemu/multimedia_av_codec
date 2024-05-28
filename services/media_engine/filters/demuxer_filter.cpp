@@ -496,7 +496,7 @@ bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
 
 bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime)
 {
-    MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
+    MEDIA_LOG_I("mediaType is %{public}d", static_cast<int32_t>(mediaType));
     if (mediaType == MediaType::AUDIO) {
         if (mime == std::string(MimeType::AUDIO_RAW)) {
             streamType = StreamType::STREAMTYPE_RAW_AUDIO;
