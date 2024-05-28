@@ -28,10 +28,9 @@ config("video_sample_config") {
     "./sample/decoder",
     "./sample/encoder",
     "./sample/helper/include",
+    "$av_codec_root_dir",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
-    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
-    "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
   ]
 }
 

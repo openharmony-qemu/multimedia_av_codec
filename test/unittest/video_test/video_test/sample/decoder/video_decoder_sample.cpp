@@ -21,7 +21,7 @@
 
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
-#include "wm/window.h"
+#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
 
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
