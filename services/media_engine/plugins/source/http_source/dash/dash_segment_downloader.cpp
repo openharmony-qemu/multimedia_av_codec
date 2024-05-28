@@ -32,6 +32,7 @@ constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 constexpr int32_t RECORD_TIME_INTERVAL = 500;
 constexpr int32_t IS_DOWNLOAD_MIN_BIT = 2000;
+constexpr uint32_t SPEED_MULTI_FACT = 1000;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
@@ -666,12 +667,11 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
 {
     MEDIA_LOG_I("UpdateDownloadFinished:streamId:" PUBLIC_LOG_D32 ", url=" PUBLIC_LOG_S, streamId_, url.c_str());
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
-
     if (downloadDuringTime_ > 0) {
         double tmpNumerator = static_cast<double>(downloadBits_);
         double tmpDenominator = static_cast<double>(downloadDuringTime_);
         double downloadRate = tmpNumerator / tmpDenominator;
-        downloadSpeed_ = downloadRate * 1000;
+        downloadSpeed_ = downloadRate * SPEED_MULTI_FACT;
     } else {
         downloadSpeed_ = 0;
     }
