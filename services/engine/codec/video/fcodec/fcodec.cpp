@@ -558,7 +558,7 @@ void FCodec::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
     outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
-    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, inputBufferSize_);
+    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
