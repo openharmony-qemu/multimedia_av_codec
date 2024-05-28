@@ -115,6 +115,8 @@ public:
 
     void SetOutPath(const std::string &path);
     void SetIsHdrVivid(bool isHdrVivid);
+    int32_t testParam_ = VCodecTestParam::SW_AVC;
+    bool needCheckSHA_ = false;
 
 private:
     void FlushInner();
@@ -139,6 +141,8 @@ private:
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
+    void CheckSHA();
+    void PerformEosFrameAndVerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
