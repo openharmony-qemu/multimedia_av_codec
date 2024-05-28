@@ -383,7 +383,7 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetStreamByStreamId(in
 std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetUsingStreamByType(MediaAVCodec::MediaType type)
 {
     for (auto streamDescription : streamDescriptions_) {
-        if (streamDescription->type_ = type && streamDescription->inUse_) {
+        if (streamDescription->type_ == type && streamDescription->inUse_) {
             return streamDescription;
         }
     }

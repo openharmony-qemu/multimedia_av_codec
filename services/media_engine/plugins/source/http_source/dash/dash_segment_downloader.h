@@ -22,7 +22,7 @@
 #include "dash_common.h"
 #include "download/downloader.h"
 #include "osal/utils/ring_buffer.h"
-#include "osal/utils/stead_clock.h"
+#include "osal/utils/steady_clock.h"
 
 namespace OHOS {
 namespace Media {
@@ -193,7 +193,7 @@ private:
     bool userDefinedBufferDuration_{false};
     uint64_t expectDuration_{0};
 
-    uint32_t ringBufferCapcity_ {0}:
+    uint32_t ringBufferCapcity_ {0};
     uint64_t lastCheckTime_ {0};
     uint64_t totalBits_ {0};
     uint64_t lastBits_ {0};

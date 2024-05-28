@@ -547,28 +547,28 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     if (bitRates.size() == 0) {
         return 0;
     }
-    uint32_t curBitRate = stream->bandwidth_;
+    uint32_t curBitrate = stream->bandwidth_;
     uint64_t downloadSpeed = static_cast<uint64_t>(segmentDownloader->GetDownloadSpeed());
     if (downloadSpeed == 0) {
         return false;
     }
     uint32_t desBitrate = GetDesBitrate(bitRates, downloadSpeed);
-    if (curBitRate == desBitrate) {
+    if (curBitrate == desBitrate) {
         return 0;
     }
-    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double>(bitRate) / 8.0 * 0.3);
+    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double>(curBitrate) / 8.0 * 0.3);
     // switch to high bitrate,if buffersize less than lowsize, do not switch
-    if (curBitrate < desBitRate && buffer_->GetSize() < bufferLowSize) {
+    if (curBitrate < desBitrate && segmentDownloader->GetRingBufferSize()  < bufferLowSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
-                    ", bufferLowSize " PUBLIC_LOG_D32, curBitrate, desBitRate, bufferLowSize);
+                    ", bufferLowSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferLowSize);
         return 0;
     }
     // high size: buffersize * 0.8
     uint32_t bufferHighSize = segmentDownloader->GetRingBufferCapcity() * 0.8;
     // switch to low bitrate, if buffersize more than highsize, do not switch
-    if (curBitrate > desBitRate && bsegmentDownloader->GetRingBufferSize() > bufferHighSize) {
+    if (curBitrate > desBitrate && segmentDownloader->GetRingBufferSize() > bufferHighSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
-                     ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitRate, bufferHighSize);
+                     ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferHighSize);
         return 0;
     }
     return desBitrate;
@@ -576,8 +576,8 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
 
 bool DashMediaDownloader::AutoSelectBitrateInternal(uint32_t bitrate)
 {
-    bitrateParam_.positon_ = -1;
-    bitrateParam_.bitRate_ = bitrate;
+    bitrateParam_.position_ = -1;
+    bitrateParam_.bitrate_ = bitrate;
     bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_AUTO;
     if (mpdDownloader_ == nullptr) {
         return false;
@@ -590,7 +590,7 @@ bool DashMediaDownloader::AutoSelectBitrateInternal(uint32_t bitrate)
         bitrateParam_.waitSidxFinish_ = true;
         return true;
     }
-    bitrateParam_.bitRate_ = bitrate;
+    bitrateParam_.bitrate_ = bitrate;
     bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_NONE;
     GetSegmentToDownload(bitrateParam_.streamId_, true);
     return true;

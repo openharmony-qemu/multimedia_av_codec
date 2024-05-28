@@ -77,6 +77,12 @@ DashSegmentDownloader::~DashSegmentDownloader() noexcept
 bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& seg)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
+    steadyClock_.Reset();
+    lastCheckTime_ = 0;
+    downloadDuringTime_ = 0;
+    downloadBits_ = 0;
+    totalBits_ = 0;
+    lastBits_ = 0;
     mediaSegment_ = std::make_shared<DashBufferSegment>(seg);
     if (mediaSegment_->byteRange_.length() > 0) {
         DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
@@ -588,8 +594,8 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
 {
     uint32_t writeBits = len * 8;
     totalBits_ += writeBits;
-    uint64_t now = static_cast<uint64_t>(steadyClocak_.ElapsedMilliseconds());
-    if ((now - lastChechTime_) > RECORD_TIME_INTERVAL) {
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = (now - lastCheckTime_) < 0 ? 0 : static_cast<uint64_t>(now - lastCheckTime_);
@@ -608,12 +614,12 @@ uint64_t DashSegmentDownloader::GetDownloadSpeed() const
 uint32_t DashSegmentDownloader::GetRingBufferSize() const
 {
     if (buffer_ != nullptr) {
-        return buffer_->GetSize()
+        return buffer_->GetSize();
     }
     return 0;
 }
 
-uint32_t GetRingBufferCapcity() const
+uint32_t DashSegmentDownloader::GetRingBufferCapcity() const
 {
     return ringBufferCapcity_;
 }
