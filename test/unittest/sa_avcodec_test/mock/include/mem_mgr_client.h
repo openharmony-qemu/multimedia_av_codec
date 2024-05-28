@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEM_MGR_PROXY_MOCK_H
-#define MEM_MGR_PROXY_MOCK_H
+#ifndef MEM_MGR_CLIENT_MOCK_H
+#define MEM_MGR_CLIENT_MOCK_H
 
 #include <gmock/gmock.h>
 #include <memory>
@@ -29,31 +29,32 @@
 
 namespace OHOS {
 namespace Memory {
-class IStandardMemMgrProxy : public IRemoteBroker {
+class IStandardMemMgrClient : public IRemoteBroker {
 public:
-    virtual ~IStandardMemMgrProxy() = default;
+    virtual ~IStandardMemMgrClient() = default;
 
     virtual int32_t NotifyProcessStatus(pid_t pid, int32_t status, int32_t start, int32_t saId) = 0;
     virtual int32_t SetCritical(pid_t pid, bool flag, int32_t saId) = 0;
 
-    DECLARE_INTERFACE_DESCRIPTOR(u"IStandardMemMgrProxy");
+    DECLARE_INTERFACE_DESCRIPTOR(u"IStandardMemMgrClient");
 };
 
-class MemMgrProxy;
-class MemMgrProxyMock {
+class MemMgrClient;
+class MemMgrClientMock {
 public:
-    MemMgrProxyMock() = default;
-    ~MemMgrProxyMock() = default;
+    MemMgrClientMock() = default;
+    ~MemMgrClientMock() = default;
 
     MOCK_METHOD(int32_t, NotifyProcessStatus, (pid_t pid, int32_t, int32_t, int32_t));
     MOCK_METHOD(int32_t, SetCritical, (pid_t pid, bool, int32_t));
 };
 
-class MemMgrProxy : public IRemoteStub<IStandardMemMgrProxy>, public NoCopyable {
+class MemMgrClient : public IRemoteStub<IStandardMemMgrClient>, public NoCopyable {
 public:
-    static void RegisterMock(std::shared_ptr<MemMgrProxyMock> &mock);
-    MemMgrProxy();
-    ~MemMgrProxy();
+    static MemMgrClient &GetInstance();
+    static void RegisterMock(std::shared_ptr<MemMgrClientMock> &mock);
+    MemMgrClient();
+    ~MemMgrClient();
     int32_t NotifyProcessStatus(pid_t pid, int32_t status, int32_t start, int32_t saId) override;
     int32_t SetCritical(pid_t pid, bool flag, int32_t saId) override;
 };

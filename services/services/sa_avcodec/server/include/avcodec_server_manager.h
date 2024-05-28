@@ -47,6 +47,8 @@ public:
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
     void DestroyDumper(StubType type, sptr<IRemoteObject> object);
     void DestroyDumperForPid(pid_t pid);
+    void NotifyProcessStatus(const int32_t status);
+    void SetCritical(const bool isKeyService);
 
 private:
     AVCodecServerManager();
@@ -85,6 +87,7 @@ private:
     std::map<sptr<IRemoteObject>, pid_t> sourceStubMap_;
     std::map<StubType, std::vector<Dumper>> dumperTbl_;
     AsyncExecutor executor_;
+    pid_t pid_ = 0;
 
     std::mutex mutex_;
 };
