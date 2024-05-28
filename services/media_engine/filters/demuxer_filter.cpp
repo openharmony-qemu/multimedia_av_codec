@@ -183,11 +183,11 @@ Status DemuxerFilter::DoPrepare()
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
             continue;
         }
-        if (ShouldTrackSkipped(mediaType, mime)) {
+        if (ShouldTrackSkipped(mediaType, mime, index)) {
             continue;
         }
         StreamType streamType;
-        if (!FindStreamType(streamType, mediaType, mime)) {
+        if (!FindStreamType(streamType, mediaType, mime, index)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
         UpdateTrackIdMap(streamType, static_cast<int32_t>(index));
@@ -494,7 +494,7 @@ bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
     return false;
 }
 
-bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime)
+bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime, size_t index)
 {
     MEDIA_LOG_I("mediaType is %{public}d", static_cast<int32_t>(mediaType));
     if (mediaType == MediaType::AUDIO) {
@@ -512,7 +512,7 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
     return true;
 }
 
-bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime)
+bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index)
 {
     if (mime.substr(0, MIME_IMAGE.size()).compare(MIME_IMAGE) == 0) {
         MEDIA_LOG_W("is image track, continue");
