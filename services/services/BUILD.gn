@@ -122,7 +122,6 @@ ohos_shared_library("av_codec_service") {
     "sa_avcodec/ipc/avcodec_service_stub.cpp",
     "sa_avcodec/server/avcodec_server.cpp",
     "sa_avcodec/server/avcodec_server_manager.cpp",
-    "sa_avcodec/server/mem_mgr_client.cpp",
   ]
 
   if (av_codec_support_codec) {
