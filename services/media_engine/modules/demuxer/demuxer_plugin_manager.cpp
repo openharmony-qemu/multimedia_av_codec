@@ -129,6 +129,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
     for (auto& iter : streams) {
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
+        streamInfoMap_[streamIndex].bitRate = iter.bitRate;
         if (iter.type == MIXED) {  // 存在混合流则只请求该流
             curVideoStreamID_ = streamIndex;
             streamInfoMap_[streamIndex].activated = true;
@@ -588,6 +589,14 @@ std::shared_ptr<Meta> DemuxerPluginManager::GetUserMeta()
         MEDIA_LOG_W("Demuxer plugin is not exist.");
     }
     return meta;
+}
+
+uint32_t DemuxerPluginManager::GetCurrentBitRate()
+{
+    if (IsDash() && curVideoStreamID_ != -1) {
+        return streamInfoMap_[curVideoStreamID_].bitRate;
+    }
+    return 0;
 }
 
 } // namespace Media

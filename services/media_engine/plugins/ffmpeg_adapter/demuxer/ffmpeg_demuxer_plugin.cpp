@@ -656,6 +656,10 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
+    if (ioContext->dataSource->IsDash() && ioContext->eos == true) {
+        MEDIA_LOG_I("AVReadPacket return EOS");
+        return AVERROR_EOF;
+    }
     if (ioContext && ioContext->dataSource) {
         auto buffer = std::make_shared<Buffer>();
         auto bufData = buffer->WrapMemory(buf, bufSize, 0);
