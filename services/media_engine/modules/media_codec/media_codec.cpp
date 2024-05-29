@@ -269,7 +269,7 @@ int32_t MediaCodec::Stop()
     auto ret = codecPlugin_->Stop();
     MEDIA_LOG_I("codec Stop, state from %{public}s to Stop", StateToString(state_).data());
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin stop failed");
-    ClearInputBuffer();
+    ClearBufferQueue();
     state_ = CodecState::PREPARED;
     return (int32_t)ret;
 }
@@ -288,10 +288,9 @@ int32_t MediaCodec::Flush()
     }
     MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
     state_ = CodecState::FLUSHING;
-    inputBufferQueueProducer_->Clear();
     auto ret = codecPlugin_->Flush();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin flush failed");
-    ClearInputBuffer();
+    ClearBufferQueue();
     state_ = CodecState::FLUSHED;
     return (int32_t)ret;
 }
@@ -312,7 +311,7 @@ int32_t MediaCodec::Reset()
     }
     auto ret = codecPlugin_->Reset();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
-    ClearInputBuffer();
+    ClearBufferQueue();
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
 }
@@ -336,6 +335,7 @@ int32_t MediaCodec::Release()
     state_ = CodecState::RELEASING;
     auto ret = codecPlugin_->Release();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin release failed");
+    ClearBufferQueue();
     state_ = CodecState::UNINITIALIZED;
     return (int32_t)ret;
 }
@@ -417,9 +417,14 @@ Status MediaCodec::AttachBufffer()
         avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
 #endif
         std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+        FALSE_RETURN_V_MSG_E(inputBuffer != nullptr, Status::ERROR_UNKNOWN,
+                             "inputBuffer is nullptr");
         FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_UNKNOWN,
                              "inputBufferQueueProducer_ is nullptr");
         inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
+        MEDIA_LOG_I("AttachBuffer buffer. index: %{public}d, bufferid: %{public}" PRIu64,
+            i, inputBuffer->GetUniqueId());
+        inputBufferVector_.push_back(inputBuffer);
     }
     return Status::OK;
 }
@@ -507,6 +512,7 @@ int32_t MediaCodec::PrepareInputBufferQueue()
         inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
         for (uint32_t i = 0; i < inputBuffers.size(); i++) {
             inputBufferQueueProducer_->AttachBuffer(inputBuffers[i], false);
+            inputBufferVector_.push_back(inputBuffers[i]);
         }
     }
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
@@ -544,15 +550,27 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
         for (int i = 0; i < outputBufferNum; i++) {
             auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
             std::shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputBufferCapacity_);
+            FALSE_RETURN_V_MSG_E(outputBuffer != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
+                                 "outputBuffer is nullptr");
             FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                                  "outputBufferQueueProducer_ is nullptr");
+            uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
+            outputBufferQueueProducer_->SetQueueSize(size);
+            MEDIA_LOG_I("AttachBuffer buffer. index: %{public}d, size: %{public}u , bufferid: %{public}" PRIu64,
+                i, size, outputBuffer->GetUniqueId());
             outputBufferQueueProducer_->AttachBuffer(outputBuffer, false);
+            outputBufferVector_.push_back(outputBuffer);
         }
     } else {
         FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                              "outputBufferQueueProducer_ is nullptr");
         for (uint32_t i = 0; i < outputBuffers.size(); i++) {
+            uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
+            outputBufferQueueProducer_->SetQueueSize(size);
+            MEDIA_LOG_I("AttachBuffer buffer. index: %{public}d, size: %{public}u , bufferid: %{public}" PRIu64,
+                i, size, outputBuffers[i]->GetUniqueId());
             outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false);
+            outputBufferVector_.push_back(outputBuffers[i]);
         }
     }
     return (int32_t)ret;
@@ -697,25 +715,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     return ret;
 }
 
-void MediaCodec::ClearInputBuffer()
-{
-    MediaAVCodec::AVCodecTrace trace("MediaCodec::ClearInputBuffer");
-    MEDIA_LOG_I("ClearInputBuffer enter");
-    if (!inputBufferQueueConsumer_) {
-        return;
-    }
-    std::shared_ptr<AVBuffer> filledInputBuffer;
-    Status ret = Status::OK;
-    while (ret == Status::OK) {
-        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
-        if (ret != Status::OK) {
-            MEDIA_LOG_I("clear input Buffer");
-            return;
-        }
-        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
-    }
-}
-
 void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::OnInputBufferDone");
@@ -738,6 +737,25 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " OnOutputBufferDone, buffer->pts" PUBLIC_LOG_D64,
         FAKE_POINTER(this), outputBuffer->pts_);
     FALSE_RETURN_MSG(ret == Status::OK, "OnOutputBufferDone fail");
+}
+
+void MediaCodec::ClearBufferQueue()
+{
+    MEDIA_LOG_I("ClearBufferQueue called.");
+    if (inputBufferQueueProducer_ != nullptr) {
+        for (auto &buffer : inputBufferVector_) {
+            inputBufferQueueProducer_->DetachBuffer(buffer);
+        }
+        inputBufferVector_.clear();
+        inputBufferQueueProducer_->SetQueueSize(0);
+    }
+    if (outputBufferQueueProducer_ != nullptr) {
+        for (auto &buffer : outputBufferVector_) {
+            outputBufferQueueProducer_->DetachBuffer(buffer);
+        }
+        outputBufferVector_.clear();
+        outputBufferQueueProducer_->SetQueueSize(0);
+    }
 }
 
 void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) {}
