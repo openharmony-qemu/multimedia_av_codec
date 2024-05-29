@@ -33,6 +33,7 @@ constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 constexpr int32_t RECORD_TIME_INTERVAL = 500;
 constexpr int32_t IS_DOWNLOAD_MIN_BIT = 2000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
+constexpr uint32_t BYTE_TO_BIT = 8;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
@@ -593,7 +594,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
 
 void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
 {
-    uint32_t writeBits = len * 8;
+    uint32_t writeBits = len * BYTE_TO_BIT;
     totalBits_ += writeBits;
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {

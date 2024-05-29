@@ -21,12 +21,15 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "utils/time_utils.h"
-#include "utils/bitrate_utils.h"
+#include "utils/bitrate_process_utils.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+constexpr double BUFFER_LOW_LIMIT  = 0.3;
+constexpr double BYTE_TO_BIT = 8.0;
 
 DashMediaDownloader::DashMediaDownloader() noexcept
 {
@@ -553,13 +556,14 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     uint32_t curBitrate = stream->bandwidth_;
     uint64_t downloadSpeed = static_cast<uint64_t>(segmentDownloader->GetDownloadSpeed());
     if (downloadSpeed == 0) {
-        return false;
+        return 0;
     }
     uint32_t desBitrate = GetDesBitrate(bitRates, downloadSpeed);
     if (curBitrate == desBitrate) {
         return 0;
     }
-    uint32_t bufferLowSize = static_cast<uint32_t>(static_cast<double>(curBitrate) / 8.0 * 0.3);
+    uint32_t bufferLowSize = 
+        static_cast<uint32_t>(static_cast<double>(curBitrate) / BYTE_TO_BIT * BUFFER_LOW_LIMIT);
     // switch to high bitrate,if buffersize less than lowsize, do not switch
     if (curBitrate < desBitrate && segmentDownloader->GetRingBufferSize()  < bufferLowSize) {
         MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
