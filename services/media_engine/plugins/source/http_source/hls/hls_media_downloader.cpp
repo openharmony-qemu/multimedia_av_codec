@@ -157,7 +157,9 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
         }
     }
     SaveHttpHeader(httpHeader);
-    playListDownloader_->SetMimeType(mimeType_);
+    if (!mimeType_.empty()) {
+        playListDownloader_->SetMimeType(mimeType_);
+    }
     playListDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();
     openTime_ = steadyClock_.ElapsedMilliseconds();
