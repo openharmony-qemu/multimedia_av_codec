@@ -593,7 +593,7 @@ std::shared_ptr<Meta> DemuxerPluginManager::GetUserMeta()
 
 uint32_t DemuxerPluginManager::GetCurrentBitRate()
 {
-    if (IsDash()) {
+    if (IsDash() && curVideoStreamID_ != -1) {
         return streamInfoMap_[curVideoStreamID_].bitRate;
     }
     return 0;
