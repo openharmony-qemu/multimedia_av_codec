@@ -210,7 +210,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return uri_.find(".m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
+        return uri_.find("m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
     }
     MEDIA_LOG_D("IsSeekToTimeSupported return true");
     return true;

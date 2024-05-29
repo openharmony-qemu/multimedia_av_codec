@@ -72,7 +72,6 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
 
 M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv)
     : uri_(std::move(m3u8.uri_)),
-      title_(std::move(m3u8.title_)),
       duration_(m3u8.duration_),
       sequence_(m3u8.sequence_),
       discont_(m3u8.discont_)
@@ -87,8 +86,8 @@ M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const u
     }
 }
 
-M3U8Fragment::M3U8Fragment(std::string uri, std::string title, double duration, int sequence, bool discont)
-    : uri_(std::move(uri)), title_(std::move(title)), duration_(duration), sequence_(sequence), discont_(discont)
+M3U8Fragment::M3U8Fragment(std::string uri, double duration, int sequence, bool discont)
+    : uri_(std::move(uri)), duration_(duration), sequence_(sequence), discont_(discont)
 {
 }
 
@@ -149,7 +148,7 @@ void M3U8::InitTagUpdatersMap()
     };
 
     tagUpdatersMap_[HlsTag::EXTINF] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
-        GetExtInf(tag, info.duration, info.title);
+        GetExtInf(tag, info.duration);
     };
 
     tagUpdatersMap_[HlsTag::URI] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
@@ -208,24 +207,23 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             }
             // add key_ and iv_ to M3U8Fragment(file)
             if (isDecryptAble_) {
-                auto m3u8 = M3U8Fragment(info.uri, info.title, info.duration, sequence_++, info.discontinuity);
+                auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_++, info.discontinuity);
                 auto fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
                 files_.emplace_back(fragment);
             } else {
-                auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.title, info.duration, sequence_++,
+                auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_++,
                     info.discontinuity);
                 files_.emplace_back(fragment);
             }
-            info.uri = "", info.title = "", info.duration = 0, info.discontinuity = false;
+            info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
 }
 
-void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration, std::string& title) const
+void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
 {
     auto item = std::static_pointer_cast<ValuesListTag>(tag);
     duration =  item ->GetAttributeByName("DURATION")->FloatingPoint();
-    title = item ->GetAttributeByName("TITLE")->QuotedString();
 }
 
 double M3U8::GetDuration() const

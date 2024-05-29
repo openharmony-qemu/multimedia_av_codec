@@ -46,10 +46,9 @@ struct M3U8InitFile {
 };
 
 struct M3U8Fragment {
-    M3U8Fragment(std::string uri, std::string title, double duration, int sequence, bool discont);
+    M3U8Fragment(std::string uri, double duration, int sequence, bool discont);
     M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv);
     std::string uri_;
-    std::string title_;
     double duration_;
     int64_t sequence_;
     bool discont_ {false};
@@ -61,7 +60,6 @@ struct M3U8Fragment {
 
 struct M3U8Info {
     std::string uri;
-    std::string title;
     double duration = 0;
     bool discontinuity = false;
     bool bVod;
@@ -73,7 +71,7 @@ struct M3U8 {
     void InitTagUpdatersMap();
     bool Update(const std::string& playList);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
-    void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration, std::string& title) const;
+    void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
     bool IsLive() const;
 
