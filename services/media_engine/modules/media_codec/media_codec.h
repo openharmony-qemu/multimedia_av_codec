@@ -140,8 +140,6 @@ private:
 
     int32_t PrepareOutputBufferQueue();
 
-    void ClearInputBuffer();
-
     void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
@@ -149,6 +147,8 @@ private:
     void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
 
     std::string StateToString(CodecState state);
+
+    void ClearBufferQueue();
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
@@ -168,6 +168,8 @@ private:
     std::string codecPluginName_;
 
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
+    std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
+    std::vector<std::shared_ptr<AVBuffer>> outputBufferVector_;
     std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };
