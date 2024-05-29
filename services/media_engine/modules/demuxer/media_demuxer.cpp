@@ -1020,7 +1020,7 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
         // when read failed, or request always failed in 1min, send error event
-        if ((ret == Status::ERROR_UNKNOWN && !isStopped_ && !isPaused_) ||
+        if ((ret == Status::ERROR_UNKNOWN && (!isStopped_ || !isPaused_)) ||
              requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
