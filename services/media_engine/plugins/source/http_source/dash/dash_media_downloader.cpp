@@ -21,11 +21,15 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "utils/time_utils.h"
+#include "utils/bitrate_process_utils.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+constexpr double BUFFER_LOW_LIMIT  = 0.3;
+constexpr double BYTE_TO_BIT = 8.0;
 
 DashMediaDownloader::DashMediaDownloader() noexcept
 {
@@ -115,7 +119,6 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
         MEDIA_LOG_E("stream " PUBLIC_LOG_D32 " not exist", streamId);
         return segmentDownloader;
     }
-
     return GetSegmentDownloaderByType(streamDescription->type_);
 }
 
@@ -421,6 +424,9 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             bitrateParam_.streamId_ = -1;
         } else {
             // auto switch
+            if (CheckAutoSelectBitrate(streamId)) {
+                return;
+            }
         }
     }
 
@@ -515,6 +521,83 @@ bool DashMediaDownloader::SelectBitrateInternal(uint32_t bitrate)
     
     // 3. get dest segment and download
     bitrateParam_.bitrate_ = 0;
+    bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_NONE;
+    GetSegmentToDownload(bitrateParam_.streamId_, true);
+    return true;
+}
+
+bool DashMediaDownloader::CheckAutoSelectBitrate(int streamId)
+{
+    MEDIA_LOG_I("AutoSelectBitrate streamId: " PUBLIC_LOG_D32, streamId);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
+        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    if (segmentDownloader == nullptr) {
+        MEDIA_LOG_W("AutoSelectBitrate can not get segmentDownloader.");
+        return false;
+    }
+    uint32_t desBitrate = GetNextBitrate(segmentDownloader);
+    if (desBitrate == 0) {
+        return false;
+    }
+    return AutoSelectBitrateInternal(desBitrate);
+}
+
+uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownloader> segmentDownloader)
+{
+    std::shared_ptr<DashStreamDescription> stream = mpdDownloader_->GetUsingStreamByType(
+        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    if (stream == nullptr) {
+        return 0;
+    }
+    std::vector<uint32_t> bitRates =  mpdDownloader_->GetBitRatesByHdr(stream->isHdr_);
+    if (bitRates.size() == 0) {
+        return 0;
+    }
+    uint32_t curBitrate = stream->bandwidth_;
+    uint64_t downloadSpeed = static_cast<uint64_t>(segmentDownloader->GetDownloadSpeed());
+    if (downloadSpeed == 0) {
+        return 0;
+    }
+    uint32_t desBitrate = GetDesBitrate(bitRates, downloadSpeed);
+    if (curBitrate == desBitrate) {
+        return 0;
+    }
+    uint32_t bufferLowSize =
+        static_cast<uint32_t>(static_cast<double>(curBitrate) / BYTE_TO_BIT * BUFFER_LOW_LIMIT);
+    // switch to high bitrate,if buffersize less than lowsize, do not switch
+    if (curBitrate < desBitrate && segmentDownloader->GetRingBufferSize()  < bufferLowSize) {
+        MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
+                    ", bufferLowSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferLowSize);
+        return 0;
+    }
+    // high size: buffersize * 0.8
+    uint32_t bufferHighSize = segmentDownloader->GetRingBufferCapcity() * BUFFER_LIMIT_FACT;
+    // switch to low bitrate, if buffersize more than highsize, do not switch
+    if (curBitrate > desBitrate && segmentDownloader->GetRingBufferSize() > bufferHighSize) {
+        MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
+                     ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitrate, bufferHighSize);
+        return 0;
+    }
+    return desBitrate;
+}
+
+bool DashMediaDownloader::AutoSelectBitrateInternal(uint32_t bitrate)
+{
+    bitrateParam_.position_ = -1;
+    bitrateParam_.bitrate_ = bitrate;
+    bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_AUTO;
+    if (mpdDownloader_ == nullptr) {
+        return false;
+    }
+    DashMpdGetRet ret = mpdDownloader_->GetNextVideoStream(bitrateParam_, bitrateParam_.streamId_);
+    if (ret == DASH_MPD_GET_ERROR) {
+        return false;
+    }
+    if (ret == DASH_MPD_GET_UNDONE) {
+        bitrateParam_.waitSidxFinish_ = true;
+        return true;
+    }
+    bitrateParam_.bitrate_ = bitrate;
     bitrateParam_.type_ = DASH_MPD_SWITCH_TYPE_NONE;
     GetSegmentToDownload(bitrateParam_.streamId_, true);
     return true;

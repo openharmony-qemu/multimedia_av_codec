@@ -30,6 +30,10 @@ constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
+constexpr int32_t RECORD_TIME_INTERVAL = 500;
+constexpr int32_t IS_DOWNLOAD_MIN_BIT = 2000;
+constexpr uint32_t SPEED_MULTI_FACT = 1000;
+constexpr uint32_t BYTE_TO_BIT = 8;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID,      VID_RING_BUFFER_SIZE},
@@ -49,6 +53,7 @@ DashSegmentDownloader::DashSegmentDownloader(int streamId, MediaAVCodec::MediaTy
     PUBLIC_LOG_D32
     ", ringBufferSize:"
     PUBLIC_LOG_ZU, streamId, ringBufferSize);
+    ringBufferCapcity_ = ringBufferSize;
     buffer_ = std::make_shared<RingBuffer>(ringBufferSize);
     buffer_->Init();
 
@@ -74,6 +79,12 @@ DashSegmentDownloader::~DashSegmentDownloader() noexcept
 bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& seg)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
+    steadyClock_.Reset();
+    lastCheckTime_ = 0;
+    downloadDuringTime_ = 0;
+    downloadBits_ = 0;
+    totalBits_ = 0;
+    lastBits_ = 0;
     mediaSegment_ = std::make_shared<DashBufferSegment>(seg);
     if (mediaSegment_->byteRange_.length() > 0) {
         DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
@@ -526,6 +537,9 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     MEDIA_LOG_D("SaveData:streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
     startedPlayStatus_ = true;
+    if (streamType_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+        OnWriteRingBuffer(len);
+    }
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
         MEDIA_LOG_I("SaveData:streamId:"
@@ -572,6 +586,40 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
     return writeRet;
 }
 
+void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
+{
+    uint32_t writeBits = len * BYTE_TO_BIT;
+    totalBits_ += writeBits;
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+        uint64_t curDownloadBits = totalBits_ - lastBits_;
+        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+            downloadDuringTime_ = (now - lastCheckTime_) < 0 ? 0 : static_cast<uint64_t>(now - lastCheckTime_);
+            downloadBits_ += curDownloadBits;
+        }
+        lastBits_ = totalBits_;
+        lastCheckTime_ = now;
+    }
+}
+
+uint64_t DashSegmentDownloader::GetDownloadSpeed() const
+{
+    return static_cast<uint64_t>(downloadSpeed_);
+}
+
+uint32_t DashSegmentDownloader::GetRingBufferSize() const
+{
+    if (buffer_ != nullptr) {
+        return buffer_->GetSize();
+    }
+    return 0;
+}
+
+uint32_t DashSegmentDownloader::GetRingBufferCapcity() const
+{
+    return ringBufferCapcity_;
+}
+
 void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos,
                                                      std::string url)
 {
@@ -613,6 +661,15 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
 {
     MEDIA_LOG_I("UpdateDownloadFinished:streamId:" PUBLIC_LOG_D32 ", url=" PUBLIC_LOG_S, streamId_, url.c_str());
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
+    if (downloadDuringTime_ > 0) {
+        double tmpNumerator = static_cast<double>(downloadBits_);
+        double tmpDenominator = static_cast<double>(downloadDuringTime_);
+        double downloadRate = tmpNumerator / tmpDenominator;
+        downloadSpeed_ = downloadRate * SPEED_MULTI_FACT;
+    } else {
+        downloadSpeed_ = 0;
+    }
+
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
         MEDIA_LOG_I("UpdateDownloadFinished:streamId:"
         PUBLIC_LOG_D32
