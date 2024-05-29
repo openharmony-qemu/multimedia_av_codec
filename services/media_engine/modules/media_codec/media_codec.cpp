@@ -422,7 +422,7 @@ Status MediaCodec::AttachBufffer()
         FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_UNKNOWN,
                              "inputBufferQueueProducer_ is nullptr");
         inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
-        MEDIA_LOG_I("AttachBuffer buffer. index: %{public}d, bufferid: %{public}" PRIu64,
+        MEDIA_LOG_I("Attach intput buffer. index: %{public}d, bufferId: %{public}" PRIu64,
             i, inputBuffer->GetUniqueId());
         inputBufferVector_.push_back(inputBuffer);
     }
@@ -556,7 +556,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
                                  "outputBufferQueueProducer_ is nullptr");
             uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
             outputBufferQueueProducer_->SetQueueSize(size);
-            MEDIA_LOG_I("AttachBuffer buffer. index: %{public}d, size: %{public}u , bufferid: %{public}" PRIu64,
+            MEDIA_LOG_I("Attach output buffer. index: %{public}d, size: %{public}u, bufferId: %{public}" PRIu64,
                 i, size, outputBuffer->GetUniqueId());
             outputBufferQueueProducer_->AttachBuffer(outputBuffer, false);
             outputBufferVector_.push_back(outputBuffer);
@@ -567,7 +567,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
         for (uint32_t i = 0; i < outputBuffers.size(); i++) {
             uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
             outputBufferQueueProducer_->SetQueueSize(size);
-            MEDIA_LOG_I("AttachBuffer buffer. index: %{public}d, size: %{public}u , bufferid: %{public}" PRIu64,
+            MEDIA_LOG_I("Attach output buffer. index: %{public}d, size: %{public}u, bufferId: %{public}" PRIu64,
                 i, size, outputBuffers[i]->GetUniqueId());
             outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false);
             outputBufferVector_.push_back(outputBuffers[i]);
