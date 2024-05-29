@@ -253,7 +253,11 @@ Status LiveStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::
                     buffer->GetMemory() != nullptr && buffer->GetMemory()->GetSize() == 0) {
                     MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                                 " Read fail and try again");
-                    return Status::ERROR_AGAIN;
+                    if (isIgnoreParse_.load()) {
+                        return Status::ERROR_WRONG_STATE;
+                    } else {
+                        return Status::ERROR_AGAIN;
+                    }
                 }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
