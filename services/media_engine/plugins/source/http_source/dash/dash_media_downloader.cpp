@@ -28,8 +28,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-constexpr double BUFFER_LIMIT_FACT = 0.8;
-
 DashMediaDownloader::DashMediaDownloader() noexcept
 {
     mpdDownloader_ = std::make_shared<DashMpdDownloader>();
