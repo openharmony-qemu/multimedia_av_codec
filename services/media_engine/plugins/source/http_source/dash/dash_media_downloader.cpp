@@ -562,7 +562,7 @@ uint32_t DashMediaDownloader::GetNextBitrate(std::shared_ptr<DashSegmentDownload
     if (curBitrate == desBitrate) {
         return 0;
     }
-    uint32_t bufferLowSize = 
+    uint32_t bufferLowSize =
         static_cast<uint32_t>(static_cast<double>(curBitrate) / BYTE_TO_BIT * BUFFER_LOW_LIMIT);
     // switch to high bitrate,if buffersize less than lowsize, do not switch
     if (curBitrate < desBitrate && segmentDownloader->GetRingBufferSize()  < bufferLowSize) {
