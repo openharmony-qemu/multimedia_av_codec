@@ -175,6 +175,7 @@ private:
     Mutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     bool shouldStartNextRequest {false};
+    int32_t noTaskLoopTimes_ {0};
 };
 }
 }

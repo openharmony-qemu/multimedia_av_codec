@@ -27,7 +27,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-const uint32_t MAX_STRING_LENGTH = 512;
+const uint32_t MAX_STRING_LENGTH = 1024;
 const std::string USER_AGENT = "User-Agent";
 const std::string REFERER = "Referer";
 const std::string COOKIE = "Cookie";
