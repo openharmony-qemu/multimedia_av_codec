@@ -378,7 +378,6 @@ int64_t Downloader::HttpDownloadLoop()
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
         if (!tempRequest) {
             MEDIA_LOG_W("HttpDownloadLoop tempRequest is null.");
-            task_->PauseAsync();
             return 0;
         }
         currentRequest_ = tempRequest;
