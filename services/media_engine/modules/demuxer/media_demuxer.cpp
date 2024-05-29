@@ -566,7 +566,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
     if (ret != Status::OK) {
         MEDIA_LOG_E("MediaDemuxer SelectBitRate failed");
         if (demuxerPluginManager_->IsDash()) {
-           isSelectBitRate_.store(false);
+            isSelectBitRate_.store(false);
         }
     } else {
         if (demuxerPluginManager_->IsDash() && bitRate == demuxerPluginManager_->GetCurrentBitRate()) {
