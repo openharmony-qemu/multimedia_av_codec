@@ -88,6 +88,8 @@ public:
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurAudioPlugin();
     std::shared_ptr<Plugins::DemuxerPlugin> SelectPlugin(int32_t trackId);
     Status LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, MediaInfo& mediaInfo);
+    Status LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+        Plugins::MediaInfo& mediaInfo);
     Status LoadDemuxerPlugin(int32_t streamID, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status Reset();
     Status Start();

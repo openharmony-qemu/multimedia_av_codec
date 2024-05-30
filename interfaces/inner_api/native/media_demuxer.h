@@ -111,6 +111,7 @@ private:
     void ReportIsLiveStreamEvent();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
         std::string& videoMime);
+    void InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(int32_t trackId, TaskType type);
@@ -136,12 +137,17 @@ private:
     bool ChangeStream(uint32_t trackId);
 
     Plugins::Seekable seekable_;
+    Plugins::Seekable subSeekable_;
     std::string uri_;
+    std::string SubtitleUri_;
     uint64_t mediaDataSize_;
+    uint64_t subMediaDataSize_;
 
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<Source> source_;
+    std::shared_ptr<Source> subtitleSource_;
     MediaMetaData mediaMetaData_;
+    MediaMetaData subMediaMetaData_;
 
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
@@ -170,11 +176,13 @@ private:
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
+    uint32_t extSubtitleTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
 
     std::atomic<bool> isStopped_ = false;
     std::atomic<bool> isPaused_ = false;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
+    std::shared_ptr<BaseStreamDemuxer> subStreamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
 
