@@ -336,6 +336,7 @@ int32_t MediaCodec::Release()
     state_ = CodecState::RELEASING;
     auto ret = codecPlugin_->Release();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin release failed");
+    codecPlugin_ = nullptr;
     ClearBufferQueue();
     state_ = CodecState::UNINITIALIZED;
     return (int32_t)ret;

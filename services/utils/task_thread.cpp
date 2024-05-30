@@ -93,7 +93,7 @@ void TaskThread::StopAsync()
 {
     AVCODEC_LOGD("task %{public}s StopAsync called", name_.data());
     std::unique_lock lock(stateMutex_);
-    if (runningState_.load() != RunningState::STOPPING || runningState_.load() != RunningState::STOPPED) {
+    if (runningState_.load() != RunningState::STOPPING && runningState_.load() != RunningState::STOPPED) {
         runningState_ = RunningState::STOPPING;
         syncCond_.notify_all();
     }

@@ -29,7 +29,7 @@ const std::string_view ASYNC_HANDLE_INPUT = "OS_ACodecIn";
 const std::string_view ASYNC_OUTPUT_FRAME = "OS_ACodecOut";
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr uint8_t TIME_OUT_MS = 5;
-constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
+constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1000;
 constexpr int64_t MILLISECONDS = 100;
 } // namespace
 
@@ -134,6 +134,7 @@ int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    StopTaskAsync();
     int32_t ret = codecService_->Stop();
     StopTask();
     ClearCache();
@@ -144,6 +145,7 @@ int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    PauseTaskAsync();
     int32_t ret = codecService_->Flush();
     PauseTask();
     ClearCache();
@@ -154,6 +156,7 @@ int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    StopTaskAsync();
     int32_t ret = codecService_->Reset();
     StopTask();
     ClearCache();
@@ -165,6 +168,7 @@ int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    StopTaskAsync();
     int32_t ret = codecService_->Release();
     StopTask();
     ClearCache();
@@ -377,11 +381,46 @@ void AVCodecAudioCodecImpl::ClearCache()
     }
 }
 
-void AVCodecAudioCodecImpl::StopTask()
+void AVCodecAudioCodecImpl::StopTaskAsync()
 {
     isRunning_ = false;
-    inputCondition_.notify_one();
-    outputCondition_.notify_one();
+    {
+        std::lock_guard lock(inputMutex2_);
+        inputCondition_.notify_one();
+    }
+    {
+        std::lock_guard lock(outputMutex_2);
+        outputCondition_.notify_one();
+    }
+    if (inputTask_) {
+        inputTask_->StopAsync();
+    }
+    if (outputTask_) {
+        outputTask_->StopAsync();
+    }
+}
+
+void AVCodecAudioCodecImpl::PauseTaskAsync()
+{
+    isRunning_ = false;
+    {
+        std::lock_guard lock(inputMutex2_);
+        inputCondition_.notify_one();
+    }
+    {
+        std::lock_guard lock(outputMutex_2);
+        outputCondition_.notify_one();
+    }
+    if (inputTask_) {
+        inputTask_->PauseAsync();
+    }
+    if (outputTask_) {
+        outputTask_->PauseAsync();
+    }
+}
+
+void AVCodecAudioCodecImpl::StopTask()
+{
     if (inputTask_) {
         inputTask_->Stop();
     }
@@ -392,9 +431,6 @@ void AVCodecAudioCodecImpl::StopTask()
 
 void AVCodecAudioCodecImpl::PauseTask()
 {
-    isRunning_ = false;
-    inputCondition_.notify_one();
-    outputCondition_.notify_one();
     if (inputTask_) {
         inputTask_->Pause();
     }
