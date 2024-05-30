@@ -211,7 +211,7 @@ void AudioBufferAacEncDemo::Setformat(OH_AVFormat *format)
     return;
 }
 
-AudioBufferAacEncDemo::AudioBufferAacEncDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0),sampleRate_(44100),channels_(1)
+AudioBufferAacEncDemo::AudioBufferAacEncDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0)
 {
     signal_ = new AEncSignal();
     DEMO_CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: No memory");
@@ -374,9 +374,10 @@ void AudioBufferAacEncDemo::InputFunc()
     size_t gmusize = 320;
     size_t lbvcsize = 640;
     size_t aacsize = 1024;
+    size_t opussize = 960;
     size_t frameBytes = 1152;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = 960; //opussize
+        frameBytes = opussize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
@@ -384,6 +385,7 @@ void AudioBufferAacEncDemo::InputFunc()
     } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
         frameBytes = aacsize;
     }
+    size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -393,13 +395,8 @@ void AudioBufferAacEncDemo::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-        if (inputdatasize < frameBytes) {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), inputdatasize, inputdata.c_str(), inputdatasize);
-            buffer->buffer_->memory_->SetSize(inputdatasize);
-        } else {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), frameBytes, inputdata.c_str(), frameBytes);
-            buffer->buffer_->memory_->SetSize(frameBytes);
-        }
+        strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        buffer->buffer_->memory_->SetSize(currentSize);
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -422,7 +419,6 @@ void AudioBufferAacEncDemo::InputFunc()
         }
     }
     signal_->outCond_.notify_all();
-    std::cout << "InputFunc end\n";
 }
 
 void AudioBufferAacEncDemo::OutputFunc()

@@ -385,9 +385,10 @@ void ADecBufferDemo::InputFunc()
     size_t gmusize = 320;
     size_t lbvcsize = 640;
     size_t aacsize = 1024;
+    size_t opussize = 960;
     size_t frameBytes = 1152;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = 960; //opussize
+        frameBytes = opussize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
@@ -422,7 +423,6 @@ void ADecBufferDemo::InputFunc()
         signal_->inBufferQueue_.pop();
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
-            cout << "Fatal error, exit" << endl;
             isRunning_.store(false);
             break;
         }
