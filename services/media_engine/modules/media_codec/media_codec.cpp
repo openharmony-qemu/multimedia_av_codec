@@ -288,9 +288,10 @@ int32_t MediaCodec::Flush()
     }
     MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
     state_ = CodecState::FLUSHING;
+    inputBufferQueueProducer_->Clear();
     auto ret = codecPlugin_->Flush();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin flush failed");
-    ClearBufferQueue();
+    ClearInputBuffer();
     state_ = CodecState::FLUSHED;
     return (int32_t)ret;
 }
@@ -755,6 +756,25 @@ void MediaCodec::ClearBufferQueue()
         }
         outputBufferVector_.clear();
         outputBufferQueueProducer_->SetQueueSize(0);
+    }
+}
+
+void MediaCodec::ClearInputBuffer()
+{
+    MediaAVCodec::AVCodecTrace trace("MediaCodec::ClearInputBuffer");
+    MEDIA_LOG_I("ClearInputBuffer enter");
+    if (!inputBufferQueueConsumer_) {
+        return;
+    }
+    std::shared_ptr<AVBuffer> filledInputBuffer;
+    Status ret = Status::OK;
+    while (ret == Status::OK) {
+        ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            MEDIA_LOG_I("clear input Buffer");
+            return;
+        }
+        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
     }
 }
 
