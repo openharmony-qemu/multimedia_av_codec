@@ -236,17 +236,6 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
     return Status::OK;
 }
 
-Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
-    Plugins::MediaInfo& mediaInfo)
-{
-    if (curSubTitleStreamID_ != -1) {
-        MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin");
-        Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
-        AddMediaInfo(ret, curSubTitleStreamID_, mediaInfo, true, true);
-    }
-    return Status::OK;
-}
-
 Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackIndex)
 {
     MEDIA_LOG_I("DemuxerPluginManager::AddTrackMapInfo in");

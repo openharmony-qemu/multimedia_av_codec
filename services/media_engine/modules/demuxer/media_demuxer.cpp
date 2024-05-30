@@ -349,13 +349,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
     subtitleSource_->GetStreamInfo(subtitleStreams);
     subtitleStreams[0].type = StreamType::SUBTITLE;
     subtitleStreams[0].streamId = demuxerPluginManager_->GetStreamCount();
-    for (auto& iter : subtitleStreams) {
-        MEDIA_LOG_E("SetSubtitleSource GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
-            iter.streamId, iter.type);
-    }
-
     demuxerPluginManager_->InitDefaultPlay(subtitleStreams);
-
     subStreamDemuxer_ = std::make_shared<VodStreamDemuxer>();
     subStreamDemuxer_->SetSource(subtitleSource_);
     subStreamDemuxer_->Init(subSource->GetSourceUri());
@@ -935,8 +929,8 @@ void MediaDemuxer::InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo
         trackMeta.Get<Tag::MIME_TYPE>(mimeType);
 
         if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("application/x-subrip") == 0) {
-            MEDIA_LOG_I("Found subtitle track, id: " PUBLIC_LOG_U32 ",
-                mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
+            MEDIA_LOG_I("Found subtitle track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S,
+                index, mimeType.c_str());
             extSubtitleTrackId_ = demuxerPluginManager_->GetStreamCount();
             break;
         }

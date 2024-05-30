@@ -34,7 +34,8 @@ static AutoRegisterFilter<SubtitleSinkFilter> g_registerSubtitleSinkFilter("buil
 
 static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
 
-SubtitleSinkFilter::AVBufferAvailableListener::AVBufferAvailableListener(std::shared_ptr<SubtitleSinkFilter> subtitleSinkFilter)
+SubtitleSinkFilter::AVBufferAvailableListener::AVBufferAvailableListener(
+    std::shared_ptr<SubtitleSinkFilter> subtitleSinkFilter)
 {
     subtitleSinkFilter_ = subtitleSinkFilter;
 }
@@ -62,7 +63,7 @@ SubtitleSinkFilter::~SubtitleSinkFilter()
 }
 
 void SubtitleSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-                           const std::shared_ptr<FilterCallback> &callback)
+    const std::shared_ptr<FilterCallback> &callback)
 {
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
@@ -167,6 +168,7 @@ Status SubtitleSinkFilter::DoRelease()
 {
     return subtitleSink_->Release();
 }
+
 Status SubtitleSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     subtitleSink_->DrainOutputBuffer(dropFrame);

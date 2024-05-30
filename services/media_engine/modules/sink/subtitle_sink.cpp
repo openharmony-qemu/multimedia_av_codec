@@ -188,11 +188,11 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
         return;
     }
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer_);
-    MEDIA_LOG_I("winddraw, pts - %{public}lld, duration - %{public}lld", filledOutputBuffer_->pts_, filledOutputBuffer_->duration_);
-    if (ret != Status::OK || filledOutputBuffer_ == nullptr || filledOutputBuffer_->memory_ == nullptr || filledOutputBuffer_->memory_->GetAddr() == nullptr) {
+    if (ret != Status::OK || filledOutputBuffer_ == nullptr || filledOutputBuffer_->memory_ == nullptr) {
         return;
     }
-    std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer_->memory_->GetAddr()), filledOutputBuffer_->memory_->GetSize());
+    std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer_->memory_->GetAddr()),
+        filledOutputBuffer_->memory_->GetSize());
     SubtitleInfo subtitleInfo {
         subtitleText,
         filledOutputBuffer_->pts_,

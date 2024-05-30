@@ -56,6 +56,7 @@ public:
     ~MediaDemuxer() override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> &source);
+    Status SetSubtitleSource(const std::shared_ptr<MediaSource> &source);
     void SetBundleName(const std::string& bundleName);
     Status SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
 
