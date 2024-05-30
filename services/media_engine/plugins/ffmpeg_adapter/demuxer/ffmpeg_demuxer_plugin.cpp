@@ -680,6 +680,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ioContext->timeout = true;
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
+            if (ret == 0) {
+                return AVERROR(EAGAIN);
+            }
         } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
