@@ -221,6 +221,7 @@ OH_AVErrCode OH_AudioCodec_Destroy(struct OH_AVCodec *codec)
         {
             std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
             audioCodecObj->memoryObjList_.clear();
+            audioCodecObj->bufferObjList_.clear();
         }
         audioCodecObj->isStop_.store(true);
         int32_t ret = audioCodecObj->audioCodec_->Release();
@@ -308,6 +309,7 @@ OH_AVErrCode OH_AudioCodec_Stop(struct OH_AVCodec *codec)
     }
     std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
     audioCodecObj->memoryObjList_.clear();
+    audioCodecObj->bufferObjList_.clear();
 
     return AV_ERR_OK;
 }
@@ -335,6 +337,7 @@ OH_AVErrCode OH_AudioCodec_Flush(struct OH_AVCodec *codec)
     AVCODEC_LOGD("set flush status to false");
     std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
     audioCodecObj->memoryObjList_.clear();
+    audioCodecObj->bufferObjList_.clear();
     return AV_ERR_OK;
 }
 
@@ -358,6 +361,7 @@ OH_AVErrCode OH_AudioCodec_Reset(struct OH_AVCodec *codec)
 
     std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
     audioCodecObj->memoryObjList_.clear();
+    audioCodecObj->bufferObjList_.clear();
     return AV_ERR_OK;
 }
 
