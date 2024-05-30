@@ -830,5 +830,13 @@ int32_t VideoDecSample::InputLoopInnerExt()
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }
+
+int32_t VideoDecSample::SetVideoDecryptionConfig()
+{
+    if (videoDec_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return videoDec_->SetVideoDecryptionConfig();
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
