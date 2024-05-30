@@ -688,6 +688,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
+            if (result == Status::ERROR_WRONG_STATE) {
+                ioContext->timeout = true;
+            }
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
         }
     }
