@@ -749,6 +749,43 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_06, TestSize.Leve
     }
 }
 
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_07, TestSize.Level1)
+{
+    signal_ = nullptr;
+    if (!CheckSoFunc()) {
+        return;
+    }
+    bool result;
+    for (size_t i = 0; i < INPUT_OPUS_FILE_SOURCE_PATH.size(); i++) {
+        cout << "decode start " << INPUT_OPUS_FILE_SOURCE_PATH[i][0] << endl;
+        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_OPUS_NAME, INPUT_OPUS_FILE_SOURCE_PATH[i][0]));
+
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                                stoi(INPUT_OPUS_FILE_SOURCE_PATH[i][1]));
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                                stoi(INPUT_OPUS_FILE_SOURCE_PATH[i][2]));
+        EXPECT_NE(nullptr, signal_);
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+        EXPECT_NE(nullptr, inputLoop_);
+        outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+        EXPECT_NE(nullptr, outputLoop_);
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+        result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+        EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_OPUS_FILE_SOURCE_PATH[i][0] << endl;
+
+        Release();
+    }
+}
+
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_08, TestSize.Level1)
 {
     bool result;
