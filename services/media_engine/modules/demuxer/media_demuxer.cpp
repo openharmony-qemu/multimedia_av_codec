@@ -268,6 +268,8 @@ Status MediaDemuxer::AddDemuxerCopyTask(int32_t trackId, TaskType type)
         taskName += "V";
     } else if (type == TaskType::AUDIO) {
         taskName += "A";
+    } else if (type == TaskType::SUBTITLE) {
+        taskName += "S";
     } else {
         MEDIA_LOG_E("AddDemuxerCopyTask failed, unknow type = " PUBLIC_LOG_D32, type);
         return Status::ERROR_UNKNOWN;

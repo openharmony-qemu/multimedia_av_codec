@@ -196,6 +196,9 @@ private:
     std::atomic<double> frameRate_ {0.0};
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
+    std::string subtitlePluginName_;
+    std::shared_ptr<Plugins::DemuxerPlugin> subtitlePlugin_;
+    std::shared_ptr<MediaSource> subtitleMediaSource_;
     bool isDump_ = false;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
     std::atomic<bool> isSelectBitRate_ = false;
