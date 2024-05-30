@@ -39,7 +39,6 @@ SubtitleSink::~SubtitleSink()
 
 void SubtitleSink::SetSeekTime(int64_t timeUs)
 {
-    MEDIA_LOG_I("winddraw seek %{public}lld", timeUs);
     isSeek_ = true;
     seekTimeUs_ = timeUs;
     GetTargetSubtitleIndex();
@@ -62,7 +61,6 @@ void SubtitleSink::GetTargetSubtitleIndex()
         left = mid;
     }
     currentInfoIndex_ = left;
-    MEDIA_LOG_E("winddraw index %{public}d str %{public}s", currentInfoIndex_, subtitleInfoVec_.at(currentInfoIndex_).text_.c_str());
 }
 
 Status SubtitleSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
@@ -220,14 +218,12 @@ void SubtitleSink::RenderLoop()
         if (speed_ != 0.0) {
             waitTime /= speed_;
         }
-        MEDIA_LOG_I("winddraw loop enter. pts: " PUBLIC_LOG_D64"  waitTime:" PUBLIC_LOG_D64,
-                    subtitleInfo.pts_, waitTime);
         std::unique_lock<std::mutex> lock(mutex_);
         condBufferAvailable_.wait_for(lock, std::chrono::microseconds(waitTime), [this] {
             return isThreadExit_.load();
         });
         if (isThreadExit_) {
-            break;
+            return;
         }
         auto actionToDo = ActionToDo(subtitleInfo);
         if (state_ == Pipeline::FilterState::PAUSED || actionToDo == SubtitleBufferState::WAIT) {
@@ -238,7 +234,6 @@ void SubtitleSink::RenderLoop()
         }
         if (++currentInfoIndex_ >= subtitleInfoVec_.size()) {
             currentInfoIndex_ = subtitleInfoVec_.size() - 1;
-            continue;
         }
     }
 }
@@ -295,9 +290,7 @@ int64_t SubtitleSink::DoSyncWrite(SubtitleInfo subtitleInfo)
         return -1;
     }
     auto curTime = syncCenter->GetMediaTimeNow();
-    MEDIA_LOG_I("winddraw DoSyncWrite %{public}lld %{public}lld", curTime, subtitleInfo.pts_ + subtitleInfo.duration_);
     Format format;
-    MEDIA_LOG_W("winddraw subtitle %{public}s", subtitleInfo.text_.c_str());
     (void)format.PutStringValue(Tag::SUBTITLE_TEXT, subtitleInfo.text_);
     (void)format.PutIntValue(Tag::SUBTITLE_PTS, subtitleInfo.pts_);
     (void)format.PutIntValue(Tag::SUBTITLE_DURATION, subtitleInfo.duration_);
