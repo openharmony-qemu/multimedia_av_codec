@@ -997,14 +997,14 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
-    if (!GetBufferFromUserQueue(trackId, size)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     if (trackId == videoTrackId_ && demuxerPluginManager_->IsDash()) {
         auto result = ChangeStream(trackId);
         if (result) {
             return Status::OK;
         }
+    }
+    if (!GetBufferFromUserQueue(trackId, size)) {
+        return Status::ERROR_INVALID_PARAMETER;
     }
     ret = HandleRead(trackId);
     MEDIA_LOG_D("CopyFrameToUserQueue exit, copy frame for track: " PUBLIC_LOG_U32, trackId);
