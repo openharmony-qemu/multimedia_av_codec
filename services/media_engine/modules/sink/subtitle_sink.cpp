@@ -19,6 +19,9 @@
 
 namespace OHOS {
 namespace Media {
+namespace {
+constexpr bool SUBTITME_LOOP_RUNNING = true;
+}
 
 SubtitleSink::SubtitleSink()
 {
@@ -202,7 +205,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
 
 void SubtitleSink::RenderLoop()
 {
-    while (true) {
+    while (SUBTITME_LOOP_RUNNING) {
         if (currentInfoIndex_ >= subtitleInfoVec_.size()) {
             break;
         }
