@@ -134,7 +134,8 @@ int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTaskAsync() int32_t ret = codecService_->Stop();
+    StopTaskAsync();
+    int32_t ret = codecService_->Stop();
     StopTask();
     ClearCache();
     return ret;
@@ -155,7 +156,8 @@ int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTaskAsync() int32_t ret = codecService_->Reset();
+    StopTaskAsync();
+    int32_t ret = codecService_->Reset();
     StopTask();
     ClearCache();
     inputBufferSize_ = 0;
@@ -166,7 +168,8 @@ int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTaskAsync() int32_t ret = codecService_->Release();
+    StopTaskAsync();
+    int32_t ret = codecService_->Release();
     StopTask();
     ClearCache();
     inputBufferSize_ = 0;
