@@ -63,6 +63,7 @@ MediaDemuxer::MediaDemuxer()
       uri_(),
       mediaDataSize_(0),
       source_(std::make_shared<Source>()),
+      subtitleSource_(std::make_shared<Source>()),
       mediaMetaData_(),
       bufferQueueMap_(),
       bufferMap_(),
@@ -356,18 +357,17 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
     MediaInfo mediaInfo;
     ret = demuxerPluginManager_->LoadCurrentSubtitlePlugin(subStreamDemuxer_, mediaInfo);
-    if (ret == Status::OK) {
-        InitSubtitleMediaMetaData(mediaInfo);
-        if (extSubtitleTrackId_ != TRACK_ID_DUMMY) {
-            AddDemuxerCopyTask(extSubtitleTrackId_, TaskType::SUBTITLE);
-            demuxerPluginManager_->UpdateTempTrackMapInfo(extSubtitleTrackId_, extSubtitleTrackId_);
-            int32_t streamId = demuxerPluginManager_->GetStreamID(extSubtitleTrackId_);
-            subStreamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
-        }
-    } else {
-        MEDIA_LOG_E("demuxer filter parse meta failed, ret: " PUBLIC_LOG_D32, (int32_t)(ret));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "demuxer filter parse meta failed, ret: "
+        PUBLIC_LOG_D32, (int32_t)(ret));
+    InitSubtitleMediaMetaData(mediaInfo);
+    if (extSubtitleTrackId_ != TRACK_ID_DUMMY) {
+        AddDemuxerCopyTask(extSubtitleTrackId_, TaskType::SUBTITLE);
+        demuxerPluginManager_->UpdateTempTrackMapInfo(extSubtitleTrackId_, extSubtitleTrackId_);
+        int32_t streamId = demuxerPluginManager_->GetStreamID(extSubtitleTrackId_);
+        subStreamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
     }
 
+    FALSE_RETURN_V_MSG(mediaInfo.tracks.size() != 0, Status::ERROR_WRONG_STATE, "subtitle no data");
     auto trackMeta = mediaInfo.tracks[0];
     mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
 
