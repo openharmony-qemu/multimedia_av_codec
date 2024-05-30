@@ -622,7 +622,7 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     dumpControler.AddInfo(DUMP_STATUS_INDEX, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
     dumpControler.AddInfo(DUMP_LAST_ERROR_INDEX, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
-    int32_t dumpIndex = 3;
+    uint32_t dumpIndex = 3;
     for (auto iter : dumpTable) {
         if (iter.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
             dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
