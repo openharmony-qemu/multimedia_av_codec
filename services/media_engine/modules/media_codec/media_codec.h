@@ -150,6 +150,8 @@ private:
 
     void ClearBufferQueue();
 
+    void ClearInputBuffer();
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
