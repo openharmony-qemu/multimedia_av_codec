@@ -373,15 +373,19 @@ void AudioBufferAacEncDemo::InputFunc()
 {
     size_t gmusize = 320;
     size_t lbvcsize = 640;
-    double time20ms = 0.02;
-    size_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
+    size_t aacsize = 1024;
+    size_t opussize = 960;
+    size_t frameBytes = 1152;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
+        frameBytes = opussize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         frameBytes = lbvcsize;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
+        frameBytes = aacsize;
     }
+    size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -391,11 +395,8 @@ void AudioBufferAacEncDemo::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-        if (inputdatasize < frameBytes) {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), inputdatasize, inputdata.c_str(), inputdatasize);
-        } else {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), frameBytes, inputdata.c_str(), frameBytes);
-        }
+        strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        buffer->buffer_->memory_->SetSize(currentSize);
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -414,11 +415,10 @@ void AudioBufferAacEncDemo::InputFunc()
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
             isRunning_.store(false);
-            signal_->outCond_.notify_all();
             break;
         }
     }
-    std::cout << "InputFunc end\n";
+    signal_->outCond_.notify_all();
 }
 
 void AudioBufferAacEncDemo::OutputFunc()

@@ -375,7 +375,6 @@ int32_t ADecBufferDemo::Release()
 
 void ADecBufferDemo::HandleInputEOS(const uint32_t index)
 {
-    std::cout << "end buffer\n";
     OH_AudioCodec_PushInputBuffer(audioDec_, index);
     signal_->inBufferQueue_.pop();
     signal_->inQueue_.pop();
@@ -383,9 +382,21 @@ void ADecBufferDemo::HandleInputEOS(const uint32_t index)
 
 void ADecBufferDemo::InputFunc()
 {
-    size_t maxSize = 65536;
-    size_t currentSize = inputdatasize < maxSize ? inputdatasize : maxSize;
-    
+    size_t gmusize = 320;
+    size_t lbvcsize = 640;
+    size_t aacsize = 1024;
+    size_t opussize = 960;
+    size_t frameBytes = 1152;
+    if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
+        frameBytes = opussize;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
+        frameBytes = gmusize;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
+        frameBytes = lbvcsize;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
+        frameBytes = aacsize;
+    }
+    size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -397,6 +408,7 @@ void ADecBufferDemo::InputFunc()
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         int ret;
         strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        buffer->buffer_->memory_->SetSize(currentSize);
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
             ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
@@ -404,17 +416,18 @@ void ADecBufferDemo::InputFunc()
         } else {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
             ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
+            isRunning_.store(false);
+            break;
         }
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
-            cout << "Fatal error, exit" << endl;
             isRunning_.store(false);
-            signal_->startCond_.notify_all();
             break;
         }
     }
+    signal_->startCond_.notify_all();
 }
 
 void ADecBufferDemo::OutputFunc()
@@ -550,7 +563,6 @@ OH_AVErrCode ADecBufferDemo::PushInputData(OH_AVCodec* codec, uint32_t index)
             }
         }
     }
-    std::cout <<"PushInputData  index:" << index <<std::endl;
     return OH_AudioCodec_PushInputBuffer(codec, index);
 }
 
