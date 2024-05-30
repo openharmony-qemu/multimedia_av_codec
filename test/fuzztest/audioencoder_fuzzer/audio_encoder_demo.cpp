@@ -211,7 +211,7 @@ void AudioBufferAacEncDemo::Setformat(OH_AVFormat *format)
     return;
 }
 
-AudioBufferAacEncDemo::AudioBufferAacEncDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0)
+AudioBufferAacEncDemo::AudioBufferAacEncDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0),sampleRate_(44100),channels_(1)
 {
     signal_ = new AEncSignal();
     DEMO_CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: No memory");
@@ -373,14 +373,16 @@ void AudioBufferAacEncDemo::InputFunc()
 {
     size_t gmusize = 320;
     size_t lbvcsize = 640;
-    double time20ms = 0.02;
-    size_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
+    size_t aacsize = 1024;
+    size_t frameBytes = 1152;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
+        frameBytes = 960; //opussize
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         frameBytes = lbvcsize;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
+        frameBytes = aacsize;
     }
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -393,8 +395,10 @@ void AudioBufferAacEncDemo::InputFunc()
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         if (inputdatasize < frameBytes) {
             strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), inputdatasize, inputdata.c_str(), inputdatasize);
+            buffer->buffer_->memory_->SetSize(inputdatasize);
         } else {
             strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), frameBytes, inputdata.c_str(), frameBytes);
+            buffer->buffer_->memory_->SetSize(frameBytes);
         }
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
@@ -406,6 +410,7 @@ void AudioBufferAacEncDemo::InputFunc()
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
             HandleEOS(index);
             isRunning_.store(false);
+            cout << "InputFunc, 1111111" << endl;
             break;
         }
         timeStamp_ += FRAME_DURATION_US;
@@ -414,10 +419,10 @@ void AudioBufferAacEncDemo::InputFunc()
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
             isRunning_.store(false);
-            signal_->outCond_.notify_all();
             break;
         }
     }
+    signal_->outCond_.notify_all();
     std::cout << "InputFunc end\n";
 }
 
