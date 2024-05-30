@@ -107,7 +107,6 @@ void AVCodecServerManager::DumpServer(int32_t fd, StubType stubType, std::unorde
 
 int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
-    std::string dumpString;
     std::unordered_set<std::u16string> argSets;
     for (decltype(args.size()) index = 0; index < args.size(); ++index) {
         argSets.insert(args[index]);
