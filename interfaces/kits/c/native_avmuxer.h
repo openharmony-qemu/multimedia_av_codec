@@ -44,6 +44,8 @@ OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format);
  * @param rotation The supported angles are 0, 90, 180, and 270 degrees.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer or rotation invalid.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface, it was called in invalid state.
  * @since 10
  */
 OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation);
@@ -59,6 +61,11 @@ OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation);
  * @param trackFormat OH_AVFormat handle pointer contain track format
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer or trackIndex or trackFormat invalid.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface, it was called in invalid state.
+ * {@link AV_ERR_UNSUPPORT}, the mime type is not supported.
+ * {@link AV_ERR_NO_MEMORY}, failed to malloc memory.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
  * @since 10
  */
 OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFormat *trackFormat);
@@ -70,6 +77,9 @@ OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFo
  * @param muxer Pointer to an OH_AVMuxer instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer invalid.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface, it was called in invalid state.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
  * @since 10
  */
 OH_AVErrCode OH_AVMuxer_Start(OH_AVMuxer *muxer);
@@ -86,6 +96,10 @@ OH_AVErrCode OH_AVMuxer_Start(OH_AVMuxer *muxer);
  * @param info The buffer information related to this sample {@link OH_AVCodecBufferAttr}
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer or trackIndex or sample or info invalid.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface, it was called in invalid state.
+ * {@link AV_ERR_NO_MEMORY}, failed to request memory.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
  * @deprecated since 11
  * @useinstead OH_AVMuxer_WriteSampleBuffer
  * @since 10
@@ -104,6 +118,10 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
  * @param sample The encoded or demuxer sample, which including data and buffer information
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer or trackIndex or sample invalid.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface, it was called in invalid state.
+ * {@link AV_ERR_NO_MEMORY}, failed to request memory.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
  * @since 11
  */
 OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex,
@@ -116,6 +134,8 @@ OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex
  * @param muxer Pointer to an OH_AVMuxer instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer invalid.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, not permit to call the interface, it was called in invalid state.
  * @since 10
  */
 OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer);
@@ -126,6 +146,7 @@ OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer);
  * @param muxer Pointer to an OH_AVMuxer instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the muxer invalid.
  * @since 10
  */
 OH_AVErrCode OH_AVMuxer_Destroy(OH_AVMuxer *muxer);
