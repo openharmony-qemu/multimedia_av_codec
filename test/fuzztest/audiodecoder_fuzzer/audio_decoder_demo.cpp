@@ -375,7 +375,6 @@ int32_t ADecBufferDemo::Release()
 
 void ADecBufferDemo::HandleInputEOS(const uint32_t index)
 {
-    std::cout << "end buffer\n";
     OH_AudioCodec_PushInputBuffer(audioDec_, index);
     signal_->inBufferQueue_.pop();
     signal_->inQueue_.pop();
@@ -564,7 +563,6 @@ OH_AVErrCode ADecBufferDemo::PushInputData(OH_AVCodec* codec, uint32_t index)
             }
         }
     }
-    std::cout <<"PushInputData  index:" << index <<std::endl;
     return OH_AudioCodec_PushInputBuffer(codec, index);
 }
 

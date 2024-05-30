@@ -410,7 +410,6 @@ void AudioBufferAacEncDemo::InputFunc()
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
             HandleEOS(index);
             isRunning_.store(false);
-            cout << "InputFunc, 1111111" << endl;
             break;
         }
         timeStamp_ += FRAME_DURATION_US;
