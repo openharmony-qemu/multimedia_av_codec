@@ -170,6 +170,11 @@ bool FileFdSourcePlugin::HandleBuffering()
 
 Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    return Read(0, buffer, offset, expectedLen);
+}
+
+Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
     if (isBuffering_) {
         MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
             PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
