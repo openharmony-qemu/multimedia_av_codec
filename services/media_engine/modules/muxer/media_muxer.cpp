@@ -150,7 +150,7 @@ Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta");
     std::lock_guard<std::mutex> lock(mutex_);
-    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
+    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
         "The state is not INITIALIZED, the interface must be called after constructor and before Start(). "
         "The current state is %{public}s.", StateConvert(state_).c_str());
     return muxer_->SetUserMeta(userMeta);
@@ -349,7 +349,6 @@ void MediaMuxer::ThreadProcessor()
         if (buffer1 != nullptr) {
             muxer_->WriteSample(tracks_[trackIdx]->trackId_, tracks_[trackIdx]->curBuffer_);
             tracks_[trackIdx]->ReleaseBuffer();
-            --bufferAvailableCount_;
         }
         MEDIA_LOG_D("Track " PUBLIC_LOG_S " 2 bufferAvailableCount_ :" PUBLIC_LOG_D32,
             threadName_.c_str(), bufferAvailableCount_.load());
@@ -364,10 +363,21 @@ void MediaMuxer::OnBufferAvailable()
         threadName_.c_str(), bufferAvailableCount_.load());
 }
 
+void MediaMuxer::ReleaseBuffer()
+{
+    --bufferAvailableCount_;
+}
+
 std::shared_ptr<AVBuffer> MediaMuxer::Track::GetBuffer()
 {
     if (curBuffer_ == nullptr && bufferAvailableCount_ > 0) {
-        consumer_->AcquireBuffer(curBuffer_);
+        Status ret = consumer_->AcquireBuffer(curBuffer_);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Track " PUBLIC_LOG_S " lost " PUBLIC_LOG_D32 " frames",
+                mimeType_.c_str(), bufferAvailableCount_.load());
+            --bufferAvailableCount_;
+            listener_->ReleaseBuffer();
+        }
     }
     return curBuffer_;
 }
@@ -378,6 +388,7 @@ void MediaMuxer::Track::ReleaseBuffer()
         consumer_->ReleaseBuffer(curBuffer_);
         curBuffer_ = nullptr;
         --bufferAvailableCount_;
+        listener_->ReleaseBuffer();
     }
 }
 
