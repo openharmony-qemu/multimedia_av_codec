@@ -216,7 +216,6 @@ void HCodec::InitializedState::OnStateEntered()
 {
     codec_->inputPortEos_ = false;
     codec_->outputPortEos_ = false;
-    codec_->outPortHasChanged_ = false;
     codec_->inputFormat_.reset();
     codec_->outputFormat_.reset();
 
@@ -494,9 +493,6 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
             codec_->OnQueueInputBuffer(info, inputMode_);
-            if (codec_->outPortHasChanged_) {
-                codec_->SubmitDynamicBufferIfPossible();
-            }
             break;
         case MsgWhat::NOTIFY_EOS:
             codec_->OnSignalEndOfInputStream(info);
@@ -731,8 +727,6 @@ void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
     if (codec_->isBufferCirculating_) {
         codec_->SubmitOutputBuffersToOmxNode();
     }
-    codec_->outPortHasChanged_ = true;
-    codec_->UpdateFormatFromSurfaceBuffer();
     SLOGI("output format changed: %s", codec_->outputFormat_->Stringify().c_str());
     codec_->callback_->OnOutputFormatChanged(*(codec_->outputFormat_.get()));
     codec_->ChangeStateTo(codec_->runningState_);

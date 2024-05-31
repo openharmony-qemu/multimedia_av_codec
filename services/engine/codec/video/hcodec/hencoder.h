@@ -62,6 +62,8 @@ private:
     void FindAllIdleSlotAndSubmit();
     void SubmitOneBuffer(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
+    int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer>& omxBuffer,
+        const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag);
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
 
