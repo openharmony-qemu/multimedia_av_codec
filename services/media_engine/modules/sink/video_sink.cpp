@@ -204,6 +204,12 @@ void VideoSink::SetFirstPts(int64_t pts)
     }
 }
 
+Status VideoSink::SetParameter(const std::shared_ptr<Meta>& meta)
+{
+    UpdateMediaTimeRange(meta);
+    return Status::OK;
+}
+
 float VideoSink::GetSpeed(float speed)
 {
     if (std::fabs(speed - 0) < 1e-9) {

@@ -229,6 +229,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     if (isDrmProtected_) {
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
     }
+    videoSink_->SetParameter(meta_);
     return Status::OK;
 }
 
