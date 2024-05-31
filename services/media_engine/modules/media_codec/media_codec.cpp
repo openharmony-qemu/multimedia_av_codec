@@ -269,7 +269,7 @@ int32_t MediaCodec::Stop()
     auto ret = codecPlugin_->Stop();
     MEDIA_LOG_I("codec Stop, state from %{public}s to Stop", StateToString(state_).data());
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin stop failed");
-    ClearBufferQueue();
+    ClearInputBuffer();
     state_ = CodecState::PREPARED;
     return (int32_t)ret;
 }
@@ -312,7 +312,7 @@ int32_t MediaCodec::Reset()
     }
     auto ret = codecPlugin_->Reset();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
-    ClearBufferQueue();
+    ClearInputBuffer();
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
 }
