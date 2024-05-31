@@ -137,6 +137,11 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     return demuxer_->SetDataSource(mediaSource_);
 }
 
+Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
+{
+    return demuxer_->SetSubtitleSource(source);
+}
+
 void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
 {
     if (demuxer_ != nullptr) {
@@ -497,7 +502,9 @@ bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
 bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime, size_t index)
 {
     MEDIA_LOG_I("mediaType is %{public}d", static_cast<int32_t>(mediaType));
-    if (mediaType == MediaType::AUDIO) {
+    if (mediaType == Plugins::MediaType::SUBTITLE) {
+        streamType = StreamType::STREAMTYPE_SUBTITLE;
+    } else if (mediaType == Plugins::MediaType::AUDIO) {
         if (mime == std::string(MimeType::AUDIO_RAW)) {
             streamType = StreamType::STREAMTYPE_RAW_AUDIO;
         } else {
@@ -519,9 +526,6 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
         return true;
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W("mediaType disabled, index: %zu", index);
-        return true;
-    } else if (mediaType == MediaType::SUBTITLE) {
-        MEDIA_LOG_W("is subtitle track, continue");
         return true;
     }
     return false;

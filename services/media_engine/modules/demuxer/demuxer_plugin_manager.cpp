@@ -123,6 +123,11 @@ DemuxerPluginManager::~DemuxerPluginManager()
     }
 }
 
+size_t DemuxerPluginManager::GetStreamCount()
+{
+    return streamInfoMap_.size();
+}
+
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
     MEDIA_LOG_I("InitDefaultPlay begin");
@@ -216,6 +221,17 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         MEDIA_LOG_I("LoadCurrentAllPlugin video plugin");
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         AddMediaInfo(ret, curVideoStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
+    }
+    return Status::OK;
+}
+
+Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+    Plugins::MediaInfo& mediaInfo)
+{
+    if (curSubTitleStreamID_ != -1) {
+        MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin");
+        Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
+        AddMediaInfo(ret, curSubTitleStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
     }
     return Status::OK;
 }
@@ -519,6 +535,12 @@ Status DemuxerPluginManager::Stop()
             return ret;
         }
     }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Stop();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
     return Status::OK;   // todo: 待适配返回值
 }
 
@@ -532,6 +554,12 @@ Status DemuxerPluginManager::Start()
     }
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Start();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Start();
         if (ret != Status::OK) {
             return ret;
         }

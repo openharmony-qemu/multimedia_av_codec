@@ -64,6 +64,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "decoder_surface_filter.cpp",
     "demuxer_filter.cpp",
     "muxer_filter.cpp",
+    "subtitle_sink_filter.cpp",
     "surface_encoder_adapter.cpp",
     "surface_encoder_filter.cpp",
     "video_capture_filter.cpp",

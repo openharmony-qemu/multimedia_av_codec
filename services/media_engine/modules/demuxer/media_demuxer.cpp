@@ -63,6 +63,7 @@ MediaDemuxer::MediaDemuxer()
       uri_(),
       mediaDataSize_(0),
       source_(std::make_shared<Source>()),
+      subtitleSource_(std::make_shared<Source>()),
       mediaMetaData_(),
       bufferQueueMap_(),
       bufferMap_(),
@@ -268,6 +269,8 @@ Status MediaDemuxer::AddDemuxerCopyTask(int32_t trackId, TaskType type)
         taskName += "V";
     } else if (type == TaskType::AUDIO) {
         taskName += "A";
+    } else if (type == TaskType::SUBTITLE) {
+        taskName += "S";
     } else {
         MEDIA_LOG_E("AddDemuxerCopyTask failed, unknow type = " PUBLIC_LOG_D32, type);
         return Status::ERROR_UNKNOWN;
@@ -332,6 +335,43 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 
     ProcessDrmInfos();
     MEDIA_LOG_I("SetDataSource exit");
+    return ret;
+}
+
+Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSource)
+{
+    subtitleSource_->SetCallback(this);
+    subtitleSource_->SetSource(subSource);
+    Status ret = subtitleSource_->GetSize(subMediaDataSize_);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set subtitle data source failed due to get file size failed.");
+    subSeekable_ = subtitleSource_->GetSeekable();
+
+    std::vector<StreamInfo> subtitleStreams;
+    subtitleSource_->GetStreamInfo(subtitleStreams);
+    subtitleStreams[0].type = StreamType::SUBTITLE;
+    subtitleStreams[0].streamId = demuxerPluginManager_->GetStreamCount();
+    demuxerPluginManager_->InitDefaultPlay(subtitleStreams);
+    subStreamDemuxer_ = std::make_shared<VodStreamDemuxer>();
+    subStreamDemuxer_->SetSource(subtitleSource_);
+    subStreamDemuxer_->Init(subSource->GetSourceUri());
+
+    MediaInfo mediaInfo;
+    ret = demuxerPluginManager_->LoadCurrentSubtitlePlugin(subStreamDemuxer_, mediaInfo);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "demuxer filter parse meta failed, ret: "
+        PUBLIC_LOG_D32, (int32_t)(ret));
+    InitSubtitleMediaMetaData(mediaInfo);
+    if (extSubtitleTrackId_ != TRACK_ID_DUMMY) {
+        AddDemuxerCopyTask(extSubtitleTrackId_, TaskType::SUBTITLE);
+        demuxerPluginManager_->UpdateTempTrackMapInfo(extSubtitleTrackId_, extSubtitleTrackId_);
+        int32_t streamId = demuxerPluginManager_->GetStreamID(extSubtitleTrackId_);
+        subStreamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+    }
+
+    FALSE_RETURN_V_MSG(mediaInfo.tracks.size() != 0, Status::ERROR_WRONG_STATE, "subtitle no data");
+    auto trackMeta = mediaInfo.tracks[0];
+    mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
+
+    MEDIA_LOG_I("SetSubtitleSource done, ext sub track id = %{public}d", extSubtitleTrackId_);
     return ret;
 }
 
@@ -790,6 +830,7 @@ Status MediaDemuxer::Start()
     isThreadExit_ = false;
     isStopped_ = false;
     auto it = bufferQueueMap_.begin();
+    MEDIA_LOG_I("BUFFER QUEUE MAP SIZE %{public}d", bufferQueueMap_.size());
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
         taskMap_[trackId]->Start();
@@ -864,6 +905,35 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32
             if (audioTrackId_ == TRACK_ID_DUMMY) {
                 audioTrackId = index;
             }
+        }
+    }
+}
+
+void MediaDemuxer::InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo)
+{
+    AutoLock lock(mapMetaMutex_);
+    subMediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
+    if (subtitleSource_ != nullptr && subtitleSource_->IsSeekToTimeSupported()) {
+        int64_t duration = subtitleSource_->GetDuration();
+        if (duration != Plugins::HST_TIME_NONE) {
+            MEDIA_LOG_I("InitMediaMetaData for hls, duration: " PUBLIC_LOG_D64, duration);
+            subMediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration));
+        }
+    }
+    subMediaMetaData_.trackMetas.clear();
+    subMediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
+    for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
+        auto trackMeta = mediaInfo.tracks[index];
+        subMediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
+        std::string mimeType;
+        std::string trackType;
+        trackMeta.Get<Tag::MIME_TYPE>(mimeType);
+
+        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("application/x-subrip") == 0) {
+            MEDIA_LOG_I("Found subtitle track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S,
+                index, mimeType.c_str());
+            extSubtitleTrackId_ = mediaMetaData_.trackMetas.size() + index;
+            break;
         }
     }
 }

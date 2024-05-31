@@ -88,6 +88,8 @@ public:
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurAudioPlugin();
     std::shared_ptr<Plugins::DemuxerPlugin> SelectPlugin(int32_t trackId);
     Status LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, MediaInfo& mediaInfo);
+    Status LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+        Plugins::MediaInfo& mediaInfo);
     Status LoadDemuxerPlugin(int32_t streamID, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status Reset();
     Status Start();
@@ -106,6 +108,7 @@ public:
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId);
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();
+    size_t GetStreamCount();
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
