@@ -50,8 +50,10 @@ void SubtitleSink::SetSeekTime(int64_t timeUs)
 
 void SubtitleSink::GetTargetSubtitleIndex()
 {
+    auto bufferCount = subtitleInfoVec_.size();
+    FALSE_RETURN(bufferCount > 0);
     int32_t left = 0;
-    int32_t right = subtitleInfoVec_.size() - 1;
+    int32_t right = bufferCount - 1;
     while (left < right) {
         int32_t mid = (left + right) / 2;
         if (mid == left) {

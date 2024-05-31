@@ -403,12 +403,6 @@ Status DemuxerPluginManager::StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> s
             return ret;
         }
     }
-    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
-        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Start();
-        if (ret != Status::OK) {
-            return ret;
-        }
-    }
     MEDIA_LOG_I("StartAllPlugin success.");
     return Status::OK;
 }
@@ -560,6 +554,12 @@ Status DemuxerPluginManager::Start()
     }
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Start();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Start();
         if (ret != Status::OK) {
             return ret;
         }

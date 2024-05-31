@@ -830,6 +830,7 @@ Status MediaDemuxer::Start()
     isThreadExit_ = false;
     isStopped_ = false;
     auto it = bufferQueueMap_.begin();
+    MEDIA_LOG_I("BUFFER QUEUE MAP SIZE %{public}d", bufferQueueMap_.size());
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
         taskMap_[trackId]->Start();
@@ -931,7 +932,7 @@ void MediaDemuxer::InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo
         if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("application/x-subrip") == 0) {
             MEDIA_LOG_I("Found subtitle track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S,
                 index, mimeType.c_str());
-            extSubtitleTrackId_ = demuxerPluginManager_->GetStreamCount();
+            extSubtitleTrackId_ = mediaMetaData_.trackMetas.size() + index;
             break;
         }
     }

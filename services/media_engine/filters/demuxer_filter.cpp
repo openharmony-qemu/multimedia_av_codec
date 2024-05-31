@@ -527,9 +527,6 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W("mediaType disabled, index: %zu", index);
         return true;
-    } else if (mediaType == MediaType::SUBTITLE) {
-        MEDIA_LOG_W("is subtitle track, continue");
-        return true;
     }
     return false;
 }
