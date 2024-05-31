@@ -691,9 +691,16 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
+    const int32_t maxRetryTimes = 3; // max retry count is 3
+    int32_t retryCount = 0;
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-    } while (ret != Status::OK && state_ == CodecState::RUNNING);
+        retryCount++;
+    } while (ret != Status::OK && state_ == CodecState::RUNNING && retryCount < maxRetryTimes);
+
+    if (retryCount == maxRetryTimes && emptyOutputBuffer == nullptr) {
+        MEDIA_LOG_E("request audio decoder output buffer failed");
+    }
 
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
