@@ -564,7 +564,6 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
             HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
-        SetCallerToBuffer(outBuffer->fd);
         BufferInfo bufInfo;
         bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
         bufInfo.owner          = BufferOwner::OWNED_BY_US;
@@ -575,6 +574,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         bufInfo.CleanUpUnusedInfo();
         pool.push_back(bufInfo);
     }
+    SetCallerToBuffer(true);
     return AVCS_ERR_OK;
 }
 
@@ -891,18 +891,6 @@ void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
             return;
         }
     }
-}
-
-void HCodec::WrapSurfaceBufferToSlot(BufferInfo &info,
-    const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag)
-{
-    info.surfaceBuffer = surfaceBuffer;
-    info.omxBuffer->bufferhandle = new NativeBuffer(surfaceBuffer->GetBufferHandle());
-    info.omxBuffer->filledLen = surfaceBuffer->GetSize();
-    info.omxBuffer->fd = -1;
-    info.omxBuffer->fenceFd = -1;
-    info.omxBuffer->pts = pts;
-    info.omxBuffer->flag = flag;
 }
 
 void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)

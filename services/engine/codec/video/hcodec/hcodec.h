@@ -189,7 +189,7 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
-    virtual void SetCallerToBuffer(int fd) {}
+    virtual void SetCallerToBuffer(bool isInput) {}
     virtual void UpdateFormatFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
@@ -208,8 +208,6 @@ protected:
     uint32_t UserFlagToOmxFlag(AVCodecBufferFlag userFlag);
     AVCodecBufferFlag OmxFlagToUserFlag(uint32_t omxFlag);
     bool WaitFence(const sptr<SyncFence>& fence);
-    void WrapSurfaceBufferToSlot(BufferInfo &info,
-        const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag);
 
     // input buffer circulation
     virtual void NotifyUserToFillThisInBuffer(BufferInfo &info);
@@ -220,7 +218,6 @@ protected:
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
 
     // output buffer circulation
-    virtual void SubmitDynamicBufferIfPossible() {}
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const OHOS::HDI::Codec::V3_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
@@ -336,7 +333,6 @@ protected:
     bool outputPortEos_ = false;
     bool gotFirstInput_ = false;
     bool gotFirstOutput_ = false;
-    bool outPortHasChanged_ = false;
 
     struct TotalCntAndCost {
         uint64_t totalCnt = 0;
