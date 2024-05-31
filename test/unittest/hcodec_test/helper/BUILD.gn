@@ -42,7 +42,7 @@ ohos_static_library("hcodec_test_helper") {
   ]
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:codec_idl_headers",
+    "drivers_interface_codec:libcodec_proxy_3.0",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
