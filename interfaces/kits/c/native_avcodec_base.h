@@ -245,6 +245,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_APE;
 
 /**
+ * @brief Enumerates the MIME type of srt subtitle demuxer
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
