@@ -48,7 +48,7 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample = new VEncAPI11FuzzSample();
     vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     vEncSample->SetVideoEncoderCallback();
-    vEncSample->SURF_INPUT = true;
+    vEncSample->surfInput = true;
     vEncSample->ConfigureVideoEncoderFuzz(data_);
     vEncSample->StartVideoEncoder();
     vEncSample->SetParameter(data_);

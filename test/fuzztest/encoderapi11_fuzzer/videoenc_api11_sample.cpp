@@ -31,7 +31,6 @@ constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t DEFAULT_BITRATE = 10000000;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
-VEncAPI11FuzzSample *enc_sample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -214,7 +213,6 @@ int32_t VEncAPI11FuzzSample::StartVideoEncoder()
 int32_t VEncAPI11FuzzSample::CreateVideoEncoder(const char *codecName)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
-    enc_sample = this;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -249,7 +247,7 @@ uint32_t VEncAPI11FuzzSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuff
 
 void VEncAPI11FuzzSample::InputFuncSurface()
 {
-    while (true) {
+    while (isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         if (nativeWindow == nullptr) {

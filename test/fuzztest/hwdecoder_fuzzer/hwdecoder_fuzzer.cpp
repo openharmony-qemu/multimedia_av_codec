@@ -23,7 +23,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "hwdecoder_fuzzer"
 
-static VDecFuzzSample *g_g_vDecSample = nullptr;
+static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
