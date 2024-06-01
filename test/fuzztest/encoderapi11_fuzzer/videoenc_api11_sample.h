@@ -51,30 +51,25 @@ class VEncAPI11FuzzSample : public NoCopyable {
 public:
     VEncAPI11FuzzSample() = default;
     ~VEncAPI11FuzzSample();
-    uint32_t DEFAULT_WIDTH = 1280;
-    uint32_t DEFAULT_HEIGHT = 720;
-    uint32_t DEFAULT_BITRATE = 5000000;
-    uint32_t DEFAULT_QUALITY = 30;
-    double DEFAULT_FRAME_RATE = 30.0;
+    uint32_t defaultWidth = 1280;
+    uint32_t defaultHeight = 720;
+    uint32_t defaultBitRate = 5000000;
+    uint32_t defaultQuality = 30;
+    double defaultFrameRate = 30.0;
     uint32_t maxFrameInput = 20;
-    int32_t DEFAULT_QP = 20;
+    int32_t defaultQP = 20;
     bool fuzzMode = true;
-    uint32_t DEFAULT_BITRATE_MODE = CBR;
-    OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
-    uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
-    uint32_t repeat_time = 0;
+    uint32_t defaultBitrateMode = CBR;
+    OH_AVPixelFormat defaultPixFmt = AV_PIXEL_FORMAT_NV12;
+    uint32_t defaultKeyFrameInterval = 1000;
     int32_t CreateVideoEncoder(const char *codecName);
-    int32_t ConfigureVideoEncoder();
-    int32_t ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size);
     int32_t ConfigureVideoEncoderFuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
     int32_t SetParameter(int32_t data);
     void GetStride();
-    void testApi();
     void WaitForEOS();
-    int32_t OpenFile();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     int64_t GetSystemTimeUs();
     int32_t Start();
@@ -82,13 +77,9 @@ public:
     int32_t Reset();
     int32_t Stop();
     int32_t Release();
-    void Flush_buffer();
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void InputFunc();
-    int32_t state_EOS();
     void InputFuncSurface();
-    uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
-    void ReadOneFrameRGBA8888(uint8_t *dst);
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void ReleaseSignal();
@@ -97,8 +88,7 @@ public:
     uint32_t errCount = 0;
     uint32_t frameCount = 0;
     bool sleepOnFPS = false;
-    bool SURF_INPUT = false;
-    int64_t encode_count = 0;
+    bool surfInput = false;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::thread> inputLoop_;
@@ -110,7 +100,6 @@ private:
     bool isFirstFrame_ = true;
     OHNativeWindow *nativeWindow;
     int stride_;
-    static constexpr uint32_t SAMPLE_RATIO = 2;
 };
 } // namespace Media
 } // namespace OHOS

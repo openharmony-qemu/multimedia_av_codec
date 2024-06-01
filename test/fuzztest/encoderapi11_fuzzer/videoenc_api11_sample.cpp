@@ -42,7 +42,7 @@ void clearIntqueue(std::queue<uint32_t> &q)
 
 VEncAPI11FuzzSample::~VEncAPI11FuzzSample()
 {
-    if (SURF_INPUT && nativeWindow) {
+    if (surfInput && nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
     }
@@ -84,7 +84,7 @@ int64_t VEncAPI11FuzzSample::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
+    int64_t nanoTime = reinterpret_cast<int64_t>(now.tv_sec) * NANOS_IN_SECOND + now.tv_nsec;
 
     return nanoTime / NANOS_IN_MICRO;
 }
@@ -97,9 +97,9 @@ int32_t VEncAPI11FuzzSample::ConfigureVideoEncoderFuzz(int32_t data)
         return AV_ERR_UNKNOWN;
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
-    DEFAULT_WIDTH = data;
+    defaultWidth = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
-    DEFAULT_HEIGHT = data;
+    defaultHeight = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, data % MAX_PIXEL_FMT);
     double frameRate = data;
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
@@ -125,7 +125,7 @@ int32_t VEncAPI11FuzzSample::SetVideoEncoderCallback()
         cout << "Failed to new VEncSignal" << endl;
         return AV_ERR_UNKNOWN;
     }
-    if (SURF_INPUT) {
+    if (surfInput) {
         int32_t ret = OH_VideoEncoder_RegisterParameterCallback(venc_, onEncInputParam, static_cast<void *>(this));
         if (ret != AV_ERR_OK) {
             return ret;
@@ -164,7 +164,7 @@ int32_t VEncAPI11FuzzSample::CreateSurface()
         cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
         return ret;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, defaultWidth, defaultHeight);
     if (ret != AV_ERR_OK) {
         cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
         return ret;
@@ -185,7 +185,7 @@ int32_t VEncAPI11FuzzSample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURF_INPUT) {
+    if (surfInput) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;
@@ -198,7 +198,7 @@ int32_t VEncAPI11FuzzSample::StartVideoEncoder()
         signal_->inCond_.notify_all();
         return ret;
     }
-    if (SURF_INPUT) {
+    if (surfInput) {
         inputLoop_ = make_unique<thread>(&VEncAPI11FuzzSample::InputFuncSurface, this);
     } else {
         inputLoop_ = make_unique<thread>(&VEncAPI11FuzzSample::InputFunc, this);
@@ -231,8 +231,8 @@ uint32_t VEncAPI11FuzzSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuff
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;
-    rect->w = DEFAULT_WIDTH;
-    rect->h = DEFAULT_HEIGHT;
+    rect->w = defaultWidth;
+    rect->h = defaultHeight;
     region.rects = rect;
     NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
     int32_t err = OH_NativeBuffer_Unmap(nativeBuffer);
@@ -257,7 +257,6 @@ void VEncAPI11FuzzSample::InputFuncSurface()
             isRunning_.store(false);
             break;
         }
-
         int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
         if (err != 0) {
             cout << "RequestBuffer failed, GSError=" << err << endl;
@@ -275,16 +274,6 @@ void VEncAPI11FuzzSample::InputFuncSurface()
             isRunning_.store(false);
             break;
         }
-        uint8_t *dst = (uint8_t *)virAddr;
-        const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
-        int stride = sbuffer->GetStride();
-        if (dst == nullptr || stride < DEFAULT_WIDTH) {
-            cout << "invalid va or stride=" << stride << endl;
-            err = NativeWindowCancelBuffer(nativeWindow, ohNativeWindowBuffer);
-            isRunning_.store(false);
-            break;
-        }
-        stride_ = stride;
         if (frameCount == maxFrameInput) {
             err = OH_VideoEncoder_NotifyEndOfStream(venc_);
             if (err != 0) {
@@ -319,10 +308,7 @@ void VEncAPI11FuzzSample::SetEOS(uint32_t index, OH_AVBuffer *buffer)
 void VEncAPI11FuzzSample::InputFunc()
 {
     errCount = 0;
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
