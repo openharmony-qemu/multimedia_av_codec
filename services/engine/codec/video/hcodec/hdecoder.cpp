@@ -404,11 +404,16 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     if (portIndex == OMX_DirInput) {
         return AllocateAvLinearBuffers(portIndex);
     }
+    int32_t ret;
     if (currSurface_.surface_) {
-        return isDynamic_ ? AllocOutDynamicSurfaceBuf() : AllocateOutputBuffersFromSurface();
+        ret = isDynamic_ ? AllocOutDynamicSurfaceBuf() : AllocateOutputBuffersFromSurface();
     } else {
-        return AllocateAvSurfaceBuffers(portIndex);
+        ret = AllocateAvSurfaceBuffers(portIndex);
     }
+    if (ret == AVCS_ERR_OK) {
+        UpdateFormatFromSurfaceBuffer();
+    }
+    return ret;
 }
 
 void HDecoder::SetCallerToBuffer(int fd)
@@ -434,6 +439,7 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     if (surfaceBuffer == nullptr) {
         return;
     }
+    HLOGI(">>");
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, surfaceBuffer->GetWidth());
@@ -720,16 +726,19 @@ void HDecoder::SubmitDynamicBufferIfPossible()
             return;
         }
         WaitFence(fence);
-        if (iter == outputBufferPool_.end()) {
-            SetCallerToBuffer(buffer->GetFileDescriptor());
-            HLOGI("bufferId=%u, seq=%u", idleIter->bufferId, buffer->GetSeqNum());
-            WrapSurfaceBufferToSlot(*idleIter, buffer, 0, 0);
-            NotifyOmxToFillThisOutBuffer(*idleIter);
-            return;
+        if (iter != outputBufferPool_.end()) {
+            ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
+            NotifyOmxToFillThisOutBuffer(*iter);
+            continue; // keep request until we got a new surfacebuffer
         }
-        ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
-        NotifyOmxToFillThisOutBuffer(*iter);
-        // keep request until we got a new surfacebuffer
+        SetCallerToBuffer(buffer->GetFileDescriptor());
+        HLOGI("bufferId=%u, seq=%u", idleIter->bufferId, buffer->GetSeqNum());
+        WrapSurfaceBufferToSlot(*idleIter, buffer, 0, 0);
+        if (idleIter == outputBufferPool_.begin()) {
+            UpdateFormatFromSurfaceBuffer();
+        }
+        NotifyOmxToFillThisOutBuffer(*idleIter);
+        return;
     }
 }
 
