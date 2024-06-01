@@ -542,7 +542,7 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_004, TestSize.Level0)
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_005, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1104x622.h265";
+    vDecSample->INP_DIR = "/data/test/media/1104x622.h264";
     vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
     vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
     vDecSample->DEFAULT_FRAME_RATE = 30;
