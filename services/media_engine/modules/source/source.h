@@ -43,6 +43,16 @@ public:
         callbackWrap_->OnEvent(event);
     }
 
+    void SetSelectBitRateFlag(bool flag) override
+    {
+        callbackWrap_->SetSelectBitRateFlag(flag);
+    }
+
+    bool CheckSwitchFlag() override
+    {
+        return callbackWrap_->CheckSwitchFlag();
+    }
+
     void SetCallbackWrap(Callback* callbackWrap)
     {
         callbackWrap_ = callbackWrap;
@@ -70,6 +80,9 @@ public:
     Status GetSize(uint64_t &fileSize);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void SetSelectBitRateFlag(bool flag) override;
+    bool CheckSwitchFlag() override;
+
     bool IsSeekToTimeSupported();
     int64_t GetDuration();
     Status SeekToTime(int64_t seekTime, SeekMode mode);
