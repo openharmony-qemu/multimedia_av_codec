@@ -527,6 +527,7 @@ Status MediaDemuxer::SeekToTimeAfter(bool jumperRestartPlugin)
                 int32_t streamID = demuxerPluginManager_->GetStreamID(audioTrackId_);
                 streamDemuxer_->SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
                 demuxerPluginManager_->StartPlugin(streamID, streamDemuxer_);
+                InnerSelectTrack(audioTrackId_);
                 streamDemuxer_->SetDemuxerState(streamID, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
             }
         } else {
@@ -1306,6 +1307,18 @@ Status MediaDemuxer::DisableMediaTrack(Plugins::MediaType mediaType)
 bool MediaDemuxer::IsTrackDisabled(Plugins::MediaType mediaType)
 {
     return !disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end();
+}
+
+void MediaDemuxer::SetSelectBitRateFlag(bool flag)
+{
+    MEDIA_LOG_I("SetSelectBitRateFlag = " PUBLIC_LOG_D32, static_cast<int32_t>(flag));
+    isSelectBitRate_.store(flag);
+}
+
+bool MediaDemuxer::CheckSwitchFlag()
+{
+    // calculating auto selectbitrate time
+    return isSelectBitRate_.load();
 }
 } // namespace Media
 } // namespace OHOS
