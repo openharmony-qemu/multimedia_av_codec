@@ -1315,10 +1315,10 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag)
     isSelectBitRate_.store(flag);
 }
 
-bool MediaDemuxer::CheckSwitchFlag()
+bool MediaDemuxer::CanDoSelectBitRate()
 {
     // calculating auto selectbitrate time
-    return isSelectBitRate_.load();
+    return !(isSelectBitRate_.load());
 }
 } // namespace Media
 } // namespace OHOS

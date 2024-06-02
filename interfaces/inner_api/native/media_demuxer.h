@@ -101,7 +101,7 @@ public:
     Status DisableMediaTrack(Plugins::MediaType mediaType);
 
     void SetSelectBitRateFlag(bool flag) override;
-    bool CheckSwitchFlag() override;
+    bool CanDoSelectBitRate() override;
 private:
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
