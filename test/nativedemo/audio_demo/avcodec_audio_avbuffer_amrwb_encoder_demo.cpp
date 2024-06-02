@@ -306,7 +306,7 @@ void AEncAvbufferAmrWbDemo::InputFunc()
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         if (!inputFile_->eof()) {
-            inputFile_->read((char*)OH_AVBuffer_GetAddr(buffer), INPUT_FRAME_BYTES);
+            inputFile_->read(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(buffer)), INPUT_FRAME_BYTES);
             buffer->buffer_->memory_->SetSize(INPUT_FRAME_BYTES);
             if (inputFile_->gcount() == 0) {
                 buffer->buffer_->memory_->SetSize(1);
