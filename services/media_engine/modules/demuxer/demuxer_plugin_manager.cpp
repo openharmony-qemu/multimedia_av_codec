@@ -472,13 +472,13 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
 
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
-    if (curAudioStreamID_ != -1) {
+    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curVideoStreamID_ != -1) {
+    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
             return ret;
