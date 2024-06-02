@@ -258,7 +258,7 @@ void SubtitleSink::ResetSyncInfo()
     lastReportedClockTime_ = HST_TIME_NONE;
 }
 
-uint64_t SubtitleSink::CalcWaitTime(SubtitleInfo subtitleInfo)
+uint64_t SubtitleSink::CalcWaitTime(SubtitleInfo &subtitleInfo)
 {
     int64_t curTime;
     if (shouldUpdate_.load()) {
@@ -291,7 +291,7 @@ int64_t SubtitleSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer> &
     return 0;
 }
 
-void SubtitleSink::NotifyRender(SubtitleInfo subtitleInfo)
+void SubtitleSink::NotifyRender(SubtitleInfo &subtitleInfo)
 {
     Format format;
     (void)format.PutStringValue(Tag::SUBTITLE_TEXT, subtitleInfo.text_);
