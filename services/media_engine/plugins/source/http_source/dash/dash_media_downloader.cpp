@@ -429,11 +429,12 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
                 switchFlag = callback_->CheckSwitchFlag();
             }
             if (switchFlag == false) {
-                if (CheckAutoSelectBitrate(streamId)) {
+                bool flag = CheckAutoSelectBitrate(streamId);
+                if (callback_ != nullptr) {
+                    callback_->SetSelectBitRateFlag(flag);
+                }
+                if (flag) {
                     // switch success
-                    if (callback_ != nullptr) {
-                        callback_->SetSelectBitRateFlag(true);
-                    }
                     return;
                 }
             }
