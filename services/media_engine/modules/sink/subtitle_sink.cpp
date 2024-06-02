@@ -32,43 +32,49 @@ SubtitleSink::SubtitleSink()
 SubtitleSink::~SubtitleSink()
 {
     MEDIA_LOG_I("SubtitleSink dtor");
-    isThreadExit_ = true;
-    condBufferAvailable_.notify_all();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        isThreadExit_ = true;
+    }
+    updateCond_.notify_all();
     if (readThread_ != nullptr && readThread_->joinable()) {
         readThread_->join();
         readThread_ = nullptr;
     }
 }
 
-void SubtitleSink::SetSeekTime(int64_t timeUs)
+void SubtitleSink::NotifySeek()
 {
-    isSeek_ = true;
-    seekTimeUs_ = timeUs;
-    GetTargetSubtitleIndex();
-    condBufferAvailable_.notify_all();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        shouldUpdate_ = true;
+    }
+    updateCond_.notify_all();
 }
 
-void SubtitleSink::GetTargetSubtitleIndex()
+void SubtitleSink::GetTargetSubtitleIndex(int64_t currentTime)
 {
-    auto bufferCount = subtitleInfoVec_.size();
-    FALSE_RETURN(bufferCount > 0);
     int32_t left = 0;
-    int32_t right = bufferCount - 1;
+    int32_t right = subtitleInfoVec_.size();
     while (left < right) {
         int32_t mid = (left + right) / 2;
-        if (mid == left) {
-            break;
-        }
-        if (subtitleInfoVec_.at(mid).pts_ > seekTimeUs_) {
+        int64_t startTime = subtitleInfoVec_.at(mid).pts_;
+        int64_t endTime = subtitleInfoVec_.at(mid).duration_ + startTime;
+        if (startTime > currentTime) {
             right = mid;
             continue;
+        } else if (endTime < currentTime) {
+            left = mid + 1;
+            continue;
+        } else {
+            left = mid;
+            break;
         }
-        left = mid;
     }
     currentInfoIndex_ = left;
 }
 
-Status SubtitleSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+Status SubtitleSink::Init(std::shared_ptr<Meta> &meta, const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     state_ = Pipeline::FilterState::INITIALIZED;
     if (meta != nullptr) {
@@ -94,12 +100,12 @@ sptr<AVBufferQueueConsumer> SubtitleSink::GetBufferQueueConsumer()
     return inputBufferQueueConsumer_;
 }
 
-Status SubtitleSink::SetParameter(const std::shared_ptr<Meta>& meta)
+Status SubtitleSink::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     return Status::OK;
 }
 
-Status SubtitleSink::GetParameter(std::shared_ptr<Meta>& meta)
+Status SubtitleSink::GetParameter(std::shared_ptr<Meta> &meta)
 {
     return Status::OK;
 }
@@ -120,11 +126,6 @@ Status SubtitleSink::Start()
 {
     isEos_ = false;
     state_ = Pipeline::FilterState::RUNNING;
-    if (isPaused_.load()) {
-        return Resume();
-    }
-    isThreadExit_ = false;
-    isPaused_ = false;
     readThread_ = std::make_unique<std::thread>(&SubtitleSink::RenderLoop, this);
     pthread_setname_np(readThread_->native_handle(), "SubtitleRenderLoop");
     return Status::OK;
@@ -132,7 +133,7 @@ Status SubtitleSink::Start()
 
 Status SubtitleSink::Stop()
 {
-    condBufferAvailable_.notify_all();
+    updateCond_.notify_all();
     state_ = Pipeline::FilterState::INITIALIZED;
     return Status::OK;
 }
@@ -145,8 +146,11 @@ Status SubtitleSink::Pause()
 
 Status SubtitleSink::Resume()
 {
-    state_ = Pipeline::FilterState::RUNNING;
-    condBufferAvailable_.notify_all();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        state_ = Pipeline::FilterState::RUNNING;
+    }
+    updateCond_.notify_all();
     return Status::OK;
 }
 
@@ -168,7 +172,7 @@ Status SubtitleSink::SetIsTransitent(bool isTransitent)
 
 Status SubtitleSink::PrepareInputBufferQueue()
 {
-    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
+    if (inputBufferQueue_ != nullptr && inputBufferQueue_->GetQueueSize() > 0) {
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
@@ -177,7 +181,7 @@ Status SubtitleSink::PrepareInputBufferQueue()
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
 #endif
-    MEDIA_LOG_I("PrepareInputBufferQueue ");
+    MEDIA_LOG_I("PrepareInputBufferQueue");
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
@@ -187,59 +191,61 @@ Status SubtitleSink::PrepareInputBufferQueue()
 void SubtitleSink::DrainOutputBuffer(bool flushed)
 {
     Status ret;
-    if (inputBufferQueueConsumer_ == nullptr) {
+    if (inputBufferQueueConsumer_ == nullptr || isEos_.load()) {
         return;
     }
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer_);
+    if (filledOutputBuffer_->flag_ & BUFFER_FLAG_EOS) {
+        isEos_ = true;
+    }
     if (ret != Status::OK || filledOutputBuffer_ == nullptr || filledOutputBuffer_->memory_ == nullptr) {
         return;
     }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer_->memory_->GetAddr()),
-        filledOutputBuffer_->memory_->GetSize());
-    SubtitleInfo subtitleInfo {
-        subtitleText,
-        filledOutputBuffer_->pts_,
-        filledOutputBuffer_->duration_
-    };
-    subtitleInfoVec_.push_back(subtitleInfo);
+                             filledOutputBuffer_->memory_->GetSize());
+    SubtitleInfo subtitleInfo{ subtitleText, filledOutputBuffer_->pts_, filledOutputBuffer_->duration_ };
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
+    if (subtitleInfoVec_.size() != 0) {
+        auto lastSubtitleInfo = subtitleInfoVec_.back();
+        if (lastSubtitleInfo.pts_ > subtitleInfo.pts_) {
+            inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
+            return;
+        }
+        if (lastSubtitleInfo.pts_ == subtitleInfo.pts_) {
+            lastSubtitleInfo.text_ += subtitleInfo.text_;
+            inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
+            return;
+        }
+    }
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        subtitleInfoVec_.push_back(subtitleInfo);
+    }
+    updateCond_.notify_all();
 }
 
 void SubtitleSink::RenderLoop()
 {
     while (SUBTITME_LOOP_RUNNING) {
-        if (currentInfoIndex_ >= subtitleInfoVec_.size()) {
-            break;
-        }
-        SubtitleInfo subtitleInfo = subtitleInfoVec_.at(currentInfoIndex_);
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            condBufferAvailable_.wait(lock, [this] { return !isPaused_.load() || isThreadExit_.load(); });
-            if (isThreadExit_.load()) {
-                break;
-            }
-        }
-        int64_t waitTime = CalcWaitTime(subtitleInfo);
-        if (speed_ != 0.0) {
-            waitTime /= speed_;
-        }
         std::unique_lock<std::mutex> lock(mutex_);
-        condBufferAvailable_.wait_for(lock, std::chrono::microseconds(waitTime), [this] {
-            return isThreadExit_.load();
+        updateCond_.wait(lock, [this] {
+            return isThreadExit_.load() ||
+                   (subtitleInfoVec_.size() > currentInfoIndex_ && state_ == Pipeline::FilterState::RUNNING);
         });
-        if (isThreadExit_) {
-            return;
-        }
+        FALSE_RETURN(!isThreadExit_.load());
+        // wait timeout, seek or stop
+        SubtitleInfo tempSubtitleInfo = subtitleInfoVec_.at(currentInfoIndex_);
+        SubtitleInfo subtitleInfo{ tempSubtitleInfo.text_, tempSubtitleInfo.pts_, tempSubtitleInfo.duration_ };
+        int64_t waitTime = CalcWaitTime(subtitleInfo);
+        updateCond_.wait_for(lock, std::chrono::microseconds(waitTime),
+                             [this] { return isThreadExit_.load() || shouldUpdate_; });
+        FALSE_RETURN(!isThreadExit_.load());
         auto actionToDo = ActionToDo(subtitleInfo);
-        if (state_ == Pipeline::FilterState::PAUSED || actionToDo == SubtitleBufferState::WAIT) {
+        if (actionToDo == SubtitleBufferState::DROP || actionToDo == SubtitleBufferState::WAIT) {
             continue;
         }
-        if (actionToDo == SubtitleBufferState::SHOW) {
-            DoSyncWrite(subtitleInfo);
-        }
-        if (++currentInfoIndex_ >= subtitleInfoVec_.size()) {
-            currentInfoIndex_ = subtitleInfoVec_.size() - 1;
-        }
+        NotifyRender(subtitleInfo);
+        ++currentInfoIndex_;
     }
 }
 
@@ -252,64 +258,51 @@ void SubtitleSink::ResetSyncInfo()
     lastReportedClockTime_ = HST_TIME_NONE;
 }
 
-int64_t SubtitleSink::CalcWaitTime(SubtitleInfo subtitleInfo)
+uint64_t SubtitleSink::CalcWaitTime(SubtitleInfo subtitleInfo)
 {
-    auto syncCenter = syncCenter_.lock();
-    if (!syncCenter) {
-        return -1;
+    int64_t curTime;
+    if (shouldUpdate_.load()) {
+        shouldUpdate_ = false;
     }
-    auto curTime = syncCenter->GetMediaTimeNow();
-    return subtitleInfo.pts_ - curTime;
+    curTime = GetMediaTime();
+    if (subtitleInfo.pts_ < curTime) {
+        return 0;
+    }
+    return (subtitleInfo.pts_ - curTime) / speed_;
 }
 
-uint32_t SubtitleSink::ActionToDo(SubtitleInfo subtitleInfo)
+uint32_t SubtitleSink::ActionToDo(SubtitleInfo &subtitleInfo)
 {
-    if (isSeek_) {
-        isSeek_ = false;
+    auto curTime = GetMediaTime();
+    if (shouldUpdate_ || subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
+        GetTargetSubtitleIndex(curTime);
         return SubtitleBufferState::DROP;
     }
-    auto syncCenter = syncCenter_.lock();
-    if (!syncCenter) {
-        return SubtitleBufferState::DROP;
-    }
-    auto curTime = syncCenter->GetMediaTimeNow();
-    if (subtitleInfo.pts_ > curTime) {
+    if (subtitleInfo.pts_ > curTime || state_ != Pipeline::FilterState::RUNNING) {
         return SubtitleBufferState::WAIT;
     }
-    if (subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
-        return SubtitleBufferState::DROP;
-    }
+    subtitleInfo.duration_ -= curTime - subtitleInfo.pts_;
     return SubtitleBufferState::SHOW;
 }
 
-int64_t SubtitleSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+int64_t SubtitleSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer> &buffer)
 {
     (void)buffer;
     return 0;
 }
 
-int64_t SubtitleSink::DoSyncWrite(SubtitleInfo subtitleInfo)
+void SubtitleSink::NotifyRender(SubtitleInfo subtitleInfo)
 {
-    auto syncCenter = syncCenter_.lock();
-    if (!syncCenter) {
-        return -1;
-    }
-    auto curTime = syncCenter->GetMediaTimeNow();
     Format format;
     (void)format.PutStringValue(Tag::SUBTITLE_TEXT, subtitleInfo.text_);
-    (void)format.PutIntValue(Tag::SUBTITLE_PTS, subtitleInfo.pts_);
-    (void)format.PutIntValue(Tag::SUBTITLE_DURATION, subtitleInfo.duration_);
-    Event event {
-        .srcFilter = "SubtitleSink",
-        .type = EventType::EVENT_SUBTITLE_TEXT_UPDATE,
-        .param = format
-    };
-    FALSE_RETURN_V(playerEventReceiver_ != nullptr, 0);
+    (void)format.PutIntValue(Tag::SUBTITLE_PTS, Plugins::Us2Ms(subtitleInfo.pts_));
+    (void)format.PutIntValue(Tag::SUBTITLE_DURATION, Plugins::Us2Ms(subtitleInfo.duration_));
+    Event event{ .srcFilter = "SubtitleSink", .type = EventType::EVENT_SUBTITLE_TEXT_UPDATE, .param = format };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
-    return subtitleInfo.pts_ - curTime;
 }
 
-void SubtitleSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+void SubtitleSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     FALSE_RETURN(receiver != nullptr);
     playerEventReceiver_ = receiver;
@@ -323,8 +316,23 @@ void SubtitleSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syn
 
 Status SubtitleSink::SetSpeed(float speed)
 {
-    speed_ = speed;
+    FALSE_RETURN_V_MSG_W(speed > 0, Status::OK, "Invalid speed %{public}f", speed);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        speed_ = speed;
+        shouldUpdate_ = true;
+    }
+    updateCond_.notify_all();
     return Status::OK;
 }
-} // namespace MEDIA
-} // namespace OHOS
+
+int64_t SubtitleSink::GetMediaTime()
+{
+    auto syncCenter = syncCenter_.lock();
+    if (!syncCenter) {
+        return 0;
+    }
+    return syncCenter->GetMediaTimeNow();
+}
+}  // namespace MEDIA
+}  // namespace OHOS

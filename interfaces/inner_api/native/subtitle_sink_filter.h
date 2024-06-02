@@ -62,7 +62,7 @@ public:
 
     Status SetIsTransitent(bool isTransitent);
 
-    void SetSeekTime(int64_t seekTimeUs);
+    void NotifySeek();
 
     Status SetSpeed(float speed);
 protected:

@@ -32,8 +32,6 @@ static AutoRegisterFilter<SubtitleSinkFilter> g_registerSubtitleSinkFilter("buil
         return std::make_shared<SubtitleSinkFilter>(name, FilterType::FILTERTYPE_SSINK);
     });
 
-static const bool IS_FILTER_ASYNC = system::GetParameter("persist.media_service.async_filter", "1") == "1";
-
 SubtitleSinkFilter::AVBufferAvailableListener::AVBufferAvailableListener(
     std::shared_ptr<SubtitleSinkFilter> subtitleSinkFilter)
 {
@@ -50,7 +48,7 @@ void SubtitleSinkFilter::AVBufferAvailableListener::OnBufferAvailable()
 }
 
 SubtitleSinkFilter::SubtitleSinkFilter(const std::string& name, FilterType filterType)
-    : Filter(name, FilterType::FILTERTYPE_SSINK, IS_FILTER_ASYNC)
+    : Filter(name, FilterType::FILTERTYPE_SSINK, false)
 {
     filterType_ = filterType;
     subtitleSink_ = std::make_shared<SubtitleSink>();
@@ -211,9 +209,9 @@ Status SubtitleSinkFilter::OnUnLinked(StreamType inType, const std::shared_ptr<F
     return Filter::OnUnLinked(inType, callback);
 }
 
-void SubtitleSinkFilter::SetSeekTime(int64_t seekTimeUs)
+void SubtitleSinkFilter::NotifySeek()
 {
-    subtitleSink_->SetSeekTime(seekTimeUs);
+    subtitleSink_->NotifySeek();
 }
 
 Status SubtitleSinkFilter::SetSpeed(float speed)
