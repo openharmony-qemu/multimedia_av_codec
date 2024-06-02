@@ -56,6 +56,8 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     CHECK_AND_RETURN_RET_LOG(pixFmt == VideoPixelFormat::YUV420P || pixFmt == VideoPixelFormat::NV12 ||
                                  pixFmt == VideoPixelFormat::NV21,
                              AVCS_ERR_UNSUPPORT, "pixFmt: %{public}d do not support", pixFmt);
+    CHECK_AND_RETURN_RET_LOG(height > 0, AVCS_ERR_UNSUPPORT, "height less than 0.");
+    CHECK_AND_RETURN_RET_LOG(stride > 0, AVCS_ERR_UNSUPPORT, "stride less than 0.");
     int32_t srcPos = 0;
     int32_t dstPos = 0;
     int32_t dataSize = scaleLineSize[0];

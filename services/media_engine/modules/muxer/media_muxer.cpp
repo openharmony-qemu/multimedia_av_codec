@@ -66,7 +66,7 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
 namespace OHOS {
 namespace Media {
 MediaMuxer::MediaMuxer(int32_t appUid, int32_t appPid)
-    : appUid_(appUid), appPid_(appPid)
+    : appUid_(appUid), appPid_(appPid), format_(Plugins::OutputFormat::DEFAULT)
 {
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " instances create", FAKE_POINTER(this));
 }
