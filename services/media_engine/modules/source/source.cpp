@@ -271,6 +271,16 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
+void Source::SetSelectBitRateFlag(bool flag)
+{
+    mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
+}
+
+bool Source::CanDoSelectBitRate()
+{
+    return mediaDemuxerCallback_->CanDoSelectBitRate();
+}
+
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
     if (plugin_) {

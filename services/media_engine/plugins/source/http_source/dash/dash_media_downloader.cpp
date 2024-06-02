@@ -424,8 +424,19 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             bitrateParam_.streamId_ = -1;
         } else {
             // auto switch
-            if (CheckAutoSelectBitrate(streamId)) {
-                return;
+            bool switchFlag = true;
+            if (callback_ != nullptr) {
+                switchFlag = callback_->CanDoSelectBitRate();
+            }
+            if (switchFlag) {
+                bool flag = CheckAutoSelectBitrate(streamId);
+                if (callback_ != nullptr) {
+                    callback_->SetSelectBitRateFlag(flag);
+                }
+                if (flag) {
+                    // switch success
+                    return;
+                }
             }
         }
     }
@@ -537,8 +548,10 @@ bool DashMediaDownloader::CheckAutoSelectBitrate(int streamId)
     }
     uint32_t desBitrate = GetNextBitrate(segmentDownloader);
     if (desBitrate == 0) {
+        MEDIA_LOG_I("AutoSelectBitrate end no change");
         return false;
     }
+    MEDIA_LOG_I("AutoSelectBitrate end change: " PUBLIC_LOG_U32, desBitrate);
     return AutoSelectBitrateInternal(desBitrate);
 }
 

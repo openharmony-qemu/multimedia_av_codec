@@ -99,6 +99,9 @@ public:
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
+
+    void SetSelectBitRateFlag(bool flag) override;
+    bool CanDoSelectBitRate() override;
 private:
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
