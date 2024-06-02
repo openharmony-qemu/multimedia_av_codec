@@ -333,9 +333,8 @@ void HdiCodec::Release()
     compMgr_ = nullptr;
 }
 
-HdiCodec::HdiCallback::HdiCallback(std::shared_ptr<HdiCodec> hdiCodec)
+HdiCodec::HdiCallback::HdiCallback(std::shared_ptr<HdiCodec> hdiCodec) : hdiCodec_(hdiCodec)
 {
-    hdiCodec_ = hdiCodec;
 }
 
 int32_t HdiCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)

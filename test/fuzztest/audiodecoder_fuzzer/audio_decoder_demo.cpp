@@ -116,7 +116,7 @@ void StringReplace(std::string& strBig, const std::string& strsrc, const std::st
 
 bool ADecBufferDemo::RunCase(const uint8_t *data, size_t size)
 {
-    std::string codecdata((const char*) data, size);
+    std::string codecdata(reinterpret_cast<const char *>(data), size);
     inputdata = codecdata;
     inputdatasize = size;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
@@ -186,7 +186,7 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     return true;
 }
 
-bool ADecBufferDemo::InitFile(std::string inputFile)
+bool ADecBufferDemo::InitFile(const std::string& inputFile)
 {
     if (inputFile.find("mp4") != std::string::npos || inputFile.find("m4a") != std::string::npos ||
         inputFile.find("vivid") != std::string::npos || inputFile.find("ts") != std::string::npos) {
@@ -407,7 +407,7 @@ void ADecBufferDemo::InputFunc()
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         int ret;
-        strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        strncpy_s(reinterpret_cast<char*>(OH_AVBuffer_GetAddr(buffer)), currentSize, inputdata.c_str(), currentSize);
         buffer->buffer_->memory_->SetSize(currentSize);
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
