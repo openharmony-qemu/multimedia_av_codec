@@ -61,9 +61,9 @@ private:
         int64_t pts_;
         int64_t duration_;
     };
-    void NotifyRender(SubtitleInfo subtitleInfo);
+    void NotifyRender(SubtitleInfo &subtitleInfo);
     void RenderLoop();
-    uint64_t CalcWaitTime(SubtitleInfo subtitleInfo);
+    uint64_t CalcWaitTime(SubtitleInfo &subtitleInfo);
     uint32_t ActionToDo(SubtitleInfo &subtitleInfo);
     void GetTargetSubtitleIndex(int64_t currentTime);
     Status PrepareInputBufferQueue();
