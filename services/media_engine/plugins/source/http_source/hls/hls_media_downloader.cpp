@@ -149,7 +149,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     MEDIA_LOG_I("Open enter");
     std::string hostname = extractHostname(url);
     if (!hostname.empty()) {
-        struct hostent* he = gethostbyname(hostname.c_str());
+        struct hostent* he = gethostbyname_r(hostname.c_str());
         if (he != nullptr) {
             char ip[INET_ADDRSTRLEN];
             inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
