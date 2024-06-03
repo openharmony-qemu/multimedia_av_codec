@@ -719,40 +719,10 @@ void DecoderSurfaceFilter::SetBitrateStart()
 {
     bitrateChange_++;
 }
-
-void Source::OnEvent(const Plugins::PluginEvent& event)
-{
-    MEDIA_LOG_D("OnEvent");
-    if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
-        if (isPluginReady_ && isAboveWaterline_) {
-            isAboveWaterline_ = false;
-            isPluginReady_ = false;
-        }
-    } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
-        MEDIA_LOG_I("Error happened, need notify client by OnEvent");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
-    } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
-        MEDIA_LOG_I("Drminfo updates from source");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
-    } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
-        MEDIA_LOG_I("Gallery read freeze.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
-    } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
-        MEDIA_LOG_I("source bitrate start from source.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
-    }
-}
  
 void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
 {
+    AutoLock lock(formatChangeMutex_);
     int32_t width = 0;
     format.GetIntValue("video_picture_width", width);
     int32_t height = 0;
