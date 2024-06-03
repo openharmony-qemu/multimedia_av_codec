@@ -508,7 +508,6 @@ int32_t HCodec::GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIO
         HLOGE("invalid nBufferSize %u", def.nBufferSize);
         return AVCS_ERR_INVALID_VAL;
     }
-    PrintPortDefinition(def);
     return AVCS_ERR_OK;
 }
 

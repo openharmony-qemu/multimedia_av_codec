@@ -765,6 +765,7 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                 if (averageQp == nullptr) {
                     return;
                 }
+                HLOGD("pts=%" PRId64 ", averageQp=(%d)", omxBuffer->pts, *averageQp);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
                 break;
             }
@@ -773,8 +774,19 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                 if (averageMseLcu == nullptr) {
                     return;
                 }
+                HLOGD("pts=%" PRId64 ", averageMseLcu=(%f)", omxBuffer->pts, *averageMseLcu);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
                 break;
+            }
+            case OMX_IndexParamEncOutLTR: {
+                auto *encOutLtrParam = reader.Read<CodecEncOutLTRParam>();
+                if (encOutLtrParam == nullptr) {
+                    return;
+                }
+                HLOGD("pts=%" PRId64 ", isLTR=(%d), poc=(%d)", omxBuffer->pts, encOutLtrParam->isLTR,
+                      encOutLtrParam->poc);
+                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, encOutLtrParam->isLTR);
+                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(encOutLtrParam->poc));
             }
             default: {
                 break;

@@ -67,7 +67,7 @@ private:
     void OnGetBufferFromSurface(const ParamSP& param) override;
     bool RequestAndFindBelongTo(
         sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, std::vector<BufferInfo>::iterator& iter);
-    void SubmitDynamicBufferIfPossible() override;
+    __attribute__((no_sanitize("cfi"))) void SubmitDynamicBufferIfPossible() override;
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);

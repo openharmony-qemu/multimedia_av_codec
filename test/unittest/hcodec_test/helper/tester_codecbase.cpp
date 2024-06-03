@@ -42,10 +42,21 @@ void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shar
 void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     int32_t aveQp {};
-    buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp);
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp)) {
+        TLOGI("buffer->pts_[%" PRId64 "], qp[%d]", buffer->pts_, aveQp);
+    }
     double mse {};
-    buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse);
-    TLOGI("output buffer: aveQp[%d], mse[%f]", aveQp, mse);
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse)) {
+        TLOGI("buffer->pts_[%" PRId64 "], mse[%f]", buffer->pts_, mse);
+    }
+    bool isLTR {};
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLTR)) {
+        TLOGI("buffer->pts_[%" PRId64 "], isLTR[%d]", buffer->pts_, isLTR);
+    }
+    int32_t poc {};
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, poc)) {
+        TLOGI("buffer->pts_[%" PRId64 "], poc[%d]", buffer->pts_, poc);
+    }
     tester_->AfterGotOutput(OH_AVCodecBufferAttr {
         .pts = buffer->pts_,
         .size = buffer->memory_ ? buffer->memory_->GetSize() : 0,
