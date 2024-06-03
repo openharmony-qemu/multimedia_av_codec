@@ -32,7 +32,6 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
