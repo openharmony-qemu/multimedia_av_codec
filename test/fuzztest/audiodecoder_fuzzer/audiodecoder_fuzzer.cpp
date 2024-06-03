@@ -34,7 +34,7 @@ bool AudioDecoderFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     // FUZZ OH_AudioCodec_CreateByMime
-    std::string codecdata((const char*) data, size);
+    std::string codecdata(reinterpret_cast<const char*>(data), size);
     OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata.c_str(), true);
     if (source) {
         OH_AudioCodec_Destroy(source);

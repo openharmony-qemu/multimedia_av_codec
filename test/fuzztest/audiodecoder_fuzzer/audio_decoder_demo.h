@@ -69,7 +69,7 @@ public:
       * @input inputFile
       * @output outputFile
     **/
-    bool InitFile(std::string inputFile);
+    bool InitFile(const std::string& inputFile);
     bool RunCase(const uint8_t *data, size_t size);
     OH_AVCodec* CreateByMime(const char* mime);
     OH_AVCodec* CreateByName(const char* name);
@@ -111,7 +111,7 @@ private:
     bool isFirstFrame_ = true;
     uint32_t frameCount_ = 0;
     AudioBufferFormatType audioType_;
-    size_t inputdatasize;
+    size_t inputdatasize = 0;
     std::string inputdata;
     bool eosFlag = false;
 };

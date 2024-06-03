@@ -66,7 +66,7 @@ public:
 
     OH_AVCodec* CreateByMime(const char* mime);
 
-    OH_AVCodec* CreateByName(const char* mime);
+    OH_AVCodec* CreateByName(const char* name);
 
     OH_AVErrCode Destroy(OH_AVCodec* codec);
 
@@ -96,7 +96,7 @@ public:
 
     uint32_t GetOutputIndex();
 
-    bool InitFile(std::string inputFile);
+    bool InitFile(const std::string& inputFile);
 private:
     void ClearQueue();
     int32_t CreateEnc();
@@ -123,11 +123,9 @@ private:
     bool isFirstFrame_ = true;
     int64_t timeStamp_ = 0;
     uint32_t frameCount_ = 0;
-    int32_t sampleRate_;
-    int32_t channels_;
-    size_t inputdatasize;
+    size_t inputdatasize = 0;
     std::string inputdata;
-    AudioBufferFormatType audioType_;
+    AudioBufferFormatType audioType_ = AudioBufferFormatType::TYPE_AAC;
 };
 } // namespace AudioAacEncDemo
 } // namespace MediaAVCodec

@@ -13,16 +13,15 @@
  * limitations under the License.
  */
 
+#include "avcodec_audio_decoder_inner_demo.h"
 #include <iostream>
 #include <unistd.h>
-
 #include "avcodec_codec_name.h"
 #include "avcodec_errors.h"
 #include "avcodec_common.h"
 #include "demo_log.h"
 #include "media_description.h"
 #include "securec.h"
-#include "avcodec_audio_decoder_inner_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

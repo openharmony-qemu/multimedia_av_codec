@@ -119,7 +119,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-bool AudioBufferAacEncDemo::InitFile(std::string inputFile)
+bool AudioBufferAacEncDemo::InitFile(const std::string& inputFile)
 {
     if (inputFile.find("mp4") != std::string::npos || inputFile.find("m4a") != std::string::npos ||
         inputFile.find("vivid") != std::string::npos) {
@@ -141,7 +141,7 @@ bool AudioBufferAacEncDemo::InitFile(std::string inputFile)
 
 bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
 {
-    std::string codecdata((const char*) data, size);
+    std::string codecdata(reinterpret_cast<const char *>(data), size);
     inputdata = codecdata;
     inputdatasize = size;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
@@ -268,15 +268,9 @@ int32_t AudioBufferAacEncDemo::Start()
     isRunning_.store(true);
 
     inputLoop_ = make_unique<thread>(&AudioBufferAacEncDemo::InputFunc, this);
-    if (inputLoop_ == nullptr) {
-        std::cout << "inputLoop_ is nullptr" << std::endl;
-    }
     DEMO_CHECK_AND_RETURN_RET_LOG(inputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
 
     outputLoop_ = make_unique<thread>(&AudioBufferAacEncDemo::OutputFunc, this);
-    if (outputLoop_ == nullptr) {
-        std::cout << "outputLoop_ is nullptr" << std::endl;
-    }
     DEMO_CHECK_AND_RETURN_RET_LOG(outputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
     return OH_AudioCodec_Start(audioEnc_);
 }
@@ -538,12 +532,11 @@ OH_AVFormat *AudioBufferAacEncDemo::GetOutputDescription(OH_AVCodec *codec)
 OH_AVErrCode AudioBufferAacEncDemo::PushInputData(OH_AVCodec *codec, uint32_t index)
 {
     OH_AVCodecBufferAttr info;
-    int64_t size = 100;
     if (!signal_->inBufferQueue_.empty()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         auto buffer = signal_->inBufferQueue_.front();
         OH_AVBuffer_GetBufferAttr(buffer, &info);
-        info.size = size;
+        info.size = 100; // size 100
         OH_AVErrCode ret = OH_AVBuffer_SetBufferAttr(buffer, &info);
         if (ret != AV_ERR_OK) {
             return ret;
