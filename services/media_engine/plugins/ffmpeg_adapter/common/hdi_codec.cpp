@@ -99,7 +99,7 @@ bool HdiCodec::IsSupportCodecType(const std::string &name)
     }
 
     bool checkName = std::any_of(std::begin(capabilityList),
-        std::end(capabilityList), [name](CodecCompCapability capability){
+        std::end(capabilityList), [name](CodecCompCapability capability) {
         return capability.compName == name;
     });
     return checkName;
