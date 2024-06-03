@@ -44,7 +44,7 @@ public:
     ~DownloadMonitor() override = default;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
-    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
+    Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset) override;
     void Pause() override;
     void Resume() override;

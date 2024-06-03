@@ -41,7 +41,7 @@ public:
     virtual void Close(bool isAsync) = 0;
     virtual void Pause() = 0;
     virtual void Resume() = 0;
-    virtual bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) = 0;
+    virtual Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) = 0;
     virtual bool SeekToPos(int64_t offset)
     {
         MEDIA_LOG_E("SeekToPos is unimplemented.");
