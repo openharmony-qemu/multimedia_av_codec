@@ -619,10 +619,10 @@ bool DemuxerFilter::GetDuration(int64_t& durationMs)
     return demuxer_->GetDuration(durationMs);
 }
 
-Status DemuxerFilter::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+Status DemuxerFilter::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "OptimizeDecodeSlow failed.");
-    return demuxer_->OptimizeDecodeSlow(useDecodeSlowOptimization);
+    return demuxer_->OptimizeDecodeSlow(isDecodeOptimizationEnabled);
 }
 
 Status DemuxerFilter::SetSpeed(float speed)

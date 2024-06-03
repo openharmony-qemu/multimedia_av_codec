@@ -1228,10 +1228,10 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
     }
 }
 
-Status MediaDemuxer::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
 {
     MEDIA_LOG_I("OptimizeDecodeSlow entered.");
-    useDecodeSlowOptimization_ = useDecodeSlowOptimization;
+    isDecodeOptimizationEnabled_ = isDecodeOptimizationEnabled;
     return Status::OK;
 }
 
@@ -1275,7 +1275,7 @@ bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t 
         return false;
     }
 
-    if (!useDecodeSlowOptimization_.load()) {
+    if (!isDecodeOptimizationEnabled_.load()) {
         return false;
     }
 

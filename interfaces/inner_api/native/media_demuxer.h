@@ -91,7 +91,7 @@ public:
     void SetPlayerId(std::string playerId);
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
-    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
+    Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
     Status SetFrameRate(double frameRate, uint32_t trackId);
@@ -192,7 +192,7 @@ private:
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
 
-    std::atomic<bool> useDecodeSlowOptimization_ {false};
+    std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
     std::atomic<double> frameRate_ {0.0};
     std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
