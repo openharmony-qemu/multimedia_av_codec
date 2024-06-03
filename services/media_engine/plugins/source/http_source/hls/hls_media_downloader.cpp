@@ -24,6 +24,8 @@
 #include "osal/task/task.h"
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <regex>
 
 namespace OHOS {
@@ -149,11 +151,15 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     MEDIA_LOG_I("Open enter");
     std::string hostname = extractHostname(url);
     if (!hostname.empty()) {
-        struct hostent* he = gethostbyname(hostname.c_str());
-        if (he != nullptr) {
-            char ip[INET_ADDRSTRLEN];
-            inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
-            MEDIA_LOG_D("Open url ip: %{public}s", ip);
+        struct addrinfo hints, *res, *p;
+        int errcode;
+        char ipstr[INET_ADDRSTRLEN];
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET; // Specify IPv4
+        hints.ai_socktype = SOCK_STREAM; // Specify TCP
+        if ((errcode = getaddrinfo(argv[1], NULL, &hints, &res)) != 0) {
+            inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+            MEDIA_LOG_D("Open url ip: %{public}s", ipstr);
         }
     }
     SaveHttpHeader(httpHeader);

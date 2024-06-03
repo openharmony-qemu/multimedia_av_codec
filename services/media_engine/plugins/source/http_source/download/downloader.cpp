@@ -240,11 +240,8 @@ void Downloader::Start()
 void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
-    {
-        AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I("pause Begin");
-        requestQue_->SetActive(false, false);
-    }
+    MEDIA_LOG_I("pause Begin");
+    requestQue_->SetActive(false, false);
     if (isAsync) {
         task_->PauseAsync();
     } else {
