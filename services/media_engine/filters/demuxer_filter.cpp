@@ -580,12 +580,12 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
         return;
     }
     uint32_t trackIdU32 = static_cast<uint32_t>(trackId);
-    int32_t decodeFramerateUpperLimit = 0;
-    if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decodeFramerateUpperLimit)) {
-        demuxer_->SetDecodeFramerateUpperLimit(decodeFramerateUpperLimit, trackIdU32);
+    int32_t decoderFramerateUpperLimit = 0;
+    if (meta->GetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, decoderFramerateUpperLimit)) {
+        demuxer_->SetDecoderFramerateUpperLimit(decoderFramerateUpperLimit, trackIdU32);
     }
-    double frameRate;
-    if (meta->GetData(Tag::VIDEO_FRAME_RATE, frameRate)) {
+    double framerate;
+    if (meta->GetData(Tag::VIDEO_FRAME_RATE, framerate)) {
         demuxer_->SetFrameRate(frameRate, trackIdU32);
     }
 }
