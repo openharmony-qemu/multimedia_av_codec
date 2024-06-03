@@ -63,6 +63,7 @@ private:
     std::atomic<bool> lastFrameDropped_ {false};
     int64_t lastPts_;
     int64_t lastClockTime_;
+    std::atomic<bool> isStartRenderFrame_{true};
 };
 } // namespace Pipeline
 } // namespace Media
