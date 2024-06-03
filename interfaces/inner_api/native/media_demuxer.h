@@ -94,7 +94,7 @@ public:
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
-    Status SetFrameRate(double frameRate, uint32_t trackId);
+    Status SetFrameRate(double framerate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
@@ -194,7 +194,7 @@ private:
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
-    std::atomic<double> frameRate_ {0.0};
+    std::atomic<double> framerate_ {0.0};
     std::atomic<int32_t> decoderFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
     std::string subtitlePluginName_;

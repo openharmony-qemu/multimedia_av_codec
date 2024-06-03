@@ -586,7 +586,7 @@ void DemuxerFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
     }
     double framerate;
     if (meta->GetData(Tag::VIDEO_FRAME_RATE, framerate)) {
-        demuxer_->SetFrameRate(frameRate, trackIdU32);
+        demuxer_->SetFrameRate(framerate, trackIdU32);
     }
 }
 
