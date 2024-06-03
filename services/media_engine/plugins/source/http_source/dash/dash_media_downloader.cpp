@@ -73,7 +73,7 @@ void DashMediaDownloader::Resume()
 
 Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    FALSE_RETURN_V(buff != nullptr, false);
+    FALSE_RETURN_V(buff != nullptr, Status::END_OF_STREAM);
     if (segmentDownloaders_.empty()) {
         MEDIA_LOG_W("dash read, segmentDownloaders size is 0");
         return Status::END_OF_STREAM;
