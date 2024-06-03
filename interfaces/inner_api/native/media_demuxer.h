@@ -91,10 +91,10 @@ public:
     void SetPlayerId(std::string playerId);
     void SetDumpInfo(bool isDump, uint64_t instanceId);
 
-    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
-    Status SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit, uint32_t trackId);
+    Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
+    Status SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit, uint32_t trackId);
     Status SetSpeed(float speed);
-    Status SetFrameRate(double frameRate, uint32_t trackId);
+    Status SetFrameRate(double framerate, uint32_t trackId);
     void SetInterruptState(bool isInterruptNeeded);
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
@@ -195,10 +195,10 @@ private:
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
 
-    std::atomic<bool> useDecodeSlowOptimization_ {false};
+    std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
-    std::atomic<double> frameRate_ {0.0};
-    std::atomic<int32_t> decodeFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
+    std::atomic<double> framerate_ {0.0};
+    std::atomic<int32_t> decoderFramerateUpperLimit_ {DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT};
 
     std::string subtitlePluginName_;
     std::shared_ptr<Plugins::DemuxerPlugin> subtitlePlugin_;

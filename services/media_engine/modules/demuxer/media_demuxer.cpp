@@ -1229,22 +1229,22 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
     }
 }
 
-Status MediaDemuxer::OptimizeDecodeSlow(bool useDecodeSlowOptimization)
+Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
 {
     MEDIA_LOG_I("OptimizeDecodeSlow entered.");
-    useDecodeSlowOptimization_ = useDecodeSlowOptimization;
+    isDecodeOptimizationEnabled_ = isDecodeOptimizationEnabled;
     return Status::OK;
 }
 
-Status MediaDemuxer::SetDecodeFramerateUpperLimit(int32_t decodeFramerateUpperLimit,
+Status MediaDemuxer::SetDecoderFramerateUpperLimit(int32_t decoderFramerateUpperLimit,
     uint32_t trackId)
 {
-    MEDIA_LOG_I("decodeFramerateUpperLimit = " PUBLIC_LOG_D32 " trackId = " PUBLIC_LOG_D32,
-        decodeFramerateUpperLimit, trackId);
+    MEDIA_LOG_I("decoderFramerateUpperLimit = " PUBLIC_LOG_D32 " trackId = " PUBLIC_LOG_D32,
+        decoderFramerateUpperLimit, trackId);
     FALSE_RETURN_V(trackId == videoTrackId_, Status::OK);
-    FALSE_RETURN_V_MSG_E(decodeFramerateUpperLimit > 0, Status::ERROR_INVALID_PARAMETER,
-        "SetDecodeFramerateUpperLimit failed, decodeFramerateUpperLimit <= 0");
-    decodeFramerateUpperLimit_.store(decodeFramerateUpperLimit);
+    FALSE_RETURN_V_MSG_E(decoderFramerateUpperLimit > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetDecoderFramerateUpperLimit failed, decoderFramerateUpperLimit <= 0");
+    decoderFramerateUpperLimit_.store(decoderFramerateUpperLimit);
     return Status::OK;
 }
 
@@ -1257,14 +1257,14 @@ Status MediaDemuxer::SetSpeed(float speed)
     return Status::OK;
 }
 
-Status MediaDemuxer::SetFrameRate(double frameRate, uint32_t trackId)
+Status MediaDemuxer::SetFrameRate(double framerate, uint32_t trackId)
 {
-    MEDIA_LOG_I("frameRate = " PUBLIC_LOG_F " trackId = " PUBLIC_LOG_D32,
-        frameRate, trackId);
+    MEDIA_LOG_I("framerate = " PUBLIC_LOG_F " trackId = " PUBLIC_LOG_D32,
+        framerate, trackId);
     FALSE_RETURN_V(trackId == videoTrackId_, Status::OK);
-    FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_INVALID_PARAMETER,
-        "SetFrameRate failed, frameRate <= 0");
-    frameRate_.store(frameRate);
+    FALSE_RETURN_V_MSG_E(framerate > 0, Status::ERROR_INVALID_PARAMETER,
+        "SetFrameRate failed, framerate <= 0");
+    framerate_.store(framerate);
     return Status::OK;
 }
 
@@ -1276,12 +1276,12 @@ bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t 
         return false;
     }
 
-    if (!useDecodeSlowOptimization_.load()) {
+    if (!isDecodeOptimizationEnabled_.load()) {
         return false;
     }
 
-    double targetRate = frameRate_.load() * speed_.load();
-    double actualRate = decodeFramerateUpperLimit_.load() * (1 + DECODE_RATE_THRESHOLD);
+    double targetRate = framerate_.load() * speed_.load();
+    double actualRate = decoderFramerateUpperLimit_.load() * (1 + DECODE_RATE_THRESHOLD);
     if (targetRate <= actualRate) {
         return false;
     }
@@ -1292,9 +1292,9 @@ bool MediaDemuxer::IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t 
         return false;
     }
 
-    MEDIA_LOG_D("drop buffer, frameRate = " PUBLIC_LOG_F " speed = " PUBLIC_LOG_F " decodeUpLimit = "
-        PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_U64, frameRate_.load(), speed_.load(),
-        decodeFramerateUpperLimit_.load(), sample->pts_);
+    MEDIA_LOG_D("drop buffer, framerate = " PUBLIC_LOG_F " speed = " PUBLIC_LOG_F " decodeUpLimit = "
+        PUBLIC_LOG_D32 " pts = " PUBLIC_LOG_U64, framerate_.load(), speed_.load(),
+        decoderFramerateUpperLimit_.load(), sample->pts_);
     return true;
 }
 
