@@ -242,10 +242,8 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = streamId;
     readDataInfo.nextStreamId_ = streamId;
-    readDataInfo.wantReadLength_ = expectedLen;
-    auto result = false;
-    
-    result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
+    readDataInfo.wantReadLength_ = expectedLen; 
+    auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
     
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
