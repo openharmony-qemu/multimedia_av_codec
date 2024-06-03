@@ -83,6 +83,7 @@ void MediaSynchronousSink::NotifyAllPrerolled()
 
 void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& meta)
 {
+    FALSE_RETURN_MSG(meta != nullptr, "meta is null!");
     int64_t trackStartTime = 0;
     meta->GetData(Tag::MEDIA_START_TIME, trackStartTime);
     uint32_t trackId = 0;
