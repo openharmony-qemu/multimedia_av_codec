@@ -719,10 +719,40 @@ void DecoderSurfaceFilter::SetBitrateStart()
 {
     bitrateChange_++;
 }
+
+void Source::OnEvent(const Plugins::PluginEvent& event)
+{
+    MEDIA_LOG_D("OnEvent");
+    if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
+        if (isPluginReady_ && isAboveWaterline_) {
+            isAboveWaterline_ = false;
+            isPluginReady_ = false;
+        }
+    } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
+        MEDIA_LOG_I("Error happened, need notify client by OnEvent");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
+        MEDIA_LOG_I("Drminfo updates from source");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
+        MEDIA_LOG_I("Gallery read freeze.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
+        MEDIA_LOG_I("source bitrate start from source.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    }
+}
  
 void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
 {
-    AutoLock lock(formatChangeMutex_);
     int32_t width = 0;
     format.GetIntValue("video_picture_width", width);
     int32_t height = 0;
@@ -754,138 +784,6 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
     bitrateChange_--;
-}
-
-Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
-{
-    if (source_ == nullptr) {
-        MEDIA_LOG_E("GetDownloadInfo failed, source_ is null");
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    return source_->GetDownloadInfo(downloadInfo);
-}
-
-void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
-{
-    MEDIA_LOG_I("SetDrmCallback called");
-    drmCallback_ = callback;
-    bool isExisted = IsLocalDrmInfosExisted();
-    if (isExisted) {
-        MEDIA_LOG_D("SetDrmCallback Already received drminfo and report!");
-        ReportDrmInfos(localDrmInfos_);
-    }
-}
-
-void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
-{
-    eventReceiver_ = receiver;
-}
-
-void MediaDemuxer::SetPlayerId(std::string playerId)
-{
-    playerId_ = playerId;
-}
-
-void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
-{
-    if (isDump && instanceId == 0) {
-        MEDIA_LOG_W("Cannot dump with instanceId 0.");
-        return;
-    }
-    dumpPrefix_ = std::to_string(instanceId);
-    isDump_ = isDump;
-}
-
-bool MediaDemuxer::GetDuration(int64_t& durationMs)
-{
-    AutoLock lock(mapMetaMutex_);
-    return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
-}
-
-bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
-{
-    MEDIA_LOG_D("IsDrmInfosUpdate");
-    bool isUpdated = false;
-    std::unique_lock<std::shared_mutex> lock(drmMutex);
-    for (auto &newItem : info) {
-        if (newItem.second.size() == 0) {
-            continue;
-        }
-        auto pos = localDrmInfos_.equal_range(newItem.first);
-        if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
-            MEDIA_LOG_D("this uuid doesn't exist, and update");
-            localDrmInfos_.insert(newItem);
-            isUpdated = true;
-            continue;
-        }
-        bool isSame = false;
-        for (; pos.first != pos.second; ++pos.first) {
-            if (newItem.second == pos.first->second) {
-                MEDIA_LOG_D("this uuid exists and same pssh, not update");
-                isSame = true;
-                break;
-            }
-        }
-        if (!isSame) {
-            MEDIA_LOG_D("this uuid exists but pssh not same, update");
-            localDrmInfos_.insert(newItem);
-            isUpdated = true;
-        }
-    }
-    return isUpdated;
-}
-
-bool MediaDemuxer::IsLocalDrmInfosExisted()
-{
-    MEDIA_LOG_I("CheckLocalDrmInfos");
-    std::shared_lock<std::shared_mutex> lock(drmMutex);
-    return !localDrmInfos_.empty();
-}
-
-Status MediaDemuxer::ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info)
-{
-    MEDIA_LOG_I("ReportDrmInfos");
-    FALSE_RETURN_V_MSG_E(drmCallback_ != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "ReportDrmInfos failed due to drmcallback nullptr.");
-    MEDIA_LOG_I("demuxer filter will update drminfo OnDrmInfoChanged");
-    drmCallback_->OnDrmInfoChanged(info);
-    return Status::OK;
-}
-
-Status MediaDemuxer::ProcessDrmInfos()
-{
-    MEDIA_LOG_D("ProcessDrmInfos");
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
-    FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "ProcessDrmInfos failed due to get demuxer plugin failed.");
-    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
-    Status ret = pluginTemp->GetDrmInfo(drmInfo);
-    if (ret == Status::OK && !drmInfo.empty()) {
-        MEDIA_LOG_D("MediaDemuxer get drminfo success");
-        bool isUpdated = IsDrmInfosUpdate(drmInfo);
-        if (isUpdated) {
-            return ReportDrmInfos(drmInfo);
-        } else {
-            MEDIA_LOG_D("MediaDemuxer received drminfo but not update");
-        }
-    } else {
-        if (ret != Status::OK) {
-            MEDIA_LOG_D("MediaDemuxer get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
-        }
-    }
-    return Status::OK;
-}
-
-Status MediaDemuxer::ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
-{
-    MEDIA_LOG_D("ProcessVideoStartTime,  trackId: %{public}u", trackId);
-    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported()
-        && seekable_ == Plugins::Seekable::SEEKABLE && !(demuxerPluginManager_->IsDash())) {
-        MEDIA_LOG_D("add start time, videoStartTime_: %{public}" PRId64 ", sample->pts_: %{public}" PRId64,
-         videoStartTime_, sample->pts_);
-        sample->pts_ += Plugins::HstTime2Us(videoStartTime_);
-    }
-    return Status::OK;
 }
 } // namespace Pipeline
 } // namespace MEDIA
