@@ -1100,7 +1100,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3700, TestSize.Level0)
         trackFormat = OH_AVSource_GetTrackFormat(source, index);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-        if(tarckType == 1) {
+        if (tarckType == 1) {
             OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer);
             ASSERT_NE(avBuffer, nullptr);
             format = OH_AVBuffer_GetParameter(avBuffer);
