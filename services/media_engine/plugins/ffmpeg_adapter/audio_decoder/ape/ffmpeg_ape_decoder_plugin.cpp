@@ -115,10 +115,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         fakedata[0] = 3990;  // 3990 version
         fakedata[1] = 2000;  // 2000 complexity
         fakedata[2] = 0;     // flags 0
-        if (memcpy_s(codecCtx->extradata, EXTRA_DATA_SIZE, fakedata, EXTRA_DATA_SIZE) != EOK) {
-            AVCODEC_LOGE("extradata memcpy_s failed.");
-            return Status::ERROR_INVALID_PARAMETER;
-        }
+        memcpy_s(codecCtx->extradata, EXTRA_DATA_SIZE, fakedata, EXTRA_DATA_SIZE)；
     }
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
@@ -135,7 +132,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
             codecCtx->bits_per_coded_sample = 8; // sample bit = 8 bit
         }
         if (samplefmt == SAMPLE_S32LE || samplefmt == SAMPLE_S32P) {
-            codecCtx->bits_per_coded_sample = 24; // sample bit = 32 bit
+            codecCtx->bits_per_coded_sample = 24; // sample bit = 24 bit
         }
         AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     }
