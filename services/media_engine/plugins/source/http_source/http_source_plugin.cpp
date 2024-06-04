@@ -159,7 +159,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("SetSource enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
-    PlayStrategy* playStrategy;
+    PlayStrategy* playStrategy = nullptr;
     
     if (source != nullptr) {
         uri_ = source->GetSourceUri();
