@@ -892,6 +892,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     }
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        MEDIA_LOG_I("Parse info for track " PUBLIC_LOG_D32 , trackIndex);
         Meta meta;
         auto avStream = formatContext_->streams[trackIndex];
         if (avStream == nullptr) {
