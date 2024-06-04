@@ -81,9 +81,9 @@ void DownloadMonitor::Close(bool isAsync)
     isPlaying_ = false;
 }
 
-bool DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    bool ret = downloader_->Read(buff, readDataInfo);
+    auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
     return ret;
 }

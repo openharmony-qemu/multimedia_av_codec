@@ -33,7 +33,6 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int RECORD_TIME_INTERVAL = 3000;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -80,33 +79,9 @@ HttpMediaDownloader::~HttpMediaDownloader()
     Close(false);
 }
 
-static std::string extractHostname(const std::string& url)
-{
-    std::smatch matches;
-    std::regex pattern(
-        "https?:\\/\\/([^\\/:]*)",
-        std::regex::icase
-    );
-
-    if (std::regex_search(url, matches, pattern) && matches.size() > 1) {
-        return matches[1].str();
-    }
-    return "";
-}
-
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
-    std::string hostname = extractHostname(url);
-    if (!hostname.empty()) {
-        struct hostent* he = gethostbyname(hostname.c_str());
-        if (he != nullptr) {
-            char ip[INET_ADDRSTRLEN];
-            inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
-            MEDIA_LOG_D("Open url ip: %{public}s", ip);
-        }
-    }
-
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -172,9 +147,9 @@ void HttpMediaDownloader::Resume()
     cvReadWrite_.NotifyOne();
 }
 
-bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    FALSE_RETURN_V(buffer_ != nullptr, false);
+    FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     readDataInfo.isEos_ = false;
     readTime_ = 0;
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
@@ -191,9 +166,9 @@ bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
-        if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
+        if (downloadErrorState_ || isTimeOut_) {
             isTimeOut_ = true;
             if (downloader_ != nullptr) {
                 // avoid deadlock caused by ringbuffer write stall
@@ -209,13 +184,13 @@ bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
                 callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             }
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && buffer_->GetSize() == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
         Task::SleepInTask(5); // 5
         readTime_ += 5;    // 5
@@ -223,7 +198,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
-    return true;
+    return Status::OK;
 }
 
 bool HttpMediaDownloader::SeekToPos(int64_t offset)

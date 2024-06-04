@@ -46,7 +46,7 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
+    Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
     size_t GetContentLength() const override;

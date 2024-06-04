@@ -32,7 +32,6 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
@@ -130,32 +129,8 @@ void HlsMediaDownloader::SaveHttpHeader(const std::map<std::string, std::string>
     httpHeader_ = httpHeader;
 }
 
-static std::string extractHostname(const std::string& url)
-{
-    std::smatch matches;
-    std::regex pattern(
-        "https?:\\/\\/([^\\/:]*)",
-        std::regex::icase
-    );
-
-    if (std::regex_search(url, matches, pattern) && matches.size() > 1) {
-        return matches[1].str();
-    }
-    return "";
-}
-
 bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("Open enter");
-    std::string hostname = extractHostname(url);
-    if (!hostname.empty()) {
-        struct hostent* he = gethostbyname(hostname.c_str());
-        if (he != nullptr) {
-            char ip[INET_ADDRSTRLEN];
-            inet_ntop(he->h_addrtype, he->h_addr_list[0], ip, sizeof(ip));
-            MEDIA_LOG_D("Open url ip: %{public}s", ip);
-        }
-    }
     SaveHttpHeader(httpHeader);
     if (!mimeType_.empty()) {
         playListDownloader_->SetMimeType(mimeType_);
@@ -241,7 +216,7 @@ bool HlsMediaDownloader::CheckReadStatus()
 
 bool HlsMediaDownloader::CheckReadTimeOut()
 {
-    if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
+    if (downloadErrorState_ || isTimeOut_) {
         isTimeOut_ = true;
         if (downloader_ != nullptr) {
             // avoid deadlock caused by ringbuffer write stall
@@ -261,13 +236,13 @@ bool HlsMediaDownloader::CheckReadTimeOut()
     return false;
 }
 
-bool HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    FALSE_RETURN_V(buffer_ != nullptr, false);
+    FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     if (CheckReadStatus()) {
         readDataInfo.isEos_ = true;
         readDataInfo.realReadLength_ = 0;
-        return false;
+        return Status::END_OF_STREAM;
     }
     readTime_ = 0;
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
@@ -278,15 +253,15 @@ bool HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         }
         if (isFinishedPlay && buffer_->GetSize() > 0) {
             readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
-            return true;
+            return Status::OK;
         }
         if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
         if (CheckReadTimeOut()) {
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
         OSAL::SleepFor(5);  // 5
         readTime_ += 5;
@@ -294,7 +269,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
-    return true;
+    return Status::OK;
 }
 
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
