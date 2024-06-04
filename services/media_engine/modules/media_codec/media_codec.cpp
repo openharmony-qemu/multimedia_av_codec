@@ -549,14 +549,13 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
         MEDIA_LOG_E("GetOutputBuffers failed");
         return (int32_t)ret;
     }
+    FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
+                         "outputBufferQueueProducer_ is nullptr");
     if (outputBuffers.empty()) {
         int outputBufferNum = 30;
         std::shared_ptr<Meta> outputBufferConfig = std::make_shared<Meta>();
         ret = codecPlugin_->GetParameter(outputBufferConfig);
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("GetParameter failed");
-            return (int32_t)ret;
-        }
+        FALSE_RETURN_V_MSG_E(ret != Status::OK, (int32_t)ret, "GetParameter failed");
         FALSE_RETURN_V_MSG_E(outputBufferConfig != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                              "outputBufferConfig is nullptr");
         FALSE_RETURN_V(outputBufferConfig->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(outputBufferCapacity_),
@@ -566,8 +565,6 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
             std::shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputBufferCapacity_);
             FALSE_RETURN_V_MSG_E(outputBuffer != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                                  "outputBuffer is nullptr");
-            FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
-                                 "outputBufferQueueProducer_ is nullptr");
             MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
                         outputBuffer->GetUniqueId());
             if (outputBufferQueueProducer_->AttachBuffer(outputBuffer, false) == Status::OK) {
@@ -575,8 +572,6 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
             }
         }
     } else {
-        FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
-                             "outputBufferQueueProducer_ is nullptr");
         for (uint32_t i = 0; i < outputBuffers.size(); i++) {
             MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
                         outputBuffers[i]->GetUniqueId());
@@ -585,6 +580,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
             }
         }
     }
+    FALSE_RETURN_V_MSG_E(outputBufferVector_.size() > 0, (int32_t)Status::ERROR_INVALID_STATE, "Attach no buffer");
     return (int32_t)ret;
 }
 
