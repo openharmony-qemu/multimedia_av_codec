@@ -97,9 +97,8 @@ static std::string extractHostname(const std::string& url)
     return "";
 }
 
-bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
+void HttpMediaDownloader::ValidAddrInfo(const std::string& url)
 {
-    MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
     std::string hostname = extractHostname(url);
     if (!hostname.empty()) {
         struct addrinfo hints = {}; // 使用列表初始化
@@ -118,6 +117,12 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
             freeaddrinfo(res); // 释放分配的内存
         }
     }
+}
+
+bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
+{
+    MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
+    ValidAddrInfo(url);
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -134,8 +139,9 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
         if (downloadTime > ZERO_THRESHOLD) {
             avgDownloadSpeed_ = totalBits_ / downloadTime;
         }
-        MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(avgDownloadSpeed_));
-        MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms", 
+        MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
+                    static_cast<int32_t>(avgDownloadSpeed_));
+        MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
                     totalBits_, static_cast<int64_t>(downloadTime * 1000));
     };
     MediaSouce mediaSouce;
