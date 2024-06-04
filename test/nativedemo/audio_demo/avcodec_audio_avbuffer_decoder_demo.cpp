@@ -161,7 +161,6 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     if (audioType == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-        // extradata for vorbis
         int64_t extradataSize;
         DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: file is not open");
         inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
