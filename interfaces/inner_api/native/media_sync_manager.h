@@ -129,7 +129,9 @@ private:
     int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
     int64_t currentAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedMediaTime_ {HST_TIME_NONE};
+    int64_t pausedExactMediaTime_ {HST_TIME_NONE};
     int64_t pausedAbsMediaTime_ {HST_TIME_NONE};
+    int64_t pausedExactAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
     int64_t startingTimeMediaUs_ {HST_TIME_NONE};
 
