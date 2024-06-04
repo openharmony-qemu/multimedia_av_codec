@@ -17,10 +17,7 @@
 #include "http/http_media_downloader.h"
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <regex>
-#include <sys/types.h>
-#include <sys/socket.h>
 
 namespace OHOS {
 namespace Media {

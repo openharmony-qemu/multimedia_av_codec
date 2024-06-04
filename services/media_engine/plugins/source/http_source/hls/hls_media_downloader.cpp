@@ -24,8 +24,6 @@
 #include "osal/task/task.h"
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <regex>
 
 namespace OHOS {
