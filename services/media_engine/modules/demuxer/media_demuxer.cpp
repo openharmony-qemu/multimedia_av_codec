@@ -440,10 +440,20 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 {
     eosMap_[trackId] = false;
     requestBufferErrorCountMap_[trackId] = 0;
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
-    FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "InnerSelectTrack failed due to get demuxer plugin failed.");
-    int32_t innerTrackID = demuxerPluginManager_->GetInnerTrackID(trackId);
+
+    int32_t innerTrackID = trackId;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    if (demuxerPluginManager_->IsDash()) {
+        pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "InnerSelectTrack failed due to get demuxer plugin failed.");
+        innerTrackID = demuxerPluginManager_->GetInnerTrackID(trackId);
+    } else {
+        pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "InnerSelectTrack failed due to get demuxer plugin failed.");
+    }
+
     return pluginTemp->SelectTrack(innerTrackID);
 }
 
@@ -495,10 +505,20 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_I("UnselectTrack trackId: " PUBLIC_LOG_D32, trackId);
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
-    FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "UnselectTrack failed due to get demuxer plugin failed.");
-    int32_t innerTrackID = demuxerPluginManager_->GetInnerTrackID(trackId);
+
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    int32_t innerTrackID = trackId;
+    if (demuxerPluginManager_->IsDash()) {
+        pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "UnselectTrack failed due to get demuxer plugin failed.");
+        innerTrackID = demuxerPluginManager_->GetInnerTrackID(trackId);
+    } else {
+        pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "UnselectTrack failed due to get demuxer plugin failed.");
+    }
+
     return pluginTemp->UnselectTrack(innerTrackID);
 }
 
@@ -1085,9 +1105,21 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     MEDIA_LOG_D("copy frame for track " PUBLIC_LOG_U32, trackId);
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
-    int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackID(trackId);
-    Status ret = pluginTemp->ReadSample(innerTrackId, sample);
+
+    int32_t innerTrackID = trackId;
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
+    if (demuxerPluginManager_->IsDash()) {
+        pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "InnerReadSample failed due to get demuxer plugin failed.");
+        innerTrackID = demuxerPluginManager_->GetInnerTrackID(trackId);
+    } else {
+        pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+        FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "InnerReadSample failed due to get demuxer plugin failed.");
+    }
+
+    Status ret = pluginTemp->ReadSample(innerTrackID, sample);
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read buffer eos for track " PUBLIC_LOG_U32, trackId);
     } else if (ret != Status::OK) {

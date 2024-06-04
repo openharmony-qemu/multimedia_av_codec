@@ -114,7 +114,7 @@ private:
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
     Status InitDefaultPlay();
-    Status AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
+    void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
         bool isAddTempTrack);
     Status AddGeneral(const Meta& format, Meta& formatNew);
     void ClearTempTrackInfo();
