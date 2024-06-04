@@ -18,6 +18,7 @@
 #include "avformat_capi_mock.h"
 #include "avmemory_capi_mock.h"
 #include "surface_capi_mock.h"
+#include "media_key_system_mock.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -264,6 +265,24 @@ bool VideoDecCapiMock::IsValid()
     bool isValid = false;
     (void)OH_VideoDecoder_IsValid(codec_, &isValid);
     return isValid;
+}
+
+int32_t VideoDecCapiMock::SetVideoDecryptionConfig()
+{
+#ifdef SUPPORT_DRM
+    std::shared_ptr<MediaKeySystemCapiMock> mediaKeySystemMock = std::make_shared<MediaKeySystemCapiMock>();
+    mediaKeySystemMock->CreateMediaKeySystem();
+    mediaKeySystemMock->CreateMediaKeySession();
+
+    bool isSecure = false;
+    if (mediaKeySystemMock->GetMediaKeySession() == nullptr) {
+        printf("VideoDecCapiMock SetVideoDecryptionConfig GetMediaKeySession failed!");
+        return AV_ERR_UNKNOWN;
+    }
+    return OH_VideoDecoder_SetDecryptionConfig(codec_, mediaKeySystemMock->GetMediaKeySession(), isSecure);
+#else
+    return AV_ERR_OK;
+#endif
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

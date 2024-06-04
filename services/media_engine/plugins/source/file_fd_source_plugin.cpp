@@ -170,6 +170,11 @@ bool FileFdSourcePlugin::HandleBuffering()
 
 Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    return Read(0, buffer, offset, expectedLen);
+}
+
+Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
     if (isBuffering_) {
         MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
             PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
@@ -207,7 +212,7 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
 
     if (size <= 0) {
         MEDIA_LOG_I("return EOS, buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
-            PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
+            PUBLIC_LOG_U64 ", offset " PUBLIC_LOG_D64, position_, expectedLen, fileSize_, offset_);
         if (size < 0) {
             MEDIA_LOG_E("fd read fail errno: " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
         }
@@ -380,7 +385,7 @@ void FileFdSourcePlugin::CacheData()
     while (avaiableReadSize > 0 && isReadSuccess_) {
         auto downloadReadSize = read(fd_, cacheBuffer, avaiableReadSize);
         if (downloadReadSize == 0) {
-            MEDIA_LOG_D("fd read fail, cache data " PUBLIC_LOG_D64, static_cast<int64_t>(readSize - avaiableReadSize));
+            MEDIA_LOG_W("fd read fail, cache data " PUBLIC_LOG_D64, static_cast<int64_t>(readSize - avaiableReadSize));
             break;
         } else if (downloadReadSize < 0) {
             isReadSuccess_ = false;

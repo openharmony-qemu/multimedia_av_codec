@@ -123,12 +123,18 @@ DemuxerPluginManager::~DemuxerPluginManager()
     }
 }
 
+size_t DemuxerPluginManager::GetStreamCount()
+{
+    return streamInfoMap_.size();
+}
+
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
     MEDIA_LOG_I("InitDefaultPlay begin");
     for (auto& iter : streams) {
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
+        streamInfoMap_[streamIndex].bitRate = iter.bitRate;
         if (iter.type == MIXED) {  // 存在混合流则只请求该流
             curVideoStreamID_ = streamIndex;
             streamInfoMap_[streamIndex].activated = true;
@@ -215,6 +221,17 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         MEDIA_LOG_I("LoadCurrentAllPlugin video plugin");
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
         AddMediaInfo(ret, curVideoStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
+    }
+    return Status::OK;
+}
+
+Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+    Plugins::MediaInfo& mediaInfo)
+{
+    if (curSubTitleStreamID_ != -1) {
+        MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin");
+        Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
+        AddMediaInfo(ret, curSubTitleStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
     }
     return Status::OK;
 }
@@ -455,13 +472,13 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
 
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
-    if (curAudioStreamID_ != -1) {
+    if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
             return ret;
         }
     }
-    if (curVideoStreamID_ != -1) {
+    if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
             return ret;
@@ -518,6 +535,12 @@ Status DemuxerPluginManager::Stop()
             return ret;
         }
     }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Stop();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
     return Status::OK;   // todo: 待适配返回值
 }
 
@@ -531,6 +554,12 @@ Status DemuxerPluginManager::Start()
     }
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Start();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
+        Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->Start();
         if (ret != Status::OK) {
             return ret;
         }
@@ -588,6 +617,14 @@ std::shared_ptr<Meta> DemuxerPluginManager::GetUserMeta()
         MEDIA_LOG_W("Demuxer plugin is not exist.");
     }
     return meta;
+}
+
+uint32_t DemuxerPluginManager::GetCurrentBitRate()
+{
+    if (IsDash() && curVideoStreamID_ != -1) {
+        return streamInfoMap_[curVideoStreamID_].bitRate;
+    }
+    return 0;
 }
 
 } // namespace Media

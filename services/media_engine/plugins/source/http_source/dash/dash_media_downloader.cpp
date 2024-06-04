@@ -71,12 +71,12 @@ void DashMediaDownloader::Resume()
     }
 }
 
-bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    FALSE_RETURN_V(buff != nullptr, false);
+    FALSE_RETURN_V(buff != nullptr, Status::END_OF_STREAM);
     if (segmentDownloaders_.empty()) {
         MEDIA_LOG_W("dash read, segmentDownloaders size is 0");
-        return false;
+        return Status::END_OF_STREAM;
     }
 
     if (downloadErrorState_) {
@@ -87,13 +87,13 @@ bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         for (auto &segmentDownloader : segmentDownloaders_) {
             segmentDownloader->Close(false, true);
         }
-        return false;
+        return Status::END_OF_STREAM;
     }
 
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(readDataInfo.streamId_);
     if (segmentDownloader == nullptr) {
         MEDIA_LOG_E("GetSegmentDownloader failed when Read, streamId " PUBLIC_LOG_D32, readDataInfo.streamId_);
-        return false;
+        return Status::END_OF_STREAM;
     }
 
     DashReadRet ret = segmentDownloader->Read(readDataInfo.streamId_, buff, readDataInfo.wantReadLength_,
@@ -106,9 +106,9 @@ bool DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
             MEDIA_LOG_I("Read time out, OnEvent");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
-        return false;
+        return Status::END_OF_STREAM;
     }
-    return true;
+    return Status::OK;
 }
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
@@ -424,8 +424,19 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             bitrateParam_.streamId_ = -1;
         } else {
             // auto switch
-            if (CheckAutoSelectBitrate(streamId)) {
-                return;
+            bool switchFlag = true;
+            if (callback_ != nullptr) {
+                switchFlag = callback_->CanDoSelectBitRate();
+            }
+            if (switchFlag) {
+                bool flag = CheckAutoSelectBitrate(streamId);
+                if (callback_ != nullptr) {
+                    callback_->SetSelectBitRateFlag(flag);
+                }
+                if (flag) {
+                    // switch success
+                    return;
+                }
             }
         }
     }
@@ -537,8 +548,10 @@ bool DashMediaDownloader::CheckAutoSelectBitrate(int streamId)
     }
     uint32_t desBitrate = GetNextBitrate(segmentDownloader);
     if (desBitrate == 0) {
+        MEDIA_LOG_I("AutoSelectBitrate end no change");
         return false;
     }
+    MEDIA_LOG_I("AutoSelectBitrate end change: " PUBLIC_LOG_U32, desBitrate);
     return AutoSelectBitrateInternal(desBitrate);
 }
 

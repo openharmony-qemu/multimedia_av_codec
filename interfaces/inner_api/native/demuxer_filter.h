@@ -48,6 +48,7 @@ public:
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
+    Status SetSubtitleSource(const std::shared_ptr<MediaSource> source);
     void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
@@ -76,7 +77,7 @@ public:
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
-    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
+    Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
     void SetInterruptState(bool isInterruptNeeded);
     void SetDumpFlag(bool isdump);

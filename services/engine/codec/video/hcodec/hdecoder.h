@@ -45,11 +45,13 @@ private:
     int32_t SetScaleMode();
 
     // start
+    bool UseHandleOnOutputPort(bool isDynamic);
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
-    void SetCallerToBuffer(bool isInput) override;
+    void SetCallerToBuffer(int fd) override;
     void UpdateFormatFromSurfaceBuffer() override;
+    int32_t AllocOutDynamicSurfaceBuf();
     int32_t AllocateOutputBuffersFromSurface();
-    int32_t SetMinQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
@@ -63,10 +65,13 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     GSError OnBufferReleasedByConsumer(uint64_t surfaceId);
     void OnGetBufferFromSurface(const ParamSP& param) override;
-    bool GetOneBufferFromSurface();
+    bool RequestAndFindBelongTo(
+        sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, std::vector<BufferInfo>::iterator& iter);
+    __attribute__((no_sanitize("cfi"))) void SubmitDynamicBufferIfPossible() override;
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
+    void AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t PushBlankBufferToCurrSurface();
 
     // stop/release
@@ -89,6 +94,7 @@ private:
         std::optional<GraphicTransformType> originalTransform_;
     } currSurface_;
 
+    bool isDynamic_ = false;
     uint32_t outBufferCnt_ = 0;
     BufferFlushConfig flushCfg_;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;

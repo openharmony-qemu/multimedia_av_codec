@@ -215,7 +215,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return uri_.find(".m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
+        return uri_.find("m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
     }
     MEDIA_LOG_D("IsSeekToTimeSupported return true");
     return true;
@@ -248,19 +248,17 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.streamId_ = streamId;
     readDataInfo.nextStreamId_ = streamId;
     readDataInfo.wantReadLength_ = expectedLen;
-    bool result = false;
-    
-    result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
+    auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
     
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
     MEDIA_LOG_I("Read finished, read size = "
     PUBLIC_LOG_ZU
-    "nextStreamId = "
+    ", nextStreamId = "
     PUBLIC_LOG_D32
     ", isEos "
     PUBLIC_LOG_D32, bufData->GetSize(), readDataInfo.nextStreamId_, readDataInfo.isEos_);
-    return result ? Status::OK : Status::END_OF_STREAM;
+    return result;
 }
 
 Status HttpSourcePlugin::GetSize(uint64_t& size)

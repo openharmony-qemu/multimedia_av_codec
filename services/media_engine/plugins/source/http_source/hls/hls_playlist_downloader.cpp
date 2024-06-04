@@ -255,7 +255,6 @@ void HlsPlayListDownloader::FirstTsUpdateLoop()
     if (firstTsTask_ != nullptr) {
         firstTsTask_->StopAsync();
     }
-    firstTsTask_.reset();
     MEDIA_LOG_I("first ts task stop, run times: " PUBLIC_LOG_D32 ". ", runTimes);
 }
 

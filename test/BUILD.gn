@@ -19,7 +19,7 @@ group("av_codec_demo_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [ "nativedemo:av_codec_demo" ]
-    deps += [ "unittest/video_test/video_perf_test:video_codec_demo" ]
+    deps += [ "unittest/video_test/video_test:video_codec_demo" ]
   }
 }
 
@@ -65,9 +65,6 @@ group("av_codec_unit_test") {
     if (av_codec_support_hcodec) {
       deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
     }
-    if (av_codec_support_codec_perf_test) {
-      deps += [ "unittest/video_test/video_perf_test:video_perf_test" ]
-    }
     if (av_codec_enable_special_codec) {
       deps += [
         "unittest/audio_vivid_test:audio_vivid_ability_unit_test",
@@ -108,8 +105,10 @@ group("av_codec_fuzz_test") {
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
+      "fuzztest/encoderapi11_fuzzer:EncoderAPI11FuzzTest",
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
+      "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",

@@ -1220,6 +1220,34 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoDecoder_GetOutputDescription_004
+ * @tc.desc: video codec GetOutputDescription
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    format_ = videoDec_->GetOutputDescription();
+
+    int32_t pictureWidth = 0;
+    int32_t pictureHeight = 0;
+
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
+
+    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
+    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
+
+    EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
  * @tc.name: VideoDecoder_HDR_Function_001
  * @tc.desc: video decodec hdr function test
  * @tc.type: FUNC
@@ -1256,5 +1284,19 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_SetDecryptionConfig_001
+ * @tc.desc: video decodec set decryption config function test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
+{
+    VCodecTestCode param = VCodecTestCode::SW_AVC;
+    CreateByNameWithParam(param);
+    SetFormatWithParam(param);
+    PrepareSource(param);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetVideoDecryptionConfig());
 }
 } // namespace

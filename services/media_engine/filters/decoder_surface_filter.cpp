@@ -229,6 +229,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     if (isDrmProtected_) {
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
     }
+    videoSink_->SetParameter(meta_);
     return Status::OK;
 }
 
@@ -700,6 +701,7 @@ void DecoderSurfaceFilter::ParseDecodeRateLimit()
     MediaAVCodec::CapabilityData *capabilityData = codecList->GetCapability(codecMimeType_, false,
         MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
     std::shared_ptr<MediaAVCodec::VideoCaps> videoCap = std::make_shared<MediaAVCodec::VideoCaps>(capabilityData);
+    FALSE_RETURN_MSG(videoCap != nullptr, "failed to get videoCap instance");
     const MediaAVCodec::Range &frameRange = videoCap->GetSupportedFrameRatesFor(width, height);
     int32_t rateUpperLimit = frameRange.maxVal;
     if (rateUpperLimit > 0) {
@@ -722,6 +724,7 @@ void DecoderSurfaceFilter::SetBitrateStart()
  
 void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
 {
+    AutoLock lock(formatChangeMutex_);
     int32_t width = 0;
     format.GetIntValue("video_picture_width", width);
     int32_t height = 0;

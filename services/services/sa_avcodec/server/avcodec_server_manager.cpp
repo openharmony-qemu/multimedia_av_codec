@@ -24,6 +24,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
 #include "mem_mgr_client.h"
+#include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
 #endif
@@ -106,7 +107,6 @@ void AVCodecServerManager::DumpServer(int32_t fd, StubType stubType, std::unorde
 
 int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
-    std::string dumpString;
     std::unordered_set<std::u16string> argSets;
     for (decltype(args.size()) index = 0; index < args.size(); ++index) {
         argSets.insert(args[index]);
@@ -128,6 +128,7 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 
 AVCodecServerManager::AVCodecServerManager()
 {
+    pid_ = getpid();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
@@ -169,7 +170,6 @@ int32_t AVCodecServerManager::CreateCodecListStubObject(sptr<IRemoteObject> &obj
 
     pid_t pid = IPCSkeleton::GetCallingPid();
     codecListStubMap_[object] = pid;
-    MemMgrClient::GetInstance().SetCritical(true);
     AVCODEC_LOGD("The number of codeclist services(%{public}zu).", codecListStubMap_.size());
     return AVCS_ERR_OK;
 }
@@ -194,7 +194,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     dumper.remoteObject_ = object;
     dumperTbl_[StubType::CODEC].emplace_back(dumper);
 
-    MemMgrClient::GetInstance().SetCritical(true);
+    SetCritical(true);
     AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
     return AVCS_ERR_OK;
 }
@@ -239,8 +239,8 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             break;
         }
     }
-    if (codecStubMap_.size() == 0 && codecListStubMap_.size() == 0) {
-        MemMgrClient::GetInstance().SetCritical(false);
+    if (codecStubMap_.size() == 0) {
+        SetCritical(false);
     }
 }
 
@@ -269,8 +269,8 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     EraseObject(codecListStubMap_, pid);
     AVCODEC_LOGI("codeclist stub services(%{public}zu).", codecListStubMap_.size());
     executor_.Clear();
-    if (codecStubMap_.size() == 0 && codecListStubMap_.size() == 0) {
-        MemMgrClient::GetInstance().SetCritical(false);
+    if (codecStubMap_.size() == 0) {
+        SetCritical(false);
     }
 }
 
@@ -302,6 +302,26 @@ void AVCodecServerManager::DestroyDumperForPid(pid_t pid)
     }
     if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
         AVCODEC_LOGW("failed to call InstanceDump");
+    }
+}
+
+void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
+{
+    int32_t ret = Memory::MemMgrClient::GetInstance().NotifyProcessStatus(pid_, 1, status, AV_CODEC_SERVICE_ID);
+    if (ret == 0) {
+        AVCODEC_LOGI("notify memory manager to %{public}d success.", status);
+    } else {
+        AVCODEC_LOGW("notify memory manager to %{public}d fail.", status);
+    }
+}
+
+void AVCodecServerManager::SetCritical(const bool isKeyService)
+{
+    int32_t ret = Memory::MemMgrClient::GetInstance().SetCritical(pid_, isKeyService, AV_CODEC_SERVICE_ID);
+    if (ret == 0) {
+        AVCODEC_LOGI("set critical to %{public}d success.", isKeyService);
+    } else {
+        AVCODEC_LOGW("set critical to %{public}d fail.", isKeyService);
     }
 }
 

@@ -142,6 +142,7 @@ private:
     std::atomic<bool> doPrepareFrame_{false};
     std::atomic<bool> isNeedStartDecoder_{true};
     bool renderFirstFrame_{false};
+    Mutex formatChangeMutex_{};
 
     int32_t appUid_;
     int32_t appPid_;

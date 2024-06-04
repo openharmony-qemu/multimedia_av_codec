@@ -227,13 +227,13 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
      */
     virtual Status Drain() = 0;
 
-    virtual int64_t GetPlayedOutDurationUs(int64_t nowUs);
+    virtual int64_t GetPlayedOutDurationUs(int64_t nowUs) = 0;
 
-    virtual Status GetFramePosition(int32_t &framePosition);
+    virtual Status GetFramePosition(int32_t &framePosition) = 0;
 
-    virtual void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    virtual void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver) = 0;
 
-    virtual int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
+    virtual int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) = 0;
 };
 
 /// Audio sink plugin api major number.

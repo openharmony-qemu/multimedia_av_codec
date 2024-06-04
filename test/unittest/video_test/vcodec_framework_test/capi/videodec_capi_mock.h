@@ -47,6 +47,7 @@ public:
     int32_t RenderOutputBuffer(uint32_t index) override;
     int32_t FreeOutputBuffer(uint32_t index) override;
     bool IsValid() override;
+    int32_t SetVideoDecryptionConfig() override;
 
 private:
     static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData);

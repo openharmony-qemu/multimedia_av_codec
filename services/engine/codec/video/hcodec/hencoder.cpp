@@ -690,23 +690,6 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
     return AVCS_ERR_OK;
 }
 
-int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
-                                                 const sptr<SurfaceBuffer> &surfaceBuffer, int64_t pts, uint32_t flag)
-{
-    BufferHandle *bufferHandle = surfaceBuffer->GetBufferHandle();
-    if (bufferHandle == nullptr) {
-        HLOGE("null BufferHandle");
-        return AVCS_ERR_UNKNOWN;
-    }
-    omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
-    omxBuffer->filledLen = surfaceBuffer->GetSize();
-    omxBuffer->fd = -1;
-    omxBuffer->fenceFd = -1;
-    omxBuffer->pts = pts;
-    omxBuffer->flag = flag;
-    return AVCS_ERR_OK;
-}
-
 void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
                                               const shared_ptr<Media::Meta> &meta)
 {
@@ -782,17 +765,28 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                 if (averageQp == nullptr) {
                     return;
                 }
+                HLOGD("pts=%" PRId64 ", averageQp=(%d)", omxBuffer->pts, *averageQp);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
                 break;
             }
             case OMX_IndexParamEncOutMse: {
-                auto *averageMseLcu = reader.Read<OMX_S32>();
+                auto *averageMseLcu = reader.Read<double>();
                 if (averageMseLcu == nullptr) {
                     return;
                 }
-                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE,
-                              static_cast<double>(*averageMseLcu));
+                HLOGD("pts=%" PRId64 ", averageMseLcu=(%f)", omxBuffer->pts, *averageMseLcu);
+                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
                 break;
+            }
+            case OMX_IndexParamEncOutLTR: {
+                auto *encOutLtrParam = reader.Read<CodecEncOutLTRParam>();
+                if (encOutLtrParam == nullptr) {
+                    return;
+                }
+                HLOGD("pts=%" PRId64 ", isLTR=(%d), poc=(%d)", omxBuffer->pts, encOutLtrParam->isLTR,
+                      encOutLtrParam->poc);
+                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, encOutLtrParam->isLTR);
+                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(encOutLtrParam->poc));
             }
             default: {
                 break;
@@ -858,13 +852,8 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    int err = WrapSurfaceBufferIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->surfaceBuffer,
-        bufferInfo->avBuffer->pts_,
+    WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
-    if (err != AVCS_ERR_OK) {
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
 
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
@@ -929,18 +918,13 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
         inputSurface_->ReleaseBuffer(entry.buffer, -1);
         return;
     }
-    int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp, 0);
-    if (err != AVCS_ERR_OK) {
-        inputSurface_->ReleaseBuffer(entry.buffer, -1);
-        return;
-    }
-    info.surfaceBuffer = entry.buffer;
+    WrapSurfaceBufferToSlot(info, entry.buffer, entry.timestamp, 0);
 
     if (enableSurfaceModeInputCb_) {
         info.avBuffer->pts_ = entry.timestamp;
         NotifyUserToFillThisInBuffer(info);
     } else {
-        err = NotifyOmxToEmptyThisInBuffer(info);
+        int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             inputSurface_->ReleaseBuffer(entry.buffer, -1);
         }

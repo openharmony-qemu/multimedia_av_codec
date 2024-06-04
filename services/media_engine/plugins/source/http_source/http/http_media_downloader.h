@@ -39,7 +39,7 @@ public:
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
+    Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToPos(int64_t offset) override;
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;

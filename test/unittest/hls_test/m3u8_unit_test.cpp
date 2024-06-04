@@ -91,9 +91,8 @@ HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
 {
-    M3U8Fragment m3u8("http://example.com", "Test Title", 10.0, 1, false);
+    M3U8Fragment m3u8("http://example.com", 10.0, 1, false);
     M3U8Fragment fragment(m3u8, nullptr, nullptr);
-    EXPECT_EQ(fragment.title_, "Test Title");
     EXPECT_EQ(fragment.duration_, 10.0);
     EXPECT_EQ(fragment.sequence_, 1);
     EXPECT_EQ(fragment.discont_, false);
@@ -107,12 +106,11 @@ HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_VALID_KEY_AND_IV, TestSize.Level1)
 {
-    M3U8Fragment m3u8("http://example.com", "Test Title", 10.0, 1, false);
+    M3U8Fragment m3u8("http://example.com", 10.0, 1, false);
     uint8_t key[MAX_LOOP] = {1, 2, 3, 4, 5};
     uint8_t iv[MAX_LOOP] = {6, 7, 8, 9, 10};
     M3U8Fragment fragment(m3u8, key, iv);
     EXPECT_EQ(fragment.uri_, "http://example.com");
-    EXPECT_EQ(fragment.title_, "Test Title");
     EXPECT_EQ(fragment.duration_, 10.0);
     EXPECT_EQ(fragment.sequence_, 1);
     EXPECT_EQ(fragment.discont_, false);
@@ -171,15 +169,10 @@ HWTEST_F(M3u8UnitTest, GET_EXT_INF_TEST, TestSize.Level1)
     auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDISCONTINUITY, "123");
     auto attr1 =  std::make_shared<Attribute>("DURATION", "3.5");
     tag->AddAttribute(attr1);
-    auto attr2 =  std::make_shared<Attribute>("TITLE", "\"Test Title\"");
-    tag->AddAttribute(attr2);
     double duration;
-    std::string title;
-    m3u8.GetExtInf(tag, duration, title);
+    m3u8.GetExtInf(tag, duration);
     //check name
     EXPECT_DOUBLE_EQ(3.5, duration);
-    //check updaters map
-    EXPECT_EQ("Test Title", title);
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_KEY_METHOD_ATTRIBUTE, TestSize.Level1)
@@ -446,13 +439,11 @@ HWTEST_F(M3u8UnitTest, IS_LIVE_TEST, TestSize.Level1)
 // 测试 M3U8Fragment 构造函数
 HWTEST_F(M3u8UnitTest, M3U8FragmentConstructorTest, TestSize.Level1)
 {
-    std::string testTitle = "FragmentTitle";
     double testDuration = 10.0;
     int testSequence = 1;
     bool testDiscont = false;
-    M3U8Fragment fragment(testUri, testTitle, testDuration, testSequence, testDiscont);
+    M3U8Fragment fragment(testUri, testDuration, testSequence, testDiscont);
     ASSERT_EQ(fragment.uri_, testUri);
-    ASSERT_EQ(fragment.title_, testTitle);
     ASSERT_DOUBLE_EQ(fragment.duration_, testDuration);
     ASSERT_EQ(fragment.sequence_, testSequence);
     ASSERT_EQ(fragment.discont_, testDiscont);

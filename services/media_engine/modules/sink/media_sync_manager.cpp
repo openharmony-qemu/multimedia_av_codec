@@ -113,8 +113,12 @@ void MediaSyncManager::SetMediaTimeStartEnd(int32_t trackId, int32_t index, int6
     }
 }
 
-void MediaSyncManager::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId)
+void MediaSyncManager::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier)
 {
+    if (!IsSupplierValid(supplier) || supplier->GetPriority() < currentRangeStartPriority_) {
+        return;
+    }
+    currentRangeStartPriority_ = supplier->GetPriority();
     OHOS::Media::AutoLock lock(clockMutex_);
     SetMediaTimeStartEnd(trackId, MEDIA_TUPLE_START_INDEX, startMediaTime);
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || startMediaTime < minRangeStartOfMediaTime_) {
@@ -123,8 +127,12 @@ void MediaSyncManager::SetMediaTimeRangeStart(int64_t startMediaTime, int32_t tr
     }
 }
 
-void MediaSyncManager::SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId)
+void MediaSyncManager::SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier)
 {
+    if (!IsSupplierValid(supplier) || supplier->GetPriority() < currentRangeEndPriority_) {
+        return;
+    }
+    currentRangeEndPriority_ = supplier->GetPriority();
     OHOS::Media::AutoLock lock(clockMutex_);
     SetMediaTimeStartEnd(trackId, MEDIA_TUPLE_END_INDEX, endMediaTime);
     if (maxRangeEndOfMediaTime_ == HST_TIME_NONE || endMediaTime > maxRangeEndOfMediaTime_) {

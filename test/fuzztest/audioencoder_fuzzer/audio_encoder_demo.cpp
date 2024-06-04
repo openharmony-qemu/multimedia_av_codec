@@ -119,7 +119,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-bool AudioBufferAacEncDemo::InitFile(std::string inputFile)
+bool AudioBufferAacEncDemo::InitFile(const std::string& inputFile)
 {
     if (inputFile.find("mp4") != std::string::npos || inputFile.find("m4a") != std::string::npos ||
         inputFile.find("vivid") != std::string::npos) {
@@ -141,7 +141,7 @@ bool AudioBufferAacEncDemo::InitFile(std::string inputFile)
 
 bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
 {
-    std::string codecdata((const char*) data, size);
+    std::string codecdata(reinterpret_cast<const char *>(data), size);
     inputdata = codecdata;
     inputdatasize = size;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
@@ -268,15 +268,9 @@ int32_t AudioBufferAacEncDemo::Start()
     isRunning_.store(true);
 
     inputLoop_ = make_unique<thread>(&AudioBufferAacEncDemo::InputFunc, this);
-    if (inputLoop_ == nullptr) {
-        std::cout << "inputLoop_ is nullptr" << std::endl;
-    }
     DEMO_CHECK_AND_RETURN_RET_LOG(inputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
 
     outputLoop_ = make_unique<thread>(&AudioBufferAacEncDemo::OutputFunc, this);
-    if (outputLoop_ == nullptr) {
-        std::cout << "outputLoop_ is nullptr" << std::endl;
-    }
     DEMO_CHECK_AND_RETURN_RET_LOG(outputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
     return OH_AudioCodec_Start(audioEnc_);
 }
@@ -373,15 +367,19 @@ void AudioBufferAacEncDemo::InputFunc()
 {
     size_t gmusize = 320;
     size_t lbvcsize = 640;
-    double time20ms = 0.02;
-    size_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
+    size_t aacsize = 1024;
+    size_t opussize = 960;
+    size_t frameBytes = 1152;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = channels_ * sizeof(short) * sampleRate_ * time20ms;
+        frameBytes = opussize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         frameBytes = lbvcsize;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
+        frameBytes = aacsize;
     }
+    size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -391,11 +389,8 @@ void AudioBufferAacEncDemo::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-        if (inputdatasize < frameBytes) {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), inputdatasize, inputdata.c_str(), inputdatasize);
-        } else {
-            strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), frameBytes, inputdata.c_str(), frameBytes);
-        }
+        strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        buffer->buffer_->memory_->SetSize(currentSize);
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -414,11 +409,10 @@ void AudioBufferAacEncDemo::InputFunc()
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
             isRunning_.store(false);
-            signal_->outCond_.notify_all();
             break;
         }
     }
-    std::cout << "InputFunc end\n";
+    signal_->outCond_.notify_all();
 }
 
 void AudioBufferAacEncDemo::OutputFunc()
@@ -538,12 +532,11 @@ OH_AVFormat *AudioBufferAacEncDemo::GetOutputDescription(OH_AVCodec *codec)
 OH_AVErrCode AudioBufferAacEncDemo::PushInputData(OH_AVCodec *codec, uint32_t index)
 {
     OH_AVCodecBufferAttr info;
-    int64_t size = 100;
     if (!signal_->inBufferQueue_.empty()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         auto buffer = signal_->inBufferQueue_.front();
         OH_AVBuffer_GetBufferAttr(buffer, &info);
-        info.size = size;
+        info.size = 100; // size 100
         OH_AVErrCode ret = OH_AVBuffer_SetBufferAttr(buffer, &info);
         if (ret != AV_ERR_OK) {
             return ret;

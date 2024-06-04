@@ -134,6 +134,7 @@ int32_t OH_AVCapability_GetMaxSupportedInstances(OH_AVCapability *capability);
  * @param bitrateRange Output parameter. Encoder bitrate range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the bitrateRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetEncoderBitrateRange(OH_AVCapability *capability, OH_AVRange *bitrateRange);
@@ -155,6 +156,7 @@ bool OH_AVCapability_IsEncoderBitrateModeSupported(OH_AVCapability *capability, 
  * @param qualityRange Output parameter. Encoder quality range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the qualityRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability, OH_AVRange *qualityRange);
@@ -166,6 +168,7 @@ OH_AVErrCode OH_AVCapability_GetEncoderQualityRange(OH_AVCapability *capability,
  * @param complexityRange Output parameter. Encoder complexity range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the complexityRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetEncoderComplexityRange(OH_AVCapability *capability, OH_AVRange *complexityRange);
@@ -178,6 +181,9 @@ OH_AVErrCode OH_AVCapability_GetEncoderComplexityRange(OH_AVCapability *capabili
  * @param sampleRateNum Output parameter. The element number of the sample rates array
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the sampleRates is nullptr, or sampleRateNum is nullptr.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capability, const int32_t **sampleRates,
@@ -190,6 +196,7 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
  * @param channelCountRange Output parameter. Audio channel count range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the channelCountRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetAudioChannelCountRange(OH_AVCapability *capability, OH_AVRange *channelCountRange);
@@ -201,6 +208,7 @@ OH_AVErrCode OH_AVCapability_GetAudioChannelCountRange(OH_AVCapability *capabili
  * @param widthAlignment Output parameter. Video width alignment
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the widthAlignment is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoWidthAlignment(OH_AVCapability *capability, int32_t *widthAlignment);
@@ -212,6 +220,7 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthAlignment(OH_AVCapability *capability,
  * @param heightAlignment Output parameter. Video height alignment
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the heightAlignment is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoHeightAlignment(OH_AVCapability *capability, int32_t *heightAlignment);
@@ -224,6 +233,8 @@ OH_AVErrCode OH_AVCapability_GetVideoHeightAlignment(OH_AVCapability *capability
  * @param widthRange Output parameter. Video width range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the height is not within the supported range
+ * obtained through {@link OH_AVCapability_GetVideoHeightRange}, or the widthRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoWidthRangeForHeight(OH_AVCapability *capability, int32_t height,
@@ -237,6 +248,8 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthRangeForHeight(OH_AVCapability *capabi
  * @param heightRange Output parameter. Video height range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the width is not within the supported range
+ * obtained through {@link OH_AVCapability_GetVideoWidthRange}, or the heightRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoHeightRangeForWidth(OH_AVCapability *capability, int32_t width,
@@ -249,6 +262,7 @@ OH_AVErrCode OH_AVCapability_GetVideoHeightRangeForWidth(OH_AVCapability *capabi
  * @param widthRange Output parameter. Video width range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the widthRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoWidthRange(OH_AVCapability *capability, OH_AVRange *widthRange);
@@ -260,6 +274,7 @@ OH_AVErrCode OH_AVCapability_GetVideoWidthRange(OH_AVCapability *capability, OH_
  * @param heightRange Output parameter. Video height range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the heightRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoHeightRange(OH_AVCapability *capability, OH_AVRange *heightRange);
@@ -282,6 +297,7 @@ bool OH_AVCapability_IsVideoSizeSupported(OH_AVCapability *capability, int32_t w
  * @param frameRateRange Output parameter. Video frame rate range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, or the frameRateRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoFrameRateRange(OH_AVCapability *capability, OH_AVRange *frameRateRange);
@@ -295,6 +311,8 @@ OH_AVErrCode OH_AVCapability_GetVideoFrameRateRange(OH_AVCapability *capability,
  * @param frameRateRange Output parameter. Frame rate range
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the combination of width and height is
+ * not supported, or the frameRateRange is nullptr.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoFrameRateRangeForSize(OH_AVCapability *capability, int32_t width, int32_t height,
@@ -322,6 +340,10 @@ bool OH_AVCapability_AreVideoSizeAndFrameRateSupported(OH_AVCapability *capabili
  * @param pixelFormatNum Output parameter. The element number of the pixel format array
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the pixelFormats is nullptr,
+ * or the pixelFormatNum is nullptr.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capability, const int32_t **pixelFormats,
@@ -335,6 +357,9 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
  * @param profileNum Output parameter. The element number of the profile array
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the profiles is nullptr, or the profileNum is nullptr.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetSupportedProfiles(OH_AVCapability *capability, const int32_t **profiles,
@@ -349,6 +374,10 @@ OH_AVErrCode OH_AVCapability_GetSupportedProfiles(OH_AVCapability *capability, c
  * @param levelNum Output parameter. The element number of the level array
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the capability is invalid, the profile is not within the supported profile array
+ * obtained through {@link OH_AVCapability_GetSupportedProfiles}, the levels is nullptr, or the levelNum is nullptr.
+ * {@link AV_ERR_UNKNOWN}, unknown error.
+ * {@link AV_ERR_NO_MEMORY}, internal use memory malloc failed.
  * @since 10
  */
 OH_AVErrCode OH_AVCapability_GetSupportedLevelsForProfile(OH_AVCapability *capability, int32_t profile,

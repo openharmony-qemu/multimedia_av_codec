@@ -30,6 +30,7 @@ struct IMediaSynchronizer {
     const static int8_t AUDIO_SINK = 2;
     const static int8_t VIDEO_SRC = 4;
     const static int8_t AUDIO_SRC = 6;
+    const static int8_t SUBTITLE_SINK = 8;
     virtual ~IMediaSynchronizer() = default;
     virtual int8_t GetPriority() = 0;
     virtual void WaitAllPrerolled(bool shouldWait) = 0;
@@ -80,9 +81,9 @@ struct IMediaSyncCenter {
      */
     virtual void ReportPrerolled(IMediaSynchronizer* supplier) = 0;
 
-    virtual void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId) = 0;
+    virtual void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) = 0;
 
-    virtual void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId) = 0;
+    virtual void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) = 0;
 
     virtual int64_t GetSeekTime() = 0;
 

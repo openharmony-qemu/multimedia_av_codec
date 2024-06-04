@@ -46,6 +46,8 @@ static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+static OH_AVBuffer *avBuffer = nullptr;
+static OH_AVFormat *format = nullptr;
 
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
@@ -82,6 +84,14 @@ void DemuxerProcNdkTest::TearDown()
     if (demuxer != nullptr) {
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
+    }
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
+    }
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
     }
 }
 } // namespace Media
@@ -997,3 +1007,152 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3400, TestSize.Level0)
     ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormatFirst, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
     close(fd);
 }
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3500
+ * @tc.name      : demuxer MP4 ,startTime
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3500, TestSize.Level0)
+{
+    int64_t startTime;
+    const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
+    ASSERT_EQ(0, startTime);
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3600
+ * @tc.name      : demuxer MP4 ,SAR,bitsPreCodedSample,sampleFormat
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3600, TestSize.Level0)
+{
+    int tarckType = 0;
+    double sar;
+    int32_t bitsPreCodedSample;
+    int32_t sampleFormat;
+    const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        if (tarckType == 1) {
+            ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_VIDEO_SAR, &sar));
+        }else if (tarckType == 0) {
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bitsPreCodedSample));
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &sampleFormat));
+        }
+    }
+    ASSERT_EQ(1, sar);
+    ASSERT_EQ(16, bitsPreCodedSample);
+    ASSERT_EQ(9, sampleFormat);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3700
+ * @tc.name      : demuxer MP4,duration,dts
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3700, TestSize.Level0)
+{
+    int tarckType = 0;
+    int64_t duration;
+    int64_t dts;
+    const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        if (tarckType == 1) {
+            OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer);
+            ASSERT_NE(avBuffer, nullptr);
+            format = OH_AVBuffer_GetParameter(avBuffer);
+            ASSERT_NE(format, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetLongValue(format, OH_MD_KEY_BUFFER_DURATION, &duration));
+            ASSERT_TRUE(OH_AVFormat_GetLongValue(format, OH_MD_KEY_DECODING_TIMESTAMP, &dts));
+            ASSERT_EQ(40000, duration);
+            ASSERT_EQ(-80000, dts);
+        }
+    }
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_3800
+ * @tc.name      : demuxer MP4 ,AVCODEC_BUFFER_FLAGS_DISCARD
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3800, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    int tarckType = 0;
+    const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int audioFrame = 0;
+    bool audioIsEnd = false;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0 && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_DISCARD)) {
+                audioIsEnd = true;
+                cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+            }
+        }
+    }
+    close(fd);
+}
+

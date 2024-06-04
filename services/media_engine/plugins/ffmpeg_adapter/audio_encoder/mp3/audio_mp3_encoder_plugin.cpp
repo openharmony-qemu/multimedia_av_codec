@@ -186,7 +186,6 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
 {
     auto memory = inputBuffer->memory_;
     auto inputSize = memory->GetSize();
-    int32_t sampleNumTmp = -1;
     if (inputSize < 0) {
         AVCODEC_LOGE("SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
         return Status::ERROR_UNKNOWN;
@@ -208,6 +207,7 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
     }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
+        int32_t sampleNumTmp = -1;
         sampleNumTmp = channels_ == ONE_CHANNEL ? inputSize / sizeof(int16_t) : inputSize / sizeof(int16_t) / 2; // 2ch
         unsigned char* lamePcmBuffer = memory->GetAddr();
         int outputSize = 0;

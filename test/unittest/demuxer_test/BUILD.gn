@@ -93,6 +93,12 @@ ohos_unittest("demuxer_capi_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

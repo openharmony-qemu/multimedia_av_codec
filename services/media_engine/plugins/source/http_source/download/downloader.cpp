@@ -34,6 +34,7 @@ constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
+constexpr int32_t LOOP_TIMES = 5;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -354,7 +355,7 @@ bool Downloader::BeginDownload()
         client_->Open(url, httpHeader, timeoutMs);
     }
 
-    if (currentRequest_->requestWholeFile_) {
+    if (currentRequest_->endPos_ <= 0) {
         currentRequest_->startPos_ = 0;
         currentRequest_->requestSize_ = 2; // 2
     } else {
@@ -375,8 +376,13 @@ int64_t Downloader::HttpDownloadLoop()
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
         if (!tempRequest) {
             MEDIA_LOG_W("HttpDownloadLoop tempRequest is null.");
+            noTaskLoopTimes_++;
+            if (noTaskLoopTimes_ >= LOOP_TIMES) {
+                task_->PauseAsync();
+            }
             return 0;
         }
+        noTaskLoopTimes_ = 0;
         currentRequest_ = tempRequest;
         BeginDownload();
         shouldStartNextRequest = false;
@@ -418,7 +424,7 @@ void Downloader::HandleRetOK()
         currentRequest_->retryTimes_ = 0;
     }
     int64_t remaining = 0;
-    if (currentRequest_->requestWholeFile_) {
+    if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
                     currentRequest_->startPos_;
     } else {

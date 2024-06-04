@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "avcodec_audio_g711mu_encoder_demo.h"
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
@@ -24,7 +25,6 @@
 #include "demo_log.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_audio_common.h"
-#include "avcodec_audio_g711mu_encoder_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

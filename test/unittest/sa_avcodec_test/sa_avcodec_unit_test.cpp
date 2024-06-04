@@ -24,7 +24,7 @@
 #include "codec_service_stub.h"
 #include "codeclist_service_stub.h"
 #include "iservice_registry.h"
-#include "mem_mgr_proxy.h"
+#include "mem_mgr_client.h"
 #include "system_ability.h"
 #include "system_ability_definition.h"
 
@@ -48,10 +48,9 @@ public:
     void TearDown(void);
 
     void CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &server);
-    sptr<ISystemAbilityManager> GetSaMgrOfMemMgrProxy();
 
     std::shared_ptr<SystemAbilityMock> saMock_;
-    std::shared_ptr<MemMgrProxyMock> memMgrMock_;
+    std::shared_ptr<MemMgrClientMock> memMgrMock_;
     std::shared_ptr<AVCodecServiceStubMock> avcodecStubMock_;
     std::shared_ptr<CodecServiceStubMock> codecStubMock_;
     std::shared_ptr<CodecListServiceStubMock> codeclistStubMock_;
@@ -68,8 +67,8 @@ void SaAVCodecUnitTest::SetUp(void)
 {
     saMock_ = std::make_shared<SystemAbilityMock>();
     SystemAbility::RegisterMock(saMock_);
-    memMgrMock_ = std::make_shared<MemMgrProxyMock>();
-    MemMgrProxy::RegisterMock(memMgrMock_);
+    memMgrMock_ = std::make_shared<MemMgrClientMock>();
+    MemMgrClient::RegisterMock(memMgrMock_);
     avcodecStubMock_ = std::make_shared<AVCodecServiceStubMock>();
     AVCodecServiceStub::RegisterMock(avcodecStubMock_);
     codecStubMock_ = std::make_shared<CodecServiceStubMock>();
@@ -95,7 +94,6 @@ void SaAVCodecUnitTest::CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &s
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager()).Times(AtLeast(1)).WillRepeatedly(Return(GetSaMgrOfMemMgrProxy()));
     EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), true, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), false, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
@@ -111,15 +109,6 @@ void SaAVCodecUnitTest::CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &s
     EXPECT_NE(codecStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     stubList_.emplace_back(AVCodecServerManager::StubType::CODEC, codecStub);
-}
-
-sptr<ISystemAbilityManager> SaAVCodecUnitTest::GetSaMgrOfMemMgrProxy()
-{
-    auto mgr = new ISystemAbilityManagerMock();
-    EXPECT_CALL(*mgr, GetSystemAbility(OHOS::MEMORY_MANAGER_SA_ID))
-        .Times(AtLeast(1))
-        .WillRepeatedly(Return(new MemMgrProxy()));
-    return mgr;
 }
 
 /**
@@ -262,7 +251,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStop_001, TestSize.Level1)
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager()).Times(1).WillOnce(Return(GetSaMgrOfMemMgrProxy()));
     EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(getpid(), 1, 0, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
@@ -283,7 +271,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStop_002, TestSize.Level1)
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager()).Times(2).WillRepeatedly(Return(GetSaMgrOfMemMgrProxy()));
     EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(getpid(), 1, 0, AV_CODEC_SERVICE_ID))
         .Times(2)
         .WillOnce(Return(0))
@@ -307,7 +294,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_001, TestSize.Leve
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager()).Times(1).WillOnce(Return(GetSaMgrOfMemMgrProxy()));
     EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(getpid(), 1, 1, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
@@ -327,7 +313,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_002, TestSize.Leve
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager).Times(0);
     EXPECT_CALL(*memMgrMock_, NotifyProcessStatus).Times(0);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
@@ -349,7 +334,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager()).Times(AtLeast(1)).WillRepeatedly(Return(GetSaMgrOfMemMgrProxy()));
     EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), true, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
     EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), false, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
 
@@ -392,7 +376,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_002, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*saMock_, GetSystemAbilityManager()).Times(AtLeast(1)).WillRepeatedly(Return(GetSaMgrOfMemMgrProxy()));
     EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), true, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
     EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), false, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
 

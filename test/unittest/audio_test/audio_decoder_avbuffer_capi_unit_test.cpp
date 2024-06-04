@@ -37,6 +37,10 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "native_audio_channel_layout.h"
+#ifdef SUPPORT_DRM
+#include "native_mediakeysession.h"
+#include "native_mediakeysystem.h"
+#endif
 
 using namespace std;
 using namespace testing::ext;
@@ -2827,5 +2831,33 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Prepare_01, TestSize.L
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
     Release();
 }
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Aac_SetDecryptionConfig_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AAC));
+#ifdef SUPPORT_DRM
+    int32_t ret = 0;
+    MediaKeySystem *mediaKeySystem = nullptr;
+    if (OH_MediaKeySystem_IsSupported("com.clearplay.drm")) {
+        OH_MediaKeySystem_Create("com.clearplay.drm", &mediaKeySystem);
+    } else if (OH_MediaKeySystem_IsSupported("com.wiseplay.drm")) {
+        OH_MediaKeySystem_Create("com.wiseplay.drm", &mediaKeySystem);
+    }
+    EXPECT_NE(nullptr, mediaKeySystem);
+
+    MediaKeySession *mediaKeySession = nullptr;
+    DRM_ContentProtectionLevel contentProtectionLevel = CONTENT_PROTECTION_LEVEL_SW_CRYPTO;
+    OH_MediaKeySystem_CreateMediaKeySession(mediaKeySystem, &contentProtectionLevel, &mediaKeySession);
+    EXPECT_NE(nullptr, mediaKeySession);
+
+    ret = OH_AudioCodec_SetDecryptionConfig(audioDec_, mediaKeySession, false);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, ret);
+
+    (void)OH_MediaKeySession_Destroy(mediaKeySession);
+    (void)OH_MediaKeySystem_Destroy(mediaKeySystem);
+#endif
+    Release();
+}
+
 }
 }

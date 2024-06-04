@@ -271,6 +271,16 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
+void Source::SetSelectBitRateFlag(bool flag)
+{
+    mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
+}
+
+bool Source::CanDoSelectBitRate()
+{
+    return mediaDemuxerCallback_->CanDoSelectBitRate();
+}
+
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
     if (plugin_) {
@@ -340,6 +350,7 @@ Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
         MEDIA_LOG_I("GetStreamInfo empty, MIX Stream");
         Plugins::StreamInfo info;
         info.streamId = 0;
+        info.bitRate = 0;
         info.type = Plugins::MIXED;
         streams.push_back(info);
     }

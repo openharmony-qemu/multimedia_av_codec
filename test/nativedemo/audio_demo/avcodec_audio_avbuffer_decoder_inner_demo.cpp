@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "avcodec_audio_avbuffer_decoder_inner_demo.h"
 #include <unistd.h>
 #include <string>
 #include <string_view>
@@ -22,8 +24,8 @@
 #include "demo_log.h"
 #include "meta/audio_types.h"
 #include "inner_api/native/avcodec_audio_codec.h"
-#include "avcodec_audio_avbuffer_decoder_inner_demo.h"
 #include "avcodec_errors.h"
+
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;

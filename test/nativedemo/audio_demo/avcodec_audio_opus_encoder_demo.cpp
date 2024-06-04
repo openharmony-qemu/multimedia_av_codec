@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "avcodec_audio_opus_encoder_demo.h"
 #include <iostream>
 #include <unistd.h>
 #include "securec.h"
@@ -23,7 +24,6 @@
 #include "demo_log.h"
 #include "avcodec_codec_name.h"
 #include "ffmpeg_converter.h"
-#include "avcodec_audio_opus_encoder_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

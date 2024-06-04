@@ -34,7 +34,6 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
@@ -132,43 +131,12 @@ void HlsMediaDownloader::SaveHttpHeader(const std::map<std::string, std::string>
     httpHeader_ = httpHeader;
 }
 
-static std::string extractHostname(const std::string& url)
-{
-    std::smatch matches;
-    std::regex pattern(
-        "https?:\\/\\/([^\\/:]*)",
-        std::regex::icase
-    );
-
-    if (std::regex_search(url, matches, pattern) && matches.size() > 1) {
-        return matches[1].str();
-    }
-    return "";
-}
-
 bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("Open enter");
-    std::string hostname = extractHostname(url);
-    if (!hostname.empty()) {
-        struct addrinfo hints = {}; // 使用列表初始化
-        hints.ai_family = AF_INET; // 仅处理IPv4
-        hints.ai_socktype = SOCK_STREAM;
-        struct addrinfo *res;
-        int status = getaddrinfo(hostname.c_str(), nullptr, &hints, &res);
-        if (status == 0) {
-            char ip[INET_ADDRSTRLEN];
-            struct addrinfo *p = res;
-            if (p != nullptr) {
-                struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
-                inet_ntop(p->ai_family, &(ipv4->sin_addr), ip, sizeof(ip));
-                MEDIA_LOG_D("Open url ip: %{public}s", ip);
-            }
-            freeaddrinfo(res); // 释放分配的内存
-        }
-    }
     SaveHttpHeader(httpHeader);
-    playListDownloader_->SetMimeType(mimeType_);
+    if (!mimeType_.empty()) {
+        playListDownloader_->SetMimeType(mimeType_);
+    }
     playListDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();
     openTime_ = steadyClock_.ElapsedMilliseconds();
@@ -250,7 +218,7 @@ bool HlsMediaDownloader::CheckReadStatus()
 
 bool HlsMediaDownloader::CheckReadTimeOut()
 {
-    if (readTime_ >= TIME_OUT || downloadErrorState_ || isTimeOut_) {
+    if (downloadErrorState_ || isTimeOut_) {
         isTimeOut_ = true;
         if (downloader_ != nullptr) {
             // avoid deadlock caused by ringbuffer write stall
@@ -270,13 +238,13 @@ bool HlsMediaDownloader::CheckReadTimeOut()
     return false;
 }
 
-bool HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    FALSE_RETURN_V(buffer_ != nullptr, false);
+    FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     if (CheckReadStatus()) {
         readDataInfo.isEos_ = true;
         readDataInfo.realReadLength_ = 0;
-        return false;
+        return Status::END_OF_STREAM;
     }
     readTime_ = 0;
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
@@ -287,15 +255,15 @@ bool HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         }
         if (isFinishedPlay && buffer_->GetSize() > 0) {
             readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
-            return true;
+            return Status::OK;
         }
         if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
         if (CheckReadTimeOut()) {
             readDataInfo.realReadLength_ = 0;
-            return false;
+            return Status::END_OF_STREAM;
         }
         OSAL::SleepFor(5);  // 5
         readTime_ += 5;
@@ -303,7 +271,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
-    return true;
+    return Status::OK;
 }
 
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)

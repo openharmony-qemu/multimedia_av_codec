@@ -154,6 +154,11 @@ Status FileSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 Status FileSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    return Read(0, buffer, offset, expectedLen);
+}
+
+Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
     FALSE_RETURN_V_MSG_E(fp_ != nullptr, Status::ERROR_WRONG_STATE, "invalid fp");
     (void)offset;
     if (std::feof(fp_) || (fileSize_ == position_)) {
