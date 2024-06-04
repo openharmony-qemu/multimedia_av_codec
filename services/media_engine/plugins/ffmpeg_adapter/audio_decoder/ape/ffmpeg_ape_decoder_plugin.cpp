@@ -126,17 +126,27 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
     AudioSampleFormat samplefmt;
     parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt);
+    parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);
+    if (codecCtx->bits_per_coded_sample == 0) {
+        codecCtx->bits_per_coded_sample = SetBitsdepth(samplefmt);
+    }
+    ret = basePlugin->OpenContext();
+    return ret;
+}
+
+int32_t FFmpegAPEDecoderPlugin::SetBitsdepth(AudioSampleFormat samplefmt)
+{
+    int32_t ret;
     if (samplefmt == SAMPLE_S16LE || samplefmt == SAMPLE_S16P) {
-        codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
+        ret = 16; // sample bit = 16 bit
     }
     if (samplefmt == SAMPLE_U8 || samplefmt == SAMPLE_U8P) {
-        codecCtx->bits_per_coded_sample = 8; // sample bit = 8 bit
+        ret = 8; // sample bit = 8 bit
     }
     if (samplefmt == SAMPLE_S32LE || samplefmt == SAMPLE_S32P) {
-        codecCtx->bits_per_coded_sample = 32; // sample bit = 32 bit
+        ret = 24; // sample bit = 24 bit
     }
-    AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
-    ret = basePlugin->OpenContext();
+    AVCODEC_LOGI("samplefmt be set %{publib}d.", ret);
     return ret;
 }
 
