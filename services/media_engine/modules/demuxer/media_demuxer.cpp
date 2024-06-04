@@ -57,6 +57,7 @@ static const uint32_t RETRY_FRAME_TIME = 50; // Retry if no buffer ready 50ms.
 static const uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 static const double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 static const uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Retry if request buffer from buffer queue failed.
+static const uint64_t DEFAULT_PREPARE_FRAME_COUNT = 0; // Default prepare frame count 0.
 
 MediaDemuxer::MediaDemuxer()
     : seekable_(Plugins::Seekable::INVALID),
@@ -863,12 +864,26 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
 {
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
-    Start();
+    Status ret = Status::OK;
+    if ((firstFrameCount_ != DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
+        MEDIA_LOG_I("Current is Seeking and resume demuxer");
+        ret = Resume();
+    } else {
+        ret = Start();
+    }
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("PrepareFrame and start demuxer failed.");
+        return ret;
+    }
     AutoLock lock(firstFrameMutex_);
-    firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
+    bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
          return firstFrameCount_ == taskMap_.size();
     });
     doPrepareFrame_ = false;
+    if (!res) {
+        MEDIA_LOG_E("PrepareFrame wait data failed res= %{public}d.", res);
+        waitForDataFail_ = true;
+    }
     return Pause();
 }
 

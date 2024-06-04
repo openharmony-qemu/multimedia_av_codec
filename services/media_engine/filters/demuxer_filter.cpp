@@ -182,7 +182,10 @@ Status DemuxerFilter::DoPrepare()
             return Status::ERROR_INVALID_PARAMETER;
         }
         std::string mime;
-        meta->GetData(Tag::MIME_TYPE, mime);
+        if (!meta->GetData(Tag::MIME_TYPE, mime)) {
+            MEDIA_LOG_E("mimeType not found, index: %zu", index);
+            continue;
+        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
