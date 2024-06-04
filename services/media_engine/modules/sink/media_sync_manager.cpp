@@ -166,12 +166,14 @@ Status MediaSyncManager::Resume()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     // update time anchor after a pause during normal playing
-    if (clockState_ == State::PAUSED && pausedAbsMediaTime_ != HST_TIME_NONE
-        && pausedMediaTime_ != HST_TIME_NONE && alreadySetSyncersShouldWait_) {
-        SimpleUpdateTimeAnchor(GetSystemClock(), pausedMediaTime_, pausedAbsMediaTime_);
+    if (clockState_ == State::PAUSED && pausedExactAbsMediaTime_ != HST_TIME_NONE
+        && pausedExactMediaTime_ != HST_TIME_NONE && alreadySetSyncersShouldWait_) {
+        SimpleUpdateTimeAnchor(GetSystemClock(), pausedExactMediaTime_, pausedExactAbsMediaTime_);
         pausedMediaTime_ = HST_TIME_NONE;
+        pausedExactMediaTime_ = HST_TIME_NONE;
         pausedClockTime_ = HST_TIME_NONE;
         pausedAbsMediaTime_ = HST_TIME_NONE;
+        pausedExactAbsMediaTime_ = HST_TIME_NONE;
     }
     if (clockState_ == State::RESUMED) {
         return Status::OK;
@@ -197,16 +199,24 @@ Status MediaSyncManager::Pause()
     if (currentAnchorMediaTime_ != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE) {
         pausedMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
             currentAnchorMediaTime_, playRate_);
+        pausedExactMediaTime_ = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+            currentAnchorMediaTime_, playRate_);
         pausedAbsMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+            currentAbsMediaTime_, playRate_);
+        pausedExactAbsMediaTime_ = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, pausedClockTime_,
             currentAbsMediaTime_, playRate_);
     } else {
         pausedMediaTime_ = HST_TIME_NONE;
+        pausedExactMediaTime_ = HST_TIME_NONE;
         pausedAbsMediaTime_ = HST_TIME_NONE;
+        pausedExactAbsMediaTime_ = HST_TIME_NONE;
     }
     pausedMediaTime_ = ClipMediaTime(pausedMediaTime_);
+    pausedExactMediaTime_ = ClipMediaTime(pausedExactMediaTime_);
     pausedAbsMediaTime_ = ClipMediaTime(pausedAbsMediaTime_);
-    MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64, pausedClockTime_,
-            pausedAbsMediaTime_);
+    pausedExactAbsMediaTime_ = ClipMediaTime(pausedExactAbsMediaTime_);
+    MEDIA_LOG_I("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64 ", exactMediaTime " PUBLIC_LOG_D64,
+            pausedClockTime_, pausedAbsMediaTime_, pausedExactAbsMediaTime_);
     clockState_ = State::PAUSED;
     return Status::OK;
 }
@@ -277,7 +287,9 @@ int64_t MediaSyncManager::ClipMediaTime(int64_t inTime)
 void MediaSyncManager::ResetTimeAnchorNoLock()
 {
     pausedMediaTime_ = HST_TIME_NONE;
+    pausedExactMediaTime_ = HST_TIME_NONE;
     pausedAbsMediaTime_ = HST_TIME_NONE;
+    pausedExactAbsMediaTime_ = HST_TIME_NONE;
     currentSyncerPriority_ = IMediaSynchronizer::NONE;
     SimpleUpdateTimeAnchor(HST_TIME_NONE, HST_TIME_NONE, HST_TIME_NONE);
 }
