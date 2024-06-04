@@ -129,7 +129,6 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);
     if (codecCtx->bits_per_coded_sample == 0) {
         codecCtx->bits_per_coded_sample = SetBitsdepth(samplefmt);
-        
     }
     ret = basePlugin->OpenContext();
     return ret;
@@ -145,7 +144,7 @@ int32_t FFmpegAPEDecoderPlugin::SetBitsdepth(AudioSampleFormat samplefmt)
         ret = 8; // sample bit = 8 bit
     }
     if (samplefmt == SAMPLE_S32LE || samplefmt == SAMPLE_S32P) {
-        ret = 24; // sample bit = 32 bit
+        ret = 24; // sample bit = 24 bit
     }
     AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     return ret;
