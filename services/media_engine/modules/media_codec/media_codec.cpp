@@ -63,6 +63,18 @@ MediaCodec::MediaCodec()
 {
 }
 
+MediaCodec::~MediaCodec()
+{
+    codecPlugin_ = nullptr;
+    inputBufferQueue_ = nullptr;
+    inputBufferQueueProducer_ = nullptr;
+    inputBufferQueueConsumer_ = nullptr;
+    outputBufferQueueProducer_ = nullptr;
+    codecCallback_ = nullptr;
+    mediaCodecCallback_ = nullptr;
+    outputBufferCapacity_ = 0;
+}
+
 int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);
@@ -556,23 +568,21 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
                                  "outputBuffer is nullptr");
             FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                                  "outputBufferQueueProducer_ is nullptr");
-            uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
-            outputBufferQueueProducer_->SetQueueSize(size);
-            MEDIA_LOG_I("Attach output buffer. index: %{public}d, size: %{public}u, bufferId: %{public}" PRIu64,
-                i, size, outputBuffer->GetUniqueId());
-            outputBufferQueueProducer_->AttachBuffer(outputBuffer, false);
-            outputBufferVector_.push_back(outputBuffer);
+            MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
+                        outputBuffer->GetUniqueId());
+            if (outputBufferQueueProducer_->AttachBuffer(outputBuffer, false) == Status::OK) {
+                outputBufferVector_.push_back(outputBuffer);
+            }
         }
     } else {
         FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                              "outputBufferQueueProducer_ is nullptr");
         for (uint32_t i = 0; i < outputBuffers.size(); i++) {
-            uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
-            outputBufferQueueProducer_->SetQueueSize(size);
-            MEDIA_LOG_I("Attach output buffer. index: %{public}d, size: %{public}u, bufferId: %{public}" PRIu64,
-                i, size, outputBuffers[i]->GetUniqueId());
-            outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false);
-            outputBufferVector_.push_back(outputBuffers[i]);
+            MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
+                        outputBuffers[i]->GetUniqueId());
+            if (outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false) == Status::OK) {
+                outputBufferVector_.push_back(outputBuffers[i]);
+            }
         }
     }
     return (int32_t)ret;
