@@ -739,8 +739,8 @@ Status MediaDemuxer::Pause()
 {
     MEDIA_LOG_D("Pause");
     isPaused_ = true;
-    streamDemuxer_->SetIsIgnoreParse(true);
     if (streamDemuxer_) {
+        streamDemuxer_->SetIsIgnoreParse(true);
         streamDemuxer_->Pause();
     }
     if (source_) {
