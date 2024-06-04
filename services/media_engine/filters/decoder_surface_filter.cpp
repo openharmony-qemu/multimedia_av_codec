@@ -314,7 +314,7 @@ Status DecoderSurfaceFilter::DoPause()
         isPaused_ = true;
         condBufferAvailable_.notify_all();
     }
-    videoSink_->ResetSyncInfoWithOutFirstFrame();
+    videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
     if (videoDecoder_ != nullptr) {
         videoDecoder_->ResetRenderTime();
