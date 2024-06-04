@@ -151,15 +151,20 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     MEDIA_LOG_I("Open enter");
     std::string hostname = extractHostname(url);
     if (!hostname.empty()) {
-        struct addrinfo hints, *res, *p;
-        int errcode;
-        char ipstr[INET_ADDRSTRLEN];
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET; // Specify IPv4
-        hints.ai_socktype = SOCK_STREAM; // Specify TCP
-        if ((errcode = getaddrinfo(argv[1], NULL, &hints, &res)) != 0) {
-            inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
-            MEDIA_LOG_D("Open url ip: %{public}s", ipstr);
+        struct addrinfo hints = {}; // 使用列表初始化
+        hints.ai_family = AF_INET; // 仅处理IPv4
+        hints.ai_socktype = SOCK_STREAM;
+        struct addrinfo *res;
+        int status = getaddrinfo(hostname.c_str(), nullptr, &hints, &res);
+        if (status == 0) {
+            char ip[INET_ADDRSTRLEN];
+            struct addrinfo *p = res;
+            if (p != nullptr) {
+                struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+                inet_ntop(p->ai_family, &(ipv4->sin_addr), ip, sizeof(ip));
+                MEDIA_LOG_D("Open url ip: %{public}s", ip);
+            }
+            freeaddrinfo(res); // 释放分配的内存
         }
     }
     SaveHttpHeader(httpHeader);
