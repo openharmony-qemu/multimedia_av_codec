@@ -160,7 +160,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
             char ip[INET_ADDRSTRLEN];
             struct addrinfo *p = res;
             if (p != nullptr) {
-                struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+                struct sockaddr_in *ipv4 = reinterpret_cast<struct sockaddr_in *>(p->ai_addr);
                 inet_ntop(p->ai_family, &(ipv4->sin_addr), ip, sizeof(ip));
                 MEDIA_LOG_D("Open url ip: %{public}s", ip);
             }
