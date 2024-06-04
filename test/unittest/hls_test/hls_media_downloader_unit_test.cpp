@@ -122,7 +122,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
+    EXPECT_NE(downloader->Read(buff, readDataInfo), Status::OK);
     delete downloader;
     downloader = nullptr;
 }
@@ -137,7 +137,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_002, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
+    EXPECT_NE(downloader->Read(buff, readDataInfo), Status::OK);
     delete downloader;
     downloader = nullptr;
 }
@@ -154,7 +154,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_003, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
+    EXPECT_NE(downloader->Read(buff, readDataInfo), Status::OK);
     delete downloader;
     downloader = nullptr;
 }
@@ -171,7 +171,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_004, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
+    EXPECT_NE(downloader->Read(buff, readDataInfo), Status::OK);
     delete downloader;
     downloader = nullptr;
 }
@@ -186,7 +186,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_005, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
+    EXPECT_NE(downloader->Read(buff, readDataInfo), Status::OK);
     delete downloader;
     downloader = nullptr;
 }
@@ -201,7 +201,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_006, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    EXPECT_FALSE(downloader->Read(buff, readDataInfo));
+    EXPECT_NE(downloader->Read(buff, readDataInfo), Status::OK);
     delete downloader;
     downloader = nullptr;
 }
