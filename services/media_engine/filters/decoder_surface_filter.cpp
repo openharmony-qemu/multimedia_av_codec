@@ -347,6 +347,8 @@ Status DecoderSurfaceFilter::DoStop()
     timeval tv;
     gettimeofday(&tv, 0);
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
+    videoSink_->ResetSyncInfo();
+    videoSink_->ResetRenderStarted();
     auto ret = videoDecoder_->Stop();
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;

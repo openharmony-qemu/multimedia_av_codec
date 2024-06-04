@@ -113,6 +113,11 @@ void VideoSink::ResetSyncInfo()
     lastClockTime_ = HST_TIME_NONE;
 }
 
+void VideoSink::ResetRenderStarted()
+{
+    isRenderStarted_ = false;
+}
+
 Status VideoSink::GetLatency(uint64_t& nanoSec)
 {
     nanoSec = 10; // 10 ns
