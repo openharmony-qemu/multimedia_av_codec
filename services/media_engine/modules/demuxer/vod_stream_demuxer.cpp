@@ -274,15 +274,12 @@ Status VodStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>&
             if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
-                if (buffer != nullptr && buffer->GetMemory() != nullptr &&
-                    buffer->GetMemory()->GetSize() == 0) {
+                if (isIgnoreParse_.load() && buffer->GetMemory()->GetSize() == 0) {
                     MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                                 " Read fail and try again");
-                    if (isIgnoreParse_.load()) {
-                        return Status::ERROR_WRONG_STATE;
-                    } else {
-                        return Status::ERROR_AGAIN;
-                    }
+                    return Status::ERROR_WRONG_STATE;
+                } else if (buffer->GetMemory()->GetSize() == 0) {
+                    return Status::ERROR_AGAIN;
                 }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
