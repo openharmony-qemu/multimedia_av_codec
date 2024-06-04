@@ -293,8 +293,8 @@ int32_t CodecClient::GetOutputFormat(Format &format)
 int32_t CodecClient::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_OPERATION, "Server not exist");
 
     int32_t ret = codecProxy_->SetDecryptConfig(keySession, svpFlag);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");

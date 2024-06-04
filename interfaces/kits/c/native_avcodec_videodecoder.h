@@ -309,8 +309,11 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @param codec Pointer to an OH_AVCodec instance
  * @param mediaKeySession A media key session instance with decryption function.
  * @param secureVideoPath Require secure decoder or not.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_OPERATE_NOT_PERMIT} 2 - If the codec service or the media key session
+ *         service is in wrong status.
+ *         {@link AV_ERR_INVALID_VAL} 3 - If the codec instance is nullptr or invalid,
+ *         the mediaKeySession is nullptr or invalid.
  * @since 11
  * @version 1.0
 */
