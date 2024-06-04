@@ -282,7 +282,7 @@ int32_t MediaCodec::Stop()
     MEDIA_LOG_I("codec Stop, state from %{public}s to Stop", StateToString(state_).data());
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin stop failed");
     ClearInputBuffer();
-    state_ = CodecState::PREPARED;
+    state_ = CodecState::CONFIGURED;
     return (int32_t)ret;
 }
 
@@ -562,17 +562,17 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
             std::shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputBufferCapacity_);
             FALSE_RETURN_V_MSG_E(outputBuffer != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                                  "outputBuffer is nullptr");
-            MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
-                        outputBuffer->GetUniqueId());
             if (outputBufferQueueProducer_->AttachBuffer(outputBuffer, false) == Status::OK) {
+                MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
+                            outputBuffer->GetUniqueId());
                 outputBufferVector_.push_back(outputBuffer);
             }
         }
     } else {
         for (uint32_t i = 0; i < outputBuffers.size(); i++) {
-            MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
-                        outputBuffers[i]->GetUniqueId());
             if (outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false) == Status::OK) {
+                MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
+                            outputBuffers[i]->GetUniqueId());
                 outputBufferVector_.push_back(outputBuffers[i]);
             }
         }
