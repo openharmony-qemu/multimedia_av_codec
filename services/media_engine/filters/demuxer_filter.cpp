@@ -182,7 +182,10 @@ Status DemuxerFilter::DoPrepare()
             return Status::ERROR_INVALID_PARAMETER;
         }
         std::string mime;
-        meta->GetData(Tag::MIME_TYPE, mime);
+        if (!meta->GetData(Tag::MIME_TYPE, mime)) {
+            MEDIA_LOG_E("mimeType not found, index: %zu", index);
+            continue;
+        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
@@ -282,25 +285,18 @@ Status DemuxerFilter::PrepareBeforeStart()
         MEDIA_LOG_I("Loop is started. Not need start again.");
         return Status::OK;
     }
-    MEDIA_LOG_I("Loop is not started. PrepareBeforeStart firstly.");
-    isLoopStarted = true;
-    auto ret = Filter::Start();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareBeforeStart start filter failed.");
-    if (isPrepareFramed.load()) {
-        return demuxer_->Resume();
-    }
-    return demuxer_->Start();
+    return Filter::Start();
 }
 
 Status DemuxerFilter::DoStart()
 {
     if (isLoopStarted.load()) {
         MEDIA_LOG_I("Loop is started. Resume only.");
-        return Resume();
+        return Filter::Resume();
     }
-    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
-    MEDIA_LOG_I("Start in");
+    MEDIA_LOG_I("Loop is not started. PrepareBeforeStart firstly.");
     isLoopStarted = true;
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     if (isPrepareFramed.load()) {
         return demuxer_->Resume();
     }

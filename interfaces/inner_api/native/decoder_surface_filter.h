@@ -140,7 +140,7 @@ private:
     Mutex firstFrameMutex_{};
     ConditionVariable firstFrameCond_;
     std::atomic<bool> doPrepareFrame_{false};
-    std::atomic<bool> isNeedStartDecoder_{true};
+    std::atomic<bool> isPauseNeedResume_{false};
     bool renderFirstFrame_{false};
     Mutex formatChangeMutex_{};
 

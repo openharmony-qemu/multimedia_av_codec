@@ -194,6 +194,7 @@ private:
     ConditionVariable firstFrameCond_;
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
+    bool waitForDataFail_{false};
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
