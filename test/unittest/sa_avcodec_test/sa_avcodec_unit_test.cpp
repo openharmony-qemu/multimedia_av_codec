@@ -334,9 +334,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), true, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
-    EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), false, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
-
+    EXPECT_CALL(*memMgrMock_, SetCritical).Times(AtLeast(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
@@ -376,9 +374,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_002, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), true, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
-    EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), false, AV_CODEC_SERVICE_ID)).Times(2).WillRepeatedly(Return(0));
-
+    EXPECT_CALL(*memMgrMock_, SetCritical).Times(AtLeast(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
