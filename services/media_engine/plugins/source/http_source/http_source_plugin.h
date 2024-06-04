@@ -58,6 +58,7 @@ public:
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
 private:
     void CloseUri();
+    void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
 
     uint32_t bufferSize_;
     uint32_t waterline_;

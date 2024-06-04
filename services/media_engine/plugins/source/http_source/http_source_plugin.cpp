@@ -159,13 +159,27 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("SetSource enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
-    uri_ = source->GetSourceUri();
-    httpHeader_ = source->GetSourceHeader();
-    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
-        httpHeader_["Referer"].c_str());
+    SetDownloaderBySource(source);
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (callback_ != nullptr) {
+        downloader_->SetCallback(callback_);
+    }
+    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
+    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
+    return Status::OK;
+}
 
-    PlayStrategy* playStrategy = source->GetPlayStrategy();
-    mimeType_ = source->GetMimeType();
+void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
+{
+    PlayStrategy* playStrategy = nullptr;
+    if (source != nullptr) {
+        uri_ = source->GetSourceUri();
+        httpHeader_ = source->GetSourceHeader();
+        MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
+                    httpHeader_["Referer"].c_str());
+        playStrategy = source->GetPlayStrategy();
+        mimeType_ = source->GetMimeType();
+    }
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
         if (playStrategy != nullptr) {
@@ -193,18 +207,10 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
         }
-    } else if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
+    }
+    if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
     }
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-
-    if (callback_ != nullptr) {
-        downloader_->SetCallback(callback_);
-    }
-
-    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
-    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
-    return Status::OK;
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
