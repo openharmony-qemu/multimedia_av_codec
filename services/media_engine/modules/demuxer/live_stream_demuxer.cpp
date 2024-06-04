@@ -238,10 +238,11 @@ Status LiveStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>
             if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
-                if ((isIgnoreRead_.load() || isIgnoreParse_.load()) && buffer != nullptr &&
-                    buffer->GetMemory() != nullptr && buffer->GetMemory()->GetSize() == 0) {
+                if (isIgnoreParse_.load() && buffer->GetMemory()->GetSize() == 0) {
                     MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                                 " Read fail and try again");
+                    return Status::ERROR_WRONG_STATE;
+                } else if (isIgnoreRead_.load() && buffer->GetMemory()->GetSize() == 0) {
                     return Status::ERROR_AGAIN;
                 }
             } else {
