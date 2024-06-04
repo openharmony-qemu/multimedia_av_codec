@@ -99,9 +99,9 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
             avgDownloadSpeed_ = totalBits_ / downloadTime;
         }
         MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
-                    static_cast<int32_t>(avgDownloadSpeed_));
+                static_cast<int32_t>(avgDownloadSpeed_));
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
-                    totalBits_, static_cast<int64_t>(downloadTime * 1000));
+                totalBits_, static_cast<int64_t>(downloadTime * 1000));
     };
     MediaSouce mediaSouce;
     mediaSouce.url = url;

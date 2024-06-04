@@ -61,7 +61,6 @@ public:
     void DownloadReportLoop();
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    void ValidAddrInfo(const std::string& url);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
