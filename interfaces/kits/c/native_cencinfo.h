@@ -114,7 +114,9 @@ typedef struct DrmSubsample {
  * @brief Creates an OH_AVCencInfo instance for setting cencinfo.
  * Free the resources of the instance by calling OH_AVCencInfo_Destory.
  * @syscap SystemCapability.Multimedia.Media.Spliter
- * @return Returns a pointer to an OH_AVCencInfo instance
+ * @return Returns the newly created OH_AVCencInfo object. If nullptr is returned, the object failed to be created.
+ *         The possible failure is due to the application address space being full,
+ *         or the data in the initialization object has failed.
  * @since 12
  * @version 1.0
  */
@@ -127,8 +129,8 @@ OH_AVCencInfo *OH_AVCencInfo_Create();
  * the instance pointer to NULL right after the instance is destroyed successfully.
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param cencInfo Pointer to an OH_AVCencInfo instance.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_INVALID_VAL} 3 - cencInfo is nullptr.
  * @since 12
  * @version 1.0
 */
@@ -139,8 +141,8 @@ OH_AVErrCode OH_AVCencInfo_Destroy(OH_AVCencInfo *cencInfo);
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param cencInfo Pointer to an OH_AVCencInfo instance.
  * @param algo Cenc algo.
- * @return Returns {@link AV_ERR_OK} if the algo is set; returns an error code defined
- * in {@link native_averrors.h} otherwise.
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_INVALID_VAL} 3 - cencInfo is nullptr.
  * @since 12
  * @version 1.0
  */
@@ -154,8 +156,9 @@ OH_AVErrCode OH_AVCencInfo_SetAlgorithm(OH_AVCencInfo *cencInfo, enum DrmCencAlg
  * @param keyIdLen Key id len.
  * @param iv Iv.
  * @param ivLen Iv len.
- * @return Returns {@link AV_ERR_OK} if the key id and iv is set; returns an error code defined
- * in {@link native_averrors.h} otherwise.
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_INVALID_VAL} 3 - If cencInfo is nullptr, or keyId is nullptr, or keyIdLen != DRM_KEY_ID_SIZE,
+ *         or iv is nullptr, or ivLen != DRM_KEY_IV_SIZE, or keyId copy fails, or iv copy fails.
  * @since 12
  * @version 1.0
  */
@@ -171,8 +174,9 @@ OH_AVErrCode OH_AVCencInfo_SetKeyIdAndIv(OH_AVCencInfo *cencInfo, uint8_t *keyId
  * @param firstEncryptedOffset Offset of first encrypted payload.
  * @param subsampleCount Subsample num.
  * @param subsamples Subsample info
- * @return Returns {@link AV_ERR_OK} if the subsample info is set; returns an error code defined
- * in {@link native_averrors.h} otherwise.
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_INVALID_VAL} 3 - If cencInfo is nullptr, or subsampleCount > DRM_KEY_MAX_SUB_SAMPLE_NUM,
+ *         or subsamples is nullptr.
  * @since 12
  * @version 1.0
  */
@@ -184,8 +188,8 @@ OH_AVErrCode OH_AVCencInfo_SetSubsampleInfo(OH_AVCencInfo *cencInfo, uint32_t en
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param cencInfo Pointer to an OH_AVCencInfo instance.
  * @param mode Cenc mode, indicate whether key/iv/subsample set or not.
- * @return Returns {@link AV_ERR_OK} if the mode is set; returns an error code defined
- * in {@link native_averrors.h} otherwise.
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_INVALID_VAL} 3 - cencInfo is nullptr.
  * @since 12
  * @version 1.0
  */
@@ -196,8 +200,9 @@ OH_AVErrCode OH_AVCencInfo_SetMode(OH_AVCencInfo *cencInfo, enum DrmCencInfoMode
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param cencInfo Pointer to an OH_AVCencInfo instance.
  * @param buffer AVBuffer to attach cencinfo.
- * @return Returns {@link AV_ERR_OK} if the cencinfo is set; returns an error code defined
- * in {@link native_averrors.h} otherwise.
+ * @return {@link AV_ERR_OK} 0 - Success
+ *         {@link AV_ERR_INVALID_VAL} 3 - If cencInfo is nullptr, or buffer is nullptr, or buffer->buffer_ is nullptr,
+ *         or buffer->buffer_->meta_ is nullptr.
  * @since 12
  * @version 1.0
  */
