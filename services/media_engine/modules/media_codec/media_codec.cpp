@@ -63,6 +63,18 @@ MediaCodec::MediaCodec()
 {
 }
 
+MediaCodec::~MediaCodec()
+{
+    codecPlugin_ = nullptr;
+    inputBufferQueue_ = nullptr;
+    inputBufferQueueProducer_ = nullptr;
+    inputBufferQueueConsumer_ = nullptr;
+    outputBufferQueueProducer_ = nullptr;
+    codecCallback_ = nullptr;
+    mediaCodecCallback_ = nullptr;
+    outputBufferCapacity_ = 0;
+}
+
 int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);
@@ -533,18 +545,14 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
     MediaAVCodec::AVCodecTrace trace("MediaCodec::PrepareOutputBufferQueue");
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "codecPlugin_ is nullptr");
     auto ret = codecPlugin_->GetOutputBuffers(outputBuffers);
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("GetOutputBuffers failed");
-        return (int32_t)ret;
-    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "GetOutputBuffers failed");
+    FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
+                         "outputBufferQueueProducer_ is nullptr");
     if (outputBuffers.empty()) {
         int outputBufferNum = 30;
         std::shared_ptr<Meta> outputBufferConfig = std::make_shared<Meta>();
         ret = codecPlugin_->GetParameter(outputBufferConfig);
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("GetParameter failed");
-            return (int32_t)ret;
-        }
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "GetParameter failed");
         FALSE_RETURN_V_MSG_E(outputBufferConfig != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                              "outputBufferConfig is nullptr");
         FALSE_RETURN_V(outputBufferConfig->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(outputBufferCapacity_),
@@ -554,27 +562,22 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
             std::shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputBufferCapacity_);
             FALSE_RETURN_V_MSG_E(outputBuffer != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
                                  "outputBuffer is nullptr");
-            FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
-                                 "outputBufferQueueProducer_ is nullptr");
-            uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
-            outputBufferQueueProducer_->SetQueueSize(size);
-            MEDIA_LOG_I("Attach output buffer. index: %{public}d, size: %{public}u, bufferId: %{public}" PRIu64,
-                i, size, outputBuffer->GetUniqueId());
-            outputBufferQueueProducer_->AttachBuffer(outputBuffer, false);
-            outputBufferVector_.push_back(outputBuffer);
+            if (outputBufferQueueProducer_->AttachBuffer(outputBuffer, false) == Status::OK) {
+                MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
+                            outputBuffer->GetUniqueId());
+                outputBufferVector_.push_back(outputBuffer);
+            }
         }
     } else {
-        FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
-                             "outputBufferQueueProducer_ is nullptr");
         for (uint32_t i = 0; i < outputBuffers.size(); i++) {
-            uint32_t size = outputBufferQueueProducer_->GetQueueSize() + 1;
-            outputBufferQueueProducer_->SetQueueSize(size);
-            MEDIA_LOG_I("Attach output buffer. index: %{public}d, size: %{public}u, bufferId: %{public}" PRIu64,
-                i, size, outputBuffers[i]->GetUniqueId());
-            outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false);
-            outputBufferVector_.push_back(outputBuffers[i]);
+            if (outputBufferQueueProducer_->AttachBuffer(outputBuffers[i], false) == Status::OK) {
+                MEDIA_LOG_D("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
+                            outputBuffers[i]->GetUniqueId());
+                outputBufferVector_.push_back(outputBuffers[i]);
+            }
         }
     }
+    FALSE_RETURN_V_MSG_E(outputBufferVector_.size() > 0, (int32_t)Status::ERROR_INVALID_STATE, "Attach no buffer");
     return (int32_t)ret;
 }
 
