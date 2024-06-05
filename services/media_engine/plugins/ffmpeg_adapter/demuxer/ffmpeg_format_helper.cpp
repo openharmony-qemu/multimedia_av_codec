@@ -349,7 +349,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
-        MEDIA_LOG_D("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
+        MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_id));
     }
 
@@ -357,7 +357,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_D("Parse track type info failed: " PUBLIC_LOG_D32 ".",
+        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_type));
     }
 }
@@ -383,7 +383,7 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
             fileType = g_convertFfmpegFileType[fileName];
         }
     }
-    MEDIA_LOG_D("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
+    MEDIA_LOG_I("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
         fileName, static_cast<int32_t>(fileType));
     return fileType;
 }
