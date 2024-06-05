@@ -61,6 +61,7 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
+    void ResetEosStatus() override;
 
 private:
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);

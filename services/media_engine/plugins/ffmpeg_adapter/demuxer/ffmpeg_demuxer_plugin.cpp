@@ -1198,6 +1198,12 @@ Status FFmpegDemuxerPlugin::Flush()
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::ResetEosStatus() {
+    MEDIA_LOG_I("ResetEosStatus enter.");
+    formatContext_->pb->eof_reached = 0;
+    formatContext_->pb->error = 0;
+}
+
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
