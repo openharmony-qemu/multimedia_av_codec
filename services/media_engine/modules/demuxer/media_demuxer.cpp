@@ -628,7 +628,6 @@ Status MediaDemuxer::Pause()
         source_->Pause();
     }
     PauseAllTask();
-    isPaused_ = false;
     if (source_ != nullptr) {
         source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
     }
@@ -665,6 +664,7 @@ Status MediaDemuxer::Resume()
         source_->Resume();
     }
     ResumeAllTask();
+    isPaused_ = false;
     return Status::OK;
 }
 
