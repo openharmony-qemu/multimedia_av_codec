@@ -907,7 +907,7 @@ void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
         if (info.owner == OWNED_BY_SURFACE) {
             ChangeOwner(info, BufferOwner::OWNED_BY_US);
         }
-        if (info.owner == OWNED_BY_US) {
+        if ((info.owner == OWNED_BY_US) && (currState_->GetName() == "Running")) {
             NotifyOmxToFillThisOutBuffer(info);
         }
     }

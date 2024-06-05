@@ -637,6 +637,12 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             OnCheckIfStuck(info);
             return;
         }
+        case MsgWhat::SET_OUTPUT_SURFACE: {
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
         default: {
             BaseState::OnMsgReceived(info);
         }
