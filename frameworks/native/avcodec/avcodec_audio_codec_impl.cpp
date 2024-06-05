@@ -138,6 +138,7 @@ int32_t AVCodecAudioCodecImpl::Stop()
     int32_t ret = codecService_->Stop();
     StopTask();
     ClearCache();
+    ReturnInputBuffer();
     return ret;
 }
 
@@ -149,6 +150,7 @@ int32_t AVCodecAudioCodecImpl::Flush()
     int32_t ret = codecService_->Flush();
     PauseTask();
     ClearCache();
+    ReturnInputBuffer();
     return ret;
 }
 
@@ -160,6 +162,7 @@ int32_t AVCodecAudioCodecImpl::Reset()
     int32_t ret = codecService_->Reset();
     StopTask();
     ClearCache();
+    ClearInputBuffer();
     inputBufferSize_ = 0;
     return ret;
 }
@@ -172,6 +175,7 @@ int32_t AVCodecAudioCodecImpl::Release()
     int32_t ret = codecService_->Release();
     StopTask();
     ClearCache();
+    ClearInputBuffer();
     inputBufferSize_ = 0;
     return ret;
 }
@@ -375,6 +379,23 @@ void AVCodecAudioCodecImpl::ClearCache()
         iter = outputBufferObjMap_.erase(iter);
         implConsumer_->ReleaseBuffer(buffer);
     }
+}
+
+void AVCodecAudioCodecImpl::ReturnInputBuffer()
+{
+    for (const auto &inputMap : inputBufferObjMap_) {
+        mediaCodecProducer_->PushBuffer(inputMap.second, false);
+    }
+    inputBufferObjMap_.clear();
+    while (!inputIndexQueue.empty()) {
+        std::shared_ptr<AVBuffer> buffer = inputIndexQueue.front();
+        mediaCodecProducer_->PushBuffer(buffer, false);
+        inputIndexQueue.pop();
+    }
+}
+
+void AVCodecAudioCodecImpl::ClearInputBuffer()
+{
     inputBufferObjMap_.clear();
     while (!inputIndexQueue.empty()) {
         inputIndexQueue.pop();
