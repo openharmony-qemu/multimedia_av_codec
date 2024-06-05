@@ -954,7 +954,6 @@ Status MediaDemuxer::Start()
     isThreadExit_ = false;
     isStopped_ = false;
     auto it = bufferQueueMap_.begin();
-    MEDIA_LOG_I("BUFFER QUEUE MAP SIZE %{public}d", bufferQueueMap_.size());
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
         taskMap_[trackId]->Start();
