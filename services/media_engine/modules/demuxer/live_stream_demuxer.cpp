@@ -84,8 +84,9 @@ Status LiveStreamDemuxer::Init(std::string uri)
     };
     getRange_ = [this](int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
         // In push mode, ignore offset, always get data from the start of the data packer.
-        return dataPacker_->GetRange(size, bufferPtr, offset,
-            pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+        bool isRemove = (source_->IsNeedPreDownload() && source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE 
+            && pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+        return dataPacker_->GetRange(size, bufferPtr, offset, isRemove);
     };
     uri_ = uri;
     return Status::OK;
