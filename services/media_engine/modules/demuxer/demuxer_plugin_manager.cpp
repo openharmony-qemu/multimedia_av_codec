@@ -215,12 +215,14 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
     if (curAudioStreamID_ != -1) {
         MEDIA_LOG_I("LoadCurrentAllPlugin audio plugin");
         Status ret = LoadDemuxerPlugin(curAudioStreamID_, streamDemuxer);
-        AddMediaInfo(ret, curAudioStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin audio plugin failed.");
+        AddMediaInfo(curAudioStreamID_, mediaInfo, true, true);
     }
     if (curVideoStreamID_ != -1) {
         MEDIA_LOG_I("LoadCurrentAllPlugin video plugin");
         Status ret = LoadDemuxerPlugin(curVideoStreamID_, streamDemuxer);
-        AddMediaInfo(ret, curVideoStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin video plugin failed.");
+        AddMediaInfo(curVideoStreamID_, mediaInfo, true, true);
     }
     return Status::OK;
 }
@@ -231,7 +233,8 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
     if (curSubTitleStreamID_ != -1) {
         MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin");
         Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
-        AddMediaInfo(ret, curSubTitleStreamID_, mediaInfo, true, true);   // todo: 合并mediaInfo元数据
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin subtitle plugin failed.");
+        AddMediaInfo(curSubTitleStreamID_, mediaInfo, true, true);
     }
     return Status::OK;
 }
@@ -289,14 +292,10 @@ Status DemuxerPluginManager::AddTempTrackInfo(const Plugins::MediaInfo& mediaInf
 }
 
 
-Status DemuxerPluginManager::AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo,
+void DemuxerPluginManager::AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo,
     bool isAddTrack, bool isAddTempTrack)
 {
     MEDIA_LOG_I("AddMediaInfo enter");
-    if (ret != Status::OK) {
-        MEDIA_LOG_I("AddMediaInfo failed");
-        return ret;
-    }
     AddGeneral(streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
     for (uint32_t index = 0; index < streamInfoMap_[streamID].mediaInfo.tracks.size(); index++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[index];
@@ -309,7 +308,7 @@ Status DemuxerPluginManager::AddMediaInfo(Status ret, int32_t streamID, Plugins:
     if (isAddTempTrack) {
         AddTempTrackInfo(streamInfoMap_[streamID].mediaInfo, streamID);
     }
-    return ret;
+    return;
 }
 
 std::shared_ptr<Plugins::DemuxerPlugin> DemuxerPluginManager::SelectPlugin(int32_t trackId)
@@ -585,15 +584,15 @@ Status DemuxerPluginManager::UpdateDefaultVideoStreamID(std::shared_ptr<BaseStre
     ClearTempTrackInfo();
 
     // 更新streamInfoMap_
-    MEDIA_LOG_I("subenhui UpdateDefaultVideoStreamID, stop video plugin");
+    MEDIA_LOG_I("UpdateDefaultVideoStreamID, stop video plugin");
     StopPlugin(curVideoStreamID_);
     
-    Status ret = Status::OK;
-    AddMediaInfo(ret, curAudioStreamID_, mediaInfo, false, true);
+    AddMediaInfo(curAudioStreamID_, mediaInfo, false, true);
 
-    MEDIA_LOG_I("subenhui UpdateDefaultVideoStreamID, start video plugin");
-    ret = StartPlugin(newStreamID, streamDemuxer);
-    AddMediaInfo(ret, newStreamID, mediaInfo, true, true);
+    MEDIA_LOG_I("UpdateDefaultVideoStreamID, start video plugin");
+    Status ret = StartPlugin(newStreamID, streamDemuxer);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "UpdateDefaultVideoStreamID video plugin failed.");
+    AddMediaInfo(newStreamID, mediaInfo, true, true);
 
     curVideoStreamID_ = newStreamID;
 
