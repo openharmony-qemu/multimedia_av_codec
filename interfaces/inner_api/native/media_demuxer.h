@@ -173,6 +173,7 @@ private:
     bool firstAudio_{true};
 
     std::atomic<bool> isStopped_ = false;
+    std::atomic<bool> isPaused_ = false;
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;

@@ -590,10 +590,12 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         }
         if (ffmpegRet < 0) { // fail
             av_packet_free(&pkt);
-            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S, AVStrError(ffmpegRet).c_str());
-            if (ffmpegRet == AVERROR(EAGAIN)) { //Read data get 0 byte in seeking process, need retry
+            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", timeout: " PUBLIC_LOG_D32,
+                AVStrError(ffmpegRet).c_str(), int(ioContext_.timeout));
+            if (ffmpegRet == AVERROR(EAGAIN) || ioContext_.timeout) {
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
+                ioContext_.timeout = false;
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
@@ -667,13 +669,21 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::ERROR_AGAIN) {
-            MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
-            ret = AVERROR(EAGAIN);
+            MEDIA_LOG_I("Read data not enough, read again.");
+            ioContext->timeout = true;
+            ioContext->offset += buffer->GetMemory()->GetSize();
+            ret = buffer->GetMemory()->GetSize();
+            if (ret == 0) {
+                return AVERROR(EAGAIN);
+            }
         } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
+            if (result == Status::ERROR_WRONG_STATE) {
+                ioContext->timeout = true;
+            }
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
         }
     }

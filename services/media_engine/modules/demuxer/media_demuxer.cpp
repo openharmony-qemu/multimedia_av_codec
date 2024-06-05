@@ -585,8 +585,6 @@ Status MediaDemuxer::PauseAllTask()
 {
     MEDIA_LOG_I("PauseAllTask enter.");
 
-    streamDemuxer_->SetIsIgnoreParse(true);
-
     // To accelerate DemuxerLoop thread to run into PAUSED state
     for (auto &iter : taskMap_) {
         if (iter.second != nullptr) {
@@ -620,6 +618,8 @@ Status MediaDemuxer::ResumeAllTask()
 Status MediaDemuxer::Pause()
 {
     MEDIA_LOG_I("Pause");
+    isPaused_ = true;
+    streamDemuxer_->SetIsIgnoreParse(true);
     if (streamDemuxer_) {
         streamDemuxer_->Pause();
     }
@@ -664,6 +664,7 @@ Status MediaDemuxer::Resume()
         source_->Resume();
     }
     ResumeAllTask();
+    isPaused_ = false;
     return Status::OK;
 }
 
@@ -937,13 +938,13 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_) {
+    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);
         // when read failed, or request always failed in 1min, send error event
-        if ((ret == Status::ERROR_UNKNOWN && !isStopped_) ||
+        if ((ret == Status::ERROR_UNKNOWN && !isStopped_ && !isPaused_) ||
              requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Data source is invalid, can not get frame");
             if (eventReceiver_ != nullptr) {
