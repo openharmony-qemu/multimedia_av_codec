@@ -388,7 +388,7 @@ bool DemuxerPluginManager::IsDash()
     return isDash_;
 }
 
-bool DemuxerPluginManager::SetResetEosStatus(bool flag)
+void DemuxerPluginManager::SetResetEosStatus(bool flag)
 {
     needResetEosStatus_ = flag;
 }

@@ -768,7 +768,7 @@ Status MediaDemuxer::Flush()
     }
 
     if (demuxerPluginManager_) {
-        if (source != nullptr && source_->IsSeekToTimeSupported()) {
+        if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
             demuxerPluginManager_->SetResetEosStatus(true);
         }
         demuxerPluginManager_->Flush();
