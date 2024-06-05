@@ -159,7 +159,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("SetSource enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
-    FALSE_RETURN_V(source == nullptr, Status::ERROR_INVALID_OPERATION); 
+    FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION); 
     SetDownloaderBySource(source);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     if (callback_ != nullptr) {
