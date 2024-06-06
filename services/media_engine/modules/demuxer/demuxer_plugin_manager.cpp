@@ -387,6 +387,11 @@ bool DemuxerPluginManager::IsDash()
     return isDash_;
 }
 
+void DemuxerPluginManager::SetResetEosStatus(bool flag)
+{
+    needResetEosStatus_ = flag;
+}
+
 Status DemuxerPluginManager::StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer)
 {
     MEDIA_LOG_I("StartAllPlugin begin.");
@@ -490,12 +495,18 @@ Status DemuxerPluginManager::Flush()
 {
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curAudioStreamID_].plugin->Flush();
+        if (needResetEosStatus_) {
+            streamInfoMap_[curAudioStreamID_].plugin->ResetEosStatus();
+        }
         if (ret != Status::OK) {
             return ret;
         }
     }
     if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Flush();
+        if (needResetEosStatus_) {
+            streamInfoMap_[curAudioStreamID_].plugin->ResetEosStatus();
+        }
         if (ret != Status::OK) {
             return ret;
         }
