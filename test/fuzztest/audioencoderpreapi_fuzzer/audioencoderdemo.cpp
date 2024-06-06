@@ -401,10 +401,10 @@ int32_t AEncDemoAuto::CreateEnd()
         return AVCS_ERR_INVALID_VAL;
     }
 
-    if(signal_ == nullptr){
+    if (signal_ == nullptr) {
         signal_ = new AEncSignal();
     }    
-    if(signal_ == nullptr) {
+    if (signal_ == nullptr) {
         return AVCS_ERR_UNKNOWN;
     }
     DEMO_CHECK_AND_RETURN_RET_LOG(audioEnc_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: CreateByName fail");

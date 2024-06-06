@@ -38,7 +38,7 @@ extern void OnOutputBufferAvailable(OH_AVCodec* codec, uint32_t index, OH_AVMemo
 enum AudioFormatType : int32_t {
     TYPE_OPUS = 0,
     TYPE_G711MU = 1,
-    TYPE_AAC= 2,
+    TYPE_AAC = 2,
     TYPE_FLAC = 3,
     TYPE_MAX = 10,
 };

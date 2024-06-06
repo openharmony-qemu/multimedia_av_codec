@@ -141,9 +141,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AudioDecoderFlacFuzzTest(data, size);
     OHOS::AudioDecoderG711FuzzTest(data, size);
     OHOS::AudioDecoderOPUSFuzzTest(data, size);
-    OHOS::AudioDecoderVORBISFuzzTest(data,size);
-    OHOS::AudioDecoderAMRNBFuzzTest(data,size);
-    OHOS::AudioDecoderAMRWBFuzzTest(data,size);
-    OHOS::AudioDecoderMP3FuzzTest(data,size);
+    OHOS::AudioDecoderVORBISFuzzTest(data, size);
+    OHOS::AudioDecoderAMRNBFuzzTest(data, size);
+    OHOS::AudioDecoderAMRWBFuzzTest(data, size);
+    OHOS::AudioDecoderMP3FuzzTest(data, size);
     return 0;
 }
