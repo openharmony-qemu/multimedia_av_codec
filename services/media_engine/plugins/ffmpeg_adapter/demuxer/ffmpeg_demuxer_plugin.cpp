@@ -1198,7 +1198,8 @@ Status FFmpegDemuxerPlugin::Flush()
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ResetEosStatus() {
+void FFmpegDemuxerPlugin::ResetEosStatus()
+{
     MEDIA_LOG_I("ResetEosStatus enter.");
     formatContext_->pb->eof_reached = 0;
     formatContext_->pb->error = 0;
