@@ -88,8 +88,7 @@ namespace AudioEncDemoAuto {
         signal->outBufferQueue_.push(data);
         if (attr) {
             signal->attrQueue_.push(*attr);
-        }
-        else {
+        } else {
             cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
         }
         signal->outCond_.notify_all();
@@ -129,9 +128,7 @@ void AEncDemoAuto::HandleEOS(const uint32_t& index)
     info.offset = 0;
     info.pts = 0;
     info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    std::cout << "HandleEOS in" <<endl;
     OH_AVErrCode ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
-    std::cout << "HandleEOS ->" << ret <<endl;
     signal_->inBufferQueue_.pop();
     signal_->inQueue_.pop();
 }
@@ -200,8 +197,6 @@ OH_AVErrCode AEncDemoAuto::PushInputData(OH_AVCodec* codec, uint32_t index, int3
     info.offset = offset;
     info.pts = 0;
     info.flags = AVCODEC_BUFFER_FLAGS_NONE;
-    std::cout << "info.size:"<< info.size <<endl;
-    std::cout << "info.offset:"<< info.offset <<endl;
     return OH_AudioEncoder_PushInputData(codec, index, info);
 }
 
@@ -338,9 +333,7 @@ bool AEncDemoAuto::RunCase(const uint8_t *data, size_t size)
     auto end = chrono::steady_clock::now();
     std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
         << " ms" << std::endl;
-
     DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    std::cout << "end stop!\n";
     DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
     OH_AVFormat_Destroy(format);
     sleep(1);
@@ -371,16 +364,12 @@ int32_t AEncDemoAuto::CreateEnd()
 {
     if (audioType_ == TYPE_AAC) {
         audioEnc_ = OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_AAC_NAME).data());
-        cout << "CreateEnc aac!" << endl;
     } else if (audioType_ == TYPE_FLAC) {
         audioEnc_ = OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME).data());
-        cout << "CreateEnc flac!" << endl;
     } else if (audioType_ == TYPE_OPUS) {
         audioEnc_ = OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_OPUS_NAME).data());
-        cout << "CreateEnc opus!" << endl;
     } else if (audioType_ == TYPE_G711MU) {
         audioEnc_ = OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_G711MU_NAME).data());
-        cout << "CreateEnc g711!" << endl;
     } else {
         return AVCS_ERR_INVALID_VAL;
     }
@@ -449,24 +438,21 @@ int32_t AEncDemoAuto::Start()
 
     outputLoop_ = make_unique<thread>(&AEncDemoAuto::OutputFunc, this);
     DEMO_CHECK_AND_RETURN_RET_LOG(outputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
-    if(audioEnc_ == nullptr) {
+    if (audioEnc_ == nullptr) {
         std::cout << "audioEnc_ is nullptr " << std::endl;
     }
     int32_t ret = OH_AudioEncoder_Start(audioEnc_);
-    std::cout << "OH_AudioEncoder_Start is  " << ret << std::endl;
     return ret;
 }
 
 int32_t AEncDemoAuto::Stop()
 {
-    std::cout << "AEncDemoAuto::Stop!\n";
     return OH_AudioEncoder_Stop(audioEnc_);
 }
 
 int32_t AEncDemoAuto::Flush()
 {
     OH_AVErrCode ret = OH_AudioEncoder_Flush(audioEnc_);
-    std::cout << "Flush ret:"<< ret <<endl;
     return ret;
 }
 
@@ -517,7 +503,6 @@ int32_t AEncDemoAuto::Release()
         std::cout << "signal_Release" <<endl;
     }
     int32_t ret = OH_AudioEncoder_Destroy(audioEnc_);
-    std::cout << "OH_AudioEncoder_Destroy ret" <<  ret <<endl;
     audioEnc_ = nullptr;
     return ret;
 }
