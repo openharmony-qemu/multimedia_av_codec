@@ -33,7 +33,7 @@ int64_t GetAudioLatencyFixDelay()
 
 AudioSink::AudioSink()
 {
-    MEDIA_LOG_I("AudioSink ctor");
+    MEDIA_LOG_I("Tips AudioSink ctor");
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
