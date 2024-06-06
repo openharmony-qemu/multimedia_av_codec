@@ -348,24 +348,19 @@ int32_t ADecDemoAuto::CreateDec()
     if (audioType_ == TYPE_AAC) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AAC_NAME).data());
         std::cout << "creat aac!\n";
-    }
-    else if (audioType_ == TYPE_FLAC) {
+    } else if (audioType_ == TYPE_FLAC) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_FLAC_NAME).data());
         std::cout << "creat flac!\n";
-    }
-    else if (audioType_ == TYPE_MP3) {
+    } else if (audioType_ == TYPE_MP3) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_MP3_NAME).data());
         std::cout << "creat mp3!\n";
-    }
-    else if (audioType_ == TYPE_VORBIS) {
+    } else if (audioType_ == TYPE_VORBIS) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data());
         std::cout << "creat vorbis!\n";
-    }
-    else if (audioType_ == TYPE_AMRNB) {
+    } else if (audioType_ == TYPE_AMRNB) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
         std::cout << "creat amrnb!\n";
-    }
-    else if (audioType_ == TYPE_AMRWB) {
+    } else if (audioType_ == TYPE_AMRWB) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
         std::cout << "creat amrwb!\n";
     } else if (audioType_ == TYPE_OPUS) {
