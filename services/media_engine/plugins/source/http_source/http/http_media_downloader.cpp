@@ -147,9 +147,18 @@ void HttpMediaDownloader::Resume()
     cvReadWrite_.NotifyOne();
 }
 
+void HttpMediaDownloader::OnClientErrorEvent()
+{
+    if (callback_ != nullptr) {
+        MEDIA_LOG_I("Read time out, OnEvent");
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
+}
+
 Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
+    FALSE_RETURN_V_MSG(buffer_ != nullptr, Status::END_OF_STREAM, "buffer_ = nullptr");
+    FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
     readDataInfo.isEos_ = false;
     readTime_ = 0;
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
@@ -158,8 +167,8 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         uint64_t remain = fileContentLength - mediaOffset;
         readDataInfo.wantReadLength_ = remain < readDataInfo.wantReadLength_ ? remain : readDataInfo.wantReadLength_;
     }
-
-    while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
+    FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
+    while (buffer_->GetSize() < readDataInfo.wantReadLength_) {
         if (downloadRequest_ != nullptr) {
             readDataInfo.isEos_ = downloadRequest_->IsEos();
         };
