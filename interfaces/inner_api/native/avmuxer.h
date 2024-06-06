@@ -39,7 +39,7 @@ public:
 
     /**
      * @brief Set the user meta for media.
-     * Note: This interface can only be called before Start.
+     * Note: This interface can only be called before Stop.
      * @param userMeta The meta keys are user-defined, the meta values can only be string, int, float.
      * @return Returns AVCS_ERR_OK if the execution is successful,
      * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
