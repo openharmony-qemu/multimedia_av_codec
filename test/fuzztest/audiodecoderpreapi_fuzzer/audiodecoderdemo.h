@@ -77,38 +77,6 @@ public:
 
     OH_AVErrCode SetCallback(OH_AVCodec* codec);
 
-    /**
-      * @interfaceTest
-      * @Status Configure
-      * @after SetCallback
-      * @param codec; depend: CreateByMime.return; code: AV_ERR_INVALID_VAL;
-      * @param format; default: OH_AVFormat_Create(); code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_AAC
-      * @param channel; scope: [1, 8]; default: 2; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000};
-      *                    default: 48000; code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_FLAC
-      * @param channel; scope: [1, 8]; default: 2; code: AV_ERR_UNSUPPORT;
-      * @param sampleRate; scope: {8000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000}; default: 48000;
-      *                    code: AV_ERR_UNSUPPORT;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_MPEG
-      * @param channel; scope: [1, 8]; default: 2; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000}; default: 48000;
-      *                    code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_VORBIS
-      * @param channel; scope: [1, 8]; default: 2; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: [8000, 192000]; default: 48000; code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB
-      * @param channel; scope: {1}; default: 1; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: {8000}; default: 8000; code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB
-      * @param channel; scope: {1}; default: 1; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: {16000}; default: 16000; code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_OPUS
-      * @param channel; scope: [1, 2]; default: 1; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: [8000, 12000, 16000, 24000, 48000]; default: 16000; code: AV_ERR_INVALID_VAL;
-      * @return AV_ERR_OK
-    **/
     OH_AVErrCode Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate);
 
     OH_AVErrCode Prepare(OH_AVCodec* codec);

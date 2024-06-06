@@ -58,21 +58,6 @@ public:
     std::queue<OH_AVCodecBufferAttr> attrQueue_;
 };
 
-/**
-  * @test
-  * @Status {Create, Configure, Start, Running, EOS, Flush, Stop, Reset, Release}
-  * @StatusErrCode AV_ERR_INVALID_STATE
-  * @Allow Create -> Configure
-  * @Allow Configure -> Start
-  * @Allow Start -> {Running, Flush, EOS, Stop}
-  * @Allow Flush -> {Start, Stop}
-  * @Allow Running -> {Running, EOS, Flush, Stop}
-  * @Allow EOS -> {Flush, Stop}
-  * @Allow Stop -> Start
-  * @Allow Reset -> Configure
-  * @Allow {Create, Configure, Start, Running, EOS, Flush, Stop, Reset} -> Reset
-  * @Allow {Create, Configure, Start, Running, EOS, Flush, Stop, Reset} -> Release
-**/
 class AEncDemoAuto : public NoCopyable {
 public:
     AEncDemoAuto();
@@ -87,28 +72,6 @@ public:
     OH_AVErrCode Destroy(OH_AVCodec* codec);
 
     OH_AVErrCode SetCallback(OH_AVCodec* codec);
-
-    /**
-      * @interfaceTest
-      * @Status Configure
-      * @after SetCallback
-      * @param codec; depend: CreateByMime.return; code: AV_ERR_INVALID_VAL;
-      * @param format; default: OH_AVFormat_Create(); code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_OPUS
-      * @param channel; scope: [1, 2]; default: 2; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: {8000, 12000, 16000, 24000, 48000}; default: 48000;
-      *                    code: AV_ERR_INVALID_VAL;
-      * @param bitRate; scope: [6000, 510000]; default: 15000; code: AV_ERR_INVALID_VAL;
-      * @param sampleFormat; scope: [AudioSampleFormat::SAMPLE_S16LE]; default: AudioSampleFormat::SAMPLE_S16LE; code: AV_ERR_INVALID_VAL;
-      * @param sampleBit; scope: [16]; default: 16; code: AV_ERR_INVALID_VAL;
-      * @param complexity; scope: [1, 10]; default: 10; code: AV_ERR_INVALID_VAL;
-      * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_G711MU
-      * @param channel; scope: {1}; default: 1; code: AV_ERR_INVALID_VAL;
-      * @param sampleRate; scope: {8000}; default: 8000; code: AV_ERR_INVALID_VAL;
-      * @param sampleFormat; scope: [AudioSampleFormat::SAMPLE_S16LE]; default: AudioSampleFormat::SAMPLE_S16LE; code: AV_ERR_INVALID_VAL;
-      * @return AV_ERR_OK
-    **/
-    OH_AVErrCode Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
 
     OH_AVErrCode Prepare(OH_AVCodec* codec);
 
@@ -131,8 +94,8 @@ public:
     uint32_t GetInputIndex();
 
     uint32_t GetOutputIndex();
-	
-	void HandleEOS(const uint32_t& index);
+
+    void HandleEOS(const uint32_t& index);
     bool InitFile(std::string inputFile);
 private:
     void ClearQueue();

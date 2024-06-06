@@ -77,8 +77,7 @@ namespace AudioDemoAuto {
         signal->outBufferQueue_.push(data);
         if (attr) {
             signal->attrQueue_.push(*attr);
-        }
-        else {
+        } else {
             cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
         }
         signal->outCond_.notify_all();
@@ -112,18 +111,6 @@ OH_AVErrCode ADecDemoAuto::SetCallback(OH_AVCodec* codec)
 {
     cb_ = { &OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable };
     return OH_AudioDecoder_SetCallback(codec, cb_, signal_);
-}
-
-OH_AVErrCode ADecDemoAuto::Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate)
-{
-    if (format == nullptr) {
-        return OH_AudioDecoder_Configure(codec, format);
-    }
-    format_ = format;
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-    OH_AVErrCode ret = OH_AudioDecoder_Configure(codec, format);
-    return ret;
 }
 
 OH_AVErrCode ADecDemoAuto::Prepare(OH_AVCodec* codec)
@@ -197,8 +184,7 @@ uint32_t ADecDemoAuto::GetInputIndex()
     int32_t sleepTime = 0;
     uint32_t index;
     int32_t condTime = 5;
-    while (signal_->inQueue_.empty() && sleepTime < condTime)
-    {
+    while (signal_->inQueue_.empty() && sleepTime < condTime) {
         sleep(1);
         sleepTime++;
     }
@@ -216,8 +202,7 @@ uint32_t ADecDemoAuto::GetOutputIndex()
     int32_t sleepTime = 0;
     uint32_t index;
     int32_t condTime = 5;
-    while (signal_->outQueue_.empty() && sleepTime < condTime)
-    {
+    while (signal_->outQueue_.empty() && sleepTime < condTime) {
         sleep(1);
         sleepTime++;
     }
@@ -279,9 +264,9 @@ bool ADecDemoAuto::InitFormat(OH_AVFormat *format)
     int32_t sampleRate = SAMPLE_RATE;
     if (audioType_ == TYPE_AAC) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(),
-                                DEFAULT_AAC_TYPE);
+            DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
+            OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType_ == TYPE_AMRNB || audioType_ == TYPE_G711MU || audioType_ == TYPE_OPUS) {
         channelCount = CHANNEL_COUNT1;
         sampleRate = AMRNB_SAMPLE_RATE;
@@ -572,15 +557,12 @@ void ADecDemoAuto::OutputFunc()
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
-
         if (!isRunning_.load()) {
             cout << "wait to stop, exit" << endl;
             break;
         }
-
         uint32_t index = signal_->outQueue_.front();
         OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();
-
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "decode eos" << endl;
             isRunning_.store(false);

@@ -133,7 +133,7 @@ void AEncDemoAuto::HandleEOS(const uint32_t& index)
     OH_AVErrCode ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
     std::cout << "HandleEOS ->" << ret <<endl;
     signal_->inBufferQueue_.pop();
-    signal_->inQueue_.pop();    
+    signal_->inQueue_.pop();
 }
 
 OH_AVCodec* AEncDemoAuto::CreateByMime(const char* mime)
@@ -161,22 +161,6 @@ OH_AVErrCode AEncDemoAuto::SetCallback(OH_AVCodec* codec)
 {
     cb_ = { &OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable };
     return OH_AudioEncoder_SetCallback(codec, cb_, signal_);
-}
-
-OH_AVErrCode AEncDemoAuto::Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity)
-{
-    if (format == nullptr) {
-        return OH_AudioEncoder_Configure(codec, format);
-    }
-    format_ = format;
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitRate);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, sampleBit);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, complexity);
-    OH_AVErrCode ret = OH_AudioEncoder_Configure(codec, format);
-    return ret;
 }
 
 OH_AVErrCode AEncDemoAuto::Prepare(OH_AVCodec* codec)
@@ -244,14 +228,14 @@ OH_AVErrCode AEncDemoAuto::IsValid(OH_AVCodec* codec, bool* isValid)
 
 uint32_t AEncDemoAuto::GetInputIndex()
 {
-    int32_t sleep_time = 0;
+    int32_t sleepTime = 0;
     uint32_t index;
-    while (signal_->inQueue_.empty() && sleep_time < 5)
-    {
+    int32_t condTime = 5;
+    while (signal_->inQueue_.empty() && sleepTime < condTime) {
         sleep(1);
-        sleep_time++;
+        sleepTime++;
     }
-    if (sleep_time >= 5) {
+    if (sleepTime >= condTime) {
         return 0;
     } else {
         index = signal_->inQueue_.front();
@@ -262,14 +246,14 @@ uint32_t AEncDemoAuto::GetInputIndex()
 
 uint32_t AEncDemoAuto::GetOutputIndex()
 {
-    int32_t sleep_time = 0;
+    int32_t sleepTime = 0;
     uint32_t index;
-    while (signal_->outQueue_.empty() && sleep_time < 5)
-    {
+    int32_t condTime = 5;
+    while (signal_->outQueue_.empty() && sleepTime < condTime) {
         sleep(1);
-        sleep_time++;
+        sleepTime++;
     }
-    if (sleep_time >= 5) {
+    if (sleepTime >= condTime) {
         return 0;
     } else {
         index = signal_->outQueue_.front();
@@ -364,7 +348,8 @@ bool AEncDemoAuto::RunCase(const uint8_t *data, size_t size)
 }
 
 
-AEncDemoAuto::AEncDemoAuto() {
+AEncDemoAuto::AEncDemoAuto()
+{
     audioEnc_ = nullptr;
     signal_ = new AEncSignal();
     DEMO_CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: No memory");
@@ -402,7 +387,7 @@ int32_t AEncDemoAuto::CreateEnd()
 
     if (signal_ == nullptr) {
         signal_ = new AEncSignal();
-    }    
+    }
     if (signal_ == nullptr) {
         return AVCS_ERR_UNKNOWN;
     }
@@ -445,7 +430,7 @@ int32_t AEncDemoAuto::Start()
         while (!signal_->inBufferQueue_.empty()) {
             signal_->inBufferQueue_.pop();
         }
-    }   
+    }
     {
         unique_lock<mutex> lock(signal_->outMutex_);
         while (!signal_->outQueue_.empty()) {
@@ -464,7 +449,7 @@ int32_t AEncDemoAuto::Start()
 
     outputLoop_ = make_unique<thread>(&AEncDemoAuto::OutputFunc, this);
     DEMO_CHECK_AND_RETURN_RET_LOG(outputLoop_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: No memory");
-    if(audioEnc_ == nullptr){
+    if(audioEnc_ == nullptr) {
         std::cout << "audioEnc_ is nullptr " << std::endl;
     }
     int32_t ret = OH_AudioEncoder_Start(audioEnc_);
@@ -567,8 +552,7 @@ int32_t AEncDemoAuto::HandleNormalInput(const uint32_t& index, const int64_t pts
         info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
         ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
         isFirstFrame_ = false;
-    }
-    else {
+    } else {
         info.flags = AVCODEC_BUFFER_FLAGS_NONE;
         ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
     }
@@ -580,7 +564,7 @@ int32_t AEncDemoAuto::HandleNormalInput(const uint32_t& index, const int64_t pts
 
 void AEncDemoAuto::InputFunc()
 {
-    int64_t pts = 0;        
+    int64_t pts = 0;
     size_t frameBytes = 1152;
     if (audioType_ == TYPE_OPUS) {
         size_t opussize = 960;
@@ -642,7 +626,7 @@ void AEncDemoAuto::OutputFunc()
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "encode eos" << endl;
             break;
-        }   
+        }
     }
     isRunning_.store(false);
     signal_->startCond_.notify_all();
