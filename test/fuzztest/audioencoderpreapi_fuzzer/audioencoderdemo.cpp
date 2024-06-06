@@ -128,7 +128,7 @@ void AEncDemoAuto::HandleEOS(const uint32_t& index)
     info.offset = 0;
     info.pts = 0;
     info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    OH_AVErrCode ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
+    OH_AudioEncoder_PushInputData(audioEnc_, index, info);
     signal_->inBufferQueue_.pop();
     signal_->inQueue_.pop();
 }
