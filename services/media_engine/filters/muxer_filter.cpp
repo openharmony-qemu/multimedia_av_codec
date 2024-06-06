@@ -301,7 +301,8 @@ void MuxerFilter::SetFaultEvent(const std::string &errMsg)
 
 const std::string &MuxerFilter::GetContainerFormat(Plugins::OutputFormat format)
 {
-    FALSE_RETURN_V_MSG_E(FORMAT_TABLE.find(format) != FORMAT_TABLE.end(), "",
+    static std::string emptyFormat = "";
+    FALSE_RETURN_V_MSG_E(FORMAT_TABLE.find(format) != FORMAT_TABLE.end(), emptyFormat,
         "The output format %{public}d is not supported!", format);
     return FORMAT_TABLE.at(format);
 }
