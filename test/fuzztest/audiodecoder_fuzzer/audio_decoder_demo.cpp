@@ -382,18 +382,18 @@ void ADecBufferDemo::HandleInputEOS(const uint32_t index)
 
 void ADecBufferDemo::InputFunc()
 {
-    size_t gmusize = 320;
-    size_t lbvcsize = 640;
-    size_t aacsize = 1024;
-    size_t opussize = 960;
     size_t frameBytes = 1152;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
+		size_t opussize = 960;
         frameBytes = opussize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
+		size_t gmusize = 320;
         frameBytes = gmusize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
+		size_t lbvcsize = 640;
         frameBytes = lbvcsize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
+		size_t aacsize = 1024;
         frameBytes = aacsize;
     }
     size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
