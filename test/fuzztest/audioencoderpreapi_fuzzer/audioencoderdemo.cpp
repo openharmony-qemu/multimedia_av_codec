@@ -331,7 +331,6 @@ bool AEncDemoAuto::RunCase(const uint8_t *data, size_t size)
         sampleRate = SAMPLE_RATE_8000;
         OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BIT_RATE_64000);
     } else if (audioType_ == TYPE_FLAC) {
-        // channelCount = CHANNEL_COUNT1;
         uint64_t channelLayout = GetChannelLayout(CHANNEL_COUNT);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, channelLayout);
         OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BIT_RATE_64000);
@@ -632,7 +631,6 @@ void AEncDemoAuto::OutputFunc()
         }
         uint32_t index = signal_->outQueue_.front();
         OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();
-        // OH_AVMemory* data = signal_->outBufferQueue_.front();
 
         signal_->outBufferQueue_.pop();
         signal_->attrQueue_.pop();

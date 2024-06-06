@@ -33,7 +33,7 @@ bool AudioDecoderAACFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     // FUZZ aac
-   ADecDemoAuto* aDecBufferDemo = new ADecDemoAuto();
+    ADecDemoAuto* aDecBufferDemo = new ADecDemoAuto();
     aDecBufferDemo->InitFile("aac");
     auto res = aDecBufferDemo->RunCase(data, size);
     delete aDecBufferDemo;
@@ -46,7 +46,7 @@ bool AudioDecoderFlacFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     // FUZZ flac
-   ADecDemoAuto* aDecBufferDemo = new ADecDemoAuto();
+    ADecDemoAuto* aDecBufferDemo = new ADecDemoAuto();
     aDecBufferDemo->InitFile("flac");
     auto res = aDecBufferDemo->RunCase(data, size);
     delete aDecBufferDemo;

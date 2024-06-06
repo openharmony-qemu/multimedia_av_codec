@@ -194,14 +194,15 @@ OH_AVErrCode ADecDemoAuto::IsValid(OH_AVCodec* codec, bool* isValid)
 
 uint32_t ADecDemoAuto::GetInputIndex()
 {
-    int32_t sleep_time = 0;
+    int32_t sleepTime = 0;
     uint32_t index;
-    while (signal_->inQueue_.empty() && sleep_time < 5)
+    int32_t condTime = 5;
+    while (signal_->inQueue_.empty() && sleepTime < condTime)
     {
         sleep(1);
-        sleep_time++;
+        sleepTime++;
     }
-    if (sleep_time >= 5) {
+    if (sleepTime >= condTime) {
         return 0;
     } else {
         index = signal_->inQueue_.front();
@@ -212,14 +213,15 @@ uint32_t ADecDemoAuto::GetInputIndex()
 
 uint32_t ADecDemoAuto::GetOutputIndex()
 {
-    int32_t sleep_time = 0;
+    int32_t sleepTime = 0;
     uint32_t index;
-    while (signal_->outQueue_.empty() && sleep_time < 5)
+    int32_t condTime = 5;
+    while (signal_->outQueue_.empty() && sleepTime < condTime)
     {
         sleep(1);
-        sleep_time++;
+        sleepTime++;
     }
-    if (sleep_time >= 5) {
+    if (sleepTime >= condTime) {
         return 0;
     } else {
         index = signal_->outQueue_.front();
@@ -529,7 +531,7 @@ void ADecDemoAuto::InputFunc()
 {
     size_t gmusize = 320;
     size_t aacsize = 1024;
-    size_t opussize = 960;
+    size_t opussize = 320;
     size_t frameBytes = 1152;
     if (audioType_ == TYPE_OPUS) {
         frameBytes = opussize;
