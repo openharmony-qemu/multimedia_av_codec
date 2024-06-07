@@ -400,6 +400,18 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
         configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
     }
+    if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
+        double rate = 0.0;
+        parameter->Get<Tag::VIDEO_FRAME_RATE>(rate);
+        if (rate < 0) {
+            if (configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, rate)) {
+                MEDIA_LOG_W("rate is invalid, get frame rate from the original resource: %{public}f", rate);
+            } else {
+                rate = 0.0;
+            }
+        }
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
+    }
     // cannot set parameter when codec at [ CONFIGURED / INITIALIZED ] state
     auto ret = videoDecoder_->SetParameter(format);
     if (ret == MediaAVCodec::AVCS_ERR_INVALID_STATE) {
