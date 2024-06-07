@@ -289,7 +289,7 @@ bool ADecDemoAuto::InitFormat(OH_AVFormat *format)
 
 bool ADecDemoAuto::RunCase(const uint8_t *data, size_t size)
 {
-    std::string codecdata(reinterpret_cast<const char*> (data), size);
+    std::string codecdata(reinterpret_cast<const char*>(data), size);
     inputdata = codecdata;
     inputdatasize = size;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
