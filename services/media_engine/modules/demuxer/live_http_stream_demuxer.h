@@ -67,7 +67,6 @@ private:
     Status HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 private:
     std::map<int32_t, CacheData> cacheDataMap_;
-    uint64_t position_;
 };
 } // namespace Media
 } // namespace OHOS

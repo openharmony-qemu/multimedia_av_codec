@@ -42,7 +42,7 @@ namespace Media {
 
 const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
 const int32_t TRY_READ_TIMES = 10;
-LiveHttpStreamDemuxer::LiveHttpStreamDemuxer() : position_(0)
+LiveHttpStreamDemuxer::LiveHttpStreamDemuxer()
 {
     MEDIA_LOG_I("LiveHttpStreamDemuxer called");
 }
@@ -240,44 +240,14 @@ Status LiveHttpStreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_
 Status LiveHttpStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Plugins::Buffer>& data)
 {
-    MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU
-        ", position: " PUBLIC_LOG_U64, offset, size, position_);
+    MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU, offset, size);
     if (!source_) {
         return Status::ERROR_INVALID_OPERATION;
     }
-    Status err;
+    
     auto readSize = size;
-    if (source_->IsSeekToTimeSupported()) {
-        err = ReadRetry(streamID, offset, readSize, data);
-        FALSE_LOG_MSG(err == Status::OK, "hls, plugin read failed.");
-        return err;
-    }
-
-    uint64_t totalSize = 0;
-    if ((source_->GetSize(totalSize) == Status::OK) && (totalSize != 0)) {
-        if (offset >= totalSize) {
-            MEDIA_LOG_W("Offset: " PUBLIC_LOG_U64 " is larger than totalSize: " PUBLIC_LOG_U64, offset, totalSize);
-            return Status::END_OF_STREAM;
-        }
-        if ((offset + readSize) > totalSize) {
-            readSize = totalSize - offset;
-        }
-        if (data->GetMemory() != nullptr) {
-            auto realSize = data->GetMemory()->GetCapacity();
-            readSize = (readSize > realSize) ? realSize : readSize;
-        }
-        MEDIA_LOG_DD("TotalSize_: " PUBLIC_LOG_U64, totalSize);
-    }
-    if (position_ != offset) {
-        err = source_->SeekTo(offset);
-        FALSE_RETURN_V_MSG_E(err == Status::OK, err, "Seek to " PUBLIC_LOG_U64 " fail", offset);
-        position_ = offset;
-    }
-
-    err = ReadRetry(streamID, offset, readSize, data);
-    if (err == Status::OK) {
-        position_ += data->GetMemory()->GetSize();
-    }
+    Status err = ReadRetry(streamID, offset, readSize, data);
+    FALSE_LOG_MSG(err == Status::OK, "hls, plugin read failed.");
     return err;
 }
 
