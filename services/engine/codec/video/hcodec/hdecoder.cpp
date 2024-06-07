@@ -31,6 +31,11 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V3_0;
 
+HDecoder::~HDecoder()
+{
+    MsgHandleLoop::Stop();
+}
+
 int32_t HDecoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
@@ -269,6 +274,18 @@ int32_t HDecoder::OnSetParameters(const Format &format)
     ret = SaveScaleMode(format, true);
     if (ret != AVCS_ERR_OK) {
         return ret;
+    }
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    if (frameRate.has_value()) {
+        OMX_PARAM_U32TYPE framerateCfgType;
+        InitOMXParam(framerateCfgType);
+        framerateCfgType.nPortIndex = OMX_DirInput;
+        framerateCfgType.nU32 = frameRate.value() * FRAME_RATE_COEFFICIENT;
+        if (SetParameter(OMX_IndexCodecExtConfigOperatingRate, framerateCfgType, true)) {
+            HLOGI("succ to set frameRate %.f", frameRate.value());
+        } else {
+            HLOGW("succ to set frameRate %.f", frameRate.value());
+        }
     }
     return AVCS_ERR_OK;
 }
