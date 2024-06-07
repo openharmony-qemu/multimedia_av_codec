@@ -39,10 +39,10 @@
 namespace OHOS {
 namespace Media {
 
-class LiveStreamDemuxer : public BaseStreamDemuxer {
+class LiveDataSourceStreamDemuxer : public BaseStreamDemuxer {
 public:
-    explicit LiveStreamDemuxer();
-    ~LiveStreamDemuxer() override;
+    explicit LiveDataSourceStreamDemuxer();
+    ~LiveDataSourceStreamDemuxer() override;
 
     Status Init(std::string uri) override;
     Status Reset() override;

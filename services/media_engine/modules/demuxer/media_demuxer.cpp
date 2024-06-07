@@ -36,8 +36,9 @@
 #include "plugin/plugin_manager.h"
 #include "plugin/plugin_buffer.h"
 #include "source/source.h"
-#include "live_stream_demuxer.h"
+#include "live_datasource_stream_demuxer.h"
 #include "vod_stream_demuxer.h"
+#include "live_http_stream_demuxer.h"
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
@@ -410,8 +411,10 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
         Flush();
         streamDemuxer_ = std::make_shared<VodStreamDemuxer>();
+    } else if (source_->IsNeedPreDownload() && source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
+        streamDemuxer_ = std::make_shared<LiveDataSourceStreamDemuxer>();
     } else {
-        streamDemuxer_ = std::make_shared<LiveStreamDemuxer>();
+        streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
     }
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);

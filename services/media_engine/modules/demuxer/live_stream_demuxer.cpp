@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#define HST_LOG_TAG "LiveStreamDemuxer"
+#define HST_LOG_TAG "LiveDataSourceStreamDemuxer"
 
-#include "live_stream_demuxer.h"
+#include "live_datasource_stream_demuxer.h"
 
 #include <algorithm>
 #include <map>
@@ -41,25 +41,25 @@ namespace OHOS {
 namespace Media {
 constexpr size_t DEFAULT_READ_SIZE = 4096;
 const int32_t READ_LOOP_RETRY_TIMES = 15;
-LiveStreamDemuxer::LiveStreamDemuxer()
+LiveDataSourceStreamDemuxer::LiveDataSourceStreamDemuxer()
     : dataPacker_(std::make_shared<DataPacker>()),
     taskPtr_(nullptr),
     mediaOffset_(0)
 
 {
-    MEDIA_LOG_I("LiveStreamDemuxer called");
+    MEDIA_LOG_I("LiveDataSourceStreamDemuxer called");
     dataPacker_->Start();
 }
 
-LiveStreamDemuxer::~LiveStreamDemuxer()
+LiveDataSourceStreamDemuxer::~LiveDataSourceStreamDemuxer()
 {
-    MEDIA_LOG_I("~LiveStreamDemuxer called");
+    MEDIA_LOG_I("~LiveDataSourceStreamDemuxer called");
     Stop();
     dataPacker_ = nullptr;
     taskPtr_ = nullptr;
 }
 
-Status LiveStreamDemuxer::Init(std::string uri)
+Status LiveDataSourceStreamDemuxer::Init(std::string uri)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {
@@ -72,8 +72,8 @@ Status LiveStreamDemuxer::Init(std::string uri)
     MEDIA_LOG_I("Init task start");
     taskPtr_->Start();
 
-    MediaAVCodec::AVCodecTrace trace("LiveStreamDemuxer::Init");
-    MEDIA_LOG_I("LiveStreamDemuxer::Init called");
+    MediaAVCodec::AVCodecTrace trace("LiveDataSourceStreamDemuxer::Init");
+    MEDIA_LOG_I("LiveDataSourceStreamDemuxer::Init called");
     checkRange_ = [this](int32_t streamID, uint64_t offset, uint32_t size) {
         (void)streamID;
         return !dataPacker_->IsEmpty(); // True if there is some data
@@ -92,7 +92,7 @@ Status LiveStreamDemuxer::Init(std::string uri)
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset)
+Status LiveDataSourceStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset)
 {
     if (buffer->flag & BUFFER_FLAG_EOS) {
         dataPacker_->SetEos();
@@ -102,7 +102,7 @@ Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uin
     return Status::OK;
 }
 
-void LiveStreamDemuxer::ReadLoop()
+void LiveDataSourceStreamDemuxer::ReadLoop()
 {
     std::shared_ptr<Plugins::Buffer> data = std::make_shared<Plugins::Buffer>();
     Status err = source_->Read(-1, data, -1, DEFAULT_READ_SIZE);
@@ -150,12 +150,12 @@ void LiveStreamDemuxer::ReadLoop()
     mediaOffset_ += static_cast<int64_t>(size);
 }
 
-Status LiveStreamDemuxer::Reset()
+Status LiveDataSourceStreamDemuxer::Reset()
 {
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::Start()
+Status LiveDataSourceStreamDemuxer::Start()
 {
     if (dataPacker_) {
         dataPacker_->Start();
@@ -163,7 +163,7 @@ Status LiveStreamDemuxer::Start()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::Pause()
+Status LiveDataSourceStreamDemuxer::Pause()
 {
     MEDIA_LOG_I("Pause entered.");
     if (dataPacker_) {
@@ -177,7 +177,7 @@ Status LiveStreamDemuxer::Pause()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::Resume()
+Status LiveDataSourceStreamDemuxer::Resume()
 {
     MEDIA_LOG_I("Resume entered.");
     if (dataPacker_) {
@@ -190,7 +190,7 @@ Status LiveStreamDemuxer::Resume()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::Stop()
+Status LiveDataSourceStreamDemuxer::Stop()
 {
     MEDIA_LOG_I("Stop entered.");
     if (dataPacker_) {
@@ -203,7 +203,7 @@ Status LiveStreamDemuxer::Stop()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::Flush()
+Status LiveDataSourceStreamDemuxer::Flush()
 {
     MEDIA_LOG_I("Flush entered.");
     if (dataPacker_) {
@@ -212,17 +212,17 @@ Status LiveStreamDemuxer::Flush()
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::ResetCache(int32_t streamID)
+Status LiveDataSourceStreamDemuxer::ResetCache(int32_t streamID)
 {
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::ResetAllCache()
+Status LiveDataSourceStreamDemuxer::ResetAllCache()
 {
     return Status::OK;
 }
 
-Status LiveStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+Status LiveDataSourceStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
     switch (pluginStateMap_[streamID]) {
