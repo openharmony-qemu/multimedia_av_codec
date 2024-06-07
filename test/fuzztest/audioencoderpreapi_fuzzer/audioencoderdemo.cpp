@@ -292,7 +292,7 @@ bool AEncDemoAuto::InitFile(string inputFile)
 
 bool AEncDemoAuto::RunCase(const uint8_t *data, size_t size)
 {
-    std::string codecdata(reinterpret_cast<const char*> (data), size);
+    std::string codecdata(reinterpret_cast<const char*>(data), size);
     inputdata = codecdata;
     inputdatasize = size;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnd() == AVCS_ERR_OK, false, "Fatal: CreateEnd fail");
