@@ -323,7 +323,7 @@ protected:
     sptr<OHOS::HDI::Codec::V3_0::ICodecComponentManager> compMgr_ = nullptr;
 
     std::shared_ptr<MediaCodecCallback> callback_;
-    PixelFmt configuredFmt_;
+    PixelFmt configuredFmt_{};
     BufferRequestConfig requestCfg_{};
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
