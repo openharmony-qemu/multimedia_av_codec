@@ -239,13 +239,15 @@ bool HlsMediaDownloader::CheckReadTimeOut()
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
+    FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
     if (CheckReadStatus()) {
         readDataInfo.isEos_ = true;
         readDataInfo.realReadLength_ = 0;
         return Status::END_OF_STREAM;
     }
     readTime_ = 0;
-    while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
+    FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
+    while (buffer_->GetSize() < readDataInfo.wantReadLength_) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
                                downloadRequest_->IsEos()) || isStopped;
         if (downloadRequest_ != nullptr) {
