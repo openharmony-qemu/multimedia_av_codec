@@ -46,7 +46,7 @@ int32_t DataProducerBase::Init(SampleInfo &info)
 
 int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
 {
-    if ((frameCount_ >= sampleInfo_.maxFrames) || (IsEOS() && !Repeat())) {
+    if ((frameCount_ >= sampleInfo_.maxFrames || IsEOS()) && !Repeat()) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
@@ -55,7 +55,7 @@ int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Fill buffer failed");
 
     frameCount_++;
-    PrintProgress(sampleInfo_.repeatTimes, frameCount_);
+    PrintProgress(sampleInfo_.sampleRepeatTimes, frameCount_);
     return ret;
 }
 
@@ -70,13 +70,15 @@ inline int32_t DataProducerBase::Seek(int64_t position)
 
 bool DataProducerBase::Repeat()
 {
-    if (--sampleInfo_.repeatTimes <= 0) {
+    if (--sampleInfo_.sampleRepeatTimes < 0) {
         return false;
     }
 
+    frameCount_ = 0;
+
     int32_t ret = Seek(0);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, false, "Seek failed");
-    AVCODEC_LOGI("Seek input file to head, repeat times left: %{public}u", sampleInfo_.repeatTimes);
+    AVCODEC_LOGI("Seek input file to head, repeat times left: %{public}u", sampleInfo_.sampleRepeatTimes);
     return true;
 }
 

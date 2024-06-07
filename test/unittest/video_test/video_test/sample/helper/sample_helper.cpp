@@ -83,7 +83,7 @@ void PrintSampleInfo(const SampleInfo &info)
     deviceSampleRunTimes++;
     (void)system::SetParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), std::to_string(deviceSampleRunTimes));
 
-    PrintProgress(info.repeatTimes, 0);
+    PrintProgress(info.sampleRepeatTimes, 0);
 
     AVCODEC_LOGI("This device has run %{public}d times.", deviceSampleRunTimes);
     AVCODEC_LOGI("====== Video sample config ======");
@@ -100,9 +100,19 @@ void PrintSampleInfo(const SampleInfo &info)
     AVCODEC_LOGI("====== Video sample config ======");
 }
 
+void ShowCmdCursor()
+{
+    std::cout << "\033[?25h";
+}
+
+void HideCmdCursor()
+{
+    std::cout << "\033[?25l";
+}
+
 void PrintProgress(int32_t times, int32_t frames)
 {
-    std::cout << "\r" << "Repeat times left: " << times << ", frames: " << frames << std::flush;
+    std::cout << "\r\033[K" << "Repeat times left: " << times << ", frames: " << frames << std::flush;
 }
 } // Sample
 } // MediaAVCodec

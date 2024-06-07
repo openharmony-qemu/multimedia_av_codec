@@ -24,6 +24,8 @@ namespace Sample {
 std::string ToString(OH_AVPixelFormat pixelFormat);
 int32_t RunSample(const SampleInfo &sampleInfo);
 void PrintSampleInfo(const SampleInfo &info);
+void ShowCmdCursor();
+void HideCmdCursor();
 void PrintProgress(int32_t times, int32_t frames);
 } // Sample
 } // MediaAVCodec
