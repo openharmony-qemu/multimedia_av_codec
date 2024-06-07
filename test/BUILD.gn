@@ -100,8 +100,10 @@ group("av_codec_fuzz_test") {
     deps += [
       "fuzztest/audiodecoder_fuzzer:AudioDecoderFuzzTest",
       "fuzztest/audiodecoderconfigure_fuzzer:AudiodecoderConfigureFuzzTest",
+      "fuzztest/audiodecoderpreapi_fuzzer:AudioDecoderpreapiFuzzTest",
       "fuzztest/audiodecodersetparameter_fuzzer:AudiodecoderSetParameterFuzzTest",
       "fuzztest/audioencoder_fuzzer:AudioencoderFuzzTest",
+      "fuzztest/audioencoderpreapi_fuzzer:AudioencoderpreapiFuzzTest",
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
