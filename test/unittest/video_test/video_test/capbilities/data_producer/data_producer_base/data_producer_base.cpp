@@ -14,6 +14,7 @@
  */
 
 #include "data_producer_base.h"
+#include "sample_helper.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 
@@ -41,6 +42,21 @@ int32_t DataProducerBase::Init(SampleInfo &info)
     CHECK_AND_RETURN_RET_LOG(inputFile_->is_open(), AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
 
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
+{
+    if ((frameCount_ >= sampleInfo_.maxFrames) || (IsEOS() && !Repeat())) {
+        bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        return AVCODEC_SAMPLE_ERR_OK;
+    }
+
+    int32_t ret = FillBuffer(bufferInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Fill buffer failed");
+
+    frameCount_++;
+    PrintProgress(sampleInfo_.repeatTimes, frameCount_);
+    return ret;
 }
 
 inline int32_t DataProducerBase::Seek(int64_t position)

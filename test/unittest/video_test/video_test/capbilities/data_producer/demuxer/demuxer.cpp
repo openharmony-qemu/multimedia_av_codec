@@ -49,13 +49,8 @@ int32_t Demuxer::Init(SampleInfo &info)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t Demuxer::ReadSample(CodecBufferInfo &bufferInfo)
+int32_t Demuxer::FillBuffer(CodecBufferInfo &bufferInfo)
 {
-    if ((frameCount_ >= sampleInfo_.maxFrames) || (feof(file_) && !Repeat())) {
-        bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
-
     int32_t ret = 0;
     if (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10) {  // ob10: AVBuffer mode mask
         ret = OH_AVDemuxer_ReadSampleBuffer(demuxer_, videoTrackId_,
@@ -66,7 +61,6 @@ int32_t Demuxer::ReadSample(CodecBufferInfo &bufferInfo)
             reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer), &bufferInfo.attr);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Read sample failed");
-    frameCount_++;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -135,6 +129,11 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
     OH_AVFormat_GetLongValue(sourceFormat.get(), OH_MD_KEY_DURATION, &info.videoDuration);
 
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+bool Demuxer::IsEOS()
+{
+    return feof(file_);
 }
 } // Sample
 } // MediaAVCodec

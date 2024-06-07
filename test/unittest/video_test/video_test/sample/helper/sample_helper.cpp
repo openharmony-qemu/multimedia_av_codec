@@ -14,6 +14,7 @@
  */
 
 #include "sample_helper.h"
+#include <iostream>
 #include <unordered_map>
 #include "video_sample_base.h"
 #include "av_codec_sample_log.h"
@@ -82,6 +83,8 @@ void PrintSampleInfo(const SampleInfo &info)
     deviceSampleRunTimes++;
     (void)system::SetParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), std::to_string(deviceSampleRunTimes));
 
+    PrintProgress(info.repeatTimes, 0);
+
     AVCODEC_LOGI("This device has run %{public}d times.", deviceSampleRunTimes);
     AVCODEC_LOGI("====== Video sample config ======");
     AVCODEC_LOGI("codec type: %{public}s, codec run mode: %{public}s, max frames: %{public}u",
@@ -95,6 +98,11 @@ void PrintSampleInfo(const SampleInfo &info)
     AVCODEC_LOGI("interval: %{public}dms, HDR vivid: %{public}s, dump output: %{public}s",
         info.frameInterval, BOOL_TO_STRING.at(info.isHDRVivid).c_str(), BOOL_TO_STRING.at(info.needDumpOutput).c_str());
     AVCODEC_LOGI("====== Video sample config ======");
+}
+
+void PrintProgress(int32_t times, int32_t frames)
+{
+    std::cout << "\r" << "Repeat times left: " << times << ", frames: " << frames << std::flush;
 }
 } // Sample
 } // MediaAVCodec

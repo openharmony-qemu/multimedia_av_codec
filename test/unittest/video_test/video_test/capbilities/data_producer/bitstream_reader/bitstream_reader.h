@@ -23,10 +23,10 @@ namespace Sample {
 class BitstreamReader : public DataProducerBase {
 public:
     explicit BitstreamReader(BitstreamType &type);
-    int32_t ReadSample(CodecBufferInfo &bufferInfo) override;
 
 private:
     BitstreamReader() {}
+    int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
     int32_t ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize);
     int32_t ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize);
     void PrereadFile();
@@ -35,6 +35,7 @@ private:
     uint8_t GetNaluType(const uint8_t *const bufferAddr);
     bool IsCodecData(uint8_t naluType);
     bool IsIDR(uint8_t naluType);
+    bool IsEOS() override;
 
     BitstreamType bitstreamType_;
     std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;

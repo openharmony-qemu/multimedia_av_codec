@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
     }
 
     int ret = RunSample(info);
+    std::cout << std::endl;
     if (ret != AVCODEC_SAMPLE_ERR_OK) {
         std::cout << "Demo run failed!" << std::endl;
         return 1;
