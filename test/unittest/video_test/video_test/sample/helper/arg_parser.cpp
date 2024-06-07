@@ -148,6 +148,9 @@ inline void ShowHelp(SampleInfo &info, const char * const value)
 inline void SetCodecType(SampleInfo &info, const char * const value)
 {
     info.codecType = static_cast<CodecType>(std::stol(value));
+    if (info.codecType == 0b10) { // 0b10: Encoder
+        info.dataProducerInfo.dataProducerType = DATA_PRODUCER_TYPE_RAW_DATA_READER;
+    }
 }
 
 inline void SetInputFilePath(SampleInfo &info, const char * const value)
