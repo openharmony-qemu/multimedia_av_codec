@@ -36,7 +36,7 @@ namespace Media {
 namespace Plugins {
 namespace FileFdSource {
 namespace {
-constexpr size_t SAVE_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr size_t SAVE_BUFFER_SIZE = 40 * 1024 * 1024;
 constexpr int32_t ONE_THOUSAND_MICROSECOUNDS = 1000;
 constexpr int32_t TEN_THOUSAND_MICROSECOUNDS = 10 * 1000;
 constexpr int32_t ONE_MILLION_MICROSECOUNDS = 1 * 1000 * 1000;
