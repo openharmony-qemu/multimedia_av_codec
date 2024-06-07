@@ -209,7 +209,6 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                         OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
     }
 
-    AVCODEC_LOGI("Buffer addr: %{public}p", bufferAddr);
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }
