@@ -21,7 +21,6 @@
 
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
-#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
 
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
@@ -36,6 +35,14 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+VideoDecoderSample::~VideoDecoderSample()
+{
+    if (rosenWindow_) {
+        rosenWindow_->Destroy();
+        rosenWindow_ = nullptr;
+    }
+}
+
 int32_t VideoDecoderSample::Init()
 {
     if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
@@ -130,13 +137,13 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
-        sptr<Rosen::Window> rosenWindow = Rosen::Window::Create("VideoCodecDemo", option);
-        CHECK_AND_RETURN_RET_LOG(rosenWindow != nullptr && rosenWindow->GetSurfaceNode() != nullptr,
+        rosenWindow_ = Rosen::Window::Create("VideoCodecDemo", option);
+        CHECK_AND_RETURN_RET_LOG(rosenWindow_ != nullptr && rosenWindow_->GetSurfaceNode() != nullptr,
             AVCODEC_SAMPLE_ERR_ERROR, "Create display window failed");
-        rosenWindow->SetTurnScreenOn(!rosenWindow->IsTurnScreenOn());
-        rosenWindow->SetKeepScreenOn(true);
-        rosenWindow->Show();
-        surfaceConsumer_ = rosenWindow->GetSurfaceNode()->GetSurface();
+        rosenWindow_->SetTurnScreenOn(!rosenWindow_->IsTurnScreenOn());
+        rosenWindow_->SetKeepScreenOn(true);
+        rosenWindow_->Show();
+        surfaceConsumer_ = rosenWindow_->GetSurfaceNode()->GetSurface();
         window = CreateNativeWindowFromSurface(&surfaceConsumer_);
     }
 
@@ -146,8 +153,10 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 void VideoDecoderSample::OnBufferAvailable()
 {
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+    int64_t timestamp = 0;
+    OHOS::Rect damage = {};
     int32_t flushFence;
-    surfaceConsumer_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
+    surfaceConsumer_->AcquireBuffer(buffer, flushFence, timestamp, damage);
 
     if (sampleInfo_.needDumpOutput) {
         CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
