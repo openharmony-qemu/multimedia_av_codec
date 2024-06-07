@@ -66,7 +66,8 @@ bool LiveHttpStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, s
     return Status::OK == ret;
 }
 
-bool LiveHttpStreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+bool LiveHttpStreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         MEDIA_LOG_I("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
@@ -81,7 +82,8 @@ bool LiveHttpStreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size
     return false;
 }
 
-bool LiveHttpStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+bool LiveHttpStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     if (bufferPtr == nullptr) {
         MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
