@@ -647,7 +647,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
-    int ret = 0;
+    int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     if (ioContext && ioContext->dataSource) {
