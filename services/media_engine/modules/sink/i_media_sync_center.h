@@ -90,6 +90,8 @@ struct IMediaSyncCenter {
     virtual Status SetPlaybackRate(float rate) = 0;
 
     virtual float GetPlaybackRate() = 0;
+
+    virtual void SetMediaStartPts(int64_t startPts) = 0;
 };
 } // namespace Pipeline
 } // namespace Media

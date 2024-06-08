@@ -376,10 +376,16 @@ int64_t MediaSyncManager::GetMediaTimeNow()
         if (pausedAbsMediaTime_ == HST_TIME_NONE) {
             return 0;
         }
+        if (startPts_ != HST_TIME_NONE) {
+            return pausedAbsMediaTime_ - startPts_;
+        }
         return pausedAbsMediaTime_;
     }
     MEDIA_LOG_D("GetMediaTimeNow, currentAbsMediaTime_: %{public}" PRId64 ", pausedAbsMediaTime_: %{public}" PRId64,
         currentAbsMediaTime_, pausedAbsMediaTime_);
+    if (startPts_ != HST_TIME_NONE) {
+        return currentAbsMediaTime_ - startPts_;
+    }
     return currentAbsMediaTime_;
 }
 
@@ -450,6 +456,11 @@ int64_t MediaSyncManager::GetSeekTime()
 bool MediaSyncManager::InSeeking()
 {
     return isSeeking_;
+}
+
+void MediaSyncManager::SetMediaStartPts(int64_t startPts)
+{
+    startPts_ = startPts;
 }
 } // namespace Pipeline
 } // namespace Media
