@@ -28,7 +28,6 @@ class Demuxer : public DataProducerBase {
 public:
     int32_t Init(SampleInfo &info) override;
     int32_t Seek(int64_t position)override;
-    int32_t Release() override;
 
 private:
     int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
@@ -36,9 +35,9 @@ private:
     int32_t GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, SampleInfo &info);
     bool IsEOS() override;
 
-    OH_AVSource *source_ = nullptr;
-    OH_AVDemuxer *demuxer_ = nullptr;
-    FILE *file_ = nullptr;
+    std::shared_ptr<FILE> file_ = nullptr;
+    std::shared_ptr<OH_AVSource> source_ = nullptr;
+    std::shared_ptr<OH_AVDemuxer> demuxer_ = nullptr;
     int32_t fileFd_ = -1;
     int64_t fileSize_ = -1;
     int32_t videoTrackId_ = -1;

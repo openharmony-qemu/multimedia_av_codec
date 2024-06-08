@@ -35,7 +35,7 @@ public:
     virtual int32_t Release() = 0;
 
 protected:
-    OH_AVCodec *codec_;
+    std::shared_ptr<OH_AVCodec> codec_ = nullptr;
     CodecRunMode runMode_ = SURFACE_ORIGIN;
 };
 

@@ -54,7 +54,7 @@ protected:
 
     std::mutex mutex_;
     SampleInfo sampleInfo_;
-    CodecUserData *context_ = nullptr;
+    std::shared_ptr<CodecUserData> context_ = nullptr;
     std::condition_variable doneCond_;
 };
 

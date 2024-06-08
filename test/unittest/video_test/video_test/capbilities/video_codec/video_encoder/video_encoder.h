@@ -35,7 +35,6 @@ public:
     int32_t Reset() override;
     int32_t PushInputData(CodecBufferInfo &info) override;
     int32_t FreeOutputData(uint32_t bufferIndex) override;
-    int32_t Release() override;
 
 private:
     int32_t NotifyEndOfStream();

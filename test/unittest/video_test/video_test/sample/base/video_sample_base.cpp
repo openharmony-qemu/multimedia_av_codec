@@ -64,7 +64,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = videoCodec_->Create(sampleInfo_.codecMime);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
-    context_ = new CodecUserData;
+    context_ = std::make_shared<CodecUserData>();
     context_->sampleInfo = &sampleInfo_;
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
@@ -73,7 +73,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     }
     PrintSampleInfo(sampleInfo_);
     
-    ret = videoCodec_->Config(sampleInfo_, context_);
+    ret = videoCodec_->Config(sampleInfo_, context_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder config failed");
 
     releaseThread_ = nullptr;
@@ -118,15 +118,12 @@ int32_t VideoSampleBase::StartThread()
 
 void VideoSampleBase::Release()
 {
-        std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     if (inputThread_ && inputThread_->joinable()) {
         inputThread_->join();
     }
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
-    }
-    if (videoCodec_ != nullptr) {
-        videoCodec_->Release();
     }
     inputThread_.reset();
     outputThread_.reset();
@@ -136,16 +133,10 @@ void VideoSampleBase::Release()
         OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
         sampleInfo_.window = nullptr;
     }
-    if (context_ != nullptr) {
-        delete context_;
-        context_ = nullptr;
-    }
-    if (dataProducer_ != nullptr) {
-        dataProducer_.reset();
-    }
-    if (outputFile_ != nullptr) {
-        outputFile_.reset();
-    }
+
+    context_.reset();
+    dataProducer_.reset();
+    outputFile_.reset();
 
     AVCODEC_LOGI("Succeed");
     doneCond_.notify_all();

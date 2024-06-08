@@ -42,10 +42,7 @@ constexpr uint8_t HEVC_NAL_SEI_SUFFIX = 40;
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-BitstreamReader::BitstreamReader(BitstreamType &type)
-{
-    bitstreamType_ = type;
-}
+BitstreamReader::BitstreamReader(BitstreamType &type) : bitstreamType_(type) {}
 
 int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
 {
@@ -113,7 +110,6 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         CHECK_AND_RETURN_RET_LOG(prereadBufferSize_ > 0, AVCODEC_SAMPLE_ERR_ERROR, "Empty file, nothing to read");
     }
 
-    bool keepRead = true;
     auto pBuffer = bufferAddr;
     do {
         auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + (bufferSize > 0 ? 0 : ANNEXB_FRAME_HEAD_LEN),
@@ -139,7 +135,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
             pBuffer -= ANNEXB_FRAME_HEAD_LEN;
             pPrereadBuffer_ = 0;
         }
-    } while (keepRead);
+    } while (true);
     if (prereadBuffer_.get()[pPrereadBuffer_ - 1] == 0) {
         bufferSize--;
         pPrereadBuffer_--;

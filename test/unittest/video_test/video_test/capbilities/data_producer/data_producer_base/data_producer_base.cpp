@@ -29,11 +29,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "DataP
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-DataProducerBase::~DataProducerBase()
-{
-    Release();
-}
-
 int32_t DataProducerBase::Init(SampleInfo &info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -82,17 +77,7 @@ bool DataProducerBase::Repeat()
     return true;
 }
 
-int32_t DataProducerBase::Release()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (inputFile_ != nullptr && inputFile_->is_open()) {
-        inputFile_->close();
-    }
-    inputFile_ = nullptr;
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(DataProducerInfo info)
+std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const DataProducerInfo &info)
 {
     std::shared_ptr<DataProducerBase> dataProducer;
     switch (info.dataProducerType) {

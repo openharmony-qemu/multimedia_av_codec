@@ -52,13 +52,13 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
 
 VideoEncoder::~VideoEncoder()
 {
-    Release();
+    InnerRelease();
 }
 
 int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
 {
     (void)isSoftware;
-    codec_ = OH_VideoEncoder_CreateByMime(codecMime.data());
+    codec_ = std::shared_ptr<OH_AVCodec>(OH_VideoEncoder_CreateByMime(codecMime.data()), OH_VideoEncoder_Destroy);
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -82,7 +82,7 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserDat
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed");
 
     // Prepare video encoder
-    ret = OH_VideoEncoder_Prepare(codec_);
+    ret = OH_VideoEncoder_Prepare(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
 
     return AVCODEC_SAMPLE_ERR_OK;
@@ -92,7 +92,7 @@ int32_t VideoEncoder::Start()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
 
-    int ret = OH_VideoEncoder_Start(codec_);
+    int ret = OH_VideoEncoder_Start(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -101,7 +101,7 @@ int32_t VideoEncoder::Flush()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
 
-    int ret = OH_VideoEncoder_Flush(codec_);
+    int ret = OH_VideoEncoder_Flush(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Flush failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -110,7 +110,7 @@ int32_t VideoEncoder::Stop()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
 
-    int32_t ret = OH_VideoEncoder_Stop(codec_);
+    int32_t ret = OH_VideoEncoder_Stop(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Stop failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -119,7 +119,7 @@ int32_t VideoEncoder::Reset()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
 
-    int32_t ret = OH_VideoEncoder_Reset(codec_);
+    int32_t ret = OH_VideoEncoder_Reset(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Reset failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -138,9 +138,9 @@ int32_t VideoEncoder::PushInputData(CodecBufferInfo &info)
     if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
         ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
-        ret = OH_VideoEncoder_PushInputBuffer(codec_, info.bufferIndex);
+        ret = OH_VideoEncoder_PushInputBuffer(codec_.get(), info.bufferIndex);
     } else {
-        ret = OH_VideoEncoder_PushInputData(codec_, info.bufferIndex, info.attr);
+        ret = OH_VideoEncoder_PushInputData(codec_.get(), info.bufferIndex, info.attr);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
     return AVCODEC_SAMPLE_ERR_OK;
@@ -152,21 +152,12 @@ int32_t VideoEncoder::FreeOutputData(uint32_t bufferIndex)
 
     int32_t ret = AV_ERR_OK;
     if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoEncoder_FreeOutputBuffer(codec_, bufferIndex);
+        ret = OH_VideoEncoder_FreeOutputBuffer(codec_.get(), bufferIndex);
     } else {
-        ret = OH_VideoEncoder_FreeOutputData(codec_, bufferIndex);
+        ret = OH_VideoEncoder_FreeOutputData(codec_.get(), bufferIndex);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Free output data failed, ret: %{public}d", ret);
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoder::Release()
-{
-    if (codec_ != nullptr) {
-        OH_VideoEncoder_Destroy(codec_);
-        codec_ = nullptr;
-    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
