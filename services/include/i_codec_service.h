@@ -106,7 +106,7 @@ public:
     {
         return;
     }
-    virtual bool GetStatus()
+    virtual bool CheckRunning()
     {
         return false;
     }
