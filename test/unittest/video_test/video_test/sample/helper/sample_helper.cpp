@@ -120,12 +120,12 @@ void PrintSampleInfo(const SampleInfo &info)
 
 void ShowCmdCursor()
 {
-    std::cout << "\033[?25h";
+    std::cout << "\033[?25h" << std::flush;
 }
 
 void HideCmdCursor()
 {
-    std::cout << "\033[?25l";
+    std::cout << "\033[?25l" << std::flush;
 }
 
 void PrintProgress(int32_t times, int32_t frames)
