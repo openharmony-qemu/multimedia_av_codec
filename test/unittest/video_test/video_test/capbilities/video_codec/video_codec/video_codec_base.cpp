@@ -15,6 +15,7 @@
 
 #include "video_codec_base.h"
 #include "av_codec_sample_log.h"
+#include "native_avcapability.h"
 
 #include "video_decoder.h"
 #include "video_encoder.h"
@@ -41,6 +42,13 @@ std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoCodec(CodecType ty
             AVCODEC_LOGW("Not supported codec type");
     }
     return codec;
+}
+
+std::string VideoCodecBase::GetCodecName(const std::string &codecMime, bool isEncoder, bool isSoftware)
+{
+    auto capability = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), isEncoder,
+        isSoftware ? OH_AVCodecCategory::SOFTWARE : OH_AVCodecCategory::HARDWARE);
+    return OH_AVCapability_GetName(capability);
 }
 } // Sample
 } // MediaAVCodec

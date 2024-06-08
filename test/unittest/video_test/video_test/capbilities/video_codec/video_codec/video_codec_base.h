@@ -34,6 +34,8 @@ public:
     virtual int32_t FreeOutputData(uint32_t bufferIndex) = 0;
 
 protected:
+    std::string GetCodecName(const std::string &codecMime, bool isEncoder, bool isSoftware);
+
     std::shared_ptr<OH_AVCodec> codec_ = nullptr;
     CodecRunMode runMode_ = SURFACE_ORIGIN;
 };

@@ -28,8 +28,9 @@ constexpr std::string_view DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY = "OHOS.Media.A
 constexpr int32_t MAX_PAUSE_TIME = 60;
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
-    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Decoder"},
-    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_ENCODER, "Encoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Hardware Decoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_SW_DECODER, "Software Decoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_ENCODER, "Hardware Encoder"},
 };
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
