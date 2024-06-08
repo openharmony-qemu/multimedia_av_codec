@@ -487,6 +487,12 @@ void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
+    if (streamDemuxer_ != nullptr) {
+        streamDemuxer_->SetInterruptState(isInterruptNeeded);
+    }
+    if (subStreamDemuxer_ != nullptr) {
+        subStreamDemuxer_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 void MediaDemuxer::SetBundleName(const std::string& bundleName)

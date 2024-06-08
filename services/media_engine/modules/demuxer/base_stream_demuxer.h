@@ -104,6 +104,7 @@ public:
 
     virtual Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) = 0;
+    void SetInterruptState(bool isInterruptNeeded);
     void SetDemuxerState(int32_t streamId, DemuxerState state);
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
@@ -122,6 +123,7 @@ protected:
     std::map<int32_t, DemuxerState> pluginStateMap_;
     std::atomic<bool> isIgnoreParse_{false};
     std::atomic<bool> isIgnoreRead_{false};
+    std::atomic<bool> isInterruptNeeded_{false};
     std::string bundleName_ {};
     std::string uri_ {};
 public:
