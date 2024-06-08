@@ -46,6 +46,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_CODEC_CONSUMER,
     DEMO_ARG_THREAD_SLEEP_MODE,
     DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER,
+    DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,
     DEMO_ARG_END,
 };
 
@@ -73,6 +74,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_CODEC_CONSUMER,                   "codec_consumer"},
     {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
     {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, "encoder_surface_max_input_buffer"},
+    {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          "pause_before_run_sample"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -100,6 +102,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"codec_consumer",                   required_argument,  nullptr, DEMO_ARG_CODEC_CONSUMER},
     {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
     {"encoder_surface_max_input_buffer", required_argument,  nullptr, DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER},
+    {"pause_before_run_sample",          required_argument,  nullptr, DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
@@ -135,6 +138,8 @@ Video codec demo help:
                                             2: SEEK_MODE_CLOSEST_SYNC
     --thread_sleep_mode                 0: Input sleep;  1: Output sleep
     --encoder_surface_max_input_buffer  set for encoder surface max input buffer count
+    --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
+                                        greater than 0 then sleep seconds of value
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -270,6 +275,11 @@ inline void SetEncoderSurfaceMaxInputBufferCount(SampleInfo &info, const char * 
     info.encoderSurfaceMaxInputBuffer = std::stol(value);
 }
 
+inline void SetPauseBeforeRunSample(SampleInfo &info, const char * const value)
+{
+    info.pauseBeforeRunSample = std::stol(value);
+}
+
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,                             ShowHelp},
     {DEMO_ARG_CODEC_TYPE,                       SetCodecType},
@@ -295,6 +305,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_CODEC_CONSUMER,                   SetCodecConsumerType},
     {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},
     {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, SetEncoderSurfaceMaxInputBufferCount},
+    {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          SetPauseBeforeRunSample},
 };
 } // namespace
 

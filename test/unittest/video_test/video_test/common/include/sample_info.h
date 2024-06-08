@@ -126,6 +126,7 @@ struct SampleInfo {
     CodecConsumerType codecConsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
     ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
     int32_t encoderSurfaceMaxInputBuffer = 0;
+    int32_t pauseBeforeRunSample = 0;
 };
 
 struct CodecBufferInfo {

@@ -16,6 +16,7 @@
 #include "sample_helper.h"
 #include <iostream>
 #include <unordered_map>
+#include <unistd.h>
 #include "video_sample_base.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
@@ -24,6 +25,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "SampleHelper"};
 constexpr std::string_view DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY = "OHOS.Media.AVCodecSample.DeviceSampleRunTimes";
+constexpr int32_t MAX_PAUSE_TIME = 60;
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
     {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Decoder"},
@@ -49,6 +51,20 @@ const std::unordered_map<OH_AVPixelFormat, std::string> PIXEL_FORMAT_TO_STRING =
     {AV_PIXEL_FORMAT_SURFACE_FORMAT,    "SURFACE_FORMAT"},
     {AV_PIXEL_FORMAT_RGBA,              "RGBA"},
 };
+
+inline void Pause(int32_t sleepTime)
+{
+    CHECK_AND_RETURN(sleepTime > 0);
+
+    if (sleepTime > MAX_PAUSE_TIME) {
+        std::cout << "Press enter to continue...";
+        std::cin.get();
+        std::cin.clear();
+    } else {
+        std::cout << "Pause " << sleepTime << " seconds and continue..." << std::endl;
+        sleep(sleepTime);
+    }
+}
 }
 
 namespace OHOS {
@@ -67,6 +83,8 @@ std::string ToString(OH_AVPixelFormat pixelFormat)
 int32_t RunSample(const SampleInfo &info)
 {
     std::shared_ptr<VideoSampleBase> sample = VideoSampleFactory::CreateVideoSample(info.codecType);
+
+    Pause(info.pauseBeforeRunSample);
 
     int32_t ret = sample->Create(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
