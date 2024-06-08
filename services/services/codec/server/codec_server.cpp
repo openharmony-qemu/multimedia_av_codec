@@ -968,7 +968,7 @@ int32_t CodecServer::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeyS
 }
 #endif
 
-bool CodecServer::GetStatus()
+bool CodecServer::CheckRunning()
 {
     if (status_ == CodecServer::RUNNING) {
         return true;
