@@ -167,9 +167,7 @@ void VideoSampleBase::ThreadSleep(bool isValid)
 
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
-    if (!sampleInfo_.needDumpOutput) {
-        return;
-    }
+    CHECK_AND_RETURN(sampleInfo_.needDumpOutput);
 
     if (outputFile_ == nullptr) {
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -179,7 +177,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                     std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
                     std::to_string(time) + ".yuv";
             } else {
-                sampleInfo_.outputFilePath = "VideoEncoderOut_"s + "_" + std::to_string(time) + ".bin";
+                sampleInfo_.outputFilePath = "VideoEncoderOut_"s + std::to_string(time) + ".bin";
             }
         }
         

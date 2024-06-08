@@ -116,6 +116,7 @@ struct SampleInfo {
     int32_t demoRepeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
     bool isHDRVivid = false;
+    bool needDumpInput = false;
     bool needDumpOutput = false;
     uint32_t maxFrames = UINT32_MAX;
     uint32_t bitrateMode = CBR;

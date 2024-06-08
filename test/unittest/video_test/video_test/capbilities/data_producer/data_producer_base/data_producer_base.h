@@ -35,8 +35,10 @@ public:
 protected:
     virtual int32_t FillBuffer(CodecBufferInfo &bufferInfo) = 0;
     virtual bool IsEOS() = 0;
+    void DumpInput(const CodecBufferInfo &bufferInfo);
 
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
+    std::unique_ptr<std::ofstream> inputDumpFile_ = nullptr;
     std::mutex mutex_;
     SampleInfo sampleInfo_;
     uint32_t frameCount_ = 0;
