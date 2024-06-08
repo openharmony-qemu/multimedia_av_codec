@@ -32,7 +32,6 @@ public:
     virtual int32_t Reset() = 0;
     virtual int32_t PushInputData(CodecBufferInfo &info) = 0;
     virtual int32_t FreeOutputData(uint32_t bufferIndex) = 0;
-    virtual int32_t Release() = 0;
 
 protected:
     std::shared_ptr<OH_AVCodec> codec_ = nullptr;

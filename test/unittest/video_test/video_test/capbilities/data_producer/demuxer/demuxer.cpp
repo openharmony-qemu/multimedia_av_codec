@@ -34,7 +34,7 @@ int32_t Demuxer::Init(SampleInfo &info)
 
     file_ = std::shared_ptr<FILE>(fopen(info.inputFilePath.data(), "r"), fclose);
     CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
-    fileFd_ = fileno(file_);
+    fileFd_ = fileno(file_.get());
     
     fileSize_ = GetFileSize(info.inputFilePath.data());
     source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd_, 0, fileSize_), OH_AVSource_Destroy);
@@ -93,7 +93,7 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
         int trackType = -1;
         
         auto trackFormat =
-            std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_, index), OH_AVFormat_Destroy);
+            std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_.get(), index), OH_AVFormat_Destroy);
         OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_TRACK_TYPE, &trackType);
         if (trackType == MEDIA_TYPE_VID) {
             OH_AVDemuxer_SelectTrackByID(demuxer_.get(), index);
@@ -121,7 +121,7 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
 
 bool Demuxer::IsEOS()
 {
-    return feof(file_);
+    return feof(file_.get());
 }
 } // Sample
 } // MediaAVCodec

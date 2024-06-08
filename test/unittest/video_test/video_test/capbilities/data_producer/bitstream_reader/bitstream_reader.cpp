@@ -42,8 +42,6 @@ constexpr uint8_t HEVC_NAL_SEI_SUFFIX = 40;
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-BitstreamReader::BitstreamReader(BitstreamType &type) : bitstreamType_(type) {}
-
 int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);

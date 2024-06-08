@@ -21,11 +21,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 class BitstreamReader : public DataProducerBase {
-public:
-    explicit BitstreamReader(BitstreamType &type);
-
 private:
-    BitstreamReader() {}
     int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
     int32_t ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize);
     int32_t ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize);
@@ -37,7 +33,6 @@ private:
     bool IsIDR(uint8_t naluType);
     bool IsEOS() override;
 
-    BitstreamType bitstreamType_;
     std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
     uint32_t prereadBufferSize_ = 0;
     uint32_t pPrereadBuffer_ = 0;

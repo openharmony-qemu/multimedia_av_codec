@@ -24,8 +24,6 @@ namespace MediaAVCodec {
 namespace Sample {
 class VideoDecoder : public VideoCodecBase {
 public:
-    VideoDecoder() = default;
-
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
     int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData) override;
     int32_t Start() override;

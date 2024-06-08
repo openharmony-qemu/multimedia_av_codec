@@ -85,8 +85,7 @@ std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const 
             dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<Demuxer>());
             break;
         case DATA_PRODUCER_TYPE_BITSTREAM_READER:
-            dataProducer =
-                std::static_pointer_cast<DataProducerBase>(std::make_shared<BitstreamReader>(info.bitstreamType));
+            dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<BitstreamReader>());
             break;
         case DATA_PRODUCER_TYPE_RAW_DATA_READER:
             dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<RawdataReader>());

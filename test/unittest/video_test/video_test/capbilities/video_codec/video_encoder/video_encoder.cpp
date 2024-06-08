@@ -50,11 +50,6 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
     }
 }
 
-VideoEncoder::~VideoEncoder()
-{
-    InnerRelease();
-}
-
 int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
 {
     (void)isSoftware;
@@ -165,7 +160,7 @@ int32_t VideoEncoder::NotifyEndOfStream()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
 
-    int32_t ret = OH_VideoEncoder_NotifyEndOfStream(codec_);
+    int32_t ret = OH_VideoEncoder_NotifyEndOfStream(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Notify end of stream failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
@@ -175,9 +170,9 @@ int32_t VideoEncoder::SetCallback(CodecUserData *codecUserData)
 {
     int32_t ret = AV_ERR_OK;
     if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoEncoder_RegisterCallback(codec_, AVCodecCallback, codecUserData);
+        ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, codecUserData);
     } else {
-        ret = OH_VideoEncoder_SetCallback(codec_, AVCodecAsyncCallback, codecUserData);
+        ret = OH_VideoEncoder_SetCallback(codec_.get(), AVCodecAsyncCallback, codecUserData);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
 
@@ -197,7 +192,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, sampleInfo.hevcProfile);
     
-    int ret = OH_VideoEncoder_Configure(codec_, format);
+    int ret = OH_VideoEncoder_Configure(codec_.get(), format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 
     OH_AVFormat_Destroy(format);
@@ -208,7 +203,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
 {
     if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
-        int32_t ret = OH_VideoEncoder_GetSurface(codec_, &sampleInfo.window);
+        int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &sampleInfo.window);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Get surface failed, ret: %{public}d", ret);
         (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
