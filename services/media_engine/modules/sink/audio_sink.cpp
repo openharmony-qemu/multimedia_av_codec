@@ -33,7 +33,7 @@ int64_t GetAudioLatencyFixDelay()
 
 AudioSink::AudioSink()
 {
-    MEDIA_LOG_I("AudioSink ctor");
+    MEDIA_LOG_I("Tips AudioSink ctor");
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
     fixDelay_ = GetAudioLatencyFixDelay();
     plugin_ = CreatePlugin();
@@ -58,7 +58,15 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->Prepare();
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
-
+    int64_t startTime = 0;
+    if (!meta->GetData(Tag::MEDIA_START_TIME, startTime)) {
+        startTime = 0;
+    }
+    MEDIA_LOG_I("Get startTime from track meta, " PUBLIC_LOG_D64, startTime);
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        syncCenter->SetMediaStartPts(Plugins::HstTime2Us(startTime));
+    }
     std::string mime;
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {

@@ -28,6 +28,11 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V3_0;
 
+HEncoder::~HEncoder()
+{
+    MsgHandleLoop::Stop();
+}
+
 int32_t HEncoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);

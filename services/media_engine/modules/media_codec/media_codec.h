@@ -80,6 +80,8 @@ class MediaCodec : public Plugins::DataCallback {
 public:
     MediaCodec();
 
+    ~MediaCodec() override;
+
     int32_t Init(const std::string &mime, bool isEncoder);
 
     int32_t Init(const std::string &name);

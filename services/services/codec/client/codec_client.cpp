@@ -128,16 +128,18 @@ int32_t CodecClient::Configure(const Format &format)
 
 int32_t CodecClient::Start()
 {
-    std::scoped_lock lock(mutex_, *syncMutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
                              "Not get input surface.");
 
+    SetNeedListen(true);
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
-        SetNeedListen(true);
         needUpdateGeneration_ = true;
         AVCODEC_LOGI("Succeed");
+    } else {
+        SetNeedListen(needUpdateGeneration_); // is in running state = needUpdateGeneration_
     }
     return ret;
 }

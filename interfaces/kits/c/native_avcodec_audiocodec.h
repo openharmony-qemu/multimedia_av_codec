@@ -57,6 +57,10 @@ OH_AVCodec *OH_AudioCodec_CreateByName(const char *name);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the codec is nullptr or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_NO_MEMORY}, inner resource has already released.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_Destroy(OH_AVCodec *codec);
@@ -70,6 +74,8 @@ OH_AVErrCode OH_AudioCodec_Destroy(OH_AVCodec *codec);
  * @param userData User specific data
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, input parameter is empty or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallback callback, void *userData);
@@ -82,6 +88,11 @@ OH_AVErrCode OH_AudioCodec_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallbac
  * @param format A pointer to an OH_AVFormat giving a description of the audio track to be encoded or decoded
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, input parameter is empty or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_Configure(OH_AVCodec *codec, const OH_AVFormat *format);
@@ -93,6 +104,11 @@ OH_AVErrCode OH_AudioCodec_Configure(OH_AVCodec *codec, const OH_AVFormat *forma
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the codec is nullptr or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_Prepare(OH_AVCodec *codec);
@@ -104,6 +120,11 @@ OH_AVErrCode OH_AudioCodec_Prepare(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the codec is nullptr or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_Start(OH_AVCodec *codec);
@@ -116,6 +137,11 @@ OH_AVErrCode OH_AudioCodec_Start(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the codec is nullptr or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_Stop(OH_AVCodec *codec);
@@ -128,6 +154,11 @@ OH_AVErrCode OH_AudioCodec_Stop(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the codec is nullptr or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_Flush(OH_AVCodec *codec);
@@ -139,6 +170,8 @@ OH_AVErrCode OH_AudioCodec_Flush(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, the codec is nullptr or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
  * @since 11
  */
 
@@ -164,14 +197,19 @@ OH_AVFormat *OH_AudioCodec_GetOutputDescription(OH_AVCodec *codec);
  * @param format OH_AVFormat handle pointer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, input parameter is empty or invalid.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_SetParameter(OH_AVCodec *codec, const OH_AVFormat *format);
 
 /**
- * @brief Submit the input buffer filled with data to the audio codec. The {@link OH_AVCodecOnNeedInputData} callback
+ * @brief Submit the input buffer filled with data to the audio codec. The {@link OH_AVCodecOnNeedInputBuffer} callback
  * will report the available input buffer and the corresponding index value. Once the buffer with the specified index
- * is submitted to the audio codec, the buffer cannot be accessed again until the {@link OH_AVCodecOnNeedInputData}
+ * is submitted to the audio codec, the buffer cannot be accessed again until the {@link OH_AVCodecOnNeedInputBuffer}
  * callback is received again reporting that the buffer with the same index is available. In addition, for some
  * codecs, it is required to input Codec-Specific-Data to the codec at the beginning to initialize the encoding or
  * decoding process of the codec.
@@ -180,6 +218,12 @@ OH_AVErrCode OH_AudioCodec_SetParameter(OH_AVCodec *codec, const OH_AVFormat *fo
  * @param index Enter the index value corresponding to the Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, input parameter is empty or invalid. Buffer index
+ * should be given by {@link OH_AVCodecOnNeedInputBuffer}.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
@@ -191,6 +235,12 @@ OH_AVErrCode OH_AudioCodec_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
  * @param index The index value corresponding to the output Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, input parameter is empty or invalid. Buffer index
+ * should be given by {@link OH_AVCodecOnNewOutputBuffer}.
+ * {@link AV_ERR_INVALID_STATE}, the interface was called in an invalid state.
+ * {@link AV_ERR_OPERATE_NOT_PERMIT}, operation not permitted.
+ * This could be due to an incorrect state or an unsupported operation.
+ * {@link AV_ERR_UNKNOWN}, internal error occurred, it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
@@ -204,6 +254,7 @@ OH_AVErrCode OH_AudioCodec_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
  * false if the codec instance is invalid
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * {@link AV_ERR_INVALID_VAL}, input parameter is empty or invalid.
  * @since 11
  */
 OH_AVErrCode OH_AudioCodec_IsValid(OH_AVCodec *codec, bool *isValid);

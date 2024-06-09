@@ -82,6 +82,11 @@ void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
     bundleName_ = bundleName;
 }
 
+void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
+
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
 {
     return isIgnoreParse_.store(state);

@@ -892,6 +892,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     }
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        MEDIA_LOG_I("Parse info for track " PUBLIC_LOG_D32, trackIndex);
         Meta meta;
         auto avStream = formatContext_->streams[trackIndex];
         if (avStream == nullptr) {
@@ -1195,6 +1196,13 @@ Status FFmpegDemuxerPlugin::Flush()
         avformat_flush(formatContext_.get());
     }
     return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::ResetEosStatus()
+{
+    MEDIA_LOG_I("ResetEosStatus enter.");
+    formatContext_->pb->eof_reached = 0;
+    formatContext_->pb->error = 0;
 }
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)

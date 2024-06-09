@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef LIVE_STREAM_DEMUXER_H
-#define LIVE_STREAM_DEMUXER_H
+#ifndef LIVE_HTTP_STREAM_DEMUXER_H
+#define LIVE_HTTP_STREAM_DEMUXER_H
 
 #include <atomic>
 #include <limits>
@@ -39,10 +39,10 @@
 namespace OHOS {
 namespace Media {
 
-class LiveStreamDemuxer : public BaseStreamDemuxer {
+class LiveHttpStreamDemuxer : public BaseStreamDemuxer {
 public:
-    explicit LiveStreamDemuxer();
-    ~LiveStreamDemuxer() override;
+    explicit LiveHttpStreamDemuxer();
+    ~LiveHttpStreamDemuxer() override;
 
     Status Init(std::string uri) override;
     Status Reset() override;
@@ -52,17 +52,21 @@ public:
     Status Stop() override;
     Status Flush() override;
     Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
-	    size_t expectedLen) override;
+        size_t expectedLen) override;
     Status ResetCache(int32_t streamID) override;
     Status ResetAllCache() override;
 private:
-    void ReadLoop();
-    Status PushData(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset);
+    Status PullData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
+    bool PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool PullDataWithCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool TryReadCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    Status ReadRetry(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
+    Status HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
+    Status HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 private:
-    std::shared_ptr<DataPacker> dataPacker_ = nullptr;
-    std::shared_ptr<Task> taskPtr_ = nullptr;
-    int64_t mediaOffset_ {0}; // offset used in push mode
-    int32_t retryTimes_ {0};
+    std::map<int32_t, CacheData> cacheDataMap_;
 };
 } // namespace Media
 } // namespace OHOS

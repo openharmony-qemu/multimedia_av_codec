@@ -99,10 +99,13 @@ public:
     void OnDumpInfo(int32_t fd);
     bool IsLocalDrmInfosExisted();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
+    void OnBufferAvailable(uint32_t trackId);
 
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
 private:
+    class AVBufferQueueProducerListener;
+    class TrackWrapper;
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
@@ -118,12 +121,15 @@ private:
     void InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
-    Status AddDemuxerCopyTask(int32_t trackId, TaskType type);
+    Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
 
     Status StopTask(uint32_t trackId);
     Status StopAllTask();
     Status PauseAllTask();
     Status ResumeAllTask();
+    void AccelerateTrackTask(uint32_t trackId);
+    void SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded);
+    void ResetInner();
 
     bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ProcessDrmInfos();
@@ -160,7 +166,8 @@ private:
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
 
-    Mutex mapMetaMutex_{};
+    Mutex mapMutex_{};
+    std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
@@ -194,6 +201,7 @@ private:
     ConditionVariable firstFrameCond_;
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
+    bool waitForDataFail_{false};
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};

@@ -99,6 +99,7 @@ public:
 
     int64_t GetSeekTime() override;
     void ResetTimeAnchorNoLock();
+    void SetMediaStartPts(int64_t startPts) override;
 private:
     enum class State {
         RESUMED,
@@ -129,7 +130,9 @@ private:
     int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
     int64_t currentAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedMediaTime_ {HST_TIME_NONE};
+    int64_t pausedExactMediaTime_ {HST_TIME_NONE};
     int64_t pausedAbsMediaTime_ {HST_TIME_NONE};
+    int64_t pausedExactAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
     int64_t startingTimeMediaUs_ {HST_TIME_NONE};
 
@@ -148,6 +151,7 @@ private:
     std::vector<IMediaSynchronizer*> syncers_;
     std::vector<IMediaSynchronizer*> prerolledSyncers_;
     int64_t delayTime_ {HST_TIME_NONE};
+    int64_t startPts_ {HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

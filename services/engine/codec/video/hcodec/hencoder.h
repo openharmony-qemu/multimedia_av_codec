@@ -25,6 +25,7 @@ class HEncoder : public HCodec {
 public:
     HEncoder(OHOS::HDI::Codec::V3_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, true) {}
+    ~HEncoder() override;
 
 private:
     // configure

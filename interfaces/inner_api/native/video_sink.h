@@ -32,6 +32,7 @@ public:
     ~VideoSink();
     int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override; // true and render
     void ResetSyncInfo() override;
+    void ResetRenderStarted();
     Status GetLatency(uint64_t& nanoSec);
     int64_t CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
@@ -63,6 +64,7 @@ private:
     std::atomic<bool> lastFrameDropped_ {false};
     int64_t lastPts_;
     int64_t lastClockTime_;
+    std::atomic<bool> isRenderStarted_{false};
 };
 } // namespace Pipeline
 } // namespace Media

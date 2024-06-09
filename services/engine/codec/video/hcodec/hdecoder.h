@@ -23,6 +23,7 @@ class HDecoder : public HCodec, public std::enable_shared_from_this<HDecoder> {
 public:
     HDecoder(OHOS::HDI::Codec::V3_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, false) {}
+    ~HDecoder() override;
 
 private:
     // configure

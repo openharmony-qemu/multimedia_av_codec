@@ -78,7 +78,7 @@ protected:
     virtual void ClearAllBuffer() = 0;
     virtual bool Stop() = 0;
     virtual bool Release() = 0;
-    std::string GetCodecMime(const CodeType& type);
+    static std::string GetCodecMime(const CodeType& type);
 
     CommandOpt opt_;
     std::ifstream ifs_;

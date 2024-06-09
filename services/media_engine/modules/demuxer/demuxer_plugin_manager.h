@@ -109,12 +109,13 @@ public:
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();
     size_t GetStreamCount();
+    void SetResetEosStatus(bool flag);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
     Status InitDefaultPlay();
-    Status AddMediaInfo(Status ret, int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
+    void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
         bool isAddTempTrack);
     Status AddGeneral(const Meta& format, Meta& formatNew);
     void ClearTempTrackInfo();
@@ -132,6 +133,7 @@ private:
 
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
+    bool needResetEosStatus_ = false;
 };
 } // namespace Media
 } // namespace OHOS

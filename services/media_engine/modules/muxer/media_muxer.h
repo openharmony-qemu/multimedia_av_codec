@@ -56,6 +56,7 @@ private:
     void StopThread();
     void ThreadProcessor();
     void OnBufferAvailable();
+    void ReleaseBuffer();
     bool CanAddTrack(const std::string &mimeType);
     bool CheckKeys(const std::string &mimeType, const std::shared_ptr<Meta> &trackDesc);
     std::string StateConvert(State state);

@@ -251,24 +251,27 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
-    auto ret = DoStart();
+    Status ret = Status::OK;
+    if (isPauseNeedResume_.load()) {
+        ret = DoResume();
+    } else {
+        ret = DoStart();
+    }
     if (ret != Status::OK) {
         MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
-    } else {
-        isNeedStartDecoder_ = false;
     }
     return ret;
 }
 
 Status DecoderSurfaceFilter::WaitPrepareFrame()
 {
-    MEDIA_LOG_I("WaitPrepareFrame enter.");
+    MEDIA_LOG_D("WaitPrepareFrame enter.");
     AutoLock lock(firstFrameMutex_);
     bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
          return !doPrepareFrame_;
     });
-    MEDIA_LOG_D("PrepareFrame res= %{public}d.", res);
+    MEDIA_LOG_I("PrepareFrame res= %{public}d.", res);
     doPrepareFrame_ = false;
     DoPause();
     return Status::OK;
@@ -288,6 +291,10 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
+    if (isPauseNeedResume_.load()) {
+        MEDIA_LOG_I("DoStart after pause to execute resume.");
+        return DoResume();
+    }
     if (!IS_FILTER_ASYNC) {
         if (isPaused_.load()) {
             return DoResume();
@@ -297,12 +304,7 @@ Status DecoderSurfaceFilter::DoStart()
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    auto ret = videoDecoder_->Start();
-    if (!isNeedStartDecoder_.load()) {
-        MEDIA_LOG_I("Already start videoDecoder and enter.");
-        return Status::OK;
-    }
-    return ret;
+    return videoDecoder_->Start();
 }
 
 Status DecoderSurfaceFilter::DoPause()
@@ -317,6 +319,7 @@ Status DecoderSurfaceFilter::DoPause()
     if (videoDecoder_ != nullptr) {
         videoDecoder_->ResetRenderTime();
     }
+    isPauseNeedResume_ = true;
     return Status::OK;
 }
 
@@ -329,6 +332,7 @@ Status DecoderSurfaceFilter::DoResume()
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
+    isPauseNeedResume_ = false;
     return Status::OK;
 }
 
@@ -343,6 +347,8 @@ Status DecoderSurfaceFilter::DoStop()
     timeval tv;
     gettimeofday(&tv, 0);
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
+    videoSink_->ResetSyncInfo();
+    videoSink_->ResetRenderStarted();
     auto ret = videoDecoder_->Stop();
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
@@ -393,6 +399,18 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         int32_t codecScalingMode = static_cast<int32_t>(ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType)));
         format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
         configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
+    }
+    if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
+        double rate = 0.0;
+        parameter->Get<Tag::VIDEO_FRAME_RATE>(rate);
+        if (rate < 0) {
+            if (configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, rate)) {
+                MEDIA_LOG_W("rate is invalid, get frame rate from the original resource: %{public}f", rate);
+            } else {
+                rate = 0.0;
+            }
+        }
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
     }
     // cannot set parameter when codec at [ CONFIGURED / INITIALIZED ] state
     auto ret = videoDecoder_->SetParameter(format);

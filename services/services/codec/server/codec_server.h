@@ -102,7 +102,7 @@ public:
     int32_t Prepare() override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     void ProcessInputBuffer() override;
-    bool GetStatus() override;
+    bool CheckRunning() override;
 
 #ifdef SUPPORT_DRM
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,

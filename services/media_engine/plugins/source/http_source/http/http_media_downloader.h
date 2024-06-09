@@ -61,6 +61,7 @@ public:
     void DownloadReportLoop();
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    void OnClientErrorEvent();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
