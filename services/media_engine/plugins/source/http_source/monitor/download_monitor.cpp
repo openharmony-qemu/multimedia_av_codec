@@ -25,6 +25,7 @@ namespace HttpPlugin {
 namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 1000;
     constexpr int RETRY_THRESHOLD = 1;
+    constexpr int SERVER_ERROR_THRESHOLD = 500;
 }
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
@@ -155,12 +156,12 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     auto clientError = request->GetClientError();
     int serverError = static_cast<int>(request->GetServerError());
     auto retryTimes = request->GetRetryTimes();
-    std::set<int> notRetryErrorSet = {400, 401, 403}; 
+    std::set<int> notRetryErrorSet = {400, 401, 403};
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
     if (clientError == NetworkClientErrorCode::ERROR_NOT_RETRY ||
         notRetryErrorSet.find(serverError) != notRetryErrorSet.end() ||
-        serverError>=500) {
+        serverError >= SERVER_ERROR_THRESHOLD) {
         if (retryTimes > RETRY_THRESHOLD) {
             if (callback_ != nullptr) {
                 MEDIA_LOG_I("Send http client error, code " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));

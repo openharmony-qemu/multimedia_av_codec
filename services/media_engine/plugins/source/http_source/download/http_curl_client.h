@@ -51,6 +51,7 @@ private:
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckHeaderKey(std::string setKey, std::string setValue);
+    void CheckRequestRange(long startPos);
 
 private:
     RxHeader rxHeader_;

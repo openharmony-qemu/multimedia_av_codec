@@ -347,14 +347,8 @@ std::string HttpCurlClient::UrlParse(const std::string& url) const
     return s;
 }
 
-// RequestData run in HttpDownload thread,
-// Open, Close, Deinit run in other thread.
-// Should call Open before start HttpDownload thread.
-// Should Pause HttpDownload thread then Close, Deinit.
-Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
-                                   NetworkClientErrorCode& clientCode)
+void HttpCurlClient::CheckRequestRange(long startPos)
 {
-    FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     if (startPos >= 0) {
         char requestRange[128] = {0};
         if (len > 0) {
@@ -366,11 +360,21 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         MEDIA_LOG_DD("RequestData: requestRange " PUBLIC_LOG_S, requestRange);
         curl_easy_setopt(easyHandle_, CURLOPT_RANGE, requestRange);
     }
+}
+
+// RequestData run in HttpDownload thread,
+// Open, Close, Deinit run in other thread.
+// Should call Open before start HttpDownload thread.
+// Should Pause HttpDownload thread then Close, Deinit.
+Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
+                                   NetworkClientErrorCode& clientCode)
+{
+    FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    CheckRequestRange(startPos);
     curl_slist *headers {nullptr};
     headers = curl_slist_append(headers, "Connection: Keep-alive");
     headers = curl_slist_append(headers, "Keep-Alive: timeout=120");
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headers);
-    
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
     AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -381,8 +385,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
     std::set <CURLcode> notRetrySet = {
         CURLE_WRITE_ERROR, CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
         CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
-        CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR 
-    }   
+        CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR};
     clientCode = NetworkClientErrorCode::ERROR_OK;
     serverCode = 0;
     if (returnCode != CURLE_OK) {
