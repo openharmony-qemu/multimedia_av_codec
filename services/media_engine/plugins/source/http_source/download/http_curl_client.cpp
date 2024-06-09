@@ -378,11 +378,16 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
     if (headers != nullptr) {
         curl_slist_free_all(headers);
     }
+    std::set <CURLcode> notRetrySet = {
+        CURLE_WRITE_ERROR, CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
+        CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
+        CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR 
+    }   
     clientCode = NetworkClientErrorCode::ERROR_OK;
     serverCode = 0;
     if (returnCode != CURLE_OK) {
         MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
-        if (returnCode == CURLE_WRITE_ERROR) {
+        if (notRetrySet.find(returnCode) != notRetrySet.end()) {
             clientCode = NetworkClientErrorCode::ERROR_NOT_RETRY;
         } else if (returnCode == CURLE_COULDNT_CONNECT || returnCode == CURLE_OPERATION_TIMEDOUT) {
             clientCode = NetworkClientErrorCode::ERROR_TIME_OUT;
