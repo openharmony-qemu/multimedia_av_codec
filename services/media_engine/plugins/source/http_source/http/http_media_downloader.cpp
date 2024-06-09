@@ -169,21 +169,14 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     }
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
     while (buffer_->GetSize() < readDataInfo.wantReadLength_) {
-        if (downloadRequest_ != nullptr) {
-            readDataInfo.isEos_ = downloadRequest_->IsEos();
-        };
-        if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
-            readDataInfo.realReadLength_ = 0;
+        if (CheckIsEosBeforeTimeout(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
         if (downloadErrorState_ || isTimeOut_) {
             isTimeOut_ = true;
             if (downloader_ != nullptr) {
-                // avoid deadlock caused by ringbuffer write stall
-                buffer_->SetActive(false);
-                // the downloader is unavailable after this
-                downloader_->Pause(true);
+                buffer_->SetActive(false); // avoid deadlock caused by ringbuffer write stall
+                downloader_->Pause(true); // the downloader is unavailable after this
             }
             if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
                 downloadRequest_->Close();
@@ -205,6 +198,23 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
     return Status::OK;
+}
+
+bool HttpMediaDownloader::CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    if (downloadRequest_ != nullptr) {
+        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    };
+    if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
+        MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+        readDataInfo.realReadLength_ = 0;
+        return true;
+    }
+    if (readDataInfo.isEos_ && downloadRequest_->IsChunkedVod()) {
+        readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2); // wait 2 times
+        return true;
+    }
+    return false;
 }
 
 bool HttpMediaDownloader::SeekToPos(int64_t offset)

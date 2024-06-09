@@ -62,6 +62,7 @@ public:
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
+    bool CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataInfo& readDataInfo);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
