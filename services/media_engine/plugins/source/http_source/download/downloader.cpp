@@ -109,7 +109,7 @@ Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
         return Seekable::INVALID;
     }
     if (headerInfo_.isChunked) {
-        return Seekable::UNSEEKABLE;
+        return GetFileContentLength() == LIVE_CONTENT_LENGTH ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     } else {
         return Seekable::SEEKABLE;
     }
@@ -196,6 +196,11 @@ uint32_t DownloadRequest::GetBitRate() const
     uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ / timeGap * 1000 *
                        1 * 8); // 1000:ms to sec 1:weight 8:byte to bit
     return bitRate;
+}
+
+bool DownloadRequest::IsChunkedVod() const
+{
+    return headerInfo_.isChunked && headerInfo_.GetFileContentLength() == LIVE_CONTENT_LENGTH;
 }
 
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
@@ -423,6 +428,12 @@ void Downloader::HandleRetOK()
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
+    if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
+        currentRequest_->isEos_ = true;
+        task_->PauseAsync();
+        return;
+    }
+    
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
@@ -464,12 +475,25 @@ void Downloader::HandleRetOK()
     }
 }
 
+void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
+{
+    if (!mediaDownloader->currentRequest_->isHeaderUpdated) {
+        MEDIA_LOG_I("UpdateHeaderInfo enter.");
+        HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+        mediaDownloader->currentRequest_->SaveHeader(info);
+        if (info->contentLen <= 0) {
+            FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
+        }
+    }
+}
+
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
+    UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     if (mediaDownloader->currentRequest_->IsClosed()) {
@@ -597,6 +621,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         FALSE_RETURN_V(token != nullptr, size * nitems);
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked"))) {
             info->isChunked = true;
+            info->contentLen = LIVE_CONTENT_LENGTH;
         }
     }
 
@@ -609,13 +634,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
 
     StrncmpContentRange(info, key, next, size, nitems);
 
-    if (info->contentLen <= 0) {
-        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
-    } else {
-        info->isChunked = false;
-    }
-
-    mediaDownloader->currentRequest_->SaveHeader(info);
     return size * nitems;
 }
 }

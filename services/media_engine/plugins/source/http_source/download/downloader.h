@@ -112,6 +112,7 @@ public:
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
     uint32_t GetBitRate() const;
+    bool IsChunkedVod() const;
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -167,6 +168,7 @@ private:
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static void FLVProcess(bool &isTrunck, long &contentLen, std::string url);
     static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static void UpdateHeaderInfo(Downloader* mediaDownloader);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
