@@ -22,6 +22,7 @@
 #include "plugin/plugin_time.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include "common/media_core.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
@@ -43,6 +44,10 @@ constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
 constexpr double ZERO_THRESHOLD = 1e-9;
+constexpr int PLAY_WATER_LINE = 5 * 1024;
+constexpr int CACHE_WATER_LINE = 512 * 1024;
+constexpr int FIRST_CACHE_WATER_LINE = 50 * 1024;
+constexpr int SECOND_CACHE_WATER_LINE = 100 * 1024;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -51,6 +56,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
 {
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
     buffer_->Init();
+    isBuffering_ = true;
     totalRingBufferSize_ = RING_BUFFER_SIZE;
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
@@ -61,6 +67,13 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
+    downloadTask_ = std::make_shared<Task>(std::string("OS_readDownloadTask"));
+    downloadTask_->RegisterJob([this] {
+        CacheData();
+        return 0;
+    });
+    wantReadLenth_ = PLAY_WATER_LINE;
+    downloadTask_->Start();
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
@@ -165,6 +178,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 void HlsMediaDownloader::Close(bool isAsync)
 {
     MEDIA_LOG_I("Close enter");
+    isInterrupt_ = true;
     buffer_->SetActive(false);
     playList_->SetActive(false);
     playListDownloader_->Cancel();
@@ -184,6 +198,7 @@ void HlsMediaDownloader::Close(bool isAsync)
 void HlsMediaDownloader::Pause()
 {
     MEDIA_LOG_I("Pause enter");
+    isInterrupt_ = true;
     bool cleanData = GetSeekable() != Seekable::SEEKABLE;
     buffer_->SetActive(false, cleanData);
     playList_->SetActive(false, cleanData);
@@ -194,6 +209,7 @@ void HlsMediaDownloader::Pause()
 void HlsMediaDownloader::Resume()
 {
     MEDIA_LOG_I("Resume enter");
+    isInterrupt_ = false;
     buffer_->SetActive(true);
     playList_->SetActive(true);
     playListDownloader_->Resume();
@@ -236,16 +252,63 @@ bool HlsMediaDownloader::CheckReadTimeOut()
     return false;
 }
 
+bool HlsMediaDownloader::HandleBuffering()
+{
+    MEDIA_LOG_I("HandleBuffering begin.");
+    int32_t sleepTime = 0;
+    while (sleepTime < SLEEP_TIME::BUFFERING_TIME_OUT) {
+        if (!isBuffering_) {
+            break;
+        }
+        OSAL::SleepFor(SLEEP_TIME::BUFFERING_SLEEP_TIME);
+        sleepTime += SLEEP_TIME::BUFFERING_SLEEP_TIME;
+    }
+    MEDIA_LOG_I("HandleBuffering end.");
+    return isBuffering_;
+}
+
+bool HlsMediaDownloader::HandleCache()
+{
+    bufferingTimes_++;
+    if (bufferingTimes_ == BufferingTimes::FIRST_TIMES) {
+        wantReadLenth_ = FIRST_CACHE_WATER_LINE;
+    } else if (bufferingTimes_ == BufferingTimes::SECOND_TIMES) {
+        wantReadLenth_ = SECOND_CACHE_WATER_LINE;
+    } else {
+        wantReadLenth_ = CACHE_WATER_LINE;
+    }
+    if (downloadTask_ != nullptr && !isBuffering_) {
+        MEDIA_LOG_I("DownloadTask start.");
+        isBuffering_ = true;
+        downloadTask_->Start();
+        callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        return true;
+    }
+    return false;
+}
+
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
+    if (isBuffering_) {
+        if (HandleBuffering()) {
+            MEDIA_LOG_I("Read return error again.");
+            return Status::ERROR_AGAIN;
+        }
+    }
     if (CheckReadStatus()) {
         readDataInfo.isEos_ = true;
         readDataInfo.realReadLength_ = 0;
         return Status::END_OF_STREAM;
     }
-    readTime_ = 0;
+
+    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE) {
+        if (HandleCache()) {
+            return Status::ERROR_AGAIN;
+        }
+    }
+
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
     while (buffer_->GetSize() < readDataInfo.wantReadLength_) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
@@ -266,7 +329,6 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
             return Status::END_OF_STREAM;
         }
         OSAL::SleepFor(5);  // 5
-        readTime_ += 5;
     }
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
@@ -679,6 +741,7 @@ void HlsMediaDownloader::SetDemuxerState()
 {
     MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;
+    isFirstFrameArrived_ = true;
 }
 
 void HlsMediaDownloader::SetDownloadErrorState()
@@ -913,6 +976,50 @@ void HlsMediaDownloader::ReportBitrateStart(uint32_t bitRate)
     }
     MEDIA_LOG_I("ReportBitrateStart bitRate : " PUBLIC_LOG_U32, bitRate);
     callback_->OnEvent({PluginEventType::SOURCE_BITRATE_START, {bitRate}, "source_bitrate_start"});
+}
+
+void HlsMediaDownloader::CacheData()
+{
+    MEDIA_LOG_I("CacheData begin.");
+    while (buffer_->GetSize() < wantReadLenth_ && !isInterrupt_) {
+        if (downloadRequest_ == nullptr) {
+            OSAL::SleepFor(SLEEP_TIME::REQUEST_SLEEP_TIME);
+            continue;
+        }
+        bool isEos = downloadRequest_->IsEos();
+        if (isEos && buffer_->GetSize() == 0) {
+            isBuffering_ = false;
+            MEDIA_LOG_I("CacheData over, isEos: " PUBLIC_LOG_D32, isEos);
+            break;
+        }
+        if (downloadErrorState_) {
+            isBuffering_ = false;
+            MEDIA_LOG_I("downloadErrorState_ break");
+            break;
+        }
+        bool isClose = downloadRequest_->IsClosed();
+        if (isClose && buffer_->GetSize() == 0) {
+            isBuffering_ = false;
+            MEDIA_LOG_I("isClose break");
+            break;
+        }
+        OSAL::SleepFor(SLEEP_TIME::CACHE_DATA_SLEEP_TIME);
+    }
+
+    if (!isReadFrame_) {
+        isReadFrame_ = true;
+        MEDIA_LOG_I("Playing start");
+    } else {
+        MEDIA_LOG_I("CacheData onEvent BUFFERING_EDN");
+        callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+    }
+
+    isBuffering_ = false;
+    if (downloadTask_ != nullptr) {
+        MEDIA_LOG_I("Download task pause async, GetSize: " PUBLIC_LOG_ZU, buffer_->GetSize());
+        downloadTask_->PauseAsync();
+    }
+    MEDIA_LOG_I("CacheData over.");
 }
 }
 }

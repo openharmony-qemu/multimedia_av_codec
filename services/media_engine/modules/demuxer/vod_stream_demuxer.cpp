@@ -352,7 +352,7 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
     if (0 == expectedLen) {
         return Status::END_OF_STREAM;
     }
-    return Status::ERROR_NOT_ENOUGH_DATA;
+    return Status::ERROR_AGAIN;
 }
 
 Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,

@@ -36,6 +36,18 @@ namespace HttpPlugin {
 #else
 #define PRIVATE private
 #endif
+enum BufferingTimes : int32_t {
+    FIRST_TIMES = 1,
+    SECOND_TIMES = 2,
+};
+
+enum SLEEP_TIME : int32_t {
+    REQUEST_SLEEP_TIME = 5, // 5ms
+    BUFFERING_SLEEP_TIME = 10, // 10ms
+    CACHE_DATA_SLEEP_TIME = 100, // 100ms
+    BUFFERING_TIME_OUT = 1000, // 100ms
+};
+
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
     HlsMediaDownloader() noexcept;
@@ -96,6 +108,9 @@ PRIVATE:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
+    void CacheData();
+    bool HandleBuffering();
+    bool HandleCache();
     bool CheckReadStatus();
     bool CheckReadTimeOut();
 PRIVATE:
@@ -198,6 +213,12 @@ PRIVATE:
     std::atomic<bool> isStopped = false;
     Mutex firstTsMutex_ {};
     std::string mimeType_;
+    std::shared_ptr<Task> downloadTask_;
+    unsigned int wantReadLenth_ {0};
+    bool isInterrupt_ {false};
+    bool isBuffering_ {false};
+    bool isFirstFrameArrived_ {false};
+    unsigned int bufferingTimes_ {0};
 };
 }
 }
