@@ -383,7 +383,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         curl_slist_free_all(headers);
     }
     std::set <CURLcode> notRetrySet = {
-        CURLE_WRITE_ERROR, CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
+        CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
         CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
         CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR};
     clientCode = NetworkClientErrorCode::ERROR_OK;
