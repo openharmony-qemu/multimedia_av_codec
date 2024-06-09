@@ -25,7 +25,7 @@ namespace Sample {
 class VideoEncoder : public VideoCodecBase {
 public:
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData) override;
+    int32_t Config(SampleInfo &sampleInfo, SampleContext * const sampleContext) override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
@@ -35,7 +35,7 @@ public:
 
 private:
     int32_t NotifyEndOfStream();
-    int32_t SetCallback(CodecUserData *codecUserData);
+    int32_t SetCallback(SampleContext * const sampleContext);
     int32_t Configure(const SampleInfo &sampleInfo);
     int32_t GetSurface(SampleInfo &sampleInfo);
 };

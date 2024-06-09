@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_BITSTREAM_READER_H
-#define AVCODEC_SAMPLE_BITSTREAM_READER_H
+#ifndef AVCODEC_SAMPLE_DATA_PRODUCER_BITSTREAM_READER_H
+#define AVCODEC_SAMPLE_DATA_PRODUCER_BITSTREAM_READER_H
 #include "data_producer_base.h"
 
 namespace OHOS {
@@ -40,4 +40,4 @@ private:
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_BITSTREAM_READER_H
+#endif // AVCODEC_SAMPLE_DATA_PRODUCER_BITSTREAM_READER_H

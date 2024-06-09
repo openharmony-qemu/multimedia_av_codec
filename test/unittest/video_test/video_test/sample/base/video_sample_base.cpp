@@ -64,7 +64,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = videoCodec_->Create(sampleInfo_.codecMime);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
-    context_ = std::make_shared<CodecUserData>();
+    context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = &sampleInfo_;
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");

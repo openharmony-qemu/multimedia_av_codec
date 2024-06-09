@@ -64,10 +64,10 @@ int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserData)
+int32_t VideoEncoder::Config(SampleInfo &sampleInfo, SampleContext * const sampleContext)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
-    CHECK_AND_RETURN_RET_LOG(codecUserData != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: codecUserData");
+    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: codecUserData");
     runMode_ = sampleInfo.codecRunMode;
 
     // Configure video encoder
@@ -79,7 +79,7 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserDat
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get surface failed");
 
     // SetCallback for video encoder
-    ret = SetCallback(codecUserData);
+    ret = SetCallback(sampleContext);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed");
 
     // Prepare video encoder
@@ -172,13 +172,13 @@ int32_t VideoEncoder::NotifyEndOfStream()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoder::SetCallback(CodecUserData *codecUserData)
+int32_t VideoEncoder::SetCallback(SampleContext * const sampleContext)
 {
     int32_t ret = AV_ERR_OK;
     if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, codecUserData);
+        ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
     } else {
-        ret = OH_VideoEncoder_SetCallback(codec_.get(), AVCodecAsyncCallback, codecUserData);
+        ret = OH_VideoEncoder_SetCallback(codec_.get(), AVCodecAsyncCallback, sampleContext);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
 

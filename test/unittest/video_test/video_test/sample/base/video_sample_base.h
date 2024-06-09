@@ -22,6 +22,7 @@
 #include "sample_info.h"
 #include "video_codec_base.h"
 #include "data_producer_base.h"
+#include "sample_context.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -54,7 +55,7 @@ protected:
 
     std::mutex mutex_;
     SampleInfo sampleInfo_;
-    std::shared_ptr<CodecUserData> context_ = nullptr;
+    std::shared_ptr<SampleContext> context_ = nullptr;
     std::condition_variable doneCond_;
 };
 

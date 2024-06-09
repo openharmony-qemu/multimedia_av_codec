@@ -17,6 +17,7 @@
 #define AVCODEC_SAMPLE_VIDEO_CODEC_BASE_H
 
 #include "sample_info.h"
+#include "sample_context.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -25,7 +26,7 @@ class VideoCodecBase {
 public:
     virtual ~VideoCodecBase() {};
     virtual int32_t Create(const std::string &codecMime, bool isSoftware = false) = 0;
-    virtual int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData) = 0;
+    virtual int32_t Config(SampleInfo &sampleInfo, SampleContext * const codecUserData) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Flush() = 0;
     virtual int32_t Stop() = 0;
