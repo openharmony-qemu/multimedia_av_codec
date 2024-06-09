@@ -347,7 +347,7 @@ std::string HttpCurlClient::UrlParse(const std::string& url) const
     return s;
 }
 
-void HttpCurlClient::CheckRequestRange(long startPos)
+void HttpCurlClient::CheckRequestRange(long startPos, int len)
 {
     if (startPos >= 0) {
         char requestRange[128] = {0};
@@ -370,7 +370,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
                                    NetworkClientErrorCode& clientCode)
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
-    CheckRequestRange(startPos);
+    CheckRequestRange(startPos, len);
     curl_slist *headers {nullptr};
     headers = curl_slist_append(headers, "Connection: Keep-alive");
     headers = curl_slist_append(headers, "Keep-Alive: timeout=120");
