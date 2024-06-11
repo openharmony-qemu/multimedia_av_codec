@@ -505,7 +505,7 @@ Status DemuxerPluginManager::Flush()
     if (curVideoStreamID_ != -1 && streamInfoMap_[curVideoStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curVideoStreamID_].plugin->Flush();
         if (needResetEosStatus_) {
-            streamInfoMap_[curAudioStreamID_].plugin->ResetEosStatus();
+            streamInfoMap_[curVideoStreamID_].plugin->ResetEosStatus();
         }
         if (ret != Status::OK) {
             return ret;
