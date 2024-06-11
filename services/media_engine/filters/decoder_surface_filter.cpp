@@ -406,9 +406,10 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         if (rate < 0) {
             if (configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, rate)) {
                 MEDIA_LOG_W("rate is invalid, get frame rate from the original resource: %{public}f", rate);
-            } else {
-                rate = 0.0;
             }
+        }
+        if (rate <= 0) {
+            rate = 30.0; // 30.0 is the hisi default frame rate.
         }
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
     }
