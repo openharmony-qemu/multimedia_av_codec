@@ -499,15 +499,15 @@ int32_t ADecDemoAuto::HandleNormalInput(const uint32_t& index, const int64_t pts
 
 void ADecDemoAuto::InputFunc()
 {
-    size_t gmusize = 320;
-    size_t aacsize = 1024;
-    size_t opussize = 320;
     size_t frameBytes = 1152;
     if (audioType_ == TYPE_OPUS) {
+        size_t opussize = 320;
         frameBytes = opussize;
     } else if (audioType_ == TYPE_G711MU) {
+        size_t gmusize = 320;
         frameBytes = gmusize;
     } else if (audioType_ == TYPE_AAC) {
+        size_t aacsize = 1024;
         frameBytes = aacsize;
     }
     size_t currentSize = inputdatasize < frameBytes ? inputdatasize : frameBytes;
