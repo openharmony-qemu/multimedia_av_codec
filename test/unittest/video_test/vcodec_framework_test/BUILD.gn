@@ -145,6 +145,7 @@ ohos_unittest("videodec_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -190,6 +191,7 @@ ohos_unittest("videoenc_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -233,6 +235,7 @@ ohos_unittest("videoenc_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -301,6 +304,7 @@ ohos_unittest("videoenc_stable_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
