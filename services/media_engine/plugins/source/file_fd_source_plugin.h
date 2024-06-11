@@ -28,11 +28,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace FileFdSource {
-struct HmdfsHasCache {
-    int64_t offset;
-    int64_t readSize;
-};
-    
 class FileFdSourcePlugin : public SourcePlugin {
 public:
     explicit FileFdSourcePlugin(std::string name);
@@ -48,25 +43,18 @@ public:
     Status Stop() override;
     void SetDemuxerState() override;
     void SetBundleName(const std::string& bundleName) override;
-    void SetInterruptState(bool isInterruptNeeded) override;
     void SubmitBufferingStart();
     void SubmitReadFail();
 private:
     Status ParseUriInfo(const std::string& uri);
     void PauseReadTimer();
     int64_t ReadTimer();
-    int64_t ReadData();
-    int WaitRead(std::shared_ptr<Memory>& bufData, HmdfsHasCache ioctlData, size_t expectedLen);
-    Status CheckReading();
-    Status CheckWaiting();
-    void ReadFailedLog(ssize_t size, size_t expectedLen);
     void CacheData();
     void StartTimerTask();
     void PauseTimerTask();
     void HandleReadFail();
-    bool HandleBuffering(size_t expectedLen);
+    bool HandleBuffering();
     void PauseDownloadTask(bool isAsync);
-    void PauseReadTask(bool isAsync);
 
     int32_t fd_ {-1};
     int64_t offset_ {0};
@@ -82,13 +70,10 @@ private:
     uint64_t readTime_ {0};
     std::shared_ptr<Task> timerTask_;
     std::shared_ptr<Task> downloadTask_;
-    std::shared_ptr<Task> readTask_;
     std::shared_mutex mutex_;
     bool isReadFrame_ {false};
     std::string bundleName_ {};
-    size_t expectedLen_ {0};
-    bool isInterruptNeeded_ {false};
-    std::atomic<bool> isReadFailed_ {false};
+    bool isReadSuccess_ {false};
 };
 } // namespace FileSource
 } // namespace Plugins
