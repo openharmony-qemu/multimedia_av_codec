@@ -67,19 +67,5 @@ int32_t DemuxerInnerMock::SeekToTime(int64_t mSeconds, SeekMode mode)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t DemuxerInnerMock::SetMediaKeySystemInfoCallback(bool isNull)
-{
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::SetDemuxerMediaKeySystemInfoCallback(bool isNull)
-{
-    return AV_ERR_UNKNOWN;
-}
-
-int32_t DemuxerInnerMock::GetMediaKeySystemInfo()
-{
-    return AV_ERR_UNKNOWN;
-}
 }
 }
