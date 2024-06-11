@@ -136,7 +136,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
 
 int32_t FFmpegAPEDecoderPlugin::SetBitsDepth(AudioSampleFormat sampleFmt)
 {
-    int32_t ret = 16;
+    int32_t ret = 16; // default sample bit = 16 bit
     if (sampleFmt == SAMPLE_S16LE || sampleFmt == SAMPLE_S16P) {
         ret = 16; // sample bit = 16 bit
     } else if (sampleFmt == SAMPLE_U8 || sampleFmt == SAMPLE_U8P) {
