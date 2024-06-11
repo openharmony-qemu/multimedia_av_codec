@@ -24,7 +24,6 @@
 #include "media_downloader.h"
 #include "common/media_source.h"
 #include "timer.h"
-#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -63,19 +62,19 @@ public:
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
-    bool HandleSeekHit(int64_t offest);
     bool CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataInfo& readDataInfo);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
-    std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
     Mutex mutex_;
     ConditionVariable cvReadWrite_;
     Callback* callback_ {nullptr};
     StatusCallbackFunc statusCallback_ {nullptr};
+    bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
+    uint64_t readTime_ {0};
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
@@ -96,8 +95,6 @@ private:
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
-    size_t readOffset_ {0};
-    size_t writeOffset_ {0};
 };
 }
 }

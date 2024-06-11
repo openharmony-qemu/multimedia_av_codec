@@ -102,7 +102,6 @@ ohos_shared_library("media_plugin_HttpSource") {
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
     "monitor/download_monitor.cpp",
-    "utils/media_cached_buffer.cpp",
     "xml/xml_element.cpp",
     "xml/xml_parser.cpp",
   ]

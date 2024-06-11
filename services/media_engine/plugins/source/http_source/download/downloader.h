@@ -174,7 +174,7 @@ private:
     std::shared_ptr<NetworkClient> client_;
     std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
-    FairMutex operatorMutex_{};
+    Mutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     bool shouldStartNextRequest {false};
     int32_t noTaskLoopTimes_ {0};
