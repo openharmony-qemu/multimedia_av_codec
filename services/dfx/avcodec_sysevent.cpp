@@ -80,8 +80,24 @@ void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecI
                     "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
 }
 
-void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)
+void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
 {
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+                    "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
+}
+
+void DemuxerInitEventWrite(uint32_t clientPid, uint32_t clientTid, uint32_t downloadSize, std::string sourceType)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "DEMUXER_INIT_INFO",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+                    "CLIENT_PID", clientPid, "CLIENT_TID",   clientTid,
+                    "DOWNLOAD_SIZE", downloadSize,
+                    "SOURCE_TYPE", sourceType);
+}
+
+void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)
+ {
     HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "DEMUXER_FAILURE",
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "APP_NAME",         demuxerFaultInfo.appName,
