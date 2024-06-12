@@ -31,6 +31,7 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 #include "meta/video_types.h"
+#include "avcodec_sysevent.h"
 #include "ffmpeg_demuxer_plugin.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -57,6 +58,7 @@ const int32_t MP3_PROBE_SCORE_LIMIT = 5;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
+const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 
@@ -676,6 +678,10 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
             bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
 
+        if(!ioContext->initCompleted) {
+            ioContext->initDownloadDataSize +=  static_cast<uint32_t>(buffer->GetMemory()->GetSize());
+        }
+
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
@@ -812,6 +818,15 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
     });
 }
 
+void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
+{
+    ioContext_.initCompleted = true;
+    if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
+        MEDIA_LOG_I("init download data size = %{public}u.", ioContext_.initDownloadDataSize);
+        DemuxerInitEventWrite(getpid(), gettid(), ioContext_.initDownloadDataSize, pluginName_);
+    }
+}
+
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -865,6 +880,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         }
     }
 
+    NotifyInitializationCompleted();
     MEDIA_LOG_I("Set data source for demuxer successfully.");
     return Status::OK;
 }

@@ -73,6 +73,7 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags);
     void InitAVFormatContext();
+    void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);
     void ConvertAvcToAnnexb(AVPacket& pkt);
@@ -106,6 +107,8 @@ private:
         uint64_t fileSize {0};
         bool eos {false};
         std::atomic<bool> timeout {false};
+        uint32_t initDownloadDataSize {0};
+        std::atomic<bool> initCompleted {false};
     };
 
     std::mutex mutex_ {};
