@@ -22,9 +22,12 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-static const std::string MPD_SEGMENT_BASE = "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_HEV1/DASH_SDR_H265_HEV1.mpd";
-static const std::string MPD_SEGMENT_LIST = "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/index_only720P.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE = "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentTemplate/index_only720P.mpd";
+static const std::string MPD_SEGMENT_BASE =
+    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_HEV1/DASH_SDR_H265_HEV1.mpd";
+static const std::string MPD_SEGMENT_LIST =
+    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/index_only720P.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE =
+    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentTemplate/index_only720P.mpd";
 }
 
 using namespace testing::ext;
@@ -42,7 +45,7 @@ void DashMpdDownloaderUnitTest::TearDownTestCase(void)
     g_mpdDownloader = nullptr;
 }
 
-void DashMpdDownloaderUnitTest::SetUp(void){}
+void DashMpdDownloaderUnitTest::SetUp(void) {}
 
 void DashMpdDownloaderUnitTest::TearDown(void) {}
 

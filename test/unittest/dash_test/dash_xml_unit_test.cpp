@@ -25,7 +25,7 @@ void DashXmlUnitTest::SetUpTestCase(void) {}
 
 void DashXmlUnitTest::TearDownTestCase(void) {}
 
-void DashXmlUnitTest::SetUp(void){}
+void DashXmlUnitTest::SetUp(void) {}
 
 void DashXmlUnitTest::TearDown(void) {}
 
@@ -49,7 +49,6 @@ HWTEST_F(DashXmlUnitTest, Test_ParseFromString_Success_001, TestSize.Level1)
 
 HWTEST_F(DashXmlUnitTest, Test_ParseFromBuffer_Failed_001, TestSize.Level1)
 {
-
     double ret = xmlParser_->ParseFromBuffer(nullptr, 1);
     EXPECT_GE(ret, -1);
 }

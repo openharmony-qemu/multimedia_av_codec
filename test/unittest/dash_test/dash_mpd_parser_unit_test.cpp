@@ -28,7 +28,7 @@ void DashMpdParserUnitTest::SetUpTestCase(void) {}
 
 void DashMpdParserUnitTest::TearDownTestCase(void) {}
 
-void DashMpdParserUnitTest::SetUp(void){}
+void DashMpdParserUnitTest::SetUp(void) {}
 
 void DashMpdParserUnitTest::TearDown(void) {}
 
@@ -81,9 +81,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentListMpd_001, TestSize.Level1)
     std::string mpd = "<?xml version=\"1.0\" ?>\n"
                       "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" profiles=\"urn:mpeg:dash:profile:isoff-live:2011\""
                       " minBufferTime=\"PT2.00S\" mediaPresentationDuration=\"PT01M1.100S\" type=\"static\">\n"
-                      "  <!-- Created with Bento4 mp4-dash.py, VERSION=1.7.0-613 -->\n"
                       "  <Period>\n"
-                      "    <!-- Video -->\n"
                       "    <AdaptationSet mimeType=\"video/mp4\" segmentAlignment=\"true\" startWithSAP=\"1\" "
                       "minWidth=\"1280\" maxWidth=\"2560\" minHeight=\"720\" maxHeight=\"1440\">\n"
                       "      <Representation id=\"video/1\" codecs=\"hev1.2.4.H120.90\" width=\"1280\" "
@@ -102,16 +100,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentListMpd_001, TestSize.Level1)
                       "          <SegmentURL media=\"video/2/seg-2.m4s\" TI=\"15.09\" SI=\"33.79\"/>\n"
                       "        </SegmentList>\n"
                       "      </Representation>\n"
-                      "      <Representation id=\"video/3\" codecs=\"hev1.2.4.H150.90\" width=\"2560\" "
-                      "height=\"1440\" scanType=\"progressive\" frameRate=\"30\" bandwidth=\"4640480\">\n"
-                      "        <SegmentList timescale=\"1000\" duration=\"2000\">\n"
-                      "          <Initialization sourceURL=\"video/3/init.mp4\"/>\n"
-                      "          <SegmentURL media=\"video/3/seg-1.m4s\" TI=\"7.06\" SI=\"26.09\"/>\n"
-                      "          <SegmentURL media=\"video/3/seg-2.m4s\" TI=\"15.04\" SI=\"29.67\"/>\n"
-                      "        </SegmentList>\n"
-                      "      </Representation>\n"
                       "    </AdaptationSet>\n"
-                      "    <!-- Audio -->\n"
                       "    <AdaptationSet mimeType=\"audio/mp4\" startWithSAP=\"1\" segmentAlignment=\"true\">\n"
                       "      <Representation id=\"audio/und/mp4a\" codecs=\"mp4a.40.2\" bandwidth=\"132195\" "
                       "audioSamplingRate=\"48000\">\n"
