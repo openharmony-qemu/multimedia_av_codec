@@ -29,6 +29,8 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 constexpr uint32_t DRM_UUID_OFFSET = 12;
+constexpr size_t RETRY_TIMES = 15000;
+constexpr unsigned int SLEEP_TIME = 1;
 
 DashMpdDownloader::DashMpdDownloader()
 {
@@ -420,6 +422,16 @@ void DashMpdDownloader::SetHdrStart(bool isHdrStart)
     isHdrStart_ = isHdrStart;
 }
 
+void DashMpdDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
+
+std::string DashMpdDownloader::GetUrl()
+{
+    return url_;
+}
+
 void DashMpdDownloader::ParseManifest()
 {
     if (downloadContent_.length() == 0) {
@@ -725,12 +737,20 @@ int64_t DashMpdDownloader::GetDuration() const
 Seekable DashMpdDownloader::GetSeekable() const
 {
     // need wait mpdInfo_ not null
-    while (true) {
+    size_t times = 0;
+    while (times < RETRY_TIMES && !isInterruptNeeded_) {
         if (mpdInfo_ != nullptr && notifyOpenOk_) {
             break;
         }
-        OSAL::SleepFor(1);
+        OSAL::SleepFor(SLEEP_TIME);
+        times++;
     }
+
+    if (times >= RETRY_TIMES || isInterruptNeeded_) {
+        MEDIA_LOG_I("GetSeekable INVALID");
+        return Seekable::INVALID;
+    }
+
     MEDIA_LOG_I("GetSeekable end");
     return mpdInfo_->type_ == DashType::DASH_TYPE_STATIC ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
 }

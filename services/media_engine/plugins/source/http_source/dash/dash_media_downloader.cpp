@@ -30,6 +30,8 @@ namespace HttpPlugin {
 
 constexpr double BUFFER_LOW_LIMIT  = 0.3;
 constexpr double BYTE_TO_BIT = 8.0;
+constexpr size_t RETRY_TIMES = 15000;
+constexpr unsigned int SLEEP_TIME = 1;
 
 DashMediaDownloader::DashMediaDownloader() noexcept
 {
@@ -101,6 +103,7 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_)) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
+        return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_TIMEOUT) {
         if (callback_ != nullptr) {
             MEDIA_LOG_I("Read time out, OnEvent");
@@ -185,16 +188,28 @@ Seekable DashMediaDownloader::GetSeekable() const
 {
     MEDIA_LOG_I("GetSeekable begin");
     Seekable value = mpdDownloader_->GetSeekable();
+    if (value == Seekable::INVALID) {
+        return value;
+    }
+
+    size_t times = 0;
     bool status = false;
-    while (!status) {
+    while (!status && times < RETRY_TIMES && !isInterruptNeeded_) {
         for (auto downloader : segmentDownloaders_) {
             status = downloader->GetStartedStatus();
             if (!status) {
                 break;
             }
         }
-        OSAL::SleepFor(1);
+        OSAL::SleepFor(SLEEP_TIME);
+        times++;
     }
+
+    if (times >= RETRY_TIMES || isInterruptNeeded_) {
+        MEDIA_LOG_I("GetSeekable INVALID");
+        return Seekable::INVALID;
+    }
+
     MEDIA_LOG_I("GetSeekable end");
     return value;
 }
@@ -709,7 +724,8 @@ void DashMediaDownloader::OnDrmInfoChanged(const std::multimap<std::string, std:
 
 void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
-    return;
+    isInterruptNeeded_ = isInterruptNeeded;
+    mpdDownloader_->SetInterruptState(isInterruptNeeded);
 }
 }
 }

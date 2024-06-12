@@ -86,6 +86,7 @@ private:
     std::shared_ptr<DashMpdDownloader> mpdDownloader_;
     std::vector<std::shared_ptr<DashSegmentDownloader>> segmentDownloaders_;
 
+    std::atomic<bool> isInterruptNeeded_{false};
     bool isAutoSelectBitrate_ {true};
     bool downloadErrorState_ {false};
     int64_t breakpoint_ {0};
