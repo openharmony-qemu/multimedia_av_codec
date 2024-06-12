@@ -767,14 +767,10 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     surfaceWidth_ = width;
     surfaceHeight_ = height;
  
-    if (bitrateChange_ <= 0) {
-        return;
-    }
     MEDIA_LOG_I("ReportVideoSizeChange videoWidth: " PUBLIC_LOG_D32 " videoHeight: "
         PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
     std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
-    bitrateChange_--;
 }
 } // namespace Pipeline
 } // namespace MEDIA
