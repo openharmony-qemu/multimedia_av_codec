@@ -652,58 +652,70 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
     return 0;
 }
 
+void FFmpegDemuxerPlugin::CollectDownloadDataSize()
+{
+    if(ioContext->initCompleted) {
+        return;
+    }
+    ioContext->initDownloadDataSize +=  static_cast<uint32_t>(buffer->GetMemory()->GetSize());
+}
+
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
     int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
+    FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
+
     if (ioContext->dataSource->IsDash() && ioContext->eos == true) {
         MEDIA_LOG_I("AVReadPacket return EOS");
         return AVERROR_EOF;
     }
-    if (ioContext && ioContext->dataSource) {
-        auto buffer = std::make_shared<Buffer>();
-        auto bufData = buffer->WrapMemory(buf, bufSize, 0);
-        FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
-        MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
-        if (ioContext->fileSize > 0) {
-            FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
-                "Offset out of file size.");
-            if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
-                bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
-            }
+    auto buffer = std::make_shared<Buffer>();
+    auto bufData = buffer->WrapMemory(buf, bufSize, 0);
+    MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
+    if (ioContext->fileSize > 0) {
+        FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
+            "Offset out of file size.");
+        if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
+            bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
         }
-        auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
-        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
-            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
+    }
+    auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
+    MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
+        bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
 
-        if(!ioContext->initCompleted) {
-            ioContext->initDownloadDataSize +=  static_cast<uint32_t>(buffer->GetMemory()->GetSize());
-        }
-
-        if (result == Status::OK) {
+    switch (result) {
+        case Status::OK:
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
-        } else if (result == Status::ERROR_AGAIN) {
+            break;
+        case Status::ERROR_AGAIN:
             MEDIA_LOG_I("Read data not enough, read again.");
             ioContext->timeout = true;
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
             if (ret == 0) {
-                return AVERROR(EAGAIN);
+                ret = AVERROR(EAGAIN);
             }
-        } else if (result == Status::END_OF_STREAM) {
-            MEDIA_LOG_I("File is end.");
+            break;
+        case Status::END_OF_STREAM:
+            MEDIA_LOG_I("Read at end of file.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
-        } else {
-            if (result == Status::ERROR_WRONG_STATE) {
-                ioContext->timeout = true;
-            }
+            break;
+        case Status::ERROR_WRONG_STATE:
+            ioContext->timeout = true;
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
-        }
+            break;
+        default:
+            MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
+            break;
     }
+
+    CollectDownloadDataSize();
+
     return ret;
 }
 
