@@ -654,7 +654,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 
 void FFmpegDemuxerPlugin::CollectDownloadDataSize(IOContext* ioContext, uint32_t dataSize)
 {
-    if(ioContext->initCompleted) {
+    if (ioContext->initCompleted) {
         return;
     }
     ioContext->initDownloadDataSize +=  dataSize;
@@ -695,10 +695,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             MEDIA_LOG_I("Read data not enough, read again.");
             ioContext->timeout = true;
             ioContext->offset += buffer->GetMemory()->GetSize();
-            ret = buffer->GetMemory()->GetSize();
-            if (ret == 0) {
-                ret = AVERROR(EAGAIN);
-            }
+            ret = buffer->GetMemory()->GetSize() == 0 ? AVERROR(EAGAIN) : buffer->GetMemory()->GetSize();
             break;
         case Status::END_OF_STREAM:
             MEDIA_LOG_I("Read at end of file.");
