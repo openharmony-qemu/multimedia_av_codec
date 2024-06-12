@@ -59,7 +59,7 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    std::string userAgent_ {"Harmony OS UA"};
+    std::string userAgent_ {"OpenHarmony OS UA"};
     std::string referer_ {};
     std::string cookie_ {};
 };
