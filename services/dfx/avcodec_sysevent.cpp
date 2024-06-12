@@ -85,8 +85,7 @@ void DemuxerInitEventWrite(uint32_t clientPid, uint32_t clientTid, uint32_t down
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "DEMUXER_INIT_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                     "CLIENT_PID", clientPid, "CLIENT_TID",   clientTid,
-                    "DOWNLOAD_SIZE", downloadSize,
-                    "SOURCE_TYPE", sourceType);
+                    "DOWNLOAD_SIZE", downloadSize, "SOURCE_TYPE", sourceType);
 }
 
 void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)
