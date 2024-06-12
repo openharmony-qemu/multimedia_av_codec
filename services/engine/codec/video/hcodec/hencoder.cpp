@@ -26,7 +26,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 HEncoder::~HEncoder()
 {
@@ -722,7 +722,7 @@ void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
     AppendToVector(omxBuffer->alongParam, param);
 }
 
-void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                                    const shared_ptr<Media::Meta> &meta)
 {
     bool requestIFrame = false;
@@ -739,7 +739,7 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::
     HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
 }
 
-void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                              const shared_ptr<Media::Meta> &meta)
 {
     int32_t minQp;

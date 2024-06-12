@@ -22,7 +22,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 /**************************** BaseState Start ****************************/
 void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
@@ -171,26 +171,16 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
     }
 }
 
-static bool IsSecureMode(const string &name)
-{
-    string prefix = ".secure";
-    if (name.length() <= prefix.length()) {
-        return false;
-    }
-    return (name.rfind(prefix) == (name.length() - prefix.length()));
-}
-
 int32_t HCodec::UninitializedState::OnAllocateComponent()
 {
-    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + codec_->componentName_);
-    codec_->isSecure_ = IsSecureMode(codec_->componentName_);
+    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + codec_->caps_.compName);
     codec_->compMgr_ = GetManager();
     if (codec_->compMgr_ == nullptr) {
         SLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
     }
     codec_->compCb_ = new HdiCallback(codec_);
-    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, codec_->componentName_,
+    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, codec_->caps_.compName,
                                                     0, codec_->compCb_);
     if (ret != HDF_SUCCESS || codec_->compNode_ == nullptr) {
         codec_->compCb_ = nullptr;
@@ -199,7 +189,7 @@ int32_t HCodec::UninitializedState::OnAllocateComponent()
         return AVCS_ERR_UNKNOWN;
     }
     codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + codec_->shortName_ + "]";
-    SLOGI("create omx node %s succ", codec_->componentName_.c_str());
+    SLOGI("create omx node %s succ", codec_->caps_.compName.c_str());
     codec_->PrintCaller();
     return AVCS_ERR_OK;
 }

@@ -29,7 +29,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 HDecoder::~HDecoder()
 {
@@ -259,9 +259,6 @@ int32_t HDecoder::OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface)
     }
     currSurface_ = SurfaceItem(surface);
     HLOGI("set surface(%" PRIu64 ")(%s) succ", surface->GetUniqueId(), surface->GetName().c_str());
-    if (surface->GetName().find("BootAnimationNode") != string::npos) {
-        debugMode_ = true;
-    }
     return AVCS_ERR_OK;
 }
 
