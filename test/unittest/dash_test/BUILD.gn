@@ -89,7 +89,6 @@ config("dash_unittest_cfg") {
     "$media_foundation_root_dir/src",
     "//third_party/curl/include",
     "//third_party/openssl/include",
-    "//third_party/libxml2/include",
   ]
 }
 
@@ -104,7 +103,6 @@ ohos_unittest("dash_xml_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
-    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -113,6 +111,7 @@ ohos_unittest("dash_xml_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
@@ -130,7 +129,6 @@ ohos_unittest("dash_mpd_parser_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
-    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -139,6 +137,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
@@ -156,7 +155,6 @@ ohos_unittest("dash_media_downloader_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
-    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -165,6 +163,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
@@ -182,7 +181,6 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
-    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -191,6 +189,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
@@ -208,7 +207,6 @@ ohos_unittest("dash_segment_downloader_unit_test") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
-    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -217,6 +215,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
