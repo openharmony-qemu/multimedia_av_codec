@@ -294,8 +294,8 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 #ifndef _WIN32
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 #endif
-    pluginImpl_ = nullptr;
     formatContext_ = nullptr;
+    pluginImpl_ = nullptr;
     avbsfContext_ = nullptr;
     streamParser_ = nullptr;
     selectedTrackIds_.clear();
