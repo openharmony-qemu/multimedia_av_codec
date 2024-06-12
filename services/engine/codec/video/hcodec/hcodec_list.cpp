@@ -26,7 +26,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 using namespace OHOS::HDI::ServiceManager::V1_0;
 
 static mutex g_mtx;
@@ -230,7 +230,7 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
     }
 }
 
-void HCodecList::GetSupportedFeatureParam(const OHOS::HDI::Codec::V3_0::CodecVideoPortCap& hdiVideoCap,
+void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
                                           CapabilityData& userCap)
 {
     if (hdiVideoCap.isSupportLowLatency) {
