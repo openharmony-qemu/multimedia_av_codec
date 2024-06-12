@@ -477,13 +477,17 @@ void Downloader::HandleRetOK()
 
 void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
 {
-    if (!mediaDownloader->currentRequest_->isHeaderUpdated) {
-        MEDIA_LOG_I("UpdateHeaderInfo enter.");
-        HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
-        mediaDownloader->currentRequest_->SaveHeader(info);
-        if (info->contentLen <= 0) {
-            FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
-        }
+    if (mediaDownloader->currentRequest_->isHeaderUpdated) {
+        return;
+    }
+    MEDIA_LOG_I("UpdateHeaderInfo enter.");
+    HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+    if (info->contentLen > 0 && info->contentLen < LIVE_CONTENT_LENGTH) {
+        info->isChunked = false;
+    }
+    mediaDownloader->currentRequest_->SaveHeader(info);
+    if (info->contentLen <= 0) {
+        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
     }
 }
 
@@ -595,6 +599,9 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = reinterpret_cast<Downloader *>(userParam);
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+    if (mediaDownloader->currentRequest_->isHeaderUpdated) {
+        return size * nitems;
+    }
     char* next = nullptr;
     char* key = strtok_s(reinterpret_cast<char*>(buffer), ":", &next);
     FALSE_RETURN_V(key != nullptr, size * nitems);
