@@ -16,11 +16,10 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/unittest"
 dash_test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_segment_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_com_attrs_elements.cpp",
@@ -46,9 +45,10 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/utils/time_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_segment_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [
@@ -103,8 +103,8 @@ ohos_unittest("dash_xml_unit_test") {
   sources = dash_test_sources + [ "dash_xml_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/libxml2:xml2",
     "//third_party/curl:curl_shared",
+    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -129,8 +129,8 @@ ohos_unittest("dash_mpd_parser_unit_test") {
   sources = dash_test_sources + [ "dash_mpd_parser_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/libxml2:xml2",
     "//third_party/curl:curl_shared",
+    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -155,8 +155,8 @@ ohos_unittest("dash_media_downloader_unit_test") {
   sources = dash_test_sources + [ "dash_media_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/libxml2:xml2",
     "//third_party/curl:curl_shared",
+    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -181,8 +181,8 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
   sources = dash_test_sources + [ "dash_mpd_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/libxml2:xml2",
     "//third_party/curl:curl_shared",
+    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -207,8 +207,8 @@ ohos_unittest("dash_segment_downloader_unit_test") {
   sources = dash_test_sources + [ "dash_segment_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/libxml2:xml2",
     "//third_party/curl:curl_shared",
+    "//third_party/libxml2:xml2",
     "//third_party/openssl:libcrypto_shared",
   ]
 
