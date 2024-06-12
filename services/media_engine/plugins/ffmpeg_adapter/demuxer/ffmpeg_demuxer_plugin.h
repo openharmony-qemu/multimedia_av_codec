@@ -73,7 +73,7 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags);
     void InitAVFormatContext();
-    void CollectDownloadDataSize();
+    void CollectDownloadDataSize(uint32 dataSize);
     void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);

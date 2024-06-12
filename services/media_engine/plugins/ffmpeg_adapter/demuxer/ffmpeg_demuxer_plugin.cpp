@@ -652,12 +652,12 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
     return 0;
 }
 
-void FFmpegDemuxerPlugin::CollectDownloadDataSize()
+void FFmpegDemuxerPlugin::CollectDownloadDataSize(uint32 dataSize)
 {
-    if(ioContext->initCompleted) {
+    if(ioContext_->initCompleted) {
         return;
     }
-    ioContext->initDownloadDataSize +=  static_cast<uint32_t>(buffer->GetMemory()->GetSize());
+    ioContext_->initDownloadDataSize +=  dataSize;
 }
 
 // Write packet data into the buffer provided by ffmpeg
@@ -714,7 +714,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
     }
 
-    CollectDownloadDataSize();
+    CollectDownloadDataSize(static_cast<uint32_t>(buffer->GetMemory()->GetSize()));
 
     return ret;
 }
@@ -835,7 +835,7 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
     ioContext_.initCompleted = true;
     if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
         MEDIA_LOG_I("init download data size = %{public}u.", ioContext_.initDownloadDataSize);
-        DemuxerInitEventWrite(getpid(), gettid(), ioContext_.initDownloadDataSize, pluginName_);
+        MediaAVCodec::DemuxerInitEventWrite(getpid(), gettid(), ioContext_.initDownloadDataSize, pluginName_);
     }
 }
 
