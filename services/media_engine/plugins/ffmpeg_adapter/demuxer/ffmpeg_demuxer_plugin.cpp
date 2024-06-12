@@ -654,7 +654,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 
 void FFmpegDemuxerPlugin::CollectDownloadDataSize(IOContext* ioContext, uint32_t dataSize)
 {
-    if(ioContext->initCompleted) {
+    if (ioContext->initCompleted) {
         return;
     }
     ioContext->initDownloadDataSize +=  dataSize;

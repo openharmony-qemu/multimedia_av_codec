@@ -89,7 +89,7 @@ void DemuxerInitEventWrite(int32_t clientPid, int32_t clientTid, uint32_t downlo
 }
 
 void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)
- {
+{
     HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "DEMUXER_FAILURE",
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "APP_NAME",         demuxerFaultInfo.appName,
