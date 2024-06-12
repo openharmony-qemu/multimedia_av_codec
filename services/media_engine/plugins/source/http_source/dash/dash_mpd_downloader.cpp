@@ -755,52 +755,6 @@ Seekable DashMpdDownloader::GetSeekable() const
     return mpdInfo_->type_ == DashType::DASH_TYPE_STATIC ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
 }
 
-void DashMpdDownloader::SelectBitRate(uint32_t bitRate)
-{
-    MEDIA_LOG_I("SelectBitRate bitRate " PUBLIC_LOG_U32, bitRate);
-    if (mpdInfo_ == nullptr || streamDescriptions_.empty()) {
-        return;
-    }
-
-    if (IsBitrateSame(bitRate) || selectVideoStreamId_ == -1) {
-        MEDIA_LOG_W("SelectBitRate is same bitRate or not exit select stream.");
-        return;
-    }
-
-    std::shared_ptr<DashStreamDescription> inUseVideoStream;
-    for (auto &stream : streamDescriptions_) {
-        if (stream->inUse_ && stream->type_ == MediaAVCodec::MEDIA_TYPE_VID) {
-            inUseVideoStream = stream;
-            break;
-        }
-    }
-
-    if (inUseVideoStream == nullptr) {
-        MEDIA_LOG_W("SelectBitRate is failed, not exist use stream.");
-        return;
-    }
-
-    for (auto &stream : streamDescriptions_) {
-        if (stream->type_ != MediaAVCodec::MEDIA_TYPE_VID || stream->inUse_) {
-            continue;
-        }
-
-        if (stream->streamId_ == selectVideoStreamId_) {
-            stream->currentNumberSeq_ = inUseVideoStream->currentNumberSeq_;
-            MEDIA_LOG_I("SelectBitRate update id:"
-            PUBLIC_LOG_D32
-            ", seq:"
-            PUBLIC_LOG_D64, stream->streamId_, stream->currentNumberSeq_);
-            inUseVideoStream->inUse_ = false;
-            stream->inUse_ = true;
-            if (!ondemandSegBase_) {
-                GetSegmentsInMpd(stream);
-            }
-            return;
-        }
-    }
-}
-
 std::vector<uint32_t> DashMpdDownloader::GetBitRates()
 {
     std::vector<uint32_t> bitRates;
