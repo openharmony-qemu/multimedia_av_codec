@@ -25,6 +25,7 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/media_cached_buffer.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
 ]
 config("hls_unittest_cfg") {

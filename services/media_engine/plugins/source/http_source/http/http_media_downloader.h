@@ -24,6 +24,7 @@
 #include "media_downloader.h"
 #include "common/media_source.h"
 #include "timer.h"
+#include "media_cached_buffer.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -32,8 +33,8 @@ namespace Plugins {
 namespace HttpPlugin {
 class HttpMediaDownloader : public MediaDownloader {
 public:
-    HttpMediaDownloader() noexcept;
-    explicit HttpMediaDownloader(uint32_t expectBufferDuration);
+    explicit HttpMediaDownloader(std::string url);
+    explicit HttpMediaDownloader(std::string url, uint32_t expectBufferDuration);
     ~HttpMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
@@ -62,10 +63,24 @@ public:
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
+    bool CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataInfo& readDataInfo);
+    bool HandleSeekHit(int64_t offest);
+    Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    bool SeekRingBuffer(int64_t offset);
+    bool SeekCacheBuffer(int64_t offset);
+    void InitRingBuffer(uint32_t expectBufferDuration);
+    void InitCacheBuffer(uint32_t expectBufferDuration);
+    void CacheData();
+    bool HandleBuffering();
+    bool StartDownloadTask();
+    size_t GetCurrentBufferSize();
+    bool HandleBreak();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
+    std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
     Mutex mutex_;
@@ -95,6 +110,16 @@ private:
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
+    bool isFlv_ {false};
+    size_t readOffset_ {0};
+    size_t writeOffset_ {0};
+    
+    std::shared_ptr<Task> downloadTask_;
+    unsigned int wantReadLength_ {0};
+    bool isInterrupt_ {false};
+    bool isBuffering_ {false};
+    bool isFirstFrameArrived_ {false};
+    unsigned int bufferingTimes_ {0};
 };
 }
 }

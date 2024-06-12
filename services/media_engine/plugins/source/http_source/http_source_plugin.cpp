@@ -204,9 +204,10 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(expectDuration));
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
+                (uri_, expectDuration));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(uri_));
         }
     }
     if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
