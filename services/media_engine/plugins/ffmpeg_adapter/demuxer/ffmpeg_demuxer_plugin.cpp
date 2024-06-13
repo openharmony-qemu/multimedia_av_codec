@@ -652,14 +652,6 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
     return 0;
 }
 
-void FFmpegDemuxerPlugin::CollectDownloadDataSize(IOContext* ioContext, uint32_t dataSize)
-{
-    if (ioContext->initCompleted) {
-        return;
-    }
-    ioContext->initDownloadDataSize +=  dataSize;
-}
-
 // Write packet data into the buffer provided by ffmpeg
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
@@ -711,7 +703,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
     }
 
-    CollectDownloadDataSize(ioContext, static_cast<uint32_t>(buffer->GetMemory()->GetSize()));
+    if (!ioContext->initCompleted) {
+        ioContext->initDownloadDataSize += dataSize;
+    }
 
     return ret;
 }
