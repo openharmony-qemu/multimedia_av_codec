@@ -30,7 +30,6 @@ constexpr uint32_t CODEC_NAME_SIZE = 128;
 constexpr uint32_t DEFAULT_BITRATE = 1000000;
 char g_codecName[CODEC_NAME_SIZE] = {};
 char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
-//const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 } // namespace
@@ -101,7 +100,7 @@ void GetWidthandHeight(OH_AVCapability *capability, int32_t &maxval, int32_t &mi
     ASSERT_GT(heightRange.maxVal, 0);
     maxval = max(widthRange.maxVal, heightRange.maxVal);
     minval = min(widthRange.minVal, heightRange.minVal);
-}    
+}
 
 /**
  * @tc.number    : VIDEO_ENCODE_HEVC_CAPABILITY_1800
