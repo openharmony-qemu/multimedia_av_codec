@@ -29,6 +29,8 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 constexpr uint32_t DRM_UUID_OFFSET = 12;
+constexpr size_t RETRY_TIMES = 15000;
+constexpr unsigned int SLEEP_TIME = 1;
 
 DashMpdDownloader::DashMpdDownloader()
 {
@@ -420,6 +422,16 @@ void DashMpdDownloader::SetHdrStart(bool isHdrStart)
     isHdrStart_ = isHdrStart;
 }
 
+void DashMpdDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
+
+std::string DashMpdDownloader::GetUrl()
+{
+    return url_;
+}
+
 void DashMpdDownloader::ParseManifest()
 {
     if (downloadContent_.length() == 0) {
@@ -725,60 +737,22 @@ int64_t DashMpdDownloader::GetDuration() const
 Seekable DashMpdDownloader::GetSeekable() const
 {
     // need wait mpdInfo_ not null
-    while (true) {
+    size_t times = 0;
+    while (times < RETRY_TIMES && !isInterruptNeeded_) {
         if (mpdInfo_ != nullptr && notifyOpenOk_) {
             break;
         }
-        OSAL::SleepFor(1);
+        OSAL::SleepFor(SLEEP_TIME);
+        times++;
     }
+
+    if (times >= RETRY_TIMES || isInterruptNeeded_) {
+        MEDIA_LOG_I("GetSeekable INVALID");
+        return Seekable::INVALID;
+    }
+
     MEDIA_LOG_I("GetSeekable end");
     return mpdInfo_->type_ == DashType::DASH_TYPE_STATIC ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
-}
-
-void DashMpdDownloader::SelectBitRate(uint32_t bitRate)
-{
-    MEDIA_LOG_I("SelectBitRate bitRate " PUBLIC_LOG_U32, bitRate);
-    if (mpdInfo_ == nullptr || streamDescriptions_.empty()) {
-        return;
-    }
-
-    if (IsBitrateSame(bitRate) || selectVideoStreamId_ == -1) {
-        MEDIA_LOG_W("SelectBitRate is same bitRate or not exit select stream.");
-        return;
-    }
-
-    std::shared_ptr<DashStreamDescription> inUseVideoStream;
-    for (auto &stream : streamDescriptions_) {
-        if (stream->inUse_ && stream->type_ == MediaAVCodec::MEDIA_TYPE_VID) {
-            inUseVideoStream = stream;
-            break;
-        }
-    }
-
-    if (inUseVideoStream == nullptr) {
-        MEDIA_LOG_W("SelectBitRate is failed, not exist use stream.");
-        return;
-    }
-
-    for (auto &stream : streamDescriptions_) {
-        if (stream->type_ != MediaAVCodec::MEDIA_TYPE_VID || stream->inUse_) {
-            continue;
-        }
-
-        if (stream->streamId_ == selectVideoStreamId_) {
-            stream->currentNumberSeq_ = inUseVideoStream->currentNumberSeq_;
-            MEDIA_LOG_I("SelectBitRate update id:"
-            PUBLIC_LOG_D32
-            ", seq:"
-            PUBLIC_LOG_D64, stream->streamId_, stream->currentNumberSeq_);
-            inUseVideoStream->inUse_ = false;
-            stream->inUse_ = true;
-            if (!ondemandSegBase_) {
-                GetSegmentsInMpd(stream);
-            }
-            return;
-        }
-    }
 }
 
 std::vector<uint32_t> DashMpdDownloader::GetBitRates()

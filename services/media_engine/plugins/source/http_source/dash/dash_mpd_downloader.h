@@ -99,7 +99,6 @@ public:
     void SetMpdCallback(DashMpdCallback* callback);
     int64_t GetDuration() const;
     Seekable GetSeekable() const;
-    void SelectBitRate(uint32_t bitRate);
     std::vector<uint32_t> GetBitRates();
     std::vector<uint32_t> GetBitRatesByHdr(bool isHdr);
     bool IsBitrateSame(uint32_t bitRate);
@@ -116,6 +115,8 @@ public:
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
     void SetHdrStart(bool isHdrStart);
+    void SetInterruptState(bool isInterruptNeeded);
+    std::string GetUrl();
 
 private:
     void ParseManifest();
@@ -217,6 +218,7 @@ private:
     bool notifyOpenOk_ {false};
     bool isHdrStart_ {false};
     int selectVideoStreamId_ {-1};
+    std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;
 };
 }
