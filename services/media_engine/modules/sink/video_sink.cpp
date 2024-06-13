@@ -45,6 +45,8 @@ constexpr int64_t SINK_TIME_US_THRESHOLD = 100000; // max sink time 100ms
 
 constexpr int64_t PER_SINK_TIME_THRESHOLD = 33000; // max per sink time 33ms
 
+constexpr int64_t WAIT_TIME_US_THRESHOLD_WARNING = 40000; // warning threshold 40ms
+
 VideoSink::VideoSink()
 {
     refreshTime_ = 0;
@@ -177,7 +179,8 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     MEDIA_LOG_D("VS ct4Bf:" PUBLIC_LOG_D64 "diff:" PUBLIC_LOG_D64 "nowCt:" PUBLIC_LOG_D64, ct4Buffer, diff, nowCt);
     if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
         waitTimeUs = 0 - diff;
-        MEDIA_LOG_W("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
+        MEDIA_LOG_I_FALSE_D((waitTimeUs >= WAIT_TIME_US_THRESHOLD_WARNING),
+            "buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
         if (waitTimeUs > WAIT_TIME_US_THRESHOLD) {
             waitTimeUs = WAIT_TIME_US_THRESHOLD;
         }
@@ -186,10 +189,8 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         MEDIA_LOG_D("buffer is too late");
     }
     lastBufferTime_ = ct4Buffer;
-    if (tooLate && (buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0) { // buffer is too late, drop it
-        return -1;
-    }
-    return waitTimeUs;
+    bool dropFlag = tooLate && ((buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0); // buffer is too late, drop it
+    return dropFlag ? -1 : waitTimeUs;
 }
 
 void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter)
