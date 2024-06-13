@@ -62,7 +62,6 @@
           "samgr",
           "window_manager",
           "media_foundation",
-          "memmgr",
           "audio_framework",
           "drm_framework",
           "ffmpeg",

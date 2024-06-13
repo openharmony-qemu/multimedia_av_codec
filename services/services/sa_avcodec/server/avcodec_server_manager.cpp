@@ -129,12 +129,26 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 AVCodecServerManager::AVCodecServerManager()
 {
     pid_ = getpid();
+    Init();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecServerManager::~AVCodecServerManager()
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+}
+
+void AVCodecServerManager::Init()
+{
+    void *handle = dlopen(LIB_PATH, RTLD_NOW);
+    EXPECT_AND_LOGE(handle == nullptr, "Load so failed:%{public}s", LIB_PATH);
+    auto libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
+    auto notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
+    EXPECT_AND_LOGE(notifyProcessStatusFunc_ == nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
+                    NOTIFY_STATUS_FUNC_NAME);
+    auto setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
+    EXPECT_AND_LOGE(setCriticalFunc_ == nullptr, "Load setCriticalFunc failed:%{public}s", SET_CRITICAL_FUNC_NAME);
+    return;
 }
 
 int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject> &object)
@@ -307,7 +321,7 @@ void AVCodecServerManager::DestroyDumperForPid(pid_t pid)
 
 void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 {
-    int32_t ret = Memory::MemMgrClient::GetInstance().NotifyProcessStatus(pid_, 1, status, AV_CODEC_SERVICE_ID);
+    int32_t ret = notifyProcessStatusFunc_(pid_, 1, status, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
         AVCODEC_LOGI("notify memory manager to %{public}d success.", status);
     } else {
@@ -317,7 +331,7 @@ void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 
 void AVCodecServerManager::SetCritical(const bool isKeyService)
 {
-    int32_t ret = Memory::MemMgrClient::GetInstance().SetCritical(pid_, isKeyService, AV_CODEC_SERVICE_ID);
+    int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
         AVCODEC_LOGI("set critical to %{public}d success.", isKeyService);
     } else {

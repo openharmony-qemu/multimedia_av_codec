@@ -67,6 +67,7 @@ private:
                      pid_t pid,
                      const std::string& stubName);
     void EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stubMap, pid_t pid);
+    void Init();
 
     class AsyncExecutor {
     public:
@@ -88,8 +89,15 @@ private:
     std::map<StubType, std::vector<Dumper>> dumperTbl_;
     AsyncExecutor executor_;
     pid_t pid_ = 0;
-
     std::mutex mutex_;
+    using NotifyProcessStatusFunc = int32_t(*)(int32_t pid, int32_t type, int32_t status, int32_t saId);
+    using SetCriticalFunc = int32_t(*)(int32_t pid, bool critical, int32_t saId);
+    constexpr char LIB_PATH = "libmemmgrclient.z.so";
+    constexpr char NOTIFY_STATUS_FUNC_NAME[] = "notify_process_status";
+    cosntexpr char SET_CRITICAL_FUNC_NAME[] = "set_critical";
+    std::shared_ptr<void> libMemMgrClientHandle_ = nullptr;
+    NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
+    SetCriticalFunc setCriticalFunc_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
