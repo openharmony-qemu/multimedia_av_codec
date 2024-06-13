@@ -131,7 +131,7 @@ Video codec demo help:
 
     --frame_interval                    frame push interval (ms)
     --sample_repeat_times               sample repeat times, data producer will seek to head while eos
-    --demo_repeat_times                 demo repeat times, sample will destroy while eos 
+    --demo_repeat_times                 demo repeat times, sample will destroy while eos
     --hdr_vivid_video                   input file is hdr vivid video? (0: false; 1: true)
     --need_dump_input                   need to dump input stream? (0: false; 1: true)
     --need_dump_output                  need to dump output stream? (0: false; 1: true)

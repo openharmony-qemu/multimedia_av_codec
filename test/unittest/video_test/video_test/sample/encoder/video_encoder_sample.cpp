@@ -63,7 +63,8 @@ void VideoEncoderSample::BufferInputThread()
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
         AVCODEC_LOGV("In buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
-            context_->inputBufferQueue.GetFrameCount(), bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
+            context_->inputBufferQueue.GetFrameCount(),
+            bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
         ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
 
@@ -122,7 +123,8 @@ void VideoEncoderSample::OutputThread()
         CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
         auto &bufferInfo = bufferInfoOpt.value();
         AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
-            context_->outputBufferQueue.GetFrameCount(), bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
+            context_->outputBufferQueue.GetFrameCount(),
+            bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
 
         DumpOutput(bufferInfo);
