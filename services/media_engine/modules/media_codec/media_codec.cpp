@@ -47,22 +47,6 @@ private:
     MediaCodec *mediaCodec_;
 };
 
-class OutputBufferAvailableListener : public IProducerListener {
-public:
-    explicit OutputBufferAvailableListener(MediaCodec *mediaCodec)
-    {
-        mediaCodec_ = mediaCodec;
-    }
-
-    void OnBufferAvailable() override
-    {
-        mediaCodec_->ProcessInputBuffer();
-    }
-
-private:
-    MediaCodec *mediaCodec_;
-};
-
 MediaCodec::MediaCodec()
     : codecPlugin_(nullptr),
       inputBufferQueue_(nullptr),
@@ -179,10 +163,6 @@ int32_t MediaCodec::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &buff
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
                    (int32_t)Status::ERROR_INVALID_STATE);
     outputBufferQueueProducer_ = bufferQueueProducer;
-    sptr<IProducerListener> listener = new OutputBufferAvailableListener(this);
-    FALSE_RETURN_V_MSG_E(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
-                         "outputBufferQueueProducer_ is nullptr");
-    inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     isBufferMode_ = true;
     return (int32_t)Status::OK;
 }
@@ -714,16 +694,9 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
-    const int32_t maxRetryTimes = 3; // max retry count is 3
-    int32_t retryCount = 0;
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-        retryCount++;
-    } while (ret != Status::OK && state_ == CodecState::RUNNING && retryCount < maxRetryTimes);
-
-    if (retryCount == maxRetryTimes && emptyOutputBuffer == nullptr) {
-        MEDIA_LOG_E("request audio decoder output buffer failed");
-    }
+    } while (ret != Status::OK && state_ == CodecState::RUNNING);
 
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
