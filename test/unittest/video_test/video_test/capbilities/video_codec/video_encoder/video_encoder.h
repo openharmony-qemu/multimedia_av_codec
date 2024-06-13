@@ -24,22 +24,18 @@ namespace MediaAVCodec {
 namespace Sample {
 class VideoEncoder : public VideoCodecBase {
 public:
-    VideoEncoder() = default;
-    ~VideoEncoder();
-    
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData) override;
+    int32_t Config(SampleInfo &sampleInfo, SampleContext * const sampleContext) override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
     int32_t Reset() override;
     int32_t PushInputData(CodecBufferInfo &info) override;
     int32_t FreeOutputData(uint32_t bufferIndex) override;
-    int32_t Release() override;
 
 private:
     int32_t NotifyEndOfStream();
-    int32_t SetCallback(CodecUserData *codecUserData);
+    int32_t SetCallback(SampleContext * const sampleContext);
     int32_t Configure(const SampleInfo &sampleInfo);
     int32_t GetSurface(SampleInfo &sampleInfo);
 };

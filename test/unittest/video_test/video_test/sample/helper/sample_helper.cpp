@@ -14,7 +14,9 @@
  */
 
 #include "sample_helper.h"
+#include <iostream>
 #include <unordered_map>
+#include <unistd.h>
 #include "video_sample_base.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
@@ -23,10 +25,12 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "SampleHelper"};
 constexpr std::string_view DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY = "OHOS.Media.AVCodecSample.DeviceSampleRunTimes";
+constexpr int32_t MAX_PAUSE_TIME = 60;
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
-    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Decoder"},
-    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_ENCODER, "Encoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Hardware Decoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_SW_DECODER, "Software Decoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_ENCODER, "Hardware Encoder"},
 };
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
@@ -48,6 +52,20 @@ const std::unordered_map<OH_AVPixelFormat, std::string> PIXEL_FORMAT_TO_STRING =
     {AV_PIXEL_FORMAT_SURFACE_FORMAT,    "SURFACE_FORMAT"},
     {AV_PIXEL_FORMAT_RGBA,              "RGBA"},
 };
+
+inline void Pause(int32_t sleepTime)
+{
+    CHECK_AND_RETURN(sleepTime > 0);
+
+    if (sleepTime > MAX_PAUSE_TIME) {
+        std::cout << "Press enter to continue...";
+        std::cin.get();
+        std::cin.clear();
+    } else {
+        std::cout << "Pause " << sleepTime << " seconds and continue..." << std::endl;
+        sleep(sleepTime);
+    }
+}
 }
 
 namespace OHOS {
@@ -67,6 +85,8 @@ int32_t RunSample(const SampleInfo &info)
 {
     std::shared_ptr<VideoSampleBase> sample = VideoSampleFactory::CreateVideoSample(info.codecType);
 
+    Pause(info.pauseBeforeRunSample);
+
     int32_t ret = sample->Create(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     ret = sample->Start();
@@ -82,6 +102,8 @@ void PrintSampleInfo(const SampleInfo &info)
     deviceSampleRunTimes++;
     (void)system::SetParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), std::to_string(deviceSampleRunTimes));
 
+    PrintProgress(info.sampleRepeatTimes, 0);
+
     AVCODEC_LOGI("This device has run %{public}d times.", deviceSampleRunTimes);
     AVCODEC_LOGI("====== Video sample config ======");
     AVCODEC_LOGI("codec type: %{public}s, codec run mode: %{public}s, max frames: %{public}u",
@@ -95,6 +117,21 @@ void PrintSampleInfo(const SampleInfo &info)
     AVCODEC_LOGI("interval: %{public}dms, HDR vivid: %{public}s, dump output: %{public}s",
         info.frameInterval, BOOL_TO_STRING.at(info.isHDRVivid).c_str(), BOOL_TO_STRING.at(info.needDumpOutput).c_str());
     AVCODEC_LOGI("====== Video sample config ======");
+}
+
+void ShowCmdCursor()
+{
+    std::cout << "\033[?25h" << std::flush;
+}
+
+void HideCmdCursor()
+{
+    std::cout << "\033[?25l" << std::flush;
+}
+
+void PrintProgress(int32_t times, int32_t frames)
+{
+    std::cout << "\r\033[K" << "Repeat times left: " << times << ", frames: " << frames << std::flush;
 }
 } // Sample
 } // MediaAVCodec

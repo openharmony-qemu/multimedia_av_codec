@@ -25,12 +25,15 @@
 #include "video_sample_base.h"
 #include "iconsumer_surface.h"
 
+#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 class VideoDecoderSample : public VideoSampleBase, public OHOS::IBufferConsumerListener {
 public:
     VideoDecoderSample() {};
+    ~VideoDecoderSample() override;
 
 private:
     int32_t Init() override;
@@ -40,9 +43,8 @@ private:
     int32_t CreateWindow(OHNativeWindow *&window);
     void OnBufferAvailable() override;
 
-    int64_t timestamp_ = 0;
-    OHOS::Rect damage_ = {};
     OHOS::sptr<OHOS::Surface> surfaceConsumer_ = nullptr;
+    sptr<Rosen::Window> rosenWindow_;
 };
 } // Sample
 } // MediaAVCodec

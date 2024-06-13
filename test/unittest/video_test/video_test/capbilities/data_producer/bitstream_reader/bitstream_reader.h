@@ -13,20 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_BITSTREAM_READER_H
-#define AVCODEC_SAMPLE_BITSTREAM_READER_H
+#ifndef AVCODEC_SAMPLE_DATA_PRODUCER_BITSTREAM_READER_H
+#define AVCODEC_SAMPLE_DATA_PRODUCER_BITSTREAM_READER_H
 #include "data_producer_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 class BitstreamReader : public DataProducerBase {
-public:
-    explicit BitstreamReader(BitstreamType &type);
-    int32_t ReadSample(CodecBufferInfo &bufferInfo) override;
-
 private:
-    BitstreamReader() {}
+    int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
     int32_t ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize);
     int32_t ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize);
     void PrereadFile();
@@ -35,8 +31,8 @@ private:
     uint8_t GetNaluType(const uint8_t *const bufferAddr);
     bool IsCodecData(uint8_t naluType);
     bool IsIDR(uint8_t naluType);
+    bool IsEOS() override;
 
-    BitstreamType bitstreamType_;
     std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
     uint32_t prereadBufferSize_ = 0;
     uint32_t pPrereadBuffer_ = 0;
@@ -44,4 +40,4 @@ private:
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_BITSTREAM_READER_H
+#endif // AVCODEC_SAMPLE_DATA_PRODUCER_BITSTREAM_READER_H

@@ -22,11 +22,10 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 class RawdataReader : public DataProducerBase {
-public:
-    int32_t ReadSample(CodecBufferInfo &bufferInfo) override;
-    int32_t ReadSample(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags);
 private:
+    int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
     int32_t GetBufferSize();
+    bool IsEOS() override;
 };
 } // Sample
 } // MediaAVCodec

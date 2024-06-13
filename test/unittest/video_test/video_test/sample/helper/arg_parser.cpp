@@ -35,16 +35,19 @@ enum DemoArgumentType : int {
     DEMO_ARG_BITRATE_MODE,
     DEMO_ARG_CODEC_RUN_MODE,
     DEMO_ARG_FRAME_INTERVAL,
-    DEMO_ARG_REPEAT_TIMES,
+    DEMO_ARG_SAMPLE_REPEAT_TIMES,
+    DEMO_ARG_DEMO_REPEAT_TIMES,
     DEMO_ARG_HDR_VIVID_VIDEO,
+    DEMO_ARG_NEED_DUMP_INPUT,
     DEMO_ARG_NEED_DUMP_OUTPUT,
     DEMO_ARG_MAX_FRAMES,
     DEMO_ARG_DATA_PRODUCER,
     DEMO_ARG_BITSTREAM_TYPE,
     DEMO_ARG_SEEK_MODE,
-    DEMO_ARG_CODEC_COMSUMER,
+    DEMO_ARG_CODEC_CONSUMER,
     DEMO_ARG_THREAD_SLEEP_MODE,
     DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER,
+    DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,
     DEMO_ARG_END,
 };
 
@@ -61,16 +64,19 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_BITRATE_MODE,                     "bitrate_mode"},
     {DEMO_ARG_CODEC_RUN_MODE,                   "codec_run_mode"},
     {DEMO_ARG_FRAME_INTERVAL,                   "frame_interval"},
-    {DEMO_ARG_REPEAT_TIMES,                     "repeat_times"},
+    {DEMO_ARG_SAMPLE_REPEAT_TIMES,              "sample_repeat_times"},
+    {DEMO_ARG_DEMO_REPEAT_TIMES,                "demo_repeat_times"},
     {DEMO_ARG_HDR_VIVID_VIDEO,                  "hdr_vivid_video"},
+    {DEMO_ARG_NEED_DUMP_INPUT,                  "need_dump_input"},
     {DEMO_ARG_NEED_DUMP_OUTPUT,                 "need_dump_output"},
     {DEMO_ARG_MAX_FRAMES,                       "max_frames"},
     {DEMO_ARG_DATA_PRODUCER,                    "data_producer"},
     {DEMO_ARG_BITSTREAM_TYPE,                   "bitstream_type"},
     {DEMO_ARG_SEEK_MODE,                        "seek_mode"},
-    {DEMO_ARG_CODEC_COMSUMER,                   "codec_comsumer"},
+    {DEMO_ARG_CODEC_CONSUMER,                   "codec_consumer"},
     {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
     {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, "encoder_surface_max_input_buffer"},
+    {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          "pause_before_run_sample"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -87,16 +93,19 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"bitrate_mode",                     required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
     {"codec_run_mode",                   required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
     {"frame_interval",                   required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
-    {"repeat_times",                     required_argument,  nullptr, DEMO_ARG_REPEAT_TIMES},
+    {"sample_repeat_times",              required_argument,  nullptr, DEMO_ARG_SAMPLE_REPEAT_TIMES},
+    {"demo_repeat_times",                required_argument,  nullptr, DEMO_ARG_DEMO_REPEAT_TIMES},
     {"hdr_vivid_video",                  required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
+    {"need_dump_input",                  required_argument,  nullptr, DEMO_ARG_NEED_DUMP_INPUT},
     {"need_dump_output",                 required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
     {"max_frames",                       required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
     {"data_producer",                    required_argument,  nullptr, DEMO_ARG_DATA_PRODUCER},
     {"bitstream_type",                   required_argument,  nullptr, DEMO_ARG_BITSTREAM_TYPE},
     {"seek_mode",                        required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
-    {"codec_comsumer",                   required_argument,  nullptr, DEMO_ARG_CODEC_COMSUMER},
+    {"codec_consumer",                   required_argument,  nullptr, DEMO_ARG_CODEC_CONSUMER},
     {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
     {"encoder_surface_max_input_buffer", required_argument,  nullptr, DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER},
+    {"pause_before_run_sample",          required_argument,  nullptr, DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
@@ -118,11 +127,13 @@ Video codec demo help:
                                         2: Surface AVBuffer    3: Buffer AVBuffer
     --data_producer                     0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
     --bitstream_type                    0: AnnexB;   1: AVCC
-    --codec_comsumer                    0: Default;  1: Decoder render output
+    --codec_consumer                    0: Default;  1: Decoder render output
 
     --frame_interval                    frame push interval (ms)
-    --repeat_times                      demo repeat times
+    --sample_repeat_times               sample repeat times, data producer will seek to head while eos
+    --demo_repeat_times                 demo repeat times, sample will destroy while eos
     --hdr_vivid_video                   input file is hdr vivid video? (0: false; 1: true)
+    --need_dump_input                   need to dump input stream? (0: false; 1: true)
     --need_dump_output                  need to dump output stream? (0: false; 1: true)
     --max_frames                        number of frames to be processed
     --seek_mode                         demuxer seek mode:
@@ -131,6 +142,8 @@ Video codec demo help:
                                             2: SEEK_MODE_CLOSEST_SYNC
     --thread_sleep_mode                 0: Input sleep;  1: Output sleep
     --encoder_surface_max_input_buffer  set for encoder surface max input buffer count
+    --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
+                                        greater than 0 then sleep seconds of value
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -148,6 +161,9 @@ inline void ShowHelp(SampleInfo &info, const char * const value)
 inline void SetCodecType(SampleInfo &info, const char * const value)
 {
     info.codecType = static_cast<CodecType>(std::stol(value));
+    if (info.codecType == 0b10) { // 0b10: Encoder
+        info.dataProducerInfo.dataProducerType = DATA_PRODUCER_TYPE_RAW_DATA_READER;
+    }
 }
 
 inline void SetInputFilePath(SampleInfo &info, const char * const value)
@@ -205,9 +221,14 @@ inline void SetFrameInterval(SampleInfo &info, const char * const value)
     info.frameInterval = std::stol(value);
 }
 
-inline void SetRepeatTimes(SampleInfo &info, const char * const value)
+inline void SetSampleRepeatTimes(SampleInfo &info, const char * const value)
 {
-    info.repeatTimes = std::stoul(value);
+    info.sampleRepeatTimes = std::stoul(value) - 1;
+}
+
+inline void SetDemoRepeatTimes(SampleInfo &info, const char * const value)
+{
+    info.demoRepeatTimes = std::stoul(value);
 }
 
 inline void SetHdrVividVideo(SampleInfo &info, const char * const value)
@@ -216,6 +237,11 @@ inline void SetHdrVividVideo(SampleInfo &info, const char * const value)
     if (info.isHDRVivid) {
         info.hevcProfile = HEVC_PROFILE_MAIN_10;
     }
+}
+
+inline void SetNeedDumpInput(SampleInfo &info, const char * const value)
+{
+    info.needDumpInput = std::stol(value);
 }
 
 inline void SetNeedDumpOutput(SampleInfo &info, const char * const value)
@@ -243,9 +269,9 @@ inline void SetSeekMode(SampleInfo &info, const char * const value)
     info.dataProducerInfo.seekMode = static_cast<OH_AVSeekMode>(std::stol(value));
 }
 
-inline void SetCodecComsumerType(SampleInfo &info, const char * const value)
+inline void SetCodecConsumerType(SampleInfo &info, const char * const value)
 {
-    info.codecComsumerType = static_cast<CodecComsumerType>(std::stol(value));
+    info.codecConsumerType = static_cast<CodecConsumerType>(std::stol(value));
 }
 
 inline void SetThreadSleepMode(SampleInfo &info, const char * const value)
@@ -256,6 +282,11 @@ inline void SetThreadSleepMode(SampleInfo &info, const char * const value)
 inline void SetEncoderSurfaceMaxInputBufferCount(SampleInfo &info, const char * const value)
 {
     info.encoderSurfaceMaxInputBuffer = std::stol(value);
+}
+
+inline void SetPauseBeforeRunSample(SampleInfo &info, const char * const value)
+{
+    info.pauseBeforeRunSample = std::stol(value);
 }
 
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
@@ -272,16 +303,19 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_BITRATE_MODE,                     SetBitrateMode},
     {DEMO_ARG_CODEC_RUN_MODE,                   SetCodecRunMode},
     {DEMO_ARG_FRAME_INTERVAL,                   SetFrameInterval},
-    {DEMO_ARG_REPEAT_TIMES,                     SetRepeatTimes},
+    {DEMO_ARG_SAMPLE_REPEAT_TIMES,              SetSampleRepeatTimes},
+    {DEMO_ARG_DEMO_REPEAT_TIMES,                SetDemoRepeatTimes},
     {DEMO_ARG_HDR_VIVID_VIDEO,                  SetHdrVividVideo},
+    {DEMO_ARG_NEED_DUMP_INPUT,                  SetNeedDumpInput},
     {DEMO_ARG_NEED_DUMP_OUTPUT,                 SetNeedDumpOutput},
     {DEMO_ARG_MAX_FRAMES,                       SetMaxFrames},
     {DEMO_ARG_DATA_PRODUCER,                    SetDataProducer},
     {DEMO_ARG_BITSTREAM_TYPE,                   SetBitstreamType},
     {DEMO_ARG_SEEK_MODE,                        SetSeekMode},
-    {DEMO_ARG_CODEC_COMSUMER,                   SetCodecComsumerType},
+    {DEMO_ARG_CODEC_CONSUMER,                   SetCodecConsumerType},
     {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},
     {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, SetEncoderSurfaceMaxInputBufferCount},
+    {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          SetPauseBeforeRunSample},
 };
 } // namespace
 

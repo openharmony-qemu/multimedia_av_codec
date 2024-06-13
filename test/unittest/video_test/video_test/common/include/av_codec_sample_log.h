@@ -28,6 +28,13 @@ extern const bool VERBOSE_LOG;
         AVCODEC_LOGI(fmt, ##__VA_ARGS__);   \
     }
 
+#define CHECK_AND_CONTINUE(cond)            \
+    if (1) {                                \
+        if (!(cond)) {                      \
+            continue;                       \
+        }                                   \
+    } else void (0)
+
 #define CHECK_AND_RETURN(cond)              \
     if (1) {                                \
         if (!(cond)) {                      \

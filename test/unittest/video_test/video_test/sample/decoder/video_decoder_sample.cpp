@@ -21,7 +21,6 @@
 
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
-#include "../../window/window_manager/interfaces/innerkits/wm/window.h"
 
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
@@ -36,6 +35,14 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+VideoDecoderSample::~VideoDecoderSample()
+{
+    if (rosenWindow_) {
+        rosenWindow_->Destroy();
+        rosenWindow_ = nullptr;
+    }
+}
+
 int32_t VideoDecoderSample::Init()
 {
     if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
@@ -61,21 +68,15 @@ void VideoDecoderSample::InputThread()
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
-        std::unique_lock<std::mutex> lock(context_->inputMutex_);
-        bool condRet = context_->inputCond_.wait_for(lock, 5s,
-            [this]() { return !context_->inputBufferInfoQueue_.empty(); });
-        CHECK_AND_CONTINUE_LOG(!context_->inputBufferInfoQueue_.empty(),
-            "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
-
-        CodecBufferInfo bufferInfo = context_->inputBufferInfoQueue_.front();
-        context_->inputBufferInfoQueue_.pop();
-        context_->inputFrameCount_++;
-        lock.unlock();
+        auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
+        CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
+        auto &bufferInfo = bufferInfoOpt.value();
 
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
         AVCODEC_LOGV("In buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
-            context_->inputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
+            context_->inputBufferQueue.GetFrameCount(),
+            bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
         ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
 
@@ -83,26 +84,20 @@ void VideoDecoderSample::InputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
-    AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputFrameCount_);
+    AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     StartRelease();
 }
 
 void VideoDecoderSample::OutputThread()
 {
     while (true) {
-        std::unique_lock<std::mutex> lock(context_->outputMutex_);
-        bool condRet = context_->outputCond_.wait_for(lock, 5s,
-            [this]() { return !context_->outputBufferInfoQueue_.empty(); });
-        CHECK_AND_CONTINUE_LOG(!context_->outputBufferInfoQueue_.empty(),
-            "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
-
-        CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
-        context_->outputBufferInfoQueue_.pop();
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
-        context_->outputFrameCount_++;
+        auto bufferInfoOpt = context_->outputBufferQueue.DequeueBuffer();
+        CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
+        auto &bufferInfo = bufferInfoOpt.value();
         AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
-            context_->outputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
-        lock.unlock();
+            context_->outputBufferQueue.GetFrameCount(),
+            bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
 
         DumpOutput(bufferInfo);
         ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP);
@@ -111,14 +106,14 @@ void VideoDecoderSample::OutputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
-    OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
-    AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputFrameCount_);
+    OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
+    AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
     StartRelease();
 }
 
 int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 {
-    if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
+    if (sampleInfo_.codecConsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
         surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer("VideoCodecDemo");
         OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
         surfaceConsumer_->RegisterConsumerListener(listener);
@@ -126,17 +121,17 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
         auto surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
         window = CreateNativeWindowFromSurface(&surfaceProducer);
         CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
-    } else if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
+    } else if (sampleInfo_.codecConsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
-        sptr<Rosen::Window> rosenWindow = Rosen::Window::Create("VideoCodecDemo", option);
-        CHECK_AND_RETURN_RET_LOG(rosenWindow != nullptr && rosenWindow->GetSurfaceNode() != nullptr,
+        rosenWindow_ = Rosen::Window::Create("VideoCodecDemo", option);
+        CHECK_AND_RETURN_RET_LOG(rosenWindow_ != nullptr && rosenWindow_->GetSurfaceNode() != nullptr,
             AVCODEC_SAMPLE_ERR_ERROR, "Create display window failed");
-        rosenWindow->SetTurnScreenOn(!rosenWindow->IsTurnScreenOn());
-        rosenWindow->SetKeepScreenOn(true);
-        rosenWindow->Show();
-        surfaceConsumer_ = rosenWindow->GetSurfaceNode()->GetSurface();
+        rosenWindow_->SetTurnScreenOn(!rosenWindow_->IsTurnScreenOn());
+        rosenWindow_->SetKeepScreenOn(true);
+        rosenWindow_->Show();
+        surfaceConsumer_ = rosenWindow_->GetSurfaceNode()->GetSurface();
         window = CreateNativeWindowFromSurface(&surfaceConsumer_);
     }
 
@@ -146,8 +141,10 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 void VideoDecoderSample::OnBufferAvailable()
 {
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+    int64_t timestamp = 0;
+    OHOS::Rect damage = {};
     int32_t flushFence;
-    surfaceConsumer_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
+    surfaceConsumer_->AcquireBuffer(buffer, flushFence, timestamp, damage);
 
     if (sampleInfo_.needDumpOutput) {
         CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());

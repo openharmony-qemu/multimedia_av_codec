@@ -42,22 +42,11 @@ constexpr uint8_t HEVC_NAL_SEI_SUFFIX = 40;
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-BitstreamReader::BitstreamReader(BitstreamType &type)
-{
-    bitstreamType_ = type;
-}
-
-int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
+int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
-
-    if ((frameCount_ >= sampleInfo_.maxFrames) ||
-        ((pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->eof() && !Repeat()))) {
-        bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
 
     auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
         OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
@@ -93,7 +82,6 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
         bufferAddr += frameSize;
     } while (keepRead);
 
-    frameCount_++;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -120,7 +108,6 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         CHECK_AND_RETURN_RET_LOG(prereadBufferSize_ > 0, AVCODEC_SAMPLE_ERR_ERROR, "Empty file, nothing to read");
     }
 
-    bool keepRead = true;
     auto pBuffer = bufferAddr;
     do {
         auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + (bufferSize > 0 ? 0 : ANNEXB_FRAME_HEAD_LEN),
@@ -146,7 +133,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
             pBuffer -= ANNEXB_FRAME_HEAD_LEN;
             pPrereadBuffer_ = 0;
         }
-    } while (keepRead);
+    } while (true);
     if (prereadBuffer_.get()[pPrereadBuffer_ - 1] == 0) {
         bufferSize--;
         pPrereadBuffer_--;
@@ -208,6 +195,11 @@ bool BitstreamReader::IsIDR(uint8_t naluType)
         return true;
     }
     return false;
+}
+
+bool BitstreamReader::IsEOS()
+{
+    return (pPrereadBuffer_ == prereadBufferSize_) && (inputFile_->peek() == EOF);
 }
 } // Sample
 } // MediaAVCodec

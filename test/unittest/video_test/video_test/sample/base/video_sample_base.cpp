@@ -64,7 +64,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = videoCodec_->Create(sampleInfo_.codecMime);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
-    context_ = new CodecUserData;
+    context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = &sampleInfo_;
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
@@ -73,8 +73,8 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     }
     PrintSampleInfo(sampleInfo_);
     
-    ret = videoCodec_->Config(sampleInfo_, context_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder config failed");
+    ret = videoCodec_->Config(sampleInfo_, context_.get());
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
     releaseThread_ = nullptr;
     AVCODEC_LOGI("Succeed");
@@ -118,15 +118,12 @@ int32_t VideoSampleBase::StartThread()
 
 void VideoSampleBase::Release()
 {
-        std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     if (inputThread_ && inputThread_->joinable()) {
         inputThread_->join();
     }
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
-    }
-    if (videoCodec_ != nullptr) {
-        videoCodec_->Release();
     }
     inputThread_.reset();
     outputThread_.reset();
@@ -136,16 +133,10 @@ void VideoSampleBase::Release()
         OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
         sampleInfo_.window = nullptr;
     }
-    if (context_ != nullptr) {
-        delete context_;
-        context_ = nullptr;
-    }
-    if (dataProducer_ != nullptr) {
-        dataProducer_.reset();
-    }
-    if (outputFile_ != nullptr) {
-        outputFile_.reset();
-    }
+
+    context_.reset();
+    dataProducer_.reset();
+    outputFile_.reset();
 
     AVCODEC_LOGI("Succeed");
     doneCond_.notify_all();
@@ -176,9 +167,7 @@ void VideoSampleBase::ThreadSleep(bool isValid)
 
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
-    if (!sampleInfo_.needDumpOutput) {
-        return;
-    }
+    CHECK_AND_RETURN(sampleInfo_.needDumpOutput);
 
     if (outputFile_ == nullptr) {
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -188,7 +177,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                     std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
                     std::to_string(time) + ".yuv";
             } else {
-                sampleInfo_.outputFilePath = "VideoEncoderOut_"s + "_" + std::to_string(time) + ".bin";
+                sampleInfo_.outputFilePath = "VideoEncoderOut_"s + std::to_string(time) + ".bin";
             }
         }
         
@@ -209,7 +198,6 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                         OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
     }
 
-    AVCODEC_LOGI("Buffer addr: %{public}p", bufferAddr);
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }

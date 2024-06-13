@@ -23,16 +23,21 @@ using namespace OHOS::MediaAVCodec::Sample;
 
 int main(int argc, char *argv[])
 {
+    HideCmdCursor();
     auto info = ParseDemoArg(argc, argv);
     if (!SampleInfoChecker(info)) {
         std::cout << "Demo arg check failed, exit" << std::endl;
         return 1;
     }
 
-    int ret = RunSample(info);
-    if (ret != AVCODEC_SAMPLE_ERR_OK) {
-        std::cout << "Demo run failed!" << std::endl;
-        return 1;
+    for (int32_t times = 0; times < info.demoRepeatTimes; times++) {
+        int ret = RunSample(info);
+        std::cout << std::endl;
+        if (ret != AVCODEC_SAMPLE_ERR_OK) {
+            std::cout << "Demo run failed!" << std::endl;
+            return 1;
+        }
     }
+    ShowCmdCursor();
     return 0;
 }

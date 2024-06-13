@@ -24,8 +24,11 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Rawda
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t RawdataReader::ReadSample(CodecBufferInfo &info)
+int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
 {
+    CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
+        AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
+
     uint8_t *bufferAddr = nullptr;
     if (info.bufferAddr != nullptr) {
         bufferAddr = info.bufferAddr;
@@ -33,28 +36,14 @@ int32_t RawdataReader::ReadSample(CodecBufferInfo &info)
         bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
             OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
             OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
+        CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
     }
-    int32_t ret = ReadSample(bufferAddr, info.attr.size, info.attr.flags);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Read frame failed");
-
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t RawdataReader::ReadSample(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags)
-{
-    CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
-        AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
-    CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
-
-    if ((frameCount_ >= sampleInfo_.maxFrames) || (inputFile_->eof() && !Repeat())) {
-        flags = AVCODEC_BUFFER_FLAGS_EOS;
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
-
-    bufferSize = GetBufferSize();
+    int32_t bufferSize = GetBufferSize();
     inputFile_->read(reinterpret_cast<char *>(bufferAddr), bufferSize);
+    info.attr.size = inputFile_->gcount();
+    info.attr.pts = frameCount_ *
+        ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
 
-    frameCount_++;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -64,6 +53,11 @@ inline int32_t RawdataReader::GetBufferSize()
         sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 :          // RGBA buffer size
         sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;       // YUV420 buffer size
     return sampleInfo_.isHDRVivid ? size * 2 : size;
+}
+
+bool RawdataReader::IsEOS()
+{
+    return inputFile_->peek() == EOF;
 }
 } // Sample
 } // MediaAVCodec

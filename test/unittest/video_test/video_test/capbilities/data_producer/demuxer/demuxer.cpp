@@ -29,17 +29,20 @@ namespace MediaAVCodec {
 namespace Sample {
 int32_t Demuxer::Init(SampleInfo &info)
 {
-    file_ = fopen(info.inputFilePath.data(), "r");
+    CHECK_AND_RETURN_RET_LOG(file_ == nullptr && source_ == nullptr && demuxer_ == nullptr,
+        AVCODEC_SAMPLE_ERR_ERROR, "Demuxer has already initialized");
+
+    file_ = std::shared_ptr<FILE>(fopen(info.inputFilePath.data(), "r"), fclose);
     CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
-    fileFd_ = fileno(file_);
+    fileFd_ = fileno(file_.get());
     
     fileSize_ = GetFileSize(info.inputFilePath.data());
-    source_ = OH_AVSource_CreateWithFD(fileFd_, 0, fileSize_);
+    source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd_, 0, fileSize_), OH_AVSource_Destroy);
     CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create source failed, fd: %{public}d, file size: %{public}" PRId64, fileFd_, fileSize_);
-    demuxer_ = OH_AVDemuxer_CreateWithSource(source_);
+    demuxer_ = std::shared_ptr<OH_AVDemuxer>(OH_AVDemuxer_CreateWithSource(source_.get()), OH_AVDemuxer_Destroy);
     CHECK_AND_RETURN_RET_LOG(demuxer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create demuxer failed");
-    auto sourceFormat = std::shared_ptr<OH_AVFormat>(OH_AVSource_GetSourceFormat(source_), OH_AVFormat_Destroy);
+    auto sourceFormat = std::shared_ptr<OH_AVFormat>(OH_AVSource_GetSourceFormat(source_.get()), OH_AVFormat_Destroy);
     CHECK_AND_RETURN_RET_LOG(sourceFormat != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Get source format failed");
 
     int32_t ret = GetVideoTrackInfo(sourceFormat, info);
@@ -49,46 +52,25 @@ int32_t Demuxer::Init(SampleInfo &info)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t Demuxer::ReadSample(CodecBufferInfo &bufferInfo)
+int32_t Demuxer::FillBuffer(CodecBufferInfo &bufferInfo)
 {
-    if ((frameCount_ >= sampleInfo_.maxFrames) || (feof(file_) && !Repeat())) {
-        bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
-
     int32_t ret = 0;
     if (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10) {  // ob10: AVBuffer mode mask
-        ret = OH_AVDemuxer_ReadSampleBuffer(demuxer_, videoTrackId_,
+        ret = OH_AVDemuxer_ReadSampleBuffer(demuxer_.get(), videoTrackId_,
             reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer));
         (void)OH_AVBuffer_GetBufferAttr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer), &bufferInfo.attr);
     } else {
-        ret = OH_AVDemuxer_ReadSample(demuxer_, videoTrackId_,
+        ret = OH_AVDemuxer_ReadSample(demuxer_.get(), videoTrackId_,
             reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer), &bufferInfo.attr);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Read sample failed");
-    frameCount_++;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
 int32_t Demuxer::Seek(int64_t position)
 {
-    int32_t ret = OH_AVDemuxer_SeekToTime(demuxer_, position, sampleInfo_.dataProducerInfo.seekMode);
+    int32_t ret = OH_AVDemuxer_SeekToTime(demuxer_.get(), position, sampleInfo_.dataProducerInfo.seekMode);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Seek failed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t Demuxer::Release()
-{
-    fclose(file_);
-    file_ = nullptr;
-    if (demuxer_ != nullptr) {
-        OH_AVDemuxer_Destroy(demuxer_);
-        demuxer_ = nullptr;
-    }
-    if (source_ != nullptr) {
-        OH_AVSource_Destroy(source_);
-        source_ = nullptr;
-    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -111,10 +93,10 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
         int trackType = -1;
         
         auto trackFormat =
-            std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_, index), OH_AVFormat_Destroy);
+            std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_.get(), index), OH_AVFormat_Destroy);
         OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_TRACK_TYPE, &trackType);
         if (trackType == MEDIA_TYPE_VID) {
-            OH_AVDemuxer_SelectTrackByID(demuxer_, index);
+            OH_AVDemuxer_SelectTrackByID(demuxer_.get(), index);
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_WIDTH, &info.videoWidth);
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_HEIGHT, &info.videoHeight);
             if (info.frameRate == SAMPLE_DEFAULT_FRAMERATE) {
@@ -135,6 +117,11 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
     OH_AVFormat_GetLongValue(sourceFormat.get(), OH_MD_KEY_DURATION, &info.videoDuration);
 
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+bool Demuxer::IsEOS()
+{
+    return feof(file_.get());
 }
 } // Sample
 } // MediaAVCodec

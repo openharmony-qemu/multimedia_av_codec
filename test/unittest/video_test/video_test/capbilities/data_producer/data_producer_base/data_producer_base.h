@@ -26,23 +26,27 @@ namespace MediaAVCodec {
 namespace Sample {
 class DataProducerBase {
 public:
-    virtual ~DataProducerBase();
+    virtual ~DataProducerBase() {};
     virtual int32_t Init(SampleInfo &info);
-    virtual int32_t ReadSample(CodecBufferInfo &bufferInfo) = 0;
+    int32_t ReadSample(CodecBufferInfo &bufferInfo);
     virtual int32_t Seek(int64_t position);
     virtual bool Repeat();
-    virtual int32_t Release();
 
 protected:
+    virtual int32_t FillBuffer(CodecBufferInfo &bufferInfo) = 0;
+    virtual bool IsEOS() = 0;
+    void DumpInput(const CodecBufferInfo &bufferInfo);
+
+    std::unique_ptr<std::ifstream> inputFile_ = nullptr;
+    std::unique_ptr<std::ofstream> inputDumpFile_ = nullptr;
     std::mutex mutex_;
     SampleInfo sampleInfo_;
-    std::unique_ptr<std::ifstream> inputFile_ = nullptr;
     uint32_t frameCount_ = 0;
 };
 
 class DataProducerFactory {
 public:
-    static std::shared_ptr<DataProducerBase> CreateDataProducer(DataProducerInfo type);
+    static std::shared_ptr<DataProducerBase> CreateDataProducer(const DataProducerInfo &info);
 };
 } // Sample
 } // MediaAVCodec

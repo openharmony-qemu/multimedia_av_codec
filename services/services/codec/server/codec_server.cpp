@@ -404,12 +404,10 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(isValidState, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (surface != nullptr) {
-        isSurfaceMode_ = true;
-    }
     GSError gsRet = surface->SetSurfaceSourceType(OHSurfaceSource::OH_SURFACE_SOURCE_VIDEO);
     EXPECT_AND_LOGW(gsRet != GSERROR_OK, "Set surface source type failed, %{public}s", GSErrorStr(gsRet).c_str());
     int32_t ret = codecBase_->SetOutputSurface(surface);
+    isSurfaceMode_ = true;
 #ifdef EMULATOR_ENABLED
     Format config_emulator;
     config_emulator.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));

@@ -90,7 +90,7 @@ struct DataProducerInfo {
     OH_AVSeekMode seekMode = SEEK_MODE_PREVIOUS_SYNC;
 };
 
-enum CodecComsumerType {
+enum CodecConsumerType {
     CODEC_COMSUMER_TYPE_DEFAULT = 0,
     CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT,
 };
@@ -112,9 +112,11 @@ struct SampleInfo {
     CodecRunMode codecRunMode = SURFACE_ORIGIN;
     int32_t frameInterval = -1;
     NativeWindow* window = nullptr;
-    uint32_t repeatTimes = 1;
+    int32_t sampleRepeatTimes = 0;
+    int32_t demoRepeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
     bool isHDRVivid = false;
+    bool needDumpInput = false;
     bool needDumpOutput = false;
     uint32_t maxFrames = UINT32_MAX;
     uint32_t bitrateMode = CBR;
@@ -122,9 +124,10 @@ struct SampleInfo {
     int32_t hevcProfile = HEVC_PROFILE_MAIN;
     int64_t videoDuration = 0;
     std::string outputFilePath;
-    CodecComsumerType codecComsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
+    CodecConsumerType codecConsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
     ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
     int32_t encoderSurfaceMaxInputBuffer = 0;
+    int32_t pauseBeforeRunSample = 0;
 };
 
 struct CodecBufferInfo {
