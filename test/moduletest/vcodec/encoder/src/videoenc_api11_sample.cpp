@@ -21,6 +21,7 @@
 #include "native_buffer_inner.h"
 #include "display_type.h"
 #include "videoenc_api11_sample.h"
+#include "native_avcapability.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
@@ -36,6 +37,7 @@ constexpr uint32_t BADPOC = 1000;
 constexpr uint32_t LTR_INTERVAL = 5;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
+OH_AVCapability *cap = nullptr;
 VEncAPI11Sample *enc_sample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
@@ -66,7 +68,7 @@ static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *user
 
 static void onEncInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    VEncAPI11Signal *signal = static_cast<VEncAPI11Signal *>(userData);
     unique_lock<mutex> lock(signal->inMutex_);
     signal->inIdxQueue_.push(index);
     signal->inBufferQueue_.push(buffer);
@@ -75,7 +77,7 @@ static void onEncInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBu
 
 static void onEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    VEncAPI11Signal *signal = static_cast<VEncAPI11Signal *>(userData);
     unique_lock<mutex> lock(signal->outMutex_);
     signal->outIdxQueue_.push(index);
     signal->outBufferQueue_.push(buffer);
@@ -170,6 +172,13 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_KEY_FRAME_INTERVAL);
+    if (isAVCEncoder) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, avcProfile);
+    } else {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, hevcProfile);
+    }
+    
     if (DEFAULT_BITRATE_MODE == CQ) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
     } else {
@@ -249,9 +258,9 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder_fuzz(int32_t data)
 
 int32_t VEncAPI11Sample::SetVideoEncoderCallback()
 {
-    signal_ = new VEncSignal();
+    signal_ = new VEncAPI11Signal();
     if (signal_ == nullptr) {
-        cout << "Failed to new VEncSignal" << endl;
+        cout << "Failed to new VEncAPI11Signal" << endl;
         return AV_ERR_UNKNOWN;
     }
     if (SURF_INPUT) {
@@ -428,6 +437,13 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
 
 int32_t VEncAPI11Sample::CreateVideoEncoder(const char *codecName)
 {
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    const char *tmpCodecName = OH_AVCapability_GetName(cap);
+    if (!strcmp(codecName, tmpCodecName)) {
+        isAVCEncoder = true;
+    } else {
+        isAVCEncoder = false;
+    }
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     enc_sample = this;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;

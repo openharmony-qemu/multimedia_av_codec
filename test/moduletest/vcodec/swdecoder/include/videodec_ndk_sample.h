@@ -62,7 +62,7 @@ public:
     uint32_t DEFAULT_HEIGHT = 1080;
     uint32_t DEFAULT_FRAME_RATE = 30;
     uint32_t DEFAULT_ROTATION = 0;
-    uint32_t DEFAULT_PIXEL_FORMAT = 1;
+    uint32_t DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
     bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
