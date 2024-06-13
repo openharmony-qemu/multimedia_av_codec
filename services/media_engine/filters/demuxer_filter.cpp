@@ -271,7 +271,7 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
 
 Status DemuxerFilter::DoPrepareFrame(bool renderFirstFrame)
 {
-    MEDIA_LOG_I("PrepareFrame");
+    MEDIA_LOG_I("PrepareFrame.");
     auto ret = demuxer_->PrepareFrame(renderFirstFrame);
     if (ret == Status::OK) {
         isPrepareFramed = true;
