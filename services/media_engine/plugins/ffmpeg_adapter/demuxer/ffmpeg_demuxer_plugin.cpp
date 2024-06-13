@@ -713,7 +713,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     }
 
     if (!ioContext->initCompleted) {
-        ioContext->initDownloadDataSize += dataSize;
+        ioContext->initDownloadDataSize += static_cast<uint32_t>(buffer->GetMemory()->GetSize());
     }
 
     return ret;
