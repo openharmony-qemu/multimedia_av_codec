@@ -73,6 +73,7 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags);
     void InitAVFormatContext();
+    int CheckContextIsValid(void* opaque);
     void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);

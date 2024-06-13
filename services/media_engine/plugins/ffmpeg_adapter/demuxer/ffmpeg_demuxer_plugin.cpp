@@ -652,8 +652,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
     return 0;
 }
 
-// Write packet data into the buffer provided by ffmpeg
-int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
+int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque)
 {
     int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
@@ -664,6 +663,16 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         MEDIA_LOG_I("AVReadPacket return EOS");
         return AVERROR_EOF;
     }
+    return 0;
+}
+
+// Write packet data into the buffer provided by ffmpeg
+int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
+{
+    int ret = CheckContextIsValid(opaque);
+    FALSE_RETURN_V(ret == 0, ret);
+
+    auto ioContext = static_cast<IOContext*>(opaque);
     auto buffer = std::make_shared<Buffer>();
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
