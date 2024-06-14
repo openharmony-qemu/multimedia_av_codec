@@ -247,10 +247,13 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
         std::lock_guard<std::mutex> lock(avMutex_);
         auto memory = outputBuffer->memory_;
 
-        if (outputSize_ > 0) {
-            memory->Write(const_cast<const uint8_t*>(lameMp3Buffer), outputSize_, 0);
+        if (outputSize_ == 0) {
+            AVCODEC_LOGD("AudioMp3EncoderPlugin lame outputSize of this frame is 0.")
+            return Status::ERROR_NOT_ENOUGH_DATA;
         }
+
         memory->SetSize(outputSize_);
+        memory->Write(const_cast<const uint8_t*>(lameMp3Buffer), outputSize_, 0);
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
 
