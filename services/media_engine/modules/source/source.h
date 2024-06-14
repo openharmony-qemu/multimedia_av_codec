@@ -120,6 +120,7 @@ private:
     bool isAboveWaterline_ {false};
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 } // namespace Media
 } // namespace OHOS

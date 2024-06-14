@@ -213,6 +213,9 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
     }
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded_);
+    }
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
@@ -283,7 +286,7 @@ Seekable HttpSourcePlugin::GetSeekable()
 
 void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_D("Interrupt enter");
+    isInterruptNeeded_ = isInterruptNeeded;
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }

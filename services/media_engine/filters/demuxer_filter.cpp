@@ -144,9 +144,7 @@ Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> sourc
 
 void DemuxerFilter::SetInterruptState(bool isInterruptNeeded)
 {
-    if (demuxer_ != nullptr) {
-        demuxer_->SetInterruptState(isInterruptNeeded);
-    }
+    demuxer_->SetInterruptState(isInterruptNeeded);
 }
 
 void DemuxerFilter::SetBundleName(const std::string& bundleName)

@@ -84,7 +84,9 @@ Status AudioSinkFilter::DoPrepare()
     audioSink_->Prepare();
     inputBufferQueueConsumer_ = audioSink_->GetBufferQueueConsumer();
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
+    if (inputBufferQueueConsumer_ != nullptr) {
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
+    }
     if (onLinkedResultCallback_ != nullptr) {
         onLinkedResultCallback_->OnLinkedResult(audioSink_->GetBufferQueueProducer(), trackMeta_);
     }
