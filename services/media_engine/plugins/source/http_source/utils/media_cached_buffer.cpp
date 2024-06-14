@@ -94,7 +94,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
-    FALSE_RETURN_V_MSG_E(static_cast<int64_t>(sizePerChunk) * chunkNum > 0, false, "Invalid sizePerChunk and chunkNum.");
+    FALSE_RETURN_V_MSG_E(static_cast<int64_t>(sizePerChunk) * chunkNum > 0, false,
+        "Invalid sizePerChunk and chunkNum.");
     bufferAddr_ = (uint8_t*)malloc(sizePerChunk * chunkNum);
     if (bufferAddr_ == nullptr) {
         return false;

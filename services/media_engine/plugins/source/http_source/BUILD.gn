@@ -99,7 +99,7 @@ ohos_shared_library("media_plugin_HttpSource") {
     "hls/hls_tags.cpp",
     "hls/m3u8.cpp",
     "hls/playlist_downloader.cpp",
-    "http/http_media_downloader.cpp",    
+    "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
     "monitor/download_monitor.cpp",
     "utils/media_cached_buffer.cpp",

@@ -14,7 +14,7 @@
  */
 #define HST_LOG_TAG "HttpMediaDownloader"
 
-#include "utils/http_media_downloader.h"
+#include "http/http_media_downloader.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
