@@ -24,7 +24,6 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalScalability"};
 } // namespace
 
-constexpr int32_t DEFAULT_GOPSIZE = 60; // DEFAULT_FRAMERATE * DEFAULT_I_FRAME_INTERVAL / 1000;
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_LTR_FRAME_NUM = 2;
 constexpr int32_t ENABLE_PARAMETER_CALLBACK = 1;
