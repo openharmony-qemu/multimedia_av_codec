@@ -753,7 +753,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
     const char *file = "/data/test/media/srt_test.srt";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -764,17 +763,14 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
     string mimeType_s = mimeType;
     string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
-    cout << "------mimeType-------" << mimeType_s << endl;
     ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
-
     for (int index = 0; index < 5; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
-        cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl;
         ASSERT_EQ(srtSubtitle, srtIndex);
         srtIndex++;
     }
@@ -782,23 +778,18 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
     data = OH_AVMemory_GetAddr(memory);
     srtSubtitle = atoi(reinterpret_cast<const char*>(data));
-    cout << "subtitle"<< "----------------" << srtSubtitle << "-----------------" << endl;
     srtIndex = 2;
     ASSERT_EQ(srtSubtitle, srtIndex);
-
     while (true) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "   srt is end !!!!!!!!!!!!!!!" << endl;
             break;
         }
         data = OH_AVMemory_GetAddr(memory);
         srtSubtitle = atoi(reinterpret_cast<const char*>(data));
-        cout << "subtitle" << "----------------" << srtSubtitle << "-----------------" << endl;
         srtIndex++;
         ASSERT_EQ(srtSubtitle, srtIndex);
     }
-    
     close(fd);
 }
 
