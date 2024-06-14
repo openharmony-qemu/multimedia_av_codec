@@ -46,3 +46,8 @@ CODEC_STOP_INFO:
   CLIENT_PID: {type: INT32, desc: Codec client pid}
   CLIENT_UID: {type: INT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
+
+DEMUXER_INIT_INFO:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC demuxer init event}
+  DOWNLOAD_SIZE: {type: INT32, desc: Demuxer download data size in Bytes}
+  SOURCE_TYPE: {type: STRING, desc: Demuxer source type}
