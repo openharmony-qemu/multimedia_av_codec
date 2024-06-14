@@ -776,6 +776,20 @@ void VideoEncSample::OutputLoopFuncExt()
     signal_->cond_.notify_all();
 }
 
+void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock>buffer)
+{
+    if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA || attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        int32_t qpAverage = 60;
+        EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
+        if (testParam_ == VCodecTestParam::HW_HEVC) {
+            double mse = 1.0;
+            EXPECT_EQ(true, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
+        }
+        format->Destroy();
+    }
+}
+
 int32_t VideoEncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
@@ -783,15 +797,6 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
-
-    std::shared_ptr<FormatMock> format = buffer->GetParameter();
-#ifdef HMOS_TEST
-    int32_t qpAverage = 60;
-    double mse = 1.0;
-    EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
-    EXPECT_EQ(true, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
-    format->Destroy();
-#endif
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBuffer fail, exit. index: %d", index);
@@ -802,6 +807,11 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
     UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+
+#ifdef HMOS_TEST
+    CheckFormatKey(attr, buffer);
+#endif
+
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
