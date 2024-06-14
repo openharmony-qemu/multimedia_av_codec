@@ -1040,7 +1040,7 @@ void FCodec::RenderFrame()
             continue;
         }
         auto queSize = renderAvailQue_->Size();
-        uint32_t curIndex = -1;
+        uint32_t curIndex = 0;
         uint32_t i = 0;
         for (i = 0; i < queSize; i++) {
             curIndex = renderAvailQue_->Pop();
