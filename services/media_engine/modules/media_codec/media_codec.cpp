@@ -474,7 +474,7 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
     Status ret = Status::OK;
 
     // 1. allocate drm buffer
-    uint32_t bufSize = filledInputBuffer->memory_->GetSize();
+    uint32_t bufSize = static_cast<uint32_t>(filledInputBuffer->memory_->GetSize());
     if (bufSize == 0) {
         MEDIA_LOG_D("MediaCodec DrmAudioCencDecrypt input buffer size equal 0");
         return ret;
