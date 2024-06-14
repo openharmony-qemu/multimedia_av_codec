@@ -137,7 +137,8 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
 
     const int maxTryTimes = 3;
     int i = 0;
-    while (!checkRange_(streamID_, offset, expectedLen) && (i++ < maxTryTimes)) {
+    while (!checkRange_(streamID_, offset, expectedLen) && (i < maxTryTimes)) {
+        i++;
         OSAL::SleepFor(5); // 5 ms
     }
     if (i == maxTryTimes) {
