@@ -24,7 +24,7 @@
 #include "media_downloader.h"
 #include "common/media_source.h"
 #include "timer.h"
-#include "media_cached_buffer.h"
+#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 
 namespace OHOS {

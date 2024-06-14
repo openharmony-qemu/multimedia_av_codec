@@ -94,7 +94,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     readPos_ = fragmentCacheBuffer_.end();
     writePos_ = fragmentCacheBuffer_.end();
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
-    FALSE_RETURN_V_MSG_E(sizePerChunk * chunkNum > 0, false, "Invalid sizePerChunk and chunkNum.");
+    FALSE_RETURN_V_MSG_E(static_cast<int64_t>(sizePerChunk) * chunkNum > 0, false,
+        "Invalid sizePerChunk and chunkNum.");
     bufferAddr_ = (uint8_t*)malloc(sizePerChunk * chunkNum);
     if (bufferAddr_ == nullptr) {
         return false;
@@ -121,7 +122,7 @@ void CacheMediaChunkBufferImpl::UpdateAccessPos(FragmentIterator& fragmentPos, C
 {
     if (chunkPos == fragmentPos->chunks.end()) {
         auto preChunkPos = std::prev(chunkPos);
-        if (((*preChunkPos)->offset + (*preChunkPos)->chunkSize) == offsetChunk) {
+        if (((*preChunkPos)->offset + static_cast<int64_t>((*preChunkPos)->chunkSize)) == offsetChunk) {
             fragmentPos->accessPos = chunkPos;
         } else {
             fragmentPos->accessPos = preChunkPos;
@@ -197,8 +198,9 @@ bool CacheMediaChunkBufferImpl::WriteInPlace(FragmentIterator& fragmentPos, uint
     }
     size_t writeSizeTmp = 0;
     auto chunkInfoTmp = *chunkPos;
-    if (chunkInfoTmp->offset <= offset && offset < chunkInfoTmp->offset + chunkInfoTmp->dataLength) {
-        auto diff = offset - chunkInfoTmp->offset;
+    if (chunkInfoTmp->offset <= offset &&
+        offset < chunkInfoTmp->offset + static_cast<int64_t>(chunkInfoTmp->dataLength)) {
+        size_t diff = static_cast<size_t>(offset - chunkInfoTmp->offset);
         size_t copyLen = static_cast<size_t>(chunkInfoTmp->dataLength - diff);
         copyLen = std::min(copyLen, writeSize);
         errno_t res = memcpy_s(chunkInfoTmp->data + diff, copyLen, src, copyLen);
@@ -245,7 +247,8 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(int64_t offset, size_t writeSize,
             }
             auto &chunkInfo  = *endPos;
             int64_t newOffset = offset + static_cast<int64_t>(writeSize);
-            size_t moveLen = static_cast<size_t>(chunkInfo->offset + chunkInfo->dataLength - newOffset);
+            int64_t dataLength = static_cast<int64_t>(chunkInfo->dataLength);
+            size_t moveLen = static_cast<size_t>(chunkInfo->offset + dataLength - newOffset);
             auto mergeDataLen = chunkInfo->dataLength - static_cast<int64_t>(moveLen);
             errno_t res = memmove_s(chunkInfo->data, moveLen, chunkInfo->data + mergeDataLen, moveLen);
             FALSE_RETURN_V_MSG_E(res == EOK, false, "memmove_s data err");
@@ -301,7 +304,7 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, int64_t inOffset, size_t inWr
                 return writeSize;
             }
             src += dupWriteSize;
-            offset += dupWriteSize;
+            offset += static_cast<int64_t>(dupWriteSize);
             writeSize -= dupWriteSize;
         }
         chunkPos = std::prev(chunkList.end());
@@ -380,7 +383,7 @@ inline size_t WriteOneChunkData(CacheChunk& chunkInfo, uint8_t* src, int64_t off
     if (copyBegin < 0 || copyBegin > chunkInfo.chunkSize) {
         return 0;
     }
-    size_t writePerOne = static_cast<size_t>(chunkInfo.chunkSize - copyBegin);
+    size_t writePerOne = static_cast<size_t>(chunkInfo.chunkSize - static_cast<size_t>(copyBegin));
     writePerOne = std::min(writePerOne, writeSize);
     errno_t res = memcpy_s(chunkInfo.data + copyBegin, writePerOne, src, writePerOne);
     FALSE_RETURN_V_MSG_E(res == EOK, 0, "memcpy_s data err");
@@ -400,7 +403,7 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
     uint8_t* src = (uint8_t*) ptr;
     if (chunkInfo->chunkSize > chunkInfo->dataLength) {
         writedTmp += WriteOneChunkData(*chunkInfo, src, offset, writeSize);
-        fragmentCacheBuffer.dataLength += writedTmp;
+        fragmentCacheBuffer.dataLength += static_cast<int64_t>(writedTmp);
     }
     while (writedTmp < writeSize) {
         auto chunkOffset = offset + static_cast<int64_t>(writedTmp);
@@ -426,7 +429,7 @@ CacheChunk* UpdateFragmentCacheForDelHead(FragmentCacheBuffer& fragment)
     auto cacheChunk = fragment.chunks.front();
     fragment.chunks.pop_front();
 
-    auto dataLength = cacheChunk->dataLength;
+    int64_t dataLength = static_cast<int64_t>(cacheChunk->dataLength);
     fragment.offsetBegin += dataLength;
     fragment.dataLength -= dataLength;
     if (fragment.accessLength > dataLength) {
@@ -643,7 +646,7 @@ bool CacheMediaChunkBufferImpl::CheckInner()
         auto prev = fragment.chunks.begin();
         auto next = fragment.chunks.end();
         if (!fragment.chunks.empty()) {
-            dataLength += (*prev)->dataLength;
+            dataLength += static_cast<int64_t>((*prev)->dataLength);
             next = std::next(prev);
             if ((*prev)->offset != fragment.offsetBegin) {
                 checkSuccess = false;
