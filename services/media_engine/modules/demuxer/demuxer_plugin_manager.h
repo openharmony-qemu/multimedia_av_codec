@@ -99,6 +99,7 @@ public:
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
     bool IsDash();
+    bool IsSubtitle();
     Status StopPlugin(int32_t streamId);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
@@ -133,6 +134,7 @@ private:
 
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
+    bool isSubtitle_ = false;
     bool needResetEosStatus_ = false;
 };
 } // namespace Media

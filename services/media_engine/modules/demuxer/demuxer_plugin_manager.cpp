@@ -163,6 +163,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
                 curSubTitleStreamID_ = streamIndex;
                 streamInfoMap_[streamIndex].activated = true;
                 MEDIA_LOG_I("InitDefaultPlay SUBTITLE");
+                isSubtitle_ = true;
             }
             streamInfoMap_[streamIndex].type = SUBTITLE;
         } else {
@@ -385,6 +386,11 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
 bool DemuxerPluginManager::IsDash()
 {
     return isDash_;
+}
+
+bool DemuxerPluginManager::IsSubtitle()
+{
+    return isSubtitle_;
 }
 
 void DemuxerPluginManager::SetResetEosStatus(bool flag)
