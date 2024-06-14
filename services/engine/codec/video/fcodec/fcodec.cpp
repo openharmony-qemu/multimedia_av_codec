@@ -545,7 +545,7 @@ int32_t FCodec::GetOutputFormat(Format &format)
     }
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) {
         int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-        int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
+        int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
 
@@ -557,7 +557,7 @@ int32_t FCodec::GetOutputFormat(Format &format)
 void FCodec::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-    outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
+    outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) / UV_SCALE_FACTOR);
     inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
@@ -902,8 +902,6 @@ void FCodec::SendFrame()
 
 int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 {
-    CHECK_AND_RETURN_RET_LOG((cachedFrame_->flags & AV_FRAME_FLAG_CORRUPT) == 0, AVCS_ERR_INVALID_VAL,
-                             "Recevie frame from codec failed: decoded frame is corrupt");
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         targetPixelFmt = sInfo_.surface ? VideoPixelFormat::NV12 : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
@@ -926,7 +924,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     bufferMemory->SetSize(0);
     if (sInfo_.surface) {
         struct SurfaceInfo surfaceInfo;
-        surfaceInfo.surfaceStride = frameBuffer->sMemory_->GetSurfaceBufferStride();
+        surfaceInfo.surfaceStride = static_cast<uint32_t>(frameBuffer->sMemory_->GetSurfaceBufferStride());
         surfaceInfo.surfaceFence = frameBuffer->sMemory_->GetFence();
         surfaceInfo.scaleData = scaleData_;
         surfaceInfo.scaleLineSize = scaleLineSize_;
@@ -1041,9 +1039,9 @@ void FCodec::RenderFrame()
             std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_REQ_TIME));
             continue;
         }
-        int queSize = renderAvailQue_->Size();
-        int curIndex = -1;
-        int i = 0;
+        auto queSize = renderAvailQue_->Size();
+        uint32_t curIndex = 0;
+        uint32_t i = 0;
         for (i = 0; i < queSize; i++) {
             curIndex = renderAvailQue_->Pop();
             if (surfaceMemory->GetBase() == buffers_[INDEX_OUTPUT][curIndex]->avBuffer_->memory_->GetAddr() &&
