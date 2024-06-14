@@ -137,8 +137,13 @@ void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)
         return nameAddrMap_[name];
     }
     CHECK_AND_RETURN_RET_LOG(sizeOfCap > 0, nullptr, "Get capability buffer failed: invalid size");
-    nameAddrMap_[name] = static_cast<void *>(malloc(sizeOfCap));
-    return nameAddrMap_[name];
+    void *buf = static_cast<void *>(malloc(sizeOfCap));
+    if (buf != nullptr) {
+        nameAddrMap_[name] = buf;
+        return buf;
+    } else {
+        return nullptr;
+    }
 }
 
 void *AVCodecListImpl::NewBuffer(size_t bufSize)
