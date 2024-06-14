@@ -24,9 +24,9 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/media_cached_buffer.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",  
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
 ]
 config("hls_unittest_cfg") {
   defines = [

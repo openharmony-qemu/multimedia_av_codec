@@ -14,7 +14,7 @@
  */
 #define HST_LOG_TAG "HttpMediaDownloader"
 
-#include "http/http_media_downloader.h"
+#include "utils/http_media_downloader.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
@@ -82,7 +82,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
 
 void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
 {
-    int totalBufferSize = CURRENT_BIT_RATE * expectBufferDuration;
+    int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     if (totalBufferSize < RING_BUFFER_SIZE) {
         MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
         PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
@@ -105,7 +105,7 @@ void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
 
 void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
 {
-    int totalBufferSize = CURRENT_BIT_RATE * expectBufferDuration;
+    int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
     if (totalBufferSize < RING_BUFFER_SIZE) {
         MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
@@ -431,16 +431,16 @@ bool HttpMediaDownloader::CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataI
 
 bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
 {
-    size_t seekOffset = offset + cacheMediaBuffer_->GetBufferSize(offset);
-    readOffset_ = offset;
+    size_t seekOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
+    readOffset_ = static_cast<size_t>(offset);
     cacheMediaBuffer_->Seek(offset);
 
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     if (seekOffset < fileContentLength) {
-        seekOffset = offset + cacheMediaBuffer_->GetBufferSize(offset);
+        seekOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
         if (writeOffset_ != seekOffset) {
             downloader_->Pause(true);
-            seekOffset = offset + cacheMediaBuffer_->GetBufferSize(offset);
+            seekOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
             bool result = downloader_->Seek(seekOffset);
             if (result) {
                 writeOffset_ = seekOffset;
@@ -487,7 +487,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
             if (result) {
                 writeOffset_ = offset;
                 cacheMediaBuffer_->Seek(offset);
-                readOffset_ = offset;
+                readOffset_ = static_cast<size_t>(offset);
                 downloader_->Resume();
                 return true;
             } else {
