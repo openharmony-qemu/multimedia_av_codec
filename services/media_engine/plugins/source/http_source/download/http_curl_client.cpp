@@ -358,7 +358,7 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
             snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-", startPos);
         }
         MEDIA_LOG_DD("RequestData: requestRange " PUBLIC_LOG_S, requestRange);
-        std::string requestStr(request);
+        std::string requestStr(requestRange);
         curl_easy_setopt(easyHandle_, CURLOPT_RANGE, requestStr.c_str());
     }
 }

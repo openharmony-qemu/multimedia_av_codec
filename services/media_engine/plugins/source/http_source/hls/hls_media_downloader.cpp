@@ -223,7 +223,8 @@ bool HlsMediaDownloader::CheckReadStatus()
         MEDIA_LOG_I("HLS read Eos.");
         return true;
     }
-    if (playListDownloader_->GetDuration() > 0 && static_cast<int64_t>(seekTime_) >= playListDownloader_->GetDuration()) {
+    if (playListDownloader_->GetDuration() > 0 &&
+        static_cast<int64_t>(seekTime_) >= playListDownloader_->GetDuration()) {
         MEDIA_LOG_I("HLS read Eos.");
         return true;
     }
