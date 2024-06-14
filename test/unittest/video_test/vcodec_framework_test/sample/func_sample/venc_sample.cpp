@@ -778,7 +778,7 @@ void VideoEncSample::OutputLoopFuncExt()
 
 void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock>buffer)
 {
-    if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA || attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
+    if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
         int32_t qpAverage = 60;
         EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
