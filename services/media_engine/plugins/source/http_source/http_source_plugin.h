@@ -70,6 +70,7 @@ private:
     std::string uri_ {};
     std::map<std::string, std::string> httpHeader_ {};
     std::string mimeType_ {};
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin

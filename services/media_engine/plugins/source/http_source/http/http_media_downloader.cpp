@@ -294,7 +294,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
             readDataInfo.wantReadLength_;
     }
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
-    while (buffer_->GetSize() < readDataInfo.wantReadLength_) {
+    while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
         if (CheckIsEosRingBuffer(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
@@ -320,6 +320,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
         Task::SleepInTask(5); // 5
         readTime_ += 5;    // 5
     }
+    FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::OK);
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
@@ -328,7 +329,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 
 Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    while (cacheMediaBuffer_->GetBufferSize(readOffset_) < readDataInfo.wantReadLength_) {
+    while (cacheMediaBuffer_->GetBufferSize(readOffset_) < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
         if (CheckIsEosBeforeTimeout(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
@@ -669,6 +670,9 @@ void HttpMediaDownloader::SetDownloadErrorState()
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+    if (buffer_ != nullptr) {
+        buffer_->SetActive(false);
+    }
 }
 
 int HttpMediaDownloader::GetBufferSize()

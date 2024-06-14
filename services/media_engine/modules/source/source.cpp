@@ -283,8 +283,9 @@ bool Source::CanDoSelectBitRate()
 
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
+    isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
-        plugin_->SetInterruptState(isInterruptNeeded);
+        plugin_->SetInterruptState(isInterruptNeeded_);
     }
 }
 
@@ -421,6 +422,7 @@ Status Source::CreatePlugin(const std::shared_ptr<PluginInfo>& info, const std::
         MEDIA_LOG_E("PluginManager CreatePlugin " PUBLIC_LOG_S " fail", name.c_str());
         return Status::OK;
     }
+    plugin_->SetInterruptState(isInterruptNeeded_);
     pluginInfo_ = info;
     MEDIA_LOG_I("Create new plugin: \"" PUBLIC_LOG_S "\" success", pluginInfo_->name.c_str());
     return Status::OK;
@@ -440,6 +442,7 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
     auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(Plugins::PluginType::SOURCE, protocol_);
     if (plugin != nullptr) {
         plugin_ = std::static_pointer_cast<SourcePlugin>(plugin);
+        plugin_->SetInterruptState(isInterruptNeeded_);
         return Status::OK;
     }
     MEDIA_LOG_E("Cannot find any plugin");
