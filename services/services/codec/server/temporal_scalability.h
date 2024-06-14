@@ -49,7 +49,7 @@ private:
     uint32_t inputFrameCounter_ = 0;
     uint32_t outputFrameCounter_ = 0;
     int32_t frameNum_ = 0;
-    int32_t gopSize_  = DEFAULT_GOPSIZE;
+    int32_t gopSize_ = DEFAULT_GOPSIZE;
     int32_t temporalGopSize_ = 0;
     int32_t tRefMode_ = 0;
     std::shared_mutex inputBufMutex_;
