@@ -835,7 +835,7 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
     ioContext_.initCompleted = true;
     if (ioContext_.initDownloadDataSize >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
         MEDIA_LOG_I("init download data size = %{public}u.", ioContext_.initDownloadDataSize);
-        MediaAVCodec::DemuxerInitEventWrite(getpid(), gettid(), ioContext_.initDownloadDataSize, pluginName_);
+        MediaAVCodec::DemuxerInitEventWrite(ioContext_.initDownloadDataSize, pluginName_);
     }
 }
 
