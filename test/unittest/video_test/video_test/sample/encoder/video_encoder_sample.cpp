@@ -33,6 +33,14 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+VideoEncoderSample::~VideoEncoderSample()
+{
+    if (sampleInfo_.window != nullptr) {
+        OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
+        sampleInfo_.window = nullptr;
+    }
+}
+
 int32_t VideoEncoderSample::Init()
 {
     return AVCODEC_SAMPLE_ERR_OK;
@@ -73,6 +81,7 @@ void VideoEncoderSample::BufferInputThread()
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
+    PushEosFrame();
     StartRelease();
 }
 

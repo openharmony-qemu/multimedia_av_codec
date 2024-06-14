@@ -42,6 +42,7 @@ protected:
     void StartRelease();
     void ThreadSleep(bool isValid = false);
     void DumpOutput(const CodecBufferInfo &bufferInfo);
+    void PushEosFrame();
 
     std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;

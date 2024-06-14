@@ -85,6 +85,7 @@ void VideoDecoderSample::InputThread()
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
+    PushEosFrame();
     StartRelease();
 }
 

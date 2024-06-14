@@ -128,12 +128,6 @@ void VideoSampleBase::Release()
     inputThread_.reset();
     outputThread_.reset();
     videoCodec_.reset();
-
-    if (sampleInfo_.window != nullptr && sampleInfo_.codecType == VIDEO_HW_ENCODER) {
-        OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
-        sampleInfo_.window = nullptr;
-    }
-
     context_.reset();
     dataProducer_.reset();
     outputFile_.reset();
@@ -200,6 +194,17 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+}
+
+void VideoSampleBase::PushEosFrame()
+{
+    auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
+    CHECK_AND_RETURN(bufferInfoOpt != std::nullopt);
+    auto &bufferInfo = bufferInfoOpt.value();
+
+    bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+
+    (void)videoCodec_->PushInputData(bufferInfo);
 }
 } // Sample
 } // MediaAVCodec
