@@ -1063,7 +1063,7 @@ void FCodec::RenderFrame()
         }
         buffers_[INDEX_OUTPUT][curIndex]->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         codecAvailQue_->Push(curIndex);
-        AVCODEC_LOGD("Request output buffer success, index = %{public}u, queSize=%{public}d, i=%{public}d", curIndex,
+        AVCODEC_LOGD("Request output buffer success, index = %{public}u, queSize=%{public}zu, i=%{public}d", curIndex,
                      queSize, i);
         break;
     }
