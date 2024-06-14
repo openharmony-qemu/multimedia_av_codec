@@ -59,10 +59,10 @@ struct M3U8Fragment {
 };
 
 struct M3U8Info {
-    std::string uri;
+    std::string uri {};
     double duration = 0;
     bool discontinuity = false;
-    bool bVod;
+    bool bVod {false};
 };
 
 struct M3U8 {

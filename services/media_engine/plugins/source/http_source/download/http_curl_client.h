@@ -50,7 +50,7 @@ private:
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
-    void CheckHeaderKey(std::string setKey, std::string setValue);
+    void CheckHeaderKey(const std::string setKey, const std::string setValue);
     void CheckRequestRange(long startPos, int len);
 
 private:
