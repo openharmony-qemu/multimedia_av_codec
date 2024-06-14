@@ -476,7 +476,7 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
         HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
               i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
     }
-    int32_t sliceHeight = planes->planes[1].offset / stride;
+    int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
     HLOGI("[%dx%d][%dx%d]", surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), stride, sliceHeight);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
@@ -700,7 +700,7 @@ bool HDecoder::RequestAndFindBelongTo(
 
 void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
 {
-    uint64_t surfaceId;
+    uint64_t surfaceId = 0;
     param->GetValue("surfaceId", surfaceId);
     if (!currSurface_.surface_ || currSurface_.surface_->GetUniqueId() != surfaceId) {
         return;
