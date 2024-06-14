@@ -223,7 +223,8 @@ bool HlsMediaDownloader::CheckReadStatus()
         MEDIA_LOG_I("HLS read Eos.");
         return true;
     }
-    if (playListDownloader_->GetDuration() > 0 && seekTime_ >= playListDownloader_->GetDuration()) {
+    if (playListDownloader_->GetDuration() > 0 &&
+        static_cast<int64_t>(seekTime_) >= playListDownloader_->GetDuration()) {
         MEDIA_LOG_I("HLS read Eos.");
         return true;
     }
@@ -340,7 +341,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
-    seekTime_ = static_cast<int64_t>(seekTime);
+    seekTime_ = static_cast<uint64_t>(seekTime);
     buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
@@ -496,16 +497,16 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
     }
 
-    if ((nowTime - lastWriteTime_) >= RECORD_TIME_INTERVAL) {
+    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= RECORD_TIME_INTERVAL) {
         MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
         " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
         BufferDownRecord* record = new BufferDownRecord();
         record->dataBits = lastWriteBit_;
-        record->timeoff = nowTime - lastWriteTime_;
+        record->timeoff = static_cast<uint64_t>(nowTime) - lastWriteTime_;
         record->next = bufferDownRecord_;
         bufferDownRecord_ = record;
         lastWriteBit_ = 0;
-        lastWriteTime_ = nowTime;
+        lastWriteTime_ = static_cast<uint64_t>(nowTime);
 
         BufferDownRecord* tmpRecord = bufferDownRecord_;
         for (int i = 0; i < MAX_RECORD_COUNT; i++) {
@@ -536,7 +537,7 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
 constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
 void HlsMediaDownloader::DownloadReportLoop()
 {
-    int64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    int64_t now = static_cast<int64_t>(steadyClock_.ElapsedMilliseconds());
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
@@ -654,7 +655,7 @@ void HlsMediaDownloader::SeekToTs(uint64_t seekTime, SeekMode mode)
     for (const auto &item : backPlayList_) {
         double hstTime = item.duration_ * HST_SECOND;
         totalDuration += hstTime / HST_NSECOND;
-        if (seekTime >= (int64_t)totalDuration) {
+        if (seekTime >=  static_cast<uint64_t>(totalDuration)) {
             havePlayedTsNum_++;
             continue;
         }
@@ -677,7 +678,7 @@ uint64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doub
     } else {
         int64_t startTimePos = 0;
         double lastTotalDuration = totalDuration - hstTime;
-        if (static_cast<int64_t>(lastTotalDuration) < seekTime) {
+        if (static_cast<uint64_t>(lastTotalDuration) < seekTime) {
             startTimePos = seekTime - static_cast<int64_t>(lastTotalDuration);
             if (startTimePos > (int64_t)(hstTime / 2) && (&item != &backPlayList_.back())) { // 2
                 havePlayedTsNum_++;
@@ -855,7 +856,7 @@ void HlsMediaDownloader::DownBufferSize()
 void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
 {
     static uint32_t minDuration = 0;
-    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+    uint64_t nowTime = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     // len是字节 转换成bit
     uint32_t duration = len * 8;
     if (duration >= bufferedDuration_) {
