@@ -564,7 +564,7 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 
     int32_t innerTrackID = trackId;
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    if (demuxerPluginManager_->IsDash()) {
+    if (demuxerPluginManager_->IsDash() || demuxerPluginManager_->IsSubtitle()) {
         pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
             "InnerSelectTrack failed due to get demuxer plugin failed.");
@@ -629,7 +629,7 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
     int32_t innerTrackID = trackId;
-    if (demuxerPluginManager_->IsDash()) {
+    if (demuxerPluginManager_->IsDash() || demuxerPluginManager_->IsSubtitle()) {
         pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
             "UnselectTrack failed due to get demuxer plugin failed.");
@@ -1257,7 +1257,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
     int32_t innerTrackID = trackId;
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    if (demuxerPluginManager_->IsDash()) {
+    if (demuxerPluginManager_->IsDash() || demuxerPluginManager_->IsSubtitle()) {
         pluginTemp = demuxerPluginManager_->SelectPlugin(trackId);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
             "InnerReadSample failed due to get demuxer plugin failed.");
