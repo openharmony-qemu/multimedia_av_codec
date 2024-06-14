@@ -411,6 +411,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1800, TestSize.Level2)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1900, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     bool audioIsEnd = false;
     int audioFrame = 0;
     const char *file = "/data/test/media/audio/ape.ape";
@@ -422,6 +423,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1900, TestSize.Level2)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string ape_s = OH_AVCODEC_MIMETYPE_AUDIO_APE;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, ape_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -693,6 +701,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2500, TestSize.Level0)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2600, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     int srtIndex = 1;
     int srtSubtitle = 0;
     const char *file = "/data/test/media/srt_test.srt";
@@ -704,6 +713,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2600, TestSize.Level0)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -730,6 +746,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2600, TestSize.Level0)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     int srtIndex = 1;
     int srtSubtitle = 0;
     uint8_t *data = nullptr;
@@ -742,6 +759,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -786,6 +810,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2700, TestSize.Level0)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2800, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     const char *file = "/data/test/media/srt_2800.srt";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -795,6 +820,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2800, TestSize.Level2)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -819,6 +851,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2800, TestSize.Level2)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2900, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     const char *file = "/data/test/media/srt_2900.srt";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -828,6 +861,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_2900, TestSize.Level2)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -876,6 +916,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3000, TestSize.Level2)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3100, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     const char *file = "/data/test/media/srt_3100.srt";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -885,6 +926,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3100, TestSize.Level2)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -934,6 +982,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3200, TestSize.Level2)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3300, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
+    const char* mimeType = nullptr;
     const char *file = "/data/test/media/srt_3300.srt";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -943,6 +992,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3300, TestSize.Level2)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    string mimeType_s = mimeType;
+    string srt_s = OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
+    cout << "------mimeType-------" << mimeType_s << endl;
+    ASSERT_EQ(mimeType_s, srt_s);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
