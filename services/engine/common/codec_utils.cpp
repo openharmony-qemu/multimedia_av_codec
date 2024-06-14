@@ -68,22 +68,22 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     srcPos = 0;
     if (pixFmt == VideoPixelFormat::YUV420P) {
         dataSize = scaleLineSize[1];
-        writeSize = dataSize > (stride >> 1) ? (stride >> 1) : dataSize;
-        for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
+        writeSize = dataSize > (stride / UV_SCALE_FACTOR) ? (stride / UV_SCALE_FACTOR) : dataSize;
+        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
             memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
-            dstPos += (stride >> 1);
+            dstPos += (stride / UV_SCALE_FACTOR);
             srcPos += dataSize;
         }
         srcPos = 0;
-        for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
+        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
             memory->Write(scaleData[INDEX_ARRAY] + srcPos, writeSize, dstPos);
-            dstPos += (stride >> 1);
+            dstPos += (stride / UV_SCALE_FACTOR);
             srcPos += dataSize;
         }
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
         dataSize = scaleLineSize[1];
         writeSize = dataSize > stride ? stride : dataSize;
-        for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
+        for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
             memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
             dstPos += stride;
             srcPos += dataSize;
@@ -163,14 +163,15 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct Surface
         autoFence->Wait(100); // 100ms
     }
 
+    uint32_t yScaleLineSize = static_cast<uint32_t>(surfaceInfo.scaleLineSize[0]);
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % surfaceInfo.scaleLineSize[0]) {
+        if (surfaceInfo.surfaceStride % yScaleLineSize) {
             return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
         WriteYuvData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (surfaceInfo.surfaceStride % surfaceInfo.scaleLineSize[0]) {
+        if (surfaceInfo.surfaceStride % yScaleLineSize) {
             return WriteRgbDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
                                       surfaceInfo.surfaceStride, format);
         }
