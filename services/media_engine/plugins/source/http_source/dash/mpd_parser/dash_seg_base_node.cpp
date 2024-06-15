@@ -22,8 +22,7 @@ namespace Plugins {
 namespace HttpPlugin {
 DashSegBaseNode::DashSegBaseNode()
 {
-    uint32_t index = 0;
-    for (; index < DASH_SEG_BASE_ATTR_NUM; index++) {
+    for (uint32_t index = 0; index < DASH_SEG_BASE_ATTR_NUM; index++) {
         segBaseAttr_[index].attr_.assign(segBaseAttrs_[index]);
         segBaseAttr_[index].val_.assign("");
     }

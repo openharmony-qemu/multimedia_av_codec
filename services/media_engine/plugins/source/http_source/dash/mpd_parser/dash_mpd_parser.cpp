@@ -1063,28 +1063,26 @@ void DashMpdParser::ParseMPD(const char *mpdData, uint32_t length)
     }
 
     std::shared_ptr<XmlParser> xmlParser = std::make_shared<XmlParser>();
-    if (xmlParser != nullptr) {
-        int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
-        std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
-        if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) || this->stopFlag_ || rootElement == nullptr) {
-            MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
-            return;
-        }
-
-        IDashMpdNode *mpdNode = IDashMpdNode::CreateNode(MPD_LABEL_MPD);
-        if (mpdNode == nullptr) {
-            return;
-        }
-
-        // parse attribute in MPD label
-        mpdNode->ParseNode(xmlParser, rootElement);
-        GetMpdAttr(mpdNode);
-
-        // parse element in MPD label
-        GetMpdElement(xmlParser, rootElement);
-
-        IDashMpdNode::DestroyNode(mpdNode);
+    int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
+    std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
+    if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) || this->stopFlag_ || rootElement == nullptr) {
+        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
+        return;
     }
+
+    IDashMpdNode *mpdNode = IDashMpdNode::CreateNode(MPD_LABEL_MPD);
+    if (mpdNode == nullptr) {
+        return;
+    }
+
+    // parse attribute in MPD label
+    mpdNode->ParseNode(xmlParser, rootElement);
+    GetMpdAttr(mpdNode);
+
+    // parse element in MPD label
+    GetMpdElement(xmlParser, rootElement);
+
+    IDashMpdNode::DestroyNode(mpdNode);
 }
 
 void DashMpdParser::GetMPD(DashMpdInfo *&mpdInfo)

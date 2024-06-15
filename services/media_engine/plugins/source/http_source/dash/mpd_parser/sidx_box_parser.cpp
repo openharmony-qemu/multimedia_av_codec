@@ -126,14 +126,14 @@ void SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, int64_t sidxEndOffse
 
 unsigned short Get2Bytes(char *buffer, uint32_t &currPos)
 {
-    unsigned char *tmpBuff = (unsigned char *)(buffer + currPos);
+    unsigned char *tmpBuff = reinterpret_cast<unsigned char *>(buffer + currPos);
     currPos += SHIFT_NUM_2;
     return (tmpBuff[BUFF_INDEX_0] << SHIFT_NUM_8) | tmpBuff[BUFF_INDEX_1];
 }
 
 uint32_t Get4Bytes(char *buffer, uint32_t &currPos)
 {
-    unsigned char *tmpBuff = (unsigned char *)(buffer + currPos);
+    unsigned char *tmpBuff = reinterpret_cast<unsigned char *>(buffer + currPos);
     currPos += SHIFT_NUM_4;
     return (tmpBuff[BUFF_INDEX_0] << SHIFT_NUM_24) | (tmpBuff[BUFF_INDEX_1] << SHIFT_NUM_16) |
            (tmpBuff[BUFF_INDEX_2] << SHIFT_NUM_8) | tmpBuff[BUFF_INDEX_3];

@@ -61,12 +61,12 @@ int32_t CheckRepresentationDirectOutput(const DashRepresentationInfo *representa
 }
 
 // 从AdaptationSet中筛选匹配对最高的音频Representation
-DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string mineType, const PreferAudioFilter &filter,
+DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string &mineType, const PreferAudioFilter &filter,
                                                      const std::list<DashRepresentationInfo *> &repList,
                                                      uint32_t &repIndex)
 {
     // 传入的Representation不应该为空
-    if (repList.size() <= 0) {
+    if (repList.empty()) {
         MEDIA_LOG_E("Representation list is empty");
         return nullptr;
     }
@@ -74,9 +74,8 @@ DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string mineType,
     int32_t highestScore = 0;
     uint32_t indexCnt = 0;
     DashRepresentationInfo *highestScoreRep = nullptr;
-    DashList<DashRepresentationInfo *>::const_iterator it = repList.begin();
-    for (; it != repList.end(); it++, indexCnt++) {
-        DashRepresentationInfo *representation = *it;
+    for (DashRepresentationInfo *representation : repList) {
+        uint32_t indexCntTmp = indexCnt++;
         if (representation == nullptr) {
             continue;
         }
@@ -96,7 +95,7 @@ DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string mineType,
         if (highestScoreRep == nullptr || matchScore > highestScore) {
             highestScore = matchScore;
             highestScoreRep = representation;
-            repIndex = indexCnt;
+            repIndex = indexCntTmp;
         }
     }
 
@@ -131,9 +130,7 @@ int32_t GetAudioRepresentationPreferScore(const PreferAudioFilter &filter, const
         matchScore += static_cast<int32_t>(PreferAudioWeight::VOLUME_ADJUST_WEIGHT);
     }
 
-    MEDIA_LOG_D("Audio representation ["
-    PUBLIC_LOG_S
-    "] prefer score is "
+    MEDIA_LOG_D("Audio representation [" PUBLIC_LOG_S "] prefer score is "
     PUBLIC_LOG_D32, representation->id_.c_str(), matchScore);
     return matchScore;
 }

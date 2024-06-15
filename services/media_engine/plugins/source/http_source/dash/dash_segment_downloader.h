@@ -31,10 +31,10 @@ namespace HttpPlugin {
 
 enum DashReadRet {
     DASH_READ_FAILED = 0,
-    DASH_READ_OK,
-    DASH_READ_SEGMENT_DOWNLOAD_FINISH,
-    DASH_READ_END, // segment download finish and buffer read finish
-    DASH_READ_TIMEOUT
+    DASH_READ_OK = 1,
+    DASH_READ_SEGMENT_DOWNLOAD_FINISH = 2,
+    DASH_READ_END = 3, // segment download finish and buffer read finish
+    DASH_READ_TIMEOUT = 4
 };
 
 struct DashBufferSegment {
@@ -142,18 +142,18 @@ public:
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment);
     void UpdateStreamId(int streamId);
-    int GetStreamId();
-    MediaAVCodec::MediaType GetStreamType();
+    int GetStreamId() const;
+    MediaAVCodec::MediaType GetStreamType() const;
     size_t GetContentLength();
-    bool GetStartedStatus();
-    bool IsSegmentFinish();
+    bool GetStartedStatus() const;
+    bool IsSegmentFinish() const;
     uint64_t GetDownloadSpeed() const;
     uint32_t GetRingBufferSize() const;
-    uint32_t GetRingBufferCapcity() const;
+    uint32_t GetRingBufferCapacity() const;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, std::string url);
+    void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
@@ -165,7 +165,7 @@ private:
     bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
-    size_t GetRingBufferSize(MediaAVCodec::MediaType streamType);
+    size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
     void OnWriteRingBuffer(uint32_t len);
 
 private:

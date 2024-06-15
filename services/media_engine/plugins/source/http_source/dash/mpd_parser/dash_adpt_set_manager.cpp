@@ -203,9 +203,8 @@ DashRepresentationInfo *DashAdptSetManager::GetLowRepresentation()
 static void GetMimeTypeFromRepresentation(const DashAdptSetInfo *adptSetInfo, std::string &mimeType)
 {
     DashList<DashRepresentationInfo *> representationList = adptSetInfo->representationList_;
-    for (DashList<DashRepresentationInfo *>::iterator it = representationList.begin(); it != representationList.end();
-         it++) {
-        mimeType = (*it)->commonAttrsAndElements_.mimeType_;
+    for (DashRepresentationInfo *representationInfo : representationList) {
+        mimeType = representationInfo->commonAttrsAndElements_.mimeType_;
         if (!mimeType.empty()) {
             break;
         }

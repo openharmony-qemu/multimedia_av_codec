@@ -33,7 +33,7 @@ static const std::string MPD_SCHEME_CICP_MATRIX_COEFFICIENTS = "cicp:MatrixCoeff
 static const std::string MPD_SCHEME_CICP_COLOUR_PRIMARIES = "cicp:ColourPrimaries";
 static const std::string MPD_SCHEME_CICP_TRANSFER_CHARACTERISTICS = "cicp:TransferCharacteristics";
 
-bool DashUrlIsAbsolute(const std::string url)
+bool DashUrlIsAbsolute(const std::string &url)
 {
     if (url.find("http://") == 0 || url.find("https://") == 0) {
         return true;
@@ -95,7 +95,8 @@ static std::string &ReplaceSubStr(std::string &str, uint32_t position, uint32_t 
     return str;
 }
 
-int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, std::string segTmpltIdentifier, std::string substitutionStr)
+int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segTmpltIdentifier,
+                               std::string substitutionStr)
 {
     std::string::size_type pos = segTmpltStr.find(segTmpltIdentifier);
     uint32_t identifierLength = segTmpltIdentifier.length();
@@ -204,7 +205,7 @@ uint32_t DashGetAttrIndex(const std::string &attrName, const char *const *nodeAt
     return i;
 }
 
-void DashParseRange(const std::string rangeStr, int64_t &startRange, int64_t &endRange)
+void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &endRange)
 {
     if (rangeStr.length() > 0) {
         std::string::size_type separatePosition = rangeStr.find_first_of('-');
@@ -225,11 +226,7 @@ void DashParseRange(const std::string rangeStr, int64_t &startRange, int64_t &en
             std::string lastRange = rangeStr.substr(separatePosition + 1, rangeStr.length() - separatePosition - 1);
             endRange = atoll(lastRange.c_str());
         }
-        MEDIA_LOG_D("startRange="
-        PUBLIC_LOG_D64
-        ", endRange="
-        PUBLIC_LOG_D64
-        ", range="
+        MEDIA_LOG_D("startRange=" PUBLIC_LOG_D64 ", endRange=" PUBLIC_LOG_D64 ", range="
         PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
     }
 }
