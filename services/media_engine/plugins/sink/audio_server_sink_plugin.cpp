@@ -37,6 +37,7 @@
 namespace {
 using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
+constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
     {AudioInterruptMode::SHARE_MODE, OHOS::AudioStandard::InterruptMode::SHARE_MODE},
@@ -859,6 +860,99 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
     return Status::OK;
 }
 
+Status AudioServerSinkPlugin::DrainCacheData(bool render)
+{
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::DrainCacheData " + std::to_string(render));
+    if (!render) {
+        MEDIA_LOG_D("Drop cache buffer because render=false");
+        cachedBuffers_.clear();
+        return Status::OK;
+    }
+    if (cachedBuffers_.empty()) {
+        return Status::OK;
+    }
+    AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
+        audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
+    if (rendererState == AudioStandard::RendererState::RENDERER_PAUSED) {
+        MEDIA_LOG_W("audioRenderer_ is still paused, try again later");
+        return Status::ERROR_AGAIN;
+    }
+    if (rendererState != AudioStandard::RendererState::RENDERER_RUNNING) {
+        cachedBuffers_.clear();
+        MEDIA_LOG_W("Drop cache buffer because audioRenderer_ state invalid");
+        return Status::ERROR_UNKNOWN;
+    }
+    while (cachedBuffers_.size() > 0) { // do drain cache buffers
+        auto currBuffer = cachedBuffers_.front();
+        uint8_t* destBuffer = currBuffer.data();
+        size_t destLength = currBuffer.size();
+        bool shouldDrop = false;
+        size_t remained = WriteAudioBuffer(destBuffer, destLength, shouldDrop);
+        if (remained == 0) { // write ok
+            cachedBuffers_.pop_front();
+            continue;
+        }
+        if (shouldDrop) { // write error and drop buffer
+            cachedBuffers_.clear();
+            MEDIA_LOG_W("Drop cache buffer, error happens during drain");
+            return Status::ERROR_UNKNOWN;
+        }
+        if (remained < destLength) { // some data written, then audioRender paused again, update cache
+            std::vector<uint8_t> tmpBuffer(destBuffer + destLength - remained, destBuffer + destLength);
+            cachedBuffers_.pop_front();
+            cachedBuffers_.emplace_front(std::move(tmpBuffer));
+        } // else no data written, no need to update front cache
+        MEDIA_LOG_W("Audiorender pause again during drain cache buffers");
+        return Status::ERROR_AGAIN;
+    }
+    MEDIA_LOG_I("Drain cache buffer success");
+    return Status::OK;
+}
+
+void AudioServerSinkPlugin::CacheData(uint8_t* inputBuffer, size_t bufferSize)
+{
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::CacheData " + std::to_string(bufferSize));
+    std::vector<uint8_t> tmpBuffer(inputBuffer, inputBuffer + bufferSize);
+    cachedBuffers_.emplace_back(std::move(tmpBuffer));
+    MEDIA_LOG_I("Cache one audio buffer, data size is " PUBLIC_LOG_U64, bufferSize);
+    while (cachedBuffers_.size() > DEFAULT_BUFFER_NUM) {
+        auto dropSize = cachedBuffers_.front().size();
+        MEDIA_LOG_W("Drop one cached buffer size " PUBLIC_LOG_U64 " because max cache size reached.", dropSize);
+        cachedBuffers_.pop_front();
+    }
+}
+
+size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop)
+{
+    uint8_t* destBuffer = inputBuffer;
+    size_t destLength = bufferSize;
+    while (destLength > 0) {
+        MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer: " + std::to_string(destLength));
+        int32_t ret = audioRenderer_->Write(destBuffer, destLength);
+        if (ret < 0) {
+            if (audioRenderer_->GetStatus() == AudioStandard::RendererState::RENDERER_PAUSED) {
+                MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ paused, cache data.");
+                shouldDrop = false;
+            } else {
+                MEDIA_LOG_W("WriteAudioBuffer error because audioRenderer_ error, drop data.");
+                shouldDrop = true;
+            }
+            break;
+        } else if (static_cast<size_t>(ret) < destLength) {
+            OHOS::Media::SleepInJob(5); // 5ms
+        }
+        if (static_cast<size_t>(ret) > destLength) {
+            MEDIA_LOG_W("audioRenderer_ return ret " PUBLIC_LOG_D32 "> destLength " PUBLIC_LOG_U64,
+                ret, destLength);
+            ret = destLength;
+        }
+        destBuffer += ret;
+        destLength -= ret;
+        MEDIA_LOG_D("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
+    }
+    return destLength;
+}
+
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_D_T("Write buffer to audio framework");
@@ -879,24 +973,26 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     while (isForcePaused_ && seekable_ == Seekable::SEEKABLE) {
         OHOS::Media::SleepInJob(5); // 5ms
     }
-
-    FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
-    for (; destLength > 0;) {
-        MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::To be written: " + std::to_string(destLength));
-        ret = audioRenderer_->Write(destBuffer, destLength);
-        if (ret < 0) {
-            MEDIA_LOG_E_T("Write data error ret is: " PUBLIC_LOG_D32, ret);
-            break;
-        } else if (static_cast<size_t>(ret) < destLength) {
-            OHOS::Media::SleepInJob(5); // 5ms
-        }
-        DumpEntireAudioBuffer(destBuffer, static_cast<size_t>(ret));
-        DumpSliceAudioBuffer(destBuffer, static_cast<size_t>(ret));
-        destBuffer += ret;
-        destLength -= ret;
-        MEDIA_LOG_DD("written data size " PUBLIC_LOG_D32, ret);
+    if (audioRenderer_ == nullptr) {
+        DrainCacheData(false);
+        return Status::ERROR_NULL_POINTER;
     }
-    return ret >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
+    auto drainCacheRet = DrainCacheData(true);
+    if (drainCacheRet != Status::OK) {
+        if (drainCacheRet == Status::ERROR_AGAIN) {
+            CacheData(destBuffer, destLength);
+        }
+        return Status::ERROR_UNKNOWN;
+    }
+    bool shouldDrop = false;
+    size_t remained = WriteAudioBuffer(destBuffer, destLength, shouldDrop);
+    if (remained == 0) {
+        return Status::OK;
+    }
+    if (!shouldDrop) {
+        CacheData(destBuffer + destLength - remained, remained);
+    }
+    return Status::ERROR_UNKNOWN;
 }
 
 int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
@@ -915,6 +1011,7 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
 Status AudioServerSinkPlugin::Flush()
 {
     MEDIA_LOG_I_T("Flush entered.");
+    DrainCacheData(false);
     if (audioRenderer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
@@ -930,8 +1027,11 @@ Status AudioServerSinkPlugin::Drain()
 {
     MEDIA_LOG_I_T("Drain entered.");
     if (audioRenderer_ == nullptr) {
+        DrainCacheData(false);
         return Status::ERROR_WRONG_STATE;
     }
+    DrainCacheData(true); // try to drain
+    cachedBuffers_.clear(); // force clear cached data, no matter drain success or not
     if (!audioRenderer_->Drain()) {
         uint64_t latency = 0;
         audioRenderer_->GetLatency(latency);
