@@ -32,7 +32,7 @@ public:
 
 HWTEST_F(AVCodecSysEventTest, FaultEventWrite, TestSize.Level1)
 {
-    FaultType faultType = FAULT_TYPE_INVALID;
+    FaultType faultType = FaultType::FAULT_TYPE_INVALID;
     const std::string msg = "avcodec fault event for test";
     const std::string module = "unitest";
 }
@@ -68,7 +68,7 @@ HWTEST_F(AVCodecSysEventTest, CodecStopEventWrite, TestSize.Level1)
     int32_t clientPid = 0;
     int32_t clientUid = 0;
     int32_t codecInstanceId = 0;
-    CodecStopEventWrite(codecDfxInfo);
+    CodecStopEventWrite(clientPid, clientUid, codecInstanceId);
 }
 
 HWTEST_F(AVCodecSysEventTest, DemuxerInitEventWrite, TestSize.Level1)
