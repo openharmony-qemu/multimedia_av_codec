@@ -61,7 +61,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     videoCodec_ = VideoCodecFactory::CreateVideoCodec(sampleInfo_.codecType);
     CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
-    ret = videoCodec_->Create(sampleInfo_.codecMime);
+    ret = videoCodec_->Create(sampleInfo_.codecMime, sampleInfo_.codecType & 0b1);  // 0b1: software codec mask
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
     context_ = std::make_shared<SampleContext>();
