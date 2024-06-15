@@ -214,8 +214,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
     }
     if (rect.nLeft < 0 || rect.nTop < 0 ||
         rect.nWidth == 0 || rect.nHeight == 0 ||
-        rect.nLeft + rect.nWidth > w ||
-        rect.nTop + rect.nHeight > h) {
+        rect.nLeft + static_cast<int32_t>(rect.nWidth) > static_cast<int32_t>(w) ||
+        rect.nTop + static_cast<int32_t>(rect.nHeight) > static_cast<int32_t>(h)) {
         HLOGW("wrong crop rect (%d, %d, %u, %u) vs. frame (%u," \
               "%u), use default", rect.nLeft, rect.nTop, rect.nWidth, rect.nHeight, w, h);
         return;
@@ -224,8 +224,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
           rect.nLeft, rect.nTop, rect.nWidth, rect.nHeight);
     flushCfg_.damage.x = rect.nLeft;
     flushCfg_.damage.y = rect.nTop;
-    flushCfg_.damage.w = rect.nWidth;
-    flushCfg_.damage.h = rect.nHeight;
+    flushCfg_.damage.w = static_cast<int32_t>(rect.nWidth);
+    flushCfg_.damage.h = static_cast<int32_t>(rect.nHeight);
     if (outputFormat_) {
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);

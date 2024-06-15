@@ -263,8 +263,8 @@ int32_t HEncoder::UpdateInPortFormat()
 
     // save into member variable
     requestCfg_.timeout = 0;
-    requestCfg_.width = w;
-    requestCfg_.height = h;
+    requestCfg_.width = static_cast<int32_t>(w);
+    requestCfg_.height = static_cast<int32_t>(h);
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = BUFFER_MODE_REQUEST_USAGE;

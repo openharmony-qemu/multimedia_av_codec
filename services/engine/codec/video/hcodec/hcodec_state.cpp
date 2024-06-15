@@ -127,7 +127,7 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
 
 void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     (void)info.param->GetValue("generation", generation);
     if (generation == codec_->stateGeneration_) {
         SLOGE("stucked");
@@ -386,7 +386,7 @@ void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation;
+            int32_t generation = 0;
             if (info.param->GetValue("generation", generation) &&
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
@@ -653,7 +653,7 @@ void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 
 void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     (void)info.param->GetValue("generation", generation);
     if (generation != codec_->stateGeneration_) {
         return;
@@ -882,7 +882,7 @@ void HCodec::StoppingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation;
+            int32_t generation = 0;
             (void)info.param->GetValue("generation", generation);
             if (generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
