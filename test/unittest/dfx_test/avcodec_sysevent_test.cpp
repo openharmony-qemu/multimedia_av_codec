@@ -35,6 +35,7 @@ HWTEST_F(AVCodecSysEventTest, FaultEventWrite, TestSize.Level1)
     FaultType faultType = FaultType::FAULT_TYPE_INVALID;
     const std::string msg = "avcodec fault event for test";
     const std::string module = "unitest";
+    FaultEventWrite(faultType, msg, module);
 }
 
 HWTEST_F(AVCodecSysEventTest, ServiceStartEventWrite, TestSize.Level1)
