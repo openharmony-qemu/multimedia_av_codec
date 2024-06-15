@@ -1151,10 +1151,10 @@ bool MediaDemuxer::ChangeStream(uint32_t trackId)
         uint32_t tempVideoTrack = TRACK_ID_DUMMY;
         uint32_t tempAudioTrack = TRACK_ID_DUMMY;
         InitMediaMetaData(mediaInfo, tempVideoTrack, tempAudioTrack, videoMime_);
-        int32_t localVideoTrackId_ = static_cast<>(videoTrackId_);
-        int32_t localTempVideoTrack = static_cast<>(tempVideoTrack);
-        int32_t localAudioTrackId_ = static_cast<>(audioTrackId_);
-        int32_t localTempAudioTrack = static_cast<>(tempAudioTrack);
+        int32_t localVideoTrackId_ = static_cast<int32_t>(videoTrackId_);
+        int32_t localTempVideoTrack = static_cast<int32_t>(tempVideoTrack);
+        int32_t localAudioTrackId_ = static_cast<int32_t>(audioTrackId_);
+        int32_t localTempAudioTrack = static_cast<int32_t>(tempAudioTrack);
         if (tempVideoTrack != TRACK_ID_DUMMY) {
             demuxerPluginManager_->UpdateTempTrackMapInfo(localVideoTrackId_, localTempVideoTrack);
         }
