@@ -15,6 +15,7 @@
 
 #include "avcodec_server_manager.h"
 #include <codecvt>
+#include <dlfcn.h>
 #include <locale>
 #include <thread>
 #include <unistd.h>
@@ -23,7 +24,6 @@
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
-#include "mem_mgr_client.h"
 #include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
@@ -142,11 +142,11 @@ void AVCodecServerManager::Init()
 {
     void *handle = dlopen(LIB_PATH, RTLD_NOW);
     EXPECT_AND_LOGE(handle == nullptr, "Load so failed:%{public}s", LIB_PATH);
-    auto libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
-    auto notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
+    libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
+    notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
     EXPECT_AND_LOGE(notifyProcessStatusFunc_ == nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
                     NOTIFY_STATUS_FUNC_NAME);
-    auto setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
+    setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
     EXPECT_AND_LOGE(setCriticalFunc_ == nullptr, "Load setCriticalFunc failed:%{public}s", SET_CRITICAL_FUNC_NAME);
     return;
 }
@@ -321,6 +321,7 @@ void AVCodecServerManager::DestroyDumperForPid(pid_t pid)
 
 void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 {
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "notify memory manager is nullptr, %{public}d.", status);
     int32_t ret = notifyProcessStatusFunc_(pid_, 1, status, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
         AVCODEC_LOGI("notify memory manager to %{public}d success.", status);
@@ -331,6 +332,7 @@ void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 
 void AVCodecServerManager::SetCritical(const bool isKeyService)
 {
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d.", isKeyService);
     int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
         AVCODEC_LOGI("set critical to %{public}d success.", isKeyService);

@@ -92,9 +92,9 @@ private:
     std::mutex mutex_;
     using NotifyProcessStatusFunc = int32_t(*)(int32_t pid, int32_t type, int32_t status, int32_t saId);
     using SetCriticalFunc = int32_t(*)(int32_t pid, bool critical, int32_t saId);
-    constexpr char LIB_PATH = "libmemmgrclient.z.so";
-    constexpr char NOTIFY_STATUS_FUNC_NAME[] = "notify_process_status";
-    cosntexpr char SET_CRITICAL_FUNC_NAME[] = "set_critical";
+    static constexpr char LIB_PATH[] = "libmemmgrclient.z.so";
+    static constexpr char NOTIFY_STATUS_FUNC_NAME[] = "notify_process_status";
+    static constexpr char SET_CRITICAL_FUNC_NAME[] = "set_critical";
     std::shared_ptr<void> libMemMgrClientHandle_ = nullptr;
     NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
     SetCriticalFunc setCriticalFunc_ = nullptr;
