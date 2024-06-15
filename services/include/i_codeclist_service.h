@@ -27,6 +27,9 @@ public:
     virtual std::string FindEncoder(const Media::Format &format) = 0;
     virtual int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                                   const AVCodecCategory &category) = 0;
+    virtual bool IsServiceDied() {
+        return false;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

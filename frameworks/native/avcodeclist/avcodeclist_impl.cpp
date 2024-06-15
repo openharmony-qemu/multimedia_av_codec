@@ -29,7 +29,7 @@ std::shared_ptr<AVCodecList> AVCodecListFactory::CreateAVCodecList()
     static bool initialized = false;
     static std::mutex initMutex;
     std::lock_guard lock(initMutex);
-    if (!initialized) {
+    if (!initialized || impl->IsServiceDied()) {
         int32_t ret = impl->Init();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVCodecListImpl failed");
         initialized = true;
@@ -42,6 +42,11 @@ int32_t AVCodecListImpl::Init()
     codecListService_ = AVCodecServiceFactory::GetInstance().CreateCodecListService();
     CHECK_AND_RETURN_RET_LOG(codecListService_ != nullptr, AVCS_ERR_UNKNOWN, "Create AVCodecList service failed");
     return AVCS_ERR_OK;
+}
+
+bool AVCodecListImpl::IsServiceDied()
+{
+    return codecListService_ == nullptr || codecListService_->IsServiceDied();
 }
 
 AVCodecListImpl::AVCodecListImpl()
