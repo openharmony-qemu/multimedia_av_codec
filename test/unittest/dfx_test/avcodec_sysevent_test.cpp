@@ -50,14 +50,14 @@ HWTEST_F(AVCodecSysEventTest, CodecStartEventWrite, TestSize.Level1)
     codecDfxInfo.clientPid = 0;
     codecDfxInfo.clientUid = 0;
     codecDfxInfo.codecInstanceId = 0;
-    codecDfxInfo.codecName = "video/aac";
-    codecDfxInfo.codecIsVendor = "True";
-    codecDfxInfo.codecMode = "Surface mode";
+    codecDfxInfo.codecName = "unitest";
+    codecDfxInfo.codecIsVendor = "unitest";
+    codecDfxInfo.codecMode = "unitest";
     codecDfxInfo.encoderBitRate = 0;
     codecDfxInfo.videoWidth = 0;
     codecDfxInfo.videoHeight = 0;
     codecDfxInfo.videoFrameRate = 0;
-    codecDfxInfo.videoPixelFormat = "YUV420P";
+    codecDfxInfo.videoPixelFormat = "unitest";
     codecDfxInfo.audioChannelCount = 0;
     codecDfxInfo.audioSampleRate = 0;
     CodecStartEventWrite(codecDfxInfo);
