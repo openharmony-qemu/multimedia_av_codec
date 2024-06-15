@@ -18,7 +18,6 @@
 
 #include <fstream>
 #include <thread>
-#include <functional>
 #include "sample_info.h"
 #include "video_codec_base.h"
 #include "data_producer_base.h"
@@ -40,7 +39,6 @@ protected:
     virtual int32_t StartThread();
     virtual void Release();
     void StartRelease();
-    void ThreadSleep(bool isValid = false);
     void DumpOutput(const CodecBufferInfo &bufferInfo);
     void PushEosFrame();
 
@@ -50,9 +48,6 @@ protected:
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
-
-    std::function<void()> inputFunc_ = nullptr;
-    std::function<void()> outputFunc_ = nullptr;
 
     std::mutex mutex_;
     SampleInfo sampleInfo_;

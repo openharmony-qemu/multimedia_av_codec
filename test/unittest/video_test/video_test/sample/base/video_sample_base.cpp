@@ -144,21 +144,6 @@ void VideoSampleBase::StartRelease()
     }
 }
 
-void VideoSampleBase::ThreadSleep(bool isValid)
-{
-    if (!isValid || sampleInfo_.frameInterval <= 0) {
-        return;
-    }
-
-    thread_local auto lastPushTime = std::chrono::system_clock::now();
-    auto beforeSleepTime = std::chrono::system_clock::now();
-    std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
-    lastPushTime = std::chrono::system_clock::now();
-
-    AVCODEC_LOGV("Sleep time: %{public}2.2fms",
-        static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
-}
-
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
     CHECK_AND_RETURN(sampleInfo_.needDumpOutput);

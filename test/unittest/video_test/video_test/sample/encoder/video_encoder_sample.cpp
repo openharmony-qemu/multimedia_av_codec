@@ -15,7 +15,6 @@
 
 #include "video_encoder_sample.h"
 #include <unistd.h>
-#include <chrono>
 #include <memory>
 #include <sys/mman.h>
 #include "external_window.h"
@@ -23,10 +22,9 @@
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "avcodec_trace.h"
+#include "sample_utils.h"
 
 namespace {
-using namespace std::chrono_literals;
-
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoderSample"};
 }
 
@@ -74,7 +72,7 @@ void VideoEncoderSample::BufferInputThread()
             context_->inputBufferQueue.GetFrameCount(),
             bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, sampleInfo_.frameInterval);
 
         ret = videoCodec_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
@@ -111,7 +109,7 @@ void VideoEncoderSample::SurfaceInputThread()
         ret = munmap(bufferAddr, bufferHandle->size);
         CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
 
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, sampleInfo_.frameInterval);
 
         AVCodecTrace::TraceBegin("OH::Frame", pts);
         ret = OH_NativeWindow_NativeWindowFlushBuffer(sampleInfo_.window, buffer, fenceFd, {nullptr, 0});
@@ -137,7 +135,7 @@ void VideoEncoderSample::OutputThread()
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
 
         DumpOutput(bufferInfo);
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, sampleInfo_.frameInterval);
 
         int32_t ret = videoCodec_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");

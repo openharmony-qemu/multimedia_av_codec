@@ -16,12 +16,6 @@
 #ifndef AVCODEC_SAMPLE_VIDEO_DECODER_SAMPLE_H
 #define AVCODEC_SAMPLE_VIDEO_DECODER_SAMPLE_H
 
-#include <mutex>
-#include <memory>
-#include <string>
-#include <atomic>
-#include <thread>
-#include <fstream>
 #include "video_sample_base.h"
 #include "iconsumer_surface.h"
 
