@@ -93,7 +93,7 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
         mediaSegment_->contentLength_ = mediaSegment_->endRangeValue_ - mediaSegment_->startRangeValue_ + 1;
     }
     segmentList_.push_back(mediaSegment_);
-    MEDIA_LOG_I("Open enter streamId:" PUBLIC_LOG_D32 " ,seqNum:" PUBLIC_LOG_D64 ", range="PUBLIC_LOG_D64 "-"
+    MEDIA_LOG_I("Open enter streamId:" PUBLIC_LOG_D32 " ,seqNum:" PUBLIC_LOG_D64 ", range=" PUBLIC_LOG_D64 "-"
     PUBLIC_LOG_D64 " url:" PUBLIC_LOG_S, mediaSegment_->streamId_, mediaSegment_->numberSeq_,
     mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_, mediaSegment_->url_.c_str());
 
@@ -326,7 +326,7 @@ size_t DashSegmentDownloader::GetRingBufferInitSize(MediaAVCodec::MediaType stre
             ringBufferSize = DEFAULT_RING_BUFFER_SIZE;
         } else if (ringBufferSize > ringBufferFixSize) {
             MEDIA_LOG_I("Setting buffer size: " PUBLIC_LOG_ZU ", already exceed the max buffer size: "
-            PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU, ingBufferSize, ringBufferFixSize, ringBufferFixSize);
+            PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU, ringBufferSize, ringBufferFixSize, ringBufferFixSize);
             ringBufferSize = ringBufferFixSize;
         }
         return ringBufferSize;
