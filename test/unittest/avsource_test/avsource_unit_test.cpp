@@ -71,6 +71,7 @@ string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
 string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
+string g_nonStandardBomPath = TEST_FILE_PATH + string("nonstandard_bom.mp3");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -1936,5 +1937,32 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3000, TestSize.Level1)
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_SUBTITLE);
     ASSERT_EQ(formatVal_.codecMime, "application/x-subrip");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_4000
+ * @tc.desc: get format when the file is nonstandard BOM
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_nonStandardBomPath);
+    size_ = GetFileSize(g_nonStandardBomPath);
+    printf("---- %s ----\n", g_nonStandardBomPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ALBUM, formatVal_.album));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_DATE, formatVal_.date));
+
+    ASSERT_EQ(formatVal_.title, "bom");
+    ASSERT_EQ(formatVal_.artist, "张三");
+    ASSERT_EQ(formatVal_.album, "a");
+    ASSERT_EQ(formatVal_.date, "2024");
 }
 } // namespace
