@@ -73,8 +73,8 @@ HWTEST_F(AVCodecSysEventTest, CodecStopEventWrite, TestSize.Level1)
 
 HWTEST_F(AVCodecSysEventTest, DemuxerInitEventWrite, TestSize.Level1)
 {
-    uint32_t downloadSize = 3 * 1024 * 1024;
-    std::string sourceType = "mp4";
+    uint32_t downloadSize = 0;
+    std::string sourceType = "unitest";
     DemuxerInitEventWrite(downloadSize, sourceType);
 }
 }
