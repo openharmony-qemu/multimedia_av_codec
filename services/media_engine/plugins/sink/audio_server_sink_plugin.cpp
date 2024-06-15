@@ -594,7 +594,7 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelsSetter()
     paramsSetterMap_[Tag::AUDIO_OUTPUT_CHANNELS] = [this](const ValueType &para) {
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
                              "channels type should be int32_t");
-        channels_ = AnyCast<int32_t>(para);
+        channels_ = AnyCast<uint32_t>(para);
         MEDIA_LOG_I_T("Set outputChannels: " PUBLIC_LOG_U32, channels_);
         if (!AssignChannelNumIfSupported(channels_)) {
             MEDIA_LOG_E_T("channel isn't supported");
@@ -875,7 +875,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     auto srcBuffer = mem->GetAddr();
     auto destBuffer = const_cast<uint8_t *>(srcBuffer);
     auto srcLength = mem->GetSize();
-    size_t destLength = srcLength;
+    size_t destLength = static_cast<size_t>(srcLength);
     while (isForcePaused_ && seekable_ == Seekable::SEEKABLE) {
         OHOS::Media::SleepInJob(5); // 5ms
     }
@@ -965,7 +965,7 @@ Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
     if (!res) {
         return Status::ERROR_UNKNOWN;
     }
-    framePosition = ts.framePosition;
+    framePosition = static_cast<int32_t>(ts.framePosition);
     return Status::OK;
 }
 

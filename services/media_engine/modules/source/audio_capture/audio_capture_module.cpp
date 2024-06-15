@@ -77,7 +77,7 @@ Status AudioCaptureModule::Init()
         appInfo.appTokenId = appTokenId_;
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
-        appInfo.appFullTokenId = appFullTokenId_;
+        appInfo.appFullTokenId = static_cast<uint64_t>(appFullTokenId_);
         audioCapturer_ = AudioStandard::AudioCapturer::Create(options_, appInfo);
         if (audioCapturer_ == nullptr) {
             MEDIA_LOG_E("Create audioCapturer fail");

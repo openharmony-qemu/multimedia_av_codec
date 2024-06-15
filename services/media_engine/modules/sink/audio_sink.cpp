@@ -388,7 +388,7 @@ int64_t AudioSink::getDurationUsPlayedAtSampleRate(uint32_t numFrames)
         MEDIA_LOG_W("cannot get sampleRate");
         return 0;
     }
-    return (int64_t)(numFrames * HST_MSECOND / sampleRate);
+    return (int64_t)(static_cast<int32_t>(numFrames) * HST_MSECOND / sampleRate);
 }
 
 void AudioSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver)

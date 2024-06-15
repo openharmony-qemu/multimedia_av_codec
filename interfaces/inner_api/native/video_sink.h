@@ -62,8 +62,8 @@ private:
     int64_t fixDelay_ {0};
     bool seekFlag_{false};
     std::atomic<bool> lastFrameDropped_ {false};
-    int64_t lastPts_;
-    int64_t lastClockTime_;
+    int64_t lastPts_ = -1;
+    int64_t lastClockTime_ = -1;
     std::atomic<bool> isRenderStarted_{false};
 };
 } // namespace Pipeline
