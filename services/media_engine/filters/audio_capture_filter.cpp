@@ -329,7 +329,7 @@ void AudioCaptureFilter::ReadLoop()
     }
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
-    avBufferConfig.size = bufferSize;
+    avBufferConfig.size = static_cast<int32_t>(bufferSize);
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {

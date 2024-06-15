@@ -248,7 +248,7 @@ Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackInde
             return Status::OK;
         }
     }
-    int32_t index = trackInfoMap_.size();
+    int32_t index = static_cast<int32_t>(trackInfoMap_.size());
     trackInfoMap_[index].streamID = streamID;
     trackInfoMap_[index].innerTrackIndex = trackIndex;
     return Status::OK;
@@ -279,15 +279,15 @@ Status DemuxerPluginManager::AddTempTrackInfo(const Plugins::MediaInfo& mediaInf
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
         auto trackMeta = mediaInfo.tracks[index];
         for (auto& iter : tempTrackInfoMap_) {
-            if (iter.second.streamID == streamId && iter.second.innerTrackIndex == index) {
+            if (iter.second.streamID == streamId && iter.second.innerTrackIndex == static_cast<int32_t>(index)) {
                 continue;
             }
         }
-        int32_t tempIndex = tempTrackInfoMap_.size();
+        int32_t tempIndex = static_cast<int32_t>(tempTrackInfoMap_.size());
         MEDIA_LOG_I("AddTempTrackInfo index =  "  PUBLIC_LOG_D32 " id = " PUBLIC_LOG_D32
             " innerIndex = " PUBLIC_LOG_D32, tempIndex, streamId, index);
         tempTrackInfoMap_[tempIndex].streamID = streamId;
-        tempTrackInfoMap_[tempIndex].innerTrackIndex = index;
+        tempTrackInfoMap_[tempIndex].innerTrackIndex = static_cast<int32_t>(index);
     }
     return Status::OK;
 }

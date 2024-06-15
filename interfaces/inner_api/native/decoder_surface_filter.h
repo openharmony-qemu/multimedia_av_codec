@@ -144,8 +144,8 @@ private:
     bool renderFirstFrame_{false};
     Mutex formatChangeMutex_{};
 
-    int32_t appUid_;
-    int32_t appPid_;
+    int32_t appUid_ = -1;
+    int32_t appPid_ = -1;
     std::string bundleName_;
     uint64_t instanceId_ = 0;
 
