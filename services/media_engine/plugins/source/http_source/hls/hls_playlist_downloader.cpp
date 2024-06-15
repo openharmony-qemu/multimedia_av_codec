@@ -88,7 +88,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
-    if (master_->bLive_) {
+    if (master_->bLive_ && !updateTask_->IsTaskRunning()) {
         updateTask_->Start();
     }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;

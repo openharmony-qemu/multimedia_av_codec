@@ -113,6 +113,7 @@ public:
     int64_t GetNowTime();
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
+    bool IsM3u8Request() const;
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
