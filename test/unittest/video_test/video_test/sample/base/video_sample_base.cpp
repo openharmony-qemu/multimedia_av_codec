@@ -73,7 +73,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     }
     PrintSampleInfo(sampleInfo_);
     
-    ret = videoCodec_->Config(sampleInfo_, context_.get());
+    ret = videoCodec_->Config(sampleInfo_, reinterpret_cast<uintptr_t *>(context_.get()));
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
     releaseThread_ = nullptr;

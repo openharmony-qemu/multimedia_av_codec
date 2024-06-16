@@ -39,7 +39,7 @@ int32_t VideoDecoder::Create(const std::string &codecMime, bool isSoftware)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::Config(SampleInfo &sampleInfo, SampleContext * const sampleContext)
+int32_t VideoDecoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
     CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: codecUserData");
@@ -138,7 +138,7 @@ int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::SetCallback(SampleContext *codecUserData)
+int32_t VideoDecoder::SetCallback(uintptr_t * const codecUserData)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
     int32_t ret = AV_ERR_OK;
