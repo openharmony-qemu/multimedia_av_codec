@@ -203,6 +203,16 @@ bool DownloadRequest::IsChunkedVod() const
     return headerInfo_.isChunked && headerInfo_.GetFileContentLength() == LIVE_CONTENT_LENGTH;
 }
 
+bool DownloadRequest::IsM3u8Request() const
+{
+    if (url_.find(".ts") != std::string::npos ||
+        url_.find(".m3u8") != std::string::npos) {
+        MEDIA_LOG_I("request is m3u8.");
+        return true;
+    }
+    return false;
+}
+
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
 {
     shouldStartNextRequest = true;
@@ -626,7 +636,8 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         !strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
-        if (!strncmp(StringTrim(token), "chunked", strlen("chunked"))) {
+        if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
+            !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
             info->contentLen = LIVE_CONTENT_LENGTH;
         }
