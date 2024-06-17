@@ -86,6 +86,7 @@ void TemporalScalability::SetBlockQueueActive()
 
 void TemporalScalability::SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer)
 {
+    std::lock_guard<std::shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
     uint32_t flag = frameFlagMap_[outputFrameCounter_];
     buffer->flag_ |= flag;
     frameFlagMap_.erase(outputFrameCounter_);
@@ -133,34 +134,42 @@ void TemporalScalability::DisposableDecision()
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
         }
     }
+    std::lock_guard<std::shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
     frameFlagMap_.emplace(inputFrameCounter_, flag);
     inputFrameCounter_++;
 }
 
 void TemporalScalability::ConfigureLTR(uint32_t index)
 {
-    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
-    if (inputBufferMap_.find(index) != inputBufferMap_.end()) {
-        bool syncIDR;
-        if (inputBufferMap_[index]->meta_->GetData(Tag::VIDEO_REQUEST_I_FRAME, syncIDR) && syncIDR) {
-            frameNum_ = 0;
-            AVCODEC_LOGI("Request IDR frame.");
-        }
-        LTRDecision();
-        DisposableDecision();
-        inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
-        if (isUseLTR_) {
-            inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, ltrPoc_);
+    bool isFinded = false;
+    {
+        std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
+        if (inputBufferMap_.find(index) != inputBufferMap_.end()) {
+            isFinded = true;
+            bool syncIDR;
+            if (inputBufferMap_[index]->meta_->GetData(Tag::VIDEO_REQUEST_I_FRAME, syncIDR) && syncIDR) {
+                frameNum_ = 0;
+                AVCODEC_LOGI("Request IDR frame.");
+            }
+            LTRDecision();
+            inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
+            if (isUseLTR_) {
+                inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, ltrPoc_);
+            } else {
+                inputBufferMap_[index]->meta_->Remove(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR);
+            }
+            inputBufferMap_.erase(index);
+            inputIndexQueue_->Pop();
+            AVCODEC_LOGD(
+                "frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
+                frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
+            frameNum_++;
         } else {
-            inputBufferMap_[index]->meta_->Remove(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR);
+            AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
         }
-        inputBufferMap_.erase(index);
-        inputIndexQueue_->Pop();
-        AVCODEC_LOGD("frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
-                     frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
-        frameNum_++;
-    } else {
-        AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
+    }
+    if (isFinded) {
+        DisposableDecision();
     }
 }
 } // namespace MediaAVCodec
