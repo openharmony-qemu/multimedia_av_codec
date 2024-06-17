@@ -41,7 +41,6 @@ DashMediaDownloader::DashMediaDownloader() noexcept
 
 DashMediaDownloader::~DashMediaDownloader()
 {
-    Close(false);
     segmentDownloaders_.clear();
     mpdDownloader_ = nullptr;
 }
@@ -352,28 +351,26 @@ void DashMediaDownloader::OpenInitSegment(
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
             streamDesc->streamId_, streamDesc->type_, expectDuration_);
-    if (downloader != nullptr) {
-        if (statusCallback_ != nullptr) {
-            downloader->SetStatusCallback(statusCallback_);
-        }
-        auto doneCallback = [this] (int streamId) {
-            UpdateDownloadFinished(streamId);
-        };
-        downloader->SetDownloadDoneCallback(doneCallback);
-        segmentDownloaders_.push_back(downloader);
-        std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
-            streamDesc->streamId_);
-        if (initSeg != nullptr) {
-            downloader->SetInitSegment(initSeg);
-        }
-        downloader->Open(seg);
-        MEDIA_LOG_I("dash first get segment in streamId "
-        PUBLIC_LOG_D32
-        ", type "
-        PUBLIC_LOG_D32
-        ", url:"
-        PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->type_, seg->url_.c_str());
+    if (statusCallback_ != nullptr) {
+        downloader->SetStatusCallback(statusCallback_);
     }
+    auto doneCallback = [this] (int streamId) {
+        UpdateDownloadFinished(streamId);
+    };
+    downloader->SetDownloadDoneCallback(doneCallback);
+    segmentDownloaders_.push_back(downloader);
+    std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
+        streamDesc->streamId_);
+    if (initSeg != nullptr) {
+        downloader->SetInitSegment(initSeg);
+    }
+    downloader->Open(seg);
+    MEDIA_LOG_I("dash first get segment in streamId "
+    PUBLIC_LOG_D32
+    ", type "
+    PUBLIC_LOG_D32
+    ", url:"
+    PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->type_, seg->url_.c_str());
 }
 
 void DashMediaDownloader::ReceiveMpdParseOkEvent()
