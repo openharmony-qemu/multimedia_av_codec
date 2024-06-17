@@ -191,26 +191,6 @@ bool TypeFinder::IsOffsetValid(int64_t offset) const
         offset < static_cast<int64_t>(mediaDataSize_);
 }
 
-bool TypeFinder::GetPlugins()
-{
-    MEDIA_LOG_I("TypeFinder::GetPlugins : " PUBLIC_LOG_D32 ", empty: " PUBLIC_LOG_D32,
-        (pluginRegistryChanged_ == true), plugins_.empty());
-    if (pluginRegistryChanged_) {
-        pluginRegistryChanged_ = false;
-        auto pluginNames = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::DEMUXER);
-        for (auto& pluginName : pluginNames) {
-            auto pluginInfo
-                = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::DEMUXER, pluginName);
-            if (!pluginInfo) {
-                MEDIA_LOG_E("GetPlugins failed for plugin: " PUBLIC_LOG_S, pluginName.c_str());
-                continue;
-            }
-            plugins_.emplace_back(std::move(pluginInfo));
-        }
-    }
-    return !plugins_.empty();
-}
-
 void TypeFinder::SortPlugins(const std::string& uriSuffix)
 {
     if (uriSuffix.empty()) {

@@ -33,7 +33,6 @@
 #include "meta/meta.h"
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_buffer.h"
 #include "source/source.h"
 #include "live_datasource_stream_demuxer.h"

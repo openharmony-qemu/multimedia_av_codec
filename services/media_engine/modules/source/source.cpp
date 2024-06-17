@@ -404,30 +404,6 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     return ret;
 }
 
-Status Source::CreatePlugin(const std::shared_ptr<PluginInfo>& info, const std::string& name,
-    PluginManager& manager)
-{
-    MediaAVCodec::AVCodecTrace trace("Source::CreatePlugin");
-    if ((plugin_ != nullptr) && (pluginInfo_ != nullptr)) {
-        if (info->name == pluginInfo_->name && plugin_->Reset() == Status::OK) {
-            MEDIA_LOG_I("Reuse last plugin: " PUBLIC_LOG_S, name.c_str());
-            return Status::OK;
-        }
-        if (plugin_->Deinit() != Status::OK) {
-            MEDIA_LOG_E("Deinit last plugin: " PUBLIC_LOG_S " error", pluginInfo_->name.c_str());
-        }
-    }
-    plugin_ = std::static_pointer_cast<SourcePlugin>(manager.CreatePlugin(name, PluginType::SOURCE));
-    if (plugin_ == nullptr) {
-        MEDIA_LOG_E("PluginManager CreatePlugin " PUBLIC_LOG_S " fail", name.c_str());
-        return Status::OK;
-    }
-    plugin_->SetInterruptState(isInterruptNeeded_);
-    pluginInfo_ = info;
-    MEDIA_LOG_I("Create new plugin: \"" PUBLIC_LOG_S "\" success", pluginInfo_->name.c_str());
-    return Status::OK;
-}
-
 Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 {
     MediaAVCodec::AVCodecTrace trace("Source::FindPlugin");
