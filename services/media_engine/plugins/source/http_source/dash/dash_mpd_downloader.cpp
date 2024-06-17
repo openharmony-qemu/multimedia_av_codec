@@ -800,7 +800,7 @@ void DashMpdDownloader::SeekToTs(int streamId, int64_t seekTime, std::shared_ptr
             totalDuration += (int32_t)mediaSegment->duration_;
             if (totalDuration > seekTime) {
                 seg = mediaSegment;
-                MEDIA_LOG_I("Dash SeekToTs segment totalDuration:" PUBLIC_LOG_D64 ", segNum:" 
+                MEDIA_LOG_I("Dash SeekToTs segment totalDuration:" PUBLIC_LOG_D64 ", segNum:"
                 PUBLIC_LOG_D64 ", duration:" PUBLIC_LOG_U32,
                 totalDuration, mediaSegment->numberSeq_, mediaSegment->duration_);
                 return;
@@ -1345,13 +1345,13 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
         std::string tempUrl = mediaUrl;
 
         if (DashSubstituteTmpltStr(tempUrl, "$Time", std::to_string(startTime)) == -1) {
-            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static duration", 
+            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static duration",
             tempUrl.c_str(), std::to_string(startTime).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
         if (DashSubstituteTmpltStr(tempUrl, "$Number", std::to_string(segmentSeq)) == -1) {
-            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static duration", 
+            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static duration",
             tempUrl.c_str(), std::to_string(segmentSeq).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
@@ -1426,13 +1426,13 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
 
         std::string tempUrl = sampleInfo.mediaUrl_;
         if (DashSubstituteTmpltStr(tempUrl, "$Time", std::to_string(startTime)) == -1) {
-            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static timeline", 
+            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static timeline",
             tempUrl.c_str(), std::to_string(startTime).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
         if (DashSubstituteTmpltStr(tempUrl, "$Number", std::to_string(segmentSeq)) == -1) {
-            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static timeline", 
+            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static timeline",
             tempUrl.c_str(), std::to_string(segmentSeq).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
@@ -1765,7 +1765,7 @@ DashMpdGetRet DashMpdDownloader::GetSegmentsInNewStream(std::shared_ptr<DashStre
                 ret = DASH_MPD_GET_UNDONE;
                 OpenStream(destStream);
             } else {
-                MEDIA_LOG_E("GetNextSegmentByBitrate id:" 
+                MEDIA_LOG_E("GetNextSegmentByBitrate id:"
                 PUBLIC_LOG_D32 " ondemandSegBase_ but indexSegment is null", destStream->streamId_);
             }
         } else {

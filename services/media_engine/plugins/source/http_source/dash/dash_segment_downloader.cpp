@@ -327,7 +327,8 @@ size_t DashSegmentDownloader::GetRingBufferInitSize(MediaAVCodec::MediaType stre
             ringBufferSize = DEFAULT_RING_BUFFER_SIZE;
         } else if (ringBufferSize > ringBufferFixSize) {
             MEDIA_LOG_I("Setting buffer size: " PUBLIC_LOG_ZU ", already exceed the max buffer size: "
-            PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU, ringBufferSize, ringBufferFixSize, ringBufferFixSize);
+            PUBLIC_LOG_ZU ", setting buffer size: "
+            PUBLIC_LOG_ZU, ringBufferSize, ringBufferFixSize, ringBufferFixSize);
             ringBufferSize = ringBufferFixSize;
         }
         return ringBufferSize;
