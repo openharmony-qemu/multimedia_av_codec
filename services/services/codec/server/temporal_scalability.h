@@ -53,6 +53,7 @@ private:
     int32_t temporalGopSize_ = 0;
     int32_t tRefMode_ = 0;
     std::shared_mutex inputBufMutex_;
+    std::shared_mutex frameFlagMapMutex_;
     std::unordered_map<uint32_t, uint32_t> frameFlagMap_;
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
     std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;

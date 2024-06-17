@@ -86,6 +86,7 @@ void TemporalScalability::SetBlockQueueActive()
 
 void TemporalScalability::SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer)
 {
+    std::lock_guard<std::shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
     uint32_t flag = frameFlagMap_[outputFrameCounter_];
     buffer->flag_ |= flag;
     frameFlagMap_.erase(outputFrameCounter_);
@@ -133,6 +134,7 @@ void TemporalScalability::DisposableDecision()
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
         }
     }
+    std::lock_guard<std::shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
     frameFlagMap_.emplace(inputFrameCounter_, flag);
     inputFrameCounter_++;
 }
