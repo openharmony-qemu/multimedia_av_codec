@@ -1265,7 +1265,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegTemplate(const DashSeg
     }
 
     if (DashSubstituteTmpltStr(media, "$Bandwidth", std::to_string(streamDesc->bandwidth_)) == -1) {
-        MEDIA_LOG_E("media " PUBLIC_LOG_S " substitute $Bandwidth error " , media.c_str(), streamDesc->bandwidth_);
+        MEDIA_LOG_E("media " PUBLIC_LOG_S " substitute $Bandwidth error ", media.c_str(), streamDesc->bandwidth_);
         return DASH_SEGMENT_INIT_FAILED;
     }
 
@@ -1476,8 +1476,8 @@ int DashMpdDownloader::GetSegCountFromTimeline(DashList<DashSegTimeline *>::iter
             it--;
 
             if (nextStartTime <= startTime) {
-                MEDIA_LOG_W("r is negative and next S@t " PUBLIC_LOG_U64 " is not larger than startTime "
-                    , nextStartTime, startTime);
+                MEDIA_LOG_W("r is negative and next S@t " PUBLIC_LOG_U64 " is not larger than startTime ",
+                    nextStartTime, startTime);
                 return segCount;
             }
 

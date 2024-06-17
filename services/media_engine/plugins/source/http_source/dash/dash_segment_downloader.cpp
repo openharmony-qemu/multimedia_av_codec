@@ -177,8 +177,9 @@ DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_
     uint32_t maxReadLength = GetMaxReadLength(wantReadLength, currentSegment, currentStreamId);
     realReadLength = buffer_->ReadBuffer(buff, maxReadLength, DEFAULT_WAIT_TIME);
     if (realReadLength == 0) {
-        MEDIA_LOG_W("after Read: streamId:" PUBLIC_LOG_D32 " ,bufferHead:" PUBLIC_LOG_ZU ", bufferTail:" PUBLIC_LOG_ZU
-            ", realReadLength:" PUBLIC_LOG_U32, currentStreamId, buffer_->GetHead(), buffer_->GetTail(),realReadLength);
+        MEDIA_LOG_W("After read: streamId:" PUBLIC_LOG_D32 " ,bufferHead:" PUBLIC_LOG_ZU ", bufferTail:" PUBLIC_LOG_ZU
+            ", realReadLength:" PUBLIC_LOG_U32, currentStreamId, buffer_->GetHead(), buffer_->GetTail(),
+            realReadLength);
         return ret;
     }
 
