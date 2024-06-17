@@ -33,12 +33,10 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoEncoder"};
 constexpr size_t MAX_TEMPNUM = 64;
-} // namespace
 
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
 class NativeVideoEncoderCallback;
-class VideoEncoderCallback;
 
 struct VideoEncoderObject : public OH_AVCodec {
     explicit VideoEncoderObject(const std::shared_ptr<AVCodecVideoEncoder> &encoder)
@@ -419,6 +417,7 @@ void VideoEncoderObject::MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::spt
         tempList_.push(std::move(val.second));
     }
 }
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
