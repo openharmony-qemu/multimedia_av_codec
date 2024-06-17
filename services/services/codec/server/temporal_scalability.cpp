@@ -160,8 +160,9 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
             }
             inputBufferMap_.erase(index);
             inputIndexQueue_->Pop();
-            AVCODEC_LOGD("frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
-                        frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
+            AVCODEC_LOGD(
+                "frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
+                frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
             frameNum_++;
         } else {
             AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
