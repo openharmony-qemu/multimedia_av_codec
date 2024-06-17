@@ -89,8 +89,9 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
         DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
     }
 
-    if (mediaSegment_->startRangeValue_ >= 0 && mediaSegment_->endRangeValue_ > 0) {
-        mediaSegment_->contentLength_ = mediaSegment_->endRangeValue_ - mediaSegment_->startRangeValue_ + 1;
+    if (mediaSegment_->startRangeValue_ >= 0 && mediaSegment_->endRangeValue_ >= mediaSegment_->startRangeValue_) {
+        mediaSegment_->contentLength_ = static_cast<size_t>(mediaSegment_->endRangeValue_ -
+                                                            mediaSegment_->startRangeValue_ + 1);
     }
     segmentList_.push_back(mediaSegment_);
     MEDIA_LOG_I("Open enter streamId:" PUBLIC_LOG_D32 " ,seqNum:" PUBLIC_LOG_D64 ", range=" PUBLIC_LOG_D64 "-"
