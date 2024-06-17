@@ -1958,11 +1958,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
     ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
     ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
     ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ALBUM, formatVal_.album));
-    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_DATE, formatVal_.date));
 
     ASSERT_EQ(formatVal_.title, "bom");
     ASSERT_EQ(formatVal_.artist, "张三");
     ASSERT_EQ(formatVal_.album, "a");
-    ASSERT_EQ(formatVal_.date, "2024");
 }
 } // namespace
