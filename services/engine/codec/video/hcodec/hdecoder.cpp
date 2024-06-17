@@ -815,7 +815,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
     }
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);

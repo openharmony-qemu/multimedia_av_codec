@@ -835,7 +835,7 @@ void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 
 void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
@@ -1015,7 +1015,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
