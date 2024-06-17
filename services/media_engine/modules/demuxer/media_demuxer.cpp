@@ -873,7 +873,11 @@ Status MediaDemuxer::ResumeAllTask()
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
-        taskMap_[trackId]->Start();
+        if (taskMap_[trackId] == nullptr) {
+            MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
+        } else {
+            taskMap_[trackId]->Start();
+        }
         it++;
     }
     return Status::OK;
