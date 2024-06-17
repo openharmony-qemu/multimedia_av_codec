@@ -17,7 +17,6 @@
 #include "osal/task/autolock.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_trace.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "osal/utils/dump_buffer.h"
 
@@ -117,14 +116,7 @@ int32_t MediaCodec::Init(const std::string &name)
     }
     MEDIA_LOG_I("state from %{public}s to INITIALIZING", StateToString(state_).data());
     state_ = CodecState::INITIALIZING;
-    Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
-    if (name.find("Encoder") != name.npos) {
-        type = Plugins::PluginType::AUDIO_ENCODER;
-    } else if (name.find("Decoder") != name.npos) {
-        type = Plugins::PluginType::AUDIO_DECODER;
-    }
-    FALSE_RETURN_V(type != Plugins::PluginType::INVALID_TYPE, (int32_t)Status::ERROR_INVALID_PARAMETER);
-    auto plugin = Plugins::PluginManager::Instance().CreatePlugin(name, type);
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(name);
     FALSE_RETURN_V_MSG_E(plugin != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER, "create pluign failed");
     codecPlugin_ = std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
     Status ret = codecPlugin_->Init();

@@ -25,7 +25,6 @@
 
 #include "securec.h"
 #include "meta/mime_type.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
 #include "data_sink_fd.h"

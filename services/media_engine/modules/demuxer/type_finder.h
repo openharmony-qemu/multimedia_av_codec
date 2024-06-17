@@ -23,7 +23,6 @@
 #include "osal/task/task.h"
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_info.h"
 
 namespace OHOS {
@@ -58,8 +57,6 @@ private:
     bool IsOffsetValid(int64_t offset) const;
 
     bool IsSniffNeeded(std::string uri);
-
-    bool GetPlugins();
 
     void SortPlugins(const std::string& uriSuffix);
 

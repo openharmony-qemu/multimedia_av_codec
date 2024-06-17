@@ -33,7 +33,6 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "plugin/plugin_time.h"
 #include "base_stream_demuxer.h"

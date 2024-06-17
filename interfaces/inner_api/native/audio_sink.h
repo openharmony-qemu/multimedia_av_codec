@@ -25,7 +25,6 @@
 #include "plugin/audio_sink_plugin.h"
 #include "filter/filter.h"
 #include "common/log.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {
