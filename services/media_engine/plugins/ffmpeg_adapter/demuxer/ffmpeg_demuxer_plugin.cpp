@@ -672,6 +672,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int ret = CheckContextIsValid(opaque);
     FALSE_RETURN_V(ret == 0, ret);
 
+    ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     auto buffer = std::make_shared<Buffer>();
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
