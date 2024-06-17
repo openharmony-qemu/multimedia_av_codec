@@ -96,7 +96,7 @@ AudioMp3EncoderPlugin::AudioMp3EncoderPlugin(const std::string& name)
       sampleRate_(SUPPORT_SAMPLE_RATE),
       maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),
       maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT),
-      outputSize_(-1)
+      outputSize_(0)
 {
     std::lock_guard<std::mutex> lock(avMutex_);
 
