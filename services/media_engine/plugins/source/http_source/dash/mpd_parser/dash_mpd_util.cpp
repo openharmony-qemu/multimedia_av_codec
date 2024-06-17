@@ -227,7 +227,7 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
             endRange = atoll(lastRange.c_str());
         }
         MEDIA_LOG_D("startRange=" PUBLIC_LOG_D64 ", endRange=" PUBLIC_LOG_D64 ", range="
-        PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
+            PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
     }
 }
 

@@ -51,8 +51,7 @@ time_t DashMpdParser::String2Time(const std::string szTime)
 
     if (-1 == sscanf_s(szTime.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
                        &tm1.tm_min, &tm1.tm_sec)) {
-        MEDIA_LOG_E("String2Time format error "
-        PUBLIC_LOG_S, szTime.c_str());
+        MEDIA_LOG_E("String2Time format error " PUBLIC_LOG_S, szTime.c_str());
     }
 
     tm1.tm_year -= DEFAULT_YEAR;

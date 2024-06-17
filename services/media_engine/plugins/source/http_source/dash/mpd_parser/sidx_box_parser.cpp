@@ -64,9 +64,8 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
             BuildSubSegmentIndexes(bitStream, sidxEndOffset, subSegIndexTable, currPos);
         } else {
             MEDIA_LOG_W("sdix box error box=(%c %c %c %c), typeSize="
-            PUBLIC_LOG_D32, (boxType >> SHIFT_NUM_24) & 0x000000ff,
-                    (boxType >> SHIFT_NUM_16) & 0x000000ff, (boxType >> SHIFT_NUM_8) & 0x000000ff, boxType &
-                                                                                                   0x000000ff, currPos);
+                PUBLIC_LOG_D32, (boxType >> SHIFT_NUM_24) & 0x000000ff, (boxType >> SHIFT_NUM_16) & 0x000000ff,
+                (boxType >> SHIFT_NUM_8) & 0x000000ff, boxType & 0x000000ff, currPos);
             return -1;
         }
     }
