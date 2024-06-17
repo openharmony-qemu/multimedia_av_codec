@@ -354,7 +354,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
         auto size = cacheMediaBuffer_->Read(buff + hasReadSize, readOffset_ + hasReadSize,
             readDataInfo.wantReadLength_ - hasReadSize);
         if (size == 0) {
-            Task::SleepInTask(5);
+            Task::SleepInTask(5); // 5
         } else {
             hasReadSize += size;
         }
@@ -506,7 +506,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
             downloader_->Resume();
             seekFailedCount_++;
             return false;
-        }        
+        }
     }
     return false;
 }
