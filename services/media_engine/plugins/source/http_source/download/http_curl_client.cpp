@@ -28,6 +28,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 1024;
+constexpr long DEFAULT_TIMEOUT = 5000L;
 const std::string USER_AGENT = "User-Agent";
 const std::string REFERER = "Referer";
 const std::string COOKIE = "Cookie";
@@ -321,7 +322,7 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
     if (url.find(".ts") == std::string::npos || timeoutMs >= 0) {
-        int32_t timeout = timeoutMs >= 0 ? timeoutMs : 5000L;
+        int32_t timeout = timeoutMs >= 0 ? timeoutMs : DEFAULT_TIMEOUT;
         MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeout);
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeout);
     }

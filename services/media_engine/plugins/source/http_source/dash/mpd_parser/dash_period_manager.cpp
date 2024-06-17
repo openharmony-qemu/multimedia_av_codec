@@ -45,9 +45,8 @@ static bool ContainType(DashList<DashContentCompInfo *> contentComp, const std::
 static void GetMimeTypeFromRepresentation(const DashAdptSetInfo *adptSetInfo, std::string &mimeType)
 {
     DashList<DashRepresentationInfo *> representationList = adptSetInfo->representationList_;
-    for (DashList<DashRepresentationInfo *>::iterator repreIt = representationList.begin();
-         repreIt != representationList.end(); repreIt++) {
-        mimeType = (*repreIt)->commonAttrsAndElements_.mimeType_;
+    for (DashRepresentationInfo *representationInfo : representationList) {
+        mimeType = representationInfo->commonAttrsAndElements_.mimeType_;
         if (!mimeType.empty()) {
             break;
         }

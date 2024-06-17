@@ -56,7 +56,7 @@ int32_t CheckRepresentationVolumeAdjust(const DashRepresentationInfo *representa
 int32_t CheckRepresentationDirectOutput(const DashRepresentationInfo *representation);
 
 // 从AdaptationSet中筛选匹配度最高的音频Representation
-DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string mineType, const PreferAudioFilter &filter,
+DashRepresentationInfo *GetPreferAudioRepFromAdptSet(const std::string &mineType, const PreferAudioFilter &filter,
                                                      const std::list<DashRepresentationInfo *> &repList,
                                                      uint32_t &repIndex);
 

@@ -51,8 +51,7 @@ time_t DashMpdParser::String2Time(const std::string szTime)
 
     if (-1 == sscanf_s(szTime.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d", &tm1.tm_year, &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_hour,
                        &tm1.tm_min, &tm1.tm_sec)) {
-        MEDIA_LOG_E("String2Time format error "
-        PUBLIC_LOG_S, szTime.c_str());
+        MEDIA_LOG_E("String2Time format error " PUBLIC_LOG_S, szTime.c_str());
     }
 
     tm1.tm_year -= DEFAULT_YEAR;
@@ -1063,28 +1062,26 @@ void DashMpdParser::ParseMPD(const char *mpdData, uint32_t length)
     }
 
     std::shared_ptr<XmlParser> xmlParser = std::make_shared<XmlParser>();
-    if (xmlParser != nullptr) {
-        int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
-        std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
-        if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) || this->stopFlag_ || rootElement == nullptr) {
-            MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
-            return;
-        }
-
-        IDashMpdNode *mpdNode = IDashMpdNode::CreateNode(MPD_LABEL_MPD);
-        if (mpdNode == nullptr) {
-            return;
-        }
-
-        // parse attribute in MPD label
-        mpdNode->ParseNode(xmlParser, rootElement);
-        GetMpdAttr(mpdNode);
-
-        // parse element in MPD label
-        GetMpdElement(xmlParser, rootElement);
-
-        IDashMpdNode::DestroyNode(mpdNode);
+    int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
+    std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
+    if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK) || this->stopFlag_ || rootElement == nullptr) {
+        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
+        return;
     }
+
+    IDashMpdNode *mpdNode = IDashMpdNode::CreateNode(MPD_LABEL_MPD);
+    if (mpdNode == nullptr) {
+        return;
+    }
+
+    // parse attribute in MPD label
+    mpdNode->ParseNode(xmlParser, rootElement);
+    GetMpdAttr(mpdNode);
+
+    // parse element in MPD label
+    GetMpdElement(xmlParser, rootElement);
+
+    IDashMpdNode::DestroyNode(mpdNode);
 }
 
 void DashMpdParser::GetMPD(DashMpdInfo *&mpdInfo)
