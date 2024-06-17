@@ -504,7 +504,6 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
             return true;
         } else {
             downloader_->Resume();
-            seekFailedCount_++;
             return false;
         }
     }
