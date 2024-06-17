@@ -383,7 +383,7 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
             fileType = g_convertFfmpegFileType[fileName];
         }
     }
-    MEDIA_LOG_I("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
+    MEDIA_LOG_D("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
         fileName, static_cast<int32_t>(fileType));
     return fileType;
 }
