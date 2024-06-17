@@ -40,7 +40,7 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::OMX_EMPTY_BUFFER_DONE: {
-            uint32_t bufferId;
+            uint32_t bufferId = 0;
             (void)info.param->GetValue(BUFFER_ID, bufferId);
             codec_->OnOMXEmptyBufferDone(bufferId, inputMode_);
             return;
@@ -86,9 +86,9 @@ void HCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
 
 void HCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 {
-    CodecEventType event;
-    uint32_t data1;
-    uint32_t data2;
+    CodecEventType event{};
+    uint32_t data1 = 0;
+    uint32_t data2 = 0;
     (void)info.param->GetValue("event", event);
     (void)info.param->GetValue("data1", data1);
     (void)info.param->GetValue("data2", data2);
@@ -138,7 +138,7 @@ void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 
 void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     bool isNeedNotifyCaller;
     (void)info.param->GetValue("generation", generation);
     (void)info.param->GetValue("isNeedNotifyCaller", isNeedNotifyCaller);

@@ -844,7 +844,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     // buffer mode
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
