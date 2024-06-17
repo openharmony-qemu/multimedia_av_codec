@@ -202,8 +202,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
 {
     flushCfg_.damage.x = 0;
     flushCfg_.damage.y = 0;
-    flushCfg_.damage.w = w;
-    flushCfg_.damage.h = h;
+    flushCfg_.damage.w = static_cast<int32_t>(w);
+    flushCfg_.damage.h = static_cast<int32_t>(h);
 
     OMX_CONFIG_RECTTYPE rect;
     InitOMXParam(rect);
