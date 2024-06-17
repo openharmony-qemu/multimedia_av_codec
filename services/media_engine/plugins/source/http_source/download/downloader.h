@@ -160,6 +160,7 @@ public:
     bool Seek(int64_t offset);
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
+    void SetRequestSize(size_t downloadRequestSize);
 private:
     bool BeginDownload();
 
@@ -178,6 +179,7 @@ private:
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     bool shouldStartNextRequest {false};
+    size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
 };
 }

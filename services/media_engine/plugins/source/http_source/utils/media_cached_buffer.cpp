@@ -355,12 +355,21 @@ size_t CacheMediaChunkBufferImpl::GetBufferSize(int64_t offset)
 size_t CacheMediaChunkBufferImpl::GetNextBufferOffset(int64_t offset)
 {
     std::lock_guard lock(mutex_);
-    auto readPos = GetOffsetFragmentCache(readPos_, offset, LeftBoundedRightOpenComp);
-    if (readPos != fragmentCacheBuffer_.end()) {
-        readPos = std::next(readPos);
+    auto fragmentPos = std::upper_bound(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(), offset,
+        [](auto inputOffset, const FragmentCacheBuffer& fragment) {
+            if (inputOffset < fragment.offsetBegin + fragment.dataLength) {
+                return true;
+            }
+            return false;
+        });
+    if (fragmentPos != fragmentCacheBuffer_.end()) {
+        if (LeftBoundedRightOpenComp(offset, fragmentPos->offsetBegin,
+            fragmentPos->offsetBegin + fragmentPos->dataLength)) {
+            fragmentPos = std::next(fragmentPos);
+        }
     }
-    if (readPos != fragmentCacheBuffer_.end()) {
-        return (size_t)(readPos->offsetBegin);
+    if (fragmentPos != fragmentCacheBuffer_.end()) {
+        return (size_t)(fragmentPos->offsetBegin);
     }
     return 0;
 }
