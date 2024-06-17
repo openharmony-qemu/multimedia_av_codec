@@ -252,8 +252,8 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
             return Status::ERROR_NOT_ENOUGH_DATA;
         }
 
-        memory->SetSize(outputSize_);
         memory->Write(const_cast<const uint8_t*>(lameMp3Buffer), outputSize_, 0);
+        memory->SetSize(outputSize_);
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
 
