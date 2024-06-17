@@ -483,10 +483,10 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             codec_->OnGetBufferFromSurface(info.param);
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
-            codec_->OnQueueInputBuffer(info, inputMode_);
             if (codec_->outPortHasChanged_) {
                 codec_->SubmitDynamicBufferIfPossible();
             }
+            codec_->OnQueueInputBuffer(info, inputMode_);
             break;
         case MsgWhat::NOTIFY_EOS:
             codec_->OnSignalEndOfInputStream(info);
