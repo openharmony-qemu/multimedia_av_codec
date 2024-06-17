@@ -156,7 +156,7 @@ private:
                                                             const std::string &mediaUrl, unsigned int timeScale,
                                                             std::shared_ptr<DashStreamDescription> desc);
     DashSegmentInitValue GetSegmentsWithTmpltTimelineStatic(const DashSegTmpltInfo *segTmpltInfo,
-                                                            const std::string mediaUrl, unsigned int timeScale,
+                                                            const std::string &mediaUrl, unsigned int timeScale,
                                                             std::shared_ptr<DashStreamDescription> desc);
     DashSegmentInitValue GetSegmentsInOneTimeline(const DashSegTimeline *timeline, const MediaSegSampleInfo &sampleInfo,
                                                   int64_t &segmentSeq, uint64_t &startTime,
