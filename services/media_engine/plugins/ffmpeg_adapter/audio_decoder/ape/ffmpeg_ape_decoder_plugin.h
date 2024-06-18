@@ -73,7 +73,7 @@ private:
     int PutHeaderLength(uint8_t *p, size_t value) const;
     void PutCommentHeader(int offset) const;
     Status GenExtradata(const std::shared_ptr<Meta> &format) const;
-    int32_t SetBitsDepth(AudioSampleFormat samplefmt);
+    int32_t SetBitsDepth(AudioSampleFormat sampleFmt);
 
     int32_t GetInputBufferSize();
     int32_t GetOutputBufferSize();
