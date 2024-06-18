@@ -220,16 +220,20 @@ int32_t VideoEncSample::GetInputSurface()
     TITLE_LOG;
     int32_t ret = OH_VideoEncoder_GetSurface(codec_, &nativeWindow_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_GetSurface failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->inFile_ != nullptr, false, "create signal_->inFile_ failed");
+
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, sampleWidth_, sampleHeight_);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_USAGE fail.Error:%d", ret);
+
     inputLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
@@ -612,7 +616,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     rect->h = sampleHeight_;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
-    NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;

@@ -47,7 +47,6 @@ private:
     int32_t DoGetCapability(MessageParcel &data, MessageParcel &reply);
     int32_t DoDestroyStub(MessageParcel &data, MessageParcel &reply);
     std::shared_ptr<ICodecListService> codecListServer_ = nullptr;
-    using CodecListStubFunc = int32_t (CodecListServiceStub::*)(MessageParcel &data, MessageParcel &reply);
     std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec
