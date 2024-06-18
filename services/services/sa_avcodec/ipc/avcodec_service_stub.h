@@ -27,8 +27,6 @@ class AVCodecServiceStub : public IRemoteStub<IStandardAVCodecService>, public N
 public:
     AVCodecServiceStub();
     virtual ~AVCodecServiceStub();
-
-    using AVCodecStubFunc = int32_t(AVCodecServiceStub::*)(MessageParcel &data, MessageParcel &reply);
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
 
 protected:
@@ -42,7 +40,6 @@ private:
 
     std::map<pid_t, sptr<AVCodecDeathRecipient>> deathRecipientMap_;
     std::map<pid_t, sptr<IStandardAVCodecListener>> avCodecListenerMap_;
-    std::map<uint32_t, AVCodecStubFunc> avCodecFuncs_;
     std::mutex mutex_;
 };
 } // namespace MediaAVCodec
