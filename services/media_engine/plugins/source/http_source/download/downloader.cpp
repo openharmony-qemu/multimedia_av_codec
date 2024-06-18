@@ -326,9 +326,19 @@ bool Downloader::Seek(int64_t offset)
     }
     size_t temp = currentRequest_->GetFileContentLength() - static_cast<size_t>(currentRequest_->startPos_);
     currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<size_t>(PER_REQUEST_SIZE)));
+    if (downloadRequestSize_ > 0) {
+        currentRequest_->requestSize_ = std::min(currentRequest_->requestSize_,
+            static_cast<int>(downloadRequestSize_));
+        downloadRequestSize_ = 0;
+    }
     currentRequest_->isEos_ = false;
     shouldStartNextRequest = false; // Reuse last request when seek
     return true;
+}
+
+void Downloader::SetRequestSize(size_t downloadRequestSize)
+{
+    downloadRequestSize_ = downloadRequestSize;
 }
 
 // Pause download thread before use currentRequest_
