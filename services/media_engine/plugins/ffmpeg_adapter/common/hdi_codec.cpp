@@ -222,8 +222,8 @@ Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
 
 Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 {
-    omxInBufferInfo_->omxBuffer->filledLen = (uint32_t) buffer->memory_->GetSize();
-    omxInBufferInfo_->omxBuffer->offset = (uint32_t) buffer->memory_->GetOffset();
+    omxInBufferInfo_->omxBuffer->filledLen = static_cast<uint32_t> buffer->memory_->GetSize();
+    omxInBufferInfo_->omxBuffer->offset = static_cast<uint32_t> buffer->memory_->GetOffset();
     omxInBufferInfo_->omxBuffer->pts = buffer->pts_;
     omxInBufferInfo_->omxBuffer->flag = buffer->flag_;
 
