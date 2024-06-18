@@ -123,7 +123,6 @@ private:
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
 
-    Status StopTask(uint32_t trackId);
     Status StopAllTask();
     Status PauseAllTask();
     Status ResumeAllTask();
