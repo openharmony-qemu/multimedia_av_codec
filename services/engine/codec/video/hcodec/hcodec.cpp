@@ -785,7 +785,6 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
-        HLOGI("got input codec config data");
     }
     return flags;
 }
