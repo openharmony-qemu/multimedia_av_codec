@@ -228,8 +228,10 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     bool hasAudio = false;
     bool hasSubtitle = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
+        MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " type: " PUBLIC_LOG_S ".", i,
+            ConvertFFmpegMediaTypeToString(avFormatContext.streams[i]->codecpar->codec_type).data());
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
-            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " is invalid.", i);
+            MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " is invalid.", i);
             continue;
         }
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
