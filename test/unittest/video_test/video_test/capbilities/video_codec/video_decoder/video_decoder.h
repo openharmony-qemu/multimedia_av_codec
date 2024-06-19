@@ -25,7 +25,7 @@ namespace Sample {
 class VideoDecoder : public VideoCodecBase {
 public:
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, uintptr_t * const codecUserData) override;
+    int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
