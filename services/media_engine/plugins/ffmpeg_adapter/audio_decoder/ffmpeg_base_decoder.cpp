@@ -168,7 +168,7 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
             bufferIndex_ = 1;
         } else {
             bufferIndex_++;
-            if (preBufferGroupPts_ = 0) {
+            if (preBufferGroupPts_ == 0) {
                 cachedFrame_->pts = curBufferGroupPts_;
             } else {
                 cachedFrame_->pts =
