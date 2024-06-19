@@ -899,13 +899,10 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
+Status FFmpegDemuxerPlugin::GetSeiInfo()
 {
-    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    MEDIA_LOG_I("Get media info by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
-        "Get media info failed due to formatContext_ is nullptr.");
+        "GetSeiInfo failed due to formatContext_ is nullptr.");
     if (streamParser_ != nullptr && !streamParserInited_) {
         for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
             auto avStream = formatContext_->streams[trackIndex];
@@ -920,6 +917,20 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             }
         }
     }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
+{
+    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MEDIA_LOG_I("Get media info by FFmpeg Demuxer Plugin.");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "Get media info failed due to formatContext_ is nullptr.");
+
+    Status ret = GetSeiInfo();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
+
     OHOS::Media::Format format;
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
     format.SetMeta(std::make_shared<Meta>(mediaInfo.general));
@@ -946,15 +957,13 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
                 MEDIA_LOG_W("streamParser_ or firstFrame_ is nullptr, parser hevc fail");
             }
         }
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC ||
-            avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
+        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC || avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
         format.SetMeta(std::make_shared<Meta>(meta));
         MEDIA_LOG_I("track meta: " PUBLIC_LOG_S, format.Stringify().c_str());
     }
-
     return Status::OK;
 }
 
@@ -1422,7 +1431,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         ", real buffer size=" PUBLIC_LOG_ZU ".", bufferSize + AVPROBE_PADDING_SIZE, bufferSize);
 
     Status ret;
-    {   
+    {
         std::string traceName = "Sniff_" + pluginName + "_Readat";
         MediaAVCodec::AVCodecTrace trace(traceName.c_str());
         ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
