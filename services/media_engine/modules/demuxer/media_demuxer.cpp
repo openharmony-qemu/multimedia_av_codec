@@ -843,7 +843,6 @@ Status MediaDemuxer::StopTask(uint32_t trackId)
         it = taskMap_.erase(it);
         break;
     }
-    MEDIA_LOG_I("StopTask trackId: %{public}u done", trackId);
     return Status::OK;
 }
 
