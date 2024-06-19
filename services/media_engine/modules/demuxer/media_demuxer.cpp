@@ -880,7 +880,7 @@ Status MediaDemuxer::ResumeAllTask()
 
 Status MediaDemuxer::Pause()
 {
-    MEDIA_LOG_D("Pause");
+    MEDIA_LOG_I("Pause");
     isPaused_ = true;
     if (streamDemuxer_) {
         streamDemuxer_->SetIsIgnoreParse(true);
