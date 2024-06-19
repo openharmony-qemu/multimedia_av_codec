@@ -792,6 +792,7 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                       encOutLtrParam->poc);
                 meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, encOutLtrParam->isLTR);
                 meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(encOutLtrParam->poc));
+                break;
             }
             default: {
                 break;
