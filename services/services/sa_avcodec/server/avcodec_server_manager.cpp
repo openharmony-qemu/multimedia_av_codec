@@ -141,13 +141,13 @@ AVCodecServerManager::~AVCodecServerManager()
 void AVCodecServerManager::Init()
 {
     void *handle = dlopen(LIB_PATH, RTLD_NOW);
-    EXPECT_AND_LOGE(handle == nullptr, "Load so failed:%{public}s", LIB_PATH);
+    CHECK_AND_RETURN_LOG(handle != nullptr, "Load so failed:%{public}s", LIB_PATH);
     libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
     notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
-    EXPECT_AND_LOGE(notifyProcessStatusFunc_ == nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
                     NOTIFY_STATUS_FUNC_NAME);
     setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
-    EXPECT_AND_LOGE(setCriticalFunc_ == nullptr, "Load setCriticalFunc failed:%{public}s", SET_CRITICAL_FUNC_NAME);
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "Load setCriticalFunc failed:%{public}s", SET_CRITICAL_FUNC_NAME);
     return;
 }
 
