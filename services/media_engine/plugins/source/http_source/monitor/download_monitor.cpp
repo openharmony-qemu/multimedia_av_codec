@@ -23,7 +23,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 1000;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
     constexpr int RETRY_THRESHOLD = 1;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
 }

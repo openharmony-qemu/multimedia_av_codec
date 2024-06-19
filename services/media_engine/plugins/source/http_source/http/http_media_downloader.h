@@ -62,10 +62,12 @@ public:
     void DownloadReportLoop();
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    bool SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     bool CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offest);
+    Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
@@ -96,7 +98,6 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     int totalBufferSize_ {0};
     SteadyClock steadyClock_;
-    int32_t seekFailedCount_ {0};
     uint64_t totalBits_ {0};
     uint64_t lastBits_ {0};
     uint64_t downloadBits_ {0};
@@ -113,6 +114,10 @@ private:
     bool isFlv_ {false};
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
+    std::atomic<bool> canWrite_ {false};
+    std::atomic<bool> isNeedClean_ {false};
+    std::atomic<bool> isHitSeeking_ {false};
+    std::atomic<bool> isNeedDropData_ {false};
     
     std::shared_ptr<Task> downloadTask_;
     unsigned int wantReadLength_ {0};
