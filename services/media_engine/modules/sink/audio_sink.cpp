@@ -83,9 +83,6 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
 
 sptr<AVBufferQueueProducer> AudioSink::GetBufferQueueProducer()
 {
-    if (state_ != Pipeline::FilterState::READY) {
-        return nullptr;
-    }
     return inputBufferQueueProducer_;
 }
 
