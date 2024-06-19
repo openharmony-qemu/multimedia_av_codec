@@ -145,9 +145,10 @@ void AVCodecServerManager::Init()
     libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
     notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
     CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
-                    NOTIFY_STATUS_FUNC_NAME);
+                         NOTIFY_STATUS_FUNC_NAME);
     setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
-    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "Load setCriticalFunc failed:%{public}s", SET_CRITICAL_FUNC_NAME);
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "Load setCriticalFunc failed:%{public}s",
+                         SET_CRITICAL_FUNC_NAME);
     return;
 }
 
