@@ -899,13 +899,13 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    // since the old surface may be destroyed, we dont check any return values below
-    // 1. clear all buffers in bufferqueue because we need to attach all buffers to new surface
-    (void)currSurface_.surface_->CleanCache();
-    // 2. make the old window to be black (gobackground could replace these two steps)
-    (void)PushBlankBufferToCurrSurface();
-    // 3. attach all buffers to new surface
-    AttachToNewSurface(newSurface);
+    currSurface_.surface_->CleanCache(true); // make sure old surface is empty and go black
+    newSurface->Connect(); // cleancache will work only if the surface is connected by us
+    newSurface->CleanCache(); // make sure new surface is empty
+    ret = AttachToNewSurface(newSurface);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
 
     currSurface_.Release();
     currSurface_ = SurfaceItem(newSurface);
@@ -915,7 +915,7 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
     return AVCS_ERR_OK;
 }
 
-void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
+int32_t HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
 {
     uint64_t newId = newSurface->GetUniqueId();
     for (BufferInfo& info : outputBufferPool_) {
@@ -926,7 +926,7 @@ void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
         if (err != GSERROR_OK) {
             HLOGE("surface(%" PRIu64 "), AttachBufferToQueue(seq=%u) failed, GSError=%d",
                   newId, info.surfaceBuffer->GetSeqNum(), err);
-            return;
+            return AVCS_ERR_UNKNOWN;
         }
         if (info.owner == OWNED_BY_SURFACE) {
             ChangeOwner(info, BufferOwner::OWNED_BY_US);
@@ -935,6 +935,7 @@ void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
             NotifyOmxToFillThisOutBuffer(info);
         }
     }
+    return AVCS_ERR_OK;
 }
 
 int32_t HDecoder::PushBlankBufferToCurrSurface()
