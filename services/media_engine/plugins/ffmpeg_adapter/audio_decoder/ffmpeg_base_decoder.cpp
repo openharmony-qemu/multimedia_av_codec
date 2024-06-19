@@ -172,13 +172,8 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
             bufferIndex_ = 1;
         } else {
             bufferIndex_++;
-            if (abs(curBufferGroupPts_ - preBufferGroupPts_) > bufferGroupPtsDistance) {
-                cachedFrame_->pts = curBufferGroupPts_;
-                preBufferGroupPts_ = curBufferGroupPts_;
-            } else {
-                cachedFrame_->pts =
-                    curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
-            }
+            cachedFrame_->pts =
+                curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
         }
         status = ReceiveFrameSucc(outBuffer);
         dataCallback_->OnOutputBufferDone(outBuffer);
