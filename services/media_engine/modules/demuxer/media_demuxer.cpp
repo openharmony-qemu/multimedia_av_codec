@@ -824,6 +824,7 @@ Status MediaDemuxer::StopAllTask()
         it = taskMap_.erase(it);
     }
     isThreadExit_ = true;
+    MEDIA_LOG_I("StopAllTask done.");
     return Status::OK;
 }
 
@@ -842,6 +843,7 @@ Status MediaDemuxer::StopTask(uint32_t trackId)
         it = taskMap_.erase(it);
         break;
     }
+    MEDIA_LOG_I("StopTask trackId: %{public}u done", trackId);
     return Status::OK;
 }
 
@@ -860,7 +862,7 @@ Status MediaDemuxer::PauseAllTask()
             iter.second->Pause();
         }
     }
-
+    MEDIA_LOG_I("PauseAllTask done.");
     return Status::OK;
 }
 
@@ -875,6 +877,7 @@ Status MediaDemuxer::ResumeAllTask()
         taskMap_[trackId]->Start();
         it++;
     }
+    MEDIA_LOG_I("ResumeAllTask done.");
     return Status::OK;
 }
 
