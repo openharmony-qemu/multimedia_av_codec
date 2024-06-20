@@ -121,7 +121,7 @@ Status AudioSinkFilter::DoPause()
     }
     // only worked when state is working
     if (state_ != FilterState::READY && state_ != FilterState::RUNNING) {
-        MEDIA_LOG_W("audio sink cannot pause when not working");
+        MEDIA_LOG_W("audio sink cannot pause when not working.");
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;
