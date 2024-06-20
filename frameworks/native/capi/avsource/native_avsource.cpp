@@ -42,12 +42,8 @@ public:
         std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
             mem->GetBase(), mem->GetSize(), mem->GetSize()
         );
-        OH_AVBuffer* avBuffer = new OH_AVBuffer(buffer);
-        CHECK_AND_RETURN_RET_LOG(avBuffer != nullptr, OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO,
-            "create avBuffer failed!");
-        int32_t len = dataSource_->readAt(avBuffer, length, pos);
-        delete avBuffer;
-        return len;
+        OH_AVBuffer avBuffer(buffer);
+        return dataSource_->readAt(&avBuffer, length, pos);
     }
 
     int32_t GetSize(int64_t &size)
