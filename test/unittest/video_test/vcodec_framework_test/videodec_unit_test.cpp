@@ -1293,10 +1293,11 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
 {
-    VCodecTestCode param = VCodecTestCode::SW_AVC;
+    VCodecTestCode param = VCodecTestCode::HW_AVC;
     CreateByNameWithParam(param);
     SetFormatWithParam(param);
     PrepareSource(param);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetVideoDecryptionConfig());
 }
 } // namespace
