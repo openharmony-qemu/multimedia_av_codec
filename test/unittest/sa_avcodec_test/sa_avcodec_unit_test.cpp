@@ -94,8 +94,6 @@ void SaAVCodecUnitTest::CreateCodecServiceStub(std::shared_ptr<AVCodecServer> &s
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), true, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
-    EXPECT_CALL(*memMgrMock_, SetCritical(getpid(), false, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
@@ -162,7 +160,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Constructor_003, TestSize.Level1)
 /**
  * @tc.name: AVCodec_Server_OnStart_001
  * @tc.desc: 1. will once publish success
- *           2. will once NotifyProcessStatus = 1 success
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_001, TestSize.Level1)
 {
@@ -183,51 +180,8 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_001, TestSize.Level1)
 /**
  * @tc.name: AVCodec_Server_OnStart_002
  * @tc.desc: 1. will once publish fail
- *           2. will once NotifyProcessStatus = 1 success
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_002, TestSize.Level1)
-{
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, AddSystemAbilityListener(MEMORY_MANAGER_SA_ID)).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
-
-    EXPECT_CALL(*saMock_, Publish(server.get())).Times(1).WillOnce(Return(false));
-    server->OnStart();
-    server = nullptr;
-}
-
-/**
- * @tc.name: AVCodec_Server_OnStart_003
- * @tc.desc: 1. OnStart will once publish fail
- *           2. will once NotifyProcessStatus = 1 success
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_003, TestSize.Level1)
-{
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*saMock_, AddSystemAbilityListener(MEMORY_MANAGER_SA_ID)).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
-
-    EXPECT_CALL(*saMock_, Publish(server.get())).Times(1).WillOnce(Return(false));
-    server->OnStart();
-    server = nullptr;
-}
-
-/**
- * @tc.name: AVCodec_Server_OnStart_004
- * @tc.desc: 1. OnStart will once publish fail
- *           2. will once NotifyProcessStatus = 1 fail
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStart_004, TestSize.Level1)
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
@@ -251,37 +205,12 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStop_001, TestSize.Level1)
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(getpid(), 1, 0, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
 
     auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
     EXPECT_NE(server, nullptr);
 
-    server->OnStop();
-    server = nullptr;
-}
-
-/**
- * @tc.name: AVCodec_Server_OnStop_002
- * @tc.desc: 1. will once NotifyProcessStatus = 0 failed
- *           2. will once NotifyProcessStatus = 0 success
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnStop_002, TestSize.Level1)
-{
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(getpid(), 1, 0, AV_CODEC_SERVICE_ID))
-        .Times(2)
-        .WillOnce(Return(0))
-        .WillOnce(Return(-1));
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
-
-    server->OnStop();
     server->OnStop();
     server = nullptr;
 }
@@ -294,7 +223,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_001, TestSize.Leve
 {
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus(getpid(), 1, 1, AV_CODEC_SERVICE_ID)).Times(1).WillOnce(Return(0));
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
 
@@ -302,25 +230,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_001, TestSize.Leve
     EXPECT_NE(server, nullptr);
 
     server->OnAddSystemAbility(MEMORY_MANAGER_SA_ID, "testId");
-    server = nullptr;
-}
-
-/**
- * @tc.name: AVCodec_Server_OnAddSystemAbility_002
- * @tc.desc: 1. error saId
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_002, TestSize.Level1)
-{
-    EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
-    EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
-    EXPECT_CALL(*memMgrMock_, NotifyProcessStatus).Times(0);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
-    EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubDtor()).Times(1);
-
-    auto server = std::make_shared<AVCodecServer>(AV_CODEC_SERVICE_ID, true);
-    EXPECT_NE(server, nullptr);
-
-    server->OnAddSystemAbility(-1, "testId");
     server = nullptr;
 }
 
@@ -334,7 +243,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*memMgrMock_, SetCritical).Times(AtLeast(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);
@@ -374,7 +282,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_002, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*memMgrMock_, SetCritical).Times(AtLeast(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(*saMock_, SystemAbilityCtor(AV_CODEC_SERVICE_ID, true)).Times(1);
     EXPECT_CALL(*saMock_, SystemAbilityDtor()).Times(1);
     EXPECT_CALL(*avcodecStubMock_, AVCodecServiceStubCtor()).Times(1);

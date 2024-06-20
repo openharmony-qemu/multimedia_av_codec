@@ -165,7 +165,6 @@ ohos_shared_library("av_codec_service") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
-    "memmgr:memmgrclient",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]

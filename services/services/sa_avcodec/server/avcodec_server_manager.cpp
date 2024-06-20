@@ -15,6 +15,7 @@
 
 #include "avcodec_server_manager.h"
 #include <codecvt>
+#include <dlfcn.h>
 #include <locale>
 #include <thread>
 #include <unistd.h>
@@ -23,7 +24,6 @@
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
-#include "mem_mgr_client.h"
 #include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
@@ -129,12 +129,27 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 AVCodecServerManager::AVCodecServerManager()
 {
     pid_ = getpid();
+    Init();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecServerManager::~AVCodecServerManager()
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+}
+
+void AVCodecServerManager::Init()
+{
+    void *handle = dlopen(LIB_PATH, RTLD_NOW);
+    CHECK_AND_RETURN_LOG(handle != nullptr, "Load so failed:%{public}s", LIB_PATH);
+    libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
+    notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
+                         NOTIFY_STATUS_FUNC_NAME);
+    setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "Load setCriticalFunc failed:%{public}s",
+                         SET_CRITICAL_FUNC_NAME);
+    return;
 }
 
 int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject> &object)
@@ -307,7 +322,8 @@ void AVCodecServerManager::DestroyDumperForPid(pid_t pid)
 
 void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 {
-    int32_t ret = Memory::MemMgrClient::GetInstance().NotifyProcessStatus(pid_, 1, status, AV_CODEC_SERVICE_ID);
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "notify memory manager is nullptr, %{public}d.", status);
+    int32_t ret = notifyProcessStatusFunc_(pid_, 1, status, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
         AVCODEC_LOGI("notify memory manager to %{public}d success.", status);
     } else {
@@ -317,7 +333,8 @@ void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 
 void AVCodecServerManager::SetCritical(const bool isKeyService)
 {
-    int32_t ret = Memory::MemMgrClient::GetInstance().SetCritical(pid_, isKeyService, AV_CODEC_SERVICE_ID);
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d.", isKeyService);
+    int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
     if (ret == 0) {
         AVCODEC_LOGI("set critical to %{public}d success.", isKeyService);
     } else {

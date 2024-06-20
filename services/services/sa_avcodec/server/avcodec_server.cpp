@@ -20,7 +20,6 @@
 #include "avcodec_sysevent.h"
 #include "avcodec_trace.h"
 #include "iservice_registry.h"
-#include "mem_mgr_client.h"
 #include "system_ability_definition.h"
 
 namespace {
