@@ -193,6 +193,9 @@ OH_AVErrCode VDecFuzzSample::InputFuncFUZZ(const uint8_t *data, size_t size)
 {
     uint32_t index;
     unique_lock<mutex> lock(signal_->inMutex_);
+    if (!isRunning_.load()) {
+        return AV_ERR_NO_MEMORY;
+    }
     signal_->inCond_.wait(lock, [this]() {
         if (!isRunning_.load()) {
             return true;
@@ -253,6 +256,7 @@ int32_t VDecFuzzSample::Flush()
     unique_lock<mutex> outLock(signal_->outMutex_);
     clearIntqueue(signal_->outIdxQueue_);
     signal_->outCond_.notify_all();
+    isRunning_.store(false);
     outLock.unlock();
 
     return OH_VideoDecoder_Flush(vdec_);
@@ -282,13 +286,17 @@ int32_t VDecFuzzSample::Release()
 int32_t VDecFuzzSample::Stop()
 {
     clearIntqueue(signal_->outIdxQueue_);
+    isRunning_.store(false);
     return OH_VideoDecoder_Stop(vdec_);
 }
 
 int32_t VDecFuzzSample::Start()
 {
-    isRunning_.store(true);
-    return OH_VideoDecoder_Start(vdec_);
+    int32_t ret = OH_VideoDecoder_Start(vdec_);
+    if (ret == AV_ERR_OK) {
+        isRunning_.store(true);
+    }
+    return ret;
 }
 
 int32_t VDecFuzzSample::SetParameter(int32_t data)

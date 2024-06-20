@@ -465,6 +465,7 @@ int32_t VDecFuzzSample::Flush()
     clearIntqueue(signal_->outIdxQueue_);
     clearBufferqueue(signal_->attrQueue_);
     signal_->outCond_.notify_all();
+    isRunning_.store(false);
     outLock.unlock();
 
     return OH_VideoDecoder_Flush(vdec_);
@@ -505,7 +506,12 @@ int32_t VDecFuzzSample::Stop()
 
 int32_t VDecFuzzSample::Start()
 {
-    return OH_VideoDecoder_Start(vdec_);
+    int32_t ret = 0;
+    ret = OH_VideoDecoder_Start(vdec_);
+    if (ret == AV_ERR_OK) {
+        isRunning_.store(true);
+    }
+    return ret;
 }
 
 int32_t VDecFuzzSample::SetParameter(OH_AVFormat *format)
