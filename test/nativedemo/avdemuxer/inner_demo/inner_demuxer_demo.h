@@ -21,6 +21,11 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using AVBuffer = OHOS::Media::AVBuffer;
+using AVAllocator = OHOS::Media::AVAllocator;
+using AVAllocatorFactory = OHOS::Media::AVAllocatorFactory;
+using MemoryFlag = OHOS::Media::MemoryFlag;
+using FormatDataType = OHOS::Media::FormatDataType;
 class InnerDemuxerDemo {
 public:
     InnerDemuxerDemo();
@@ -35,6 +40,11 @@ public:
                         AVCodecBufferInfo &bufInfo, uint32_t &bufferFlag);
     int32_t SeekToTime(int64_t millisecond, Media::SeekMode mode);
     bool isEOS(std::map<uint32_t, bool>& countFlag);
+    int32_t StartReferenceParser(int64_t startTimeMs);
+    int32_t GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    int32_t GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+    int32_t ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample);
+
     AVCodecBufferInfo sampleInfo;
     std::map<int32_t, int64_t> frames_;
     std::map<int32_t, int64_t> key_frames_;
