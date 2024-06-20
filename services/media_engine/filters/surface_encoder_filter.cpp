@@ -145,6 +145,13 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
     return Status::OK;
 }
 
+Status SurfaceEncoderFilter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    mediaCodec_->SetTransCoderMode();
+    return Status::OK;
+}
+
 sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
@@ -277,6 +284,7 @@ Status SurfaceEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("OnLinked");
+    onLinkedResultCallback_ = callback;
     return Status::OK;
 }
 
@@ -298,6 +306,9 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
 {
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
+    if (onLinkedResultCallback_) {
+        onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
+    }
 }
 
 void SurfaceEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)

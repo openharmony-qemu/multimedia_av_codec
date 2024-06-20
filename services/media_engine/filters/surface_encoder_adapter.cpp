@@ -213,6 +213,13 @@ Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
     }
 }
 
+Status SurfaceEncoderAdapter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    isTransCoderMode = true;
+    return Status::OK;
+}
+
 sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 {
     return codecServer_->CreateInputSurface();
@@ -251,7 +258,7 @@ Status SurfaceEncoderAdapter::Stop()
     stopTime_ = static_cast<int64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<int64_t>(timestamp.tv_nsec);
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
-    if (isStart_) {
+    if (isStart_ && !isTransCoderMode) {
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
     }
@@ -420,7 +427,9 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     lastBufferTime_ = buffer->pts_;
     emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
-    emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
+    if (!isTransCoderMode) {
+        emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
+    }
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
