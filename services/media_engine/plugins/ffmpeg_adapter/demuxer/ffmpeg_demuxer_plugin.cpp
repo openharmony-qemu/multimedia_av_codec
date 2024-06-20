@@ -413,7 +413,7 @@ Status FFmpegDemuxerPlugin::WriteBuffer(
         FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION,
             "Write data failed due to AVBuffer memory write failed.");
     }
-    MEDIA_LOG_D("CurrentBuffer: pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64 ", flag=" PUBLIC_LOG_U32 ".",
+    MEDIA_LOG_D("CurrentBuffer: pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64 ", flag=" PUBLIC_LOG_U32,
         outBuffer->pts_, outBuffer->duration_, outBuffer->flag_);
     return Status::OK;
 }
