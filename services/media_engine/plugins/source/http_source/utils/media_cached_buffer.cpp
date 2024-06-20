@@ -96,7 +96,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     size_t sizePerChunk = sizeof(CacheChunk) + chunkSize;
     FALSE_RETURN_V_MSG_E(static_cast<int64_t>(sizePerChunk) * chunkNum > 0, false,
         "Invalid sizePerChunk and chunkNum.");
-    bufferAddr_ = (uint8_t*)malloc(sizePerChunk * chunkNum);
+    bufferAddr_ = static_cast<uint8_t*>(malloc(sizePerChunk * chunkNum));
     if (bufferAddr_ == nullptr) {
         return false;
     }
@@ -148,7 +148,7 @@ size_t CacheMediaChunkBufferImpl::Read(void* ptr, int64_t offset, size_t readSiz
         chunkPos = GetOffsetChunkCache(fragmentPos->chunks, offset, LeftBoundedRightOpenComp);
     }
 
-    uint8_t* dst = (uint8_t*)ptr;
+    uint8_t* dst = static_cast<uint8_t*>(ptr);
     int64_t offsetChunk = offset;
     if (chunkPos != fragmentPos->chunks.end()) {
         size_t hasReadSize = 0;
@@ -290,13 +290,13 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, int64_t inOffset, size_t inWr
     std::lock_guard lock(mutex_);
     int64_t offset = inOffset;
     size_t writeSize = inWriteSize;
-    uint8_t* src = (uint8_t*)ptr;
+    uint8_t* src = static_cast<uint8_t*>(ptr);
     size_t dupWriteSize = 0;
 
     auto fragmentPos = GetOffsetFragmentCache(writePos_, offset, BoundedIntervalComp);
     ChunkIterator chunkPos;
-    auto& chunkList = fragmentPos->chunks;
     if (fragmentPos != fragmentCacheBuffer_.end()) {
+        auto& chunkList = fragmentPos->chunks;
         writePos_ = fragmentPos;
         if ((fragmentPos->offsetBegin + fragmentPos->dataLength) != offset) {
             auto ret = WriteInPlace(fragmentPos, src, offset, writeSize, dupWriteSize);
@@ -409,7 +409,7 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
     }
     size_t writedTmp = 0;
     auto chunkInfo = *chunkPos;
-    uint8_t* src = (uint8_t*) ptr;
+    uint8_t* src =  static_cast<uint8_t*>(ptr);
     if (chunkInfo->chunkSize > chunkInfo->dataLength) {
         writedTmp += WriteOneChunkData(*chunkInfo, src, offset, writeSize);
         fragmentCacheBuffer.dataLength += static_cast<int64_t>(writedTmp);
@@ -474,7 +474,7 @@ inline CacheChunk* PopFreeCacheChunk(CacheChunkList& freeChunks, int64_t offset)
     return tmp;
 }
 
-void CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos)
+void CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(const FragmentIterator& currWritePos)
 {
     FragmentIterator minFragmentPos = fragmentCacheBuffer_.end();
     auto nowTime = Clock::now();

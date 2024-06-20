@@ -79,7 +79,7 @@ public:
 
     bool Init(uint64_t totalBuffSize, uint32_t chunkSize);
     size_t Read(void* ptr, int64_t offset, size_t readSize);
-    size_t Write(void* ptr, int64_t inOffset, size_t writeSize);
+    size_t Write(void* ptr, int64_t inOffset, size_t inWriteSize);
     bool Seek(int64_t offset);
     size_t GetBufferSize(int64_t offset);
     size_t GetNextBufferOffset(int64_t offset);
@@ -91,14 +91,14 @@ protected:
     FragmentIterator EraseFragmentCache(const FragmentIterator& iter);
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, int64_t offset);
     ChunkIterator GetOffsetChunkCache(CacheChunkList& fragmentCacheBuffer, int64_t offset);
-    void DumpInner(uint64_t param);
+    static void DumpInner(uint64_t param);
     bool CheckInner();
     void CheckFragment(const FragmentCacheBuffer& fragment, bool& checkSuccess);
     bool DumpAndCheckInner();
-    void UpdateAccessPos(FragmentIterator& fragmentPos, ChunkIterator& ChunkPos, int64_t offsetChunk);
+    static void UpdateAccessPos(FragmentIterator& fragmentPos, ChunkIterator& chunkPos, int64_t offsetChunk);
     bool WriteInPlace(FragmentIterator& fragmentPos, uint8_t* ptr, int64_t inOffset,
                       size_t inWriteSize, size_t& outWriteSize);
-    bool WriteMergerPre(int64_t offset, size_t writeSize, FragmentIterator& nextPos);
+    bool WriteMergerPre(int64_t offset, size_t writeSize, FragmentIterator& nextFragmentPos);
     size_t WriteMergerPost(FragmentIterator& fragmentPos, uint8_t* ptr, int64_t inOffset, size_t inWriteSize);
     void WriteMergerPost(FragmentIterator& nextFragmentPos);
 
@@ -122,7 +122,7 @@ protected:
     }
 
     template<typename Pred>
-    ChunkIterator GetOffsetChunkCache(CacheChunkList& chunkCaches, int64_t offset, Pred pred)
+    static ChunkIterator GetOffsetChunkCache(CacheChunkList& chunkCaches, int64_t offset, Pred pred)
     {
         auto chunkCachePos = std::find_if(chunkCaches.begin(), chunkCaches.end(),
             [offset, pred](const auto& fragment) {
@@ -136,12 +136,12 @@ protected:
 
     size_t WriteChunk(FragmentCacheBuffer& fragmentCacheBuffer, ChunkIterator& chunkPos,
                       void* ptr, int64_t offset, size_t writeSize);
-    void CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos);
+    void CheckThresholdFragmentCacheBuffer(const FragmentIterator& currWritePos);
     ChunkIterator AddFragmentCacheBuffer(int64_t offset);
 
     void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
     void DeleteUnreadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
-    size_t CalcAllowMaxChunkNum(uint64_t fragmentReadSize, int64_t offset)
+    const size_t CalcAllowMaxChunkNum(uint64_t fragmentReadSize, int64_t offset)
     {
         size_t allowNum = static_cast<size_t>((static_cast<double>(fragmentReadSize) /
             static_cast<double>(totalReadSize_)) * chunkMaxNum_);
