@@ -43,7 +43,11 @@ public:
             mem->GetBase(), mem->GetSize(), mem->GetSize()
         );
         OH_AVBuffer* avBuffer = new OH_AVBuffer(buffer);
-        return dataSource_->readAt(avBuffer, length, pos);
+        CHECK_AND_RETURN_RET_LOG(avBuffer != nullptr, OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO,
+            "create avBuffer failed!");
+        int32_t len = dataSource_->readAt(avBuffer, length, pos);
+        delete avBuffer;
+        return len;
     }
 
     int32_t GetSize(int64_t &size)
