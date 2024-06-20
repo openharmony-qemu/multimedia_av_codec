@@ -57,7 +57,6 @@ constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY 
 constexpr uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
-constexpr uint64_t DEFAULT_PREPARE_FRAME_COUNT = 0; // Default prepare frame count 0.
 
 class MediaDemuxer::AVBufferQueueProducerListener : public IRemoteStub<IProducerListener> {
 public:
@@ -1011,25 +1010,14 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
 {
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
-    Status ret = Status::OK;
-    if ((firstFrameCount_ != DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
-        MEDIA_LOG_I("Current is Seeking and resume demuxer");
-        ret = Resume();
-    } else {
-        ret = Start();
-    }
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("PrepareFrame and start demuxer failed.");
-        return ret;
-    }
+    Start();
     AutoLock lock(firstFrameMutex_);
     bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
          return firstFrameCount_ == taskMap_.size();
     });
     doPrepareFrame_ = false;
     if (!res) {
-        MEDIA_LOG_E("PrepareFrame wait data failed res= %{public}d.", res);
-        waitForDataFail_ = true;
+        MEDIA_LOG_E("PrepareFrame wait data failed res= %{public}d", res);
     }
     return Pause();
 }

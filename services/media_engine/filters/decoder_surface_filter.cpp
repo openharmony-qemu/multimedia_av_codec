@@ -252,15 +252,12 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
-    Status ret = Status::OK;
-    if (isPauseNeedResume_.load()) {
-        ret = DoResume();
-    } else {
-        ret = DoStart();
-    }
+    auto ret = DoStart();
     if (ret != Status::OK) {
         MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
+    } else {
+        isNeedStartDecoder_ = false;
     }
     return ret;
 }
@@ -292,10 +289,6 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
-    if (isPauseNeedResume_.load()) {
-        MEDIA_LOG_I("DoStart after pause to execute resume.");
-        return DoResume();
-    }
     if (!IS_FILTER_ASYNC) {
         if (isPaused_.load()) {
             return DoResume();
@@ -305,7 +298,13 @@ Status DecoderSurfaceFilter::DoStart()
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    return videoDecoder_->Start();
+    auto ret = videoDecoder_->Start();
+    if (!isNeedStartDecoder_.load()) {
+        isNeedStartDecoder_ = true;
+        MEDIA_LOG_I("Already start videoDecoder and enter.");
+        return Status::OK;
+    }
+    return ret;
 }
 
 Status DecoderSurfaceFilter::DoPause()
@@ -320,7 +319,6 @@ Status DecoderSurfaceFilter::DoPause()
     if (videoDecoder_ != nullptr) {
         videoDecoder_->ResetRenderTime();
     }
-    isPauseNeedResume_ = true;
     return Status::OK;
 }
 
@@ -333,7 +331,6 @@ Status DecoderSurfaceFilter::DoResume()
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
-    isPauseNeedResume_ = false;
     return Status::OK;
 }
 
