@@ -103,6 +103,9 @@ public:
 
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
+    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
+    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
+
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

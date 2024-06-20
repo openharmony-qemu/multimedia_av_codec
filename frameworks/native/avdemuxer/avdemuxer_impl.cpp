@@ -198,5 +198,29 @@ int32_t AVDemuxerImpl::GetMediaKeySystemInfo(std::multimap<std::string, std::vec
     demuxerEngine_->GetMediaKeySystemInfo(infos);
     return AVCS_ERR_OK;
 }
+
+int32_t AVDemuxerImpl::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+    int64_t presentationTimeUs, uint32_t &frameIndex)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("AVDemuxer::GetFrameIndexByPresentationTimeUs");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Demuxer engine does not exist");
+    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetFrameIndexByPresentationTimeUs(trackIndex,
+        presentationTimeUs, frameIndex));
+    return ret;
+}
+
+int32_t AVDemuxerImpl::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+    uint32_t frameIndex, int64_t &presentationTimeUs)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("AVDemuxer::GetPresentationTimeUsByFrameIndex");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Demuxer engine does not exist");
+    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetPresentationTimeUsByFrameIndex(trackIndex,
+        frameIndex, presentationTimeUs));
+    return ret;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

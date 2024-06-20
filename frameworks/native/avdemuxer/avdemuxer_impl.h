@@ -41,6 +41,10 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback) override;
     int32_t GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos) override;
     int32_t Init(std::shared_ptr<AVSource> source);
+    int32_t GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex) override;
+    int32_t GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) override;
 
 private:
     std::shared_ptr<MediaDemuxer> demuxerEngine_ = nullptr;

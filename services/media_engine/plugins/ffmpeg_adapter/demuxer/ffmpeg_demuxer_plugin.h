@@ -62,6 +62,10 @@ public:
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
+    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex) override;
+    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) override;
 
 private:
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
