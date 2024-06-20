@@ -517,7 +517,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
     bool result = false;
     result = downloader_->Seek(offset);
     if (result) {
-        writeOffset_ = offset;
+        writeOffset_ = static_cast<size_t>(offset);
         cacheMediaBuffer_->Seek(offset);
         readOffset_ = offset;
         downloader_->Resume();

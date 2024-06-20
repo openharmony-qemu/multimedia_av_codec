@@ -79,7 +79,7 @@ public:
 
     bool Init(uint64_t totalBuffSize, uint32_t chunkSize);
     size_t Read(void* ptr, int64_t offset, size_t readSize);
-    size_t Write(void* ptr, int64_t offset, size_t writeSize);
+    size_t Write(void* ptr, int64_t inOffset, size_t writeSize);
     bool Seek(int64_t offset);
     size_t GetBufferSize(int64_t offset);
     size_t GetNextBufferOffset(int64_t offset);
@@ -152,12 +152,12 @@ private:
     std::mutex mutex_;
     FragmentIterator readPos_;
     FragmentIterator writePos_;
-    uint64_t totalBuffSize_;
-    uint64_t totalReadSize_;
-    uint32_t chunkMaxNum_;
-    uint32_t chunkSize_;
-    double initReadSizeFactor_;
-    uint8_t* bufferAddr_;
+    uint64_t totalBuffSize_ {0};
+    uint64_t totalReadSize_ {0};
+    uint32_t chunkMaxNum_ {0};
+    uint32_t chunkSize_ {0};
+    double initReadSizeFactor_ {0.0};
+    uint8_t* bufferAddr_ {nullptr};
     FragmentCacheBufferList fragmentCacheBuffer_;
     CacheChunkList freeChunks_;
 };
