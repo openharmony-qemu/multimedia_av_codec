@@ -113,6 +113,7 @@ PRIVATE:
     bool HandleCache();
     bool CheckReadStatus();
     bool CheckReadTimeOut();
+    bool CheckBreakCondition();
 PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
@@ -219,6 +220,7 @@ PRIVATE:
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
     unsigned int bufferingTimes_ {0};
+    bool isBufferEnough_ {true};
 };
 }
 }
