@@ -44,7 +44,7 @@ public:
     explicit VodStreamDemuxer();
     ~VodStreamDemuxer() override;
 
-    Status Init(std::string uri) override;
+    Status Init(const std::string& uri) override;
     Status Reset() override;
     Status Pause() override;
     Status Resume() override;
