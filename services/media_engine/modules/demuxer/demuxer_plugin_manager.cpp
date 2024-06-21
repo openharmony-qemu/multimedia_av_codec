@@ -41,10 +41,10 @@
 namespace OHOS {
 namespace Media {
 
-DataSourceImpl::DataSourceImpl(std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID)
+DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID) :
+    stream_(stream),
+    streamID_(streamID)
 {
-    stream_ = stream;
-    streamID_ = streamID;
 }
 
 bool DataSourceImpl::IsOffsetValid(int64_t offset) const
@@ -122,7 +122,7 @@ DemuxerPluginManager::~DemuxerPluginManager()
     }
 }
 
-size_t DemuxerPluginManager::GetStreamCount()
+const size_t DemuxerPluginManager::GetStreamCount()
 {
     return streamInfoMap_.size();
 }
@@ -130,7 +130,7 @@ size_t DemuxerPluginManager::GetStreamCount()
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
     MEDIA_LOG_I("InitDefaultPlay begin");
-    for (auto& iter : streams) {
+    for (const auto& iter : streams) {
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
         streamInfoMap_[streamIndex].bitRate = iter.bitRate;
@@ -242,7 +242,7 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
 Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackIndex)
 {
     MEDIA_LOG_I("DemuxerPluginManager::AddTrackMapInfo in");
-    for (auto& iter : trackInfoMap_) {
+    for (const auto& iter : trackInfoMap_) {
         if (iter.second.streamID == streamID && iter.second.innerTrackIndex == trackIndex) {
             return Status::OK;
         }
@@ -277,7 +277,7 @@ Status DemuxerPluginManager::AddTempTrackInfo(const Plugins::MediaInfo& mediaInf
 {
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
         auto trackMeta = mediaInfo.tracks[index];
-        for (auto& iter : tempTrackInfoMap_) {
+        for (const auto& iter : tempTrackInfoMap_) {
             if (iter.second.streamID == streamId && iter.second.innerTrackIndex == static_cast<int32_t>(index)) {
                 continue;
             }
@@ -358,8 +358,8 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
     return true;
 }
 
-bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName,
-    int32_t id)
+bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+    const std::string& pluginName, int32_t id)
 {
     if (pluginName.empty()) {
         return false;
@@ -382,12 +382,12 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     return st == Status::OK;
 }
 
-bool DemuxerPluginManager::IsDash()
+const bool DemuxerPluginManager::IsDash()
 {
     return isDash_;
 }
 
-bool DemuxerPluginManager::IsSubtitle()
+const bool DemuxerPluginManager::IsSubtitle()
 {
     return isSubtitle_;
 }
@@ -470,8 +470,8 @@ Status DemuxerPluginManager::StopPlugin(int32_t streamId)
     return Status::OK;
 }
 
-void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName,
-    int32_t id)
+void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+    const std::string& pluginName, int32_t id)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::MediaTypeFound");
     if (!InitPlugin(streamDemuxer, pluginName, id)) {

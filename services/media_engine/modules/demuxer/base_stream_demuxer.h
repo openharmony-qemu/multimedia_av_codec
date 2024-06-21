@@ -70,11 +70,11 @@ public:
     {
         return data;
     }
-    void SetData(std::shared_ptr<Buffer>& buffer)
+    void SetData(const std::shared_ptr<Buffer>& buffer)
     {
         data = buffer;
     }
-    void Init(std::shared_ptr<Buffer>& buffer, uint64_t bufferOffset)
+    void Init(const std::shared_ptr<Buffer>& buffer, uint64_t bufferOffset)
     {
         data = buffer;
         offset = bufferOffset;
@@ -89,7 +89,7 @@ public:
     explicit BaseStreamDemuxer();
     virtual ~BaseStreamDemuxer();
 
-    virtual Status Init(std::string uri) = 0;
+    virtual Status Init(const std::string& uri) = 0;
     virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
@@ -111,7 +111,7 @@ public:
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
     std::string SnifferMediaType(int32_t streamID);
-    bool IsDash();
+    const bool IsDash();
     void SetIsDash(bool flag);
     Status SetNewVideoStreamID(int32_t streamID);
     int32_t GetNewVideoStreamID();
