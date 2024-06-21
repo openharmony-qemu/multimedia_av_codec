@@ -74,12 +74,12 @@ private:
 
 MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type)
 {
-    MEDIA_LOG_I("muxer filter create");
+    MEDIA_LOG_I("MuxerFilter create");
 }
 
 MuxerFilter::~MuxerFilter()
 {
-    MEDIA_LOG_I("muxer filter destroy");
+    MEDIA_LOG_I("MuxerFilter destroy");
 }
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
