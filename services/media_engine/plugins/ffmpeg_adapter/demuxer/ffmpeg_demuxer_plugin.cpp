@@ -685,19 +685,20 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         }
     }
     auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
+    int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
-        bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
+        bufSize, dataSize, ioContext->offset);
 
     switch (result) {
         case Status::OK:
-            ioContext->offset += buffer->GetMemory()->GetSize();
-            ret = buffer->GetMemory()->GetSize();
+            ioContext->offset += dataSize;
+            ret = dataSize;
             break;
         case Status::ERROR_AGAIN:
             MEDIA_LOG_I("Read data not enough, read again.");
             ioContext->timeout = true;
-            ioContext->offset += buffer->GetMemory()->GetSize();
-            ret = buffer->GetMemory()->GetSize() == 0 ? AVERROR(EAGAIN) : buffer->GetMemory()->GetSize();
+            ioContext->offset += dataSize;
+            ret = dataSize == 0 ? AVERROR(EAGAIN) : dataSize;
             break;
         case Status::END_OF_STREAM:
             MEDIA_LOG_I("Read at end of file.");
