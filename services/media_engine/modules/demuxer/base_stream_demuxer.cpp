@@ -41,6 +41,7 @@ namespace Media {
 BaseStreamDemuxer::BaseStreamDemuxer()
 {
     MEDIA_LOG_I("BaseStreamDemuxer called");
+    seekable_ = Plugins::Seekable::UNSEEKABLE;
 }
 
 BaseStreamDemuxer::~BaseStreamDemuxer()
