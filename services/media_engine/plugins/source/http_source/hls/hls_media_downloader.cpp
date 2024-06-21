@@ -290,8 +290,13 @@ bool HlsMediaDownloader::HandleBuffering()
             isBuffering_ = false;
             break;
         }
+        if (downloadRequest_ == nullptr) {
+            OSAL::SleepFor(SLEEP_TIME::REQUEST_SLEEP_TIME);
+            continue;
+        }
         if (CheckBreakCondition()) {
             isBuffering_ = false;
+            break;
         }
         OSAL::SleepFor(SLEEP_TIME::BUFFERING_SLEEP_TIME);
         sleepTime += SLEEP_TIME::BUFFERING_SLEEP_TIME;
