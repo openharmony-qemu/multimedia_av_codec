@@ -195,7 +195,7 @@ PRIVATE:
     int64_t startDownloadTime_ {0};
     int64_t lastCheckTime_ {0};
     uint32_t recordCount_ {0};
-    int64_t lastRecordTime_ {0};
+    uint64_t lastRecordTime_ {0};
     int32_t avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
     double avgSpeedSum_ {0};

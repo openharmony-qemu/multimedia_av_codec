@@ -537,12 +537,12 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
 constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
 void HlsMediaDownloader::DownloadReportLoop()
 {
-    int64_t now = static_cast<int64_t>(steadyClock_.ElapsedMilliseconds());
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             // 周期下载量达阈值，统计有效下载时长
-            downloadDuringTime_ += (now - lastCheckTime_)<0? 0 : static_cast<uint64_t>(now - lastCheckTime_);
+            downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
             // 有效下载数据量
             downloadBits_ += curDownloadBits;
             double downloadDuration = static_cast<double>(now - lastCheckTime_) / 1000;
@@ -585,10 +585,10 @@ void HlsMediaDownloader::DownloadReportLoop()
         downloadBits_ = 0;
         lastRecordTime_ = now;
     }
-    if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
+    if (!isDownloadFinish_ && (static_cast<int64_t>(now) - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
         MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
         dataUsage_ = 0;
-        lastReportUsageTime_ = now;
+        lastReportUsageTime_ = static_cast<int64_t>(now);
     }
 }
 

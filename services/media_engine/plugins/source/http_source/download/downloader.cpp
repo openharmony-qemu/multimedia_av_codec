@@ -583,7 +583,7 @@ char* StringTrim(char* str)
 }
 }
 
-void Downloader::FLVProcess(bool &isTrunck, long &contentLen, const std::string url)
+void Downloader::FLVProcess(bool &isTrunck, long &contentLen, const std::string &url)
 {
     if (isTrunck != true) {
         if (static_cast<int32_t>(url.find(".flv")) != -1) {

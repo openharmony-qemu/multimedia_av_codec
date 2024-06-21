@@ -189,7 +189,7 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
     return str;
 }
 
-void HttpCurlClient::CheckHeaderKey(const std::string setKey, const std::string setValue)
+void HttpCurlClient::CheckHeaderKey(const std::string &setKey, const std::string &setValue)
 {
     if (setKey != USER_AGENT && setKey != REFERER && setKey != COOKIE) {
         MEDIA_LOG_E("Setted invalid key " PUBLIC_LOG_S " .", setKey.c_str());
