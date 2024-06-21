@@ -304,7 +304,6 @@ bool HlsMediaDownloader::HandleBuffering()
             break;
         }
     }
-    
     if (!isBufferEnough_) {
         return isBuffering_;
     }
@@ -315,7 +314,6 @@ bool HlsMediaDownloader::HandleBuffering()
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
-    
     MEDIA_LOG_I("HandleBuffering end.");
     return isBuffering_;
 }
