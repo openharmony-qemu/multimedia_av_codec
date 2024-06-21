@@ -128,6 +128,8 @@ struct SampleInfo {
     ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
     int32_t encoderSurfaceMaxInputBuffer = 0;
     int32_t pauseBeforeRunSample = 0;
+    int32_t videoStrideWidth = 0;
+    int32_t videoSliceHeight = 0;
 };
 
 struct CodecBufferInfo {

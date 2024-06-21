@@ -30,6 +30,7 @@ public:
     int32_t Flush() override;
     int32_t Stop() override;
     int32_t Reset() override;
+    OH_AVFormat *GetFormat() override;
     int32_t PushInputData(CodecBufferInfo &info) override;
     int32_t FreeOutputData(uint32_t bufferIndex) override;
 

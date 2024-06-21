@@ -40,6 +40,7 @@ protected:
     virtual void Release();
     void StartRelease();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
+    void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size);
     void PushEosFrame();
 
     std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;

@@ -178,7 +178,31 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     }
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
-    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+    if (!(sampleInfo_.codecRunMode & 0b10)) {   // 0b10: Video encoder mask
+        WriteOutputFileWithStrideYUV420(bufferAddr, bufferInfo.attr.size);
+    } else {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+    }
+}
+
+void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size)
+{
+    CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
+    CHECK_AND_RETURN_LOG(size >= (sampleInfo_.videoWidth * sampleInfo_.videoHeight), "Buffer is nullptr");
+    constexpr int8_t yuvSampleRatio = 2;
+
+    // copy Y
+    for (int32_t row = 0; row < sampleInfo_.videoHeight; row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), sampleInfo_.videoWidth);
+        bufferAddr += sampleInfo_.videoStrideWidth;
+    }
+    bufferAddr += (sampleInfo_.videoSliceHeight - sampleInfo_.videoHeight) * sampleInfo_.videoStrideWidth;
+
+    // copy UV
+    for (int32_t row = 0; row < (sampleInfo_.videoHeight / yuvSampleRatio); row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), sampleInfo_.videoWidth);
+        bufferAddr += sampleInfo_.videoStrideWidth;
+    }
 }
 
 void VideoSampleBase::PushEosFrame()

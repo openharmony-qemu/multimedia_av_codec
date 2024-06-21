@@ -125,6 +125,12 @@ int32_t VideoEncoder::Reset()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
+OH_AVFormat *VideoEncoder::GetFormat()
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, nullptr, "Decoder is null");
+    return OH_VideoEncoder_GetOutputDescription(codec_.get());
+}
+
 int32_t VideoEncoder::PushInputData(CodecBufferInfo &info)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
