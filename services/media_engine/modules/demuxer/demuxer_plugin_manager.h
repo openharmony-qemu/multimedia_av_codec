@@ -98,8 +98,8 @@ public:
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
-    const bool IsDash();
-    const bool IsSubtitle();
+    bool IsDash();
+    bool IsSubtitle();
     Status StopPlugin(int32_t streamId);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
@@ -109,7 +109,7 @@ public:
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId);
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();
-    const size_t GetStreamCount();
+    size_t GetStreamCount();
     void SetResetEosStatus(bool flag);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);

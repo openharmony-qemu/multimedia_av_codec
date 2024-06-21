@@ -41,8 +41,8 @@
 namespace OHOS {
 namespace Media {
 
-DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID) :
-    stream_(stream),
+DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID)
+    : stream_(stream),
     streamID_(streamID)
 {
 }
@@ -122,7 +122,7 @@ DemuxerPluginManager::~DemuxerPluginManager()
     }
 }
 
-const size_t DemuxerPluginManager::GetStreamCount()
+size_t DemuxerPluginManager::GetStreamCount()
 {
     return streamInfoMap_.size();
 }
@@ -382,12 +382,12 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     return st == Status::OK;
 }
 
-const bool DemuxerPluginManager::IsDash()
+bool DemuxerPluginManager::IsDash()
 {
     return isDash_;
 }
 
-const bool DemuxerPluginManager::IsSubtitle()
+bool DemuxerPluginManager::IsSubtitle()
 {
     return isSubtitle_;
 }
