@@ -27,16 +27,53 @@ constexpr uint8_t ANNEXB_FRAME_HEAD[] = {0, 0, 1};
 constexpr uint8_t ANNEXB_FRAME_HEAD_LEN = sizeof(ANNEXB_FRAME_HEAD);
 constexpr uint32_t PREREAD_BUFFER_SIZE = 1 * 1024 * 1024; // 1Mb, must greater than ANNEXB_FRAME_HEAD_LEN
 
-constexpr uint8_t AVC_NAL_IDR = 5;
-constexpr uint8_t AVC_NAL_SPS = 7;
-constexpr uint8_t AVC_NAL_PPS = 8;
-constexpr uint8_t HEVC_NAL_IDR = 19;
-constexpr uint8_t HEVC_NAL_VPS = 32;
-constexpr uint8_t HEVC_NAL_SPS = 33;
-constexpr uint8_t HEVC_NAL_PPS = 34;
-constexpr uint8_t HEVC_NAL_FD_NUL = 38;
-constexpr uint8_t HEVC_NAL_SEI_PREFIX = 39;
-constexpr uint8_t HEVC_NAL_SEI_SUFFIX = 40;
+enum AvcNalType {
+    AVC_NAL_UNSPECIFIED = 0,
+    AVC_NAL_NON_IDR = 1,
+    AVC_NAL_PARTITION_A = 2,
+    AVC_NAL_PARTITION_B = 3,
+    AVC_NAL_PARTITION_C = 4,
+    AVC_NAL_IDR = 5,
+    AVC_NAL_SEI = 6,
+    AVC_NAL_SPS = 7,
+    AVC_NAL_PPS = 8,
+    AVC_NAL_AU_DELIMITER = 9,
+    AVC_NAL_END_OF_SEQUENCE = 10,
+    AVC_NAL_END_OF_STREAM = 11,
+    AVC_NAL_FILLER_DATA = 12,
+    AVC_NAL_SPS_EXT = 13,
+    AVC_NAL_PREFIX = 14,
+    AVC_NAL_SUB_SPS = 15,
+    AVC_NAL_DPS = 16,
+};
+
+enum HevcNalType {
+    HEVC_NAL_TRAIL_N = 0,
+    HEVC_NAL_TRAIL_R = 1,
+    HEVC_NAL_TSA_N = 2,
+    HEVC_NAL_TSA_R = 3,
+    HEVC_NAL_STSA_N = 4,
+    HEVC_NAL_STSA_R = 5,
+    HEVC_NAL_RADL_N = 6,
+    HEVC_NAL_RADL_R = 7,
+    HEVC_NAL_RASL_N = 8,
+    HEVC_NAL_RASL_R = 9,
+    HEVC_NAL_BLA_W_LP = 16,
+    HEVC_NAL_BLA_W_RADL = 17,
+    HEVC_NAL_BLA_N_LP = 18,
+    HEVC_NAL_IDR_W_RADL = 19,
+    HEVC_NAL_IDR_N_LP = 20,
+    HEVC_NAL_CRA_NUT = 21,
+    HEVC_NAL_VPS_NUT = 32,
+    HEVC_NAL_SPS_NUT = 33,
+    HEVC_NAL_PPS_NUT = 34,
+    HEVC_NAL_AUD_NUT = 35,
+    HEVC_NAL_EOS_NUT = 36,
+    HEVC_NAL_EOB_NUT = 37,
+    HEVC_NAL_FD_NUT = 38,
+    HEVC_NAL_PREFIX_SEI_NUT = 39,
+    HEVC_NAL_SUFFIX_SEI_NUT = 40,
+};
 }
 
 namespace OHOS {
@@ -54,7 +91,6 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got invalid buffer");
     bufferInfo.attr.size = 0;
 
-    bool keepRead = true;
     do {
         int32_t ret = 0;
         int32_t frameSize = 0;
@@ -68,19 +104,13 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         }
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
 
-        if (IsCodecData(naluType)) {
-            bufferInfo.attr.flags |= AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-        } else if (IsIDR(naluType)) {
-            bufferInfo.attr.flags |= AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-            keepRead = false;
-        } else {
-            keepRead = false;
-        }
         bufferInfo.attr.pts = frameCount_ *
             ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
         bufferInfo.attr.size += frameSize;
         bufferAddr += frameSize;
-    } while (keepRead);
+        bufferInfo.attr.flags |= IsIDR(naluType) ? AVCODEC_BUFFER_FLAGS_SYNC_FRAME : 0;
+        CHECK_AND_BREAK(!IsVCL(naluType));
+    } while (true);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -173,23 +203,21 @@ inline uint8_t BitstreamReader::GetNaluType(const uint8_t *const bufferAddr)
     return GetNaluType(*(pos + ANNEXB_FRAME_HEAD_LEN));
 }
 
-bool BitstreamReader::IsCodecData(uint8_t naluType)
+bool BitstreamReader::IsIDR(uint8_t naluType)
 {
     bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
-    if ((isH264Stream && ((naluType == AVC_NAL_SPS) || (naluType == AVC_NAL_PPS))) ||
-        (!isH264Stream && ((naluType == HEVC_NAL_VPS) || (naluType == HEVC_NAL_SPS) || (naluType == HEVC_NAL_PPS) ||
-                           (naluType == HEVC_NAL_FD_NUL) || (naluType == HEVC_NAL_SEI_PREFIX) ||
-                           (naluType == HEVC_NAL_SEI_SUFFIX)))) {
+    if ((isH264Stream && (naluType == AVC_NAL_IDR)) ||
+        (!isH264Stream && ((naluType >= HEVC_NAL_IDR_W_RADL) && (naluType <= HEVC_NAL_CRA_NUT)))) {
         return true;
     }
     return false;
 }
 
-bool BitstreamReader::IsIDR(uint8_t naluType)
+bool BitstreamReader::IsVCL(uint8_t nalType)
 {
     bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
-    if ((isH264Stream && (naluType == AVC_NAL_IDR)) ||
-        (!isH264Stream && (naluType == HEVC_NAL_IDR))) {
+    if ((isH264Stream && (nalType >= AVC_NAL_NON_IDR && nalType <= AVC_NAL_IDR)) ||
+        (!isH264Stream && (nalType >= HEVC_NAL_TRAIL_N && nalType <= HEVC_NAL_CRA_NUT))) {
         return true;
     }
     return false;
