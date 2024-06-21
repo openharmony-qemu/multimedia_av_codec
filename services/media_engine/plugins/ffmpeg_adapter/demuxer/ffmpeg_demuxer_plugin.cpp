@@ -159,7 +159,7 @@ int64_t GetFileDuration(const AVFormatContext& avFormatContext)
             auto streamDuration = (ConvertTimeFromFFmpeg(avFormatContext.streams[i]->duration,
                 avFormatContext.streams[i]->time_base)) / 1000; // us
             if (streamDuration > duration) {
-                MEDIA_LOG_I("Get duration from stream " PUBLIC_LOG_D32, i);
+                MEDIA_LOG_I("Get duration from stream " PUBLIC_LOG_U32, i);
                 duration = streamDuration;
             }
         }
