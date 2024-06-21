@@ -114,8 +114,10 @@ private:
 
 MediaDemuxer::MediaDemuxer()
     : seekable_(Plugins::Seekable::INVALID),
+      subSeekable_(Plugins::Seekable::INVALID),
       uri_(),
       mediaDataSize_(0),
+      subMediaDataSize_(0),
       source_(std::make_shared<Source>()),
       subtitleSource_(std::make_shared<Source>()),
       mediaMetaData_(),

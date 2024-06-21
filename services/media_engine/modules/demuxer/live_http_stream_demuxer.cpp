@@ -106,7 +106,7 @@ bool LiveHttpStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size
     return PullDataWithoutCache(streamID, offset, size, bufferPtr);
 }
 
-Status LiveHttpStreamDemuxer::Init(std::string uri)
+Status LiveHttpStreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
     MEDIA_LOG_I("VodStreamDemuxer::Init called");
@@ -320,7 +320,7 @@ Status LiveHttpStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset,
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
-    if (0 == expectedLen) {
+    if (expectedLen == 0) {
         return Status::END_OF_STREAM;
     }
     return Status::ERROR_NOT_ENOUGH_DATA;
