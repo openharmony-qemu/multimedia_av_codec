@@ -108,7 +108,6 @@ PRIVATE:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
-    void CacheData();
     bool HandleBuffering();
     bool HandleCache();
     bool CheckReadStatus();
@@ -214,7 +213,6 @@ PRIVATE:
     std::atomic<bool> isStopped = false;
     Mutex firstTsMutex_ {};
     std::string mimeType_;
-    std::shared_ptr<Task> downloadTask_;
     unsigned int wantReadLenth_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
