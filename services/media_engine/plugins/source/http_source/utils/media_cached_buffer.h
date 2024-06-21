@@ -141,7 +141,7 @@ protected:
 
     void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
     void DeleteUnreadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
-    const size_t CalcAllowMaxChunkNum(uint64_t fragmentReadSize, int64_t offset)
+    size_t CalcAllowMaxChunkNum(uint64_t fragmentReadSize, int64_t offset)
     {
         size_t allowNum = static_cast<size_t>((static_cast<double>(fragmentReadSize) /
             static_cast<double>(totalReadSize_)) * chunkMaxNum_);
