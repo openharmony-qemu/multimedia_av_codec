@@ -103,6 +103,10 @@ public:
 
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
+
+    Status StartReferenceParser(int64_t startTimeMs);
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -164,6 +168,7 @@ private:
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
+    int64_t ParserRefInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -214,6 +219,9 @@ private:
     std::atomic<bool> isSelectBitRate_ = false;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
+
+    std::unique_ptr<Task> parserRefInfoTask_;
+    bool isFirstParser = true;
 };
 } // namespace Media
 } // namespace OHOS

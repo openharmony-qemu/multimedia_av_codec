@@ -33,6 +33,19 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+struct ParserSdtpInfo {
+    void *pb = nullptr;
+    int pbIsCopied = 0;
+    int ffindex = 0;
+    int nextChunk = 0;
+    unsigned int chunkCount = 0;
+    int64_t *chunkOffsets = nullptr;
+    unsigned int sttsCount = 0;
+    void *sttsData = nullptr;
+    unsigned int sdtpCount = 0;
+    uint8_t *sdtpData = nullptr;
+};
+
 struct HevcParseFormat {
     int32_t isHdrVivid = 0;
     int32_t colorRange = 0;

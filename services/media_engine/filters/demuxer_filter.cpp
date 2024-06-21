@@ -372,6 +372,27 @@ Status DemuxerFilter::Reset()
     return demuxer_->Reset();
 }
 
+Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::StartReferenceParser");
+    MEDIA_LOG_D("StartReferenceParser entered");
+    return demuxer_->StartReferenceParser(startTimeMs);
+}
+
+Status DemuxerFilter::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetFrameLayerInfo");
+    MEDIA_LOG_D("GetFrameLayerInfo entered");
+    return demuxer_->GetFrameLayerInfo(videoSample, frameLayerInfo);
+}
+
+Status DemuxerFilter::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetGopLayerInfo");
+    MEDIA_LOG_D("GetGopLayerInfo entered");
+    return demuxer_->GetGopLayerInfo(gopId, gopLayerInfo);
+}
+
 void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter enter");
