@@ -14,7 +14,9 @@
  */
 
 #include "dash_media_downloader_unit_test.h"
+#include <iostream>
 #include "dash_media_downloader.h"
+#include "http_server_demo.h"
 
 namespace OHOS {
 namespace Media {
@@ -22,27 +24,36 @@ namespace Plugins {
 namespace HttpPlugin {
 using namespace testing::ext;
 namespace {
-static const std::string MPD_SEGMENT_BASE =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_HEV1/DASH_SDR_H265_HEV1.mpd";
-static const std::string MPD_SEGMENT_LIST =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/index_only720P.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentTemplate/index_only720P.mpd";
+static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:46666/test_dash/segment_list/index.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:46666/test_dash/segment_template/index.mpd";
 }
 
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 std::shared_ptr<DashMediaDownloader> g_mediaDownloader = nullptr;
+bool g_result = false;
 void DashMediaDownloaderUnitTest::SetUpTestCase(void)
 {
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+    std::cout << "start" << std::endl;
+
     g_mediaDownloader = std::make_shared<DashMediaDownloader>();
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
+                              std::shared_ptr<DownloadRequest>& request) {};
     g_mediaDownloader->SetStatusCallback(statusCallback);
+    std::string testUrl = MPD_SEGMENT_BASE;
+    std::map<std::string, std::string> httpHeader;
+    g_result = g_mediaDownloader->Open(testUrl, httpHeader);
 }
 
 void DashMediaDownloaderUnitTest::TearDownTestCase(void)
 {
     g_mediaDownloader->Close(true);
     g_mediaDownloader = nullptr;
+
+    g_server->StopServer();
+    g_server = nullptr;
 }
 
 void DashMediaDownloaderUnitTest::SetUp(void) {}
@@ -61,10 +72,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STARTED_STATUS, TestSize.Level1)
 
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {
-    std::string testUrl = MPD_SEGMENT_BASE;
-    std::map<std::string, std::string> httpHeader;
-    bool result = g_mediaDownloader->Open(testUrl, httpHeader);
-    EXPECT_TRUE(result);
+    EXPECT_TRUE(g_result);
 }
 
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_SEEKABLE, TestSize.Level1)

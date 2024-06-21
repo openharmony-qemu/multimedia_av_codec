@@ -14,7 +14,7 @@
  */
 
 #include "http_server_demo.h"
-#include "demo_log.h"
+#include "unittest_log.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -103,7 +103,6 @@ void HttpServerDemo::GetRange(const std::string &recvStr, int32_t &startPos, int
         startPos = std::regex_match(startStr, regexDigital) ? std::stoi(startStr) : 0;
         endPos = std::regex_match(endStr, regexDigital) ? std::stoi(endStr) : INT32_MAX;
     } else {
-        std::cout << "Range not found" << std::endl;
         endPos = 0;
     }
 }
@@ -142,6 +141,9 @@ int32_t HttpServerDemo::SendRequestSize(int32_t &connFd, int32_t &fileFd, const 
     int32_t ret = 0;
     int32_t fileSize = lseek(fileFd, 0, SEEK_END);
     GetRange(recvStr, startPos, endPos);
+    if (endPos <= 0) {
+        endPos = fileSize - 1;
+    }
     int32_t size = std::min(endPos, fileSize) - std::max(startPos, 0) + 1;
     if (endPos < startPos) {
         size = 0;
@@ -182,13 +184,13 @@ int32_t HttpServerDemo::SetKeepAlive(int32_t &connFd, int32_t &keepAlive, int32_
     int32_t keepInterval = 1;
     int32_t keepCount = 1;
     ret = setsockopt(connFd, SOL_SOCKET, SO_KEEPALIVE, static_cast<void *>(&keepAlive), sizeof(keepAlive));
-    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set SO_KEEPALIVE failed, ret=%d", ret);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set SO_KEEPALIVE failed, ret=%d", ret);
     ret = setsockopt(connFd, SOL_TCP, TCP_KEEPIDLE, static_cast<void *>(&keepIdle), sizeof(keepIdle));
-    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPIDLE failed, ret=%d", ret);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPIDLE failed, ret=%d", ret);
     ret = setsockopt(connFd, SOL_TCP, TCP_KEEPINTVL, static_cast<void *>(&keepInterval), sizeof(keepInterval));
-    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPINTVL failed, ret=%d", ret);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPINTVL failed, ret=%d", ret);
     ret = setsockopt(connFd, SOL_TCP, TCP_KEEPCNT, static_cast<void *>(&keepCount), sizeof(keepCount));
-    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPCNT failed, ret=%d", ret);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPCNT failed, ret=%d", ret);
     return ret;
 }
 
@@ -224,7 +226,7 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
         int32_t sendSize = std::min(BUFFER_LNE, size);
         std::vector<uint8_t> fileBuff(sendSize);
         ret = read(fileFd, fileBuff.data(), sendSize);
-        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
+        UNITTEST_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
         size -= ret;
         ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
         if (ret <= 0) { // send file buffer failed

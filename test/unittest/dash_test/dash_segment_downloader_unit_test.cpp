@@ -14,7 +14,9 @@
  */
 
 #include "dash_segment_downloader_unit_test.h"
+#include <iostream>
 #include "dash_segment_downloader.h"
+#include "http_server_demo.h"
 
 namespace OHOS {
 namespace Media {
@@ -22,20 +24,26 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 // range 0-1065
-static const std::string AUDIO_SEGMENT_URL =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_HEV1/media-audio-und-mp4a.mp4";
-static const std::string VIDEO_MEDIA_SEGMENT_URL_1 =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/video/1/seg-1.m4s";
-static const std::string VIDEO_MEDIA_SEGMENT_URL_2 =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/video/1/seg-2.m4s";
-static const std::string VIDEO_INIT_SEGMENT_URL =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/video/1/init.mp4";
+static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:46666/test_dash/segment_base/media-audio-und-mp4a.mp4";
+static const std::string VIDEO_MEDIA_SEGMENT_URL_1 = "http://127.0.0.1:46666/test_dash/segment_list/video/1/seg-1.m4s";
+static const std::string VIDEO_MEDIA_SEGMENT_URL_2 = "http://127.0.0.1:46666/test_dash/segment_list/video/1/seg-2.m4s";
+static const std::string VIDEO_INIT_SEGMENT_URL = "http://127.0.0.1:46666/test_dash/segment_list/video/1/init.mp4";
 }
 using namespace testing::ext;
 
-void DashSegmentDownloaderUnitTest::SetUpTestCase(void) {}
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
+void DashSegmentDownloaderUnitTest::SetUpTestCase(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+    std::cout << "start" << std::endl;
+}
 
-void DashSegmentDownloaderUnitTest::TearDownTestCase(void) {}
+void DashSegmentDownloaderUnitTest::TearDownTestCase(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 void DashSegmentDownloaderUnitTest::SetUp(void) {}
 
