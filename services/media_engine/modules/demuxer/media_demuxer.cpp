@@ -699,7 +699,6 @@ Status MediaDemuxer::SeekToTimeAfter(bool jumperRestartPlugin)
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
-
     Status ret;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         bool jumperRestartPlugin = (isSelectBitRate_.load() == true) ? true : false;
@@ -825,6 +824,7 @@ Status MediaDemuxer::StopAllTask()
         it = taskMap_.erase(it);
     }
     isThreadExit_ = true;
+    MEDIA_LOG_I("StopAllTask done.");
     return Status::OK;
 }
 
@@ -843,7 +843,7 @@ Status MediaDemuxer::PauseAllTask()
             iter.second->Pause();
         }
     }
-
+    MEDIA_LOG_I("PauseAllTask done.");
     return Status::OK;
 }
 
@@ -862,12 +862,13 @@ Status MediaDemuxer::ResumeAllTask()
         }
         it++;
     }
+    MEDIA_LOG_I("ResumeAllTask done.");
     return Status::OK;
 }
 
 Status MediaDemuxer::Pause()
 {
-    MEDIA_LOG_D("Pause");
+    MEDIA_LOG_I("Pause");
     isPaused_ = true;
     if (streamDemuxer_) {
         streamDemuxer_->SetIsIgnoreParse(true);
@@ -906,7 +907,7 @@ Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
 
 Status MediaDemuxer::Resume()
 {
-    MEDIA_LOG_D("Resume");
+    MEDIA_LOG_I("Resume");
     if (streamDemuxer_) {
         streamDemuxer_->Resume();
     }
@@ -1333,7 +1334,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to input sample is nullptr");
     if (eosMap_[trackId]) {
-        MEDIA_LOG_W("Read sample failed due to track has reached eos");
+        MEDIA_LOG_W("Read sample failed due to track" PUBLIC_LOG_U32 "has reached eos", trackId);
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
         sample->memory_->SetSize(0);
         return Status::END_OF_STREAM;

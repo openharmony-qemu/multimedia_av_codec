@@ -96,6 +96,7 @@ private:
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status GetSeiInfo();
 
     int FindNaluSpliter(int size, const uint8_t *data);
     bool CanDropAvcPkt(const AVPacket& pkt);
