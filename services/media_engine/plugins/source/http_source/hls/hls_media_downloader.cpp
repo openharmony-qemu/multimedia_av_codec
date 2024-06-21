@@ -48,6 +48,8 @@ constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr int CACHE_WATER_LINE = 512 * 1024;
 constexpr int FIRST_CACHE_WATER_LINE = 50 * 1024;
 constexpr int SECOND_CACHE_WATER_LINE = 100 * 1024;
+constexpr uint32_t READ_SLEEP_INTERVAL = 5;
+constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -233,7 +235,7 @@ bool HlsMediaDownloader::CheckReadStatus()
 
 bool HlsMediaDownloader::CheckReadTimeOut()
 {
-    if (downloadErrorState_ || isTimeOut_) {
+    if (sleepTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
         isTimeOut_ = true;
         if (downloader_ != nullptr) {
             // avoid deadlock caused by ringbuffer write stall
@@ -311,6 +313,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     }
 
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
+    readTime_ = 0;
     while (buffer_->GetSize() < readDataInfo.wantReadLength_) {
         bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
                                downloadRequest_->IsEos()) || isStopped;
@@ -329,7 +332,8 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
             readDataInfo.realReadLength_ = 0;
             return Status::END_OF_STREAM;
         }
-        OSAL::SleepFor(5);  // 5
+        OSAL::SleepFor(READ_SLEEP_INTERVAL);  // 5
+        readTime_ += READ_SLEEP_INTERVAL;
     }
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "

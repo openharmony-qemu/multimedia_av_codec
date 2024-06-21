@@ -52,6 +52,7 @@ constexpr int CACHEDATA_SLEEP_TIME = 100;
 constexpr int SECOND_TO_MICROSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MICROSECOND = 100;
+constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -302,7 +303,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
         if (CheckIsEosRingBuffer(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
-        if (downloadErrorState_ || isTimeOut_) {
+        if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
             isTimeOut_ = true;
             if (downloader_ != nullptr) {
                 buffer_->SetActive(false); // avoid deadlock caused by ringbuffer write stall
@@ -334,11 +335,12 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     size_t hasReadSize = 0;
+    readTime_ = 0;
     while (hasReadSize < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
         if (CheckIsEosBeforeTimeout(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
-        if (downloadErrorState_) {
+        if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_) {
             return HandleDownloadErrorState(readDataInfo.realReadLength_);
         }
         bool isClosed = downloadRequest_->IsClosed();
@@ -350,7 +352,8 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
         auto size = cacheMediaBuffer_->Read(buff + hasReadSize, readOffset_ + hasReadSize,
             readDataInfo.wantReadLength_ - hasReadSize);
         if (size == 0) {
-            Task::SleepInTask(5); // 5
+            Task::SleepInTask(FIVE_MICROSECOND); // 5
+            readTime_ += FIVE_MICROSECOND;
         } else {
             hasReadSize += size;
         }
