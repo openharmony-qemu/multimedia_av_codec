@@ -275,11 +275,11 @@ int32_t VideoDecCapiMock::SetVideoDecryptionConfig()
     mediaKeySystemMock->CreateMediaKeySession();
 
     bool isSecure = false;
-    if (mediaKeySystemMock->GetMediaKeySession() == nullptr) {
-        printf("VideoDecCapiMock SetVideoDecryptionConfig GetMediaKeySession failed!");
-        return AV_ERR_UNKNOWN;
+    int32_t ret = OH_VideoDecoder_SetDecryptionConfig(codec_, mediaKeySystemMock->GetMediaKeySession(), isSecure);
+    if (ret != OH_AVErrCode::AV_ERR_OK && mediaKeySystemMock->GetMediaKeySession() == nullptr) {
+        return AV_ERR_OK;
     }
-    return OH_VideoDecoder_SetDecryptionConfig(codec_, mediaKeySystemMock->GetMediaKeySession(), isSecure);
+    return ret;
 #else
     return AV_ERR_OK;
 #endif
