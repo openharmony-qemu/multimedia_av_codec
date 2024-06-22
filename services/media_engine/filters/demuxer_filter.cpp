@@ -175,10 +175,8 @@ Status DemuxerFilter::DoPrepare()
     }
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
-        if (meta == nullptr) {
-            MEDIA_LOG_E("meta is invalid, index: %zu", index);
-            return Status::ERROR_INVALID_PARAMETER;
-        }
+        FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER,
+            "meta is invalid, index: %zu", index);
         std::string mime;
         if (!meta->GetData(Tag::MIME_TYPE, mime)) {
             MEDIA_LOG_E("mimeType not found, index: %zu", index);
