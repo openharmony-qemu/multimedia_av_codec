@@ -104,8 +104,8 @@ struct SampleInfo {
     CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
     std::string codecMime = MIME_VIDEO_AVC.data();
-    int32_t videoWidth = 0;
-    int32_t videoHeight = 0;
+    int32_t videoWidth = 1280;
+    int32_t videoHeight = 720;
     double frameRate = SAMPLE_DEFAULT_FRAMERATE;
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
