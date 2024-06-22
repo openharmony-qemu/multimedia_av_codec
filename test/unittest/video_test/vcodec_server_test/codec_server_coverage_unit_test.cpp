@@ -257,6 +257,42 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_005, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Codec_Server_Constructor_006
+ * @tc.desc: 1. sucess to create video decoder of hcodec by mime
+ *           2. failed to init video hcodec
+ *           3. return fcodec
+ */
+HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_006, TestSize.Level1)
+{
+    std::string codecMime = CODEC_MIME_MOCK_01;
+    std::string hcodecName = "video.H.Decoder.Name.01";
+    std::string fcodecName = "video.F.Decoder.Name.01";
+
+    EXPECT_CALL(*codecBaseMock_, Init).Times(2).WillOnce(Return(AVCS_ERR_UNKNOWN)).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(2);
+    EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(hcodecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(fcodecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_DECODER, true, codecMime, *validFormat_.GetMeta(),
+                                API_VERSION::API_VERSION_11);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    EXPECT_NE(server_->codecBase_, nullptr);
+}
+
+/**
  * @tc.name: Codec_Server_Constructor_Invalid_001
  * @tc.desc: 1. create hcodec by name
  *           2. CodecFactory return nullptr
@@ -370,6 +406,21 @@ HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_005, TestSize.Lev
         server_->Init(AVCODEC_TYPE_AUDIO_ENCODER, false, codecName,
             *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: Codec_Server_Constructor_Invalid_006
+ * @tc.desc: 1. invalid mime type
+ */
+HWTEST_F(CodecServerUnitTest, Codec_Server_Constructor_Invalid_006, TestSize.Level1)
+{
+    std::string codecMime = "test";
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime, *validFormat_.GetMeta(),
+                                API_VERSION::API_VERSION_11);
+    EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
 }
 
 /**

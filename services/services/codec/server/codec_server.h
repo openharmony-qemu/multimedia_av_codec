@@ -110,6 +110,8 @@ public:
 #endif
 
 private:
+    int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
+    int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitServer();
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
