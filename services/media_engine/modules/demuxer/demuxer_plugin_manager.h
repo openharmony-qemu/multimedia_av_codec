@@ -42,7 +42,7 @@ class BaseStreamDemuxer;
 
 class DataSourceImpl : public Plugins::DataSource {
 public:
-    explicit DataSourceImpl(std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID);
+    explicit DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID);
     ~DataSourceImpl() override = default;
     Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
@@ -113,8 +113,8 @@ public:
     void SetResetEosStatus(bool flag);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
-    bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
-    void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
+    bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
+    void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     Status InitDefaultPlay();
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
         bool isAddTempTrack);

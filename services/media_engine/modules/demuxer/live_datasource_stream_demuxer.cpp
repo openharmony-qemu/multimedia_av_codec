@@ -58,7 +58,7 @@ LiveDataSourceStreamDemuxer::~LiveDataSourceStreamDemuxer()
     taskPtr_ = nullptr;
 }
 
-Status LiveDataSourceStreamDemuxer::Init(std::string uri)
+Status LiveDataSourceStreamDemuxer::Init(const std::string& uri)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {

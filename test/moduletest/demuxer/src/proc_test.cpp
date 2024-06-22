@@ -1203,3 +1203,71 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_3800, TestSize.Level0)
     close(fd);
 }
 
+/**
+ * @tc.number    : SUB_MP3_TITLE_RESOLUTION_4100
+ * @tc.name      : audio resolution with fffe mp3
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4100, TestSize.Level0)
+{
+    const char *stringVal;
+    const char *file = "/data/test/media/audio/fffe_bom.mp3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    cout << "title" << "----------------------" << stringVal << "---------" << endl;
+    ASSERT_EQ(0, strcmp(stringVal, "bom"));
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MP3_TITLE_RESOLUTION_4200
+ * @tc.name      : audio resolution with feff mp3
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4200, TestSize.Level0)
+{
+    const char *stringVal;
+    const char *file = "/data/test/media/audio/feff_bom.mp3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    cout << "title" << "----------------------" << stringVal << "---------" << endl;
+    ASSERT_EQ(0, strcmp(stringVal, "bom"));
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MP3_TITLE_RESOLUTION_4300
+ * @tc.name      : audio resolution non_standard mp3
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4300, TestSize.Level0)
+{
+    const char *stringVal;
+    const char *file = "/data/test/media/audio/nonstandard_bom.mp3";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(sourceFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &stringVal));
+    cout << "title" << "----------------------" << stringVal << "---------" << endl;
+    ASSERT_EQ(0, strcmp(stringVal, "bom"));
+    close(fd);
+}

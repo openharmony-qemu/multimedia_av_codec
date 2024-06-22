@@ -145,6 +145,8 @@ private:
     std::string location_;
     mutable size_t times_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<bool> retryOnGoing_ {false};
+    int64_t dropedDataLen_ {0};
 };
 
 class Downloader {
@@ -171,6 +173,9 @@ private:
     static void FLVProcess(bool &isTrunck, long &contentLen, const std::string &url);
     static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
+    static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
+    static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
+    static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;

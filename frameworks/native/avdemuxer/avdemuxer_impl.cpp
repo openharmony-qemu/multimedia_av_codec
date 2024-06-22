@@ -198,5 +198,30 @@ int32_t AVDemuxerImpl::GetMediaKeySystemInfo(std::multimap<std::string, std::vec
     demuxerEngine_->GetMediaKeySystemInfo(infos);
     return AVCS_ERR_OK;
 }
+
+int32_t AVDemuxerImpl::StartReferenceParser(int64_t startTimeMs)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("AVDemuxer::StartReferenceParser");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->StartReferenceParser(startTimeMs));
+}
+
+int32_t AVDemuxerImpl::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("AVDemuxer::GetFrameLayerInfo");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->GetFrameLayerInfo(videoSample, frameLayerInfo));
+}
+
+int32_t AVDemuxerImpl::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("AVDemuxer::GetGopLayerInfo");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->GetGopLayerInfo(gopId, gopLayerInfo));
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -71,7 +71,7 @@ protected:
 
 private:
     std::string name_;
-    FilterType filterType_;
+    FilterType filterType_ = FilterType::FILTERTYPE_VENC;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;

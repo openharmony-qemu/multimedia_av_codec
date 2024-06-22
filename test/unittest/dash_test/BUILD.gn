@@ -49,6 +49,7 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [
@@ -85,6 +86,7 @@ config("dash_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
+    "$av_codec_root_dir/test/unittest/common",
     "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/src",
     "//third_party/curl/include",
@@ -168,6 +170,9 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ohos_unittest("dash_mpd_downloader_unit_test") {
@@ -194,6 +199,9 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ohos_unittest("dash_segment_downloader_unit_test") {
@@ -220,4 +228,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

@@ -104,7 +104,7 @@ bool VodStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t si
     return PullDataWithoutCache(streamID, offset, size, bufferPtr);
 }
 
-Status VodStreamDemuxer::Init(std::string uri)
+Status VodStreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
     MEDIA_LOG_I("VodStreamDemuxer::Init called");
@@ -348,7 +348,7 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
-    if (0 == expectedLen) {
+    if (expectedLen == 0) {
         return Status::END_OF_STREAM;
     }
     return Status::ERROR_AGAIN;
