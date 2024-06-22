@@ -26,6 +26,9 @@ constexpr bool SUBTITME_LOOP_RUNNING = true;
 SubtitleSink::SubtitleSink()
 {
     MEDIA_LOG_I("SubtitleSink ctor");
+    subtitleInfo_->text_ = "";
+    subtitleInfo_->pts_ = 0;
+    subtitleInfo_->duration_ = 0;
     syncerPriority_ = IMediaSynchronizer::SUBTITLE_SINK;
 }
 
