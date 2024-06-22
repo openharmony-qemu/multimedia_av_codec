@@ -476,7 +476,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         Flush();
         streamDemuxer_ = std::make_shared<VodStreamDemuxer>();
     } else if (source_->IsNeedPreDownload() && source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
-        streamDemuxer_ = std::make_shared<LiveDataSourceStreamDemuxer>();
+        streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
     } else {
         streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
     }
