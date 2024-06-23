@@ -41,6 +41,7 @@ namespace Media {
 
 const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
 const int32_t TRY_READ_TIMES = 10;
+constexpr uint64_t LIVE_CONTENT_LENGTH = 2147483646;
 VodStreamDemuxer::VodStreamDemuxer() : position_(0)
 {
     MEDIA_LOG_I("VodStreamDemuxer called");
@@ -346,6 +347,9 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
             }
         }
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
+        return Status::OK;
+    }
+    if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
         return Status::OK;
     }
     if (expectedLen == 0) {
