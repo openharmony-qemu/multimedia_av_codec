@@ -349,11 +349,11 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
-    if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
-        return Status::OK;
-    }
     if (expectedLen == 0) {
         return Status::END_OF_STREAM;
+    }
+    if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
+        return Status::OK;
     }
     return Status::ERROR_AGAIN;
 }
