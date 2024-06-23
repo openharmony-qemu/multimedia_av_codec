@@ -67,7 +67,7 @@ int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
 int32_t VideoEncoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
-    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: codecUserData");
+    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
     runMode_ = sampleInfo.codecRunMode;
 
     // Configure video encoder

@@ -25,7 +25,7 @@ class VideoCodecBase {
 public:
     virtual ~VideoCodecBase() {};
     virtual int32_t Create(const std::string &codecMime, bool isSoftware = false) = 0;
-    virtual int32_t Config(SampleInfo &sampleInfo, uintptr_t * const codecUserData) = 0;
+    virtual int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Flush() = 0;
     virtual int32_t Stop() = 0;
@@ -38,7 +38,7 @@ protected:
     static std::string GetCodecName(const std::string &codecMime, bool isEncoder, bool isSoftware);
 
     std::shared_ptr<OH_AVCodec> codec_ = nullptr;
-    CodecRunMode runMode_ = SURFACE_ORIGIN;
+    CodecRunMode runMode_ = SURFACE_API10;
 };
 
 class VideoCodecFactory {

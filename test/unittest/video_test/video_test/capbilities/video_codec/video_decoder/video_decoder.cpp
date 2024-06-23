@@ -42,7 +42,7 @@ int32_t VideoDecoder::Create(const std::string &codecMime, bool isSoftware)
 int32_t VideoDecoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: codecUserData");
+    CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
     runMode_ = sampleInfo.codecRunMode;
 
     // Configure video decoder
@@ -144,14 +144,14 @@ int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::SetCallback(uintptr_t * const codecUserData)
+int32_t VideoDecoder::SetCallback(uintptr_t * const sampleContext)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
     int32_t ret = AV_ERR_OK;
     if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoDecoder_RegisterCallback(codec_.get(), AVCodecCallback, codecUserData);
+        ret = OH_VideoDecoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
     } else {
-        ret = OH_VideoDecoder_SetCallback(codec_.get(), AVCodecAsyncCallback, codecUserData);
+        ret = OH_VideoDecoder_SetCallback(codec_.get(), AVCodecAsyncCallback, sampleContext);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
 

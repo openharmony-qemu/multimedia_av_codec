@@ -35,7 +35,7 @@ public:
     int32_t FreeOutputData(uint32_t bufferIndex) override;
     
 private:
-    int32_t SetCallback(uintptr_t * const codecUserData);
+    int32_t SetCallback(uintptr_t * const sampleContext);
     int32_t Configure(const SampleInfo &sampleInfo);
 };
 } // Sample
