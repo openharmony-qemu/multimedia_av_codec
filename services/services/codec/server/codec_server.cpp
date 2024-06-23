@@ -97,6 +97,24 @@ const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
     {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale_crop"},
     {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No_scale_crop"},
 };
+
+int32_t GetAudioCodecName(const OHOS::MediaAVCodec::AVCodecType type, std::string &name)
+{
+    using namespace OHOS::MediaAVCodec;
+    if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
+        name = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
+    } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
+        name = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
+    }
+    if (name.find("Audio") != name.npos) {
+        if ((name.find("Decoder") != name.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
+            (name.find("Encoder") != name.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
+            AVCODEC_LOGE("AudioCodec name:%{public}s invalid", name.c_str());
+            return AVCS_ERR_INVALID_OPERATION;
+        }
+    }
+    return AVCS_ERR_OK;
+}
 } // namespace
 
 namespace OHOS {
@@ -143,41 +161,52 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     codecType_ = type;
-    if (isMimeType) {
-        bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
-        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_);
-    } else {
-        codecName_ = name;
-        if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
-            codecName_ = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
-        } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
-            codecName_ = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
-        }
-        if (codecName_.find("Audio") != codecName_.npos) {
-            if ((codecName_.find("Decoder") != codecName_.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
-                (codecName_.find("Encoder") != codecName_.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
-                AVCODEC_LOGE("Codec name:%{public}s invalid", codecName_.c_str());
-                return AVCS_ERR_INVALID_OPERATION;
-            }
-        }
-        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
-    }
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY,
-        "CodecBase is nullptr, %{public}s", codecName_.c_str());
-    int32_t ret = codecBase_->Init(callerInfo);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase Init failed");
+    codecName_ = name;
+    int32_t ret = isMimeType ? InitByMime(callerInfo, apiVersion) : InitByName(callerInfo, apiVersion);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret,
+                             "Init failed. isMimeType:(%{public}d), name:(%{public}s), error:(%{public}d)", isMimeType,
+                             name.c_str(), ret);
     SetCallerInfo(callerInfo);
 
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(callback);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase SetCallback failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed.");
 
     std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(videoCallback);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecBase SetCallback failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed.");
 
     StatusChanged(INITIALIZED);
     return AVCS_ERR_OK;
+}
+
+int32_t CodecServer::InitByName(Meta &callerInfo, API_VERSION apiVersion)
+{
+    int32_t ret = GetAudioCodecName(codecType_, codecName_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "CodecName get failed.");
+
+    codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr.");
+    return codecBase_->Init(callerInfo);
+}
+
+int32_t CodecServer::InitByMime(Meta &callerInfo, API_VERSION apiVersion)
+{
+    int32_t ret = AVCS_ERR_NO_MEMORY;
+    bool isEncoder = (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_AUDIO_ENCODER);
+    std::vector<std::string> nameArray = CodecFactory::Instance().GetCodecNameArrayByMime(codecName_, isEncoder);
+    std::vector<std::string>::iterator iter;
+    for (iter = nameArray.begin(); iter != nameArray.end(); ++iter) {
+        ret = AVCS_ERR_NO_MEMORY;
+        codecBase_ = CodecFactory::Instance().CreateCodecByName(*iter, apiVersion);
+        CHECK_AND_CONTINUE_LOG(codecBase_ != nullptr, "Skip creation failure. name:(%{public}s)", iter->c_str());
+        ret = codecBase_->Init(callerInfo);
+        CHECK_AND_CONTINUE_LOG(ret == AVCS_ERR_OK, "Skip initialization failure. name:(%{public}s)", iter->c_str());
+        codecName_ = *iter;
+        break;
+    }
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr.");
+    return iter == nameArray.end() ? ret : AVCS_ERR_OK;
 }
 
 int32_t CodecServer::Configure(const Format &format)
@@ -966,7 +995,7 @@ int32_t CodecServer::SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeyS
 }
 #endif
 
-bool CodecServer::GetStatus()
+bool CodecServer::CheckRunning()
 {
     if (status_ == CodecServer::RUNNING) {
         return true;

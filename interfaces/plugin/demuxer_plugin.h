@@ -23,6 +23,7 @@
 #include "plugin/plugin_caps.h"
 #include "plugin/plugin_definition.h"
 #include "plugin/plugin_info.h"
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -144,6 +145,12 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status Flush() = 0;
 
     virtual void ResetEosStatus() = 0;
+
+    virtual Status ParserRefInit(int64_t timeStampMs) = 0;
+    virtual Status ParserRefUpdatePos(int64_t timeStampMs) = 0;
+    virtual Status ParserRefInfo() = 0;
+    virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) = 0;
+    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) = 0;
 
     virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
     {

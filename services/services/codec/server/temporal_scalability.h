@@ -27,6 +27,7 @@ namespace MediaAVCodec {
 constexpr double DEFAULT_FRAMERATE = 30.0;
 constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
 constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
+constexpr int32_t DEFAULT_GOPSIZE = 60;
 
 class TemporalScalability {
 public:
@@ -40,18 +41,19 @@ public:
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
 
 private:
-    int32_t isMarkLTR_;
-    bool isUseLTR_;
-    int32_t ltrPoc_;
+    int32_t isMarkLTR_ = 0;
+    bool isUseLTR_ = false;
+    int32_t ltrPoc_ = 0;
     int32_t poc_ = 0;
     int32_t temporalPoc_ = 0;
     uint32_t inputFrameCounter_ = 0;
     uint32_t outputFrameCounter_ = 0;
     int32_t frameNum_ = 0;
-    int32_t gopSize_;
-    int32_t temporalGopSize_;
-    int32_t tRefMode_;
+    int32_t gopSize_ = DEFAULT_GOPSIZE;
+    int32_t temporalGopSize_ = 0;
+    int32_t tRefMode_ = 0;
     std::shared_mutex inputBufMutex_;
+    std::shared_mutex frameFlagMapMutex_;
     std::unordered_map<uint32_t, uint32_t> frameFlagMap_;
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
     std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;

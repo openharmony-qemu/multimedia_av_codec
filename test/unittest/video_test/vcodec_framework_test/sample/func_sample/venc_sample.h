@@ -141,6 +141,7 @@ private:
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
+    void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock>buffer);
     void CheckSHA();
     void PerformEosFrameAndVerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;

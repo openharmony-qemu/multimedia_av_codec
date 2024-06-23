@@ -123,10 +123,10 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
     if (fdUriMatch.size() == 4) { // 4：4 sub match
         offset_ = std::stoll(fdUriMatch[2].str()); // 2: sub match offset subscript
         if (static_cast<uint64_t>(offset_) > fileSize_) {
-            offset_ = fileSize_;
+            offset_ = static_cast<int64_t>(fileSize_);
         }
         size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
-        uint64_t remainingSize = fileSize_ - offset_;
+        uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
         if (size_ > remainingSize) {
             size_ = remainingSize;
         }
@@ -134,7 +134,7 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         size_ = fileSize_;
         offset_ = 0;
     }
-    position_ = offset_;
+    position_ = static_cast<uint64_t>(offset_);
     seekable_ = FileSystem::IsSeekable(fd_) ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     if (seekable_ == Seekable::SEEKABLE) {
         SeekTo(0);

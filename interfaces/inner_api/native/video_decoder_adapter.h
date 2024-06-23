@@ -87,8 +87,8 @@ private:
     int64_t totalLagDuration_ = 0;
     bool isConfigured_ {false};
     uint64_t instanceId_ = 0;
-    int32_t appUid_;
-    int32_t appPid_;
+    int32_t appUid_ = -1;
+    int32_t appPid_ = -1;
     std::string bundleName_;
 };
 

@@ -36,6 +36,18 @@ namespace HttpPlugin {
 #else
 #define PRIVATE private
 #endif
+enum BufferingTimes : int32_t {
+    FIRST_TIMES = 1,
+    SECOND_TIMES = 2,
+};
+
+enum SLEEP_TIME : int32_t {
+    REQUEST_SLEEP_TIME = 5, // 5ms
+    BUFFERING_SLEEP_TIME = 10, // 10ms
+    CACHE_DATA_SLEEP_TIME = 100, // 100ms
+    BUFFERING_TIME_OUT = 1000, // 100ms
+};
+
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
     HlsMediaDownloader() noexcept;
@@ -96,8 +108,11 @@ PRIVATE:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
+    bool HandleBuffering();
+    bool HandleCache();
     bool CheckReadStatus();
     bool CheckReadTimeOut();
+    bool CheckBreakCondition();
 PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
@@ -180,7 +195,7 @@ PRIVATE:
     int64_t startDownloadTime_ {0};
     int64_t lastCheckTime_ {0};
     uint32_t recordCount_ {0};
-    int64_t lastRecordTime_ {0};
+    uint64_t lastRecordTime_ {0};
     int32_t avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
     double avgSpeedSum_ {0};
@@ -198,6 +213,12 @@ PRIVATE:
     std::atomic<bool> isStopped = false;
     Mutex firstTsMutex_ {};
     std::string mimeType_;
+    unsigned int wantReadLenth_ {0};
+    bool isInterrupt_ {false};
+    bool isBuffering_ {false};
+    bool isFirstFrameArrived_ {false};
+    unsigned int bufferingTimes_ {0};
+    bool isBufferEnough_ {true};
 };
 }
 }

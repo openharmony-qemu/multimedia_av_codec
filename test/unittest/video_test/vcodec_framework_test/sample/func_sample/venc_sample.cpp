@@ -41,10 +41,10 @@ constexpr uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {
     0xc6, 0x48, 0xc7, 0x90, 0xca, 0xe7, 0xc1, 0xb0, 0x4e, 0x9c, 0x05, 0x1e, 0xdd, 0x22, 0xd2, 0xe0,
     0x5e, 0x9a, 0xf8, 0xbc, 0xbe, 0x39, 0x26, 0x46, 0x6e, 0xa3, 0xcd, 0x1b, 0xbb, 0xf5, 0xc8, 0x87};
 constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
-    0x89, 0x1b, 0xc5, 0x5d, 0x32, 0xf4, 0x96, 0x8a, 0x2e, 0x7c, 0x1c, 0x0d, 0xc8, 0x0c, 0xf3, 0x99,
-    0x75, 0x80, 0xef, 0x3e, 0x94, 0x99, 0xe1, 0x62, 0x51, 0x23, 0xfa, 0x22, 0x32, 0x31, 0x4e, 0x8b,
-    0x34, 0xd5, 0xb1, 0xd5, 0x72, 0x98, 0xab, 0xc8, 0x8b, 0x4d, 0x93, 0x10, 0x41, 0xfd, 0x7e, 0x13,
-    0x5d, 0xda, 0x65, 0x07, 0x86, 0x67, 0xc2, 0x62, 0xcf, 0x6f, 0xdd, 0xdc, 0x32, 0x1e, 0xd8, 0x35};
+    0xb0, 0xca, 0x29, 0xa3, 0x3c, 0x8e, 0x36, 0x3f, 0xbc, 0x30, 0xa8, 0x70, 0x09, 0x29, 0xb5, 0xff,
+    0x8f, 0xe2, 0xf9, 0x58, 0xc5, 0x00, 0x02, 0x7c, 0xa9, 0x05, 0xe0, 0x69, 0x09, 0xa7, 0x2e, 0xb2,
+    0xdf, 0x5d, 0xf4, 0x05, 0xea, 0xde, 0xe9, 0x9b, 0x1e, 0x5b, 0x37, 0x04, 0x2f, 0x3d, 0xe9, 0x2c,
+    0xb2, 0x8c, 0xc3, 0x99, 0xd4, 0xdc, 0xdf, 0xee, 0xb4, 0xd9, 0x0c, 0xd0, 0xee, 0x39, 0x94, 0x3c};
 
 uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 std::atomic<uint32_t> g_shaBufferCount = 0;
@@ -394,16 +394,16 @@ int32_t VideoEncSample::CreateInputSurface()
     nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_FORMAT fail.Error:%d", ret);
+
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
                                                 DEFAULT_HEIGHT_VENC);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_USAGE fail.Error:%d", ret);
     isSurfaceMode_ = true;
     return AV_ERR_OK;
 }
@@ -427,6 +427,9 @@ int32_t VideoEncSample::CreateInputSurface()
                                                 DEFAULT_HEIGHT_VENC);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_INVALID_VAL, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail");
 
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_USAGE fail.Error:%d", ret);
     isSurfaceMode_ = true;
     return AV_ERR_OK;
 }
@@ -776,6 +779,20 @@ void VideoEncSample::OutputLoopFuncExt()
     signal_->cond_.notify_all();
 }
 
+void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer)
+{
+    if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        int32_t qpAverage = 60;
+        EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
+        if (testParam_ == VCodecTestParam::HW_HEVC) {
+            double mse = 1.0;
+            EXPECT_EQ(true, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
+        }
+        format->Destroy();
+    }
+}
+
 int32_t VideoEncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
@@ -783,15 +800,6 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
-
-    std::shared_ptr<FormatMock> format = buffer->GetParameter();
-#ifdef HMOS_TEST
-    int32_t qpAverage = 60;
-    double mse = 1.0;
-    EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
-    EXPECT_EQ(true, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
-    format->Destroy();
-#endif
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBuffer fail, exit. index: %d", index);
@@ -802,6 +810,11 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
     UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+
+#ifdef HMOS_TEST
+    CheckFormatKey(attr, buffer);
+#endif
+
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
@@ -950,7 +963,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     rect->h = DEFAULT_HEIGHT_VENC;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
-    NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;

@@ -58,7 +58,19 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->Prepare();
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
-
+    if (samplePerFrame_ > 0 && sampleRate_ > 0) {
+        playingBufferDurationUs_ = samplePerFrame_ * 1000000 / sampleRate_; // 1000000 usec per sec
+    }
+    MEDIA_LOG_I("Audiosink playingBufferDurationUs_ = " PUBLIC_LOG_D64, playingBufferDurationUs_);
+    int64_t startTime = 0;
+    if (!meta->GetData(Tag::MEDIA_START_TIME, startTime)) {
+        startTime = 0;
+    }
+    MEDIA_LOG_I("Get startTime from track meta, " PUBLIC_LOG_D64, startTime);
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        syncCenter->SetMediaStartPts(Plugins::HstTime2Us(startTime));
+    }
     std::string mime;
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {
@@ -224,6 +236,36 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
     return std::reinterpret_pointer_cast<Plugins::AudioSinkPlugin>(plugin);
 }
 
+void AudioSink::UpdateAudioWriteTimeMayWait()
+{
+    if (latestBufferDuration_ <= 0) {
+        return;
+    }
+    int64_t timeNow = Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
+    if (!lastBufferWriteSuccess_) {
+        int64_t writeSleepTime = latestBufferDuration_ - (timeNow - lastBufferWriteTime_);
+        MEDIA_LOG_W("Last buffer write fail, sleep time is " PUBLIC_LOG_D64 "us", writeSleepTime);
+        if (writeSleepTime > 0) {
+            usleep(writeSleepTime);
+            timeNow = Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
+        }
+    }
+    lastBufferWriteTime_ = timeNow;
+}
+
+void AudioSink::ReportEosEventAndDrain()
+{
+    isEos_ = true;
+    Event event {
+        .srcFilter = "AudioSink",
+        .type = EventType::EVENT_COMPLETE,
+    };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
+    playerEventReceiver_->OnEvent(event);
+    plugin_->Drain();
+    plugin_->PauseTransitent();
+}
+
 void AudioSink::DrainOutputBuffer()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
@@ -241,21 +283,13 @@ void AudioSink::DrainOutputBuffer()
         return;
     }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
-        isEos_ = true;
-        Event event {
-            .srcFilter = "AudioSink",
-            .type = EventType::EVENT_COMPLETE,
-        };
-        FALSE_RETURN(playerEventReceiver_ != nullptr);
-        playerEventReceiver_->OnEvent(event);
+        ReportEosEventAndDrain();
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-        plugin_->Drain();
-        plugin_->PauseTransitent();
         return;
     }
-
+    UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
-    plugin_->Write(filledOutputBuffer);
+    lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
@@ -305,7 +339,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         forceUpdateTimeAnchorNextTime_ = true;
     }
     latestBufferPts_ = buffer->pts_ - firstPts_;
-    latestBufferDuration_ = buffer->duration_;
+    latestBufferDuration_ = playingBufferDurationUs_ / speed_;
     return render ? 0 : -1;
 }
 
@@ -314,11 +348,14 @@ Status AudioSink::SetSpeed(float speed)
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
-    if (speed < 0) {
+    if (speed <= 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    speed_ = speed;
-    return plugin_->SetSpeed(speed);
+    auto ret = plugin_->SetSpeed(speed);
+    if (ret == Status::OK) {
+        speed_ = speed;
+    }
+    return ret;
 }
 
 Status AudioSink::SetAudioEffectMode(int32_t effectMode)
@@ -380,7 +417,7 @@ int64_t AudioSink::getDurationUsPlayedAtSampleRate(uint32_t numFrames)
         MEDIA_LOG_W("cannot get sampleRate");
         return 0;
     }
-    return (int64_t)(numFrames * HST_MSECOND / sampleRate);
+    return (int64_t)(static_cast<int32_t>(numFrames) * HST_MSECOND / sampleRate);
 }
 
 void AudioSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver)

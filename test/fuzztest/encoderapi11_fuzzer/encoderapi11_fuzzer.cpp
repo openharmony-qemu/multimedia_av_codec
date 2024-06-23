@@ -32,16 +32,16 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     bool result = false;
-    int32_t data_ = *reinterpret_cast<const int32_t *>(data);
+    int32_t data2 = *reinterpret_cast<const int32_t *>(data);
     VEncAPI11FuzzSample *vEncSample = new VEncAPI11FuzzSample();
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);
     vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     vEncSample->SetVideoEncoderCallback();
     vEncSample->fuzzMode = true;
-    vEncSample->ConfigureVideoEncoderFuzz(data_);
+    vEncSample->ConfigureVideoEncoderFuzz(data2);
     vEncSample->StartVideoEncoder();
-    vEncSample->SetParameter(data_);
+    vEncSample->SetParameter(data2);
     vEncSample->WaitForEOS();
     delete vEncSample;
 
@@ -49,9 +49,9 @@ bool EncoderAPI11FuzzTest(const uint8_t *data, size_t size)
     vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     vEncSample->SetVideoEncoderCallback();
     vEncSample->surfInput = true;
-    vEncSample->ConfigureVideoEncoderFuzz(data_);
+    vEncSample->ConfigureVideoEncoderFuzz(data2);
     vEncSample->StartVideoEncoder();
-    vEncSample->SetParameter(data_);
+    vEncSample->SetParameter(data2);
     vEncSample->WaitForEOS();
     delete vEncSample;
 

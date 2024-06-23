@@ -73,7 +73,7 @@ CodecAbilitySingleton::~CodecAbilitySingleton()
 void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    int32_t beginIdx = capabilityDataArray_.size();
+    size_t beginIdx = capabilityDataArray_.size();
     for (auto iter = capaArray.begin(); iter != capaArray.end(); iter++) {
         std::string mimeType = (*iter).mimeType;
         std::vector<size_t> idxVec;

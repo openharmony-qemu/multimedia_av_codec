@@ -33,9 +33,7 @@ public:
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
         AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo) override;
     int32_t SeekToTime(int64_t mSeconds, SeekMode mode) override;
-    int32_t SetMediaKeySystemInfoCallback(bool isNull) override;
-    int32_t SetDemuxerMediaKeySystemInfoCallback(bool isNull) override;
-    int32_t GetMediaKeySystemInfo() override;
+
 private:
     std::shared_ptr<AVDemuxer> demuxer_ = nullptr;
 };

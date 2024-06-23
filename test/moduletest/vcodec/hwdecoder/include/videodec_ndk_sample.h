@@ -62,6 +62,7 @@ public:
     bool SF_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     uint32_t REPEAT_CALL_TIME = 10;
     uint32_t MAX_SURF_NUM = 2;
     double DEFAULT_FRAME_RATE = 30.0;

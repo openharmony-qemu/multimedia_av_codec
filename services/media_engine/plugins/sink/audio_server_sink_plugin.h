@@ -171,6 +171,10 @@ private:
     void SetAudioDumpBySysParam();
     void DumpEntireAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
     void DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
+    void CacheData(uint8_t* inputBuffer, size_t bufferSize);
+    Status DrainCacheData(bool render);
+    //return value is the remained buffer size
+    size_t WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop);
 
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
@@ -212,6 +216,7 @@ private:
     bool enableEntireDump_ {false};
     bool enableDumpSlice_ {false};
     bool audioRenderSetFlag_ {false};
+    std::list<std::vector<uint8_t>> cachedBuffers_;
 };
 } // namespace Plugin
 } // namespace Media

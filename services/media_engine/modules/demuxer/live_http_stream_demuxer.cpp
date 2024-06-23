@@ -33,7 +33,6 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 #include "source/source.h"
 
@@ -107,7 +106,7 @@ bool LiveHttpStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size
     return PullDataWithoutCache(streamID, offset, size, bufferPtr);
 }
 
-Status LiveHttpStreamDemuxer::Init(std::string uri)
+Status LiveHttpStreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
     MEDIA_LOG_I("VodStreamDemuxer::Init called");
@@ -321,7 +320,7 @@ Status LiveHttpStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset,
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
-    if (0 == expectedLen) {
+    if (expectedLen == 0) {
         return Status::END_OF_STREAM;
     }
     return Status::ERROR_NOT_ENOUGH_DATA;
@@ -361,6 +360,7 @@ Status LiveHttpStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset,
 Status LiveHttpStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
+    FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;

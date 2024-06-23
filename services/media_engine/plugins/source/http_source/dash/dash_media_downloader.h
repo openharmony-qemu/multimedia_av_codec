@@ -76,7 +76,7 @@ private:
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloader(int32_t streamId);
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type);
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
-                                                            const std::shared_ptr<DashSegment> &seg);
+                         const std::shared_ptr<DashSegment> &seg);
 
 private:
 
@@ -86,6 +86,7 @@ private:
     std::shared_ptr<DashMpdDownloader> mpdDownloader_;
     std::vector<std::shared_ptr<DashSegmentDownloader>> segmentDownloaders_;
 
+    std::atomic<bool> isInterruptNeeded_{false};
     bool isAutoSelectBitrate_ {true};
     bool downloadErrorState_ {false};
     int64_t breakpoint_ {0};

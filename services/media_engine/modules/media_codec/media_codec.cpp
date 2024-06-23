@@ -17,7 +17,6 @@
 #include "osal/task/autolock.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_trace.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "osal/utils/dump_buffer.h"
 
@@ -117,14 +116,7 @@ int32_t MediaCodec::Init(const std::string &name)
     }
     MEDIA_LOG_I("state from %{public}s to INITIALIZING", StateToString(state_).data());
     state_ = CodecState::INITIALIZING;
-    Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
-    if (name.find("Encoder") != name.npos) {
-        type = Plugins::PluginType::AUDIO_ENCODER;
-    } else if (name.find("Decoder") != name.npos) {
-        type = Plugins::PluginType::AUDIO_DECODER;
-    }
-    FALSE_RETURN_V(type != Plugins::PluginType::INVALID_TYPE, (int32_t)Status::ERROR_INVALID_PARAMETER);
-    auto plugin = Plugins::PluginManager::Instance().CreatePlugin(name, type);
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(name);
     FALSE_RETURN_V_MSG_E(plugin != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER, "create pluign failed");
     codecPlugin_ = std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
     Status ret = codecPlugin_->Init();
@@ -474,7 +466,7 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
     Status ret = Status::OK;
 
     // 1. allocate drm buffer
-    uint32_t bufSize = filledInputBuffer->memory_->GetSize();
+    uint32_t bufSize = static_cast<uint32_t>(filledInputBuffer->memory_->GetSize());
     if (bufSize == 0) {
         MEDIA_LOG_D("MediaCodec DrmAudioCencDecrypt input buffer size equal 0");
         return ret;
@@ -694,16 +686,9 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     Status ret = Status::OK;
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
-    const int32_t maxRetryTimes = 3; // max retry count is 3
-    int32_t retryCount = 0;
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-        retryCount++;
-    } while (ret != Status::OK && state_ == CodecState::RUNNING && retryCount < maxRetryTimes);
-
-    if (retryCount == maxRetryTimes && emptyOutputBuffer == nullptr) {
-        MEDIA_LOG_E("request audio decoder output buffer failed");
-    }
+    } while (ret != Status::OK && state_ == CodecState::RUNNING);
 
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;

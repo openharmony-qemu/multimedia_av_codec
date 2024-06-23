@@ -47,6 +47,7 @@ ohos_unittest("hdecoder_unit_test") {
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "window_manager:libwm",
   ]
 }
 
@@ -68,6 +69,7 @@ ohos_unittest("hencoder_unit_test") {
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "window_manager:libwm",
   ]
 }
 

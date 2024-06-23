@@ -29,7 +29,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 HDecoder::~HDecoder()
 {
@@ -202,8 +202,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
 {
     flushCfg_.damage.x = 0;
     flushCfg_.damage.y = 0;
-    flushCfg_.damage.w = w;
-    flushCfg_.damage.h = h;
+    flushCfg_.damage.w = static_cast<int32_t>(w);
+    flushCfg_.damage.h = static_cast<int32_t>(h);
 
     OMX_CONFIG_RECTTYPE rect;
     InitOMXParam(rect);
@@ -214,8 +214,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
     }
     if (rect.nLeft < 0 || rect.nTop < 0 ||
         rect.nWidth == 0 || rect.nHeight == 0 ||
-        rect.nLeft + rect.nWidth > w ||
-        rect.nTop + rect.nHeight > h) {
+        rect.nLeft + static_cast<int32_t>(rect.nWidth) > static_cast<int32_t>(w) ||
+        rect.nTop + static_cast<int32_t>(rect.nHeight) > static_cast<int32_t>(h)) {
         HLOGW("wrong crop rect (%d, %d, %u, %u) vs. frame (%u," \
               "%u), use default", rect.nLeft, rect.nTop, rect.nWidth, rect.nHeight, w, h);
         return;
@@ -224,8 +224,8 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
           rect.nLeft, rect.nTop, rect.nWidth, rect.nHeight);
     flushCfg_.damage.x = rect.nLeft;
     flushCfg_.damage.y = rect.nTop;
-    flushCfg_.damage.w = rect.nWidth;
-    flushCfg_.damage.h = rect.nHeight;
+    flushCfg_.damage.w = static_cast<int32_t>(rect.nWidth);
+    flushCfg_.damage.h = static_cast<int32_t>(rect.nHeight);
     if (outputFormat_) {
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
@@ -259,9 +259,6 @@ int32_t HDecoder::OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface)
     }
     currSurface_ = SurfaceItem(surface);
     HLOGI("set surface(%" PRIu64 ")(%s) succ", surface->GetUniqueId(), surface->GetName().c_str());
-    if (surface->GetName().find("BootAnimationNode") != string::npos) {
-        debugMode_ = true;
-    }
     return AVCS_ERR_OK;
 }
 
@@ -369,7 +366,16 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
             }
         }
     }
-    SubmitDynamicBufferIfPossible();
+    auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
+        return info.owner == BufferOwner::OWNED_BY_OMX;
+    });
+    auto outCnt = std::count_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
+        return info.owner == BufferOwner::OWNED_BY_OMX;
+    });
+    while (inCnt > outCnt) {
+        SubmitDynamicBufferIfPossible();
+        outCnt++;
+    }
     return AVCS_ERR_OK;
 }
 
@@ -479,7 +485,7 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
         HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
               i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
     }
-    int32_t sliceHeight = planes->planes[1].offset / stride;
+    int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
     HLOGI("[%dx%d][%dx%d]", surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), stride, sliceHeight);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
@@ -595,6 +601,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
     }
+    HLOGI("succ");
     return AVCS_ERR_OK;
 }
 
@@ -703,7 +710,7 @@ bool HDecoder::RequestAndFindBelongTo(
 
 void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
 {
-    uint64_t surfaceId;
+    uint64_t surfaceId = 0;
     param->GetValue("surfaceId", surfaceId);
     if (!currSurface_.surface_ || currSurface_.surface_->GetUniqueId() != surfaceId) {
         return;
@@ -818,7 +825,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
     }
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
@@ -892,13 +899,13 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    // since the old surface may be destroyed, we dont check any return values below
-    // 1. clear all buffers in bufferqueue because we need to attach all buffers to new surface
-    (void)currSurface_.surface_->CleanCache();
-    // 2. make the old window to be black (gobackground could replace these two steps)
-    (void)PushBlankBufferToCurrSurface();
-    // 3. attach all buffers to new surface
-    AttachToNewSurface(newSurface);
+    currSurface_.surface_->CleanCache(true); // make sure old surface is empty and go black
+    newSurface->Connect(); // cleancache will work only if the surface is connected by us
+    newSurface->CleanCache(); // make sure new surface is empty
+    ret = AttachToNewSurface(newSurface);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
 
     currSurface_.Release();
     currSurface_ = SurfaceItem(newSurface);
@@ -908,7 +915,7 @@ int32_t HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface)
     return AVCS_ERR_OK;
 }
 
-void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
+int32_t HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
 {
     uint64_t newId = newSurface->GetUniqueId();
     for (BufferInfo& info : outputBufferPool_) {
@@ -919,7 +926,7 @@ void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
         if (err != GSERROR_OK) {
             HLOGE("surface(%" PRIu64 "), AttachBufferToQueue(seq=%u) failed, GSError=%d",
                   newId, info.surfaceBuffer->GetSeqNum(), err);
-            return;
+            return AVCS_ERR_UNKNOWN;
         }
         if (info.owner == OWNED_BY_SURFACE) {
             ChangeOwner(info, BufferOwner::OWNED_BY_US);
@@ -928,6 +935,7 @@ void HDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
             NotifyOmxToFillThisOutBuffer(info);
         }
     }
+    return AVCS_ERR_OK;
 }
 
 int32_t HDecoder::PushBlankBufferToCurrSurface()

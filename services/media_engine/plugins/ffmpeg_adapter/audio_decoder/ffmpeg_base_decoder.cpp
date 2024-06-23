@@ -42,7 +42,6 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       bufferIndex_(1),
       preBufferGroupPts_(0),
       curBufferGroupPts_(0),
-      bufferGroupPtsDistance(0),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
@@ -163,18 +162,14 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         if (cachedFrame_->pts != AV_NOPTS_VALUE) {
             preBufferGroupPts_ = curBufferGroupPts_;
             curBufferGroupPts_ = cachedFrame_->pts;
-            if (bufferGroupPtsDistance == 0) {
-                bufferGroupPtsDistance = abs(curBufferGroupPts_ - preBufferGroupPts_);
-            }
             if (bufferIndex_ >= bufferNum_) {
                 bufferNum_ = bufferIndex_;
             }
             bufferIndex_ = 1;
         } else {
             bufferIndex_++;
-            if (abs(curBufferGroupPts_ - preBufferGroupPts_) > bufferGroupPtsDistance) {
+            if (preBufferGroupPts_ == 0) {
                 cachedFrame_->pts = curBufferGroupPts_;
-                preBufferGroupPts_ = curBufferGroupPts_;
             } else {
                 cachedFrame_->pts =
                     curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
@@ -266,6 +261,7 @@ Status FfmpegBaseDecoder::Reset()
         avCodecContext_.reset();
         avCodecContext_ = nullptr;
     }
+    preBufferGroupPts_ = 0;
     return Status::OK;
 }
 
@@ -286,6 +282,7 @@ Status FfmpegBaseDecoder::Flush()
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
+    preBufferGroupPts_ = 0;
     return Status::OK;
 }
 

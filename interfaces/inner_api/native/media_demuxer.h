@@ -103,6 +103,10 @@ public:
 
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
+
+    Status StartReferenceParser(int64_t startTimeMs);
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -123,7 +127,6 @@ private:
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
 
-    Status StopTask(uint32_t trackId);
     Status StopAllTask();
     Status PauseAllTask();
     Status ResumeAllTask();
@@ -165,6 +168,7 @@ private:
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
+    int64_t ParserRefInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -201,7 +205,6 @@ private:
     ConditionVariable firstFrameCond_;
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
-    bool waitForDataFail_{false};
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
@@ -216,6 +219,9 @@ private:
     std::atomic<bool> isSelectBitRate_ = false;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
+
+    std::unique_ptr<Task> parserRefInfoTask_;
+    bool isFirstParser = true;
 };
 } // namespace Media
 } // namespace OHOS

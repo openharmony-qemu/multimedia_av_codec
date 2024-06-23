@@ -476,7 +476,7 @@ int32_t AudioFFMpegAacEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuf
         }
     }
 
-    cachedFrame_->nb_samples = static_cast<int>(destBufferSize / (bytesPerSample * avCodecContext_->channels));
+    cachedFrame_->nb_samples = static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->channels);
     if (cachedFrame_->nb_samples > avCodecContext_->frame_size) {
         AVCODEC_LOGE("Input frame size out of range, input smaples: %{public}d, frame_size: %{public}d",
                      cachedFrame_->nb_samples, avCodecContext_->frame_size);

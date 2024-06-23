@@ -124,26 +124,24 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
-    AudioSampleFormat samplefmt;
-    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt);
+    AudioSampleFormat sampleFmt;
+    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFmt);
     parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);
     if (codecCtx->bits_per_coded_sample == 0) {
-        codecCtx->bits_per_coded_sample = SetBitsdepth(samplefmt);
+        codecCtx->bits_per_coded_sample = SetBitsDepth(sampleFmt);
     }
     ret = basePlugin->OpenContext();
     return ret;
 }
 
-int32_t FFmpegAPEDecoderPlugin::SetBitsdepth(AudioSampleFormat samplefmt)
+int32_t FFmpegAPEDecoderPlugin::SetBitsDepth(AudioSampleFormat sampleFmt)
 {
-    int32_t ret;
-    if (samplefmt == SAMPLE_S16LE || samplefmt == SAMPLE_S16P) {
+    int32_t ret = 16; // default sample bit = 16 bit
+    if (sampleFmt == SAMPLE_S16LE || sampleFmt == SAMPLE_S16P) {
         ret = 16; // sample bit = 16 bit
-    }
-    if (samplefmt == SAMPLE_U8 || samplefmt == SAMPLE_U8P) {
+    } else if (sampleFmt == SAMPLE_U8 || sampleFmt == SAMPLE_U8P) {
         ret = 8; // sample bit = 8 bit
-    }
-    if (samplefmt == SAMPLE_S32LE || samplefmt == SAMPLE_S32P) {
+    } else if (sampleFmt == SAMPLE_S32LE || sampleFmt == SAMPLE_S32P) {
         ret = 24; // sample bit = 24 bit
     }
     AVCODEC_LOGI("samplefmt be set %{publib}d.", ret);

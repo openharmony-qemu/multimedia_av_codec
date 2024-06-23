@@ -39,7 +39,7 @@
 #include "native_buffer_inner.h"
 namespace OHOS {
 namespace Media {
-class VEncSignal {
+class VEncAPI11Signal {
 public:
     std::mutex inMutex_;
     std::mutex outMutex_;
@@ -72,8 +72,12 @@ public:
     uint32_t DEFAULT_BITRATE = 5000000;
     uint32_t DEFAULT_QUALITY = 30;
     double DEFAULT_FRAME_RATE = 30.0;
+    bool isAVCEncoder = true;
+    OH_HEVCProfile hevcProfile = HEVC_PROFILE_MAIN;
+    OH_AVCProfile avcProfile = AVC_PROFILE_BASELINE;
     int32_t DEFAULT_QP = 20;
     uint32_t DEFAULT_BITRATE_MODE = CBR;
+    int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t repeat_time = 0;
@@ -122,7 +126,7 @@ public:
     void DumpLtrInfo(OH_AVBuffer *buffer);
     void DumpQPInfo(OH_AVBuffer *buffer);
     void DumpInfo(OH_AVCodecBufferAttr attr, OH_AVBuffer *buffer);
-    VEncSignal *signal_;
+    VEncAPI11Signal *signal_;
     uint32_t errCount = 0;
     bool enableForceIDR = false;
     uint32_t outCount = 0;

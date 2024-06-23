@@ -84,7 +84,6 @@ private:
     int32_t bufferIndex_;
     int64_t preBufferGroupPts_;
     int64_t curBufferGroupPts_;
-    int64_t bufferGroupPtsDistance;
     std::string name_;
 
     std::shared_ptr<AVCodec> avCodec_;

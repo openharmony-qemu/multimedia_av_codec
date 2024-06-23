@@ -37,7 +37,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 using namespace Media;
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
@@ -64,7 +64,6 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
         LOGE("cannot find %s", name.c_str());
         return nullptr;
     }
-    codec->componentName_ = name;
     return codec;
 }
 
@@ -195,7 +194,7 @@ int32_t HCodec::GetOutputFormat(Format &format)
     }
     IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("format", format),
         AVCS_ERR_UNKNOWN, "output format not replied");
-    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, componentName_);
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, caps_.compName);
     format.PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
@@ -273,7 +272,7 @@ int32_t HCodec::ReleaseOutputBuffer(uint32_t index)
 HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
     : caps_(caps), codingType_(codingType), isEncoder_(isEncoder)
 {
-    debugMode_ = HiLogIsLoggable(0xD002B32, "HCODEC", LOG_DEBUG);
+    debugMode_ = HiLogIsLoggable(HCODEC_DOMAIN, HCODEC_TAG, LOG_DEBUG);
     string dumpModeStr = OHOS::system::GetParameter("hcodec.dump", "0");
     dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
     LOGI(">> debug mode = %d, dump mode = %s(%lu)",
@@ -291,6 +290,10 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
             shortName_ = isEncoderStr;
             break;
     };
+    isSecure_ = IsSecureMode(caps_.compName);
+    if (isSecure_) {
+        shortName_ += ".secure";
+    }
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -782,7 +785,6 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
-        HLOGI("got input codec config data");
     }
     return flags;
 }
@@ -832,7 +834,7 @@ void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 
 void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
@@ -1012,7 +1014,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);

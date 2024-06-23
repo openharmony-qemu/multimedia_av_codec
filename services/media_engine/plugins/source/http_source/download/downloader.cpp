@@ -109,7 +109,7 @@ Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
         return Seekable::INVALID;
     }
     if (headerInfo_.isChunked) {
-        return Seekable::UNSEEKABLE;
+        return GetFileContentLength() == LIVE_CONTENT_LENGTH ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     } else {
         return Seekable::SEEKABLE;
     }
@@ -196,6 +196,21 @@ uint32_t DownloadRequest::GetBitRate() const
     uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ / timeGap * 1000 *
                        1 * 8); // 1000:ms to sec 1:weight 8:byte to bit
     return bitRate;
+}
+
+bool DownloadRequest::IsChunkedVod() const
+{
+    return headerInfo_.isChunked && headerInfo_.GetFileContentLength() == LIVE_CONTENT_LENGTH;
+}
+
+bool DownloadRequest::IsM3u8Request() const
+{
+    if (url_.find(".ts") != std::string::npos ||
+        url_.find(".m3u8") != std::string::npos) {
+        MEDIA_LOG_I("request is m3u8.");
+        return true;
+    }
+    return false;
 }
 
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
@@ -309,11 +324,21 @@ bool Downloader::Seek(int64_t offset)
     if (offset >= 0 && offset < static_cast<int64_t>(contentLength)) {
         currentRequest_->startPos_ = offset;
     }
-    int64_t temp = currentRequest_->GetFileContentLength() - currentRequest_->startPos_;
-    currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<int64_t>(PER_REQUEST_SIZE)));
+    size_t temp = currentRequest_->GetFileContentLength() - static_cast<size_t>(currentRequest_->startPos_);
+    currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<size_t>(PER_REQUEST_SIZE)));
+    if (downloadRequestSize_ > 0) {
+        currentRequest_->requestSize_ = std::min(currentRequest_->requestSize_,
+            static_cast<int>(downloadRequestSize_));
+        downloadRequestSize_ = 0;
+    }
     currentRequest_->isEos_ = false;
     shouldStartNextRequest = false; // Reuse last request when seek
     return true;
+}
+
+void Downloader::SetRequestSize(size_t downloadRequestSize)
+{
+    downloadRequestSize_ = downloadRequestSize;
 }
 
 // Pause download thread before use currentRequest_
@@ -333,6 +358,8 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
         if (currentRequest_ != nullptr) {
             if (currentRequest_->IsSame(request) && !shouldStartNextRequest) {
                 currentRequest_->retryTimes_++;
+                currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
                 MEDIA_LOG_D("Do retry.");
             }
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
@@ -423,6 +450,12 @@ void Downloader::HandleRetOK()
     if (currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
+    if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
+        currentRequest_->isEos_ = true;
+        task_->PauseAsync();
+        return;
+    }
+    
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
         remaining = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen) -
@@ -464,32 +497,107 @@ void Downloader::HandleRetOK()
     }
 }
 
+void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
+{
+    if (mediaDownloader->currentRequest_->isHeaderUpdated) {
+        return;
+    }
+    MEDIA_LOG_I("UpdateHeaderInfo enter.");
+    HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+    if (info->contentLen > 0 && info->contentLen < LIVE_CONTENT_LENGTH) {
+        info->isChunked = false;
+    }
+    mediaDownloader->currentRequest_->SaveHeader(info);
+    if (info->contentLen <= 0) {
+        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
+    }
+}
+
+bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
+{
+    bool isWholeFileRetry = mediaDownloader->currentRequest_->requestWholeFile_ &&
+                            mediaDownloader->currentRequest_->shouldSaveData_ &&
+                            mediaDownloader->currentRequest_->retryOnGoing_;
+    if (!isWholeFileRetry) {
+        return false;
+    }
+    if (mediaDownloader->currentRequest_->startPos_ > 0) {
+        return true;
+    } else {
+        mediaDownloader->currentRequest_->retryOnGoing_ = false;
+        return false;
+    }
+}
+
+size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader)
+{
+    auto currentRequest_ = mediaDownloader->currentRequest_;
+    int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
+    int64_t writeOffSet = -1;
+    if (needDropLen > 0) {
+        writeOffSet = needDropLen >= dataLen ? 0 : needDropLen; // 0:drop all
+    }
+    bool dropRet = false;
+    if (writeOffSet > 0) {
+        dropRet = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
+                                             dataLen - writeOffSet);
+        currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + writeOffSet;
+        MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
+                    currentRequest_->dropedDataLen_, currentRequest_->startPos_);
+    } else if (writeOffSet == 0) {
+        currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + dataLen;
+        dropRet = true;
+        MEDIA_LOG_D("DropRetryData: drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
+                    currentRequest_->dropedDataLen_, currentRequest_->startPos_);
+    } else {
+        MEDIA_LOG_E("drop data error");
+    }
+    if (dropRet && currentRequest_->startPos_ == currentRequest_->dropedDataLen_) {
+        currentRequest_->retryOnGoing_ = false;
+        currentRequest_->dropedDataLen_ = 0;
+        if (writeOffSet > 0) {
+            currentRequest_->startPos_ = currentRequest_->startPos_ + dataLen - writeOffSet;
+        }
+        MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
+    }
+    return dropRet ? dataLen : 0; // 0:save data failed or drop error
+}
+
+void Downloader::UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header)
+{
+    int64_t hstTime = 0;
+    Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
+    int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
+    int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
+    int64_t startPos = 0;
+    if (hstTime != 0) {
+        startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
+    }
+    mediaDownloader->currentRequest_->startPos_ = startPos;
+    mediaDownloader->currentRequest_->shouldSaveData_ = true;
+    mediaDownloader->currentRequest_->requestWholeFile_ = false;
+    mediaDownloader->currentRequest_->requestSize_ = PER_REQUEST_SIZE;
+    mediaDownloader->currentRequest_->startTimePos_ = 0;
+}
+
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
+    UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     if (mediaDownloader->currentRequest_->IsClosed()) {
         return 0;
     }
+    if (IsDropDataRetryRequest(mediaDownloader)) {
+        return DropRetryData(buffer, dataLen, mediaDownloader);
+    }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
-        int64_t hstTime = 0;
-        Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
-        int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
-        int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
-        int64_t startPos = 0;
-        if (hstTime != 0) {
-            startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
-        }
-        mediaDownloader->currentRequest_->startPos_ = startPos;
-        mediaDownloader->currentRequest_->shouldSaveData_ = true;
-        mediaDownloader->currentRequest_->requestWholeFile_ = false;
-        mediaDownloader->currentRequest_->requestSize_ = PER_REQUEST_SIZE;
-        mediaDownloader->currentRequest_->startTimePos_ = 0;
+        UpdateCurRequest(mediaDownloader, header);
         return dataLen;
     }
     if (header->fileContentLen == 0) {
@@ -512,7 +620,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
-
     return dataLen;
 }
 
@@ -535,7 +642,7 @@ char* StringTrim(char* str)
 }
 }
 
-void Downloader::FLVProcess(bool &isTrunck, long &contentLen, const std::string url)
+void Downloader::FLVProcess(bool &isTrunck, long &contentLen, const std::string &url)
 {
     if (isTrunck != true) {
         if (static_cast<int32_t>(url.find(".flv")) != -1) {
@@ -571,6 +678,9 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = reinterpret_cast<Downloader *>(userParam);
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
+    if (mediaDownloader->currentRequest_->isHeaderUpdated) {
+        return size * nitems;
+    }
     char* next = nullptr;
     char* key = strtok_s(reinterpret_cast<char*>(buffer), ":", &next);
     FALSE_RETURN_V(key != nullptr, size * nitems);
@@ -595,8 +705,10 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         !strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
-        if (!strncmp(StringTrim(token), "chunked", strlen("chunked"))) {
+        if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
+            !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
+            info->contentLen = LIVE_CONTENT_LENGTH;
         }
     }
 
@@ -609,13 +721,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
 
     StrncmpContentRange(info, key, next, size, nitems);
 
-    if (info->contentLen <= 0) {
-        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
-    } else {
-        info->isChunked = false;
-    }
-
-    mediaDownloader->currentRequest_->SaveHeader(info);
     return size * nitems;
 }
 }

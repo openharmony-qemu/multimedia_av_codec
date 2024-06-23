@@ -25,7 +25,6 @@
 
 #include "securec.h"
 #include "meta/mime_type.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
 #include "data_sink_fd.h"
@@ -177,7 +176,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTrack failed! %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(trackId >= 0, Status::ERROR_INVALID_DATA,
         "The track index is greater than or equal to 0.");
-    trackIndex = tracks_.size();
+    trackIndex = static_cast<int32_t>(tracks_.size());
     sptr<Track> track = new Track();
     track->trackId_ = trackId;
     track->mimeType_ = mimeType;

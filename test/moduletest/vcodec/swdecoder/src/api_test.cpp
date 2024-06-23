@@ -999,8 +999,21 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_GE(range.minVal, 0);
-    ASSERT_GT(range.maxVal, 0);
+    ASSERT_EQ(true, (range.minVal >= 0));
+    ASSERT_EQ(true, (range.maxVal > 0));
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**
@@ -1064,8 +1077,21 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_GE(range.minVal, 0);
-    ASSERT_GT(range.maxVal, 0);
+    ASSERT_EQ(true, (range.minVal >= 0));
+    ASSERT_EQ(true, (range.maxVal > 0));
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**
@@ -1149,15 +1175,32 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4900, TestSize.Level2)
 HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVRange range;
-    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVRange widthRange;
+    OH_AVRange heightRange;
+    memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    memset_s(&heightRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoHeightRange(capability, &range);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
-    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_GE(range.minVal, 0);
-    ASSERT_GT(range.maxVal, 0);
+    cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
+    ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "minval=" << widthRange.minVal << "  maxval=" << widthRange.maxVal << endl;
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.minVal - 1);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal - 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.maxVal + 1);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal + 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**

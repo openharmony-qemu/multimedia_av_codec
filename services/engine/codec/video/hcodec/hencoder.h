@@ -23,7 +23,7 @@
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
 public:
-    HEncoder(OHOS::HDI::Codec::V3_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
+    HEncoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, true) {}
     ~HEncoder() override;
 
@@ -67,15 +67,15 @@ private:
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
 
     // per frame param
-    void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                         const std::shared_ptr<Media::Meta> &meta);
-    void WrapLTRParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapLTRParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                    const std::shared_ptr<Media::Meta> &meta);
-    void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                              const std::shared_ptr<Media::Meta> &meta);
-    void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                        const std::shared_ptr<Media::Meta> &meta);
-    void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                            std::shared_ptr<Media::Meta> &meta) override;
 
     // stop/release

@@ -26,7 +26,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 HEncoder::~HEncoder()
 {
@@ -263,8 +263,8 @@ int32_t HEncoder::UpdateInPortFormat()
 
     // save into member variable
     requestCfg_.timeout = 0;
-    requestCfg_.width = w;
-    requestCfg_.height = h;
+    requestCfg_.width = static_cast<int32_t>(w);
+    requestCfg_.height = static_cast<int32_t>(h);
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = BUFFER_MODE_REQUEST_USAGE;
@@ -722,7 +722,7 @@ void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
     AppendToVector(omxBuffer->alongParam, param);
 }
 
-void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                                    const shared_ptr<Media::Meta> &meta)
 {
     bool requestIFrame = false;
@@ -739,7 +739,7 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::
     HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
 }
 
-void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                              const shared_ptr<Media::Meta> &meta)
 {
     int32_t minQp;
@@ -792,6 +792,7 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                       encOutLtrParam->poc);
                 meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, encOutLtrParam->isLTR);
                 meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(encOutLtrParam->poc));
+                break;
             }
             default: {
                 break;
@@ -844,7 +845,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     // buffer mode
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);

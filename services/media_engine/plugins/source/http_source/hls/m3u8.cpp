@@ -201,7 +201,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         }
 
         if (!info.uri.empty()) {
-            if (!isFirstFragmentReady_ && !isDecryptAble_) {
+            if (!isFirstFragmentReady_ && isDecryptAble_) {
                 firstFragment_ = info;
                 isFirstFragmentReady_ = true;
             }

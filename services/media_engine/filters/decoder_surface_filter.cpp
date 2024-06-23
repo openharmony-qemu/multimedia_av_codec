@@ -243,6 +243,7 @@ Status DecoderSurfaceFilter::DoPrepare()
         inputBufferQueueConsumer->SetBufferAvailableListener(listener);
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
     }
+    videoSink_->ResetRenderStarted();
     return Status::OK;
 }
 
@@ -251,15 +252,12 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
-    Status ret = Status::OK;
-    if (isPauseNeedResume_.load()) {
-        ret = DoResume();
-    } else {
-        ret = DoStart();
-    }
+    auto ret = DoStart();
     if (ret != Status::OK) {
         MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
+    } else {
+        isNeedStartDecoder_ = false;
     }
     return ret;
 }
@@ -291,10 +289,6 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
-    if (isPauseNeedResume_.load()) {
-        MEDIA_LOG_I("DoStart after pause to execute resume.");
-        return DoResume();
-    }
     if (!IS_FILTER_ASYNC) {
         if (isPaused_.load()) {
             return DoResume();
@@ -304,7 +298,13 @@ Status DecoderSurfaceFilter::DoStart()
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    return videoDecoder_->Start();
+    auto ret = videoDecoder_->Start();
+    if (!isNeedStartDecoder_.load()) {
+        isNeedStartDecoder_ = true;
+        MEDIA_LOG_I("Already start videoDecoder and enter.");
+        return Status::OK;
+    }
+    return ret;
 }
 
 Status DecoderSurfaceFilter::DoPause()
@@ -319,7 +319,6 @@ Status DecoderSurfaceFilter::DoPause()
     if (videoDecoder_ != nullptr) {
         videoDecoder_->ResetRenderTime();
     }
-    isPauseNeedResume_ = true;
     return Status::OK;
 }
 
@@ -332,7 +331,6 @@ Status DecoderSurfaceFilter::DoResume()
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
-    isPauseNeedResume_ = false;
     return Status::OK;
 }
 
@@ -348,7 +346,6 @@ Status DecoderSurfaceFilter::DoStop()
     gettimeofday(&tv, 0);
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
     videoSink_->ResetSyncInfo();
-    videoSink_->ResetRenderStarted();
     auto ret = videoDecoder_->Stop();
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
@@ -406,9 +403,10 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         if (rate < 0) {
             if (configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, rate)) {
                 MEDIA_LOG_W("rate is invalid, get frame rate from the original resource: %{public}f", rate);
-            } else {
-                rate = 0.0;
             }
+        }
+        if (rate <= 0) {
+            rate = 30.0; // 30.0 is the hisi default frame rate.
         }
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
     }
@@ -766,14 +764,10 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
     surfaceWidth_ = width;
     surfaceHeight_ = height;
  
-    if (bitrateChange_ <= 0) {
-        return;
-    }
     MEDIA_LOG_I("ReportVideoSizeChange videoWidth: " PUBLIC_LOG_D32 " videoHeight: "
         PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
     std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
-    bitrateChange_--;
 }
 } // namespace Pipeline
 } // namespace MEDIA

@@ -29,6 +29,15 @@ inline uint32_t GetYuv420Size(uint32_t w, uint32_t h)
     return w * h * 3 / 2;  // 3: nom of ratio, 2: denom of ratio
 }
 
+inline bool IsSecureMode(const std::string &name)
+{
+    std::string prefix = ".secure";
+    if (name.length() <= prefix.length()) {
+        return false;
+    }
+    return (name.rfind(prefix) == (name.length() - prefix.length()));
+}
+
 template <typename T>
 void AppendToVector(std::vector<uint8_t>& vec, const T& param)
 {

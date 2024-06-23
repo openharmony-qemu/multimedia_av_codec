@@ -77,7 +77,7 @@ Status AudioCaptureModule::Init()
         appInfo.appTokenId = appTokenId_;
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
-        appInfo.appFullTokenId = appFullTokenId_;
+        appInfo.appFullTokenId = static_cast<uint64_t>(appFullTokenId_);
         audioCapturer_ = AudioStandard::AudioCapturer::Create(options_, appInfo);
         if (audioCapturer_ == nullptr) {
             MEDIA_LOG_E("Create audioCapturer fail");
@@ -334,7 +334,8 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     }
 
     if (isTrackMaxAmplitude) {
-        TrackMaxAmplitude((int16_t *)bufData->GetAddr(), bufData->GetSize() >> 1);
+        TrackMaxAmplitude((int16_t *)bufData->GetAddr(),
+            static_cast<int32_t>(static_cast<uint32_t>(bufData->GetSize()) >> 1));
     }
     return ret;
 }

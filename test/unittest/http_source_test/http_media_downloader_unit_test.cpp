@@ -22,6 +22,7 @@ using namespace std;
 using namespace testing::ext;
 constexpr size_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr size_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+std::string flvUrl = "www.baidu.flv";
 
 void HttpMediaDownloaderUnitTest::SetUpTestCase(void)
 {
@@ -41,37 +42,37 @@ void HttpMediaDownloaderUnitTest::TearDown()
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
-    HttpMediaDownloader downloader;
+    HttpMediaDownloader downloader(flvUrl);
     EXPECT_EQ(downloader.GetBufferSize(), 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor_001, TestSize.Level1)
 {
-    HttpMediaDownloader downloader;
+    HttpMediaDownloader downloader(flvUrl);
     EXPECT_EQ(downloader.GetBufferSize(), 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorDefine, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(10);
+    HttpMediaDownloader downloader(flvUrl, 10);
     EXPECT_EQ(downloader.GetBufferSize(), 2*RING_BUFFER_SIZE);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorExceed, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(10000);
+    HttpMediaDownloader downloader(flvUrl, 10000);
     EXPECT_EQ(downloader.GetBufferSize(), MAX_BUFFER_SIZE);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorLess, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(1);
+    HttpMediaDownloader downloader(flvUrl, 1);
     EXPECT_EQ(downloader.GetBufferSize(), RING_BUFFER_SIZE);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TestOpenWithValidUrl, TestSize.Level1)
 {
-    HttpMediaDownloader downloader;
+    HttpMediaDownloader downloader(flvUrl);
     std::map<std::string, std::string> header = {{"a", "b"}};
     Source* source = new Source();
     downloader.SetCallback(source);

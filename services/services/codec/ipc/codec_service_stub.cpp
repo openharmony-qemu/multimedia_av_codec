@@ -231,6 +231,7 @@ int32_t CodecServiceStub::Start()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    CHECK_AND_RETURN_RET_LOG(!(codecServer_->CheckRunning()), AVCS_ERR_INVALID_STATE, "In invalid state, running");
     (void)listener_->UpdateGeneration();
     int32_t ret = codecServer_->Start();
     if (ret != AVCS_ERR_OK) {

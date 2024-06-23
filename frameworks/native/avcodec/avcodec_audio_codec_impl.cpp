@@ -186,7 +186,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     CHECK_AND_RETURN_RET_LOG(mediaCodecProducer_ != nullptr, AVCS_ERR_INVALID_STATE,
                              "mediaCodecProducer_ is nullptr");
-    CHECK_AND_RETURN_RET_LOG(codecService_->GetStatus(), AVCS_ERR_INVALID_STATE, "GetStatus is not running");
+    CHECK_AND_RETURN_RET_LOG(codecService_->CheckRunning(), AVCS_ERR_INVALID_STATE, "CheckRunning is not running");
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(inputMutex_);

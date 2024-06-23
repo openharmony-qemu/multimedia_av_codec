@@ -33,7 +33,6 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 #include "source/source.h"
 
@@ -42,6 +41,7 @@ namespace Media {
 
 const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
 const int32_t TRY_READ_TIMES = 10;
+constexpr uint64_t LIVE_CONTENT_LENGTH = 2147483646;
 VodStreamDemuxer::VodStreamDemuxer() : position_(0)
 {
     MEDIA_LOG_I("VodStreamDemuxer called");
@@ -105,7 +105,7 @@ bool VodStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t si
     return PullDataWithoutCache(streamID, offset, size, bufferPtr);
 }
 
-Status VodStreamDemuxer::Init(std::string uri)
+Status VodStreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
     MEDIA_LOG_I("VodStreamDemuxer::Init called");
@@ -349,10 +349,13 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
-    if (0 == expectedLen) {
+    if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
+        return Status::OK;
+    }
+    if (expectedLen == 0) {
         return Status::END_OF_STREAM;
     }
-    return Status::ERROR_NOT_ENOUGH_DATA;
+    return Status::ERROR_AGAIN;
 }
 
 Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
@@ -389,6 +392,7 @@ Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std:
 Status VodStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
+    FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;

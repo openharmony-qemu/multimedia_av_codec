@@ -33,7 +33,6 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 #include "source/source.h"
 
@@ -59,7 +58,7 @@ LiveDataSourceStreamDemuxer::~LiveDataSourceStreamDemuxer()
     taskPtr_ = nullptr;
 }
 
-Status LiveDataSourceStreamDemuxer::Init(std::string uri)
+Status LiveDataSourceStreamDemuxer::Init(const std::string& uri)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {
@@ -225,6 +224,7 @@ Status LiveDataSourceStreamDemuxer::ResetAllCache()
 Status LiveDataSourceStreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
+    FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;

@@ -70,11 +70,11 @@ public:
     {
         return data;
     }
-    void SetData(std::shared_ptr<Buffer>& buffer)
+    void SetData(const std::shared_ptr<Buffer>& buffer)
     {
         data = buffer;
     }
-    void Init(std::shared_ptr<Buffer>& buffer, uint64_t bufferOffset)
+    void Init(const std::shared_ptr<Buffer>& buffer, uint64_t bufferOffset)
     {
         data = buffer;
         offset = bufferOffset;
@@ -89,7 +89,7 @@ public:
     explicit BaseStreamDemuxer();
     virtual ~BaseStreamDemuxer();
 
-    virtual Status Init(std::string uri) = 0;
+    virtual Status Init(const std::string& uri) = 0;
     virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
@@ -104,6 +104,7 @@ public:
 
     virtual Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
         size_t expectedLen) = 0;
+    void SetInterruptState(bool isInterruptNeeded);
     void SetDemuxerState(int32_t streamId, DemuxerState state);
     void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
@@ -122,6 +123,7 @@ protected:
     std::map<int32_t, DemuxerState> pluginStateMap_;
     std::atomic<bool> isIgnoreParse_{false};
     std::atomic<bool> isIgnoreRead_{false};
+    std::atomic<bool> isInterruptNeeded_{false};
     std::string bundleName_ {};
     std::string uri_ {};
 public:

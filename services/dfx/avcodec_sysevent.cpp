@@ -73,11 +73,18 @@ void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
                     "AUDIO_SAMPLE_RATE",    codecDfxInfo.audioSampleRate);
 }
 
-void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
+void CodecStopEventWrite(int32_t clientPid, int32_t clientUid, int32_t codecInstanceId)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                     "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
+}
+
+void DemuxerInitEventWrite(uint32_t downloadSize, std::string sourceType)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "DEMUXER_INIT_INFO",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+                    "DOWNLOAD_SIZE", downloadSize, "SOURCE_TYPE", sourceType);
 }
 
 void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)

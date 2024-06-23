@@ -33,7 +33,6 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {
@@ -42,6 +41,7 @@ namespace Media {
 BaseStreamDemuxer::BaseStreamDemuxer()
 {
     MEDIA_LOG_I("BaseStreamDemuxer called");
+    seekable_ = Plugins::Seekable::UNSEEKABLE;
 }
 
 BaseStreamDemuxer::~BaseStreamDemuxer()
@@ -80,6 +80,11 @@ void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
 {
     MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
     bundleName_ = bundleName;
+}
+
+void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
 }
 
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)

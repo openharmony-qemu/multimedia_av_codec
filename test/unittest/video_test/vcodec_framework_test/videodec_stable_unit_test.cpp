@@ -385,6 +385,36 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, Tes
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
+/**
+ * @tc.name: VideoDecoder_Multithread_Start_Four_Times
+ * @tc.desc: 1. start 4 times
+ */
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Start_Four_Times, TestSize.Level1, VideoDecSample::threadNum_)
+{
+    auto vdec = make_shared<VideoDecSample>();
+    auto signal = make_shared<VideoDecSignal>(vdec);
+    vdec->frameCount_ = 30; // 30: input frame num
+    vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    vdec->inPath_ = "720_1280_25_avcc.h264";
+    vdec->outPath_ = GetTestName();
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_INVALID_STATE) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_INVALID_STATE) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_INVALID_STATE) << SAMPLE_ID;
+
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
 /**.
  * @tc.name: VideoDecoder_Multithread_CreateByMime_001
  * @tc.desc: 1. push/free buffer in callback;
