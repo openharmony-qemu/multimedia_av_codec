@@ -76,6 +76,7 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
+    bool IsRenderNextVideoFrameSupported();
 
     bool IsDrmProtected();
     // drm callback

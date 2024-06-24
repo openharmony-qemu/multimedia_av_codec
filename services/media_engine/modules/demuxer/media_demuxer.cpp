@@ -1556,5 +1556,13 @@ bool MediaDemuxer::CanDoSelectBitRate()
     // calculating auto selectbitrate time
     return !(isSelectBitRate_.load());
 }
+
+bool MediaDemuxer::IsRenderNextVideoFrameSupported()
+{
+    bool isDataSrcLiveStream = source_ != nullptr && source_->IsNeedPreDownload() &&
+        source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE;
+    return videoTrackId_ != TRACK_ID_DUMMY && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
+        !isDataSrcLiveStream;
+}
 } // namespace Media
 } // namespace OHOS

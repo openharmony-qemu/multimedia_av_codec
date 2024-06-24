@@ -657,6 +657,13 @@ Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
     disabledMediaTracks_.emplace(mediaType);
     return demuxer_->DisableMediaTrack(mediaType);
 }
+
+bool DemuxerFilter::IsRenderNextVideoFrameSupported()
+{
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsRenderNextVideoFrameSupported();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

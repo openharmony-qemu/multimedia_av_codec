@@ -85,6 +85,7 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
+    bool IsRenderNextVideoFrameSupported();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
