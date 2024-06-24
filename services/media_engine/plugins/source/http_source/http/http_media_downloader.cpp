@@ -356,7 +356,6 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
             readDataInfo.wantReadLength_ - hasReadSize);
         if (size == 0) {
             Task::SleepInTask(FIVE_MICROSECOND); // 5
-            readTime_ += FIVE_MICROSECOND;
         } else {
             hasReadSize += size;
         }
