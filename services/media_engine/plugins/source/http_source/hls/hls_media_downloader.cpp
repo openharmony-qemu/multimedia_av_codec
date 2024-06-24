@@ -373,7 +373,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readTime_ = 0;
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
         int64_t begainTime = steadyClock_.ElapsedMilliseconds();
-        Status tmpRes = CheckPlaylist(readDataInfo);
+        Status tmpRes = CheckPlaylist(buff, readDataInfo);
         if (tmpRes != Status::ERROR_UNKNOWN) {
             return tmpRes;
         }
