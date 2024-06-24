@@ -155,7 +155,6 @@ sptr<Surface> VideoResizeFilter::GetInputSurface()
 Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetOutputSurface");
-    // surface->SetRequestWidthAndHeight(width, height);
     int32_t ret = videoEnhancer_->SetOutputSurface(surface);
     if (ret != 0) {
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
