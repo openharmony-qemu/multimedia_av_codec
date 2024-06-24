@@ -1559,8 +1559,8 @@ bool MediaDemuxer::CanDoSelectBitRate()
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
 {
-return videoTrackId_ != TRACK_ID_DUMMY && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
-seekable_ == Plugins::Seekable::SEEKABLE;
+    return videoTrackId_ != TRACK_ID_DUMMY && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
+        seekable_ == Plugins::Seekable::SEEKABLE;
 }
 } // namespace Media
 } // namespace OHOS

@@ -660,9 +660,9 @@ Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
 
 bool DemuxerFilter::IsRenderNextVideoFrameSupported()
 {
-MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
-FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
-return demuxer_->IsRenderNextVideoFrameSupported();
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsRenderNextVideoFrameSupported();
 }
 } // namespace Pipeline
 } // namespace Media
