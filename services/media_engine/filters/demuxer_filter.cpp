@@ -173,7 +173,7 @@ Status DemuxerFilter::DoPrepare()
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
         return Status::ERROR_INVALID_PARAMETER;
     }
-    int32_t successNodes = 0;
+    int32_t successNodeCount = 0;
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
@@ -204,9 +204,9 @@ Status DemuxerFilter::DoPrepare()
             FaultDemuxerEventInfoWrite(streamType);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
-        successNodes++;
+        successNodeCount++;
     }
-    if (successNodes == 0) {
+    if (successNodeCount == 0) {
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
