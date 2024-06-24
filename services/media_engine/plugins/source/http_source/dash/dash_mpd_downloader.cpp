@@ -495,7 +495,6 @@ void DashMpdDownloader::ProcessDrmInfos()
             [&](const DashDrmInfo &localDrmInfo) {
                 return drmInfo.uuid_ == localDrmInfo.uuid_ && drmInfo.pssh_ == localDrmInfo.pssh_;
             });
-
         if (isReported) {
             continue;
         }
