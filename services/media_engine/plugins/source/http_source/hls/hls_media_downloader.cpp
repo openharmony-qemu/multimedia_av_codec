@@ -333,6 +333,24 @@ bool HlsMediaDownloader::HandleCache()
     return false;
 }
 
+Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
+                           downloadRequest_->IsEos()) || isStopped;
+    if (downloadRequest_ != nullptr) {
+        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    }
+    if (isFinishedPlay && buffer_->GetSize() > 0) {
+        readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
+        return Status::OK;
+    }
+    if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
+        readDataInfo.realReadLength_ = 0;
+        return Status::END_OF_STREAM;
+    }
+    return Status::ERROR_UNKNOWN;
+}
+
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
@@ -346,29 +364,18 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         readDataInfo.realReadLength_ = 0;
         return Status::END_OF_STREAM;
     }
-
     if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
     }
-
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
     readTime_ = 0;
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
         int64_t begainTime = steadyClock_.ElapsedMilliseconds();
-        bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
-                               downloadRequest_->IsEos()) || isStopped;
-        if (downloadRequest_ != nullptr) {
-            readDataInfo.isEos_ = downloadRequest_->IsEos();
-        }
-        if (isFinishedPlay && buffer_->GetSize() > 0) {
-            readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
-            return Status::OK;
-        }
-        if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
-            readDataInfo.realReadLength_ = 0;
-            return Status::END_OF_STREAM;
+        Status tmpRes = CheckPlaylist(readDataInfo);
+        if (tmpRes != Status::ERROR_UNKNOWN) {
+            return tmpRes;
         }
         if (CheckReadTimeOut()) {
             readDataInfo.realReadLength_ = 0;
