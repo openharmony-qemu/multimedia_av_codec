@@ -37,6 +37,7 @@ namespace Media {
 namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
+constexpr int64_t US_TO_MS = 1000;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -108,9 +109,9 @@ Status MuxerFilter::SetTransCoderMode()
 int64_t MuxerFilter::GetCurrentPtsMs()
 {
     if (lastVideoPts_ != 0) {
-        return lastVideoPts_ / 1000;
+        return lastVideoPts_ / US_TO_MS;
     } else {
-        return lastAudioPts_ / 1000;
+        return lastAudioPts_ / US_TO_MS;
     }
 }
 
@@ -325,7 +326,7 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
         } else {
             std::unique_lock<std::mutex> lock(stopMutex_);
-            stopCondition_.wait_for(lock, std::chrono::milliseconds(1000));
+            stopCondition_.wait_for(lock, std::chrono::milliseconds(US_TO_MS));
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
         }
     } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {

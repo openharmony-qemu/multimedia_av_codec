@@ -73,15 +73,15 @@ public:
     {
     }
 
-    void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode)
+    void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode) override
     {
     }
 
-    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
+    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override
     {
     }
 
-    void OnBufferEos()
+    void OnBufferEos() override
     {
         if (auto surfaceDecoderFilter = surfaceDecoderFilter_.lock()) {
             surfaceDecoderFilter->NotifyNextFilterEos();
@@ -287,7 +287,7 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
     Status ret = mediaCodec_->Init(codecMimeType_);
     if (ret == Status::OK) {
-        std::shared_ptr<DecoderAdapterCallback> decoderSurfaceCallback = 
+        std::shared_ptr<DecoderAdapterCallback> decoderSurfaceCallback =
             std::make_shared<SurfaceDecoderAdapterCallback>(shared_from_this());
         mediaCodec_->SetDecoderAdapterCallback(decoderSurfaceCallback);
     } else {
