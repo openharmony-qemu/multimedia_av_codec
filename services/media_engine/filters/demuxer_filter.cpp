@@ -113,7 +113,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
-    MEDIA_LOG_I("Init");
+    MEDIA_LOG_I("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
     MEDIA_LOG_D("DemuxerFilter Init for drm callback");
