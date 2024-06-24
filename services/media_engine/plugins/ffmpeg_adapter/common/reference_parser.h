@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -60,10 +60,11 @@ class RefParser {
 public:
     explicit RefParser(std::vector<uint32_t> IFramePos);
     virtual ~RefParser() = default;
-    virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId);
+    virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts);
     virtual Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize);
     virtual Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize);
     virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
+    virtual Status GetFrameLayerInfo(int64_t dts, FrameLayerInfo &frameLayerInfo);
     virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
 
 protected:
@@ -81,6 +82,8 @@ protected:
     std::map<uint32_t, GopLayerInfo> gopLayerInfoMap_;
     bool isEof_ = false;
     uint32_t curParserStreamId_ = 0;
+    int64_t curParserDts_ = 0;
+    std::map<int64_t, uint32_t> dts2streamId_;
     FILE *dumpFile_ = nullptr;
 };
 } // Plugins

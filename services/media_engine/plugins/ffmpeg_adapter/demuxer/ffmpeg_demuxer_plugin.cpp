@@ -71,10 +71,9 @@ bool IsInputFormatSupported(const char* name);
 
 void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str);
 
-uint32_t TimeStampUs2FrameId(int64_t timeUs, double fps)
+uint32_t TimeStamp2FrameId(int64_t timeMs, double fps)
 {
-    uint32_t us2Sec = MS_TO_SEC * MS_TO_SEC;
-    return (timeUs * fps + us2Sec / 2) / us2Sec;  // 2
+    return (timeMs * fps + MS_TO_SEC / 2) / MS_TO_SEC;  // 2
 }
 
 inline int64_t AvTime2Us(int64_t hTime)
@@ -324,7 +323,7 @@ Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs)
                          Status::ERROR_INVALID_PARAMETER,
                          "ParserRefUpdatePos failed, timeStampMs: " PUBLIC_LOG_D64 ", duration: " PUBLIC_LOG_D64,
                          timeStampMs, formatContext_->duration);
-    uint32_t frameId = TimeStampUs2FrameId(timeStampMs * MS_TO_SEC, fps_);
+    uint32_t frameId = TimeStamp2FrameId(timeStampMs, fps_);
     int32_t gopId = std::upper_bound(IFramePos_.begin(), IFramePos_.end(), frameId) - IFramePos_.begin() - 1;
     GopLayerInfo gopLayerInfo;
     Status ret = GetGopLayerInfo(gopId, gopLayerInfo);
@@ -408,7 +407,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         }
         return Status::ERROR_UNKNOWN;
     }
-    referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId);
+    int64_t dts = AvTime2Us(
+        ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
+    referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     if (ffmpegRet == AVERROR_EOF || (parserCurGopId_ + 1 < IFramePos_.size() &&
                                      curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
         processingIFrame_.remove(IFramePos_[parserCurGopId_]);
@@ -438,7 +439,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
     }
 
     if (pendingSeekMsTime_ >= 0) {
-        uint32_t frameId = TimeStampUs2FrameId(pendingSeekMsTime_ * MS_TO_SEC, fps_);
+        uint32_t frameId = TimeStamp2FrameId(pendingSeekMsTime_, fps_);
         parserCurGopId_ = std::upper_bound(IFramePos_.begin(), IFramePos_.end(), frameId) - IFramePos_.begin() - 1;
         pendingSeekMsTime_ = -1;
     }
@@ -469,11 +470,8 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
-    FALSE_RETURN_V_MSG_E(videoSample->dts_ >= 0, Status::ERROR_INVALID_PARAMETER, "dts less 0.");
-    uint32_t frameId = TimeStampUs2FrameId(videoSample->dts_, fps_); // dts 以微秒为单位
-    MEDIA_LOG_D("frameId: " PUBLIC_LOG_U32 ", fps: " PUBLIC_LOG_F ", dts: " PUBLIC_LOG_D64, frameId, fps_,
-                videoSample->dts_);
-    return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
+    MEDIA_LOG_D("GetFrameLayerInfo dts: " PUBLIC_LOG_D64, videoSample->dts_);
+    return referenceParser_->GetFrameLayerInfo(videoSample->dts_, frameLayerInfo);
 }
 
 Status FFmpegDemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
@@ -1025,9 +1023,9 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
 
     AVStream *videoStream = formatContext_->streams[videoStreamIdx];
     if (videoStream->avg_frame_rate.den == 0 || videoStream->avg_frame_rate.num == 0) {
-        fps_ = videoStream->r_frame_rate.num / videoStream->r_frame_rate.den;
+        fps_ = videoStream->r_frame_rate.num / (double)videoStream->r_frame_rate.den;
     } else {
-        fps_ = videoStream->avg_frame_rate.num / videoStream->avg_frame_rate.den;
+        fps_ = videoStream->avg_frame_rate.num / (double)videoStream->avg_frame_rate.den;
     }
     MEDIA_LOG_I("fps: " PUBLIC_LOG_F, fps_);
     FFStream *sti = ffstream(videoStream);
