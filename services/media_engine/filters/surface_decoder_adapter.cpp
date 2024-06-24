@@ -340,11 +340,7 @@ void SurfaceDecoderAdapter::AcquireAvailableInputBuffer()
 void SurfaceDecoderAdapter::ReleaseBuffer()
 {
     MEDIA_LOG_I("ReleaseBuffer");
-    while (true) {
-        if (isThreadExit_) {
-            MEDIA_LOG_I("Exit ReleaseBuffer thread.");
-            break;
-        }
+    while (!isThreadExit_) {
         std::vector<uint32_t> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
