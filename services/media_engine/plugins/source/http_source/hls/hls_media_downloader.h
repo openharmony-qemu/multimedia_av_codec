@@ -111,6 +111,7 @@ PRIVATE:
     bool HandleBuffering();
     bool HandleCache();
     bool CheckReadStatus();
+    Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
 PRIVATE:

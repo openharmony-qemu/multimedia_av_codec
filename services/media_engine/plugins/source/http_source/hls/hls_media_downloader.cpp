@@ -48,6 +48,8 @@ constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr int CACHE_WATER_LINE = 512 * 1024;
 constexpr int FIRST_CACHE_WATER_LINE = 50 * 1024;
 constexpr int SECOND_CACHE_WATER_LINE = 100 * 1024;
+constexpr uint32_t READ_SLEEP_INTERVAL = 5;
+constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -231,7 +233,7 @@ bool HlsMediaDownloader::CheckReadStatus()
 
 bool HlsMediaDownloader::CheckReadTimeOut()
 {
-    if (downloadErrorState_ || isTimeOut_) {
+    if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
         isTimeOut_ = true;
         if (downloader_ != nullptr) {
             // avoid deadlock caused by ringbuffer write stall
@@ -331,6 +333,24 @@ bool HlsMediaDownloader::HandleCache()
     return false;
 }
 
+Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
+                           downloadRequest_->IsEos()) || isStopped;
+    if (downloadRequest_ != nullptr) {
+        readDataInfo.isEos_ = downloadRequest_->IsEos();
+    }
+    if (isFinishedPlay && buffer_->GetSize() > 0) {
+        readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
+        return Status::OK;
+    }
+    if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
+        readDataInfo.realReadLength_ = 0;
+        return Status::END_OF_STREAM;
+    }
+    return Status::ERROR_UNKNOWN;
+}
+
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
@@ -344,33 +364,26 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         readDataInfo.realReadLength_ = 0;
         return Status::END_OF_STREAM;
     }
-
     if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
     }
-
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
+    readTime_ = 0;
+    int64_t startTime = steadyClock_.ElapsedMilliseconds();
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
-        bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
-                               downloadRequest_->IsEos()) || isStopped;
-        if (downloadRequest_ != nullptr) {
-            readDataInfo.isEos_ = downloadRequest_->IsEos();
-        }
-        if (isFinishedPlay && buffer_->GetSize() > 0) {
-            readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2);  // wait 2 times
-            return Status::OK;
-        }
-        if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
-            readDataInfo.realReadLength_ = 0;
-            return Status::END_OF_STREAM;
+        Status tmpRes = CheckPlaylist(buff, readDataInfo);
+        if (tmpRes != Status::ERROR_UNKNOWN) {
+            return tmpRes;
         }
         if (CheckReadTimeOut()) {
             readDataInfo.realReadLength_ = 0;
             return Status::END_OF_STREAM;
         }
-        OSAL::SleepFor(5);  // 5
+        OSAL::SleepFor(READ_SLEEP_INTERVAL);  // 5
+        int64_t endTime = steadyClock_.ElapsedMilliseconds();
+        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     if (isInterruptNeeded_.load()) {
         readDataInfo.realReadLength_ = 0;
