@@ -371,8 +371,8 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     }
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
     readTime_ = 0;
+    int64_t startTime = steadyClock_.ElapsedMilliseconds();
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
-        int64_t begainTime = steadyClock_.ElapsedMilliseconds();
         Status tmpRes = CheckPlaylist(buff, readDataInfo);
         if (tmpRes != Status::ERROR_UNKNOWN) {
             return tmpRes;
@@ -383,7 +383,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         }
         OSAL::SleepFor(READ_SLEEP_INTERVAL);  // 5
         int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ += static_cast<uint64_t>(endTime - begainTime);
+        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     if (isInterruptNeeded_.load()) {
         readDataInfo.realReadLength_ = 0;

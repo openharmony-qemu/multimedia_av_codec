@@ -299,8 +299,8 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
         readDataInfo.wantReadLength_ = remain < readDataInfo.wantReadLength_ ? remain :
             readDataInfo.wantReadLength_;
     }
+    int64_t startTime = steadyClock_.ElapsedMilliseconds();
     while (buffer_->GetSize() < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
-        int64_t begainTime = steadyClock_.ElapsedMilliseconds();
         if (CheckIsEosRingBuffer(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
@@ -325,7 +325,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
         }
         Task::SleepInTask(FIVE_MICROSECOND);
         int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ += static_cast<uint64_t>(endTime - begainTime);
+        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::OK);
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
@@ -338,8 +338,8 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
 {
     size_t hasReadSize = 0;
     readTime_ = 0;
+    int64_t startTime = steadyClock_.ElapsedMilliseconds();
     while (hasReadSize < readDataInfo.wantReadLength_ && !isInterruptNeeded_.load()) {
-        int64_t begainTime = steadyClock_.ElapsedMilliseconds();
         if (CheckIsEosBeforeTimeout(buff, readDataInfo)) {
             return Status::END_OF_STREAM;
         }
@@ -361,7 +361,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
             hasReadSize += size;
         }
         int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ += static_cast<uint64_t>(endTime - begainTime);
+        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::OK);
     readDataInfo.realReadLength_ = hasReadSize;
