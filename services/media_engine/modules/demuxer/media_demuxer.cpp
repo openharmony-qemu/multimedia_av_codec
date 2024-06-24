@@ -1559,8 +1559,10 @@ bool MediaDemuxer::CanDoSelectBitRate()
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
 {
+    bool isDataSrcLiveStream = source_ != nullptr && source_->IsNeedPreDownload() &&
+        source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE;
     return videoTrackId_ != TRACK_ID_DUMMY && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
-        seekable_ == Plugins::Seekable::SEEKABLE;
+        !isDataSrcLiveStream;
 }
 } // namespace Media
 } // namespace OHOS
