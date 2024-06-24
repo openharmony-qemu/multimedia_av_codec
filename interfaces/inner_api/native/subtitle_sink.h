@@ -96,7 +96,6 @@ private:
         DROP,
     };
     std::vector<SubtitleInfo> subtitleInfoVec_;
-    SubtitleInfo *subtitleInfo_;
     uint32_t currentInfoIndex_ = 0;
 };
 }
