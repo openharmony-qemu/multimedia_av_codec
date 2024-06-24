@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <sstream>
+#include <algorithm>
 #include "plugin/plugin_time.h"
 #include "dash_mpd_downloader.h"
 #include "dash_mpd_util.h"
@@ -31,6 +32,7 @@ namespace HttpPlugin {
 constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
+constexpr int32_t MPD_HTTP_TIME_OUT_MS = 5 * 1000;
 
 DashMpdDownloader::DashMpdDownloader()
 {
@@ -373,12 +375,14 @@ std::shared_ptr<DashStreamDescription> DashMpdDownloader::GetUsingStreamByType(M
 
 std::shared_ptr<DashInitSegment> DashMpdDownloader::GetInitSegmentByStreamId(int streamId)
 {
-    for (const auto &streamDescription : streamDescriptions_) {
-        if (streamDescription->streamId_ == streamId) {
-            return streamDescription->initSegment_;
-        }
+    auto iter = std::find_if(streamDescriptions_.begin(), streamDescriptions_.end(),
+        [&](const std::shared_ptr<DashStreamDescription> &streamDescription) {
+            return streamDescription->streamId_ == streamId;
+        });
+    if (iter == streamDescriptions_.end()) {
+        return nullptr;
     }
-    return nullptr;
+    return (*iter)->initSegment_;
 }
 
 void DashMpdDownloader::SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq)
@@ -404,7 +408,7 @@ void DashMpdDownloader::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
 }
 
-std::string DashMpdDownloader::GetUrl()
+std::string DashMpdDownloader::GetUrl() const
 {
     return url_;
 }
@@ -487,13 +491,10 @@ void DashMpdDownloader::ProcessDrmInfos()
     
     std::multimap<std::string, std::vector<uint8_t>> drmInfoMap;
     for (const auto &drmInfo: drmInfos) {
-        bool isReported = false;
-        for (auto &localDrmInfo: localDrmInfos_) {
-            if (drmInfo.uuid_ == localDrmInfo.uuid_ && drmInfo.pssh_ == localDrmInfo.pssh_) {
-                isReported = true;
-                break;
-            }
-        }
+        bool isReported = std::any_of(localDrmInfos_.begin(), localDrmInfos_.end(),
+            [&](const DashDrmInfo &localDrmInfo) {
+                return drmInfo.uuid_ == localDrmInfo.uuid_ && drmInfo.pssh_ == localDrmInfo.pssh_;
+            });
 
         if (isReported) {
             continue;
@@ -533,10 +534,9 @@ void DashMpdDownloader::ProcessDrmInfos()
     }
 }
 
-void DashMpdDownloader::GetDrmInfos(const std::string &drmId, DashList<DashDescriptor *> &contentProtections,
+void DashMpdDownloader::GetDrmInfos(const std::string &drmId, const DashList<DashDescriptor *> &contentProtections,
                                     std::vector<DashDrmInfo> &drmInfoList)
 {
-    std::vector<DashDrmInfo> drmInfos;
     for (const auto &contentProtection : contentProtections) {
         if (contentProtection == nullptr) {
             continue;
@@ -608,14 +608,12 @@ void DashMpdDownloader::ParseSidx()
 void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentIndex>> &subSegIndexList) const
 {
     uint64_t segDurSum = 0; // the sum of segment duration, not devide timescale
-    unsigned int segDurMsSum; // the sum of segment duration(ms), devide timescale
     unsigned int segAddDuration = 0; // add all segments duration(ms) before current segment
-    unsigned int durationMS; // segment real duration in ms
     int64_t segSeq = currentDownloadStream_->startNumberSeq_;
     for (const auto &subSegIndex : subSegIndexList) {
-        durationMS = (static_cast<uint64_t>(subSegIndex->duration_) * S_2_MS) / subSegIndex->timeScale_;
+        unsigned int durationMS = (static_cast<uint64_t>(subSegIndex->duration_) * S_2_MS) / subSegIndex->timeScale_;
         segDurSum += subSegIndex->duration_;
-        segDurMsSum = static_cast<unsigned int>((segDurSum * S_2_MS) / subSegIndex->timeScale_);
+        unsigned int segDurMsSum = static_cast<unsigned int>((segDurSum * S_2_MS) / subSegIndex->timeScale_);
         if (segDurMsSum > segAddDuration) {
             durationMS = segDurMsSum - segAddDuration;
         }
@@ -670,7 +668,10 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
 
     MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld url=%{public}s", (long long) startRange,
         (long long) endRange, url.c_str());
-    downloadRequest_ = std::make_shared<DownloadRequest>(url, dataSave_, realStatusCallback, requestWholeFile);
+    MediaSouce mediaSource;
+    mediaSource.url = url;
+    mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
+    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSource, requestWholeFile);
     auto downloadDoneCallback = [this](const std::string &url, const std::string &location) {
         UpdateDownloadFinished(url);
     };

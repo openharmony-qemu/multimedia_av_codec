@@ -540,7 +540,7 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = (now - lastCheckTime_) < 0 ? 0 : static_cast<uint64_t>(now - lastCheckTime_);
+            downloadDuringTime_ = static_cast<uint64_t>(now - lastCheckTime_);
             downloadBits_ += curDownloadBits;
         }
         lastBits_ = totalBits_;
