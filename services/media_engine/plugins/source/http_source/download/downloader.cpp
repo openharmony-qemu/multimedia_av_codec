@@ -543,7 +543,7 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         dropRet = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
                                              static_cast<int64_t>(dataLen) - writeOffSet);
         currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + writeOffSet;
-        MEDIA_LOG_D("DropRetryData: drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
+        MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
                     currentRequest_->dropedDataLen_, currentRequest_->startPos_);
     } else if (writeOffSet == 0) {
         currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ +
