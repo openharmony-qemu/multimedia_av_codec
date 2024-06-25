@@ -95,6 +95,7 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
 int32_t ClolorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -112,6 +113,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     ClolorPrimariesChecker,
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
+    LTRFrameCountChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -126,6 +128,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     ClolorPrimariesChecker,
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
+    LTRFrameCountChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -490,6 +493,22 @@ int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, Codec
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
         return AVCS_ERR_INVALID_VAL;
     }
+    return AVCS_ERR_OK;
+}
+
+int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    int32_t ltrFrameCount;
+    bool ltrFrameCountExist = format.GetIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameCount);
+    if (!ltrFrameCountExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(ltrFrameCountExist, Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameCount);
+
+    CHECK_AND_RETURN_RET_LOG(scenario != CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
+        AVCS_ERR_UNSUPPORT, "Param invalid, not supported to set LTR frame count in temporal scalability scenario");
+
     return AVCS_ERR_OK;
 }
 } // namespace
