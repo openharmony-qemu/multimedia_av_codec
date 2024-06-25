@@ -515,9 +515,10 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
         return AVCS_ERR_OK;
     }
     int32_t maxLTRFrameCount = 0;
-    bool maxLTRFrameCountExist = format.GetIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, maxLTRFrameCount);
+    bool maxLTRFrameCountExist =
+        ltrCap->second.GetIntValue(Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameCount);
     CHECK_AND_RETURN_RET_LOG(maxLTRFrameCountExist, AVCS_ERR_UNKNOWN, "Max LTR frame count not defined");
-    
+
     CHECK_AND_RETURN_RET_LOG(ltrFrameCount >= 0 && ltrFrameCount <= maxLTRFrameCount, AVCS_ERR_INVALID_VAL,
         "Param invalid, LTR frame count range: %{public}d-%{public}d", 0, maxLTRFrameCount);
 
