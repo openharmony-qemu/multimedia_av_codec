@@ -412,15 +412,23 @@ void MediaDemuxer::ReportIsLiveStreamEvent()
 Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
 {
     std::string taskName = "Demux";
-    if (type == TaskType::VIDEO) {
-        taskName += "V";
-    } else if (type == TaskType::AUDIO) {
-        taskName += "A";
-    } else if (type == TaskType::SUBTITLE) {
-        taskName += "S";
-    } else {
-        MEDIA_LOG_E("AddDemuxerCopyTask failed, unknow task type:" PUBLIC_LOG_D32, type);
-        return Status::ERROR_UNKNOWN;
+    switch (type) {
+        case TaskType::VIDEO: {
+            taskName += "V";
+            break;
+        }
+        case TaskType::AUDIO: {
+            taskName += "A";
+            break;
+        }
+        case TaskType::SUBTITLE: {
+            taskName += "S";
+            break;
+        }
+        default: {
+            MEDIA_LOG_E("AddDemuxerCopyTask failed, unknow task type:" PUBLIC_LOG_D32, type);
+            return Status::ERROR_UNKNOWN;
+        }
     }
 
     std::unique_ptr<Task> task = std::make_unique<Task>(taskName, playerId_, type);
