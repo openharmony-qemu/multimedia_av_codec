@@ -535,17 +535,18 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
     int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
     int64_t writeOffSet = -1;
     if (needDropLen > 0) {
-        writeOffSet = needDropLen >= dataLen ? 0 : needDropLen; // 0:drop all
+        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ? 0 : needDropLen; // 0:drop all
     }
     bool dropRet = false;
     if (writeOffSet > 0) {
         dropRet = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
-                                             dataLen - writeOffSet);
+                                             static_cast<int64_t>(dataLen) - writeOffSet);
         currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + writeOffSet;
         MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
                     currentRequest_->dropedDataLen_, currentRequest_->startPos_);
     } else if (writeOffSet == 0) {
-        currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + dataLen;
+        currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ +
+                                            static_cast<int64_t>(dataLen);
         dropRet = true;
         MEDIA_LOG_D("DropRetryData: drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
                     currentRequest_->dropedDataLen_, currentRequest_->startPos_);
@@ -556,7 +557,8 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         currentRequest_->retryOnGoing_ = false;
         currentRequest_->dropedDataLen_ = 0;
         if (writeOffSet > 0) {
-            currentRequest_->startPos_ = currentRequest_->startPos_ + dataLen - writeOffSet;
+            currentRequest_->startPos_ = currentRequest_->startPos_ +
+                                         static_cast<int64_t>(dataLen) - writeOffSet;
         }
         MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
     }
