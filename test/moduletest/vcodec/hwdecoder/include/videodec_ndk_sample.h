@@ -62,10 +62,13 @@ public:
     bool SF_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t originalWidth = 0;
+    uint32_t originalHeight = 0;
     uint32_t defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     uint32_t REPEAT_CALL_TIME = 10;
     uint32_t MAX_SURF_NUM = 2;
     double DEFAULT_FRAME_RATE = 30.0;
+    uint32_t DEFAULT_RANGE_FLAG = 0;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
     bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
@@ -107,6 +110,7 @@ public:
     void AutoSwitchSurface();
     void InputFunc();
     int32_t PushData(uint32_t index, OH_AVMemory *buffer);
+    int32_t CheckAndReturnBufferSize(OH_AVMemory *buffer);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
     void ProcessOutputData(OH_AVMemory *buffer, uint32_t index);
     void OutputFunc();
@@ -128,6 +132,7 @@ public:
     bool repeatRun = false;
     int64_t decode_count = 0;
     int64_t start_time = 0;
+    int32_t maxInputSize = 0;
     int64_t end_time = 0;
     bool autoSwitchSurface = false;
     int32_t switchSurfaceFlag = 0;

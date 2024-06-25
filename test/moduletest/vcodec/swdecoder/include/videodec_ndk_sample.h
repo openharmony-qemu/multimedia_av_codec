@@ -60,8 +60,11 @@ public:
     bool SURFACE_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t originalWidth = 0;
+    uint32_t originalHeight = 0;
     uint32_t DEFAULT_FRAME_RATE = 30;
     uint32_t DEFAULT_ROTATION = 0;
+    int32_t maxInputSize = 0;
     uint32_t DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
@@ -94,6 +97,7 @@ public:
     int32_t SetSurface(OHNativeWindow *window);
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
+    void CheckOutputDescription();
     void OutputFunc();
     void WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile);
     void InputFunc_AVCC();

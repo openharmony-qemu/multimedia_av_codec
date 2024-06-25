@@ -80,6 +80,10 @@ public:
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
+    uint32_t DEFAULT_RANGE_FLAG = 0;
+    uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
+    uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
+    uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
     uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
@@ -135,10 +139,12 @@ public:
     bool sleepOnFPS = false;
     bool SURF_INPUT = false;
     bool enableAutoSwitchParam = false;
+    bool enableColorSpaceParams = false;
     bool enableAutoSwitchBufferParam = false;
     bool needResetBitrate = false;
     bool needResetFrameRate = false;
     bool needResetQP = false;
+    bool enableQP = false;
     bool repeatRun = false;
     bool showLog = false;
     bool enableLTR = false;

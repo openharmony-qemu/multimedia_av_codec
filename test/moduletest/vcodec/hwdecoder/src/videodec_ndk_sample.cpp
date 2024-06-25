@@ -42,7 +42,7 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
-
+constexpr int32_t DEFAULT_ANGLE = 90;
 
 SHA512_CTX c;
 unsigned char md[SHA512_DIGEST_LENGTH];
@@ -221,10 +221,16 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
+    if (maxInputSize > 0) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, maxInputSize);
+    }
+    originalWidth = DEFAULT_WIDTH;
+    originalHeight = DEFAULT_HEIGHT;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY, 1);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -539,6 +545,15 @@ int32_t VDecNdkSample::PushData(uint32_t index, OH_AVMemory *buffer)
     return SendData(bufferSize, index, buffer);
 }
 
+int32_t VDecNdkSample::CheckAndReturnBufferSize(OH_AVMemory *buffer)
+{
+    int32_t size = OH_AVMemory_GetSize(buffer);
+    if (maxInputSize > 0 && (size > maxInputSize)) {
+        errCount++;
+    }
+    return size;
+}
+
 uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer)
 {
     OH_AVCodecBufferAttr attr;
@@ -557,7 +572,7 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
     } else {
         attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     }
-    int32_t size = OH_AVMemory_GetSize(buffer);
+    int32_t size = CheckAndReturnBufferSize(buffer);
     if (size < bufferSize + START_CODE_SIZE) {
         delete[] fileBuffer;
         return 0;
@@ -601,16 +616,27 @@ void VDecNdkSample::CheckOutputDescription()
         int32_t cropRight = 0;
         int32_t stride = 0;
         int32_t sliceHeight = 0;
+        int32_t picWidth = 0;
+        int32_t picHeight = 0;
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_TOP, &cropTop);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_BOTTOM, &cropBottom);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_LEFT, &cropLeft);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_RIGHT, &cropRight);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_STRIDE, &stride);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
+        OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
+        OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
         if (cropTop != expectCropTop || cropBottom != expectCropBottom || cropLeft != expectCropLeft) {
+            std::cout << "cropTop:" << cropTop << " cropBottom:" << cropBottom << " cropLeft:" << cropLeft <<std::endl;
             errCount++;
         }
         if (cropRight != expectCropRight || stride <= 0 || sliceHeight <= 0) {
+            std::cout << "cropRight:" << cropRight << std::endl; 
+            std::cout << "stride:" << stride << " sliceHeight:" << sliceHeight << std::endl;
+            errCount++;
+        }
+        if (picWidth != originalWidth || picHeight != originalHeight) {
+            std::cout << "picWidth:" << picWidth << " picHeight:" << picHeight << std::endl;
             errCount++;
         }
     } else {
@@ -626,6 +652,11 @@ void VDecNdkSample::AutoSwitchSurface()
         if (OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) != AV_ERR_OK) {
             errCount++;
         }
+        OH_AVFormat *format = OH_AVFormat_Create();
+        int32_t angle = DEFAULT_ANGLE * reinterpret_cast<int32_t>(switchSurfaceFlag);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, angle);
+        OH_VideoDecoder_SetParameter(vdec_, format);
+        OH_AVFormat_Destroy(format);
     }
 }
 

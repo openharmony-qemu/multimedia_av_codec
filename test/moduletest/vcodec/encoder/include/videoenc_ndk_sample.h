@@ -65,6 +65,7 @@ public:
     double DEFAULT_FRAME_RATE = 30.0;
     uint32_t DEFAULT_FUZZ_TIME = 30;
     uint32_t DEFAULT_BITRATE_MODE = CBR;
+    uint32_t DEFAULT_RANGE_FLAG = 0;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t repeat_time = 0;
