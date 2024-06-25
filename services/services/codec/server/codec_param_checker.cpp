@@ -498,7 +498,6 @@ int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, Codec
 
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
-    (void)capData;
     int32_t ltrFrameCount;
     bool ltrFrameCountExist = format.GetIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameCount);
     if (!ltrFrameCountExist) {
@@ -508,6 +507,19 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
 
     CHECK_AND_RETURN_RET_LOG(scenario != CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
         AVCS_ERR_UNSUPPORT, "Param invalid, not supported to set LTR frame count in temporal scalability scenario");
+
+    auto ltrCap = capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    if (ltrCap == capData.featuresMap.end()) {
+        AVCODEC_LOGW("Not support LTR but set LTR frame count");
+        format.RemoveKey(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT);
+        return AVCS_ERR_OK;
+    }
+    int32_t maxLTRFrameCount = 0;
+    bool maxLTRFrameCountExist = format.GetIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, maxLTRFrameCount);
+    CHECK_AND_RETURN_RET_LOG(maxLTRFrameCountExist, AVCS_ERR_UNKNOWN, "Max LTR frame count not defined");
+    
+    CHECK_AND_RETURN_RET_LOG(ltrFrameCount >= 0 && ltrFrameCount <= maxLTRFrameCount, AVCS_ERR_INVALID_VAL,
+        "Param invalid, LTR frame count range: %{public}d-%{public}d", 0, maxLTRFrameCount);
 
     return AVCS_ERR_OK;
 }
