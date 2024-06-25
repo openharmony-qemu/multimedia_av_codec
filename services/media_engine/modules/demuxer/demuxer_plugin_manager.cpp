@@ -122,7 +122,7 @@ DemuxerPluginManager::~DemuxerPluginManager()
     }
 }
 
-size_t DemuxerPluginManager::GetStreamCount()
+size_t DemuxerPluginManager::GetStreamCount() const
 {
     return streamInfoMap_.size();
 }
@@ -380,12 +380,12 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     return st == Status::OK;
 }
 
-bool DemuxerPluginManager::IsDash()
+bool DemuxerPluginManager::IsDash() const
 {
     return isDash_;
 }
 
-bool DemuxerPluginManager::IsSubtitle()
+bool DemuxerPluginManager::IsSubtitle() const
 {
     return isSubtitle_;
 }
