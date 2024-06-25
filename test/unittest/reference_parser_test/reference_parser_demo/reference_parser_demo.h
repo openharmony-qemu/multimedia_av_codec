@@ -37,7 +37,7 @@ struct JsonGopInfo {
 namespace OHOS {
 namespace MediaAVCodec {
 enum struct MP4Scene : uint32_t {
-    LOWDELAY_B_SCALA = 0, 
+    LOWDELAY_B_SCALA = 0,
     SCENE_MAX
 };
 

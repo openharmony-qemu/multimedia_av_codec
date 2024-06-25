@@ -27,15 +27,11 @@ using json = nlohmann::json;
 
 namespace {
 constexpr const char *SOURCE_DIR = "/data/test/media";
-constexpr uint32_t MAX_SCENE_NUM = static_cast<uint32_t>(MP4Scene::SCENE_MAX);
+constexpr uint32_t MAX_SCENE_NUM = static_cast<uint32_t>(OHOS::MediaAVCodec::MP4Scene::SCENE_MAX);
 constexpr const char *VIDEO_FILE_NAME[MAX_SCENE_NUM] = {"RP_IPBBB.mp4"};
 constexpr int32_t MAX_BUFFER_SIZE = 8294400;
 constexpr int32_t MILL_TO_MICRO = 1000;
 } // namespace
-
-namespace OHOS {
-namespace MediaAVCodec {
-using namespace Media;
 
 void from_json(const nlohmann::json &j, JsonGopInfo &gop)
 {
@@ -51,6 +47,10 @@ void from_json(const nlohmann::json &j, JsonFrameLayerInfo &frame)
     j.at("layer").get_to(frame.layer);
     j.at("discardable").get_to(frame.discardable);
 }
+
+namespace OHOS {
+namespace MediaAVCodec {
+using namespace Media;
 
 ReferenceParserDemo::~ReferenceParserDemo()
 {
@@ -104,11 +104,11 @@ int32_t ReferenceParserDemo::InitDemuxer(int64_t size)
     Format format;
     source_->GetSourceFormat(format);
     int32_t trackCount = 0;
-    format.GetIntValue(MD_KEY_TRACK_COUNT, trackCount);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
     for (auto i = 0; i < trackCount; i++) {
         source_->GetTrackFormat(format, i);
         int32_t trackType = 0;
-        format.GetIntValue(MD_KEY_TRACK_TYPE, trackType);
+        format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, trackType);
         if (trackType == 1) {
             videoTrackId_ = i;
         }
@@ -126,9 +126,9 @@ void ReferenceParserDemo::LoadJson()
     gopVec_ = gopJson_.get<vector<JsonGopInfo>>();
     frameVec_ = frameLayerJson_.get<vector<JsonFrameLayerInfo>>();
     for (auto gop : gopVec_) {
-        cout "GopID " << gop.gopId << ", GopSize " << gop.gopSize << ", startFrameId " << gop.startFrameId << endl;
+        cout << "GopID " << gop.gopId << ", GopSize " << gop.gopSize << ", startFrameId " << gop.startFrameId << endl;
         int32_t frameId = gop.startFrameId;
-        for (auto i = 0; i < gop.GopSize; i++) {
+        for (auto i = 0; i < gop.gopSize; i++) {
             JsonFrameLayerInfo frame = frameVec_[frameId + i];
             frameMap_.emplace(frame.dts, frame);
             cout << "FrameId " << frame.frameId << ", Layer " << frame.layer << endl;
@@ -144,7 +144,7 @@ void ReferenceParserDemo::SetDecIntervalMs(int64_t decIntervalMs)
 bool ReferenceParserDemo::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts)
 {
     JsonFrameLayerInfo frame = frameMap_[dts];
-    if (!frame.discardable && info.discardable) {
+    if (!frame.discardable && info.isDiscardable) {
         cout << "FrameId " << frame.frameId << ", expect layer " << frame.layer << ", get layer " << info.layer
              << ", dts " << dts << ", match failed!" << endl;
         return false;
@@ -170,7 +170,7 @@ bool ReferenceParserDemo::DoAccurateSeek(int64_t seekTimeMs)
     int64_t pts = -1L;
     while (pts < seekTimeMs * MILL_TO_MICRO) {
         demuxer_->ReadSampleBuffer(videoTrackId_, buffer_);
-        if (buffer_->flags & AVCODEC_BUFFER_FLAG_EOS) {
+        if (buffer_->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
             break;
         }
         buffer_->dts_ -= startDts_;
@@ -180,7 +180,7 @@ bool ReferenceParserDemo::DoAccurateSeek(int64_t seekTimeMs)
         if (!frameInfo.isDiscardable) {
             usleep(decIntervalUs_);
         }
-        if (!CheckFrameLayerResult(int &info, int dts)) {
+        if (!CheckFrameLayerResult(frameInfo, buffer_->dts_)) {
             return false;
         }
     }
