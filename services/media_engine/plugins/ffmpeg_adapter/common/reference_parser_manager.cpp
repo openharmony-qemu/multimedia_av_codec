@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,10 +66,10 @@ std::shared_ptr<ReferenceParserManager> ReferenceParserManager::Create(CodecType
     return loader;
 }
 
-Status ReferenceParserManager::ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId)
+Status ReferenceParserManager::ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts)
 {
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
-    return referenceParser_->ParserNalUnits(nalData, nalDataSize, frameId);
+    return referenceParser_->ParserNalUnits(nalData, nalDataSize, frameId, dts);
 }
 
 Status ReferenceParserManager::ParserExtraData(uint8_t *extraData, int32_t extraDataSize)
@@ -88,6 +88,12 @@ Status ReferenceParserManager::GetFrameLayerInfo(uint32_t frameId, FrameLayerInf
 {
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
     return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
+}
+
+Status ReferenceParserManager::GetFrameLayerInfo(int64_t dts, FrameLayerInfo &frameLayerInfo)
+{
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference parser is null!");
+    return referenceParser_->GetFrameLayerInfo(dts, frameLayerInfo);
 }
 
 Status ReferenceParserManager::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
