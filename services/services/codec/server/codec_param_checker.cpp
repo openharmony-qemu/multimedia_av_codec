@@ -92,6 +92,9 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
 int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t ClolorPrimariesChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -106,6 +109,9 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     BitrateAndQualityChecker,
     VideoProfileChecker,
     QPChecker,
+    ClolorPrimariesChecker,
+    TransferCharacteristicsChecker,
+    MatrixCoefficientsChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -117,6 +123,9 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     QPChecker,
     TemporalGopSizeChecker,
     TemporalGopReferenceModeChecker,
+    ClolorPrimariesChecker,
+    TransferCharacteristicsChecker,
+    MatrixCoefficientsChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -423,6 +432,64 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
     if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
         mode > static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t ClolorPrimariesChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t colorPrimaries;
+    bool colorPrimariesExist = format.GetIntValue(Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
+    if (!colorPrimariesExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(colorPrimariesExist, Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
+
+    if (colorPrimaries < static_cast<int32_t>(ColorPrimary::COLOR_PRIMARY_BT709) ||
+        colorPrimaries > static_cast<int32_t>(ColorPrimary::COLOR_PRIMARY_P3D65)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t transferCharacteristics;
+    bool transferCharacteristicsExist = format.GetIntValue(Tag::VIDEO_COLOR_TRC, transferCharacteristics);
+    if (!transferCharacteristicsExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(transferCharacteristicsExist, Tag::VIDEO_COLOR_TRC, transferCharacteristics);
+
+    if (transferCharacteristics < static_cast<int32_t>(TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709) ||
+        transferCharacteristics > static_cast<int32_t>(TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_TRC, transferCharacteristics);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t matrixCoefficients;
+    bool matrixCoefficientsExist =
+        format.GetIntValue(Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
+    if (!matrixCoefficientsExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(matrixCoefficientsExist, Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
+
+    if (matrixCoefficients < static_cast<int32_t>(MatrixCoefficient::MATRIX_COEFFICIENT_IDENTITY) ||
+        matrixCoefficients > static_cast<int32_t>(MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
         return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;
