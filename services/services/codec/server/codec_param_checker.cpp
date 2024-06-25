@@ -28,6 +28,7 @@
 #include "meta/meta_key.h"
 #include "temporal_scalability.h"
 #include "meta/video_types.h"
+#include "native_avcodec_base.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecParamChecker"};
@@ -96,6 +97,7 @@ int32_t ClolorPrimariesChecker(CapabilityData &capData, Format &format, CodecSce
 int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -136,6 +138,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     PixelFormatChecker,
     FramerateChecker,
     RotaitonChecker,
+    ScalingModeChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -522,6 +525,25 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
     CHECK_AND_RETURN_RET_LOG(ltrFrameCount >= 0 && ltrFrameCount <= maxLTRFrameCount, AVCS_ERR_INVALID_VAL,
         "Param invalid, LTR frame count range: %{public}d-%{public}d", 0, maxLTRFrameCount);
 
+    return AVCS_ERR_OK;
+}
+
+int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t scalingMode;
+    bool matrixCoefficientsExist = format.GetIntValue(Tag::VIDEO_SCALE_TYPE, scalingMode);
+    if (!matrixCoefficientsExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(matrixCoefficientsExist, Tag::VIDEO_SCALE_TYPE, scalingMode);
+
+    if (scalingMode < static_cast<int32_t>(OH_ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
+        scalingMode > static_cast<int32_t>(OH_ScalingMode::SCALING_MODE_SCALE_CROP)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCALE_TYPE, scalingMode);
+        return AVCS_ERR_INVALID_VAL;
+    }
     return AVCS_ERR_OK;
 }
 } // namespace
