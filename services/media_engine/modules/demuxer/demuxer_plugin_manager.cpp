@@ -203,7 +203,9 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
         "Set data source failed due to create video demuxer plugin failed.");
     Plugins::MediaInfo mediaInfoTemp;
     Status ret = streamInfoMap_[streamID].plugin->GetMediaInfo(mediaInfoTemp);
-    streamInfoMap_[streamID].mediaInfo = mediaInfoTemp;
+    if (ret == Status::OK) {
+        streamInfoMap_[streamID].mediaInfo = mediaInfoTemp;
+    }
     return ret;
 }
 
