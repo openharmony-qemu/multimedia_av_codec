@@ -34,7 +34,6 @@ std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
-constexpr int64_t TIMESTAMP_US = 1000;
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
@@ -711,7 +710,7 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->data = sample->memory_->GetAddr();
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * TIMESTAMP_US, st->time_base);
+    cachePacket_->pts = ConvertTimeToFFmpegByUs(sample->pts_, st->time_base);
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;

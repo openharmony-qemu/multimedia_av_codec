@@ -227,6 +227,9 @@ Status MediaMuxer::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuff
     if (sample->memory_ != nullptr && sample->memory_->GetSize() > 0) { // copy data
         int32_t retInt = buffer->memory_->Write(sample->memory_->GetAddr(), sample->memory_->GetSize(), 0);
         FALSE_RETURN_V_MSG_E(retInt > 0, Status::ERROR_NO_MEMORY, "Write sample in buffer failed.");
+    } else {
+        MEDIA_LOG_W("No data in the sample.");
+        buffer->memory_->SetSize(0); // no data in the buffer, clear buffer size
     }
     return tracks_[trackIndex]->producer_->PushBuffer(buffer, true);
 }
