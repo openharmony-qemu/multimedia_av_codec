@@ -149,11 +149,6 @@ void LiveDataSourceStreamDemuxer::ReadLoop()
     mediaOffset_ += static_cast<int64_t>(size);
 }
 
-Status LiveDataSourceStreamDemuxer::Reset()
-{
-    return Status::OK;
-}
-
 Status LiveDataSourceStreamDemuxer::Start()
 {
     if (dataPacker_) {

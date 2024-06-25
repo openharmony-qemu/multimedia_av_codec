@@ -49,7 +49,7 @@ LiveHttpStreamDemuxer::LiveHttpStreamDemuxer()
 LiveHttpStreamDemuxer::~LiveHttpStreamDemuxer()
 {
     MEDIA_LOG_I("~LiveHttpStreamDemuxer called");
-    Reset();
+    ResetAllCache();
 }
 
 bool LiveHttpStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size,
@@ -256,6 +256,7 @@ Status LiveHttpStreamDemuxer::ResetCache(int32_t streamID)
 {
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         cacheDataMap_[streamID].Reset();
+        cacheDataMap_.erase(streamID);
     }
     return Status::OK;
 }
@@ -266,12 +267,6 @@ Status LiveHttpStreamDemuxer::ResetAllCache()
         iter.second.Reset();
     }
     cacheDataMap_.clear();
-    return Status::OK;
-}
-
-Status LiveHttpStreamDemuxer::Reset()
-{
-    ResetAllCache();
     return Status::OK;
 }
 

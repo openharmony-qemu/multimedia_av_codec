@@ -90,7 +90,6 @@ public:
     virtual ~BaseStreamDemuxer();
 
     virtual Status Init(const std::string& uri) = 0;
-    virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
     virtual Status Start() = 0;
