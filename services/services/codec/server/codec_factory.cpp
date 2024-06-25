@@ -44,25 +44,15 @@ CodecFactory &CodecFactory::Instance()
 
 CodecFactory::~CodecFactory() {}
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder, const std::string &mime,
-                                                           API_VERSION apiVersion, std::string &codecName)
+std::vector<std::string> CodecFactory::GetCodecNameArrayByMime(const std::string &mime, const bool isEncoder)
 {
-    std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
-    std::vector<std::string> nameArray = codecListCore->FindCodecNameArray(mime, isEncoder);
-    for (const std::string &name : nameArray) {
+    auto codecListCore = std::make_shared<CodecListCore>();
+    auto nameArray = codecListCore->FindCodecNameArray(mime, isEncoder);
 #ifndef CLIENT_SUPPORT_CODEC
-        if (name.find("secure") != std::string::npos) {
-            continue;
-        }
+    auto checkFunc = [](const std::string &str) { return str.find("secure") != std::string::npos; };
+    nameArray.erase(std::remove_if(nameArray.begin(), nameArray.end(), checkFunc), nameArray.end());
 #endif
-        std::shared_ptr<CodecBase> codec = CreateCodecByName(name, apiVersion);
-        if (codec != nullptr) {
-            codecName = name;
-            return codec;
-        }
-    }
-    AVCODEC_LOGE("Failed to find codec. %{public}s", mime.c_str());
-    return nullptr;
+    return nameArray;
 }
 
 std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)

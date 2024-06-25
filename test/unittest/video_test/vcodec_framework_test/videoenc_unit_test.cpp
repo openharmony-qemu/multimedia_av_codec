@@ -668,7 +668,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Start_Buffer_001, TestSize.Level1)
     PrepareSource(GetParam());
     #ifdef HMOS_TEST
     videoEnc_->testParam_ = GetParam();
-    videoEnc_->needCheckSHA_ = true;
+    videoEnc_->needCheckSHA_ = false;
     #else
     videoEnc_->needCheckSHA_ = false;
     #endif

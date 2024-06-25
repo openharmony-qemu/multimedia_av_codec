@@ -117,21 +117,6 @@ Status AudioCaptureModule::Deinit()
 Status AudioCaptureModule::Prepare()
 {
     MEDIA_LOG_I("Prepare enter.");
-    AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
-    auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
-    for (auto& supportedEncodingType : supportedEncodingTypes) {
-        if (supportedEncodingType == AudioStandard::ENCODING_PCM) {
-            audioEncoding = AudioStandard::ENCODING_PCM;
-            break;
-        }
-    }
-
-    if (audioEncoding != AudioStandard::ENCODING_PCM) {
-        MEDIA_LOG_E("audioCapturer do not support pcm encoding");
-        SetFaultEvent("AudioCaptureModule::Prepare, audioCapturer do not support pcm encoding");
-        return Status::ERROR_UNKNOWN;
-    }
-    options_.streamInfo.encoding = AudioStandard::ENCODING_PCM;
     size_t size;
     {
         AutoLock lock (captureMutex_);
@@ -255,6 +240,21 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
             Status::ERROR_INVALID_PARAMETER, "SampleFormat is unsupported by audiocapturer");
     }
 
+    AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
+    auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
+    for (auto& supportedEncodingType : supportedEncodingTypes) {
+        if (supportedEncodingType == AudioStandard::ENCODING_PCM) {
+            audioEncoding = AudioStandard::ENCODING_PCM;
+            break;
+        }
+    }
+
+    if (audioEncoding != AudioStandard::ENCODING_PCM) {
+        MEDIA_LOG_E("audioCapturer do not support pcm encoding");
+        SetFaultEvent("AudioCaptureModule::Prepare, audioCapturer do not support pcm encoding");
+        return Status::ERROR_UNKNOWN;
+    }
+    options_.streamInfo.encoding = AudioStandard::ENCODING_PCM;
     return Status::OK;
 }
 
@@ -334,7 +334,8 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     }
 
     if (isTrackMaxAmplitude) {
-        TrackMaxAmplitude((int16_t *)bufData->GetAddr(), bufData->GetSize() >> 1);
+        TrackMaxAmplitude((int16_t *)bufData->GetAddr(),
+            static_cast<int32_t>(static_cast<uint32_t>(bufData->GetSize()) >> 1));
     }
     return ret;
 }
@@ -376,10 +377,8 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
 
 Status AudioCaptureModule::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
 {
-    if (audioCapturer_ == nullptr) {
-        MEDIA_LOG_E("audioCapturer is nullptr, cannot get audio capturer change info");
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "audioCapturer is nullptr, cannot get audio capturer change info");
     audioCapturer_->GetCurrentCapturerChangeInfo(changeInfo);
     return Status::OK;
 }

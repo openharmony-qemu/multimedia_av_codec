@@ -359,6 +359,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
             if (currentRequest_->IsSame(request) && !shouldStartNextRequest) {
                 currentRequest_->retryTimes_++;
                 currentRequest_->retryOnGoing_ = true;
+                currentRequest_->dropedDataLen_ = 0;
                 MEDIA_LOG_D("Do retry.");
             }
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
@@ -541,11 +542,11 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
     if (writeOffSet > 0) {
         dropRet = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
                                              static_cast<int64_t>(dataLen) - writeOffSet);
-        MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
-                    currentRequest_->dropedDataLen_, currentRequest_->startPos_);
+        currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ + writeOffSet;
     } else if (writeOffSet == 0) {
         currentRequest_->dropedDataLen_ = currentRequest_->dropedDataLen_ +
-                                                static_cast<int64_t>(dataLen);
+                                            static_cast<int64_t>(dataLen);
+        dropRet = true;
         MEDIA_LOG_D("DropRetryData: drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
                     currentRequest_->dropedDataLen_, currentRequest_->startPos_);
     } else {

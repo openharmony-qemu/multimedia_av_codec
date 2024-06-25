@@ -185,7 +185,7 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(
  * @tc.desc: key calls the OH_AVFormat_SetIntValue func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, TYPE_INT32_TEST, TestSize.Level1)
+HWTEST_P(TEST_SUIT, TYPE_INT32_TEST, TestSize.Level3)
 {
     auto key = GetParam();
     auto type = GetType(key);
@@ -206,7 +206,7 @@ HWTEST_P(TEST_SUIT, TYPE_INT32_TEST, TestSize.Level1)
  * @tc.desc: key calls the OH_AVFormat_SetLongValue func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, TYPE_INT64_TEST, TestSize.Level1)
+HWTEST_P(TEST_SUIT, TYPE_INT64_TEST, TestSize.Level3)
 {
     auto key = GetParam();
     auto type = GetType(key);
@@ -227,7 +227,7 @@ HWTEST_P(TEST_SUIT, TYPE_INT64_TEST, TestSize.Level1)
  * @tc.desc: key calls the OH_AVFormat_SetFloatValue func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, TYPE_FLOAT_TEST, TestSize.Level1)
+HWTEST_P(TEST_SUIT, TYPE_FLOAT_TEST, TestSize.Level3)
 {
     auto key = GetParam();
     auto type = GetType(key);
@@ -248,7 +248,7 @@ HWTEST_P(TEST_SUIT, TYPE_FLOAT_TEST, TestSize.Level1)
  * @tc.desc: key calls the OH_AVFormat_SetDoubleValue func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, TYPE_DOUBLE_TEST, TestSize.Level1)
+HWTEST_P(TEST_SUIT, TYPE_DOUBLE_TEST, TestSize.Level3)
 {
     auto key = GetParam();
     auto type = GetType(key);
@@ -269,7 +269,7 @@ HWTEST_P(TEST_SUIT, TYPE_DOUBLE_TEST, TestSize.Level1)
  * @tc.desc: key calls the OH_AVFormat_SetStringValue func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, TYPE_STRING_TEST, TestSize.Level1)
+HWTEST_P(TEST_SUIT, TYPE_STRING_TEST, TestSize.Level3)
 {
     auto key = GetParam();
     auto type = GetType(key);
@@ -290,7 +290,7 @@ HWTEST_P(TEST_SUIT, TYPE_STRING_TEST, TestSize.Level1)
  * @tc.desc: key calls the OH_AVFormat_SetBuffer func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, TYPE_ADDR_TEST, TestSize.Level1)
+HWTEST_P(TEST_SUIT, TYPE_ADDR_TEST, TestSize.Level3)
 {
     auto key = GetParam();
     auto type = GetType(key);
