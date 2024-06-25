@@ -535,8 +535,7 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
     int64_t needDropLen = currentRequest_->startPos_ - currentRequest_->dropedDataLen_;
     int64_t writeOffSet = -1;
     if (needDropLen > 0) {
-        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ?
-                        0 : static_cast<int64_t>(needDropLen); // 0:drop all
+        writeOffSet = needDropLen >= static_cast<int64_t>(dataLen) ? 0 : needDropLen; // 0:drop all
     }
     bool dropRet = false;
     if (writeOffSet > 0) {
