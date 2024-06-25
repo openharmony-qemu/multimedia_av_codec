@@ -806,7 +806,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
         }
         isSelectBitRate_.store(true);
     }
-    streamDemuxer_->Reset();
+    streamDemuxer_->ResetAllCache();
     Status ret = source_->SelectBitRate(bitRate);
     if (ret != Status::OK) {
         MEDIA_LOG_E("MediaDemuxer SelectBitRate failed");
@@ -1017,7 +1017,7 @@ Status MediaDemuxer::Reset()
         requestBufferErrorCountMap_[item.first] = 0;
     }
     videoStartTime_ = 0;
-    streamDemuxer_->Reset();
+    streamDemuxer_->ResetAllCache();
     return demuxerPluginManager_->Reset();
 }
 
