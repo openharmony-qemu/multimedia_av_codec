@@ -1188,7 +1188,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
 
 bool MediaDemuxer::ChangeStream(uint32_t trackId)
 {
-    int32_t videoStreamID = demuxerPluginManager_->GetStreamID(videoTrackId_);
+    int32_t videoStreamID = demuxerPluginManager_->GetStreamID(trackId);
     int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
     if (newStreamID >= 0 && videoStreamID != newStreamID) {
         MEDIA_LOG_I("ChangeStream dash, END_OF_STREAM begin");
@@ -1200,7 +1200,7 @@ bool MediaDemuxer::ChangeStream(uint32_t trackId)
         uint32_t tempVideoTrack = TRACK_ID_DUMMY;
         uint32_t tempAudioTrack = TRACK_ID_DUMMY;
         InitMediaMetaData(mediaInfo, tempVideoTrack, tempAudioTrack, videoMime_);
-        int32_t localVideoTrackId_ = static_cast<int32_t>(videoTrackId_);
+        int32_t localVideoTrackId_ = static_cast<int32_t>(trackId);
         int32_t localTempVideoTrack = static_cast<int32_t>(tempVideoTrack);
         int32_t localAudioTrackId_ = static_cast<int32_t>(audioTrackId_);
         int32_t localTempAudioTrack = static_cast<int32_t>(tempAudioTrack);
