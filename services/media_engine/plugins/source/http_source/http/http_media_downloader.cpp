@@ -518,7 +518,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
     downloader_->Pause();
     isNeedClean_ = false;
     size_t downloadEndOffset = cacheMediaBuffer_->GetNextBufferOffset(offset);
-    if (downloadEndOffset > offset) {
+    if (downloadEndOffset > static_cast<size_t>(offset)) {
         downloader_->SetRequestSize(downloadEndOffset - offset);
     }
     bool result = false;
@@ -526,7 +526,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
     if (result) {
         writeOffset_ = static_cast<size_t>(offset);
         cacheMediaBuffer_->Seek(offset);
-        readOffset_ = offset;
+        readOffset_ = static_cast<size_t>(offset);
         downloader_->Resume();
         MEDIA_LOG_D("Seek out.");
         return true;
