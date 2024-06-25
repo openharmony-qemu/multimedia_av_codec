@@ -265,7 +265,7 @@ void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t ne
     temp2TrackInfoMap_[oldTrackId].innerTrackIndex = tempTrackInfoMap_[newTrackId].innerTrackIndex;
 }
 
-static Status DemuxerPluginManager::AddGeneral(const Meta& format, Meta& formatNew)
+Status DemuxerPluginManager::AddGeneral(const Meta& format, Meta& formatNew)
 {
     formatNew = format;   // todo: 二阶段实现合并功能，当前先这么处理
     return Status::OK;
