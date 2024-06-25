@@ -110,7 +110,7 @@ public:
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
     std::string SnifferMediaType(int32_t streamID);
-    bool IsDash();
+    bool IsDash() const;
     void SetIsDash(bool flag);
     Status SetNewVideoStreamID(int32_t streamID);
     int32_t GetNewVideoStreamID();

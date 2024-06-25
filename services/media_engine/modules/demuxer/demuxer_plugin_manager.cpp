@@ -199,12 +199,10 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
     std::string type = streamDemuxer->SnifferMediaType(streamID);
     MediaTypeFound(streamDemuxer, type, streamID);
 
-    Plugins::MediaInfo mediaInfoTemp;
-    Status ret = Status::ERROR_UNKNOWN;
-
     FALSE_RETURN_V_MSG_E(streamInfoMap_[streamID].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create video demuxer plugin failed.");
-    ret = streamInfoMap_[streamID].plugin->GetMediaInfo(mediaInfoTemp);
+    Plugins::MediaInfo mediaInfoTemp;
+    Status ret = streamInfoMap_[streamID].plugin->GetMediaInfo(mediaInfoTemp);
     streamInfoMap_[streamID].mediaInfo = mediaInfoTemp;
     return ret;
 }
