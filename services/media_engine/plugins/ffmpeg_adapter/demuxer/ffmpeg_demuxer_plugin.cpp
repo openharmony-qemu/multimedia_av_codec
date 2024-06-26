@@ -1607,7 +1607,7 @@ Status FFmpegDemuxerPlugin::GetFrameIndexByPresentationTimeUs(uint32_t trackInde
         "GetFrameIndexByPresentationTimeUs failed due to formatContext_ is nullptr.");
 
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
-        "GetPresentationTimeUsByFrameIndex failed due to trackIndex is out of range");
+        "GetFrameIndexByPresentationTimeUs failed due to trackIndex is out of range");
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetFrameIndexByPresentationTimeUs failed due to fileType is not MP4.");

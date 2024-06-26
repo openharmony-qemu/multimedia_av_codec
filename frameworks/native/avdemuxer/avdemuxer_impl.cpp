@@ -227,7 +227,7 @@ int32_t AVDemuxerImpl::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
     int64_t presentationTimeUs, uint32_t &frameIndex)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::GetFrameIndexByPresentationTimeUs");
+    AVCODEC_LOGD("GetFrameIndexByPresentationTimeUs");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Demuxer engine does not exist");
     int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetFrameIndexByPresentationTimeUs(trackIndex,
@@ -239,7 +239,7 @@ int32_t AVDemuxerImpl::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
     uint32_t frameIndex, int64_t &presentationTimeUs)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVDemuxer::GetPresentationTimeUsByFrameIndex");
+    AVCODEC_LOGD("GetPresentationTimeUsByFrameIndex");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Demuxer engine does not exist");
     int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetPresentationTimeUsByFrameIndex(trackIndex,
