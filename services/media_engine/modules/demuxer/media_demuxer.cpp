@@ -1117,7 +1117,7 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
 {
     MEDIA_LOG_D("PrepareFrame enter.");
     doPrepareFrame_ = true;
-    Status ret == Status::OK;
+    Status ret = Status::OK;
     if (isStopped_) {
         MEDIA_LOG_D("Stop was executed before and PrepareFrame.");
         firstFrameCount_ = 0;
