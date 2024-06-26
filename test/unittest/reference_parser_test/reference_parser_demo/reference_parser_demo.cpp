@@ -26,7 +26,7 @@ using namespace std;
 using json = nlohmann::json;
 
 namespace {
-constexpr const char *SOURCE_DIR = "/data/test/media";
+constexpr const char *SOURCE_DIR = "/data/test/media/";
 constexpr uint32_t MAX_SCENE_NUM = static_cast<uint32_t>(OHOS::MediaAVCodec::MP4Scene::SCENE_MAX);
 constexpr const char *VIDEO_FILE_NAME[MAX_SCENE_NUM] = {"RP_IPBBB.mp4"};
 constexpr int32_t MAX_BUFFER_SIZE = 8294400;
