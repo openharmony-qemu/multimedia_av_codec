@@ -20,7 +20,6 @@
 #include <functional>
 #include <map>
 #include <list>
-#include <set>
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
 #include "nocopyable.h"
