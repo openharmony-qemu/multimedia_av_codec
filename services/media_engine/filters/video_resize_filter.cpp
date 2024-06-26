@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,16 +19,15 @@
 #include "detail_enhancer_video.h"
 #include "detail_enhancer_video_common.h"
 
-
 namespace OHOS {
 namespace Media {
 using namespace VideoProcessingEngine;
 namespace Pipeline {
 
 static AutoRegisterFilter<VideoResizeFilter> g_registerVideoResizeFilter("builtin.transcoder.videoresize",
-    FilterType::FILTERTYPE_AENC,
+    FilterType::FILTERTYPE_VIDRESIZE,
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<VideoResizeFilter>(name, FilterType::FILTERTYPE_AENC);
+        return std::make_shared<VideoResizeFilter>(name, FilterType::FILTERTYPE_VIDRESIZE);
     });
 
 class VideoResizeFilterLinkCallback : public FilterLinkCallback {
@@ -89,6 +88,9 @@ public:
     {
         if (auto videoResizeFilter = videoResizeFilter_.lock()) {
             videoResizeFilter->OnOutputBufferAvailable(index);
+            if (flag == DETAIL_ENH_BUFFER_FLAG_EOS) {
+                videoResizeFilter->NotifyNextFilterEos();
+            }
         } else {
             MEDIA_LOG_I("invalid videoResizeFilter");
         }
@@ -129,6 +131,13 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         MEDIA_LOG_I("Init videoEnhancer fail");
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
     }
+    if (!releaseBufferTask_) {
+        releaseBufferTask_ = std::make_shared<Task>("VideoResize");
+        releaseBufferTask_->RegisterJob([this] {
+            ReleaseBuffer();
+            return 0;
+        });
+    }
 }
 
 Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
@@ -167,7 +176,7 @@ Status VideoResizeFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
     switch (filterType_) {
-        case FilterType::FILTERTYPE_AENC:
+        case FilterType::FILTERTYPE_VIDRESIZE:
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_VIDEO);
             break;
@@ -180,6 +189,10 @@ Status VideoResizeFilter::DoPrepare()
 Status VideoResizeFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
+    isThreadExit_ = false;
+    if (releaseBufferTask_) {
+        releaseBufferTask_->Start();
+    }
     int32_t ret = videoEnhancer_->Start();
     if (ret != 0) {
         eventReceiver_->OnEvent({"VideoResizeFilter::DoStart error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
@@ -221,13 +234,15 @@ Status VideoResizeFilter::DoRelease()
     return Status::OK;
 }
 
-Status VideoResizeFilter::NotifyEos()
+Status VideoResizeFilter::NotifyNextFilterEos()
 {
-    MEDIA_LOG_I("NotifyEos");
-    int32_t ret = videoEnhancer_->NotifyEos();
-    if (ret != 0) {
-        eventReceiver_->OnEvent({"VideoResizeFilter::NotifyEos error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        return Status::ERROR_UNKNOWN;
+    MEDIA_LOG_I("NotifyNextFilterEos");
+    for (auto iter : nextFiltersMap_) {
+        for (auto filter : iter.second) {
+            std::shared_ptr<Meta> eosMeta = std::make_shared<Meta>();
+            eosMeta->Set<Tag::MEDIA_END_OF_STREAM>(true);
+            filter->SetParameter(eosMeta);
+        }
     }
     return Status::OK;
 }
@@ -235,6 +250,14 @@ Status VideoResizeFilter::NotifyEos()
 void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
+    bool isEos = false;
+    if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
+        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
+        if (isEos) {
+            videoEnhancer_->NotifyEos();
+            return;
+        }
+    }
     const DetailEnhancerParameters parameter_ = {"", DetailEnhancerLevel::DETAIL_ENH_LEVEL_MEDIUM};
     int32_t ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
     if (ret != 0) {
@@ -305,7 +328,11 @@ Status VideoResizeFilter::OnUnLinked(StreamType inType, const std::shared_ptr<Fi
 void VideoResizeFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I("OnLinkedResult");
+    MEDIA_LOG_I("OnLinkedResult enter");
+    if (onLinkedResultCallback_) {
+        onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
+    }
+    MEDIA_LOG_I("OnLinkedResult done");
 }
 
 void VideoResizeFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -322,7 +349,31 @@ void VideoResizeFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index)
 {
-    MEDIA_LOG_I("OnOutputBufferAvailable");
+    MEDIA_LOG_I("OnOutputBufferAvailable enter");
+    {
+        std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+        indexs_.push_back(index);
+    }
+    releaseBufferCondition_.notify_all();
+    MEDIA_LOG_D("OnOutputBufferAvailable end");
+}
+
+void VideoResizeFilter::ReleaseBuffer()
+{
+    MEDIA_LOG_I("ReleaseBuffer");
+    while (!isThreadExit_) {
+        std::vector<uint32_t> indexs;
+        {
+            std::unique_lock<std::mutex> lock(releaseBufferMutex_);
+            releaseBufferCondition_.wait(lock);
+            indexs = indexs_;
+            indexs_.clear();
+        }
+        for (auto &index : indexs) {
+            videoEnhancer_->ReleaseOutputBuffer(index, true);
+        }
+    }
+    MEDIA_LOG_I("ReleaseBuffer end");
 }
 
 void VideoResizeFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)
