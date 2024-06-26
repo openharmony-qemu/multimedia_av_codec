@@ -1140,7 +1140,7 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
     }
     AutoLock lock(firstFrameMutex_);
     bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
-         return firstFrameCount_ == DEFAULT_PREPARE_FRAME_COUNT;
+         return firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT;
     });
     MEDIA_LOG_I("PrepareFrame res= %{public}d", res);
     doPrepareFrame_ = false;
