@@ -73,7 +73,7 @@ CodecAbilitySingleton::~CodecAbilitySingleton()
 void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    int32_t beginIdx = capabilityDataArray_.size();
+    size_t beginIdx = capabilityDataArray_.size();
     for (auto iter = capaArray.begin(); iter != capaArray.end(); iter++) {
         std::string mimeType = (*iter).mimeType;
         std::vector<size_t> idxVec;
@@ -111,14 +111,12 @@ std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
     return capabilityDataArray_;
 }
 
-std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(std::string name)
+std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(const std::string &name)
 {
-    for (const auto &it : capabilityDataArray_) {
-        if (it.codecName == name) {
-            return it;
-        }
-    }
-    return std::nullopt;
+    auto it = std::find_if(capabilityDataArray_.begin(), capabilityDataArray_.end(), [&](const CapabilityData &cap) {
+        return cap.codecName == name;
+    });
+    return it == capabilityDataArray_.end() ? std::nullopt : std::make_optional<CapabilityData>(*it);
 }
 
 std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()

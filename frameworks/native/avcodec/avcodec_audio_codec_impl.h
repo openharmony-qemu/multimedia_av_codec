@@ -59,6 +59,10 @@ private:
     void ClearCache();
     void StopTask();
     void PauseTask();
+    void StopTaskAsync();
+    void PauseTaskAsync();
+    void ClearInputBuffer();
+    void ReturnInputBuffer();
 
 private:
     class AVCodecInnerCallback : public MediaCodecCallback {

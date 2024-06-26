@@ -62,6 +62,11 @@ codec_server_coverage_include_dirs = [
 
   # av_codec_engine_codeclist_mock
   "$av_codec_root_dir/services/engine/codeclist",
+  "$av_codec_root_dir/../../graphic/graphic_2d/utils/sync_fence/export",
+  "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
+  "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
+  "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
+  "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/",
 ]
 
 ohos_unittest("codec_server_coverage_unit_test") {
@@ -101,11 +106,14 @@ ohos_unittest("codec_server_coverage_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:libgraphic_utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -129,6 +137,7 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
     "$av_codec_root_dir/services/engine/codeclist/audio_codeclist_info.cpp",
     "$av_codec_root_dir/services/engine/codeclist/codec_ability_singleton.cpp",
     "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/hdi_codec.cpp",
   ]
 
   deps = [
@@ -139,6 +148,7 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_codec:libcodec_proxy_3.0",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -148,4 +158,6 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
+
 ##################################################################################################################
+

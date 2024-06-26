@@ -32,7 +32,6 @@ public:
     virtual ~CodecServiceStub();
 
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
-    using CodecStubFunc = int32_t(CodecServiceStub::*)(MessageParcel &data, MessageParcel &reply);
     int32_t SetListenerObject(const sptr<IRemoteObject> &object) override;
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
@@ -86,7 +85,6 @@ private:
     int32_t InnerRelease();
 
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
-    std::map<uint32_t, CodecStubFunc> recFuncs_;
     std::shared_mutex mutex_;
     sptr<IStandardCodecListener> listener_ = nullptr;
 };

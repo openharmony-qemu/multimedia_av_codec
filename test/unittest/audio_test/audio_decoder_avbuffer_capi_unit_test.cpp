@@ -37,6 +37,7 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "native_audio_channel_layout.h"
+#include "media_key_system_mock.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -2827,5 +2828,25 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Prepare_01, TestSize.L
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
     Release();
 }
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Aac_SetDecryptionConfig_01, TestSize.Level1)
+{
+#ifdef SUPPORT_DRM
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_AAC));
+    std::shared_ptr<MediaKeySystemCapiMock> mediaKeySystemMock = std::make_shared<MediaKeySystemCapiMock>();
+    mediaKeySystemMock->CreateMediaKeySystem();
+    mediaKeySystemMock->CreateMediaKeySession();
+
+    bool isSecure = false;
+    int32_t ret = OH_AudioCodec_SetDecryptionConfig(audioDec_, mediaKeySystemMock->GetMediaKeySession(), isSecure);
+    if (ret != OH_AVErrCode::AV_ERR_OK && mediaKeySystemMock->GetMediaKeySession() == nullptr) {
+        Release();
+        return;
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, ret);
+    Release();
+#endif
+}
+
 }
 }

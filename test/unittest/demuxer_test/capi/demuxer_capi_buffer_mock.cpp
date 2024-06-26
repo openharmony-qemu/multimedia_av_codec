@@ -47,7 +47,7 @@ int32_t DemuxerCapiMock::UnselectTrackByID(uint32_t trackIndex)
 }
 
 int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
-    AVCodecBufferInfo *bufferInfo, uint32_t &flag)
+    AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo)
 {
     auto mem = std::static_pointer_cast<AVMemoryCapiMock>(sample);
     if (mem == nullptr) {
@@ -74,6 +74,18 @@ int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemor
         bufferInfo->size = bufferAttr.size;
         bufferInfo->offset = bufferAttr.offset;
         flag = bufferAttr.flags;
+        if (checkBufferInfo) {
+            OH_AVFormat *format = OH_AVBuffer_GetParameter(avBuffer);
+            if (format == nullptr) {
+                printf("OH_AVBuffer format is nullptr\n");
+            } else {
+                int64_t duration;
+                int64_t dts;
+                OH_AVFormat_GetLongValue(format, OH_MD_KEY_BUFFER_DURATION, &duration);
+                OH_AVFormat_GetLongValue(format, OH_MD_KEY_DECODING_TIMESTAMP, &dts);
+                printf("[track %d] duration %" PRId64 " dts %" PRId64 "\n", trackIndex, duration, dts);
+            }
+        }
         OH_AVBuffer_Destroy(avBuffer);
         return ret;
     }
@@ -88,6 +100,21 @@ int32_t DemuxerCapiMock::SeekToTime(int64_t mSeconds, Media::SeekMode mode)
         return OH_AVDemuxer_SeekToTime(demuxer_, mSeconds, seekMode);
     }
     return AV_ERR_UNKNOWN;
+}
+
+int32_t DemuxerCapiMock::SetMediaKeySystemInfoCallback(bool isNull)
+{
+    return AV_ERR_OK;
+}
+
+int32_t DemuxerCapiMock::SetDemuxerMediaKeySystemInfoCallback(bool isNull)
+{
+    return AV_ERR_OK;
+}
+
+int32_t DemuxerCapiMock::GetMediaKeySystemInfo()
+{
+    return AV_ERR_OK;
 }
 }
 }

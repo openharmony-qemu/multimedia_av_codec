@@ -64,7 +64,9 @@
           "media_foundation",
           "audio_framework",
           "drm_framework",
-          "ffmpeg"
+          "ffmpeg",
+          "lame",
+          "libxml2"
         ],
         "third_party": [
           "bounds_checking_function",
@@ -127,6 +129,86 @@
                 "native_avdemuxer.h",
                 "native_avmuxer.h",
                 "native_avsource.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_acodec",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_adec",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_aenc",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avcencinfo",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avdemuxer",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avmuxer",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avsource",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_codecbase",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_vdec",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_venc",
+            "header": {
+              "header_files": [
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
             }

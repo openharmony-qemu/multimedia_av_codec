@@ -107,6 +107,13 @@ namespace MediaAVCodec {
         }                                                                   \
     } while (0)
 
+#define EXPECT_AND_LOGE(cond, fmt, ...)                                     \
+    do {                                                                    \
+        if ((cond)) {                                                       \
+            AVCODEC_LOGE(fmt, ##__VA_ARGS__);                               \
+        }                                                                   \
+    } while (0)
+
 #define CHECK_AND_RETURN_LOG(cond, fmt, ...)                                \
     do {                                                                    \
         if (!(cond)) {                                                      \

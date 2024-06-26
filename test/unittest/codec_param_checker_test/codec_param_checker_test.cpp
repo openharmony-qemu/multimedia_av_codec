@@ -102,8 +102,8 @@ void AVCodecParamCheckerTest::SetUp(void)
 void AVCodecParamCheckerTest::TearDown(void)
 {
     OH_AVFormat_Destroy(g_format);
-    OH_VideoEncoder_Destroy(g_videoEnc);
-    OH_VideoDecoder_Destroy(g_videoDec);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(g_videoEnc));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(g_videoDec));
 }
 
 void SetFormatBasicParam(bool isDecoder)
@@ -120,7 +120,7 @@ void SetFormatBasicParam(bool isDecoder)
  * @tc.desc: codec video configure not exsit width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0101, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0101, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -133,7 +133,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0101, TestSize.L
  * @tc.desc: codec video configure width out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0102, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0102, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -147,7 +147,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVALID_TEST_0102, TestSize.L
  * @tc.desc: codec video configure width out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0103, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0103, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -161,7 +161,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_INVAILD_TEST_0103, TestSize.L
  * @tc.desc: codec video configure default width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_VAILD_TEST_0104, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_VAILD_TEST_0104, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -175,7 +175,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_WIDTH_VAILD_TEST_0104, TestSize.Lev
  * @tc.desc: codec video configure not exsit height
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0201, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0201, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -188,7 +188,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0201, TestSize.
  * @tc.desc: codec video configure height out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0202, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0202, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -202,7 +202,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0202, TestSize.
  * @tc.desc: codec video configure height out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0203, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0203, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -216,7 +216,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_INVALID_TEST_0203, TestSize.
  * @tc.desc: codec video configure default height
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_VALID_TEST_0204, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_VALID_TEST_0204, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, ENCODER_PIXEL_FORMAT));
@@ -230,12 +230,12 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_HEIGHT_VALID_TEST_0204, TestSize.Le
  * @tc.desc: codec video configure not exsit pixel format
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0301, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0301, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AV_ERR_OK);
 }
 
 /**
@@ -243,7 +243,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0301, Tes
  * @tc.desc: codec video configure pixel format unsupport
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0302, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0302, TestSize.Level3)
 {
     OH_AVCapability *encoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
     const int32_t *pixFormats = nullptr;
@@ -274,7 +274,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0302, Tes
         ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoEncoder_Destroy(videoEnc);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
     }
 }
 
@@ -283,7 +283,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_INVALID_TEST_0302, Tes
  * @tc.desc: codec video configure default pixel format
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_VALID_TEST_0303, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_VALID_TEST_0303, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
@@ -295,7 +295,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PIXEL_FORMAT_VALID_TEST_0303, TestS
  * @tc.desc: codec video configure not exsit frame rate
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_VALID_TEST_0401, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_VALID_TEST_0401, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
@@ -307,7 +307,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_VALID_TEST_0401, TestSiz
  * @tc.desc: codec video configure frame rate out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0402, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0402, TestSize.Level3)
 {
     constexpr double frameRate = 0.0;
     SetFormatBasicParam(false);
@@ -321,7 +321,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0402, TestS
  * @tc.desc: codec video configure frame rate out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0403, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0403, TestSize.Level3)
 {
     constexpr double frameRate = -1.0;
     SetFormatBasicParam(false);
@@ -335,7 +335,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0403, TestS
  * @tc.desc: codec video configure default frame rate
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0404, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0404, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE));
@@ -348,7 +348,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_FRAME_RATE_INVALID_TEST_0404, TestS
  * @tc.desc: codec video configure not exsit bitrate and bitrate mode is CBR
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0501, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0501, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
@@ -364,7 +364,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0501, T
  * @tc.desc: codec video configure not exsit bitrate and bitrate mode is VBR
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0502, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0502, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
@@ -380,7 +380,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0502, T
  * @tc.desc: codec video configure no exist bitrate mode and bitrate value in range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0503, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0503, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
@@ -393,7 +393,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0503, T
  * @tc.desc: codec video configure bitrate in range and bitrate mode is VBR
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0504, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0504, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
@@ -411,7 +411,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0504, T
  * @tc.desc: codec video configure bitrate in range and bitrate mode is CBR
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0505, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0505, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
@@ -429,7 +429,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0505, T
  * @tc.desc: codec video configure bitrate in range and bitrate mode is CQ
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0506, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0506, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
@@ -447,7 +447,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0506,
  * @tc.desc: codec video configure bitrate invalid value
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0507, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0507, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, INT64_MAX));
@@ -460,7 +460,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0507,
  * @tc.desc: codec video configure bitrate invalid value
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0508, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0508, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, INT64_MIN));
@@ -473,7 +473,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0508,
  * @tc.desc: codec video configure bitrate and quality exist value
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0509, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0509, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetLongValue(g_format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE));
@@ -487,7 +487,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0509,
  * @tc.desc: codec video configure quality in range and bitrate mode not exist
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0510, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0510, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY));
@@ -500,7 +500,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0510, T
  * @tc.desc: codec video configure quality in range and bitrate mode is VBR
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0511, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0511, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY));
@@ -518,7 +518,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0511,
  * @tc.desc: codec video configure quality in range and bitrate mode is CBR
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0512, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0512, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY));
@@ -536,7 +536,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0512,
  * @tc.desc: codec video configure quality in range and bitrate mode is CQ
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0513, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0513, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY));
@@ -554,7 +554,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_VALID_TEST_0513, T
  * @tc.desc: codec video configure quality out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0514, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0514, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, INT32_MIN));
@@ -567,7 +567,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0514,
  * @tc.desc: codec video configure quality out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0515, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0515, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_QUALITY, INT32_MAX));
@@ -580,14 +580,14 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0515,
  * @tc.desc: codec video configure quality not exist and bitrate mode is CQ
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0516, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0516, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
     if (OH_AVCapability_IsEncoderBitrateModeSupported(capability, BITRATE_MODE_CQ)) {
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ));
         OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-        ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
 }
 
@@ -596,12 +596,12 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0516,
  * @tc.desc: codec video configure bitrate mode invalid value
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0517, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0517, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, INT32_MIN));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 
 /**
@@ -609,12 +609,12 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0517,
  * @tc.desc: codec video configure bitrate mode invalid value
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0518, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0518, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, INT32_MAX));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 
 /**
@@ -622,7 +622,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_BITRATE_QUALLITY_INVALID_TEST_0518,
  * @tc.desc: codec video configure profile support
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_VALID_TEST_0601, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_VALID_TEST_0601, TestSize.Level3)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true);
     const int32_t *profiles = nullptr;
@@ -645,7 +645,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_VALID_TEST_0601, TestSize.L
         ASSERT_EQ(ret, AV_ERR_OK);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoEncoder_Destroy(videoEnc);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
     }
 }
 
@@ -654,12 +654,12 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_VALID_TEST_0601, TestSize.L
  * @tc.desc: codec video configure profile unsupport
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0602, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0602, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PROFILE, INT32_MIN));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 
 /**
@@ -667,12 +667,12 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0602, TestSize
  * @tc.desc: codec video configure profile unsupport
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0603, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0603, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PROFILE, INT32_MAX));
     OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
-    ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 
 /**
@@ -680,7 +680,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0603, TestSize
  * @tc.desc: codec video configure not exsit width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1101, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1101, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -693,7 +693,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1101, TestSize.L
  * @tc.desc: codec video configure width out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1102, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1102, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -707,7 +707,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1102, TestSize.L
  * @tc.desc: codec video configure width out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1103, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1103, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -721,7 +721,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_INVALID_TEST_1103, TestSize.L
  * @tc.desc: codec video configure default width
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_VALID_TEST_1104, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_VALID_TEST_1104, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -735,7 +735,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_WIDTH_VALID_TEST_1104, TestSize.Lev
  * @tc.desc: codec video configure not exsit height
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1201, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1201, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -748,7 +748,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1201, TestSize.
  * @tc.desc: codec video configure height out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1202, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1202, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -762,7 +762,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1202, TestSize.
  * @tc.desc: codec video configure height out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1203, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1203, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -776,7 +776,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_INVALID_TEST_1203, TestSize.
  * @tc.desc: codec video configure default height
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_VALID_TEST_1204, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_VALID_TEST_1204, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
@@ -790,7 +790,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_HEIGHT_VALID_TEST_1204, TestSize.Le
  * @tc.desc: codec video configure not exsit pixel format
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1301, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1301, TestSize.Level3)
 {
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
@@ -803,7 +803,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1301, TestS
  * @tc.desc: codec video configure pixel format unsupport
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1302, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1302, TestSize.Level3)
 {
     OH_AVCapability *encoderCapability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
     const int32_t *pixFormats = nullptr;
@@ -834,7 +834,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1302, TestS
         ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoDecoder_Destroy(videoDec);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
     }
 }
 
@@ -843,7 +843,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1302, TestS
  * @tc.desc: codec video configure default pixel format
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1303, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1303, TestSize.Level3)
 {
     SetFormatBasicParam(true);
     OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
@@ -855,7 +855,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_PIXEL_FORMAT_VALID_TEST_1303, TestS
  * @tc.desc: codec video configure not exsit frame rate
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_VALID_TEST_1401, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_VALID_TEST_1401, TestSize.Level3)
 {
     SetFormatBasicParam(true);
     OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
@@ -867,7 +867,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_VALID_TEST_1401, TestSiz
  * @tc.desc: codec video configure frame rate out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1402, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1402, TestSize.Level3)
 {
     constexpr double frameRate = 0.0;
     SetFormatBasicParam(true);
@@ -881,7 +881,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1402, TestS
  * @tc.desc: codec video configure frame rate out of range
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1403, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1403, TestSize.Level3)
 {
     constexpr double frameRate = -1.0;
     SetFormatBasicParam(true);
@@ -895,7 +895,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_INVALID_TEST_1403, TestS
  * @tc.desc: codec video configure default frame rate
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_VALID_TEST_1404, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_VALID_TEST_1404, TestSize.Level3)
 {
     SetFormatBasicParam(true);
     ASSERT_EQ(true, OH_AVFormat_SetDoubleValue(g_format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE));
@@ -908,7 +908,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_FRAME_RATE_VALID_TEST_1404, TestSiz
  * @tc.desc: codec video configure rotation angle support
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_VALID_TEST_1501, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_VALID_TEST_1501, TestSize.Level3)
 {
     int32_t len = sizeof(VALID_ROTATION_ANGLE) / sizeof(VALID_ROTATION_ANGLE[0]);
     for (int32_t i = 0; i < len; i++) {
@@ -922,12 +922,12 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_VALID_TEST_1501, TestSize.
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 0));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, rotationAngle));
         OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
         ASSERT_EQ(ret, AV_ERR_OK);
 
         OH_AVFormat_Destroy(format);
-        OH_VideoEncoder_Destroy(videoDec);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
     }
 }
 
@@ -936,7 +936,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_VALID_TEST_1501, TestSize.
  * @tc.desc: codec video configure rotation angle support
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSize.Level1)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSize.Level3)
 {
     int32_t minRotationAngle = 0;
     int32_t maxRotationAngle = 360;
@@ -955,10 +955,10 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSiz
             ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
             ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, rotationAngle));
             OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
-            ASSERT_EQ(ret, AV_ERR_UNSUPPORT);
+            ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 
             OH_AVFormat_Destroy(format);
-            OH_VideoEncoder_Destroy(videoDec);
+            ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
         }
     }
 }

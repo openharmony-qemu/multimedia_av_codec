@@ -42,6 +42,7 @@ constexpr int32_t AAC_DEFAULT_BIT_RATE = 128000;
 constexpr int32_t AAC_MAX_BIT_RATE = 500000;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
+constexpr int32_t NS_PER_US = 1000;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -324,8 +325,8 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
         return Status::ERROR_UNKNOWN;
     }
 
-    // how get perfect pts with upstream pts
-    outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
+    // how get perfect pts with upstream pts(us)
+    outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / NS_PER_US;
     // adjust ffmpeg duration with sample rate
     outBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration)
                           ? (outBuffer->duration_ - (INT64_MAX - prevPts_))
@@ -336,7 +337,7 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
 
 Status FFmpegAACEncoderPlugin::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    MEDIA_LOG_I("ReceiveBuffer enter");
+    MEDIA_LOG_D("ReceiveBuffer enter");
     (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     Status status;
@@ -528,7 +529,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
             .channels = static_cast<uint32_t>(avCodecContext_->channels),
             .sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate),
             .bitsPerSample = 0,
-            .channelLayout = static_cast<uint32_t>(avCodecContext_->channel_layout),
+            .channelLayout = avCodecContext_->ch_layout,
             .srcFfFmt = srcFmt_,
             .destSamplesPerFrame = static_cast<uint32_t>(destSamplesPerFrame),
             .destFmt = avCodecContext_->sample_fmt,

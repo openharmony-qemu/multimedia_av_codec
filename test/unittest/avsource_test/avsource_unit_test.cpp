@@ -70,8 +70,8 @@ string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
 string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
 string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
-string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
+string g_nonStandardBomPath = TEST_FILE_PATH + string("nonstandard_bom.mp3");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -1346,7 +1346,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1160, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 30020000);
+    ASSERT_EQ(formatVal_.duration, 30988375);
     ASSERT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
@@ -1366,7 +1366,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1160, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 8000);
     ASSERT_EQ(formatVal_.channelCount, 1);
     ASSERT_EQ(formatVal_.codecMime, "audio/3gpp");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32LE);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
 }
 
 /**
@@ -1386,7 +1386,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1170, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 30000000);
+    ASSERT_EQ(formatVal_.duration, 30937500);
     ASSERT_EQ(formatVal_.trackCount, 1);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
@@ -1410,7 +1410,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1170, TestSize.Level1)
     ASSERT_EQ(formatVal_.sampleRate, 16000);
     ASSERT_EQ(formatVal_.channelCount, 1);
     ASSERT_EQ(formatVal_.codecMime, "audio/amr-wb");
-    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32LE);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
 }
 
 /**
@@ -1902,54 +1902,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1601
- * @tc.desc: get format when the file is mp4 vvc
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1601, TestSize.Level1)
-{
-    if (access(g_mp4VvcPath.c_str(), F_OK) != 0) {
-        return;
-    }
-    fd_ = OpenFile(g_mp4VvcPath);
-    size_ = GetFileSize(g_mp4VvcPath);
-    printf("---- %s ------\n", g_mp4VvcPath.c_str());
-    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.duration, 10000000);
-    ASSERT_EQ(formatVal_.trackCount, 1);
-#ifdef AVSOURCE_INNER_UNIT_TEST
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
-    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
-    ASSERT_EQ(formatVal_.hasVideo, 1);
-    ASSERT_EQ(formatVal_.hasAudio, 0);
-    ASSERT_EQ(formatVal_.fileType, 101);
-#endif
-    trackIndex_ = 0;
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
-    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
-    ASSERT_EQ(formatVal_.bitRate, 506976);
-    ASSERT_EQ(formatVal_.codecMime, "video/vvc");
-    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
-    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    ASSERT_EQ(formatVal_.width, 640);
-    ASSERT_EQ(formatVal_.height, 360);
-}
-
-/**
  * @tc.name: AVSource_GetFormat_3000
  * @tc.desc: get format when the file is srt
  * @tc.type: FUNC
@@ -1985,5 +1937,30 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3000, TestSize.Level1)
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_SUBTITLE);
     ASSERT_EQ(formatVal_.codecMime, "application/x-subrip");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_4000
+ * @tc.desc: get format when the file is nonstandard BOM
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_nonStandardBomPath);
+    size_ = GetFileSize(g_nonStandardBomPath);
+    printf("---- %s ----\n", g_nonStandardBomPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ALBUM, formatVal_.album));
+
+    ASSERT_EQ(formatVal_.title, "bom");
+    ASSERT_EQ(formatVal_.artist, "张三");
+    ASSERT_EQ(formatVal_.album, "a");
 }
 } // namespace

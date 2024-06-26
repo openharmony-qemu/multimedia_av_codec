@@ -18,22 +18,22 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 struct Protocol {
     OMX_VIDEO_CODINGTYPE omxCodingType;
-    OHOS::HDI::Codec::V3_0::AvCodecRole hdiRole;
+    CodecHDI::AvCodecRole hdiRole;
     string mime;
 };
 vector<Protocol> g_protocolTable = {
     {
         OMX_VIDEO_CodingAVC,
-        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_AVC,
+        CodecHDI::AvCodecRole::MEDIA_ROLETYPE_VIDEO_AVC,
         string(CodecMimeType::VIDEO_AVC),
     },
     {
         static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingHEVC),
-        OHOS::HDI::Codec::V3_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
+        CodecHDI::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
         string(CodecMimeType::VIDEO_HEVC),
     },
 };
@@ -82,6 +82,10 @@ vector<AVCLevelMapping> g_avcLevelTable = {
     { OMX_VIDEO_AVCLevel42, AVC_LEVEL_42 },
     { OMX_VIDEO_AVCLevel5,  AVC_LEVEL_5 },
     { OMX_VIDEO_AVCLevel51, AVC_LEVEL_51 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVC_LEVEL52), AVC_LEVEL_52 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVC_LEVEL6), AVC_LEVEL_6 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVC_LEVEL61), AVC_LEVEL_61 },
+    { static_cast<OMX_VIDEO_AVCLEVELTYPE>(OMX_VIDEO_AVC_LEVEL62), AVC_LEVEL_62 },
 };
 
 struct HEVCProfileMapping {
@@ -129,7 +133,7 @@ vector<HEVCLevelMapping> g_hevcLevelTable = {
     { CODEC_HEVC_HIGH_TIER_LEVEL62, HEVC_LEVEL_62 },
 };
 
-optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V3_0::CodecType type)
+optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::CodecType type)
 {
     static const map<CodecType, AVCodecType> table = {
         {VIDEO_DECODER, AVCODEC_TYPE_VIDEO_DECODER},

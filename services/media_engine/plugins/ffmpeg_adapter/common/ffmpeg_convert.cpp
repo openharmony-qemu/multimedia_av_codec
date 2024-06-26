@@ -37,9 +37,13 @@ Status Resample::Init(const ResamplePara &resamplePara)
             MEDIA_LOG_E("cannot allocate swr context");
             return Status::ERROR_NO_MEMORY;
         }
-        swrContext = swr_alloc_set_opts(swrContext, resamplePara_.channelLayout, resamplePara_.destFmt,
-                                        resamplePara_.sampleRate, resamplePara_.channelLayout, resamplePara_.srcFfFmt,
-                                        resamplePara_.sampleRate, 0, nullptr);
+        int32_t error = swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt,
+                                            resamplePara_.sampleRate, &resamplePara_.channelLayout,
+                                            resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
+        if (error < 0) {
+            MEDIA_LOG_E("swr init error");
+            return Status::ERROR_UNKNOWN;
+        }
         if (swr_init(swrContext) != 0) {
             MEDIA_LOG_E("swr init error");
             return Status::ERROR_UNKNOWN;
@@ -62,9 +66,13 @@ Status Resample::InitSwrContext(const ResamplePara &resamplePara)
         MEDIA_LOG_E("cannot allocate swr context");
         return Status::ERROR_NO_MEMORY;
     }
-    swrContext =
-        swr_alloc_set_opts(swrContext, resamplePara_.channelLayout, resamplePara_.destFmt, resamplePara_.sampleRate,
-                           resamplePara_.channelLayout, resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
+    int32_t error =
+        swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt, resamplePara_.sampleRate,
+                            &resamplePara_.channelLayout, resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
+    if (error < 0) {
+        MEDIA_LOG_E("swr init error");
+        return Status::ERROR_UNKNOWN;
+    }
     if (swr_init(swrContext) != 0) {
         MEDIA_LOG_E("swr init error");
         return Status::ERROR_UNKNOWN;
@@ -142,7 +150,7 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
         return Status::ERROR_NO_MEMORY;
     }
 
-    outputFrame->channel_layout = static_cast<uint64_t>(resamplePara_.channelLayout);
+    outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = static_cast<int>(resamplePara_.sampleRate);
 

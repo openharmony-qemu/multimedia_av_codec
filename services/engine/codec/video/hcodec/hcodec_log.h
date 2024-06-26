@@ -63,11 +63,22 @@ constexpr auto AddPublic(const char(&str)[N], const std::array<bool, N> &isPerce
     return newStr;
 }
 
+inline constexpr unsigned int HCODEC_DOMAIN = 0xD002B32;
+inline constexpr const char* HCODEC_TAG = "HCODEC";
+#ifdef HILOG_FMTID
+#define RE_FORMAT(level, s, ...) do { \
+    constexpr auto pair = CountPercent(s); \
+    constexpr HILOG_FMT_IN_SECTION static auto newStr = AddPublic<pair.first>(s, pair.second); \
+    (void)HiLogPrintDictNew(LOG_CORE, level, HCODEC_DOMAIN, HCODEC_TAG, \
+          HILOG_UUID, HILOG_FMT_OFFSET(newStr.data()), newStr.data(), ##__VA_ARGS__); \
+} while (0)
+#else
 #define RE_FORMAT(level, s, ...) do { \
     constexpr auto pair = CountPercent(s); \
     constexpr auto newStr = AddPublic<pair.first>(s, pair.second); \
-    (void)HiLogPrint(LOG_CORE, level, 0xD002B32, "HCODEC", newStr.data(), ##__VA_ARGS__); \
+    (void)HiLogPrint(LOG_CORE, level, HCODEC_DOMAIN, HCODEC_TAG, newStr.data(), ##__VA_ARGS__); \
 } while (0)
+#endif
 
 inline constexpr const char* StrLevel(LogLevel level)
 {

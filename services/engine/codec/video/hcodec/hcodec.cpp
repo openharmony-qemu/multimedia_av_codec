@@ -37,7 +37,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 using namespace Media;
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
@@ -64,10 +64,28 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
         LOGE("cannot find %s", name.c_str());
         return nullptr;
     }
-    if (codec->InitWithName(name) != AVCS_ERR_OK) {
-        return nullptr;
-    }
     return codec;
+}
+
+int32_t HCodec::Init(Media::Meta &callerInfo)
+{
+    if (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, playerCaller_.pid) &&
+        callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, playerCaller_.processName)) {
+        calledByAvcodec_ = false;
+    } else if (callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, avcodecCaller_.pid) &&
+               callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, avcodecCaller_.processName)) {
+        calledByAvcodec_ = true;
+    }
+    return DoSyncCall(MsgWhat::INIT, nullptr);
+}
+
+void HCodec::PrintCaller()
+{
+    if (calledByAvcodec_) {
+        HLOGI("[pid %d][%s] -> avcodec", avcodecCaller_.pid, avcodecCaller_.processName.c_str());
+    } else {
+        HLOGI("[pid %d][%s] -> player -> avcodec", playerCaller_.pid, playerCaller_.processName.c_str());
+    }
 }
 
 int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
@@ -123,10 +141,9 @@ int32_t HCodec::Reset()
 {
     SCOPED_TRACE();
     FUNC_TRACKER();
-    string previouslyConfiguredName = componentName_;
     int32_t ret = Release();
     if (ret == AVCS_ERR_OK) {
-        ret = InitWithName(previouslyConfiguredName);
+        ret = DoSyncCall(MsgWhat::INIT, nullptr);
     }
     return ret;
 }
@@ -177,7 +194,7 @@ int32_t HCodec::GetOutputFormat(Format &format)
     }
     IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("format", format),
         AVCS_ERR_UNKNOWN, "output format not replied");
-    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, componentName_);
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, caps_.compName);
     format.PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
@@ -255,7 +272,7 @@ int32_t HCodec::ReleaseOutputBuffer(uint32_t index)
 HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
     : caps_(caps), codingType_(codingType), isEncoder_(isEncoder)
 {
-    debugMode_ = HiLogIsLoggable(0xD002B32, "HCODEC", LOG_DEBUG);
+    debugMode_ = HiLogIsLoggable(HCODEC_DOMAIN, HCODEC_TAG, LOG_DEBUG);
     string dumpModeStr = OHOS::system::GetParameter("hcodec.dump", "0");
     dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
     LOGI(">> debug mode = %d, dump mode = %s(%lu)",
@@ -273,6 +290,10 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
             shortName_ = isEncoderStr;
             break;
     };
+    isSecure_ = IsSecureMode(caps_.compName);
+    if (isSecure_) {
+        shortName_ += ".secure";
+    }
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -289,14 +310,6 @@ HCodec::~HCodec()
     HLOGI(">>");
     MsgHandleLoop::Stop();
     ReleaseComponent();
-}
-
-int32_t HCodec::InitWithName(const std::string &name)
-{
-    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
-        msg->SetValue("name", name);
-    };
-    return DoSyncCall(MsgWhat::INIT, proc);
 }
 
 int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
@@ -351,13 +364,10 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t HCodec::SetProcessName(const Format &format)
+int32_t HCodec::SetProcessName()
 {
-    std::string processName;
-    if (!format.GetStringValue(OHOS::Media::Tag::PROCESS_NAME, processName)) {
-        return AVCS_ERR_UNKNOWN;
-    }
-    HLOGI("processName name is %s", processName.c_str());
+    const std::string& processName = calledByAvcodec_ ? avcodecCaller_.processName : playerCaller_.processName;
+    HLOGI("processName is %s", processName.c_str());
 
     ProcessNameParam param {};
     InitOMXParamExt(param);
@@ -501,7 +511,6 @@ int32_t HCodec::GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIO
         HLOGE("invalid nBufferSize %u", def.nBufferSize);
         return AVCS_ERR_INVALID_VAL;
     }
-    PrintPortDefinition(def);
     return AVCS_ERR_OK;
 }
 
@@ -557,6 +566,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
             HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
+        SetCallerToBuffer(outBuffer->fd);
         BufferInfo bufInfo;
         bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
         bufInfo.owner          = BufferOwner::OWNED_BY_US;
@@ -775,7 +785,6 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
-        HLOGI("got input codec config data");
     }
     return flags;
 }
@@ -825,7 +834,7 @@ void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 
 void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
@@ -837,6 +846,10 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         HLOGE("wrong ownership: buffer id=%d, owner=%s", bufferId, ToString(bufferInfo->owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
+    }
+    if (!gotFirstInput_) {
+        LOGI("got first input");
+        gotFirstInput_ = true;
     }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
         (bufferInfo->avBuffer->memory_->GetSize());
@@ -879,6 +892,18 @@ void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
             return;
         }
     }
+}
+
+void HCodec::WrapSurfaceBufferToSlot(BufferInfo &info,
+    const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag)
+{
+    info.surfaceBuffer = surfaceBuffer;
+    info.omxBuffer->bufferhandle = new NativeBuffer(surfaceBuffer->GetBufferHandle());
+    info.omxBuffer->filledLen = surfaceBuffer->GetSize();
+    info.omxBuffer->fd = -1;
+    info.omxBuffer->fenceFd = -1;
+    info.omxBuffer->pts = pts;
+    info.omxBuffer->flag = flag;
 }
 
 void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
@@ -929,6 +954,7 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
+    info.omxBuffer->alongParam = std::move(omxBuffer.alongParam);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -957,7 +983,6 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
         }
         case FREE_BUFFER:
             EraseBufferFromPool(OMX_DirOutput, bufferIdx);
-            EraseOutBuffersOwnedByOmx(info.bufferId);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -969,7 +994,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
     if (!gotFirstOutput_) {
-        LOGI("decrease thread priority");
+        LOGI("got first output");
         OHOS::QOS::ResetThreadQos();
         gotFirstOutput_ = true;
     }
@@ -982,13 +1007,14 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
+    ExtractPerFrameParamFromOmxBuffer(omxBuffer, info.avBuffer->meta_);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
 
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
@@ -1100,21 +1126,6 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
             EraseBufferFromPool(OMX_DirOutput, i);
         }
     }
-}
-
-void HCodec::RecordOutBuffersOwnedByOmx()
-{
-    outBuffersOwnedByOmx_.clear();
-    for (const BufferInfo& info : outputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_OMX) {
-            outBuffersOwnedByOmx_.insert(info.bufferId);
-        }
-    }
-}
-
-void HCodec::EraseOutBuffersOwnedByOmx(uint32_t bufferId)
-{
-    outBuffersOwnedByOmx_.erase(bufferId);
 }
 
 int32_t HCodec::ForceShutdown(int32_t generation, bool isNeedNotifyCaller)
@@ -1280,7 +1291,6 @@ void HCodec::ReleaseComponent()
     compCb_ = nullptr;
     compMgr_ = nullptr;
     componentId_ = 0;
-    componentName_.clear();
 }
 
 const char* HCodec::ToString(MsgWhat what)

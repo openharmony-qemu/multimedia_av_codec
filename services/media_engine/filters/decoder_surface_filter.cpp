@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MEDIA_PIPELINE
+
 #include "decoder_surface_filter.h"
 #include <sys/time.h>
 #include "filter/filter_factory.h"
@@ -81,10 +83,20 @@ public:
 
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnError(errorType, errorCode);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
     {
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->OnOutputFormatChanged(format);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
@@ -149,6 +161,15 @@ DecoderSurfaceFilter::~DecoderSurfaceFilter()
     MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
 }
 
+void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
+        static_cast<int32_t>(errorType), errorCode);
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_ERROR, MSERR_EXT_API9_IO});
+    }
+}
+
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -177,6 +198,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     Status ret;
     // create secure decoder for drm.
     MEDIA_LOG_I("DoInit enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
+    }
     if (isDrmProtected_ && svpFlag_) {
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder for drm-protected videos");
         std::string baseName = GetCodecName(codecMimeType_);
@@ -205,6 +229,7 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     if (isDrmProtected_) {
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
     }
+    videoSink_->SetParameter(meta_);
     return Status::OK;
 }
 
@@ -218,6 +243,7 @@ Status DecoderSurfaceFilter::DoPrepare()
         inputBufferQueueConsumer->SetBufferAvailableListener(listener);
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
     }
+    videoSink_->ResetRenderStarted();
     return Status::OK;
 }
 
@@ -227,7 +253,10 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
     auto ret = DoStart();
-    if (ret == Status::OK) {
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
+    } else {
         isNeedStartDecoder_ = false;
     }
     return ret;
@@ -235,12 +264,12 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
 
 Status DecoderSurfaceFilter::WaitPrepareFrame()
 {
-    MEDIA_LOG_I("WaitPrepareFrame enter.");
+    MEDIA_LOG_D("WaitPrepareFrame enter.");
     AutoLock lock(firstFrameMutex_);
     bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
          return !doPrepareFrame_;
     });
-    MEDIA_LOG_D("PrepareFrame res= %{public}d.", res);
+    MEDIA_LOG_I("PrepareFrame res= %{public}d.", res);
     doPrepareFrame_ = false;
     DoPause();
     return Status::OK;
@@ -271,6 +300,7 @@ Status DecoderSurfaceFilter::DoStart()
     }
     auto ret = videoDecoder_->Start();
     if (!isNeedStartDecoder_.load()) {
+        isNeedStartDecoder_ = true;
         MEDIA_LOG_I("Already start videoDecoder and enter.");
         return Status::OK;
     }
@@ -286,6 +316,9 @@ Status DecoderSurfaceFilter::DoPause()
     }
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->ResetRenderTime();
+    }
     return Status::OK;
 }
 
@@ -312,6 +345,7 @@ Status DecoderSurfaceFilter::DoStop()
     timeval tv;
     gettimeofday(&tv, 0);
     stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
+    videoSink_->ResetSyncInfo();
     auto ret = videoDecoder_->Stop();
     if (!IS_FILTER_ASYNC && !isThreadExit_.load()) {
         isThreadExit_ = true;
@@ -363,6 +397,19 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
         configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
     }
+    if (parameter->Find(Tag::VIDEO_FRAME_RATE) != parameter->end()) {
+        double rate = 0.0;
+        parameter->Get<Tag::VIDEO_FRAME_RATE>(rate);
+        if (rate < 0) {
+            if (configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, rate)) {
+                MEDIA_LOG_W("rate is invalid, get frame rate from the original resource: %{public}f", rate);
+            }
+        }
+        if (rate <= 0) {
+            rate = 30.0; // 30.0 is the hisi default frame rate.
+        }
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, rate);
+    }
     // cannot set parameter when codec at [ CONFIGURED / INITIALIZED ] state
     auto ret = videoDecoder_->SetParameter(format);
     if (ret == MediaAVCodec::AVCS_ERR_INVALID_STATE) {
@@ -380,9 +427,25 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     videoDecoder_->SetParameter(format);
 }
 
+Status DecoderSurfaceFilter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
+{
+    if (videoDecoder_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return videoDecoder_->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+}
+
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter enter parameter is valid:  %{public}i", parameter != nullptr);
+}
+
+void DecoderSurfaceFilter::SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 
 Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -482,6 +545,7 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer)
 {
     videoDecoder_->ReleaseOutputBuffer(index, render);
+    videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
@@ -630,6 +694,7 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
 
 void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
 {
+    MEDIA_LOG_I("SetSeekTime enter.");
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
 }
@@ -652,11 +717,57 @@ void DecoderSurfaceFilter::ParseDecodeRateLimit()
     MediaAVCodec::CapabilityData *capabilityData = codecList->GetCapability(codecMimeType_, false,
         MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
     std::shared_ptr<MediaAVCodec::VideoCaps> videoCap = std::make_shared<MediaAVCodec::VideoCaps>(capabilityData);
+    FALSE_RETURN_MSG(videoCap != nullptr, "failed to get videoCap instance");
     const MediaAVCodec::Range &frameRange = videoCap->GetSupportedFrameRatesFor(width, height);
     int32_t rateUpperLimit = frameRange.maxVal;
     if (rateUpperLimit > 0) {
         meta_->SetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, rateUpperLimit);
     }
+}
+
+void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("DecoderSurfaceFilter::OnDumpInfo called.");
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->OnDumpInfo(fd);
+    }
+}
+
+void DecoderSurfaceFilter::SetBitrateStart()
+{
+    bitrateChange_++;
+}
+ 
+void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
+{
+    AutoLock lock(formatChangeMutex_);
+    int32_t width = 0;
+    format.GetIntValue("video_picture_width", width);
+    int32_t height = 0;
+    format.GetIntValue("video_picture_height", height);
+    MEDIA_LOG_I("OnOutputFormatChanged curW=" PUBLIC_LOG_D32 " curH=" PUBLIC_LOG_D32 " nextW=" PUBLIC_LOG_D32
+        " nextH=" PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_, width, height);
+    if (width <= 0 || height <= 0) {
+        MEDIA_LOG_W("invaild video size");
+        return;
+    }
+    if (surfaceWidth_ == 0 || surfaceWidth_ == 0) {
+        MEDIA_LOG_I("receive first output Format");
+        surfaceWidth_ = width;
+        surfaceHeight_ = height;
+        return;
+    }
+    if (surfaceWidth_ == width && surfaceHeight_ == height) {
+        MEDIA_LOG_W("receive the same output Format");
+        return;
+    }
+    surfaceWidth_ = width;
+    surfaceHeight_ = height;
+ 
+    MEDIA_LOG_I("ReportVideoSizeChange videoWidth: " PUBLIC_LOG_D32 " videoHeight: "
+        PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
+    std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
 }
 } // namespace Pipeline
 } // namespace MEDIA

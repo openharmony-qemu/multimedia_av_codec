@@ -47,6 +47,8 @@ public:
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
     void DestroyDumper(StubType type, sptr<IRemoteObject> object);
     void DestroyDumperForPid(pid_t pid);
+    void NotifyProcessStatus(const int32_t status);
+    void SetCritical(const bool isKeyService);
 
 private:
     AVCodecServerManager();
@@ -65,6 +67,7 @@ private:
                      pid_t pid,
                      const std::string& stubName);
     void EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stubMap, pid_t pid);
+    void Init();
 
     class AsyncExecutor {
     public:
@@ -85,8 +88,16 @@ private:
     std::map<sptr<IRemoteObject>, pid_t> sourceStubMap_;
     std::map<StubType, std::vector<Dumper>> dumperTbl_;
     AsyncExecutor executor_;
-
+    pid_t pid_ = 0;
     std::mutex mutex_;
+    using NotifyProcessStatusFunc = int32_t(*)(int32_t pid, int32_t type, int32_t status, int32_t saId);
+    using SetCriticalFunc = int32_t(*)(int32_t pid, bool critical, int32_t saId);
+    static constexpr char LIB_PATH[] = "libmemmgrclient.z.so";
+    static constexpr char NOTIFY_STATUS_FUNC_NAME[] = "notify_process_status";
+    static constexpr char SET_CRITICAL_FUNC_NAME[] = "set_critical";
+    std::shared_ptr<void> libMemMgrClientHandle_ = nullptr;
+    NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
+    SetCriticalFunc setCriticalFunc_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

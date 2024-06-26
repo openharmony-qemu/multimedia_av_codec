@@ -23,8 +23,9 @@
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
 public:
-    HEncoder(OHOS::HDI::Codec::V3_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
+    HEncoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, true) {}
+    ~HEncoder() override;
 
 private:
     // configure
@@ -62,20 +63,20 @@ private:
     void FindAllIdleSlotAndSubmit();
     void SubmitOneBuffer(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
-    int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer>& omxBuffer,
-        const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag);
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
 
     // per frame param
-    void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                         const std::shared_ptr<Media::Meta> &meta);
-    void WrapLTRParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapLTRParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                    const std::shared_ptr<Media::Meta> &meta);
-    void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                              const std::shared_ptr<Media::Meta> &meta);
-    void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+    void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                        const std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                           std::shared_ptr<Media::Meta> &meta) override;
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;

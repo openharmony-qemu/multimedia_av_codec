@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include "avcodec_audio_encoder_inner_demo.h"
 #include <iostream>
 #include <unistd.h>
-
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -23,7 +23,6 @@
 #include "media_description.h"
 #include "securec.h"
 #include "ffmpeg_converter.h"
-#include "avcodec_audio_encoder_inner_demo.h"
 
 extern "C" {
 #include "libavcodec/avcodec.h"

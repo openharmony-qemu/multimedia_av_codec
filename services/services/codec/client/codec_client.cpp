@@ -116,7 +116,6 @@ int32_t CodecClient::Configure(const Format &format)
 
     Format format_ = format;
     int32_t isSetParameterCb = (codecMode_ & CODEC_SET_PARAMETER_CALLBACK) != 0;
-    format_.PutStringValue(Tag::PROCESS_NAME, program_invocation_name);
     format_.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
 
     int32_t ret = codecProxy_->Configure(format_);
@@ -129,16 +128,18 @@ int32_t CodecClient::Configure(const Format &format)
 
 int32_t CodecClient::Start()
 {
-    std::scoped_lock lock(mutex_, *syncMutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
                              "Not get input surface.");
 
+    SetNeedListen(true);
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
-        SetNeedListen(true);
         needUpdateGeneration_ = true;
         AVCODEC_LOGI("Succeed");
+    } else {
+        SetNeedListen(needUpdateGeneration_); // is in running state = needUpdateGeneration_
     }
     return ret;
 }
@@ -293,8 +294,8 @@ int32_t CodecClient::GetOutputFormat(Format &format)
 int32_t CodecClient::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_OPERATION, "Server not exist");
 
     int32_t ret = codecProxy_->SetDecryptConfig(keySession, svpFlag);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");

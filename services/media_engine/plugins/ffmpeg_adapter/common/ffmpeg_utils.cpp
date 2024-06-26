@@ -94,13 +94,27 @@ int64_t ConvertPts(int64_t pts, int64_t startTime)
     return inputPts;
 }
 
-int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base)
+int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base)
 {
     int64_t result;
     if (base.num == 0) {
         result = AV_NOPTS_VALUE;
     } else {
         AVRational bq = {1, AV_CODEC_SECOND};
+        result = av_rescale_q(timestampNs, bq, base);
+    }
+    MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
+        PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampNs, result);
+    return result;
+}
+
+int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
+{
+    int64_t result;
+    if (base.num == 0) {
+        result = AV_NOPTS_VALUE;
+    } else {
+        AVRational bq = {1, AV_CODEC_MSECOND};
         result = av_rescale_q(timestampUs, bq, base);
     }
     MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
@@ -136,6 +150,9 @@ uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough)
     if (static_cast<uint32_t>(pkt.flags) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) {
         flags |= (uint32_t)(AVBufferFlag::SYNC_FRAME);
         flags |= (uint32_t)(AVBufferFlag::CODEC_DATA);
+    }
+    if (static_cast<uint32_t>(pkt.flags) & static_cast<uint32_t>(AV_PKT_FLAG_DISCARD)) {
+        flags |= (uint32_t)(AVBufferFlag::DISCARD);
     }
     if (memoryNotEnough) {
         flags |= (uint32_t)(AVBufferFlag::PARTIAL_FRAME);

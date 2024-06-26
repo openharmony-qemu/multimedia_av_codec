@@ -21,6 +21,8 @@
 #include "plugin/source_plugin.h"
 #include "plugin/plugin_buffer.h"
 #include "osal/task/task.h"
+#include <mutex>
+#include <shared_mutex>
 
 namespace OHOS {
 namespace Media {
@@ -33,16 +35,19 @@ public:
     Status SetCallback(Callback* cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
+    Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
+    Status Stop() override;
     void SetDemuxerState() override;
     void SetBundleName(const std::string& bundleName) override;
     void SubmitBufferingStart();
     void SubmitReadFail();
 private:
     Status ParseUriInfo(const std::string& uri);
+    void PauseReadTimer();
     int64_t ReadTimer();
     void CacheData();
     void StartTimerTask();
@@ -61,10 +66,11 @@ private:
     Callback* callback_ {nullptr};
     bool isTaskCallback_ {false};
     std::atomic<bool> isBuffering_ {false};
+    std::atomic<bool> isEnd_ {false};
     uint64_t readTime_ {0};
     std::shared_ptr<Task> timerTask_;
     std::shared_ptr<Task> downloadTask_;
-
+    std::shared_mutex mutex_;
     bool isReadFrame_ {false};
     std::string bundleName_ {};
     bool isReadSuccess_ {false};

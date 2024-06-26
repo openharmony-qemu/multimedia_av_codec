@@ -46,10 +46,9 @@ struct M3U8InitFile {
 };
 
 struct M3U8Fragment {
-    M3U8Fragment(std::string uri, std::string title, double duration, int sequence, bool discont);
+    M3U8Fragment(std::string uri, double duration, int sequence, bool discont);
     M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv);
     std::string uri_;
-    std::string title_;
     double duration_;
     int64_t sequence_;
     bool discont_ {false};
@@ -61,10 +60,9 @@ struct M3U8Fragment {
 
 struct M3U8Info {
     std::string uri;
-    std::string title;
     double duration = 0;
     bool discontinuity = false;
-    bool bVod;
+    bool bVod {false};
 };
 
 struct M3U8 {
@@ -73,7 +71,7 @@ struct M3U8 {
     void InitTagUpdatersMap();
     bool Update(const std::string& playList);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
-    void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration, std::string& title) const;
+    void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
     bool IsLive() const;
 
@@ -111,6 +109,8 @@ struct M3U8 {
     bool isDecryptAble_ { false };
     bool isDecryptKeyReady_ { false };
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
+    M3U8Info firstFragment_;
+    std::atomic<bool> isFirstFragmentReady_ {false};
 };
 
 struct M3U8Media {
@@ -145,6 +145,7 @@ struct M3U8MasterPlaylist {
     void UpdateMasterPlaylist();
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
+    std::shared_ptr<M3U8VariantStream> minimumVariant_;
     std::string uri_;
     std::string playList_;
     double duration_ {0};

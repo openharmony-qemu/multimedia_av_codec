@@ -21,20 +21,24 @@
 #include <thread>
 #include <map>
 #include <shared_mutex>
+#include <list>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
 #include "stream_parser_manager.h"
+#include "reference_parser_manager.h"
 #include "meta/meta.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavcodec/bsf.h"
 #ifdef __cplusplus
 }
 #endif
@@ -60,8 +64,23 @@ public:
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
+    void ResetEosStatus() override;
+    Status ParserRefInit(int64_t timeStampMs) override;
+    Status ParserRefUpdatePos(int64_t timeStampMs) override;
+    Status ParserRefInfo() override;
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
 
 private:
+    struct IOContext {
+        std::shared_ptr<DataSource> dataSource {nullptr};
+        int64_t offset {0};
+        uint64_t fileSize {0};
+        bool eos {false};
+        std::atomic<bool> timeout {false};
+        uint32_t initDownloadDataSize {0};
+        std::atomic<bool> initCompleted {false};
+    };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
     int64_t GetStreamDuration(const AVStream& avStream);
@@ -69,21 +88,23 @@ private:
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
-    AVIOContext* AllocAVIOContext(int flags);
-    void InitAVFormatContext();
+    AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
+    std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
+    static int CheckContextIsValid(void* opaque);
+    void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);
     void ConvertAvcToAnnexb(AVPacket& pkt);
     void PushEOSToAllCache();
     void ShowSelectedTracks();
-    bool IsInSelectedTrack(const uint32_t trackId);
+    bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
     void AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertAvccToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+    void ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
-    Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
+    Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData,
         int32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
@@ -92,19 +113,14 @@ private:
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status GetSeiInfo();
 
     int FindNaluSpliter(int size, const uint8_t *data);
     bool CanDropAvcPkt(const AVPacket& pkt);
     bool CanDropHevcPkt(const AVPacket& pkt);
     void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
-
-    struct IOContext {
-        std::shared_ptr<DataSource> dataSource {nullptr};
-        int64_t offset {0};
-        uint64_t fileSize {0};
-        bool eos {false};
-    };
+    Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
+    void ParserBoxInfo();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -123,6 +139,18 @@ private:
     void GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
     AVPacket *firstFrame_ = nullptr;
+
+    std::atomic<bool> parserState_ = true;
+    IOContext parserRefIoContext_;
+    std::shared_ptr<AVFormatContext> parserRefFormatContext_{nullptr};
+    int parserRefVideoStreamIdx_ = -1;
+    std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
+    int32_t parserCurGopId_ = 0;
+    int64_t pendingSeekMsTime_ = -1;
+    std::list<uint32_t> processingIFrame_;
+    std::vector<uint32_t> IFramePos_;
+    double fps_{0};
+    std::mutex syncMutex_;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

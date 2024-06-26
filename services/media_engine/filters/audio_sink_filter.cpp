@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MEDIA_PIPELINE
 
 #define HST_LOG_TAG "AudioSinkFilter"
 #include "audio_sink_filter.h"
@@ -120,7 +121,7 @@ Status AudioSinkFilter::DoPause()
     }
     // only worked when state is working
     if (state_ != FilterState::READY && state_ != FilterState::RUNNING) {
-        MEDIA_LOG_W("audio sink cannot pause when not working");
+        MEDIA_LOG_W("audio sink cannot pause when not working.");
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;

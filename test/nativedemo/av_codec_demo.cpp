@@ -31,6 +31,7 @@
 #include "avcodec_audio_avbuffer_g711mu_encoder_demo.h"
 #include "avcodec_audio_avbuffer_lbvc_decoder_inner_demo.h"
 #include "avcodec_audio_avbuffer_lbvc_encoder_inner_demo.h"
+#include "avcodec_audio_avbuffer_mp3_encoder_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
 #include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
@@ -49,6 +50,7 @@ using namespace OHOS::MediaAVCodec::AudioFlacEncDemo;  // AudioEncoderBufferDemo
 using namespace OHOS::MediaAVCodec::AudioOpusDemo;
 using namespace OHOS::MediaAVCodec::AudioG711muDemo;
 using namespace OHOS::MediaAVCodec::AudioAvbufferG711muDemo;
+using namespace OHOS::MediaAVCodec::AudioAvbufferMp3EncoderDemo;
 using namespace OHOS::MediaAVCodec::AudioAacDemo;
 using namespace OHOS::MediaAVCodec::AudioAacEncDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
@@ -172,8 +174,7 @@ static int RunAudioAVBufferDecoderDrm()
 static int RunAudioEncoder()
 {
     cout << "Please select number for format (default AAC Encoder): " << endl;
-    cout << "0: AAC" << endl;
-    cout << "1: FLAC" << endl;
+    cout << "0: AAC\n" << "1: FLAC" << endl;
     cout << "2: OPUS" << endl;
     cout << "3: G711MU" << endl;
     cout << "4: AAC-API11" << endl;
@@ -181,6 +182,7 @@ static int RunAudioEncoder()
     cout << "6: G711MU-API11" << endl;
     cout << "7: AMR-NB-API11" << endl;
     cout << "8: AMR-WB-API11" << endl;
+    cout << "9: MP3-API11" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -209,6 +211,9 @@ static int RunAudioEncoder()
         audioEnc->RunCase();
     } else if (mode == "8") {
         auto audioEnc = std::make_unique<AEncAvbufferAmrWbDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "9") {
+        auto audioEnc = std::make_unique<AEncAvbufferMp3Demo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;
@@ -415,7 +420,7 @@ static void OptionPrint()
     cout << "7:Video Decoder" << endl;
     cout << "8:Video Inner Decoder" << endl;
     cout << "9:demuxer demo" << endl;
-    cout << "10:Audio AVBuffer Decoder with DRM" << endl;
+    cout << "10:Audio AVBuffer Decoder" << endl;
     cout << "11:Video Decoder DRM" << endl;
     cout << "12:E2E demo" << endl;
     cout << "13:Audio AVBuffer Decoder with DRM" << endl;

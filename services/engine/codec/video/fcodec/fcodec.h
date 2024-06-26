@@ -23,6 +23,7 @@
 #include <tuple>
 #include <vector>
 #include <optional>
+#include <algorithm>
 #include "av_common.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
@@ -120,6 +121,7 @@ private:
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t SetSurfaceCfg(int32_t bufferCnt);
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
@@ -136,8 +138,8 @@ private:
     std::shared_ptr<AVPacket> avPacket_ = nullptr;
     std::shared_ptr<AVFrame> cachedFrame_ = nullptr;
     // Receive frame
-    uint8_t *scaleData_[AV_NUM_DATA_POINTERS];
-    int32_t scaleLineSize_[AV_NUM_DATA_POINTERS];
+    uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};
+    int32_t scaleLineSize_[AV_NUM_DATA_POINTERS] = {0};
     std::shared_ptr<Scale> scale_ = nullptr;
     bool isConverted_ = false;
     bool isOutBufSetted_ = false;
@@ -149,7 +151,7 @@ private:
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
     std::optional<uint32_t> synIndex_ = std::nullopt;
-    sptr<Surface> surface_ = nullptr;
+    SurfaceControl sInfo_;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
     std::shared_ptr<TaskThread> renderTask_ = nullptr;

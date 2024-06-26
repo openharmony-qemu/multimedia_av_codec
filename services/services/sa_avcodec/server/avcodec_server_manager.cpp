@@ -14,15 +14,17 @@
  */
 
 #include "avcodec_server_manager.h"
+#include <codecvt>
+#include <dlfcn.h>
+#include <locale>
 #include <thread>
 #include <unistd.h>
-#include <codecvt>
-#include <locale>
-#include "avcodec_trace.h"
+#include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
-#include "avcodec_dump_utils.h"
+#include "system_ability_definition.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
 #endif
@@ -105,7 +107,6 @@ void AVCodecServerManager::DumpServer(int32_t fd, StubType stubType, std::unorde
 
 int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
-    std::string dumpString;
     std::unordered_set<std::u16string> argSets;
     for (decltype(args.size()) index = 0; index < args.size(); ++index) {
         argSets.insert(args[index]);
@@ -127,12 +128,28 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 
 AVCodecServerManager::AVCodecServerManager()
 {
+    pid_ = getpid();
+    Init();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVCodecServerManager::~AVCodecServerManager()
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+}
+
+void AVCodecServerManager::Init()
+{
+    void *handle = dlopen(LIB_PATH, RTLD_NOW);
+    CHECK_AND_RETURN_LOG(handle != nullptr, "Load so failed:%{public}s", LIB_PATH);
+    libMemMgrClientHandle_ = std::shared_ptr<void>(handle, dlclose);
+    notifyProcessStatusFunc_ = reinterpret_cast<NotifyProcessStatusFunc>(dlsym(handle, NOTIFY_STATUS_FUNC_NAME));
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "Load notifyProcessStatusFunc failed:%{public}s",
+                         NOTIFY_STATUS_FUNC_NAME);
+    setCriticalFunc_ = reinterpret_cast<SetCriticalFunc>(dlsym(handle, SET_CRITICAL_FUNC_NAME));
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "Load setCriticalFunc failed:%{public}s",
+                         SET_CRITICAL_FUNC_NAME);
+    return;
 }
 
 int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject> &object)
@@ -192,6 +209,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     dumper.remoteObject_ = object;
     dumperTbl_[StubType::CODEC].emplace_back(dumper);
 
+    SetCritical(true);
     AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
     return AVCS_ERR_OK;
 }
@@ -203,7 +221,7 @@ void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>::ite
                                        const std::string& stubName)
 {
     if (iter != stubMap.end()) {
-        AVCODEC_LOGD("destroy %{public}s stub services(%{public}zu) pid(%{public}d).", stubName.c_str(),
+        AVCODEC_LOGI("destroy %{public}s stub services(%{public}zu) pid(%{public}d).", stubName.c_str(),
                      stubMap.size(), pid);
         (void)stubMap.erase(iter);
         return;
@@ -224,17 +242,20 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
         case CODEC: {
             auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(), compare_func);
             EraseObject(it, codecStubMap_, pid, "codec");
-            return;
+            break;
         }
         case CODECLIST: {
             auto it = find_if(codecListStubMap_.begin(), codecListStubMap_.end(), compare_func);
             EraseObject(it, codecListStubMap_, pid, "codeclist");
-            return;
+            break;
         }
         default: {
             AVCODEC_LOGE("default case, av_codec server manager failed, pid(%{public}d).", pid);
             break;
         }
+    }
+    if (codecStubMap_.size() == 0) {
+        SetCritical(false);
     }
 }
 
@@ -255,13 +276,17 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     DestroyDumperForPid(pid);
-    AVCODEC_LOGD("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
+    AVCODEC_LOGI("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
     EraseObject(codecStubMap_, pid);
-    AVCODEC_LOGD("codec stub services(%{public}zu).", codecStubMap_.size());
-    AVCODEC_LOGD("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
+    AVCODEC_LOGI("codec stub services(%{public}zu).", codecStubMap_.size());
+
+    AVCODEC_LOGI("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
     EraseObject(codecListStubMap_, pid);
-    AVCODEC_LOGD("codeclist stub services(%{public}zu).", codecListStubMap_.size());
+    AVCODEC_LOGI("codeclist stub services(%{public}zu).", codecListStubMap_.size());
     executor_.Clear();
+    if (codecStubMap_.size() == 0) {
+        SetCritical(false);
+    }
 }
 
 void AVCodecServerManager::DestroyDumper(StubType type, sptr<IRemoteObject> object)
@@ -292,6 +317,28 @@ void AVCodecServerManager::DestroyDumperForPid(pid_t pid)
     }
     if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
         AVCODEC_LOGW("failed to call InstanceDump");
+    }
+}
+
+void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
+{
+    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "notify memory manager is nullptr, %{public}d.", status);
+    int32_t ret = notifyProcessStatusFunc_(pid_, 1, status, AV_CODEC_SERVICE_ID);
+    if (ret == 0) {
+        AVCODEC_LOGI("notify memory manager to %{public}d success.", status);
+    } else {
+        AVCODEC_LOGW("notify memory manager to %{public}d fail.", status);
+    }
+}
+
+void AVCodecServerManager::SetCritical(const bool isKeyService)
+{
+    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d.", isKeyService);
+    int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
+    if (ret == 0) {
+        AVCODEC_LOGI("set critical to %{public}d success.", isKeyService);
+    } else {
+        AVCODEC_LOGW("set critical to %{public}d fail.", isKeyService);
     }
 }
 

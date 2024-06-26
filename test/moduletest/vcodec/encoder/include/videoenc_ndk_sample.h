@@ -118,7 +118,7 @@ public:
     uint32_t frameCount = 0;
     uint32_t switchParamsTimeSec = 3;
     bool sleepOnFPS = false;
-    bool SURFACE_INPUT = false;
+    bool SURF_INPUT = false;
     bool enableAutoSwitchParam = false;
     bool needResetBitrate = false;
     bool needResetFrameRate = false;
@@ -126,19 +126,24 @@ public:
     bool repeatRun = false;
     bool showLog = false;
     bool fuzzMode = false;
+    bool inputCallbackFlush = false;
+    bool inputCallbackStop = false;
+    bool outputCallbackFlush = false;
+    bool outputCallbackStop = false;
     int64_t encode_count = 0;
     bool enable_random_eos = false;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     int64_t start_time = 0;
     int64_t end_time = 0;
-
+    uint32_t randomEos = 0;
     bool TEMPORAL_CONFIG = false;
     bool TEMPORAL_ENABLE = false;
     bool TEMPORAL_JUMP_MODE = false;
     bool TEMPORAL_DEFAULT = false;
-private:
+
     std::atomic<bool> isRunning_ { false };
+private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;

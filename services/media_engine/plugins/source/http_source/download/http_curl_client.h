@@ -34,7 +34,8 @@ public:
 
     Status Init() override;
 
-    Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
+    Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
+                int32_t timeoutMs) override;
 
     Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
                        NetworkClientErrorCode& clientCode) override;
@@ -42,21 +43,25 @@ public:
     Status Close() override;
 
     Status Deinit() override;
+
 private:
-    void InitCurlEnvironment(const std::string& url);
+    void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
+    void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
-    std::string ClearHeadTailSpace(std::string& str);
-    void CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue);
+    static std::string ClearHeadTailSpace(std::string& str);
+    void CheckHeaderKey(const std::string& setKey, const std::string& setValue);
+    void CheckRequestRange(long startPos, int len);
+
 private:
     RxHeader rxHeader_;
     RxBody rxBody_;
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    std::string userAgent_ {"Harmony OS UA"};
+    std::string userAgent_ {"OpenHarmony OS UA"};
     std::string referer_ {};
-    bool isSetUA_ = false;
+    std::string cookie_ {};
 };
 }
 }

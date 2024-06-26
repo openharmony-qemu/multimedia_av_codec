@@ -63,6 +63,7 @@ ohos_unittest("sa_avcodec_unit_test") {
     "./mock/avcodec_service_stub_mock.cpp",
     "./mock/codec_service_stub_mock.cpp",
     "./mock/codeclist_service_stub_mock.cpp",
+    "./mock/mem_mgr_client_mock.cpp",
     "./mock/system_ability_mock.cpp",
     "./sa_avcodec_unit_test.cpp",
   ]

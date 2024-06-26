@@ -25,7 +25,7 @@
 
 #include "securec.h"
 #include "meta/mime_type.h"
-#include "plugin/plugin_manager.h"
+#include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
 #include "data_sink_fd.h"
 #include "data_sink_file.h"
@@ -65,7 +65,7 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
 namespace OHOS {
 namespace Media {
 MediaMuxer::MediaMuxer(int32_t appUid, int32_t appPid)
-    : appUid_(appUid), appPid_(appPid)
+    : appUid_(appUid), appPid_(appPid), format_(Plugins::OutputFormat::DEFAULT)
 {
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " instances create", FAKE_POINTER(this));
 }
@@ -149,7 +149,7 @@ Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
 {
     MEDIA_LOG_I("SetUserMeta");
     std::lock_guard<std::mutex> lock(mutex_);
-    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
+    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED || state_ == State::STARTED, Status::ERROR_WRONG_STATE,
         "The state is not INITIALIZED, the interface must be called after constructor and before Start(). "
         "The current state is %{public}s.", StateConvert(state_).c_str());
     return muxer_->SetUserMeta(userMeta);
@@ -176,7 +176,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTrack failed! %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(trackId >= 0, Status::ERROR_INVALID_DATA,
         "The track index is greater than or equal to 0.");
-    trackIndex = tracks_.size();
+    trackIndex = static_cast<int32_t>(tracks_.size());
     sptr<Track> track = new Track();
     track->trackId_ = trackId;
     track->mimeType_ = mimeType;
@@ -227,6 +227,9 @@ Status MediaMuxer::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuff
     if (sample->memory_ != nullptr && sample->memory_->GetSize() > 0) { // copy data
         int32_t retInt = buffer->memory_->Write(sample->memory_->GetAddr(), sample->memory_->GetSize(), 0);
         FALSE_RETURN_V_MSG_E(retInt > 0, Status::ERROR_NO_MEMORY, "Write sample in buffer failed.");
+    } else {
+        MEDIA_LOG_W("No data in the sample.");
+        buffer->memory_->SetSize(0); // no data in the buffer, clear buffer size
     }
     return tracks_[trackIndex]->producer_->PushBuffer(buffer, true);
 }
@@ -348,7 +351,6 @@ void MediaMuxer::ThreadProcessor()
         if (buffer1 != nullptr) {
             muxer_->WriteSample(tracks_[trackIdx]->trackId_, tracks_[trackIdx]->curBuffer_);
             tracks_[trackIdx]->ReleaseBuffer();
-            --bufferAvailableCount_;
         }
         MEDIA_LOG_D("Track " PUBLIC_LOG_S " 2 bufferAvailableCount_ :" PUBLIC_LOG_D32,
             threadName_.c_str(), bufferAvailableCount_.load());
@@ -363,10 +365,21 @@ void MediaMuxer::OnBufferAvailable()
         threadName_.c_str(), bufferAvailableCount_.load());
 }
 
+void MediaMuxer::ReleaseBuffer()
+{
+    --bufferAvailableCount_;
+}
+
 std::shared_ptr<AVBuffer> MediaMuxer::Track::GetBuffer()
 {
     if (curBuffer_ == nullptr && bufferAvailableCount_ > 0) {
-        consumer_->AcquireBuffer(curBuffer_);
+        Status ret = consumer_->AcquireBuffer(curBuffer_);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Track " PUBLIC_LOG_S " lost " PUBLIC_LOG_D32 " frames",
+                mimeType_.c_str(), bufferAvailableCount_.load());
+            --bufferAvailableCount_;
+            listener_->ReleaseBuffer();
+        }
     }
     return curBuffer_;
 }
@@ -377,6 +390,7 @@ void MediaMuxer::Track::ReleaseBuffer()
         consumer_->ReleaseBuffer(curBuffer_);
         curBuffer_ = nullptr;
         --bufferAvailableCount_;
+        listener_->ReleaseBuffer();
     }
 }
 
@@ -405,30 +419,11 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);
 
-    auto names = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::MUXER);
-    std::string pluginName = "";
-    uint32_t maxProb = 0;
-    for (auto& name : names) {
-        auto info = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::MUXER, name);
-        if (info == nullptr) {
-            continue;
-        }
-        for (const auto& cap : info->outCaps) {
-            if (cap.mime == table.at(format) && info->rank > maxProb) {
-                maxProb = info->rank;
-                pluginName = name;
-                break;
-            }
-        }
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(Plugins::PluginType::MUXER, table.at(format));
+    if (plugin == nullptr) {
+        return nullptr;
     }
-    MEDIA_LOG_I("The max probability is %{public}d, and the plugin name is %{public}s.", maxProb, pluginName.c_str());
-    if (!pluginName.empty()) {
-        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::MUXER);
-        return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
-    } else {
-        MEDIA_LOG_E("No plugins matching output format - %{public}d", format);
-    }
-    return nullptr;
+    return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
 }
 
 bool MediaMuxer::CanAddTrack(const std::string &mimeType)

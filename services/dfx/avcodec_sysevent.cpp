@@ -73,11 +73,76 @@ void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
                     "AUDIO_SAMPLE_RATE",    codecDfxInfo.audioSampleRate);
 }
 
-void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
+void CodecStopEventWrite(int32_t clientPid, int32_t clientUid, int32_t codecInstanceId)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                     "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
+}
+
+void DemuxerInitEventWrite(uint32_t downloadSize, std::string sourceType)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "DEMUXER_INIT_INFO",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+                    "DOWNLOAD_SIZE", downloadSize, "SOURCE_TYPE", sourceType);
+}
+
+void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "DEMUXER_FAILURE",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "APP_NAME",         demuxerFaultInfo.appName,
+                    "INSTANCE_ID",      demuxerFaultInfo.instanceId,
+                    "CALLER_TYPE",      demuxerFaultInfo.callerType,
+                    "SOURCE_TYPE",      demuxerFaultInfo.sourceType,
+                    "CONTAINER_FORMAT", demuxerFaultInfo.containerFormat,
+                    "STREAM_TYPE",      demuxerFaultInfo.streamType,
+                    "ERROR_MESG",       demuxerFaultInfo.errMsg);
+}
+
+void FaultAudioCodecEventWrite(AudioCodecFaultInfo& audioCodecFaultInfo)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "AUDIO_CODEC_FAILURE",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "APP_NAME",    audioCodecFaultInfo.appName,
+                    "INSTANCE_ID", audioCodecFaultInfo.instanceId,
+                    "CALLER_TYPE", audioCodecFaultInfo.callerType,
+                    "AUDIO_CODEC", audioCodecFaultInfo.audioCodec,
+                    "ERROR_MESG",  audioCodecFaultInfo.errMsg);
+}
+
+void FaultVideoCodecEventWrite(VideoCodecFaultInfo& videoCodecFaultInfo)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "VIDEO_CODEC_FAILURE",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "APP_NAME",    videoCodecFaultInfo.appName,
+                    "INSTANCE_ID", videoCodecFaultInfo.instanceId,
+                    "CALLER_TYPE", videoCodecFaultInfo.callerType,
+                    "VIDEO_CODEC", videoCodecFaultInfo.videoCodec,
+                    "ERROR_MESG",  videoCodecFaultInfo.errMsg);
+}
+
+void FaultMuxerEventWrite(MuxerFaultInfo& muxerFaultInfo)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "MUXER_FAILURE",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "APP_NAME",         muxerFaultInfo.appName,
+                    "INSTANCE_ID",      muxerFaultInfo.instanceId,
+                    "CALLER_TYPE",      muxerFaultInfo.callerType,
+                    "VIDEO_CODEC",      muxerFaultInfo.videoCodec,
+                    "AUDIO_CODEC",      muxerFaultInfo.audioCodec,
+                    "CONTAINER_FORMAT", muxerFaultInfo.containerFormat,
+                    "ERROR_MESG",       muxerFaultInfo.errMsg);
+}
+
+void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo)
+{
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA, "RECORD_AUDIO_FAILURE",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "APP_NAME",          audioSourceFaultInfo.appName,
+                    "INSTANCE_ID",       audioSourceFaultInfo.instanceId,
+                    "AUDIO_SOURCE_TYPE", audioSourceFaultInfo.audioSourceType,
+                    "ERROR_MESG",        audioSourceFaultInfo.errMsg);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

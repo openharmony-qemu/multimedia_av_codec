@@ -46,6 +46,9 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
     }
     OH_AVErrCode ret = vDecSample->InputFuncFUZZ(data, size);
     if (ret != AV_ERR_OK) {
+        vDecSample->Flush();
+        vDecSample->Stop();
+        vDecSample->Reset();
         vDecSample->Release();
         delete vDecSample;
         vDecSample = nullptr;

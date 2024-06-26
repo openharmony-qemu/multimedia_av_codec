@@ -36,28 +36,6 @@ namespace {
 std::atomic<int32_t> g_vdecCount = 0;
 std::string g_vdecName = "";
 
-void MultiThreadCreateVDec()
-{
-    std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
-    std::shared_ptr<VDecCallbackTest> adecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
-    ASSERT_NE(nullptr, adecCallback);
-
-    std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
-    ASSERT_NE(nullptr, videoDec);
-
-    EXPECT_LE(g_vdecCount.load(), 64); // 64: max instances supported
-    if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
-        g_vdecCount++;
-        cout << "create successed, num:" << g_vdecCount.load() << endl;
-    } else {
-        cout << "create failed, num:" << g_vdecCount.load() << endl;
-        return;
-    }
-    sleep(1);
-    videoDec->Release();
-    g_vdecCount--;
-}
-
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 struct OH_AVCodecCallback GetVoidCallback()
 {
@@ -265,9 +243,57 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
 {
-    SET_THREAD_NUM(100);
+    auto func = []() {
+        std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
+        std::shared_ptr<VDecCallbackTest> adecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
+        ASSERT_NE(nullptr, adecCallback);
+
+        std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+        ASSERT_NE(nullptr, videoDec);
+
+        EXPECT_LE(g_vdecCount.load(), 100); // 100: max instances supported
+        if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
+            g_vdecCount++;
+            cout << "create successed, num:" << g_vdecCount.load() << endl;
+        } else {
+            cout << "create failed, num:" << g_vdecCount.load() << endl;
+            return;
+        }
+        sleep(10); // 10: existence time
+        videoDec->Release();
+        g_vdecCount--;
+    };
     g_vdecCount = 0;
-    GTEST_RUN_TASK(MultiThreadCreateVDec);
+    SET_THREAD_NUM(100); // 100: num of thread
+    GTEST_RUN_TASK(func);
+    cout << "remaining num: " << g_vdecCount.load() << endl;
+}
+
+/**
+ * @tc.name: VideoDecoder_Multithread_Create_002
+ * @tc.desc: try create 100 instances by mime
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_002, TestSize.Level1)
+{
+    auto func = []() {
+        std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
+        std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+        ASSERT_NE(nullptr, videoDec);
+        if (videoDec->CreateVideoDecMockByMime(CodecMimeType::VIDEO_AVC.data())) {
+            g_vdecCount++;
+            cout << "create successed, num:" << g_vdecCount.load() << endl;
+        } else {
+            cout << "create failed, num:" << g_vdecCount.load() << endl;
+            return;
+        }
+        sleep(10); // 10: existence time
+        videoDec->Release();
+        EXPECT_GE(g_vdecCount.load(), 64); // 64: num of instances
+    };
+    g_vdecCount = 0;
+    SET_THREAD_NUM(100); // 100: num of thread
+    GTEST_RUN_TASK(func);
     cout << "remaining num: " << g_vdecCount.load() << endl;
 }
 
@@ -1183,8 +1209,6 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_002, TestSize.Level1)
     checkFunc(Media::Tag::VIDEO_CROP_LEFT);
     checkFunc(Media::Tag::VIDEO_CROP_RIGHT);
     checkFunc(Media::Tag::VIDEO_STRIDE);
-    checkFunc(Media::Tag::VIDEO_DISPLAY_WIDTH);
-    checkFunc(Media::Tag::VIDEO_DISPLAY_HEIGHT);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -1207,21 +1231,43 @@ HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_003, TestSize.Level1)
 
     int32_t cropRight = 0;
     int32_t stride = 0;
-    int32_t displayWidth = 0;
     int32_t cropBottom = 0;
-    int32_t displayHeight = 0;
 
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_CROP_RIGHT, cropRight));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_DISPLAY_WIDTH, displayWidth));
     EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_CROP_BOTTOM, cropBottom));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_DISPLAY_HEIGHT, displayHeight));
 
     EXPECT_GE(cropRight, DEFAULT_WIDTH - 1);
     EXPECT_GE(stride, DEFAULT_WIDTH);
-    EXPECT_GE(displayWidth, DEFAULT_WIDTH);
     EXPECT_GE(cropBottom, DEFAULT_HEIGHT - 1);
-    EXPECT_GE(displayHeight, DEFAULT_HEIGHT);
+
+    EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_GetOutputDescription_004
+ * @tc.desc: video codec GetOutputDescription
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoDecoder_GetOutputDescription_004, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    format_ = videoDec_->GetOutputDescription();
+
+    int32_t pictureWidth = 0;
+    int32_t pictureHeight = 0;
+
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
+    EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
+
+    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
+    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
 
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -1264,5 +1310,20 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: VideoDecoder_SetDecryptionConfig_001
+ * @tc.desc: video decodec set decryption config function test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
+{
+    VCodecTestCode param = VCodecTestCode::HW_AVC;
+    CreateByNameWithParam(param);
+    SetFormatWithParam(param);
+    PrepareSource(param);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetVideoDecryptionConfig());
 }
 } // namespace

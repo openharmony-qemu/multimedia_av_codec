@@ -24,7 +24,9 @@ ohos_unittest("av_codec_dfx_test") {
   ]
 
   sources = [
+    "avcodec_sysevent_test.cpp",
     "dump_utils_test.cpp",
+    "media_dfx_test.cpp",
     "xcollie_test.cpp",
   ]
 

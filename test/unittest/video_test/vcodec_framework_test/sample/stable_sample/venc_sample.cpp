@@ -44,8 +44,8 @@ int32_t ReadYUV420SP(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int
     if (width == 0) {
         return 0;
     }
-    int32_t pixcelSize = int32_t(stride / width);
-    width *= pixcelSize;
+    int32_t pixelSize = int32_t(stride / width);
+    width *= pixelSize;
     for (int32_t i = 0; i < (height * 3 / 2); ++i) { // 3: nom, 2: denom
         signal->inFile_->read(reinterpret_cast<char *>(addr), width);
         addr += stride;
@@ -59,8 +59,8 @@ int32_t ReadYUV420P(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int3
     if (width == 0) {
         return 0;
     }
-    int32_t pixcelSize = int32_t(stride / width);
-    width *= pixcelSize;
+    int32_t pixelSize = int32_t(stride / width);
+    width *= pixelSize;
     // Y
     for (int32_t i = 0; i < height; ++i) {
         signal->inFile_->read(reinterpret_cast<char *>(addr), width);
@@ -81,8 +81,8 @@ int32_t ReadRGBA(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t
     if (width == 0) {
         return 0;
     }
-    int32_t pixcelSize = int32_t(stride / width);
-    width *= pixcelSize;
+    int32_t pixelSize = int32_t(stride / width);
+    width *= pixelSize;
     for (int32_t i = 0; i < height; ++i) {
         signal->inFile_->read(reinterpret_cast<char *>(addr), width);
         addr += stride;
@@ -90,9 +90,9 @@ int32_t ReadRGBA(std::shared_ptr<VideoEncSignal> &signal, uint8_t *addr, int32_t
     return stride * height;
 }
 
-ReadFrame GetReadOneFrame(int32_t pixcelFormat)
+ReadFrame GetReadOneFrame(int32_t pixelFormat)
 {
-    switch (pixcelFormat) {
+    switch (pixelFormat) {
         case AV_PIXEL_FORMAT_YUVI420:
             return ReadYUV420P;
         case AV_PIXEL_FORMAT_NV21:
@@ -220,16 +220,20 @@ int32_t VideoEncSample::GetInputSurface()
     TITLE_LOG;
     int32_t ret = OH_VideoEncoder_GetSurface(codec_, &nativeWindow_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_GetSurface failed");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->inFile_ != nullptr, false, "create signal_->inFile_ failed");
+
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, sampleWidth_, sampleHeight_);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_USAGE fail.Error:%d", ret);
+
     inputLoop_ = make_unique<thread>(&VideoEncSample::InputFuncSurface, this);
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
@@ -242,7 +246,7 @@ int32_t VideoEncSample::Configure()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
     bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixcel_);
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, samplePixel_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
     int32_t ret = OH_VideoEncoder_Configure(codec_, format);
@@ -519,7 +523,7 @@ int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_HEIGHT, &height);
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
 
-    attr.size = GetReadOneFrame(samplePixcel_)(signal_, addr, width, height, stride);
+    attr.size = GetReadOneFrame(samplePixel_)(signal_, addr, width, height, stride);
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     if (isFirstFrame_) {
         attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -612,7 +616,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     rect->h = sampleHeight_;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
-    NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;

@@ -60,10 +60,13 @@ ohos_unittest("encoder_native_module_test") {
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/videoenc_ndk_inner_sample.cpp",
       "./src/api_test.cpp",
+      "./src/configure_test.cpp",
       "./src/func_test.cpp",
       "./src/temporal_test.cpp",
 
       #"./src/perf_test.cpp",
+      "./src/getparam_test.cpp",
+
       #"./src/reli_test.cpp",
       "./src/setparam_test.cpp",
       "./src/state_test.cpp",

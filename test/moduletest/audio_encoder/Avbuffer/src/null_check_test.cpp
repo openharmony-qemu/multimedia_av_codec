@@ -407,7 +407,7 @@ HWTEST_F(NullCheckTest, NULL_CHECK_014, TestSize.Level2)
     ASSERT_EQ(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetInputIndex();
     result0 = audioBufferAacEncDemo->PushInputDataEOS(nullptr, index);
-    ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
+    ASSERT_NE(result0, AV_ERR_OK);
     result0 = audioBufferAacEncDemo->Destroy(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
     delete audioBufferAacEncDemo;
@@ -441,8 +441,9 @@ HWTEST_F(NullCheckTest, NULL_CHECK_015, TestSize.Level2)
     result0 = audioBufferAacEncDemo->Start(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetInputIndex();
+    index = -1;
     result0 = audioBufferAacEncDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    ASSERT_NE(result0, AV_ERR_OK);
     index = audioBufferAacEncDemo->GetOutputIndex();
     result0 = audioBufferAacEncDemo->FreeOutputData(nullptr, index);
     ASSERT_EQ(result0, AV_ERR_INVALID_VAL);

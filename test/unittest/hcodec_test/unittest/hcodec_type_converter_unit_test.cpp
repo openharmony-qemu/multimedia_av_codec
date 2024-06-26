@@ -23,21 +23,21 @@ using namespace testing::ext;
 
 HWTEST(HCodecTypeConverterUnitTest, hdi_codec_type_to_inner_codec_type_find, TestSize.Level1)
 {
-    optional<AVCodecType> ret = TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V3_0::VIDEO_DECODER);
+    optional<AVCodecType> ret = TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::VIDEO_DECODER);
     ASSERT_TRUE(ret.has_value());
     EXPECT_EQ(ret.value(), AVCODEC_TYPE_VIDEO_DECODER);
 }
 
 HWTEST(HCodecTypeConverterUnitTest, hdi_codec_type_to_inner_codec_type_not_find, TestSize.Level1)
 {
-    optional<AVCodecType> ret = TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V3_0::INVALID_TYPE);
+    optional<AVCodecType> ret = TypeConverter::HdiCodecTypeToInnerCodecType(CodecHDI::INVALID_TYPE);
     ASSERT_FALSE(ret.has_value());
 }
 
 HWTEST(HCodecTypeConverterUnitTest, hdi_role_to_omx_coding_type_find, TestSize.Level1)
 {
     optional<OMX_VIDEO_CODINGTYPE> ret = TypeConverter::HdiRoleToOmxCodingType(
-        OHOS::HDI::Codec::V3_0::MEDIA_ROLETYPE_VIDEO_AVC);
+        CodecHDI::MEDIA_ROLETYPE_VIDEO_AVC);
     ASSERT_TRUE(ret.has_value());
     EXPECT_EQ(ret.value(), OMX_VIDEO_CodingAVC);
 }
@@ -45,19 +45,19 @@ HWTEST(HCodecTypeConverterUnitTest, hdi_role_to_omx_coding_type_find, TestSize.L
 HWTEST(HCodecTypeConverterUnitTest, hdi_role_to_omx_coding_type_not_find, TestSize.Level1)
 {
     optional<OMX_VIDEO_CODINGTYPE> ret = TypeConverter::HdiRoleToOmxCodingType(
-        OHOS::HDI::Codec::V3_0::MEDIA_ROLETYPE_INVALID);
+        CodecHDI::MEDIA_ROLETYPE_INVALID);
     ASSERT_FALSE(ret.has_value());
 }
 
 HWTEST(HCodecTypeConverterUnitTest, hdi_role_to_mime_find, TestSize.Level1)
 {
-    string ret = TypeConverter::HdiRoleToMime(OHOS::HDI::Codec::V3_0::MEDIA_ROLETYPE_VIDEO_HEVC);
+    string ret = TypeConverter::HdiRoleToMime(CodecHDI::MEDIA_ROLETYPE_VIDEO_HEVC);
     EXPECT_EQ(ret, string(CodecMimeType::VIDEO_HEVC));
 }
 
 HWTEST(HCodecTypeConverterUnitTest, hdi_role_to_mime_not_find, TestSize.Level1)
 {
-    string ret = TypeConverter::HdiRoleToMime(OHOS::HDI::Codec::V3_0::MEDIA_ROLETYPE_INVALID);
+    string ret = TypeConverter::HdiRoleToMime(CodecHDI::MEDIA_ROLETYPE_INVALID);
     ASSERT_TRUE(ret.empty());
 }
 
@@ -255,7 +255,7 @@ HWTEST(HCodecTypeConverterUnitTest, inner_hevc_profile_to_omx_profile_not_find, 
 HWTEST(HCodecTypeConverterUnitTest, hdi_bitrate_mode_to_inner_mode_find, TestSize.Level1)
 {
     optional<VideoEncodeBitrateMode> ret =
-        TypeConverter::HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V3_0::BIT_RATE_MODE_VBR);
+        TypeConverter::HdiBitrateModeToInnerMode(CodecHDI::BIT_RATE_MODE_VBR);
     ASSERT_TRUE(ret.has_value());
     EXPECT_EQ(ret.value(), VBR);
 }
@@ -263,7 +263,7 @@ HWTEST(HCodecTypeConverterUnitTest, hdi_bitrate_mode_to_inner_mode_find, TestSiz
 HWTEST(HCodecTypeConverterUnitTest, hdi_bitrate_mode_to_inner_mode_not_find, TestSize.Level1)
 {
     optional<VideoEncodeBitrateMode> ret =
-        TypeConverter::HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V3_0::BIT_RATE_MODE_INVALID);
+        TypeConverter::HdiBitrateModeToInnerMode(CodecHDI::BIT_RATE_MODE_INVALID);
     ASSERT_FALSE(ret.has_value());
 }
 } // OHOS::MediaAVCodec

@@ -17,6 +17,7 @@
 #define MEDIA_PIPELINE_DEMUXER_FILTER_H
 
 #include <string>
+#include <unordered_set>
 #include "filter/filter.h"
 #include "media_demuxer.h"
 #include "meta/meta.h"
@@ -47,8 +48,13 @@ public:
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
+    Status SetSubtitleSource(const std::shared_ptr<MediaSource> source);
     void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
+
+    Status StartReferenceParser(int64_t startTimeMs);
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
 
     Status StartAudioTask();
     Status SelectTrack(int32_t trackId);
@@ -61,6 +67,7 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status GetDownloadInfo(DownloadInfo& downloadInfo);
 
     FilterType GetFilterType();
 
@@ -69,13 +76,19 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
+    bool IsRenderNextVideoFrameSupported();
 
+    bool IsDrmProtected();
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
-    Status OptimizeDecodeSlow(bool useDecodeSlowOptimization);
+    Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
     void SetInterruptState(bool isInterruptNeeded);
+    void SetDumpFlag(bool isdump);
+    void OnDumpInfo(int32_t fd);
+    void SetCallerInfo(uint64_t instanceId, const std::string& appName);
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -92,8 +105,13 @@ private:
     };
 
     bool FindTrackId(StreamType outType, int32_t &trackId);
-    bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
+    bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime, size_t index);
+    bool ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index);
     void UpdateTrackIdMap(StreamType streamType, int32_t index);
+    void FaultDemuxerEventInfoWrite(StreamType& streamType);
+    bool IsVideoMime(const std::string& mime);
+    bool IsAudioMime(const std::string& mime);
+    std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
     std::atomic<bool> isPrepareFramed{false};
@@ -106,6 +124,13 @@ private:
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
+
+    bool isDump_ = false;
+    std::string bundleName_;
+    uint64_t instanceId_ = 0;
+    std::string videoMime_;
+    std::string audioMime_;
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 };
 } // namespace Pipeline
 } // namespace Media

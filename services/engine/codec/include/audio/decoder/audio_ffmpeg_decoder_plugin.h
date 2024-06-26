@@ -71,6 +71,8 @@ public:
 
     int32_t SetCodecExtradata();
 
+    void DisableNeedResample();
+
 private:
     bool hasExtra_;
     int32_t maxInputSize_;

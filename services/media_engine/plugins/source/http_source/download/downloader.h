@@ -39,11 +39,11 @@ struct HeaderInfo {
     char contentType[32]; // 32 chars
     size_t fileContentLen {0};
     mutable size_t retryTimes {0};
-    size_t maxRetryTimes {100};
+    const static size_t maxRetryTimes {100};
+    const static int sleepTime {10};
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
-    unsigned int sleepTime {10};
 
     void Update(const HeaderInfo* info)
     {
@@ -75,6 +75,7 @@ using DownloadDoneCbFunc = std::function<void(const std::string&, const std::str
 struct MediaSouce {
     std::string url;
     std::map<std::string, std::string> httpHeader;
+    int32_t timeoutMs{-1};
 };
 
 class DownloadRequest {
@@ -107,9 +108,12 @@ public:
     void Close();
     double GetDuration() const;
     void SetStartTimePos(int64_t startTimePos);
+    void SetRangePos(int64_t startPos, int64_t endPos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
     uint32_t GetBitRate() const;
+    bool IsChunkedVod() const;
+    bool IsM3u8Request() const;
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -125,6 +129,7 @@ private:
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
     int64_t startPos_ {0};
+    int64_t endPos_ {-1};
     int64_t startTimePos_ {0};
     bool isDownloading_ {false};
     bool requestWholeFile_ {false};
@@ -140,6 +145,8 @@ private:
     std::string location_;
     mutable size_t times_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<bool> retryOnGoing_ {false};
+    int64_t dropedDataLen_ {0};
 };
 
 class Downloader {
@@ -149,12 +156,13 @@ public:
 
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
     void Start();
-    void Pause();
+    void Pause(bool isAsync = false);
     void Resume();
     void Stop(bool isAsync = false);
     bool Seek(int64_t offset);
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
+    void SetRequestSize(size_t downloadRequestSize);
 private:
     bool BeginDownload();
 
@@ -162,16 +170,22 @@ private:
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
-    static void FLVProcess(bool &isTrunck, long &contentLen, std::string url);
+    static void FLVProcess(bool &isTrunck, long &contentLen, const std::string &url);
     static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static void UpdateHeaderInfo(Downloader* mediaDownloader);
+    static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
+    static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
+    static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
     std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
-    Mutex operatorMutex_{};
+    FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     bool shouldStartNextRequest {false};
+    size_t downloadRequestSize_ {0};
+    int32_t noTaskLoopTimes_ {0};
 };
 }
 }

@@ -26,7 +26,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 using namespace OHOS::HDI::ServiceManager::V1_0;
 
 static mutex g_mtx;
@@ -153,8 +153,8 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
-    LOGI("isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
-        hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
+    LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
+        hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
         hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
     return userCap;
 }
@@ -230,7 +230,7 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
     }
 }
 
-void HCodecList::GetSupportedFeatureParam(const OHOS::HDI::Codec::V3_0::CodecVideoPortCap& hdiVideoCap,
+void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
                                           CapabilityData& userCap)
 {
     if (hdiVideoCap.isSupportLowLatency) {

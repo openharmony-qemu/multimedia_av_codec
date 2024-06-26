@@ -75,7 +75,7 @@ public:
 
     bool CheckSampleFormat(const std::shared_ptr<Meta> &format, int32_t channels);
 
-    void DisableNeedResamp();
+    void DisableNeedResample();
 private:
     bool isFirst;
     bool hasExtra_;
@@ -84,7 +84,6 @@ private:
     int32_t bufferIndex_;
     int64_t preBufferGroupPts_;
     int64_t curBufferGroupPts_;
-    int64_t bufferGroupPtsDistance;
     std::string name_;
 
     std::shared_ptr<AVCodec> avCodec_;

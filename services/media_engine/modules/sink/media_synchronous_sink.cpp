@@ -83,23 +83,24 @@ void MediaSynchronousSink::NotifyAllPrerolled()
 
 void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& meta)
 {
+    FALSE_RETURN_MSG(meta != nullptr, "meta is null!");
     int64_t trackStartTime = 0;
     meta->GetData(Tag::MEDIA_START_TIME, trackStartTime);
     uint32_t trackId = 0;
     FALSE_LOG(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
-        syncCenter->SetMediaTimeRangeStart(Plugins::HstTime2Us(trackStartTime), trackId);
+        syncCenter->SetMediaTimeRangeStart(Plugins::HstTime2Us(trackStartTime), trackId, this);
     }
     int64_t trackDuration = 0;
     if (meta->GetData(Tag::MEDIA_DURATION, trackDuration)) {
         if (syncCenter) {
-            syncCenter->SetMediaTimeRangeEnd(trackDuration + trackStartTime, trackId);
+            syncCenter->SetMediaTimeRangeEnd(trackDuration + trackStartTime, trackId, this);
         }
     } else {
         MEDIA_LOG_W("Get duration failed");
         if (syncCenter) {
-            syncCenter->SetMediaTimeRangeEnd(INT64_MAX, trackId);
+            syncCenter->SetMediaTimeRangeEnd(INT64_MAX, trackId, this);
         }
     }
 }

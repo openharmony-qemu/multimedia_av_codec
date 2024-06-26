@@ -143,18 +143,53 @@ int32_t AVDemuxerDemo::SeekToTime(int64_t millisecond, OH_AVSeekMode mode)
 static void OnDrmInfoChangedInApp(DRM_MediaKeySystemInfo *drmInfo)
 {
     printf("OnDrmInfoChangedInApp \n");
+    if (drmInfo == nullptr || drmInfo->psshCount > MAX_PSSH_INFO_COUNT) {
+        return;
+    }
     printf("OnDrmInfoChangedInApp info count: %d \n", drmInfo->psshCount);
     for (uint32_t i = 0; i < drmInfo->psshCount; i++) {
-        printf("OnDrmInfoChangedInApp print");
-        const uint32_t uuidLen = 16;
+        const uint32_t uuidLen = DRM_UUID_LEN;
+        printf("OnDrmInfoChangedInApp print uuid: \n");
         for (uint32_t index = 0; index < uuidLen; index++) {
-            printf("OnDrmInfoChangedInApp print uuid %x \n", drmInfo->psshInfo[i].uuid[index]);
+            printf("%x ", drmInfo->psshInfo[i].uuid[index]);
         }
+        printf(" \n");
         printf("OnDrmInfoChangedInApp print pssh length %d \n", drmInfo->psshInfo[i].dataLen);
-        for (uint32_t k = 0; k < drmInfo->psshInfo[i].dataLen; k++) {
-            unsigned char *pssh = static_cast<unsigned char*>(drmInfo->psshInfo[i].data);
-            printf("OnDrmInfoChangedInApp print pssh %x \n", pssh[k]);
+        if (drmInfo->psshInfo[i].dataLen > MAX_PSSH_DATA_LEN) {
+            return;
         }
+        unsigned char *pssh = static_cast<unsigned char*>(drmInfo->psshInfo[i].data);
+        for (uint32_t k = 0; k < drmInfo->psshInfo[i].dataLen; k++) {
+            printf("%x ", pssh[k]);
+        }
+        printf(" \n");
+    }
+}
+
+static void OnDrmInfoChangedWithObjInApp(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *drmInfo)
+{
+    printf("OnDrmInfoChangedWithObjInApp \n");
+    printf("OnDrmInfoChangedWithObjInApp demuxer is %p\n", static_cast<void*>(demuxer));
+    if (drmInfo == nullptr || drmInfo->psshCount > MAX_PSSH_INFO_COUNT) {
+        return;
+    }
+    printf("OnDrmInfoChangedWithObjInApp info count: %d \n", drmInfo->psshCount);
+    for (uint32_t i = 0; i < drmInfo->psshCount; i++) {
+        const uint32_t uuidLen = DRM_UUID_LEN;
+        printf("OnDrmInfoChangedWithObjInApp print uuid: \n");
+        for (uint32_t index = 0; index < uuidLen; index++) {
+            printf("%x ", drmInfo->psshInfo[i].uuid[index]);
+        }
+        printf(" \n");
+        printf("OnDrmInfoChangedWithObjInApp print pssh length %d \n", drmInfo->psshInfo[i].dataLen);
+        if (drmInfo->psshInfo[i].dataLen > MAX_PSSH_DATA_LEN) {
+            return;
+        }
+        unsigned char *pssh = static_cast<unsigned char*>(drmInfo->psshInfo[i].data);
+        for (uint32_t k = 0; k < drmInfo->psshInfo[i].dataLen; k++) {
+            printf("%x ", pssh[k]);
+        }
+        printf(" \n");
     }
 }
 
@@ -164,6 +199,9 @@ int32_t AVDemuxerDemo::SetDrmAppCallback()
     DRM_MediaKeySystemInfoCallback callback = &OnDrmInfoChangedInApp;
     int32_t ret = OH_AVDemuxer_SetMediaKeySystemInfoCallback(this->avdemxuer_, callback);
     printf("SetDrmAppCallback ret %d \n", ret);
+    Demuxer_MediaKeySystemInfoCallback callbackObj = &OnDrmInfoChangedWithObjInApp;
+    ret = OH_AVDemuxer_SetDemuxerMediaKeySystemInfoCallback(this->avdemxuer_, callbackObj);
+    printf("SetDrmAppCallbackWithObj ret %d \n", ret);
     return ret;
 }
 

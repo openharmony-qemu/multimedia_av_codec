@@ -34,7 +34,6 @@ std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
-constexpr int64_t TIMESTAMP_US = 1000;
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
@@ -711,7 +710,7 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->data = sample->memory_->GetAddr();
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * TIMESTAMP_US, st->time_base);
+    cachePacket_->pts = ConvertTimeToFFmpegByUs(sample->pts_, st->time_base);
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
@@ -835,15 +834,16 @@ bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size, int32_
     uint64_t naluSize = 0;
     uint64_t curPos = 0;
     uint64_t cmpSize = static_cast<uint64_t>(size);
-    while (curPos + nalSizeLen <= cmpSize) {
+    uint32_t nalUSizeLen = static_cast<uint32_t>(nalSizeLen);
+    while (curPos + nalUSizeLen <= cmpSize) {
         naluSize = 0;
-        for (uint64_t i = curPos; i < curPos + nalSizeLen; i++) {
+        for (uint64_t i = curPos; i < curPos + nalUSizeLen; i++) {
             naluSize = sample[i] + naluSize * 0x100;
         }
         if (naluSize <= 1) {
             return false;
         }
-        curPos += (naluSize + nalSizeLen);
+        curPos += (naluSize + nalUSizeLen);
     }
     return curPos == cmpSize;
 }
@@ -856,9 +856,9 @@ Status FFmpegMuxerPlugin::SetNalSizeLen(AVStream *stream, const std::vector<uint
     const size_t hevcCodecConfigSize = 23;
     AVCodecParameters *par = stream->codecpar;
     if (par->codec_id == AV_CODEC_ID_H264 && codecConfig.size() > h264CodecConfigSize) {
-        videoTracksInfo_[stream->index].nalSizeLen_ = static_cast<uint32_t>(codecConfig[h264NalSizeIndex] & 0x03) + 1;
+        videoTracksInfo_[stream->index].nalSizeLen_ = static_cast<int32_t>(codecConfig[h264NalSizeIndex] & 0x03) + 1;
     } else if (par->codec_id == AV_CODEC_ID_HEVC && codecConfig.size() > hevcCodecConfigSize) {
-        videoTracksInfo_[stream->index].nalSizeLen_ = static_cast<uint32_t>(codecConfig[hevcNalSizeIndex] & 0x03) + 1;
+        videoTracksInfo_[stream->index].nalSizeLen_ = static_cast<int32_t>(codecConfig[hevcNalSizeIndex] & 0x03) + 1;
     } else {
         MEDIA_LOG_E("SetNalSizeLen failed! codec config size is " PUBLIC_LOG_ZU, codecConfig.size());
         return Status::ERROR_INVALID_DATA;

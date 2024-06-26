@@ -331,7 +331,7 @@ void CommandOpt::Print() const
         isBufferMode ? "buffer" : "surface", render);
     TLOGI("read inputFile %s up to %u frames", inputFile.c_str(), maxReadFrameCnt);
     TLOGI("%u x %u @ %u fps", dispW, dispH, frameRate);
-    TLOGI("protocol = %s, pixFmt = %d", (protocol == H264) ? "264" : "265", pixFmt);
+    TLOGI("protocol = %d, pixFmt = %d", protocol, pixFmt);
     TLOGI("repeat %u times, timeout = %d", repeatCnt, timeout);
     TLOGI("enableHighPerfMode : %s", isHighPerfMode ? "yes" : "no");
 

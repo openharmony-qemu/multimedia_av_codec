@@ -31,6 +31,7 @@ constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
+constexpr uint32_t TEST_FRAME_COUNT = 25;
 constexpr uint32_t DOUBLE = 2;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
@@ -51,7 +52,7 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 
 VEncNdkSample::~VEncNdkSample()
 {
-    if (SURFACE_INPUT && nativeWindow) {
+    if (SURF_INPUT && nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
     }
@@ -70,6 +71,22 @@ static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *user
 
 static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
+    if (enc_sample->inputCallbackFlush) {
+        OH_VideoEncoder_Flush(codec);
+        cout << "OH_VideoEncoder_Flush end" << endl;
+        enc_sample->isRunning_.store(false);
+        enc_sample->signal_->inCond_.notify_all();
+        enc_sample->signal_->outCond_.notify_all();
+        return;
+    }
+    if (enc_sample->inputCallbackStop) {
+        OH_VideoEncoder_Stop(codec);
+        cout << "OH_VideoEncoder_Stop end" << endl;
+        enc_sample->isRunning_.store(false);
+        enc_sample->signal_->inCond_.notify_all();
+        enc_sample->signal_->outCond_.notify_all();
+        return;
+    }
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
     unique_lock<mutex> lock(signal->inMutex_);
     signal->inIdxQueue_.push(index);
@@ -80,6 +97,22 @@ static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *d
 static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                                 void *userData)
 {
+    if (enc_sample->outputCallbackFlush) {
+        OH_VideoEncoder_Flush(codec);
+        cout << "OH_VideoEncoder_Flush end" << endl;
+        enc_sample->isRunning_.store(false);
+        enc_sample->signal_->inCond_.notify_all();
+        enc_sample->signal_->outCond_.notify_all();
+        return;
+    }
+    if (enc_sample->outputCallbackStop) {
+        OH_VideoEncoder_Stop(codec);
+        cout << "OH_VideoEncoder_Stop end" << endl;
+        enc_sample->isRunning_.store(false);
+        enc_sample->signal_->inCond_.notify_all();
+        enc_sample->signal_->outCond_.notify_all();
+        return;
+    }
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
     unique_lock<mutex> lock(signal->outMutex_);
     signal->outIdxQueue_.push(index);
@@ -311,7 +344,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURFACE_INPUT) {
+    if (SURF_INPUT) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;
@@ -329,7 +362,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
     if (OpenFile() != AV_ERR_OK) {
         return AV_ERR_UNKNOWN;
     }
-    if (SURFACE_INPUT) {
+    if (SURF_INPUT) {
         inputLoop_ = make_unique<thread>(&VEncNdkSample::InputFuncSurface, this);
     } else {
         inputLoop_ = make_unique<thread>(&VEncNdkSample::InputFunc, this);
@@ -356,6 +389,7 @@ int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     enc_sample = this;
+    randomEos = rand() % TEST_FRAME_COUNT;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -433,6 +467,10 @@ uint32_t VEncNdkSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH
 void VEncNdkSample::InputFuncSurface()
 {
     while (true) {
+        if (outputCallbackFlush || outputCallbackStop) {
+            OH_VideoEncoder_NotifyEndOfStream(venc_);
+            break;
+        }
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         if (nativeWindow == nullptr) {
@@ -443,7 +481,7 @@ void VEncNdkSample::InputFuncSurface()
         int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
         if (err != 0) {
             cout << "RequestBuffer failed, GSError=" << err << endl;
-            continue;
+            break;
         }
         if (fenceFd > 0) {
             close(fenceFd);
@@ -513,8 +551,7 @@ void VEncNdkSample::RepeatStartBeforeEOS()
 
 bool VEncNdkSample::RandomEOS(uint32_t index)
 {
-    uint32_t random_eos = rand() % 25;
-    if (enable_random_eos && random_eos == frameCount) {
+    if (enable_random_eos && randomEos == frameCount) {
         OH_AVCodecBufferAttr attr;
         attr.pts = 0;
         attr.size = 0;
@@ -658,6 +695,7 @@ void VEncNdkSample::InputDataNormal(bool &runningFlag, uint32_t index, OH_AVMemo
     if (!inFile_->eof()) {
         bool isRandomEosSuccess = RandomEOS(index);
         if (isRandomEosSuccess) {
+            runningFlag = false;
             return;
         }
         int32_t pushResult = 0;
@@ -670,6 +708,9 @@ void VEncNdkSample::InputDataNormal(bool &runningFlag, uint32_t index, OH_AVMemo
         }
         if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
             runningFlag = false;
+            isRunning_.store(false);
+            signal_->inCond_.notify_all();
+            signal_->outCond_.notify_all();
             return;
         }
         frameCount++;

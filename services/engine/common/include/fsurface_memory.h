@@ -28,15 +28,24 @@ constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
 
+struct SurfaceControl {
+    sptr<Surface> surface = nullptr;
+    BufferRequestConfig requestConfig = {.width = 0,
+                                         .height = 0,
+                                         .strideAlignment = SURFACE_STRIDE_ALIGN,
+                                         .format = 0,
+                                         .usage = USAGE,
+                                         .timeout = TIMEOUT};
+    ScalingMode scalingMode = ScalingMode::SCALING_MODE_SCALE_TO_WINDOW;
+};
+
 class FSurfaceMemory {
 public:
-    FSurfaceMemory() = default;
+    FSurfaceMemory(SurfaceControl *sInfo) : sInfo_(sInfo)
+    {
+        AllocSurfaceBuffer();
+    }
     ~FSurfaceMemory();
-    static std::shared_ptr<FSurfaceMemory> Create();
-    static void SetSurface(sptr<Surface> surface);
-    static void SetConfig(int32_t width, int32_t height, int32_t format, uint64_t usage = USAGE,
-                          int32_t strideAlign = SURFACE_STRIDE_ALIGN, int32_t timeout = TIMEOUT);
-    static void SetScaleType(ScalingMode videoScaleMode);
     void AllocSurfaceBuffer();
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
@@ -48,14 +57,11 @@ public:
     int32_t GetSize() const;
 
 private:
-    // Allocated memory size.
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
     int32_t fence_ = -1;
     int32_t stride_ = 0;
     bool needRender_ = false;
-    static sptr<Surface> surface_;
-    static BufferRequestConfig requestConfig_;
-    static ScalingMode scalingMode_;
+    SurfaceControl *sInfo_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

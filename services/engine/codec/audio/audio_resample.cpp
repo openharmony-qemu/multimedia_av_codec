@@ -43,14 +43,18 @@ int32_t AudioResample::Init(const ResamplePara& resamplePara)
 int32_t AudioResample::InitSwrContext(const ResamplePara& resamplePara)
 {
     resamplePara_ = resamplePara;
-    auto swrContext = swr_alloc();
+    SwrContext *swrContext = swr_alloc();
     if (swrContext == nullptr) {
         AVCODEC_LOGE("cannot allocate swr context");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
-    swrContext = swr_alloc_set_opts(swrContext, resamplePara_.channelLayout, resamplePara_.destFmt,
-                                    resamplePara_.sampleRate, resamplePara_.channelLayout,
-                                    resamplePara_.srcFmt, resamplePara_.sampleRate, 0, nullptr);
+    int error =
+        swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt, resamplePara_.sampleRate,
+                            &resamplePara_.channelLayout, resamplePara_.srcFmt, resamplePara_.sampleRate, 0, nullptr);
+    if (error < 0) {
+        AVCODEC_LOGE("swr init error");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
     if (swr_init(swrContext) != 0) {
         AVCODEC_LOGE("swr init error");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -94,7 +98,7 @@ int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFr
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
 
-    outputFrame->channel_layout = resamplePara_.channelLayout;
+    outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = resamplePara_.sampleRate;
 

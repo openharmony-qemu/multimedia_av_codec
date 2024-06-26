@@ -12,14 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MEDIA_PIPELINE
 
 #include "audio_decoder_filter.h"
 #include "filter/filter_factory.h"
 #include "common/media_core.h"
+#include "avcodec_sysevent.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+using namespace MediaAVCodec;
 using namespace OHOS::Media::Plugins;
 static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
     FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
@@ -136,7 +139,20 @@ Status AudioDecoderFilter::PrepareFrame(bool renderFirstFrame)
 Status AudioDecoderFilter::DoStart()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Start.");
-    return (Status)mediaCodec_->Start();
+    auto ret = (Status)mediaCodec_->Start();
+    if (ret != Status::OK) {
+        std::string mime;
+        meta_->GetData(Tag::MIME_TYPE, mime);
+        std::string instanceId = std::to_string(instanceId_);
+        struct AudioCodecFaultInfo audioCodecFaultInfo;
+        audioCodecFaultInfo.appName = appName_;
+        audioCodecFaultInfo.instanceId = instanceId;
+        audioCodecFaultInfo.callerType = "player_framework";
+        audioCodecFaultInfo.audioCodec = mime;
+        audioCodecFaultInfo.errMsg = "AudioDecoder start failed";
+        FaultAudioCodecEventWrite(audioCodecFaultInfo);
+    }
+    return ret;
 }
 
 Status AudioDecoderFilter::DoPause()
@@ -294,6 +310,14 @@ Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKey
     return Status::OK;
 }
 
+void AudioDecoderFilter::SetDumpFlag(bool isDump)
+{
+    isDump_ = isDump;
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->SetDumpInfo(isDump_, instanceId_);
+    }
+}
+
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
     std::shared_ptr<Meta> &meta)
 {
@@ -306,7 +330,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     FALSE_RETURN(onLinkedResultCallback_ != nullptr);
-    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
+    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta_);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -326,6 +350,20 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
     FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
     FALSE_RETURN(inputBuffer != nullptr);
     inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+}
+
+void AudioDecoderFilter::OnDumpInfo(int32_t fd)
+{
+    MEDIA_LOG_D("AudioDecoderFilter::OnDumpInfo called.");
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->OnDumpInfo(fd);
+    }
+}
+
+void AudioDecoderFilter::SetCallerInfo(uint64_t instanceId, const std::string& appName)
+{
+    instanceId_ = instanceId;
+    appName_ = appName;
 }
 } // namespace Pipeline
 } // namespace MEDIA

@@ -81,6 +81,21 @@ bool InnerDemuxerDemo::isEOS(std::map<uint32_t, bool>& countFlag)
     return true;
 }
 
+int32_t InnerDemuxerDemo::StartReferenceParser(int64_t startTimeMs)
+{
+    return this->demuxer_->StartReferenceParser(startTimeMs);
+}
+
+int32_t InnerDemuxerDemo::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
+{
+    return this->demuxer_->GetFrameLayerInfo(videoSample, frameLayerInfo);
+}
+
+int32_t InnerDemuxerDemo::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+{
+    return this->demuxer_->GetGopLayerInfo(gopId, gopLayerInfo);
+}
+
 int32_t InnerDemuxerDemo::ReadAllSamples(std::shared_ptr<AVSharedMemory> SampleMem, int32_t tracks)
 {
     uint32_t bufferFlag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
@@ -118,6 +133,15 @@ int32_t InnerDemuxerDemo::ReadSample(uint32_t trackIndex, std::shared_ptr<AVShar
                                      AVCodecBufferInfo &bufInfo, uint32_t &bufferFlag)
 {
     int32_t ret = this->demuxer_->ReadSample(trackIndex, mem, bufInfo, bufferFlag);
+    if (ret != 0) {
+        return ret;
+    }
+    return ret;
+}
+
+int32_t InnerDemuxerDemo::ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
+{
+    int32_t ret = this->demuxer_->ReadSampleBuffer(trackIndex, sample);
     if (ret != 0) {
         return ret;
     }

@@ -46,7 +46,6 @@ struct AudioCodecObject : public OH_AVCodec {
     ~AudioCodecObject() = default;
 
     const std::shared_ptr<AVCodecAudioCodecImpl> audioCodec_;
-    std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
     std::list<OHOS::sptr<OH_AVBuffer>> bufferObjList_;
     std::shared_ptr<NativeAudioCodec> callback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
@@ -220,7 +219,7 @@ OH_AVErrCode OH_AudioCodec_Destroy(struct OH_AVCodec *codec)
         }
         {
             std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-            audioCodecObj->memoryObjList_.clear();
+            audioCodecObj->bufferObjList_.clear();
         }
         audioCodecObj->isStop_.store(true);
         int32_t ret = audioCodecObj->audioCodec_->Release();
@@ -307,7 +306,7 @@ OH_AVErrCode OH_AudioCodec_Stop(struct OH_AVCodec *codec)
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
     std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-    audioCodecObj->memoryObjList_.clear();
+    audioCodecObj->bufferObjList_.clear();
 
     return AV_ERR_OK;
 }
@@ -334,7 +333,7 @@ OH_AVErrCode OH_AudioCodec_Flush(struct OH_AVCodec *codec)
     audioCodecObj->isFlushing_.store(false);
     AVCODEC_LOGD("set flush status to false");
     std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-    audioCodecObj->memoryObjList_.clear();
+    audioCodecObj->bufferObjList_.clear();
     return AV_ERR_OK;
 }
 
@@ -357,7 +356,7 @@ OH_AVErrCode OH_AudioCodec_Reset(struct OH_AVCodec *codec)
     }
 
     std::lock_guard<std::shared_mutex> lock(audioCodecObj->memoryObjListMutex_);
-    audioCodecObj->memoryObjList_.clear();
+    audioCodecObj->bufferObjList_.clear();
     return AV_ERR_OK;
 }
 
@@ -466,7 +465,7 @@ OH_AVErrCode OH_AudioCodec_IsValid(OH_AVCodec *codec, bool *isValid)
 
 #ifdef SUPPORT_DRM
 OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
-    bool secureVideoPath)
+    bool secureAudio)
 {
     AVCODEC_LOGI("OH_AudioCodec_SetDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
@@ -489,7 +488,7 @@ OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySessio
         AV_ERR_INVALID_VAL, "MediaKeySessionServiceProxy is nullptr!");
 
     int32_t ret = audioCodecObj->audioCodec_->SetAudioDecryptionConfig(
-        sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), secureVideoPath);
+        sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), secureAudio);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "audioCodec SetAudioDecryptionConfig failed!");
 
@@ -497,12 +496,12 @@ OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySessio
 }
 #else
 OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
-    bool secureVideoPath)
+    bool secureAudio)
 {
     AVCODEC_LOGI("OH_AudioCodec_SetDecryptionConfig");
     (void)codec;
     (void)mediaKeySession;
-    (void)secureVideoPath;
+    (void)secureAudio;
     return AV_ERR_OK;
 }
 #endif

@@ -44,6 +44,7 @@ public:
     int32_t RenderOutputBuffer(uint32_t index) override;
     int32_t FreeOutputBuffer(uint32_t index) override;
     bool IsValid() override;
+    int32_t SetVideoDecryptionConfig() override;
 
 private:
     std::shared_ptr<AVCodecVideoDecoder> videoDec_ = nullptr;

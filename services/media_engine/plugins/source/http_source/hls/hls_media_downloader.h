@@ -24,6 +24,7 @@
 #include "osal/utils/steady_clock.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include "common/media_source.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -35,16 +36,29 @@ namespace HttpPlugin {
 #else
 #define PRIVATE private
 #endif
+enum BufferingTimes : int32_t {
+    FIRST_TIMES = 1,
+    SECOND_TIMES = 2,
+};
+
+enum SLEEP_TIME : int32_t {
+    REQUEST_SLEEP_TIME = 5, // 5ms
+    BUFFERING_SLEEP_TIME = 10, // 10ms
+    CACHE_DATA_SLEEP_TIME = 100, // 100ms
+    BUFFERING_TIME_OUT = 1000, // 100ms
+};
+
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
     HlsMediaDownloader() noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration);
+    explicit HlsMediaDownloader(std::string mimeType);
     ~HlsMediaDownloader() override = default;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
-    bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
+    Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
     size_t GetContentLength() const override;
@@ -58,6 +72,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
+    void OnFirstTsReady(const std::string& url, const double& duration) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
@@ -65,7 +80,6 @@ public:
     uint64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
-    void ReportVideoSizeChange();
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState() override;
@@ -73,6 +87,8 @@ public:
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    void ReportBitrateStart(uint32_t bitRate);
 
 PRIVATE:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -92,8 +108,12 @@ PRIVATE:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
+    bool HandleBuffering();
+    bool HandleCache();
     bool CheckReadStatus();
+    Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
+    bool CheckBreakCondition();
 PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
@@ -140,6 +160,7 @@ PRIVATE:
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
+    std::atomic<bool> isInterruptNeeded_{false};
 
     struct BufferDownRecord {
         /* data */
@@ -168,6 +189,20 @@ PRIVATE:
     uint64_t downloadDuringTime_ {0};    // 累计有效下载时长 ms
 
     uint64_t downloadBits_ {0};          // 累计有效时间内下载数据量 bit
+    uint32_t changeBitRateCount_ {0};  // 设置码率次数
+    int32_t seekFailedCount_ {0};   // seek失败次数
+    int64_t openTime_ {0};
+    int64_t playDelayTime_ {0};
+    int64_t startDownloadTime_ {0};
+    int64_t lastCheckTime_ {0};
+    uint32_t recordCount_ {0};
+    uint64_t lastRecordTime_ {0};
+    int32_t avgDownloadSpeed_ {0};
+    bool isDownloadFinish_ {false};
+    double avgSpeedSum_ {0};
+    uint32_t recordSpeedCount_ {0};
+    int64_t lastReportUsageTime_ {0};
+    uint64_t dataUsage_ {0};
 
     struct RecordData {
         double downloadRate {0};
@@ -177,6 +212,14 @@ PRIVATE:
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
+    Mutex firstTsMutex_ {};
+    std::string mimeType_;
+    unsigned int wantReadLenth_ {0};
+    bool isInterrupt_ {false};
+    bool isBuffering_ {false};
+    bool isFirstFrameArrived_ {false};
+    unsigned int bufferingTimes_ {0};
+    bool isBufferEnough_ {true};
 };
 }
 }

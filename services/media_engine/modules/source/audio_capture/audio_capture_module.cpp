@@ -18,10 +18,12 @@
 #include "common/status.h"
 #include "audio_type_translate.h"
 #include "audio_capturer.h"
+#include "avcodec_sysevent.h"
 
 namespace OHOS {
 namespace Media {
 namespace AudioCaptureModule {
+using namespace OHOS::MediaAVCodec;
 #define FAIL_LOG_RETURN(exec, msg) \
 do { \
     auto ret = (exec); \
@@ -75,10 +77,11 @@ Status AudioCaptureModule::Init()
         appInfo.appTokenId = appTokenId_;
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
-        appInfo.appFullTokenId = appFullTokenId_;
+        appInfo.appFullTokenId = static_cast<uint64_t>(appFullTokenId_);
         audioCapturer_ = AudioStandard::AudioCapturer::Create(options_, appInfo);
         if (audioCapturer_ == nullptr) {
             MEDIA_LOG_E("Create audioCapturer fail");
+            SetFaultEvent("AudioCaptureModule::Init, create audioCapturer fail");
             return Status::ERROR_UNKNOWN;
         }
         audioInterruptCallback_ = std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
@@ -114,20 +117,6 @@ Status AudioCaptureModule::Deinit()
 Status AudioCaptureModule::Prepare()
 {
     MEDIA_LOG_I("Prepare enter.");
-    AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
-    auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
-    for (auto& supportedEncodingType : supportedEncodingTypes) {
-        if (supportedEncodingType == AudioStandard::ENCODING_PCM) {
-            audioEncoding = AudioStandard::ENCODING_PCM;
-            break;
-        }
-    }
-
-    if (audioEncoding != AudioStandard::ENCODING_PCM) {
-        MEDIA_LOG_E("audioCapturer do not support pcm encoding");
-        return Status::ERROR_UNKNOWN;
-    }
-    options_.streamInfo.encoding = AudioStandard::ENCODING_PCM;
     size_t size;
     {
         AutoLock lock (captureMutex_);
@@ -169,6 +158,7 @@ Status AudioCaptureModule::Start()
     if (audioCapturer_->GetStatus() != AudioStandard::CapturerState::CAPTURER_RUNNING) {
         if (!audioCapturer_->Start()) {
             MEDIA_LOG_E("audioCapturer start failed");
+            SetFaultEvent("AudioCaptureModule::Start error");
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -183,6 +173,7 @@ Status AudioCaptureModule::Stop()
     if (audioCapturer_ && audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING) {
         if (!audioCapturer_->Stop()) {
             MEDIA_LOG_E("Stop audioCapturer fail");
+            SetFaultEvent("AudioCaptureModule::Stop error");
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -249,6 +240,21 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
             Status::ERROR_INVALID_PARAMETER, "SampleFormat is unsupported by audiocapturer");
     }
 
+    AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
+    auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
+    for (auto& supportedEncodingType : supportedEncodingTypes) {
+        if (supportedEncodingType == AudioStandard::ENCODING_PCM) {
+            audioEncoding = AudioStandard::ENCODING_PCM;
+            break;
+        }
+    }
+
+    if (audioEncoding != AudioStandard::ENCODING_PCM) {
+        MEDIA_LOG_E("audioCapturer do not support pcm encoding");
+        SetFaultEvent("AudioCaptureModule::Prepare, audioCapturer do not support pcm encoding");
+        return Status::ERROR_UNKNOWN;
+    }
+    options_.streamInfo.encoding = AudioStandard::ENCODING_PCM;
     return Status::OK;
 }
 
@@ -328,7 +334,8 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     }
 
     if (isTrackMaxAmplitude) {
-        TrackMaxAmplitude((int16_t *)bufData->GetAddr(), bufData->GetSize() >> 1);
+        TrackMaxAmplitude((int16_t *)bufData->GetAddr(),
+            static_cast<int32_t>(static_cast<uint32_t>(bufData->GetSize()) >> 1));
     }
     return ret;
 }
@@ -362,6 +369,7 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
     int32_t ret = audioCapturer_->SetAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
     if (ret != (int32_t)Status::OK) {
         MEDIA_LOG_E("SetAudioCapturerInfoChangeCallback fail error code: %{public}d", ret);
+        SetFaultEvent("SetAudioCapturerInfoChangeCallback error", ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -369,10 +377,8 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
 
 Status AudioCaptureModule::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
 {
-    if (audioCapturer_ == nullptr) {
-        MEDIA_LOG_E("audioCapturer is nullptr, cannot get audio capturer change info");
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "audioCapturer is nullptr, cannot get audio capturer change info");
     audioCapturer_->GetCurrentCapturerChangeInfo(changeInfo);
     return Status::OK;
 }
@@ -403,6 +409,30 @@ void AudioCaptureModule::TrackMaxAmplitude(int16_t *data, int32_t size)
             maxAmplitude_ = value;
         }
     }
+}
+
+void AudioCaptureModule::SetFaultEvent(const std::string &errMsg, int32_t ret)
+{
+    SetFaultEvent(errMsg + ", ret = " + std::to_string(ret));
+}
+
+void AudioCaptureModule::SetFaultEvent(const std::string &errMsg)
+{
+    AudioSourceFaultInfo audioSourceFaultInfo;
+    audioSourceFaultInfo.appName = bundleName_;
+    audioSourceFaultInfo.instanceId = std::to_string(instanceId_);
+    audioSourceFaultInfo.audioSourceType = options_.capturerInfo.sourceType;
+    audioSourceFaultInfo.errMsg = errMsg;
+    FaultRecordAudioEventWrite(audioSourceFaultInfo);
+}
+
+void AudioCaptureModule::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 } // namespace AudioCaptureModule
 } // namespace Media

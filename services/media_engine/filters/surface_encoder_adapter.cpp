@@ -23,12 +23,15 @@
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 
 constexpr uint32_t TIME_OUT_MS = 1000;
+constexpr uint32_t NS_PER_US = 1000;
 
 namespace OHOS {
 namespace Media {
 
+using namespace OHOS::MediaAVCodec;
 class SurfaceEncoderAdapterCallback : public MediaAVCodec::MediaCodecCallback {
 public:
     explicit SurfaceEncoderAdapterCallback(std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter)
@@ -83,9 +86,18 @@ SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
-    codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
+    codecMimeType_ = mime;
+    Format format;
+    std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, appPid_);
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID, appUid_);
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, bundleName_);
+    format.SetMeta(callerInfo);
+    int32_t ret = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime, format, codecServer_);
+    MEDIA_LOG_I("AVCodecVideoEncoderImpl::Init CreateByMime errorCode %{public}d", ret);
     if (!codecServer_) {
         MEDIA_LOG_I("Create codecServer failed");
+        SetFaultEvent("SurfaceEncoderAdapter::Init Create codecServer failed", ret);
         return Status::ERROR_UNKNOWN;
     }
     if (!releaseBufferTask_) {
@@ -98,11 +110,9 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
     return Status::OK;
 }
 
-Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
+void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I("Configure");
-    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Configure");
-    MediaAVCodec::Format format = MediaAVCodec::Format();
+    MEDIA_LOG_I("ConfigureGeneralFormat");
     if (meta->Find(Tag::VIDEO_WIDTH) != meta->end()) {
         int32_t videoWidth;
         meta->Get<Tag::VIDEO_WIDTH>(videoWidth);
@@ -121,7 +131,7 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
     if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
         int64_t mediaBitrate;
         meta->Get<Tag::MEDIA_BITRATE>(mediaBitrate);
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
+        format.PutLongValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
     }
     if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
         double videoFrameRate;
@@ -138,12 +148,24 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
+}
+
+Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_I("Configure");
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Configure");
+    MediaAVCodec::Format format = MediaAVCodec::Format();
+    ConfigureGeneralFormat(format, meta);
     ConfigureAboutRGBA(format, meta);
     ConfigureAboutEnableTemporalScale(format, meta);
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::Configure, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->Configure(format);
+    if (ret != 0) {
+        SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
+    }
     return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
 }
 
@@ -162,12 +184,14 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
         std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
     encoderAdapterCallback_ = encoderAdapterCallback;
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::SetEncoderAdapterCallback, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->SetCallback(surfaceEncoderAdapterCallback);
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::SetEncoderAdapterCallback error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -176,6 +200,7 @@ Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("GetInputSurface");
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::SetInputSurface, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     MediaAVCodec::CodecServer *codecServerPtr = (MediaAVCodec::CodecServer *)(codecServer_.get());
@@ -183,8 +208,16 @@ Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::SetInputSurface error", ret);
         return Status::ERROR_UNKNOWN;
     }
+}
+
+Status SurfaceEncoderAdapter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    isTransCoderMode = true;
+    return Status::OK;
 }
 
 sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
@@ -197,6 +230,7 @@ Status SurfaceEncoderAdapter::Start()
     MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Start");
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::Start, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret;
@@ -209,6 +243,7 @@ Status SurfaceEncoderAdapter::Start()
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::Start error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -220,10 +255,10 @@ Status SurfaceEncoderAdapter::Stop()
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     const int64_t SEC_TO_NS = 1000000000;
-    stopTime_ = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
+    stopTime_ = static_cast<int64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<int64_t>(timestamp.tv_nsec);
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
-    if (isStart_) {
+    if (isStart_ && !isTransCoderMode) {
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
     }
@@ -242,6 +277,7 @@ Status SurfaceEncoderAdapter::Stop()
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::Stop error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -265,12 +301,14 @@ Status SurfaceEncoderAdapter::Flush()
 {
     MEDIA_LOG_I("Flush");
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::Flush, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->Flush();
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::Flush error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -290,6 +328,7 @@ Status SurfaceEncoderAdapter::Reset()
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::Reset error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -305,6 +344,7 @@ Status SurfaceEncoderAdapter::Release()
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::Release error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -313,12 +353,14 @@ Status SurfaceEncoderAdapter::NotifyEos()
 {
     MEDIA_LOG_I("NotifyEos");
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::NotifyEos, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->NotifyEos();
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::NotifyEos error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -328,6 +370,7 @@ Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &paramete
     MEDIA_LOG_I("SetParameter");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::SetParameter");
     if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::SetParameter, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
     MediaAVCodec::Format format = MediaAVCodec::Format();
@@ -335,6 +378,7 @@ Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &paramete
     if (ret == 0) {
         return Status::OK;
     } else {
+        SetFaultEvent("SurfaceEncoderAdapter::SetParameter error", ret);
         return Status::ERROR_UNKNOWN;
     }
 }
@@ -383,6 +427,9 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     lastBufferTime_ = buffer->pts_;
     emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
+    if (!isTransCoderMode) {
+        emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
+    }
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
@@ -449,6 +496,31 @@ void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Form
             MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is not supported!");
         }
     }
+}
+
+void SurfaceEncoderAdapter::SetFaultEvent(const std::string &errMsg, int32_t ret)
+{
+    SetFaultEvent(errMsg + ", ret = " + std::to_string(ret));
+}
+
+void SurfaceEncoderAdapter::SetFaultEvent(const std::string &errMsg)
+{
+    VideoCodecFaultInfo videoCodecFaultInfo;
+    videoCodecFaultInfo.appName = bundleName_;
+    videoCodecFaultInfo.instanceId = std::to_string(instanceId_);
+    videoCodecFaultInfo.callerType = "player_framework";
+    videoCodecFaultInfo.videoCodec = codecMimeType_;
+    videoCodecFaultInfo.errMsg = errMsg;
+    FaultVideoCodecEventWrite(videoCodecFaultInfo);
+}
+
+void SurfaceEncoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 } // namespace MEDIA
 } // namespace OHOS

@@ -25,7 +25,6 @@
 #include "plugin/audio_sink_plugin.h"
 #include "filter/filter.h"
 #include "common/log.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {
@@ -73,6 +72,8 @@ private:
     bool OnNewAudioMediaTime(int64_t mediaTimeUs);
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
+    void UpdateAudioWriteTimeMayWait();
+    void ReportEosEventAndDrain();
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -96,8 +97,13 @@ private:
     bool isEos_ {false};
     std::mutex pluginMutex_;
     float volume_ {-1.0f};
-    float speed_ {-1.0f};
+    float speed_ {1.0f};
     int32_t effectMode_ {-1};
+    bool isApe_ {false};
+    // vars for audio progress optimization
+    int64_t playingBufferDurationUs_ {0};
+    int64_t lastBufferWriteTime_ {0};
+    bool lastBufferWriteSuccess_ {true};
 };
 }
 }

@@ -68,11 +68,12 @@ private:
     bool CheckSampleFormat(const std::shared_ptr<Meta> &format);
     bool CheckFormat(const std::shared_ptr<Meta> &format);
     bool CheckChannelCount(const std::shared_ptr<Meta> &format);
-    void SetSamplerate(const std::shared_ptr<Meta> &parameter);
+    bool SetSamplerate(const std::shared_ptr<Meta> &parameter);
     void GetExtradataSize(size_t idSize, size_t setupSize) const;
     int PutHeaderLength(uint8_t *p, size_t value) const;
     void PutCommentHeader(int offset) const;
     Status GenExtradata(const std::shared_ptr<Meta> &format) const;
+    int32_t SetBitsDepth(AudioSampleFormat sampleFmt);
 
     int32_t GetInputBufferSize();
     int32_t GetOutputBufferSize();

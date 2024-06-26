@@ -198,6 +198,15 @@ int32_t CodecBase::QueueInputBuffer(uint32_t index)
     return mock->QueueInputBuffer(index);
 }
 
+int32_t CodecBase::QueueInputParameter(uint32_t index)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("index:%u", index);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->QueueInputParameter(index);
+}
+
 int32_t CodecBase::ReleaseOutputBuffer(uint32_t index)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -281,11 +290,12 @@ std::string CodecBase::GetHidumperInfo()
 
 int32_t CodecBase::Init(Media::Meta &callerInfo)
 {
+    (void) callerInfo;
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("Init");
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->Init(callerInfo);
+    return mock->Init();
 }
 
 int32_t CodecBase::CreateCodecByName(const std::string &name)

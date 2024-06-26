@@ -22,7 +22,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
 
 /**************************** BaseState Start ****************************/
 void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
@@ -40,7 +40,7 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::OMX_EMPTY_BUFFER_DONE: {
-            uint32_t bufferId;
+            uint32_t bufferId = 0;
             (void)info.param->GetValue(BUFFER_ID, bufferId);
             codec_->OnOMXEmptyBufferDone(bufferId, inputMode_);
             return;
@@ -86,9 +86,9 @@ void HCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
 
 void HCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 {
-    CodecEventType event;
-    uint32_t data1;
-    uint32_t data2;
+    CodecEventType event{};
+    uint32_t data1 = 0;
+    uint32_t data2 = 0;
     (void)info.param->GetValue("event", event);
     (void)info.param->GetValue("data1", data1);
     (void)info.param->GetValue("data2", data2);
@@ -127,7 +127,7 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
 
 void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     (void)info.param->GetValue("generation", generation);
     if (generation == codec_->stateGeneration_) {
         SLOGE("stucked");
@@ -138,7 +138,7 @@ void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 
 void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     bool isNeedNotifyCaller;
     (void)info.param->GetValue("generation", generation);
     (void)info.param->GetValue("isNeedNotifyCaller", isNeedNotifyCaller);
@@ -158,9 +158,7 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::INIT: {
-            string name;
-            (void)info.param->GetValue("name", name);
-            int32_t err = OnAllocateComponent(name);
+            int32_t err = OnAllocateComponent();
             ReplyErrorCode(info.id, err);
             if (err == AVCS_ERR_OK) {
                 codec_->ChangeStateTo(codec_->initializedState_);
@@ -173,26 +171,16 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
     }
 }
 
-static bool IsSecureMode(const string &name)
+int32_t HCodec::UninitializedState::OnAllocateComponent()
 {
-    string prefix = ".secure";
-    if (name.length() <= prefix.length()) {
-        return false;
-    }
-    return (name.rfind(prefix) == (name.length() - prefix.length()));
-}
-
-int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
-{
-    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + name);
-    codec_->isSecure_ = IsSecureMode(name);
+    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + codec_->caps_.compName);
     codec_->compMgr_ = GetManager();
     if (codec_->compMgr_ == nullptr) {
         SLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
     }
     codec_->compCb_ = new HdiCallback(codec_);
-    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, name,
+    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, codec_->caps_.compName,
                                                     0, codec_->compCb_);
     if (ret != HDF_SUCCESS || codec_->compNode_ == nullptr) {
         codec_->compCb_ = nullptr;
@@ -200,9 +188,9 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
         SLOGE("CreateComponent failed, ret=%d", ret);
         return AVCS_ERR_UNKNOWN;
     }
-    codec_->componentName_ = name;
     codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + codec_->shortName_ + "]";
-    SLOGI("create omx node %s succ", name.c_str());
+    SLOGI("create omx node %s succ", codec_->caps_.compName.c_str());
+    codec_->PrintCaller();
     return AVCS_ERR_OK;
 }
 
@@ -218,6 +206,7 @@ void HCodec::InitializedState::OnStateEntered()
 {
     codec_->inputPortEos_ = false;
     codec_->outputPortEos_ = false;
+    codec_->outPortHasChanged_ = false;
     codec_->inputFormat_.reset();
     codec_->outputFormat_.reset();
 
@@ -397,7 +386,7 @@ void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation;
+            int32_t generation = 0;
             if (info.param->GetValue("generation", generation) &&
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
@@ -494,6 +483,9 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             codec_->OnGetBufferFromSurface(info.param);
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
+            if (codec_->outPortHasChanged_) {
+                codec_->SubmitDynamicBufferIfPossible();
+            }
             codec_->OnQueueInputBuffer(info, inputMode_);
             break;
         case MsgWhat::NOTIFY_EOS:
@@ -594,7 +586,6 @@ void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
 /**************************** OutputPortChangedState Start ********************************/
 void HCodec::OutputPortChangedState::OnStateEntered()
 {
-    codec_->RecordOutBuffersOwnedByOmx();
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
@@ -636,6 +627,12 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             OnCheckIfStuck(info);
             return;
         }
+        case MsgWhat::SET_OUTPUT_SURFACE: {
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
         default: {
             BaseState::OnMsgReceived(info);
         }
@@ -656,12 +653,15 @@ void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 
 void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     (void)info.param->GetValue("generation", generation);
     if (generation != codec_->stateGeneration_) {
         return;
     }
-    if (codec_->outBuffersOwnedByOmx_.empty()) {
+
+    if (std::none_of(codec_->outputBufferPool_.begin(), codec_->outputBufferPool_.end(), [](const BufferInfo& info) {
+            return info.owner == BufferOwner::OWNED_BY_OMX;
+        })) {
         SLOGI("output buffers owned by omx has been returned");
         return;
     }
@@ -727,6 +727,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
     if (codec_->isBufferCirculating_) {
         codec_->SubmitOutputBuffersToOmxNode();
     }
+    codec_->outPortHasChanged_ = true;
     SLOGI("output format changed: %s", codec_->outputFormat_->Stringify().c_str());
     codec_->callback_->OnOutputFormatChanged(*(codec_->outputFormat_.get()));
     codec_->ChangeStateTo(codec_->runningState_);
@@ -881,7 +882,7 @@ void HCodec::StoppingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation;
+            int32_t generation = 0;
             (void)info.param->GetValue("generation", generation);
             if (generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");

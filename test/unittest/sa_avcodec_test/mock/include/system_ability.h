@@ -18,8 +18,10 @@
 
 #include <gmock/gmock.h>
 #include <memory>
+#include <refbase.h>
 #include "hilog/log.h"
 #include "iremote_object.h"
+#include "iservice_registry.h"
 
 #ifdef REGISTER_SYSTEM_ABILITY_BY_ID
 #undef REGISTER_SYSTEM_ABILITY_BY_ID
@@ -34,6 +36,7 @@ public:                                                                         
     }
 namespace OHOS {
 class SystemAbility;
+class ISystemAbilityManagerMock;
 class SystemAbilityMock {
 public:
     SystemAbilityMock() = default;
@@ -43,8 +46,10 @@ public:
     MOCK_METHOD(void, SystemAbilityCtor, (bool runOnCreate));
     MOCK_METHOD(void, SystemAbilityDtor, ());
     MOCK_METHOD(bool, Publish, (SystemAbility * systemAbility));
+    MOCK_METHOD(bool, AddSystemAbilityListener, (int32_t systemAbilityId));
 };
 
+// SystemAbility: foundation/systemabilitymgr/safwk/interfaces/innerkits/safwk/system_ability.h
 class SystemAbility {
 public:
     static void RegisterMock(std::shared_ptr<SystemAbilityMock> &mock);
@@ -57,6 +62,8 @@ protected:
     virtual void OnDump();
     virtual void OnStart();
     virtual void OnStop();
+    virtual void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId);
+    bool AddSystemAbilityListener(int32_t systemAbilityId);
 };
 } // namespace OHOS
 #endif // SYSTEM_ABILITY_MOCK_H

@@ -31,7 +31,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 300000;
-constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 20000;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 50000;
 constexpr int32_t EXTRA_DATA_SIZE = 6;
 } // namespace
 
@@ -76,19 +76,25 @@ Status FFmpegAPEDecoderPlugin::Stop()
     return Status::OK;
 }
 
-void FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
+bool FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
 {
     int32_t sampleRate;
     parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
-    if (sampleRate <= 0) {
+    if (sampleRate < 0) {
+        return false;
+    }
+    if (sampleRate == 0) {
         parameter->SetData(Tag::AUDIO_SAMPLE_RATE, 16000); // set 16000 sample rate
     }
+    return true;
 }
 
 Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     Status ret = basePlugin->AllocateContext("ape");
-    SetSamplerate(parameter);
+    if (!SetSamplerate(parameter)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     if (!CheckChannelCount(parameter)) {
         return Status::ERROR_INVALID_PARAMETER;
     }
@@ -102,22 +108,6 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         return ret;
     }
     auto codecCtx = basePlugin->GetCodecContext();
-    AudioSampleFormat samplefmt;
-    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt);
-
-    if (samplefmt == SAMPLE_S16LE) {
-        codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
-        codecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
-    }
-    if (samplefmt == SAMPLE_U8) {
-        codecCtx->bits_per_coded_sample = 8; // sample bit = 8 bit
-        codecCtx->sample_fmt = AV_SAMPLE_FMT_U8;
-    }
-    if (samplefmt == SAMPLE_S32LE) {
-        codecCtx->bits_per_coded_sample = 32; // sample bit = 32 bit
-        codecCtx->sample_fmt = AV_SAMPLE_FMT_S32;
-    }
-    AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     if (codecCtx->extradata == nullptr) {
         codecCtx->extradata_size = EXTRA_DATA_SIZE; // 6bits
         codecCtx->extradata = static_cast<uint8_t *>(av_mallocz(EXTRA_DATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE));
@@ -134,7 +124,27 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
+    AudioSampleFormat sampleFmt;
+    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFmt);
+    parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);
+    if (codecCtx->bits_per_coded_sample == 0) {
+        codecCtx->bits_per_coded_sample = SetBitsDepth(sampleFmt);
+    }
     ret = basePlugin->OpenContext();
+    return ret;
+}
+
+int32_t FFmpegAPEDecoderPlugin::SetBitsDepth(AudioSampleFormat sampleFmt)
+{
+    int32_t ret = 16; // default sample bit = 16 bit
+    if (sampleFmt == SAMPLE_S16LE || sampleFmt == SAMPLE_S16P) {
+        ret = 16; // sample bit = 16 bit
+    } else if (sampleFmt == SAMPLE_U8 || sampleFmt == SAMPLE_U8P) {
+        ret = 8; // sample bit = 8 bit
+    } else if (sampleFmt == SAMPLE_S32LE || sampleFmt == SAMPLE_S32P) {
+        ret = 24; // sample bit = 24 bit
+    }
+    AVCODEC_LOGI("samplefmt be set %{publib}d.", ret);
     return ret;
 }
 

@@ -733,4 +733,16 @@ int TesterCommon::GetNextSample(const Span& dstSpan, size_t& sampleIdx, bool& is
     ifs_.read(reinterpret_cast<char*>(dstSpan.va), sampleSize);
     return sampleSize;
 }
+
+std::string TesterCommon::GetCodecMime(const CodeType& type)
+{
+    switch (type) {
+        case H264:
+            return "video/avc";
+        case H265:
+            return "video/hevc";
+        default:
+            return "";
+    }
+}
 } // namespace OHOS::MediaAVCodec

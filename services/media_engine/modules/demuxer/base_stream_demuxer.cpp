@@ -33,40 +33,45 @@
 #include "osal/utils/dump_buffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {
 namespace Media {
 
 BaseStreamDemuxer::BaseStreamDemuxer()
-    : typeFinder_(nullptr)
 {
     MEDIA_LOG_I("BaseStreamDemuxer called");
+    seekable_ = Plugins::Seekable::UNSEEKABLE;
 }
 
 BaseStreamDemuxer::~BaseStreamDemuxer()
 {
     MEDIA_LOG_I("~BaseStreamDemuxer called");
-    typeFinder_ = nullptr;
 }
 
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
+    MEDIA_LOG_I("BaseStreamDemuxer::SetSource");
     source_ = source;
+    source_->GetSize(mediaDataSize_);
+    seekable_ = source_->GetSeekable();
 }
 
-void BaseStreamDemuxer::InitTypeFinder()
+std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 {
-    if (!typeFinder_) {
-        typeFinder_ = std::make_shared<TypeFinder>();
-    }
+    MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
+    MEDIA_LOG_I("BaseStreamDemuxer::SnifferMediaType called");
+    std::shared_ptr<TypeFinder> typeFinder = std::make_shared<TypeFinder>();
+    typeFinder->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
+    std::string type = typeFinder->FindMediaType();
+    MEDIA_LOG_I("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
+    return type;
 }
 
-void BaseStreamDemuxer::SetDemuxerState(DemuxerState state)
+void BaseStreamDemuxer::SetDemuxerState(int32_t streamId, DemuxerState state)
 {
-    pluginState_ = state;
-    if (state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
+    pluginStateMap_[streamId] = state;
+    if (streamId == 0 && state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
         source_->SetDemuxerState();
     }
 }
@@ -77,6 +82,11 @@ void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
     bundleName_ = bundleName;
 }
 
+void BaseStreamDemuxer::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+}
+
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
 {
     return isIgnoreParse_.store(state);
@@ -85,6 +95,32 @@ void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
 bool BaseStreamDemuxer::GetIsIgnoreParse()
 {
     return isIgnoreParse_.load();
+}
+
+Plugins::Seekable BaseStreamDemuxer::GetSeekable()
+{
+    return source_->GetSeekable();
+}
+
+bool BaseStreamDemuxer::IsDash() const
+{
+    return isDash_;
+}
+void BaseStreamDemuxer::SetIsDash(bool flag)
+{
+    isDash_ = flag;
+}
+
+Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
+{
+    MEDIA_LOG_I("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
+    newVideoStreamID_.store(streamID);
+    return Status::OK;
+}
+
+int32_t BaseStreamDemuxer::GetNewVideoStreamID()
+{
+    return newVideoStreamID_.load();
 }
 
 } // namespace Media

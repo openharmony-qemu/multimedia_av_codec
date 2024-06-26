@@ -166,6 +166,7 @@ ohos_shared_library("av_codec_service") {
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
   ]
 
   if (av_codec_support_drm) {

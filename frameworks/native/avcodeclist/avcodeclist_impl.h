@@ -28,6 +28,7 @@ public:
     AVCodecListImpl();
     ~AVCodecListImpl();
     int32_t Init();
+    bool IsServiceDied();
     // AVCodecList
     std::string FindDecoder(const Format &format) override;
     std::string FindEncoder(const Format &format) override;

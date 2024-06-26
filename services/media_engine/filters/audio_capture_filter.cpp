@@ -111,6 +111,7 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (audioCaptureModule_) {
         audioCaptureModule_->SetAudioSource(sourceType_);
         audioCaptureModule_->SetParameter(audioCaptureConfig_);
+        audioCaptureModule_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
@@ -154,9 +155,8 @@ Status AudioCaptureFilter::DoPrepare()
         MEDIA_LOG_E("callback is nullptr");
         return Status::ERROR_NULL_POINTER;
     }
-    callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+    return callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_RAW_AUDIO);
-    return Status::OK;
 }
 
 Status AudioCaptureFilter::DoStart()
@@ -220,7 +220,7 @@ Status AudioCaptureFilter::DoStop()
         taskPtr_->StopAsync();
     }
     // stop audioCaptureModule secondly
-    Status ret = Status::ERROR_INVALID_OPERATION;
+    Status ret = Status::OK;
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Stop();
     }
@@ -328,7 +328,7 @@ void AudioCaptureFilter::ReadLoop()
     }
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
-    avBufferConfig.size = bufferSize;
+    avBufferConfig.size = static_cast<int32_t>(bufferSize);
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {
@@ -425,6 +425,18 @@ void AudioCaptureFilter::OnUpdatedResult(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUpdatedResult");
     (void) meta;
+}
+
+void AudioCaptureFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+    if (audioCaptureModule_) {
+        audioCaptureModule_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    }
 }
 
 } // namespace Pipeline

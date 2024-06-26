@@ -19,6 +19,7 @@
 #include "download/http_curl_client.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
+#include "dash/dash_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
 #undef ERROR_INVALID_OPERATION
@@ -104,6 +105,14 @@ Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    MEDIA_LOG_D("GetStreamInfo entered");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->GetStreamInfo(streams);
+    return Status::OK;
+}
+
 Status HttpSourcePlugin::Start()
 {
     MEDIA_LOG_D("Start enter.");
@@ -150,13 +159,35 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("SetSource enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
-    uri_ = source->GetSourceUri();
-    httpHeader_ = source->GetSourceHeader();
-    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
-        httpHeader_["Referer"].c_str());
+    FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION);
+    SetDownloaderBySource(source);
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (callback_ != nullptr) {
+        downloader_->SetCallback(callback_);
+    }
+    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
+    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
+    return Status::OK;
+}
 
-    PlayStrategy* playStrategy = source->GetPlayStrategy();
-    if (IsSeekToTimeSupported()) {
+void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
+{
+    PlayStrategy* playStrategy = nullptr;
+    if (source != nullptr) {
+        uri_ = source->GetSourceUri();
+        httpHeader_ = source->GetSourceHeader();
+        MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
+                    httpHeader_["Referer"].c_str());
+        playStrategy = source->GetPlayStrategy();
+        mimeType_ = source->GetMimeType();
+    }
+    if (uri_.find(".mpd") != std::string::npos) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
+        if (playStrategy != nullptr) {
+            downloader_->SetPlayStrategy(playStrategy);
+        }
+        delayReady = false;
+    } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
@@ -164,31 +195,44 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         }
         delayReady = false;
+    } else if (uri_.find(".mpd") != std::string::npos) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
+        if (playStrategy != nullptr) {
+            downloader_->SetPlayStrategy(playStrategy);
+        }
+        delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(expectDuration));
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
+                (uri_, expectDuration));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(uri_));
         }
     }
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-
-    if (callback_ != nullptr) {
-        downloader_->SetCallback(callback_);
+    if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
     }
-
-    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
-    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
-    return Status::OK;
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded_);
+    }
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
-    return uri_.find(".m3u8") != std::string::npos;
+    if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
+        return uri_.find("m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
+    }
+    MEDIA_LOG_D("IsSeekToTimeSupported return true");
+    return true;
 }
 
 Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
+    return Read(0, buffer, offset, expectedLen);
+}
+
+Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     MEDIA_LOG_D("Read enter.");
     AutoLock lock(mutex_);
@@ -206,12 +250,21 @@ Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, 
         bufData = buffer->GetMemory();
     }
 
-    bool isEos = false;
-    unsigned int realReadSize = 0;
-    bool result = downloader_->Read(bufData->GetWritableAddr(expectedLen), expectedLen, realReadSize, isEos);
-    bufData->UpdateDataSize(realReadSize);
-    MEDIA_LOG_D("Read finished, read size = " PUBLIC_LOG_ZU ", isEos " PUBLIC_LOG_D32, bufData->GetSize(), isEos);
-    return result ? Status::OK : Status::END_OF_STREAM;
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = streamId;
+    readDataInfo.nextStreamId_ = streamId;
+    readDataInfo.wantReadLength_ = expectedLen;
+    auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
+    buffer->streamID = readDataInfo.nextStreamId_;
+    
+    bufData->UpdateDataSize(readDataInfo.realReadLength_);
+    MEDIA_LOG_I("Read finished, read size = "
+    PUBLIC_LOG_ZU
+    ", nextStreamId = "
+    PUBLIC_LOG_D32
+    ", isEos "
+    PUBLIC_LOG_D32, bufData->GetSize(), readDataInfo.nextStreamId_, readDataInfo.isEos_);
+    return result;
 }
 
 Status HttpSourcePlugin::GetSize(uint64_t& size)
@@ -233,7 +286,7 @@ Seekable HttpSourcePlugin::GetSeekable()
 
 void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_D("Interrupt enter");
+    isInterruptNeeded_ = isInterruptNeeded;
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
     }
@@ -241,11 +294,11 @@ void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 
 Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
+    AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
     MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
-    AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     if (offset > downloader_->GetContentLength()) {
         MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);
@@ -307,6 +360,14 @@ Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
         return Status::OK;
     }
     return Status::ERROR_UNKNOWN;
+}
+
+Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    MEDIA_LOG_I("HttpSourcePlugin::GetDownloadInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->GetDownloadInfo(downloadInfo);
+    return Status::OK;
 }
 
 void HttpSourcePlugin::SetDemuxerState()

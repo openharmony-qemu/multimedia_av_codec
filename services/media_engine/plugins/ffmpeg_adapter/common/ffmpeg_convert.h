@@ -43,7 +43,7 @@ struct ResamplePara {
     uint32_t channels{2}; // 2: STEREO
     uint32_t sampleRate{0};
     uint32_t bitsPerSample{0};
-    int64_t channelLayout{0};
+    AVChannelLayout channelLayout;
     AVSampleFormat srcFfFmt{AV_SAMPLE_FMT_NONE};
     uint32_t destSamplesPerFrame{0};
     AVSampleFormat destFmt{AV_SAMPLE_FMT_S16};

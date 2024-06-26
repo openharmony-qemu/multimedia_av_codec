@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include "plugin/plugin_time.h"
+#include "avcodec_common.h"
 #include "surface/surface.h"
 #include "osal/task/condition_variable.h"
 #include "osal/task/mutex.h"
@@ -73,11 +74,19 @@ public:
     Status SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
 
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
+
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetSeekTime(int64_t seekTimeUs);
     Status HandleInputBuffer();
+    void OnDumpInfo(int32_t fd);
 
+    void SetCallingInfo(int32_t appUid, int32_t appPid, std::string bundleName, uint64_t instanceId);
+
+    Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
+    void SetBitrateStart();
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -133,6 +142,16 @@ private:
     std::atomic<bool> doPrepareFrame_{false};
     std::atomic<bool> isNeedStartDecoder_{true};
     bool renderFirstFrame_{false};
+    Mutex formatChangeMutex_{};
+
+    int32_t appUid_ = -1;
+    int32_t appPid_ = -1;
+    std::string bundleName_;
+    uint64_t instanceId_ = 0;
+
+    std::atomic<int32_t> bitrateChange_{0};
+    int32_t surfaceWidth_{0};
+    int32_t surfaceHeight_{0};
 };
 } // namespace Pipeline
 } // namespace Media

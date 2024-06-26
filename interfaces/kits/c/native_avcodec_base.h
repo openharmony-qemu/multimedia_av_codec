@@ -245,12 +245,12 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_APE;
 
 /**
- * @brief Enumerates the MIME type of versatile video coding.
+ * @brief Enumerates the MIME type of subtitle.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
-extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
+extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 
 /**
  * @brief The extra data's key of surface Buffer
@@ -269,7 +269,7 @@ extern const char *OH_ED_KEY_EOS;
  * @since 9
  * @version 1.0
  */
-/* Key for track type, value type is uint8_t, see @OH_MediaType. */
+/* Key for track type, value type is int32_t, see @OH_MediaType. */
 extern const char *OH_MD_KEY_TRACK_TYPE;
 /* Key for codec mime type, value type is string. */
 extern const char *OH_MD_KEY_CODEC_MIME;
@@ -277,25 +277,25 @@ extern const char *OH_MD_KEY_CODEC_MIME;
 extern const char *OH_MD_KEY_DURATION;
 /* Key for bitrate, value type is int64_t. */
 extern const char *OH_MD_KEY_BITRATE;
-/* Key for max input size, value type is uint32_t */
+/* Key for max input size, value type is int32_t */
 extern const char *OH_MD_KEY_MAX_INPUT_SIZE;
-/* Key for video width, value type is uint32_t */
+/* Key for video width, value type is int32_t */
 extern const char *OH_MD_KEY_WIDTH;
-/* Key for video height, value type is uint32_t */
+/* Key for video height, value type is int32_t */
 extern const char *OH_MD_KEY_HEIGHT;
 /* Key for video pixel format, value type is int32_t, see @OH_AVPixelFormat */
 extern const char *OH_MD_KEY_PIXEL_FORMAT;
-/* key for audio raw format, value type is uint32_t , see @AudioSampleFormat */
+/* key for audio raw format, value type is int32_t , see @AudioSampleFormat */
 extern const char *OH_MD_KEY_AUDIO_SAMPLE_FORMAT;
 /* Key for video frame rate, value type is double. */
 extern const char *OH_MD_KEY_FRAME_RATE;
 /* video encode bitrate mode, the value type is int32_t, see @OH_VideoEncodeBitrateMode */
 extern const char *OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE;
-/* encode profile, the value type is number. see @OH_AVCProfile, OH_HEVCProfile, OH_AACProfile. */
+/* encode profile, the value type is int32_t. see @OH_AVCProfile, OH_HEVCProfile, OH_AACProfile. */
 extern const char *OH_MD_KEY_PROFILE;
-/* Key for audio channel count, value type is uint32_t */
+/* Key for audio channel count, value type is int32_t */
 extern const char *OH_MD_KEY_AUD_CHANNEL_COUNT;
-/* Key for audio sample rate, value type is uint32_t */
+/* Key for audio sample rate, value type is int32_t */
 extern const char *OH_MD_KEY_AUD_SAMPLE_RATE;
 /**
  * @brief Key for the interval of key frame. value type is int32_t, the unit is milliseconds. A negative value means no
@@ -313,7 +313,7 @@ extern const char *OH_MD_KEY_ROTATION;
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
-/* Key for video YUV value range flag, value type is boolean */
+/* Key for video YUV value range flag, value type is bool */
 extern const char *OH_MD_KEY_RANGE_FLAG;
 /* Key for video color primaries, value type is int32_t, see @OH_ColorPrimary */
 extern const char *OH_MD_KEY_COLOR_PRIMARIES;
@@ -321,9 +321,9 @@ extern const char *OH_MD_KEY_COLOR_PRIMARIES;
 extern const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS;
 /* Key for video matrix coefficients, value type is int32_t, see @OH_MatrixCoefficient */
 extern const char *OH_MD_KEY_MATRIX_COEFFICIENTS;
-/* Key for the request an I-Frame immediately, value type is boolean */
+/* Key for the request an I-Frame immediately, value type is bool */
 extern const char *OH_MD_KEY_REQUEST_I_FRAME;
-/* Key for the desired encoding quality, value type is uint32_t, this key is only
+/* Key for the desired encoding quality, value type is int32_t, this key is only
  * supported for encoders that are configured in constant quality mode */
 extern const char *OH_MD_KEY_QUALITY;
 /* Key of the codec specific data. value type is a uint8_t pointer */
@@ -350,15 +350,15 @@ extern const char *OH_MD_KEY_LANGUAGE;
 extern const char *OH_MD_KEY_DESCRIPTION;
 /* source format Key for lyrics, value type is string */
 extern const char *OH_MD_KEY_LYRICS;
-/* source format Key for track count, value type is uint32_t */
+/* source format Key for track count, value type is int32_t */
 extern const char *OH_MD_KEY_TRACK_COUNT;
 /* Key for the desired encoding channel layout, value type is int64_t, this key is only supported for encoders */
 extern const char *OH_MD_KEY_CHANNEL_LAYOUT;
-/* Key for bits per coded sample, value type is uint32_t, supported for flac encoder, see @OH_BitsPerSample */
+/* Key for bits per coded sample, value type is int32_t, supported for flac encoder, see @OH_BitsPerSample */
 extern const char *OH_MD_KEY_BITS_PER_CODED_SAMPLE;
-/* Key for the aac format, value type is uint32_t, supported for aac decoder */
+/* Key for the aac format, value type is int32_t, supported for aac decoder */
 extern const char *OH_MD_KEY_AAC_IS_ADTS;
-/* Key for aac sbr mode, value type is uint32_t, supported for aac encoder */
+/* Key for aac sbr mode, value type is int32_t, supported for aac encoder */
 extern const char *OH_MD_KEY_SBR;
 /* Key for flac compliance level, value type is int32_t */
 extern const char *OH_MD_KEY_COMPLIANCE_LEVEL;
@@ -378,7 +378,7 @@ extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 11
  */
-/* Key for audio codec compression level, value type is uint32_t */
+/* Key for audio codec compression level, value type is int32_t */
 extern const char *OH_MD_KEY_AUDIO_COMPRESSION_LEVEL;
 /* Key of the video is hdr vivid. value type is bool */
 extern const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID;
@@ -408,7 +408,7 @@ extern const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY;
 /**
  * @brief Key for describing the temporal group of picture size, value type is int32_t. It takes effect only when
- * temporal scalability is enable. This is an optional key that applies only to video encoder. It is used in configure.
+ * temporal level scale is enable. This is an optional key that applies only to video encoder. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -435,7 +435,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT;
 /**
  * @brief Key for describing mark this frame as a long term reference frame, value type is int32_t (0 or 1): 1 is mark,
- * 0 otherwise. It takes effect only when the count of used long term reference frames is configured. This is an
+ * 0 otherwise. It takes effect only when the number of used long term reference frames is configured. This is an
  * optional key that applies only to video encoder input loop. It takes effect immediately.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -521,6 +521,24 @@ extern const char *OH_MD_KEY_VIDEO_STRIDE;
  */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
 /**
+ * @brief Key for describing the valid picture width of the video, value type is int32_t.
+ * Get the value from an OH_AVFormat instance, which obtained by calling {@link OH_VideoDecoder_GetOutputDescription}
+ * or {@link OH_AVCodecOnStreamChanged}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_PIC_WIDTH;
+/**
+ * @brief Key for describing the valid picture height of the video, value type is int32_t.
+ * Get the value from an OH_AVFormat instance, which obtained by calling {@link OH_VideoDecoder_GetOutputDescription}
+ * or {@link OH_AVCodecOnStreamChanged}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_PIC_HEIGHT;
+/**
  * @brief Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  * If enabled, the video encoder or video decoder doesn't hold input and output data more than required by
  * the codec standards. This is an optional key that applies only to video encoder or video decoder.
@@ -546,6 +564,52 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX;
  * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN;
+/**
+ * @brief Key for describing the video frame averge quantization parameter, value type is int32_t.
+ * This is a part of a video encoder statistics export feature. This value is emitted from video encoder for a video
+ * frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_AVERAGE;
+/**
+ * @brief Key for describing video frame mean squared error, value type is double.
+ * This is a part of a video encoder statistics export feature. This value is emitted from video encoder for a video
+ * frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MSE;
+/**
+ * @brief Key for decoding timestamp of the buffer in microseconds, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_DECODING_TIMESTAMP;
+/**
+ * @brief Key for duration of the buffer in microseconds, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_BUFFER_DURATION;
+/**
+ * @brief Key for sample aspect ratio, value type is double.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_SAR;
+/**
+ * @brief Key for start time of file, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_START_TIME;
 
 /**
  * @brief Media type.
@@ -604,10 +668,15 @@ typedef enum OH_AVOutputFormat {
     AV_OUTPUT_FORMAT_DEFAULT = 0,
     AV_OUTPUT_FORMAT_MPEG_4 = 2,
     AV_OUTPUT_FORMAT_M4A = 6,
-    /** The muxer output amr file format.
+    /**
+     * The muxer output amr file format.
      * @since 12
      */
     AV_OUTPUT_FORMAT_AMR = 8,
+    /**
+     * The muxer output mp3 file format.
+     * @since 12
+     */
     AV_OUTPUT_FORMAT_MP3 = 9,
 } OH_AVOutputFormat;
 
@@ -743,6 +812,10 @@ typedef enum OH_AVCLevel {
     AVC_LEVEL_42 = 13,
     AVC_LEVEL_5 = 14,
     AVC_LEVEL_51 = 15,
+    AVC_LEVEL_52 = 16,
+    AVC_LEVEL_6 = 17,
+    AVC_LEVEL_61 = 18,
+    AVC_LEVEL_62 = 19,
 } OH_AVCLevel;
 
 /**

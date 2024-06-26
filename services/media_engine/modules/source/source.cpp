@@ -14,12 +14,14 @@
  */
 
 #define HST_LOG_TAG "Source"
+#define MEDIA_ATOMIC_ABILITY
 
 #include "avcodec_trace.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "common/log.h"
 #include "osal/utils/util.h"
 #include "common/media_source.h"
+#include "plugin/plugin_manager_v2.h"
 #include "source.h"
 
 namespace OHOS {
@@ -75,7 +77,7 @@ void Source::ClearData()
     seekable_ = Seekable::INVALID;
     isPluginReady_ = false;
     isAboveWaterline_ = false;
-    isHls_ = false;
+    seekToTimeFlag_ = false;
 }
 
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
@@ -92,9 +94,9 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSource InitPlugin failed");
 
     if (plugin_ != nullptr) {
-        isHls_ = plugin_->IsSeekToTimeSupported();
+        seekToTimeFlag_ = plugin_->IsSeekToTimeSupported();
     }
-    MEDIA_LOG_I("SetSource isHls: " PUBLIC_LOG_D32, isHls_);
+    MEDIA_LOG_I("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
 
     ActivateMode();
 
@@ -152,7 +154,7 @@ Status Source::Prepare()
 
 bool Source::IsSeekToTimeSupported()
 {
-    return isHls_;
+    return seekToTimeFlag_;
 }
 
 Status Source::Start()
@@ -189,6 +191,16 @@ Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
     } else {
         return Status::ERROR_INVALID_PARAMETER;
     }
+}
+
+Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
+{
+    MEDIA_LOG_I("GetDownloadInfo");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetDownloadInfo failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetDownloadInfo(downloadInfo);
 }
 
 bool Source::IsNeedPreDownload()
@@ -251,18 +263,29 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
-    } else if (event.type == PluginEventType::VIDEO_SIZE_CHANGE) {
-        MEDIA_LOG_I("video size change from source.");
+    } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
+        MEDIA_LOG_I("source bitrate start from source.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
     }
 }
 
+void Source::SetSelectBitRateFlag(bool flag)
+{
+    mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
+}
+
+bool Source::CanDoSelectBitRate()
+{
+    return mediaDemuxerCallback_->CanDoSelectBitRate();
+}
+
 void Source::SetInterruptState(bool isInterruptNeeded)
 {
+    isInterruptNeeded_ = isInterruptNeeded;
     if (plugin_) {
-        plugin_->SetInterruptState(isInterruptNeeded);
+        plugin_->SetInterruptState(isInterruptNeeded_);
     }
 }
 
@@ -305,9 +328,12 @@ std::string Source::GetUriSuffix(const std::string& uri)
     return suffix;
 }
 
-Status Source::ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+Status Source::Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "ReadData, Source plugin is nullptr");
+    if (seekToTimeFlag_) {
+        return plugin_->Read(streamID, buffer, offset, expectedLen);
+    }
     return plugin_->Read(buffer, offset, expectedLen);
 }
 Status Source::SeekTo(uint64_t offset)
@@ -316,6 +342,25 @@ Status Source::SeekTo(uint64_t offset)
     return plugin_->SeekTo(offset);
 }
 
+Status Source::GetStreamInfo(std::vector<StreamInfo>& streams)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "GetStreamInfo, Source plugin is nullptr");
+    Status ret = plugin_->GetStreamInfo(streams);
+    if (ret == Status::OK && streams.size() == 0) {
+        MEDIA_LOG_I("GetStreamInfo empty, MIX Stream");
+        Plugins::StreamInfo info;
+        info.streamId = 0;
+        info.bitRate = 0;
+        info.type = Plugins::MIXED;
+        streams.push_back(info);
+    }
+    for (auto& iter : streams) {
+        MEDIA_LOG_I("Source GetStreamInfo id = " PUBLIC_LOG_D32 " type = " PUBLIC_LOG_D32,
+            iter.streamId, iter.type);
+    }
+    return ret;
+}
 
 bool Source::GetProtocolByUri()
 {
@@ -342,7 +387,12 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     MEDIA_LOG_D("sourceType = " PUBLIC_LOG_D32, CppExt::to_underlying(srcType));
     if (srcType == SourceType::SOURCE_TYPE_URI) {
         uri_ = source->GetSourceUri();
-        ret = GetProtocolByUri();
+        std::string mimeType = source->GetMimeType();
+        if (mimeType == AVMimeTypes::APPLICATION_M3U8) {
+            protocol_ = "http";
+        } else {
+            ret = GetProtocolByUri();
+        }
     } else if (srcType == SourceType::SOURCE_TYPE_FD) {
         protocol_.append("fd");
         uri_ = source->GetSourceUri();
@@ -352,29 +402,6 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
     }
     MEDIA_LOG_I("protocol: " PUBLIC_LOG_S ", uri: %{private}s", protocol_.c_str(), uri_.c_str());
     return ret;
-}
-
-Status Source::CreatePlugin(const std::shared_ptr<PluginInfo>& info, const std::string& name,
-    PluginManager& manager)
-{
-    MediaAVCodec::AVCodecTrace trace("Source::CreatePlugin");
-    if ((plugin_ != nullptr) && (pluginInfo_ != nullptr)) {
-        if (info->name == pluginInfo_->name && plugin_->Reset() == Status::OK) {
-            MEDIA_LOG_I("Reuse last plugin: " PUBLIC_LOG_S, name.c_str());
-            return Status::OK;
-        }
-        if (plugin_->Deinit() != Status::OK) {
-            MEDIA_LOG_E("Deinit last plugin: " PUBLIC_LOG_S " error", pluginInfo_->name.c_str());
-        }
-    }
-    plugin_ = std::static_pointer_cast<SourcePlugin>(manager.CreatePlugin(name, PluginType::SOURCE));
-    if (plugin_ == nullptr) {
-        MEDIA_LOG_E("PluginManager CreatePlugin " PUBLIC_LOG_S " fail", name.c_str());
-        return Status::OK;
-    }
-    pluginInfo_ = info;
-    MEDIA_LOG_I("Create new plugin: \"" PUBLIC_LOG_S "\" success", pluginInfo_->name.c_str());
-    return Status::OK;
 }
 
 Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
@@ -388,31 +415,11 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
         MEDIA_LOG_E("protocol_ is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    PluginManager& pluginManager = PluginManager::Instance();
-    auto nameList = pluginManager.ListPlugins(PluginType::SOURCE);
-    for (const std::string& name : nameList) {
-        std::shared_ptr<PluginInfo> info = pluginManager.GetPluginInfo(PluginType::SOURCE, name);
-        if (info == nullptr) {
-            MEDIA_LOG_W("info is null.");
-            continue;
-        }
-        MEDIA_LOG_I("name: " PUBLIC_LOG_S ", info->name: " PUBLIC_LOG_S, name.c_str(), info->name.c_str());
-        auto val = info->extra[PLUGIN_INFO_EXTRA_PROTOCOL];
-        if (Any::IsSameTypeWith<std::vector<ProtocolType>>(val)) {
-            MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S,
-                            protocol_.c_str(), name.c_str());
-            auto supportProtocols = AnyCast<std::vector<ProtocolType>>(val);
-            bool result = std::any_of(supportProtocols.begin(), supportProtocols.end(),
-                [&](const auto& supportProtocol) {
-                return supportProtocol == g_protocolStringToType[protocol_] && CreatePlugin(info,
-                    name, pluginManager) == Status::OK;
-            });
-            if (result) {
-                MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
-                    protocol_.c_str(), name.c_str());
-                return Status::OK;
-            }
-        }
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(Plugins::PluginType::SOURCE, protocol_);
+    if (plugin != nullptr) {
+        plugin_ = std::static_pointer_cast<SourcePlugin>(plugin);
+        plugin_->SetInterruptState(isInterruptNeeded_);
+        return Status::OK;
     }
     MEDIA_LOG_E("Cannot find any plugin");
     return Status::ERROR_UNSUPPORTED_FORMAT;
@@ -420,7 +427,7 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 
 int64_t Source::GetDuration()
 {
-    FALSE_RETURN_V_MSG_W(isHls_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
+    FALSE_RETURN_V_MSG_W(seekToTimeFlag_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
     int64_t duration;
     Status ret = plugin_->GetDuration(duration);
     FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed.");

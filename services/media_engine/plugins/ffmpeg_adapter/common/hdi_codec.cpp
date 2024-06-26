@@ -98,13 +98,11 @@ bool HdiCodec::IsSupportCodecType(const std::string &name)
         return false;
     }
 
-    for (const CodecCompCapability &capability : capabilityList) {
-        if (capability.compName == name) {
-            return true;
-        }
-    }
-    
-    return false;
+    bool checkName = std::any_of(std::begin(capabilityList),
+        std::end(capabilityList), [name](CodecCompCapability capability) {
+        return capability.compName == name;
+    });
+    return checkName;
 }
 
 void HdiCodec::InitParameter(AudioCodecOmxParam &param)
@@ -224,8 +222,8 @@ Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
 
 Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 {
-    omxInBufferInfo_->omxBuffer->filledLen = buffer->memory_->GetSize();
-    omxInBufferInfo_->omxBuffer->offset = buffer->memory_->GetOffset();
+    omxInBufferInfo_->omxBuffer->filledLen = static_cast<uint32_t>(buffer->memory_->GetSize());
+    omxInBufferInfo_->omxBuffer->offset = static_cast<uint32_t>(buffer->memory_->GetOffset());
     omxInBufferInfo_->omxBuffer->pts = buffer->pts_;
     omxInBufferInfo_->omxBuffer->flag = buffer->flag_;
 
@@ -335,9 +333,8 @@ void HdiCodec::Release()
     compMgr_ = nullptr;
 }
 
-HdiCodec::HdiCallback::HdiCallback(std::shared_ptr<HdiCodec> hdiCodec)
+HdiCodec::HdiCallback::HdiCallback(std::shared_ptr<HdiCodec> hdiCodec) : hdiCodec_(hdiCodec)
 {
-    hdiCodec_ = hdiCodec;
 }
 
 int32_t HdiCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)

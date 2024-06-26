@@ -18,6 +18,8 @@
 #include "iconsumer_surface.h"
 #include "meta/meta_key.h"
 #include "native_buffer_inner.h"
+#include "openssl/crypto.h"
+#include "openssl/sha.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 #include "native_window.h"
@@ -32,7 +34,39 @@ namespace {
 constexpr bool NEED_DUMP = false;
 constexpr int32_t REQUEST_I_FRAME = 1;
 constexpr int32_t REQUEST_I_FRAME_NUM = 13;
+constexpr uint32_t BUFFER_COUNT = 59;
+constexpr uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {
+    0x39, 0x2c, 0x3a, 0x78, 0xf0, 0xf7, 0xbe, 0xde, 0xc8, 0x2d, 0x45, 0x19, 0x9d, 0xd8, 0x3e, 0x88,
+    0x5f, 0xf0, 0x0b, 0xf5, 0x14, 0x01, 0x21, 0xea, 0xd2, 0xcf, 0xe3, 0xd9, 0x35, 0x6a, 0x2c, 0x98,
+    0xc6, 0x48, 0xc7, 0x90, 0xca, 0xe7, 0xc1, 0xb0, 0x4e, 0x9c, 0x05, 0x1e, 0xdd, 0x22, 0xd2, 0xe0,
+    0x5e, 0x9a, 0xf8, 0xbc, 0xbe, 0x39, 0x26, 0x46, 0x6e, 0xa3, 0xcd, 0x1b, 0xbb, 0xf5, 0xc8, 0x87};
+constexpr uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {
+    0xb0, 0xca, 0x29, 0xa3, 0x3c, 0x8e, 0x36, 0x3f, 0xbc, 0x30, 0xa8, 0x70, 0x09, 0x29, 0xb5, 0xff,
+    0x8f, 0xe2, 0xf9, 0x58, 0xc5, 0x00, 0x02, 0x7c, 0xa9, 0x05, 0xe0, 0x69, 0x09, 0xa7, 0x2e, 0xb2,
+    0xdf, 0x5d, 0xf4, 0x05, 0xea, 0xde, 0xe9, 0x9b, 0x1e, 0x5b, 0x37, 0x04, 0x2f, 0x3d, 0xe9, 0x2c,
+    0xb2, 0x8c, 0xc3, 0x99, 0xd4, 0xdc, 0xdf, 0xee, 0xb4, 0xd9, 0x0c, 0xd0, 0xee, 0x39, 0x94, 0x3c};
+
+uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
+std::atomic<uint32_t> g_shaBufferCount = 0;
+SHA512_CTX g_ctxTest;
+
+void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
+{
+    if (needCheckSHA) {
+        ++g_shaBufferCount;
+    }
+    if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
+        SHA512_Update(&g_ctxTest, addr, size);
+    }
+    if (NEED_DUMP) {
+        if (!outFile->is_open()) {
+            cout << "output data fail" << endl;
+        }
+        (void)outFile->write(addr, size);
+    }
 }
+} // namespace
+
 namespace OHOS {
 namespace MediaAVCodec {
 VEncCallbackTest::VEncCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
@@ -360,16 +394,16 @@ int32_t VideoEncSample::CreateInputSurface()
     nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_FORMAT fail.Error:%d", ret);
+
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
                                                 DEFAULT_HEIGHT_VENC);
-    if (ret != AV_ERR_OK) {
-        cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
-        return ret;
-    }
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN,
+                                      "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail.Error:%d", ret);
+
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_USAGE fail.Error:%d", ret);
     isSurfaceMode_ = true;
     return AV_ERR_OK;
 }
@@ -393,6 +427,9 @@ int32_t VideoEncSample::CreateInputSurface()
                                                 DEFAULT_HEIGHT_VENC);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_INVALID_VAL, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail");
 
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_USAGE,
+                                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_UNKNOWN, "NativeWindowHandleOpt SET_USAGE fail.Error:%d", ret);
     isSurfaceMode_ = true;
     return AV_ERR_OK;
 }
@@ -543,6 +580,10 @@ void VideoEncSample::PrepareInner()
         ASSERT_NE(inFile_, nullptr);
         inFile_->open(inPath_, std::ios::in | std::ios::binary);
         ASSERT_TRUE(inFile_->is_open());
+    }
+    if (needCheckSHA_) {
+        g_shaBufferCount = 0;
+        SHA512_Init(&g_ctxTest);
     }
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
@@ -738,6 +779,20 @@ void VideoEncSample::OutputLoopFuncExt()
     signal_->cond_.notify_all();
 }
 
+void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer)
+{
+    if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        int32_t qpAverage = 60;
+        EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
+        if (testParam_ == VCodecTestParam::HW_HEVC) {
+            double mse = 1.0;
+            EXPECT_EQ(true, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
+        }
+        format->Destroy();
+    }
+}
+
 int32_t VideoEncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
@@ -745,19 +800,27 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
+
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBuffer fail, exit. index: %d", index);
-
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
+    char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
+    int32_t size = attr.size;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
+    UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
+
+#ifdef HMOS_TEST
+    CheckFormatKey(attr, buffer);
+#endif
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
-
     if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
-            outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+            outFile_->write(bufferAddr, size);
         } else {
             UNITTEST_INFO_LOG("output data fail");
         }
@@ -766,15 +829,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail. index: %d", index);
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
-        if (NEED_DUMP && outFile_->is_open()) {
-            outFile_->close();
-        }
-        cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
-        cout << "Get EOS Frame, output func exit" << endl;
-        unique_lock<mutex> lock(signal_->mutex_);
-        EXPECT_LE(frameOutputCount_, frameInputCount_);
-        signal_->isRunning_.store(false);
-        signal_->cond_.notify_all();
+        PerformEosFrameAndVerifiedSHA();
         return AV_ERR_OK;
     }
     return AV_ERR_OK;
@@ -908,7 +963,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     rect->h = DEFAULT_HEIGHT_VENC;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
-    NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
+    OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;
@@ -923,6 +978,50 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
         return ret;
     }
     return ret;
+}
+
+void VideoEncSample::CheckSHA()
+{
+    const uint8_t *sha = nullptr;
+    switch (testParam_) {
+        case VCodecTestParam::SW_AVC:
+        case VCodecTestParam::HW_AVC:
+            sha = SHA_AVC;
+            break;
+        case VCodecTestParam::HW_HEVC:
+            sha = SHA_HEVC;
+            break;
+        default:
+            return;
+    }
+    cout << std::hex << "========================================";
+    for (uint32_t i = 0; i < SHA512_DIGEST_LENGTH; ++i) {
+        if ((i % 8) == 0) { // 8: print width
+            cout << "\n";
+        }
+        cout << "0x" << setw(2) << setfill('0') << static_cast<int32_t>(g_mdTest[i]) << ","; // 2: append print zero
+        ASSERT_EQ(g_mdTest[i], sha[i]) << "i: " << i;
+    }
+    cout << std::dec << "\n========================================\n";
+}
+
+void VideoEncSample::PerformEosFrameAndVerifiedSHA()
+{
+    if (NEED_DUMP && outFile_->is_open()) {
+        outFile_->close();
+    }
+    if (needCheckSHA_) {
+        (void)memset_s(g_mdTest, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
+        SHA512_Final(g_mdTest, &g_ctxTest);
+        OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
+        CheckSHA();
+    }
+    cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
+    cout << "Get EOS Frame, output func exit" << endl;
+    unique_lock<mutex> lock(signal_->mutex_);
+    EXPECT_LE(frameOutputCount_, frameInputCount_);
+    signal_->isRunning_.store(false);
+    signal_->cond_.notify_all();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

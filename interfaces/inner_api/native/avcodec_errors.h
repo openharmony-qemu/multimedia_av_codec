@@ -71,6 +71,7 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_DATA_SOURCE_IO_ERROR,                         // avcodec data source IO failed.
     AVCS_ERR_DATA_SOURCE_OBTAIN_MEM_ERROR,                 // avcodec data source get mem failed.
     AVCS_ERR_DATA_SOURCE_ERROR_UNKNOWN,                    // avcodec data source error unknow.
+    AVCS_ERR_CODEC_PARAM_INCORRECT,                        // video codec param check failed.
 
     AVCE_ERR_IPC_UNKNOWN,                                  // avcodec ipc unknown err.
     AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,            // avcodec ipc err, get sub system ability failed.

@@ -127,6 +127,22 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
+    if (dec_sample->inputCallbackFlush && dec_sample->outCount > 1) {
+        OH_VideoDecoder_Flush(codec);
+        cout << "OH_VideoDecoder_Flush end" << endl;
+        dec_sample->isRunning_.store(false);
+        dec_sample->signal_->inCond_.notify_all();
+        dec_sample->signal_->outCond_.notify_all();
+        return;
+    }
+    if (dec_sample->inputCallbackStop && dec_sample->outCount > 1) {
+        OH_VideoDecoder_Stop(codec);
+        cout << "OH_VideoDecoder_Stop end" << endl;
+        dec_sample->isRunning_.store(false);
+        dec_sample->signal_->inCond_.notify_all();
+        dec_sample->signal_->outCond_.notify_all();
+        return;
+    }
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
     unique_lock<mutex> lock(signal->inMutex_);
     signal->inIdxQueue_.push(index);
@@ -137,6 +153,22 @@ void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, vo
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData)
 {
+    if (dec_sample->outputCallbackFlush && dec_sample->outCount > 1) {
+        OH_VideoDecoder_Flush(codec);
+        cout << "OH_VideoDecoder_Flush end" << endl;
+        dec_sample->isRunning_.store(false);
+        dec_sample->signal_->inCond_.notify_all();
+        dec_sample->signal_->outCond_.notify_all();
+        return;
+    }
+    if (dec_sample->outputCallbackStop && dec_sample->outCount > 1) {
+        OH_VideoDecoder_Stop(codec);
+        cout << "OH_VideoDecoder_Stop end" << endl;
+        dec_sample->isRunning_.store(false);
+        dec_sample->signal_->inCond_.notify_all();
+        dec_sample->signal_->outCond_.notify_all();
+        return;
+    }
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
     unique_lock<mutex> lock(signal->outMutex_);
     signal->outIdxQueue_.push(index);
@@ -549,6 +581,7 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
     if (isRunning_.load()) {
         OH_VideoDecoder_PushInputData(vdec_, index, attr) == AV_ERR_OK ? (0) : (errCount++);
         frameCount_ = frameCount_ + 1;
+        outCount = outCount + 1;
         if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
             switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
             OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) == AV_ERR_OK ? (0) : (errCount++);

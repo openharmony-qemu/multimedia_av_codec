@@ -146,13 +146,18 @@ Status FileSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_D("IN");
     auto err = ParseFileName(source->GetSourceUri());
     if (err != Status::OK) {
-        MEDIA_LOG_E("Parse file name from uri fail, uri: " PUBLIC_LOG_S, source->GetSourceUri().c_str());
+        MEDIA_LOG_E("Parse file name from uri fail, uri: %{private}s", source->GetSourceUri().c_str());
         return err;
     }
     return OpenFile();
 }
 
 Status FileSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
+    return Read(0, buffer, offset, expectedLen);
+}
+
+Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     FALSE_RETURN_V_MSG_E(fp_ != nullptr, Status::ERROR_WRONG_STATE, "invalid fp");
     (void)offset;
@@ -228,15 +233,15 @@ Status FileSourcePlugin::ParseFileName(const std::string& uri)
         MEDIA_LOG_E("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_D("uri: %{private}s", uri.c_str());
     if (uri.find("file:/") != std::string::npos) {
         if (uri.find('#') != std::string::npos) {
-            MEDIA_LOG_E("Invalid file uri format: " PUBLIC_LOG_S, uri.c_str());
+            MEDIA_LOG_E("Invalid file uri format: %{private}s", uri.c_str());
             return Status::ERROR_INVALID_PARAMETER;
         }
         auto pos = uri.find("file:");
         if (pos == std::string::npos) {
-            MEDIA_LOG_E("Invalid file uri format: " PUBLIC_LOG_S, uri.c_str());
+            MEDIA_LOG_E("Invalid file uri format: %{private}s", uri.c_str());
             return Status::ERROR_INVALID_PARAMETER;
         }
         pos += 5; // 5: offset
@@ -246,7 +251,7 @@ Status FileSourcePlugin::ParseFileName(const std::string& uri)
             pos += 2;                 // 2: offset
             pos = uri.find('/', pos); // skip host name
             if (pos == std::string::npos) {
-                MEDIA_LOG_E("Invalid file uri format: " PUBLIC_LOG_S, uri.c_str());
+                MEDIA_LOG_E("Invalid file uri format: %{private}s", uri.c_str());
                 return Status::ERROR_INVALID_PARAMETER;
             }
             pos++;

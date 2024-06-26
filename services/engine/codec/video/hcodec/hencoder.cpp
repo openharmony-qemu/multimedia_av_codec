@@ -26,7 +26,12 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V3_0;
+using namespace CodecHDI;
+
+HEncoder::~HEncoder()
+{
+    MsgHandleLoop::Stop();
+}
 
 int32_t HEncoder::OnConfigure(const Format &format)
 {
@@ -62,7 +67,7 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         HLOGW("set color aspect failed");
     }
-    (void)SetProcessName(format);
+    (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
     ret = SetLTRParam(format);
@@ -258,8 +263,8 @@ int32_t HEncoder::UpdateInPortFormat()
 
     // save into member variable
     requestCfg_.timeout = 0;
-    requestCfg_.width = w;
-    requestCfg_.height = h;
+    requestCfg_.width = static_cast<int32_t>(w);
+    requestCfg_.height = static_cast<int32_t>(h);
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = BUFFER_MODE_REQUEST_USAGE;
@@ -690,23 +695,6 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
     return AVCS_ERR_OK;
 }
 
-int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
-                                                 const sptr<SurfaceBuffer> &surfaceBuffer, int64_t pts, uint32_t flag)
-{
-    BufferHandle *bufferHandle = surfaceBuffer->GetBufferHandle();
-    if (bufferHandle == nullptr) {
-        HLOGE("null BufferHandle");
-        return AVCS_ERR_UNKNOWN;
-    }
-    omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
-    omxBuffer->filledLen = surfaceBuffer->GetSize();
-    omxBuffer->fd = -1;
-    omxBuffer->fenceFd = -1;
-    omxBuffer->pts = pts;
-    omxBuffer->flag = flag;
-    return AVCS_ERR_OK;
-}
-
 void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
                                               const shared_ptr<Media::Meta> &meta)
 {
@@ -734,7 +722,7 @@ void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
     AppendToVector(omxBuffer->alongParam, param);
 }
 
-void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                                    const shared_ptr<Media::Meta> &meta)
 {
     bool requestIFrame = false;
@@ -751,7 +739,7 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::
     HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
 }
 
-void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                              const shared_ptr<Media::Meta> &meta)
 {
     int32_t minQp;
@@ -767,6 +755,51 @@ void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V3_0::
     param.maxQp = static_cast<uint32_t>(maxQp);
     AppendToVector(omxBuffer->alongParam, param);
     HLOGI("pts=%" PRId64 ", qp=(%d~%d)", omxBuffer->pts, minQp, maxQp);
+}
+
+void HEncoder::ExtractPerFrameParamFromOmxBuffer(
+    const shared_ptr<OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
+{
+    meta->Clear();
+    BinaryReader reader(static_cast<uint8_t*>(omxBuffer->alongParam.data()), omxBuffer->alongParam.size());
+    int* index = nullptr;
+    while ((index = reader.Read<int>()) != nullptr) {
+        switch (*index) {
+            case OMX_IndexParamEncOutQp: {
+                auto *averageQp = reader.Read<OMX_S32>();
+                if (averageQp == nullptr) {
+                    return;
+                }
+                HLOGD("pts=%" PRId64 ", averageQp=(%d)", omxBuffer->pts, *averageQp);
+                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
+                break;
+            }
+            case OMX_IndexParamEncOutMse: {
+                auto *averageMseLcu = reader.Read<double>();
+                if (averageMseLcu == nullptr) {
+                    return;
+                }
+                HLOGD("pts=%" PRId64 ", averageMseLcu=(%f)", omxBuffer->pts, *averageMseLcu);
+                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
+                break;
+            }
+            case OMX_IndexParamEncOutLTR: {
+                auto *encOutLtrParam = reader.Read<CodecEncOutLTRParam>();
+                if (encOutLtrParam == nullptr) {
+                    return;
+                }
+                HLOGD("pts=%" PRId64 ", isLTR=(%d), poc=(%d)", omxBuffer->pts, encOutLtrParam->isLTR,
+                      encOutLtrParam->poc);
+                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, encOutLtrParam->isLTR);
+                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(encOutLtrParam->poc));
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+    omxBuffer->alongParam.clear();
 }
 
 int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
@@ -812,7 +845,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     // buffer mode
-    uint32_t bufferId;
+    uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
@@ -825,13 +858,8 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    int err = WrapSurfaceBufferIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->surfaceBuffer,
-        bufferInfo->avBuffer->pts_,
+    WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
-    if (err != AVCS_ERR_OK) {
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
 
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
@@ -896,17 +924,13 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
         inputSurface_->ReleaseBuffer(entry.buffer, -1);
         return;
     }
-    int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp, 0);
-    if (err != AVCS_ERR_OK) {
-        inputSurface_->ReleaseBuffer(entry.buffer, -1);
-        return;
-    }
-    info.surfaceBuffer = entry.buffer;
+    WrapSurfaceBufferToSlot(info, entry.buffer, entry.timestamp, 0);
 
     if (enableSurfaceModeInputCb_) {
+        info.avBuffer->pts_ = entry.timestamp;
         NotifyUserToFillThisInBuffer(info);
     } else {
-        err = NotifyOmxToEmptyThisInBuffer(info);
+        int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             inputSurface_->ReleaseBuffer(entry.buffer, -1);
         }

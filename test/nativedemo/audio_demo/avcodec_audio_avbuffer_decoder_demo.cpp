@@ -137,7 +137,6 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     DEMO_CHECK_AND_RETURN_LOG(InitFile(audioType), "Fatal: InitFile file failed");
     audioType_ = audioType;
     DEMO_CHECK_AND_RETURN_LOG(CreateDec() == AVCS_ERR_OK, "Fatal: CreateDec fail");
-
     OH_AVFormat *format = OH_AVFormat_Create();
     int32_t channelCount = CHANNEL_COUNT;
     int32_t sampleRate = SAMPLE_RATE;
@@ -153,6 +152,8 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
         sampleRate = AMRWB_SAMPLE_RATE;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
+                                16); // 16 bit pre code
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
@@ -160,7 +161,6 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     if (audioType == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-        // extradata for vorbis
         int64_t extradataSize;
         DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: file is not open");
         inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
@@ -177,14 +177,8 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
 
-    auto start = chrono::steady_clock::now();
-
     unique_lock<mutex> lock(signal_->startMutex_);
     signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Decode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
 
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
     DEMO_CHECK_AND_RETURN_LOG(Release() == AVCS_ERR_OK, "Fatal: Release fail");

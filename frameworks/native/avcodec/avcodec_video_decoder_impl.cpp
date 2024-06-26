@@ -17,6 +17,7 @@
 #include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "common/log.h"
 #include "i_avcodec_service.h"
 
 namespace {
@@ -29,12 +30,11 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByMime(const std
 {
     std::shared_ptr<AVCodecVideoDecoder> impl = nullptr;
     Format format;
-
+    
     int32_t ret = CreateByMime(mime, format, impl);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
         "AVCodec video decoder impl init failed, %{public}s",
         AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
-
     return impl;
 }
 
@@ -156,6 +156,7 @@ int32_t AVCodecVideoDecoderImpl::Release()
 
 int32_t AVCodecVideoDecoderImpl::SetOutputSurface(sptr<Surface> surface)
 {
+    MEDIA_LOG_I("AVCodecVideoDecoderImpl::SetOutputSurface");
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;

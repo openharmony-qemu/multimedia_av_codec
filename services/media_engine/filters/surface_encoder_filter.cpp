@@ -113,6 +113,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             mediaCodec_->Release();
         }
         mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
+        mediaCodec_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
         Status ret = mediaCodec_->Init(codecMimeType_, true);
         if (ret == Status::OK) {
             std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
@@ -141,6 +142,13 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");
     mediaCodec_->SetInputSurface(surface);
+    return Status::OK;
+}
+
+Status SurfaceEncoderFilter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    mediaCodec_->SetTransCoderMode();
     return Status::OK;
 }
 
@@ -276,6 +284,7 @@ Status SurfaceEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("OnLinked");
+    onLinkedResultCallback_ = callback;
     return Status::OK;
 }
 
@@ -297,6 +306,9 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
 {
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
+    if (onLinkedResultCallback_) {
+        onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
+    }
 }
 
 void SurfaceEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -307,6 +319,18 @@ void SurfaceEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 void SurfaceEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnUnlinkedResult");
+}
+
+void SurfaceEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+    if (mediaCodec_) {
+        mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

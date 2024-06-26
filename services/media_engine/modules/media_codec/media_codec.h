@@ -80,6 +80,8 @@ class MediaCodec : public Plugins::DataCallback {
 public:
     MediaCodec();
 
+    ~MediaCodec() override;
+
     int32_t Init(const std::string &mime, bool isEncoder);
 
     int32_t Init(const std::string &name);
@@ -118,10 +120,14 @@ public:
 
     void ProcessInputBuffer();
 
+    void SetDumpInfo(bool isDump, uint64_t instanceId);
+
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
     Status ChangePlugin(const std::string &mime, bool isEncoder, const std::shared_ptr<Meta> &meta);
+
+    void OnDumpInfo(int32_t fd);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
@@ -136,8 +142,6 @@ private:
 
     int32_t PrepareOutputBufferQueue();
 
-    void ClearInputBuffer();
-
     void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
@@ -145,6 +149,10 @@ private:
     void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
 
     std::string StateToString(CodecState state);
+
+    void ClearBufferQueue();
+
+    void ClearInputBuffer();
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
@@ -158,9 +166,14 @@ private:
     bool isEncoder_;
     bool isSurfaceMode_;
     bool isBufferMode_;
+    bool isDump_ = false;
+    std::string dumpPrefix_ = "";
     int32_t outputBufferCapacity_;
+    std::string codecPluginName_;
 
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
+    std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
+    std::vector<std::shared_ptr<AVBuffer>> outputBufferVector_;
     std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };

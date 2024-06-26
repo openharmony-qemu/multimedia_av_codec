@@ -15,14 +15,19 @@
 #define HST_LOG_TAG "PlayListDownloader"
 #include "playlist_downloader.h"
 #include "securec.h"
+#include <unistd.h>
+#include <fstream>
+#include <iostream>
+#include <regex>
+#include "osal/filesystem/file_system.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-PlayListDownloader::PlayListDownloader()
+constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
+void PlayListDownloader::PlayListDownloaderInit()
 {
-    downloader_ = std::make_shared<Downloader>("hlsPlayList");
     dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
@@ -33,13 +38,27 @@ PlayListDownloader::PlayListDownloader()
                          std::forward<decltype(request)>(request));
     };
     updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"), "", TaskType::SINGLETON);
-    updateTask_->RegisterJob([this] { return PlayListUpdateLoop(); });
+    updateTask_->RegisterJob([this] {
+        UpdateManifest();
+        return PLAYLIST_UPDATE_RATE;
+    });
+}
+
+PlayListDownloader::PlayListDownloader()
+{
+    downloader_ = std::make_shared<Downloader>("hlsPlayList");
+    PlayListDownloaderInit();
+}
+
+PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
+{
+    downloader_ = downloader;
+    PlayListDownloaderInit();
 }
 
 PlayListDownloader::~PlayListDownloader()
 {
     updateTask_->Stop();
-    downloader_->Stop();
 }
 
 void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -66,6 +85,90 @@ void PlayListDownloader::DoOpen(const std::string& url)
     downloader_->Download(downloadRequest_, -1); // -1
     downloader_->Start();
 }
+
+void PlayListDownloader::DoOpenNative(const std::string& url)
+{
+    std::string uri = url;
+    ParseUriInfo(uri);
+    char buf[size_ + 1];
+
+    auto ret = read(fd_, buf, size_);
+    buf[size_] = '\0';
+    std::string m3u8(buf);
+    if (ret < 0) {
+        MEDIA_LOG_E("Failed to read, errno " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
+        return;
+    } else {
+        MEDIA_LOG_I("Read success.");
+    }
+    playList_ = m3u8;
+    ParseManifest(playList_);
+}
+
+bool PlayListDownloader::ParseUriInfo(const std::string& uri)
+{
+    if (uri.empty()) {
+        MEDIA_LOG_E("uri is empty");
+        return false;
+    }
+    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
+    std::smatch fdUriMatch;
+    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)?offset=(.*)&size=(.*)")) ||
+        std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
+        false, "Invalid fd uri format: %{private}s", uri.c_str());
+    fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
+    FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
+        false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
+    fileSize_ = GetFileSize(fd_);
+    if (fdUriMatch.size() == 4) { // 4：4 sub match
+        offset_ = std::stoll(fdUriMatch[2].str()); // 2: sub match offset subscript
+        if (static_cast<uint64_t>(offset_) > fileSize_) {
+            offset_ = static_cast<int64_t>(fileSize_);
+        }
+        size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
+        uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
+        if (size_ > remainingSize) {
+            size_ = remainingSize;
+        }
+    } else {
+        size_ = fileSize_;
+        offset_ = 0;
+    }
+    position_ = static_cast<uint64_t>(offset_);
+    seekable_ = FileSystem::IsSeekable(fd_) ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
+    if (seekable_ == Seekable::SEEKABLE) {
+        SeekTo(0);
+    }
+    MEDIA_LOG_D("Fd: " PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64 ", size: " PUBLIC_LOG_U64, fd_, offset_, size_);
+    return true;
+}
+
+uint64_t PlayListDownloader::GetFileSize(int32_t fd)
+{
+    uint64_t fileSize = 0;
+    struct stat s {};
+    if (fstat(fd, &s) == 0) {
+        fileSize = static_cast<uint64_t>(s.st_size);
+        return fileSize;
+    }
+    return fileSize;
+}
+
+bool PlayListDownloader::SeekTo(uint64_t offset)
+{
+    if (fd_ == -1) {
+        return false;
+    }
+    int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
+    if (ret == -1) {
+        MEDIA_LOG_E("seek to " PUBLIC_LOG_U64 " failed due to " PUBLIC_LOG_S, offset, strerror(errno));
+        return false;
+    }
+    position_ = offset + static_cast<uint64_t>(offset_);
+    MEDIA_LOG_D("now seek to " PUBLIC_LOG_D32, ret);
+    return true;
+}
+
 
 bool PlayListDownloader::GetPlayListDownloadStatus()
 {
@@ -129,7 +232,6 @@ void PlayListDownloader::Close()
         MEDIA_LOG_I("updateTask_ Close.");
         updateTask_->Stop();
     }
-    downloader_->Stop();
 }
 
 void PlayListDownloader::Stop()
@@ -145,7 +247,6 @@ void PlayListDownloader::Start()
 void PlayListDownloader::Cancel()
 {
     playList_.clear();
-    downloader_->Cancel();
     playList_.clear();
 }
 

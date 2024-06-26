@@ -30,6 +30,21 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+
+enum StreamType {
+    MIXED = 0,
+    VIDEO,
+    AUDIO,
+    SUBTITLE
+};
+
+class StreamInfo {
+public:
+    int32_t streamId;
+    StreamType type;
+    uint32_t bitRate;
+};
+
 /**
  * @brief Source Plugin Interface.
  *
@@ -70,6 +85,24 @@ public:
      *  @retval END_OF_STREAM: End of stream
      */
     virtual Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) = 0;
+
+    /**
+     * @brief Read data from data source.
+     *
+     * The function is valid only after RUNNING state.
+     *
+     * @param streamId stream index.
+     * @param buffer Buffer to store the data, it can be nullptr or empty to get the buffer from plugin.
+     * @param expectedLen   Expected data size to be read
+     * @return  Execution status return
+     *  @retval OK: Plugin Read succeeded.
+     *  @retval ERROR_NOT_ENOUGH_DATA: Data not enough
+     *  @retval END_OF_STREAM: End of stream
+     */
+    virtual Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+    {
+        return Status::OK;
+    }
 
     /**
      * @brief Get data source size.
@@ -114,6 +147,11 @@ public:
 
     virtual void SetBundleName(const std::string& bundleName) {}
 
+    virtual Status GetDownloadInfo(DownloadInfo& downloadInfo)
+    {
+        return Status::OK;
+    }
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;
@@ -151,6 +189,11 @@ public:
     }
 
     virtual void SetInterruptState(bool isInterruptNeeded) {}
+
+    virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.

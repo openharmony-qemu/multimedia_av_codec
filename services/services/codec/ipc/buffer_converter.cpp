@@ -50,7 +50,7 @@ VideoPixelFormat TranslateSurfaceFormat(GraphicPixelFormat surfaceFormat)
             return VideoPixelFormat::NV21;
         }
         default:
-            AVCODEC_LOGE("Invalid graphic pixcel format:%{public}d", static_cast<int32_t>(surfaceFormat));
+            AVCODEC_LOGE("Invalid graphic pixel format:%{public}d", static_cast<int32_t>(surfaceFormat));
             return VideoPixelFormat::UNKNOWN;
     }
 }
@@ -170,6 +170,7 @@ BufferConverter::BufferConverter(bool isEncoder)
 
 int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (isSharedMemory_) {
         return AVCS_ERR_OK;
     }
@@ -197,6 +198,7 @@ int32_t BufferConverter::ReadFromBuffer(std::shared_ptr<AVBuffer> &buffer, std::
 
 int32_t BufferConverter::WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (isSharedMemory_) {
         return AVCS_ERR_OK;
     }
@@ -220,16 +222,18 @@ int32_t BufferConverter::WriteToBuffer(std::shared_ptr<AVBuffer> &buffer, std::s
 
 void BufferConverter::NeedToResetFormatOnce()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     needResetFormat_ = true;
 }
 
 void BufferConverter::GetFormat(Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     if (isSharedMemory_ || needResetFormat_) {
         return;
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_WIDTH)) {
-        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride / pixcelSize_);
+        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride);
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.hStride);
@@ -244,7 +248,8 @@ void BufferConverter::GetFormat(Format &format)
 
 void BufferConverter::SetFormat(const Format &format)
 {
-    if (isSharedMemory_ || !needResetFormat_) {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (isSharedMemory_) {
         return;
     }
     int32_t width = 0;
@@ -255,18 +260,18 @@ void BufferConverter::SetFormat(const Format &format)
     if (format.GetIntValue(Tag::VIDEO_PIXEL_FORMAT, pixelFormat)) {
         SetPixFormat(static_cast<VideoPixelFormat>(pixelFormat));
     }
-    if (format.GetIntValue(Tag::VIDEO_DISPLAY_WIDTH, width) || format.GetIntValue(Tag::VIDEO_WIDTH, width)) {
+    if (format.GetIntValue(Tag::VIDEO_PIC_WIDTH, width) || format.GetIntValue(Tag::VIDEO_DISPLAY_WIDTH, width)) {
         SetWidth(width);
     }
-    if (format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_HEIGHT, height)) {
+    if (format.GetIntValue(Tag::VIDEO_PIC_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height)) {
         SetHeight(height);
     }
-    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride)) {
+    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride) || format.GetIntValue(Tag::VIDEO_WIDTH, wStride)) {
         SetWidthStride(rect_.wStride);
     } else {
         hwRect_.wStride = wStride;
     }
-    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride)) {
+    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride) && !format.GetIntValue(Tag::VIDEO_HEIGHT, hStride)) {
         SetHeightStride(rect_.hStride);
     } else {
         hwRect_.hStride = hStride;
@@ -287,7 +292,11 @@ void BufferConverter::SetFormat(const Format &format)
 
 void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    if (!needResetFormat_ || !isEncoder_) {
+    if (!isEncoder_) {
+        return;
+    }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (!needResetFormat_) {
         return;
     }
     needResetFormat_ = !SetBufferFormat(buffer);
@@ -295,7 +304,11 @@ void BufferConverter::SetInputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 
 void BufferConverter::SetOutputBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    if (!needResetFormat_ || isEncoder_) {
+    if (isEncoder_) {
+        return;
+    }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    if (!needResetFormat_) {
         return;
     }
     needResetFormat_ = !SetBufferFormat(buffer);
@@ -355,7 +368,11 @@ inline void BufferConverter::SetHeightStride(const int32_t hStride)
 
 bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, false, "buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "buffer is nullptr");
+    if (buffer->memory_ == nullptr) {
+        AVCODEC_LOGW("memory is nullptr");
+        return true;
+    }
     isSharedMemory_ = buffer->memory_->GetMemoryType() == MemoryType::SHARED_MEMORY;
     if (isSharedMemory_) {
         AVCODEC_LOGW("AVBuffer is shared memory");
@@ -364,7 +381,7 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 
     auto surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, false, "surface buffer is nullptr");
-    // pixcelFormat
+    // pixelFormat
     VideoPixelFormat pixelFormat = TranslateSurfaceFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     SetPixFormat(pixelFormat);
     // width
@@ -381,13 +398,17 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
     } else {
         void *planesInfoPtr = nullptr;
         surfaceBuffer->GetPlanesInfo(&planesInfoPtr);
-        CHECK_AND_RETURN_RET_LOG(planesInfoPtr != nullptr, false, "planes info is nullptr");
-        auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
-        CHECK_AND_RETURN_RET_LOG(planesInfo->planeCount > 1, false, "planes count is %{public}d",
-                                 planesInfo->planeCount);
-        SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
+        if (planesInfoPtr == nullptr) {
+            AVCODEC_LOGW("planes info is nullptr");
+            hwRect_.hStride = height;
+        } else {
+            auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
+            CHECK_AND_RETURN_RET_LOG(planesInfo->planeCount > 1, false, "planes count is %{public}d",
+                                     planesInfo->planeCount);
+            SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
+        }
     }
-    // pixcelSize
+    // pixelSize
     CHECK_AND_RETURN_RET_LOG(width != 0, false, "width is 0");
     SetFormatInner(width);
     AVCODEC_LOGI(
@@ -399,11 +420,11 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 void BufferConverter::SetFormatInner(const int32_t &width)
 {
     CHECK_AND_RETURN_LOG(width != 0, "width is 0");
-    const int32_t tempPixcelSize = hwRect_.wStride / width;
-    pixcelSize_ = tempPixcelSize == 0 ? 1 : tempPixcelSize;
+    const int32_t tempPixelSize = hwRect_.wStride / width;
+    pixelSize_ = tempPixelSize == 0 ? 1 : tempPixelSize;
 
-    rect_.wStride = width * pixcelSize_;
-    usrRect_.wStride *= pixcelSize_;
+    rect_.wStride = width * pixelSize_;
+    usrRect_.wStride *= pixelSize_;
 
     usrRect_.wStride = std::min(usrRect_.wStride, hwRect_.wStride);
     usrRect_.hStride = std::min(usrRect_.hStride, hwRect_.hStride);

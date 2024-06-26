@@ -23,6 +23,7 @@
 #include "meta/any.h"
 #include "osal/utils/util.h"
 #include "plugin/plugin_info.h"
+#include "plugin/plugin_manager_v2.h"
 
 namespace OHOS {
 namespace Media {
@@ -95,9 +96,11 @@ bool TypeFinder::IsSniffNeeded(std::string uri)
     return uri_ != uri;
 }
 
-void TypeFinder::Init(std::string uri, uint64_t mediaDataSize, std::function<bool(uint64_t, size_t)> checkRange,
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange)
+void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
+    std::function<bool(int32_t, uint64_t, size_t)> checkRange,
+    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId)
 {
+    streamID_ = streamId;
     mediaDataSize_ = mediaDataSize;
     checkRange_ = std::move(checkRange);
     peekRange_ = std::move(peekRange);
@@ -105,11 +108,6 @@ void TypeFinder::Init(std::string uri, uint64_t mediaDataSize, std::function<boo
     if (sniffNeeded_) {
         uri_.swap(uri);
         pluginName_.clear();
-        if (GetPlugins()) {
-            SortPlugins(GetUriSuffix(uri_));
-        } else {
-            MEDIA_LOG_E("TypeFinder Init failed due to no demuxer plugins...");
-        }
     }
 }
 
@@ -139,14 +137,15 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
 
     const int maxTryTimes = 3;
     int i = 0;
-    while (!checkRange_(offset, expectedLen) && (i++ < maxTryTimes)) {
+    while (!checkRange_(streamID_, offset, expectedLen) && (i < maxTryTimes)) {
+        i++;
         OSAL::SleepFor(5); // 5 ms
     }
     if (i == maxTryTimes) {
         MEDIA_LOG_E("ReadAt exceed maximum allowed try times and failed.");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    FALSE_LOG_MSG(peekRange_(static_cast<uint64_t>(offset), expectedLen, buffer), "peekRange failed.");
+    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer), "peekRange failed.");
     return Status::OK;
 }
 
@@ -165,18 +164,8 @@ std::string TypeFinder::SniffMediaType()
 {
     MEDIA_LOG_I("SniffMediaType begin.");
     std::string pluginName;
-    int maxProb = 0;
     auto dataSource = shared_from_this();
-    int cnt = 0;
-    for (const auto& plugin : plugins_) {
-        auto prob = Plugins::PluginManager::Instance().Sniffer(plugin->name, dataSource);
-        ++cnt;
-        if (prob > maxProb) {
-            maxProb = prob;
-            pluginName = plugin->name;
-        }
-    }
-    MEDIA_LOG_I("SniffMediaType end, sniffed plugin num = " PUBLIC_LOG_D32, cnt);
+    pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);
     return pluginName;
 }
 
@@ -202,26 +191,6 @@ bool TypeFinder::IsOffsetValid(int64_t offset) const
         offset < static_cast<int64_t>(mediaDataSize_);
 }
 
-bool TypeFinder::GetPlugins()
-{
-    MEDIA_LOG_I("TypeFinder::GetPlugins : " PUBLIC_LOG_D32 ", empty: " PUBLIC_LOG_D32,
-        (pluginRegistryChanged_ == true), plugins_.empty());
-    if (pluginRegistryChanged_) {
-        pluginRegistryChanged_ = false;
-        auto pluginNames = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::DEMUXER);
-        for (auto& pluginName : pluginNames) {
-            auto pluginInfo
-                = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::DEMUXER, pluginName);
-            if (!pluginInfo) {
-                MEDIA_LOG_E("GetPlugins failed for plugin: " PUBLIC_LOG_S, pluginName.c_str());
-                continue;
-            }
-            plugins_.emplace_back(std::move(pluginInfo));
-        }
-    }
-    return !plugins_.empty();
-}
-
 void TypeFinder::SortPlugins(const std::string& uriSuffix)
 {
     if (uriSuffix.empty()) {
@@ -238,5 +207,11 @@ void TypeFinder::SortPlugins(const std::string& uriSuffix)
             }
         });
 }
+
+int32_t TypeFinder::GetStreamID()
+{
+    return streamID_;
+}
+
 } // namespace Media
 } // namespace OHOS

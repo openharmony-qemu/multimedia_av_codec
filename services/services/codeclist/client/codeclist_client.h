@@ -34,6 +34,7 @@ public:
     int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category) override;
     void AVCodecServerDied();
+    bool IsServiceDied() override;
 
 private:
     sptr<IStandardCodecListService> codecListProxy_ = nullptr;

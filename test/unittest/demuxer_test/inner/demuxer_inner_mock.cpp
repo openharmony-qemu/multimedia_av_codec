@@ -46,8 +46,9 @@ int32_t DemuxerInnerMock::UnselectTrackByID(uint32_t trackIndex)
 }
 
 int32_t DemuxerInnerMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
-    AVCodecBufferInfo *bufferInfo, uint32_t &flag)
+    AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo)
 {
+    (void)checkBufferInfo;
     auto mem = std::static_pointer_cast<AVMemoryInnerMock>(sample);
     std::shared_ptr<AVSharedMemory> sharedMem = (mem != nullptr) ? mem->GetAVMemory() : nullptr;
     if (demuxer_ != nullptr) {
@@ -65,5 +66,6 @@ int32_t DemuxerInnerMock::SeekToTime(int64_t mSeconds, SeekMode mode)
     }
     return AV_ERR_UNKNOWN;
 }
+
 }
 }

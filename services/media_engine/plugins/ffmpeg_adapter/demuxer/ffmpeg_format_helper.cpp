@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "FfmpegFormatHelper"
 
 #include <algorithm>
+#include <regex>
 #include <iconv.h>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
@@ -30,7 +31,7 @@
 extern "C" {
 #endif
 #include "libavutil/avutil.h"
-#include "libavutil/mastering_display_metadata.h"
+#include "libavutil/display.h"
 #ifdef __cplusplus
 }
 #endif
@@ -48,6 +49,7 @@ const uint32_t DOUBLE_BYTES = 2;
 const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
+const int32_t VIDEO_ROTATION_360 = 360;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -74,7 +76,6 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MPEG2TS, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_MPEG2VIDEO, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
-    {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
@@ -141,7 +142,7 @@ std::string SwitchCase(const std::string& str)
             res += std::toupper(c);
         }
     }
-    MEDIA_LOG_W("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
+    MEDIA_LOG_D("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
     return res;
 }
 
@@ -227,8 +228,10 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     bool hasAudio = false;
     bool hasSubtitle = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
+        MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " type: " PUBLIC_LOG_S ".", i,
+            ConvertFFmpegMediaTypeToString(avFormatContext.streams[i]->codecpar->codec_type).data());
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
-            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " is invalid.", i);
+            MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " is invalid.", i);
             continue;
         }
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -257,33 +260,16 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             }
         }
     }
-    if (duration <= 0) {
-        for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-            if (avFormatContext.streams[i]->duration > duration) {
-                duration = avFormatContext.streams[i]->duration;
-            }
-        }
-    } else {
+    if (duration > 0 && duration != AV_NOPTS_VALUE) {
         format.Set<Tag::MEDIA_DURATION>(static_cast<int64_t>(duration));
+    }
+    if (avFormatContext.start_time != AV_NOPTS_VALUE) {
+        format.Set<Tag::MEDIA_CONTAINER_START_TIME>(static_cast<int64_t>(avFormatContext.start_time));
     }
     ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
         ParseInfoFromMetadata(avFormatContext.metadata, key, format);
     }
-}
-
-std::vector<std::string> SplitByChar(const char* str, const char* pattern)
-{
-    std::vector<std::string> resultVec;
-    char* tmpStr = strtok(const_cast<char*>(str), pattern);
-    while (tmpStr != nullptr) {
-        resultVec.push_back(std::string(tmpStr));
-        tmpStr = strtok(nullptr,  pattern);
-    }
-    MEDIA_LOG_D("Split [" PUBLIC_LOG_S "] by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string",
-        str, pattern, resultVec.size());
-    delete[] tmpStr;
-    return resultVec;
 }
 
 void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
@@ -298,19 +284,18 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Parse failed.");
         return;
     }
-    MEDIA_LOG_D("Parse location info successfully: " PUBLIC_LOG_S, valPtr->value);
-    std::vector<std::string> values = SplitByChar(valPtr->value, "+");
-    if (values.size() < VALID_LOCATION_LEN) {
+    MEDIA_LOG_D("Get location string successfully: %{private}s", valPtr->value);
+    std::string locationStr = std::string(valPtr->value);
+    std::regex pattern(R"([\+\-]\d+\.\d+)");
+    std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
+    std::sregex_iterator end;
+    // at least contain latitude and longitude
+    if (std::distance(numbers, end) < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Parse failed due to info format error.");
         return;
     }
-
-    format.Set<Tag::MEDIA_LATITUDE>(std::stof(values[0]));
-    if (values[1].find('/') != 0) {
-        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(SplitByChar(values[1].c_str(), "/")[0]));
-    } else {
-        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(values[1]));
-    }
+    format.Set<Tag::MEDIA_LATITUDE>(std::stof(numbers->str()));
+    format.Set<Tag::MEDIA_LONGITUDE>(std::stof((++numbers)->str()));
 }
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
@@ -366,7 +351,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
-        MEDIA_LOG_D("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
+        MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_id));
     }
 
@@ -374,7 +359,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_D("Parse track type info failed: " PUBLIC_LOG_D32 ".",
+        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_type));
     }
 }
@@ -456,16 +441,51 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         valPtr = av_dict_get(avStream.metadata, "ROTATE", nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse rotate info failed.");
+        MEDIA_LOG_D("Parse rotate info from meta failed.");
+        ParseRotationFromMatrix(avStream, format);
     } else {
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
     }
 
+    AVRational sar = avStream.sample_aspect_ratio;
+    if (sar.num && sar.den) {
+        format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
+    }
+
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
+    }
+}
+
+void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
+{
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    if (displayMatrix) {
+        float rotation = -round(av_display_rotation_get(displayMatrix));
+        MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_F, rotation);
+        if (isnan(rotation)) {
+            format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
+            return;
+        } else if (rotation < 0) {
+            rotation += VIDEO_ROTATION_360;
+        }
+        switch (int(rotation)) {
+            case VIDEO_ROTATION_90:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["90"]);
+                break;
+            case VIDEO_ROTATION_180:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["180"]);
+                break;
+            case VIDEO_ROTATION_270:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["270"]);
+                break;
+            default:
+                format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
+                break;
+        }
     }
 }
 

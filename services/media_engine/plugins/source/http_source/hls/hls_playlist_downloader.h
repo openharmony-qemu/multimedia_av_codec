@@ -25,13 +25,12 @@ namespace Plugins {
 namespace HttpPlugin {
 class HlsPlayListDownloader : public PlayListDownloader {
 public:
-    HlsPlayListDownloader() = default;
+    using PlayListDownloader::PlayListDownloader;
     ~HlsPlayListDownloader() override = default;
 
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;
     void ParseManifest(const std::string& location) override;
-    int64_t PlayListUpdateLoop() override;
     void SetPlayListCallback(PlayListChangeCallback* callback) override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
@@ -44,9 +43,9 @@ public:
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
-    int32_t GetVideoWidth() const override;
-    int32_t GetVideoHeight() const override;
+    void FirstTsUpdateLoop();
     void SetInterruptState(bool isInterruptNeeded) override;
+    void SetMimeType(const std::string& mimeType) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
@@ -59,6 +58,8 @@ private:
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
     std::shared_ptr<M3U8VariantStream> newVariant_;
+    std::shared_ptr<Task> firstTsTask_;
+    std::string mimeType_;
 };
 }
 }

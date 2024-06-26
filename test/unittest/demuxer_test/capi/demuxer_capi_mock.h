@@ -35,8 +35,11 @@ public:
     int32_t SelectTrackByID(uint32_t trackIndex) override;
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
-        AVCodecBufferInfo *bufferInfo, uint32_t &flag) override;
+        AVCodecBufferInfo *bufferInfo, uint32_t &flag, bool checkBufferInfo) override;
     int32_t SeekToTime(int64_t mSeconds, Media::SeekMode mode) override;
+    int32_t SetMediaKeySystemInfoCallback(bool isNull) override;
+    int32_t SetDemuxerMediaKeySystemInfoCallback(bool isNull) override;
+    int32_t GetMediaKeySystemInfo() override;
 private:
     OH_AVDemuxer *demuxer_ = nullptr;
 };

@@ -32,7 +32,8 @@
 #include "native_avmemory.h"
 #include "nocopyable.h"
 #include "securec.h"
-
+#include "surface/window.h"
+#include "iconsumer_surface.h"
 namespace OHOS {
 namespace Media {
 class VDecSignal {
@@ -91,22 +92,22 @@ public:
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
-    void StopOutloop();
     VDecSignal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;
     int64_t outTimeArray[2000] = {};
     bool sleepOnFPS = false;
     bool repeatRun = false;
-
+    bool isSurfMode = false;
     bool setParameters = false;
     OH_AVCodec *vdec_;
-
+    OHNativeWindow *nativeWindow = nullptr;
+    sptr<Surface> cs = nullptr;
+    sptr<Surface> ps = nullptr;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
-    std::unique_ptr<std::thread> outputLoop_;
     std::unordered_map<uint32_t, OH_AVMemory *> inBufferMap_;
     std::unordered_map<uint32_t, OH_AVMemory *> outBufferMap_;
     OH_AVCodecAsyncCallback cb_;

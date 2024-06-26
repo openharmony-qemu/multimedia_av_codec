@@ -320,6 +320,7 @@ void VideoCaptureFilter::OnBufferAvailable()
     sptr<SyncFence> fence;
     int64_t timestamp;
     int32_t bufferSize = 0;
+    int32_t isKeyFrame = 0;
     OHOS::Rect damage;
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
     if (ret != GSERROR_OK || buffer == nullptr) {
@@ -336,6 +337,7 @@ void VideoCaptureFilter::OnBufferAvailable()
     if (extraData) {
         extraData->ExtraGet("timeStamp", timestamp);
         extraData->ExtraGet("dataSize", bufferSize);
+        extraData->ExtraGet("isKeyFrame", isKeyFrame);
     }
 
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
@@ -356,13 +358,11 @@ void VideoCaptureFilter::OnBufferAvailable()
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
-    emptyOutputBuffer->flag_ = 0;
+    emptyOutputBuffer->flag_ = isKeyFrame != 0 ? static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME) : 0;
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
     UpdateBufferConfig(emptyOutputBuffer, timestamp);
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
-    if (status != Status::OK) {
-        MEDIA_LOG_E("PushBuffer fail");
-    }
+    FALSE_LOG_MSG(status == Status::OK, "PushBuffer fail");
     inputSurface_->ReleaseBuffer(buffer, -1);
 }
 
@@ -380,7 +380,9 @@ void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, in
         }
         refreshTotalPauseTime_ = false;
     }
+    constexpr int32_t NS_PER_US = 1000;
     buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
+    buffer->pts_ = buffer->pts_ / NS_PER_US; // the unit of pts is us
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::UpdateBufferConfig");
     MEDIA_LOG_I("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }

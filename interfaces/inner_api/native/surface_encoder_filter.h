@@ -41,6 +41,7 @@ public:
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status SetInputSurface(sptr<Surface> surface);
+    Status SetTransCoderMode();
     sptr<Surface> GetInputSurface();
     Status DoPrepare() override;
     Status DoStart() override;
@@ -60,6 +61,7 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -70,7 +72,7 @@ protected:
 
 private:
     std::string name_;
-    FilterType filterType_;
+    FilterType filterType_ = FilterType::FILTERTYPE_VENC;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;
@@ -86,6 +88,10 @@ private:
 
     std::atomic<bool> isUpdateCodecNeeded_ = false;
     sptr<Surface> surface_{nullptr};
+    std::string bundleName_;
+    uint64_t instanceId_{0};
+    int32_t appUid_ {0};
+    int32_t appPid_ {0};
 };
 } // namespace Pipeline
 } // namespace MEDIA

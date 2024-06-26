@@ -256,5 +256,10 @@ bool VideoDecInnerMock::IsValid()
 {
     return true;
 }
+
+int32_t VideoDecInnerMock::SetVideoDecryptionConfig()
+{
+    return AV_ERR_OK;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

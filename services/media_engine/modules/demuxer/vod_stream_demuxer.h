@@ -44,26 +44,28 @@ public:
     explicit VodStreamDemuxer();
     ~VodStreamDemuxer() override;
 
-    std::string Init(std::string uri, uint64_t mediaDataSize) override;
-    Status Reset() override;
+    Status Init(const std::string& uri) override;
     Status Pause() override;
     Status Resume() override;
     Status Start() override;
     Status Stop() override;
     Status Flush() override;
-    Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override;
+    Status CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
+        size_t expectedLen) override;
+    Status ResetCache(int32_t streamID) override;
+    Status ResetAllCache() override;
 private:
-    Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
-    bool PullDataWithoutCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    bool PullDataWithCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    bool GetPeekRange(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    bool GetPeekRangeSub(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    Status PullData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
+    bool PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool PullDataWithCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool TryReadCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    Status ReadRetry(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
+    Status HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
+    Status HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 private:
-    struct CacheData {
-        std::shared_ptr<Buffer> data = nullptr;
-        uint64_t offset = 0;
-    };
-    CacheData cacheData_;
+    std::map<int32_t, CacheData> cacheDataMap_;
     uint64_t position_;
 };
 } // namespace Media

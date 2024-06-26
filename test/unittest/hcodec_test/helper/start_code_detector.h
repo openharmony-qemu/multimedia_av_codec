@@ -25,7 +25,7 @@
 
 enum CodeType {
     H264,
-    H265
+    H265,
 };
 
 struct Sample {
@@ -62,7 +62,7 @@ private:
     void BuildSampleList();
     static size_t GetFileSizeInBytes(std::ifstream &ifs);
 
-    virtual uint8_t GetNalType(uint8_t byte) = 0;
+    virtual uint8_t GetNalType(uint8_t firstByte, uint8_t secondByte) = 0;
     virtual bool IsPPS(uint8_t nalType) = 0;
     virtual bool IsVCL(uint8_t nalType) = 0;
     virtual bool IsIDR(uint8_t nalType) = 0;
@@ -104,7 +104,7 @@ private:
         SUB_SPS = 15,
         DPS = 16,
     };
-    uint8_t GetNalType(uint8_t byte) override;
+    uint8_t GetNalType(uint8_t firstByte, uint8_t) override;
     bool IsPPS(uint8_t nalType) override;
     bool IsVCL(uint8_t nalType) override;
     bool IsIDR(uint8_t nalType) override;
@@ -143,7 +143,7 @@ private:
         HEVC_PREFIX_SEI_NUT = 39,
         HEVC_SUFFIX_SEI_NUT = 40,
     };
-    uint8_t GetNalType(uint8_t byte) override;
+    uint8_t GetNalType(uint8_t firstByte, uint8_t) override;
     bool IsPPS(uint8_t nalType) override;
     bool IsVCL(uint8_t nalType) override;
     bool IsIDR(uint8_t nalType) override;

@@ -25,7 +25,6 @@
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_base.h"
-#include "plugin/plugin_manager.h"
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
 #include "meta/media_types.h"
@@ -41,6 +40,16 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override
     {
         callbackWrap_->OnEvent(event);
+    }
+
+    void SetSelectBitRateFlag(bool flag) override
+    {
+        callbackWrap_->SetSelectBitRateFlag(flag);
+    }
+
+    bool CanDoSelectBitRate() override
+    {
+        return callbackWrap_->CanDoSelectBitRate();
     }
 
     void SetCallbackWrap(Callback* callbackWrap)
@@ -70,6 +79,9 @@ public:
     Status GetSize(uint64_t &fileSize);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void SetSelectBitRateFlag(bool flag) override;
+    bool CanDoSelectBitRate() override;
+
     bool IsSeekToTimeSupported();
     int64_t GetDuration();
     Status SeekToTime(int64_t seekTime, SeekMode mode);
@@ -78,23 +90,23 @@ public:
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
     void SetDemuxerState();
-    Status ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
+    Status GetStreamInfo(std::vector<StreamInfo>& streams);
+    Status Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
+    Status GetDownloadInfo(DownloadInfo& downloadInfo);
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);
     bool GetProtocolByUri();
     bool ParseProtocol(const std::shared_ptr<MediaSource>& source);
-    Status CreatePlugin(const std::shared_ptr<Plugins::PluginInfo>& info, const std::string& name,
-        Plugins::PluginManager& manager);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
 
     void ClearData();
 
     std::string protocol_;
-    bool isHls_{false};
+    bool seekToTimeFlag_{false};
     std::string uri_;
     Plugins::Seekable seekable_;
 
@@ -105,6 +117,7 @@ private:
     bool isAboveWaterline_ {false};
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 } // namespace Media
 } // namespace OHOS

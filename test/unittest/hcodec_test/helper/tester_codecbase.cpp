@@ -41,6 +41,22 @@ void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shar
 
 void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    int32_t aveQp {};
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp)) {
+        TLOGI("buffer->pts_[%" PRId64 "], qp[%d]", buffer->pts_, aveQp);
+    }
+    double mse {};
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse)) {
+        TLOGI("buffer->pts_[%" PRId64 "], mse[%f]", buffer->pts_, mse);
+    }
+    bool isLTR {};
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLTR)) {
+        TLOGI("buffer->pts_[%" PRId64 "], isLTR[%d]", buffer->pts_, isLTR);
+    }
+    int32_t poc {};
+    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, poc)) {
+        TLOGI("buffer->pts_[%" PRId64 "], poc[%d]", buffer->pts_, poc);
+    }
     tester_->AfterGotOutput(OH_AVCodecBufferAttr {
         .pts = buffer->pts_,
         .size = buffer->memory_ ? buffer->memory_->GetSize() : 0,
@@ -53,11 +69,18 @@ void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::sha
 
 bool TesterCodecBase::Create()
 {
-    string name = GetCodecName(opt_.isEncoder, (opt_.protocol == H264) ? "video/avc" : "video/hevc");
+    string mime = GetCodecMime(opt_.protocol);
+    string name = GetCodecName(opt_.isEncoder, mime);
     auto begin = std::chrono::steady_clock::now();
     CreateHCodecByName(name, codec_);
     if (codec_ == nullptr) {
         TLOGE("Create failed");
+        return false;
+    }
+    Media::Meta meta{};
+    int32_t err = codec_->Init(meta);
+    if (err != AVCS_ERR_OK) {
+        TLOGE("Init failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "Create");
@@ -238,9 +261,12 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.qpRange->qpMax));
     }
     if (param.ltrParam.has_value()) {
-        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, param.ltrParam->markAsLTR);
-        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, param.ltrParam->useLTR);
-        meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, param.ltrParam->useLTRPoc);
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR,
+            static_cast<int32_t>(param.ltrParam->markAsLTR));
+        if (param.ltrParam->useLTR > 0) {
+            meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR,
+                static_cast<int32_t>(param.ltrParam->useLTRPoc));
+        }
     }
     return true;
 }

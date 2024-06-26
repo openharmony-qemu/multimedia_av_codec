@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "avcodec_audio_avbuffer_aac_encoder_demo.h"
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
@@ -26,7 +27,6 @@
 #include "native_avmemory.h"
 #include "native_avbuffer.h"
 #include "ffmpeg_converter.h"
-#include "avcodec_audio_avbuffer_aac_encoder_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

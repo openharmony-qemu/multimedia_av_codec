@@ -36,6 +36,8 @@ const std::map<int32_t, LevelParams> AVC_PARAMS_MAP = {
     {AVC_LEVEL_32, LevelParams(216000, 5120)}, {AVC_LEVEL_4, LevelParams(245760, 8192)},
     {AVC_LEVEL_41, LevelParams(245760, 8192)}, {AVC_LEVEL_42, LevelParams(522240, 8704)},
     {AVC_LEVEL_5, LevelParams(589824, 22080)}, {AVC_LEVEL_51, LevelParams(983040, 36864)},
+    {AVC_LEVEL_52, LevelParams(2073600, 36864)}, {AVC_LEVEL_6, LevelParams(4177920, 139264)},
+    {AVC_LEVEL_61, LevelParams(8355840, 139264)}, {AVC_LEVEL_62, LevelParams(16711680, 139264)},
 };
 
 const std::map<int32_t, LevelParams> MPEG2_SIMPLE_PARAMS_MAP = {
@@ -170,7 +172,9 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
         }
         Range horizontalBlockNum = horizontalBlockRange_.Intersect(
             Range(blockPerFrameRange_.minVal / verticalBlockNum, blockPerFrameRange_.maxVal / verticalBlockNum));
-        ret = ret.Intersect(Range(horizontalBlockNum.minVal * blockWidth_, horizontalBlockNum.maxVal * blockWidth_));
+        ret = ret.Intersect(
+            Range((horizontalBlockNum.minVal - 1) * blockWidth_ + data_->alignment.width,
+                horizontalBlockNum.maxVal * blockWidth_));
     }
     return ret;
 }
@@ -189,7 +193,9 @@ Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
         }
         Range verticalBlockNum = verticalBlockRange_.Intersect(
             Range(blockPerFrameRange_.minVal / horizontalBlockNum, blockPerFrameRange_.maxVal / horizontalBlockNum));
-        ret = ret.Intersect(Range(verticalBlockNum.minVal * blockHeight_, verticalBlockNum.maxVal * blockHeight_));
+        ret = ret.Intersect(
+            Range((verticalBlockNum.minVal - 1) * blockHeight_ + data_->alignment.height,
+                verticalBlockNum.maxVal * blockHeight_));
     }
     return ret;
 }

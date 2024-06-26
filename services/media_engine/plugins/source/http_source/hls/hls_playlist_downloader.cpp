@@ -16,6 +16,7 @@
 #include <mutex>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
+#include "common/media_source.h"
 #include <unistd.h>
 
 namespace OHOS {
@@ -24,14 +25,10 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr unsigned int SLEEP_TIME = 1;
-constexpr size_t RETRY_TIMES = 15000;
+constexpr size_t RETRY_TIMES = 1000;
+constexpr int FIRST_TS_TIMEOUT = 400;
+constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
 }
-int64_t HlsPlayListDownloader::PlayListUpdateLoop()
-{
-    UpdateManifest();
-    return 5000 * 1000;  // 5000 how often is playlist updated
-}
-
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
 // PlayListDownload thread: call ParseManifest
@@ -39,10 +36,20 @@ int64_t HlsPlayListDownloader::PlayListUpdateLoop()
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
 void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
+    firstTsTask_ = std::make_shared<Task>(std::string("FirstTsLoop"));
+    firstTsTask_->RegisterJob([this] {
+        FirstTsUpdateLoop();
+        return 0;
+    });
+    firstTsTask_->Start();
     url_ = url;
     master_ = nullptr;
     SaveHttpHeader(httpHeader);
-    DoOpen(url);
+    if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
+        DoOpenNative(url_);
+    } else {
+        DoOpen(url_);
+    }
 }
 
 void HlsPlayListDownloader::UpdateManifest()
@@ -81,7 +88,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
-    if (master_->bLive_) {
+    if (master_->bLive_ && !updateTask_->IsTaskRunning()) {
         updateTask_->Start();
     }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
@@ -140,6 +147,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location)
             bool ret = currentVariant_->m3u8_->Update(playList_);
             if (ret) {
                 master_->isSimple_ = true;
+                master_->bLive_ = currentVariant_->m3u8_->IsLive();
                 master_->duration_ = currentVariant_->m3u8_->GetDuration();
                 NotifyListChange();
             }
@@ -229,20 +237,25 @@ bool HlsPlayListDownloader::IsLive() const
     return master_->bLive_;
 }
 
-int32_t HlsPlayListDownloader::GetVideoWidth() const
+void HlsPlayListDownloader::FirstTsUpdateLoop()
 {
-    if (currentVariant_==nullptr) {
-        return 0;
+    int runTimes = 0;
+    while (runTimes < FIRST_TS_TIMEOUT) {
+        if (currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr
+            && currentVariant_->m3u8_->isFirstFragmentReady_) {
+            std::string uri = currentVariant_->m3u8_->firstFragment_.uri;
+            double duration = currentVariant_->m3u8_->firstFragment_.duration;
+            MEDIA_LOG_I("first ts is ready.");
+            callback_->OnFirstTsReady(uri, duration);
+            break;
+        }
+        runTimes++;
+        OSAL::SleepFor(FIRST_TS_TASK_SLEEP_MS);
     }
-    return static_cast<int32_t>(currentVariant_->width_);
-}
-
-int32_t HlsPlayListDownloader::GetVideoHeight() const
-{
-    if (currentVariant_==nullptr) {
-        return 0;
+    if (firstTsTask_ != nullptr) {
+        firstTsTask_->StopAsync();
     }
-    return static_cast<int32_t>(currentVariant_->height_);
+    MEDIA_LOG_I("first ts task stop, run times: " PUBLIC_LOG_D32 ". ", runTimes);
 }
 
 std::string HlsPlayListDownloader::GetUrl()
@@ -268,6 +281,11 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
 void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+}
+
+void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
+{
+    mimeType_ = mimeType;
 }
 }
 }

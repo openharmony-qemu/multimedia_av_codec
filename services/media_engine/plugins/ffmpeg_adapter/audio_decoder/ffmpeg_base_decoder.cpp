@@ -42,7 +42,6 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       bufferIndex_(1),
       preBufferGroupPts_(0),
       curBufferGroupPts_(0),
-      bufferGroupPtsDistance(0),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
@@ -149,7 +148,7 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
     return ReceiveBuffer(outBuffer);
 }
 
-void FfmpegBaseDecoder::DisableNeedResamp()
+void FfmpegBaseDecoder::DisableNeedResample()
 {
     needResample_ = 0;
 }
@@ -163,18 +162,14 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         if (cachedFrame_->pts != AV_NOPTS_VALUE) {
             preBufferGroupPts_ = curBufferGroupPts_;
             curBufferGroupPts_ = cachedFrame_->pts;
-            if (bufferGroupPtsDistance == 0) {
-                bufferGroupPtsDistance = abs(curBufferGroupPts_ - preBufferGroupPts_);
-            }
             if (bufferIndex_ >= bufferNum_) {
                 bufferNum_ = bufferIndex_;
             }
             bufferIndex_ = 1;
         } else {
             bufferIndex_++;
-            if (abs(curBufferGroupPts_ - preBufferGroupPts_) > bufferGroupPtsDistance) {
+            if (preBufferGroupPts_ == 0) {
                 cachedFrame_->pts = curBufferGroupPts_;
-                preBufferGroupPts_ = curBufferGroupPts_;
             } else {
                 cachedFrame_->pts =
                     curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
@@ -216,6 +211,26 @@ Status FfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffe
 
 Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
 {
+    if (isFirst) {
+        isFirst = false;
+        format_->SetData(Tag::AUDIO_SAMPLE_FORMAT,
+                         FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
+        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
+        if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 1) { // 1 channel: mono
+            layout = AudioChannelLayout::MONO;
+            avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
+        } else if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 2) { // 2 channel: stereo
+            layout = AudioChannelLayout::STEREO;
+            avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
+        }
+        AVCODEC_LOGI("recode output description,layout:%{public}s channels:%{public}d nb_channels:%{public}d",
+                     FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data(),
+                     avCodecContext_->channels, avCodecContext_->ch_layout.nb_channels);
+        format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
+        if (InitResample() != Status::OK) {
+            return Status::ERROR_UNKNOWN;
+        }
+    }
     auto outFrame = cachedFrame_;
     if (needResample_) {
         if (ConvertPlanarFrame(outBuffer) != Status::OK) {
@@ -233,16 +248,6 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         return Status::ERROR_NO_MEMORY;
     }
     ioInfoMem->Write(outFrame->data[0], outputSize, 0);
-
-    if (isFirst) {
-        isFirst = false;
-        format_->SetData(Tag::AUDIO_SAMPLE_FORMAT,
-                         FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
-        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
-        AVCODEC_LOGI("recode output description,layout:%{public}s",
-                     FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
-        format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
-    }
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
     return Status::ERROR_AGAIN;
@@ -256,6 +261,7 @@ Status FfmpegBaseDecoder::Reset()
         avCodecContext_.reset();
         avCodecContext_ = nullptr;
     }
+    preBufferGroupPts_ = 0;
     return Status::OK;
 }
 
@@ -276,6 +282,7 @@ Status FfmpegBaseDecoder::Flush()
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
+    preBufferGroupPts_ = 0;
     return Status::OK;
 }
 
@@ -331,6 +338,14 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
         } else {
             avCodecContext_->channel_layout = ffChannelLayout;
         }
+    } else if (avCodecContext_->channels == 1) { // 1 channel: mono
+        AVCODEC_LOGW("1 channel channelLayout is unknow, set to default mono");
+        avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;
+    } else if (avCodecContext_->channels == 2) { // 2 channel: stereo
+        AVCODEC_LOGW("2 channel channelLayout is unknow, set to default stereo");
+        avCodecContext_->channel_layout = AV_CH_LAYOUT_STEREO;
+    } else {
+        AVCODEC_LOGW("channelLayout not set, unknow channelLayout");
     }
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 
@@ -360,10 +375,6 @@ Status FfmpegBaseDecoder::OpenContext()
             AVCODEC_LOGE("avcodec open error %{public}s", AVStrError(res).c_str());
             return Status::ERROR_UNKNOWN;
         }
-
-        if (InitResample() != Status::OK) {
-            return Status::ERROR_UNKNOWN;
-        }
     }
     return Status::OK;
 }
@@ -381,7 +392,7 @@ Status FfmpegBaseDecoder::InitResample()
         ResamplePara resamplePara;
         resamplePara.channels = static_cast<uint32_t>(avCodecContext_->channels);
         resamplePara.sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate);
-        resamplePara.channelLayout = static_cast<uint32_t>(avCodecContext_->channel_layout);
+        resamplePara.channelLayout = avCodecContext_->ch_layout;
         resamplePara.destSamplesPerFrame = 0;
         resamplePara.bitsPerSample = 0;
         resamplePara.srcFfFmt = avCodecContext_->sample_fmt;

@@ -19,7 +19,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include "data_sink_fd.h"
-#include "plugin/plugin_manager.h"
+#include "plugin/plugin_manager_v2.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -90,28 +90,11 @@ std::shared_ptr<Plugins::MuxerPlugin> AVMuxerFFmpegDemo::CreatePlugin(Plugins::O
         {Plugins::OutputFormat::MP3, Plugins::MimeType::MEDIA_MP3},
     };
 
-    auto names = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::MUXER);
-    std::string pluginName = "";
-    uint32_t maxProb = 0;
-    for (auto& name : names) {
-        auto info = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::MUXER, name);
-        if (info == nullptr) {
-            continue;
-        }
-        for (auto& cap : info->outCaps) {
-            if (cap.mime == table.at(format) && info->rank > maxProb) {
-                maxProb = info->rank;
-                pluginName = name;
-                break;
-            }
-        }
+    auto plugin = Plugins::PluginManagerV2::Instance().CreatePluginByMime(Plugins::PluginType::MUXER, table.at(format));
+    if (plugin == nullptr) {
+        return nullptr;
     }
-    std::cout<<"The maxProb is "<<maxProb<<" and pluginName is "<<pluginName<<std::endl;
-    if (!pluginName.empty()) {
-        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::MUXER);
-        return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
-    }
-    return nullptr;
+    return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
 }
 }  // namespace MediaAVCodec
 }  // namespace OHOS

@@ -115,8 +115,6 @@ int32_t CodecDrmDecrypt::DrmGetNalTypeAndIndex(const uint8_t *data, uint32_t dat
                 posIndex = i;
                 return 0;
             }
-        } else {
-            nalType = 0;
         }
     }
     posIndex = i;
@@ -295,8 +293,6 @@ int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(const uint8_t *data, uint32_t dataSize
         if ((data[i + DRM_LEGACY_LEN + 1] & 0xf0) == 0xd0) {
             ceiStartPos = i;
             AVCODEC_LOGD("cei found, packet start pos:%{public}d", ceiStartPos);
-        } else {
-            AVCODEC_LOGE("cei not found, type=0x%{public}x", (data[i + DRM_LEGACY_LEN + 1] & 0xf0));
         }
     }
     return -1;
@@ -406,7 +402,8 @@ int CodecDrmDecrypt::DrmFindCeiPos(const uint8_t *data, uint32_t dataSize, uint3
             i += DRM_LEGACY_LEN;
         }
     }
-    if ((ceiStartPos != DRM_INVALID_START_POS) && (ceiEndPos != DRM_INVALID_START_POS)) {
+    if ((ceiStartPos != DRM_INVALID_START_POS) && (ceiEndPos != DRM_INVALID_START_POS) &&
+        (ceiStartPos < ceiEndPos) && (ceiEndPos <= dataSize)) {
         return 1; // 1 true
     }
     return 0;
@@ -426,7 +423,9 @@ void CodecDrmDecrypt::DrmFindEncryptionFlagPos(const uint8_t *data, uint32_t dat
             }
         }
     }
-    pos = offset;
+    if (offset < dataSize) {
+        pos = offset;
+    }
     return;
 }
 
@@ -566,6 +565,7 @@ void CodecDrmDecrypt::DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t d
     uint32_t ceiEndPos = DRM_INVALID_START_POS;
     if (inBuf->memory_ == nullptr || inBuf->memory_->GetAddr() == nullptr || dataSize == 0 ||
         dataSize > DRM_MAX_STREAM_DATA_SIZE) {
+        AVCODEC_LOGE("DrmGetCencInfo parameter err");
         return;
     }
     uint8_t *data = inBuf->memory_->GetAddr();
@@ -628,9 +628,7 @@ int32_t CodecDrmDecrypt::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, s
     AVCODEC_LOGD("DrmAudioCencDecrypt");
     int32_t ret = AVCS_ERR_UNKNOWN;
     CHECK_AND_RETURN_RET_LOG((inBuf != nullptr && outBuf != nullptr), ret, "DrmCencDecrypt parameter err");
-    if (inBuf->meta_ == nullptr) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG((inBuf->meta_ != nullptr), ret, "DrmCencDecrypt meta null");
 
     std::vector<uint8_t> drmCencVec;
     MetaDrmCencInfo *cencInfo = nullptr;
@@ -680,14 +678,13 @@ void CodecDrmDecrypt::SetCodecName(const std::string &codecName)
 
 void CodecDrmDecrypt::GetCodingType()
 {
+    codingType_ = DRM_VIDEO_NONE;
     if (codecName_.find("avc") != codecName_.npos) {
         codingType_ = DRM_VIDEO_AVC;
     } else if (codecName_.find("hevc") != codecName_.npos) {
         codingType_ = DRM_VIDEO_HEVC;
     } else if (codecName_.find("avs") != codecName_.npos) {
         codingType_ = DRM_VIDEO_AVS;
-    } else {
-        codingType_ = DRM_VIDEO_NONE;
     }
 }
 
@@ -696,34 +693,30 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
 {
     AVCODEC_LOGI("CodecDrmDecrypt SetDecryptConfig");
     std::lock_guard<std::mutex> drmLock(configMutex_);
-    CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySession nullptr");
-    keySessionServiceProxy_ = keySession;
-    CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySessionServiceProxy nullptr");
-    keySessionServiceProxy_->CreateMediaDecryptModule(decryptModuleProxy_);
-    CHECK_AND_RETURN_LOG((decryptModuleProxy_ != nullptr), "SetDecryptConfig decryptModuleProxy_ nullptr");
     if (svpFlag) {
         svpFlag_ = SVP_TRUE;
     } else {
         svpFlag_ = SVP_FALSE;
     }
     mode_ = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
+    CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySession nullptr");
+    keySessionServiceProxy_ = keySession;
+    CHECK_AND_RETURN_LOG((keySessionServiceProxy_ != nullptr), "SetDecryptConfig keySessionServiceProxy nullptr");
+    keySessionServiceProxy_->CreateMediaDecryptModule(decryptModuleProxy_);
+    CHECK_AND_RETURN_LOG((decryptModuleProxy_ != nullptr), "SetDecryptConfig decryptModuleProxy_ nullptr");
 }
 
 int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     const std::shared_ptr<AVBuffer> &outBuf, DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer)
 {
     AVCODEC_LOGD("CodecDrmDecrypt SetDrmBuffer");
-    if (inBuf->memory_ == nullptr || outBuf->memory_ == nullptr) {
-        AVCODEC_LOGE("CodecDrmDecrypt SetDrmBuffer memory_ null");
-        return AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG((inBuf->memory_ != nullptr && outBuf->memory_ != nullptr), AVCS_ERR_NO_MEMORY,
+        "CodecDrmDecrypt SetDrmBuffer memory_ null");
     inDrmBuffer.bufferType = static_cast<uint32_t>(inBuf->memory_->GetMemoryType());
     inDrmBuffer.fd = inBuf->memory_->GetFileDescriptor();
     inDrmBuffer.bufferLen = static_cast<uint32_t>(inBuf->memory_->GetSize());
-    if (inBuf->memory_->GetCapacity() < 0) {
-        AVCODEC_LOGE("CodecDrmDecrypt SetDrmBuffer input buffer failed due to GetCapacity() return -1");
-        return AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG((inBuf->memory_->GetCapacity() >= 0), AVCS_ERR_NO_MEMORY,
+        "CodecDrmDecrypt SetDrmBuffer input buffer failed due to GetCapacity() return -1");
     inDrmBuffer.allocLen = static_cast<uint32_t>(inBuf->memory_->GetCapacity());
     inDrmBuffer.filledLen = static_cast<uint32_t>(inBuf->memory_->GetSize());
     inDrmBuffer.offset = static_cast<uint32_t>(inBuf->memory_->GetOffset());
@@ -732,10 +725,8 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     outDrmBuffer.bufferType = static_cast<uint32_t>(outBuf->memory_->GetMemoryType());
     outDrmBuffer.fd = outBuf->memory_->GetFileDescriptor();
     outDrmBuffer.bufferLen = static_cast<uint32_t>(outBuf->memory_->GetSize());
-    if (outBuf->memory_->GetCapacity() < 0) {
-        AVCODEC_LOGE("CodecDrmDecrypt SetDrmBuffer output buffer failed due to GetCapacity() return -1");
-        return AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG((outBuf->memory_->GetCapacity() >= 0), AVCS_ERR_NO_MEMORY,
+        "CodecDrmDecrypt SetDrmBuffer output buffer failed due to GetCapacity() return -1");
     outDrmBuffer.allocLen = static_cast<uint32_t>(outBuf->memory_->GetCapacity());
     outDrmBuffer.filledLen = static_cast<uint32_t>(outBuf->memory_->GetSize());
     outDrmBuffer.offset = static_cast<uint32_t>(outBuf->memory_->GetOffset());
@@ -751,6 +742,9 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
     std::lock_guard<std::mutex> drmLock(configMutex_);
     int32_t retCode = AVCS_ERR_INVALID_VAL;
     DrmStandard::IMediaDecryptModuleService::CryptInfo cryptInfo;
+    CHECK_AND_RETURN_RET_LOG(((cencInfo->keyIdLen <= static_cast<uint32_t>(META_DRM_KEY_ID_SIZE)) &&
+        (cencInfo->ivLen <= static_cast<uint32_t>(META_DRM_IV_SIZE)) &&
+        (cencInfo->subSampleNum <= static_cast<uint32_t>(META_DRM_MAX_SUB_SAMPLE_NUM))), retCode, "parameter err");
     cryptInfo.type = static_cast<DrmStandard::IMediaDecryptModuleService::CryptAlgorithmType>(cencInfo->algo);
     std::vector<uint8_t> keyIdVector(cencInfo->keyId, cencInfo->keyId + cencInfo->keyIdLen);
     cryptInfo.keyId = keyIdVector;
@@ -769,13 +763,11 @@ int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo
     DrmBuffer outDrmBuffer;
     retCode = SetDrmBuffer(inBuf, outBuf, inDrmBuffer, outDrmBuffer);
     CHECK_AND_RETURN_RET_LOG((retCode == AVCS_ERR_OK), retCode, "SetDecryptConfig failed cause SetDrmBuffer failed");
+    retCode = AVCS_ERR_INVALID_VAL;
     CHECK_AND_RETURN_RET_LOG((decryptModuleProxy_ != nullptr), retCode,
         "SetDecryptConfig decryptModuleProxy_ nullptr");
     retCode = decryptModuleProxy_->DecryptMediaData(svpFlag_, cryptInfo, inDrmBuffer, outDrmBuffer);
-    if (retCode != 0) {
-        AVCODEC_LOGE("CodecDrmDecrypt decrypt failed!");
-        return AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG((retCode == 0), AVCS_ERR_UNKNOWN, "CodecDrmDecrypt decrypt failed!");
     return AVCS_ERR_OK;
 #else
     (void)cencInfo;
