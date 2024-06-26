@@ -631,7 +631,7 @@ void VDecNdkSample::CheckOutputDescription()
             errCount++;
         }
         if (cropRight != expectCropRight || stride <= 0 || sliceHeight <= 0) {
-            std::cout << "cropRight:" << cropRight << std::endl; 
+            std::cout << "cropRight:" << cropRight << std::endl;
             std::cout << "stride:" << stride << " sliceHeight:" << sliceHeight << std::endl;
             errCount++;
         }

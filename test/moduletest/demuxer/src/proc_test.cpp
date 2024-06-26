@@ -52,30 +52,30 @@ static OH_AVFormat *format = nullptr;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
-const int64_t avcDuration = 2465900;
-const int32_t avcAudioFormat = 9;
-const int32_t avcAudioCount = 2;
-const int64_t avcLayout = 3;
-const int32_t avcSampleRate = 48000;
-const int32_t avcCodedSample = 16;
-const int32_t avcCurrentWidth = 1920;
-const int32_t avcCurrentHeight = 1080;
-const int32_t avcRotation = 90;
-const double avcFrameRate = 30.010003334444814;
-const int64_t avcBitrate = 20442398;
-const int64_t hevcDuration = 4120000;
-const int32_t hevcAudioFormat = 9;
-const int32_t hevcAudioCount = 2;
-const int64_t hevcLayout = 3;
-const int32_t hevcSampleRate = 44100;
-const int32_t hevcCodedSample = 16;
-const int32_t hevcCurrentWidth = 1920;
-const int32_t hevcCurrentHeight = 1080;
-const double hevcFrameRate = 25;
-const int64_t hevcBitrate = 4162669;
-const int32_t hevcCharacteristics = 2;
-const int32_t hevcCoefficients = 2;
-const int32_t hevcPrimaries = 2;
+constexpr uint64_t AVC_DURATION = 2465900;
+constexpr uint32_t AVC_AUDIOFORMAT = 9;
+constexpr uint32_t AVC_AUDIOCOUNT = 2;
+constexpr uint64_t AVC_LAYOUT = 3;
+constexpr uint32_t AVC_SAMPLERATE = 48000;
+constexpr uint32_t AVC_CODEDSAMPLE = 16;
+constexpr uint32_t AVC_CURRENTWIDTH = 1920;
+constexpr uint32_t AVC_CURRENTHEIGHT = 1080;
+constexpr uint32_t AVC_ROTATION = 90;
+constexpr double AVC_FRAMERATE = 30.010003334444814;
+constexpr uint64_t AVC_BITRATE = 20442398;
+constexpr uint64_t HEVC_DURATION = 4120000;
+constexpr uint32_t HEVC_AUDIOFORMAT = 9;
+constexpr uint32_t HEVC_AUDIOCOUNT = 2;
+constexpr uint64_t HEVC_LAYOUT = 3;
+constexpr uint32_t HEVC_SAMPLERATE = 44100;
+constexpr uint32_t HEVC_CODEDSAMPLE = 16;
+constexpr uint32_t HEVC_CURRENTWIDTH = 1920;
+constexpr uint32_t HEVC_CURRENTHEIGHT = 1080;
+constexpr double HEVC_FRAMERATE = 25;
+constexpr uint64_t HEVC_BITRATE = 4162669;
+constexpr uint32_t HEVC_CHARACTERISTICS = 2;
+constexpr uint32_t HEVC_COEFFICIENTS = 2;
+constexpr uint32_t HEVC_PRIMARIES = 2;
 
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
@@ -180,7 +180,7 @@ static void AvcParam(OH_AVFormat *paramFormat)
     const char* lyrics = nullptr;
     const char* title = nullptr;
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_DURATION, &duration));
-    ASSERT_EQ(avcDuration, duration);
+    ASSERT_EQ(AVC_DURATION, duration);
     ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ARTIST, &artist));
     ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ALBUM, &album));
@@ -213,12 +213,12 @@ static void AvcAudioParam(OH_AVFormat *paramFormat)
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
     ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
-    ASSERT_EQ(avcAudioFormat, audioFormat);
-    ASSERT_EQ(avcAudioCount, audioCount);
-    ASSERT_EQ(avcSampleRate, sampleRate);
-    ASSERT_EQ(avcCodedSample, codedSample);
+    ASSERT_EQ(AVC_AUDIOFORMAT, audioFormat);
+    ASSERT_EQ(AVC_AUDIOCOUNT, audioCount);
+    ASSERT_EQ(AVC_SAMPLERATE, sampleRate);
+    ASSERT_EQ(AVC_CODEDSAMPLE, codedSample);
     ASSERT_EQ(1, aacisAdts);
-    ASSERT_EQ(avcLayout, layout);
+    ASSERT_EQ(AVC_LAYOUT, layout);
 }
 
 static void AvcVideoParam(OH_AVFormat *paramFormat)
@@ -252,11 +252,11 @@ static void AvcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_FALSE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
     ASSERT_EQ(0, strcmp(mimeType, "video/avc"));
-    ASSERT_EQ(avcCurrentWidth, currentWidth);
-    ASSERT_EQ(avcCurrentHeight, currentHeight);
-    ASSERT_EQ(avcRotation, rotation);
-    ASSERT_EQ(avcFrameRate, frameRate);
-    ASSERT_EQ(avcBitrate, bitrate);
+    ASSERT_EQ(AVC_CURRENTWIDTH, currentWidth);
+    ASSERT_EQ(AVC_CURRENTHEIGHT, currentHeight);
+    ASSERT_EQ(AVC_ROTATION, rotation);
+    ASSERT_EQ(AVC_FRAMERATE, frameRate);
+    ASSERT_EQ(AVC_BITRATE, bitrate);
 }
 
 static void HevcParam(OH_AVFormat *paramFormat)
@@ -275,7 +275,7 @@ static void HevcParam(OH_AVFormat *paramFormat)
     const char* lyrics = nullptr;
     const char* title = nullptr;
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_DURATION, &duration));
-    ASSERT_EQ(hevcDuration, duration);
+    ASSERT_EQ(HEVC_DURATION, duration);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_TITLE, &title));
     ASSERT_EQ(0, strcmp(title, "title"));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ARTIST, &artist));
@@ -317,13 +317,13 @@ static void HevcAudioParam(OH_AVFormat *paramFormat)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AAC_IS_ADTS, &aacisAdts));
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_EQ(hevcAudioFormat, audioFormat);
-    ASSERT_EQ(hevcAudioCount, audioCount);
-    ASSERT_EQ(hevcSampleRate, sampleRate);
-    ASSERT_EQ(hevcCodedSample, codedSample);
+    ASSERT_EQ(HEVC_AUDIOFORMAT, audioFormat);
+    ASSERT_EQ(HEVC_AUDIOCOUNT, audioCount);
+    ASSERT_EQ(HEVC_SAMPLERATE, sampleRate);
+    ASSERT_EQ(HEVC_CODEDSAMPLE, codedSample);
     ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
     ASSERT_EQ(1, aacisAdts);
-    ASSERT_EQ(hevcLayout, layout);
+    ASSERT_EQ(HEVC_LAYOUT, layout);
 }
 
 static void HevcVideoParam(OH_AVFormat *paramFormat)
@@ -357,14 +357,14 @@ static void HevcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
     ASSERT_EQ(0, strcmp(mimeType, "video/hevc"));
-    ASSERT_EQ(hevcCurrentWidth, currentWidth);
-    ASSERT_EQ(hevcCurrentHeight, currentHeight);
-    ASSERT_EQ(hevcFrameRate, frameRate);
-    ASSERT_EQ(hevcBitrate, bitrate);
+    ASSERT_EQ(HEVC_CURRENTWIDTH, currentWidth);
+    ASSERT_EQ(HEVC_CURRENTHEIGHT, currentHeight);
+    ASSERT_EQ(HEVC_FRAMERATE, frameRate);
+    ASSERT_EQ(HEVC_BITRATE, bitrate);
     ASSERT_EQ(0, flag);
-    ASSERT_EQ(hevcCharacteristics, characteristics);
-    ASSERT_EQ(hevcCoefficients, coefficients);
-    ASSERT_EQ(hevcPrimaries, primaries);
+    ASSERT_EQ(HEVC_CHARACTERISTICS, characteristics);
+    ASSERT_EQ(HEVC_COEFFICIENTS, coefficients);
+    ASSERT_EQ(HEVC_PRIMARIES, primaries);
     ASSERT_EQ(1, sar);
 }
 
