@@ -102,7 +102,7 @@ Plugins::Seekable BaseStreamDemuxer::GetSeekable()
     return source_->GetSeekable();
 }
 
-bool BaseStreamDemuxer::IsDash()
+bool BaseStreamDemuxer::IsDash() const
 {
     return isDash_;
 }

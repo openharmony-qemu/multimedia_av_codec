@@ -50,7 +50,7 @@ VodStreamDemuxer::VodStreamDemuxer() : position_(0)
 VodStreamDemuxer::~VodStreamDemuxer()
 {
     MEDIA_LOG_I("~VodStreamDemuxer called");
-    Reset();
+    ResetAllCache();
 }
 
 bool VodStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size,
@@ -145,7 +145,7 @@ bool VodStreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size
             tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_W("PullDataWithCache, not cache begin.");
-            return ret == Status::OK;
+            return true;
         }
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());
@@ -285,6 +285,7 @@ Status VodStreamDemuxer::ResetCache(int32_t streamID)
 {
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         cacheDataMap_[streamID].Reset();
+        cacheDataMap_.erase(streamID);
     }
     return Status::OK;
 }
@@ -295,12 +296,6 @@ Status VodStreamDemuxer::ResetAllCache()
         iter.second.Reset();
     }
     cacheDataMap_.clear();
-    return Status::OK;
-}
-
-Status VodStreamDemuxer::Reset()
-{
-    ResetAllCache();
     return Status::OK;
 }
 
@@ -339,7 +334,7 @@ Status VodStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std:
         ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
-            if (buffer->streamID != streamID) {
+            if (buffer != nullptr && buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32
                     ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
@@ -364,7 +359,7 @@ Status VodStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std:
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
-            if (buffer->streamID != streamID) {
+            if (buffer != nullptr && buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32
                     ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);

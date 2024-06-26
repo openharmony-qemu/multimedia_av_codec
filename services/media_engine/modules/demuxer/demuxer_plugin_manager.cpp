@@ -122,7 +122,7 @@ DemuxerPluginManager::~DemuxerPluginManager()
     }
 }
 
-size_t DemuxerPluginManager::GetStreamCount()
+size_t DemuxerPluginManager::GetStreamCount() const
 {
     return streamInfoMap_.size();
 }
@@ -199,13 +199,13 @@ Status DemuxerPluginManager::LoadDemuxerPlugin(int32_t streamID, std::shared_ptr
     std::string type = streamDemuxer->SnifferMediaType(streamID);
     MediaTypeFound(streamDemuxer, type, streamID);
 
-    Plugins::MediaInfo mediaInfoTemp;
-    Status ret = Status::ERROR_UNKNOWN;
-
     FALSE_RETURN_V_MSG_E(streamInfoMap_[streamID].plugin != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create video demuxer plugin failed.");
-    ret = streamInfoMap_[streamID].plugin->GetMediaInfo(mediaInfoTemp);
-    streamInfoMap_[streamID].mediaInfo = mediaInfoTemp;
+    Plugins::MediaInfo mediaInfoTemp;
+    Status ret = streamInfoMap_[streamID].plugin->GetMediaInfo(mediaInfoTemp);
+    if (ret == Status::OK) {
+        streamInfoMap_[streamID].mediaInfo = mediaInfoTemp;
+    }
     return ret;
 }
 
@@ -382,12 +382,12 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     return st == Status::OK;
 }
 
-bool DemuxerPluginManager::IsDash()
+bool DemuxerPluginManager::IsDash() const
 {
     return isDash_;
 }
 
-bool DemuxerPluginManager::IsSubtitle()
+bool DemuxerPluginManager::IsSubtitle() const
 {
     return isSubtitle_;
 }

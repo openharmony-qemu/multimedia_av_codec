@@ -814,7 +814,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
         }
         isSelectBitRate_.store(true);
     }
-    streamDemuxer_->Reset();
+    streamDemuxer_->ResetAllCache();
     Status ret = source_->SelectBitRate(bitRate);
     if (ret != Status::OK) {
         MEDIA_LOG_E("MediaDemuxer SelectBitRate failed");
@@ -1025,7 +1025,7 @@ Status MediaDemuxer::Reset()
         requestBufferErrorCountMap_[item.first] = 0;
     }
     videoStartTime_ = 0;
-    streamDemuxer_->Reset();
+    streamDemuxer_->ResetAllCache();
     return demuxerPluginManager_->Reset();
 }
 
@@ -1196,19 +1196,19 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
 
 bool MediaDemuxer::ChangeStream(uint32_t trackId)
 {
-    int32_t videoStreamID = demuxerPluginManager_->GetStreamID(videoTrackId_);
+    int32_t videoStreamID = demuxerPluginManager_->GetStreamID(trackId);
     int32_t newStreamID = streamDemuxer_->GetNewVideoStreamID();
     if (newStreamID >= 0 && videoStreamID != newStreamID) {
         MEDIA_LOG_I("ChangeStream dash, END_OF_STREAM begin");
         streamDemuxer_->ResetCache(videoStreamID);
         Plugins::MediaInfo mediaInfo;
-        streamDemuxer_->SetDemuxerState(videoStreamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
+        streamDemuxer_->SetDemuxerState(newStreamID, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
         demuxerPluginManager_->UpdateDefaultVideoStreamID(streamDemuxer_, mediaInfo);
 
         uint32_t tempVideoTrack = TRACK_ID_DUMMY;
         uint32_t tempAudioTrack = TRACK_ID_DUMMY;
         InitMediaMetaData(mediaInfo, tempVideoTrack, tempAudioTrack, videoMime_);
-        int32_t localVideoTrackId_ = static_cast<int32_t>(videoTrackId_);
+        int32_t localVideoTrackId_ = static_cast<int32_t>(trackId);
         int32_t localTempVideoTrack = static_cast<int32_t>(tempVideoTrack);
         int32_t localAudioTrackId_ = static_cast<int32_t>(audioTrackId_);
         int32_t localTempAudioTrack = static_cast<int32_t>(tempAudioTrack);
@@ -1221,7 +1221,7 @@ bool MediaDemuxer::ChangeStream(uint32_t trackId)
         MEDIA_LOG_I("ChangeStream dash, UpdateTempTrackMapInfo done");
         InnerSelectTrack(videoTrackId_);
         MEDIA_LOG_I("ChangeStream dash, InnerSelectTrack video done");
-        streamDemuxer_->SetDemuxerState(videoStreamID, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+        streamDemuxer_->SetDemuxerState(newStreamID, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
         isSelectBitRate_.store(false);
         MEDIA_LOG_I("ChangeStream dash, END_OF_STREAM end");
         return true;
