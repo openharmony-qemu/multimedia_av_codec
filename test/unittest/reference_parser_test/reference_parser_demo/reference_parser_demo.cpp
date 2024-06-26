@@ -185,6 +185,26 @@ bool ReferenceParserDemo::DoAccurateSeek(int64_t seekTimeMs)
     return true;
 }
 
+int32_t ReferenceParserDemo::IsFrameDiscard(FrameLayerInfo &frameInfo, bool &isDiscard)
+{
+    if (frameInfo.layer == -1) {
+        isDiscard = frameInfo.isDiscardable;
+        return 0;
+    }
+
+    if (checkedGopId_ != frameInfo.gopId) {
+        GopLayerInfo gopLayerInfo;
+        demuxer_->GetGopLayerInfo(frameInfo.gopId, gopLayerInfo);
+        if (!CheckGopLayerResult(gopLayerInfo, frameInfo.gopId)) {
+            return -1;
+        }
+        checkedGopId_ = frameInfo.gopId;
+        maxDiscardLayer_ = GetMaxDiscardLayer(gopLayerInfo);
+    }
+    isDiscard = frameInfo.layer <= maxDiscardLayer_;
+    return 0;
+}
+
 bool ReferenceParserDemo::DoVariableSpeedPlay(int64_t playTimeMs)
 {
     demuxer_->SelectTrackByID(videoTrackId_);
@@ -194,7 +214,6 @@ bool ReferenceParserDemo::DoVariableSpeedPlay(int64_t playTimeMs)
         demuxer_->ReadSampleBuffer(videoTrackId_, buffer_);
     }
 
-    cout << "StartReferenceParser" << std::endl;
     demuxer_->StartReferenceParser(playTimeMs);
     FrameLayerInfo frameInfo;
     do {
@@ -203,19 +222,9 @@ bool ReferenceParserDemo::DoVariableSpeedPlay(int64_t playTimeMs)
         if (!CheckFrameLayerResult(frameInfo, buffer_->dts_)) {
             return false;
         }
-        if (frameInfo.layer != -1) {
-            if (checkedGopId_ != frameInfo.gopId) {
-                GopLayerInfo gopLayerInfo;
-                demuxer_->GetGopLayerInfo(frameInfo.gopId, gopLayerInfo);
-                if (!CheckGopLayerResult(gopLayerInfo, frameInfo.gopId)) {
-                    return false;
-                }
-                checkedGopId_ = frameInfo.gopId;
-                maxDiscardLayer_ = GetMaxDiscardLayer(gopLayerInfo);
-            }
-            isDiscard_ = frameInfo.layer <= maxDiscardLayer_;
-        } else {
-            isDiscard_ = frameInfo.isDiscardable;
+
+        if(IsFrameDiscard(frameInfo, isDiscard_) != 0) {
+            return false;
         }
         
         if (!isDiscard_) {
