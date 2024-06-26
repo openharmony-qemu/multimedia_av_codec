@@ -63,6 +63,7 @@ const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const uint32_t MS_TO_SEC = 1000;
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
+std::mutex g_mtx;
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource);
 
@@ -1063,7 +1064,10 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
     MEDIA_LOG_I("FFmpegDemuxerPlugin SetDataSource, fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32,
         ioContext_.fileSize, seekable_);
-    pluginImpl_ = g_pluginInputFormat[pluginName_];
+    {
+        std::lock_guard<std::mutex> lock(g_mtx);
+        pluginImpl_ = g_pluginInputFormat[pluginName_];
+    }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");
 
@@ -1602,8 +1606,11 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Sniff failed due to plugin name is empty.");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "Sniff failed due to dataSource invalid.");
-
-    auto plugin = g_pluginInputFormat[pluginName];
+    std::shared_ptr<AVInputFormat> plugin;
+    {
+        std::lock_guard<std::mutex> lock(g_mtx);
+        plugin = g_pluginInputFormat[pluginName];
+    }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
 
@@ -1686,7 +1693,7 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
     MEDIA_LOG_I("Register ffmpeg demuxer plugin.");
     FALSE_RETURN_V_MSG_E(reg != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Register plugin failed due to null pointer for reg.");
-
+    std::lock_guard<std::mutex> lock(g_mtx);
     const AVInputFormat* plugin = nullptr;
     void* i = nullptr;
     while ((plugin = av_demuxer_iterate(&i))) {
@@ -1729,7 +1736,7 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
     return Status::OK;
 }
 } // namespace
-PLUGIN_DEFINITION(FFmpegDemuxer, LicenseType::LGPL, RegisterPlugins, [] { g_pluginInputFormat.clear(); });
+PLUGIN_DEFINITION(FFmpegDemuxer, LicenseType::LGPL, RegisterPlugins, [] {});
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
