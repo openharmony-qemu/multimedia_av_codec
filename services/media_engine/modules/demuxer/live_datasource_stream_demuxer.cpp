@@ -58,7 +58,7 @@ LiveDataSourceStreamDemuxer::~LiveDataSourceStreamDemuxer()
     taskPtr_ = nullptr;
 }
 
-Status LiveDataSourceStreamDemuxer::Init(std::string uri)
+Status LiveDataSourceStreamDemuxer::Init(const std::string& uri)
 {
     dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     if (taskPtr_ == nullptr) {
@@ -147,11 +147,6 @@ void LiveDataSourceStreamDemuxer::ReadLoop()
     MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
     PushData(data, (uint64_t)mediaOffset_);
     mediaOffset_ += static_cast<int64_t>(size);
-}
-
-Status LiveDataSourceStreamDemuxer::Reset()
-{
-    return Status::OK;
 }
 
 Status LiveDataSourceStreamDemuxer::Start()

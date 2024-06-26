@@ -28,7 +28,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 1024;
-constexpr long DEFAULT_TIMEOUT = 5000L;
 const std::string USER_AGENT = "User-Agent";
 const std::string REFERER = "Referer";
 const std::string COOKIE = "Cookie";
@@ -189,7 +188,7 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
     return str;
 }
 
-void HttpCurlClient::CheckHeaderKey(const std::string setKey, const std::string setValue)
+void HttpCurlClient::CheckHeaderKey(const std::string &setKey, const std::string &setValue)
 {
     if (setKey != USER_AGENT && setKey != REFERER && setKey != COOKIE) {
         MEDIA_LOG_E("Setted invalid key " PUBLIC_LOG_S " .", setKey.c_str());
@@ -304,7 +303,7 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
 void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeoutMs)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 2); // 2
+    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
 #ifndef CA_DIR
@@ -321,10 +320,9 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    if (url.find(".ts") == std::string::npos || timeoutMs >= 0) {
-        int32_t timeout = timeoutMs >= 0 ? timeoutMs : DEFAULT_TIMEOUT;
-        MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeout);
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeout);
+    if (timeoutMs > 0) {
+        MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeoutMs);
+        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeoutMs);
     }
 
     InitCurProxy(url);

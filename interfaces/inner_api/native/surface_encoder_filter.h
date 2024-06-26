@@ -41,6 +41,7 @@ public:
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status SetInputSurface(sptr<Surface> surface);
+    Status SetTransCoderMode();
     sptr<Surface> GetInputSurface();
     Status DoPrepare() override;
     Status DoStart() override;
@@ -71,7 +72,7 @@ protected:
 
 private:
     std::string name_;
-    FilterType filterType_;
+    FilterType filterType_ = FilterType::FILTERTYPE_VENC;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;

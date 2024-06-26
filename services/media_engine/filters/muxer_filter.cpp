@@ -37,6 +37,7 @@ namespace Media {
 namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
+constexpr int64_t US_TO_MS = 1000;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
@@ -45,8 +46,9 @@ static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.m
 class MuxerBrokerListener : public IBrokerListener {
 public:
     MuxerBrokerListener(std::shared_ptr<MuxerFilter> muxerFilter, int32_t trackIndex,
-        sptr<AVBufferQueueProducer> inputBufferQueue)
-        : muxerFilter_(std::move(muxerFilter)), trackIndex_(trackIndex), inputBufferQueue_(inputBufferQueue)
+        StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue)
+        : muxerFilter_(std::move(muxerFilter)), trackIndex_(trackIndex), streamType_(streamType),
+        inputBufferQueue_(inputBufferQueue)
     {
     }
 
@@ -59,7 +61,7 @@ public:
     {
         if (inputBufferQueue_ != nullptr) {
             if (auto muxerFilter = muxerFilter_.lock()) {
-                muxerFilter->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_.promote());
+                muxerFilter->OnBufferFilled(avBuffer, trackIndex_, streamType_, inputBufferQueue_.promote());
             } else {
                 MEDIA_LOG_I("invalid muxerFilter");
             }
@@ -69,17 +71,18 @@ public:
 private:
     std::weak_ptr<MuxerFilter> muxerFilter_;
     int32_t trackIndex_;
+    StreamType streamType_;
     wptr<AVBufferQueueProducer> inputBufferQueue_;
 };
 
 MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type)
 {
-    MEDIA_LOG_I("muxer filter create");
+    MEDIA_LOG_I("MuxerFilter create");
 }
 
 MuxerFilter::~MuxerFilter()
 {
-    MEDIA_LOG_I("muxer filter destroy");
+    MEDIA_LOG_I("MuxerFilter destroy");
 }
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
@@ -94,6 +97,22 @@ Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t f
         SetFaultEvent("MuxerFilter::SetOutputParameter, muxerFilter init error", (int32_t)ret);
     }
     return ret;
+}
+
+Status MuxerFilter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    isTransCoderMode = true;
+    return Status::OK;
+}
+ 
+int64_t MuxerFilter::GetCurrentPtsMs()
+{
+    if (lastVideoPts_ != 0) {
+        return lastVideoPts_ / US_TO_MS;
+    } else {
+        return lastAudioPts_ / US_TO_MS;
+    }
 }
 
 void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -239,7 +258,8 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     }
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
-    sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex, inputBufferQueue);
+    sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
+        inType, inputBufferQueue);
     inputBufferQueue->SetBufferFilledListener(listener);
     preFilterCount_++;
     bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
@@ -261,24 +281,62 @@ Status MuxerFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLi
 }
 
 void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
-    sptr<AVBufferQueueProducer> inputBufferQueue)
+    StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue)
 {
     MEDIA_LOG_D("OnBufferFilled");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
-    int64_t currentBufferPts = inputBuffer->pts_;
-    int64_t anotherBufferPts = 0;
-    for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
-        if (mapInterator->first != trackIndex) {
-            anotherBufferPts = mapInterator->second;
+    if (!isTransCoderMode) {
+        int64_t currentBufferPts = inputBuffer->pts_;
+        int64_t anotherBufferPts = 0;
+        for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
+            if (mapInterator->first != trackIndex) {
+                anotherBufferPts = mapInterator->second;
+            }
+        }
+        bufferPtsMap_[trackIndex] = currentBufferPts;
+        if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
+            MEDIA_LOG_I("OnBufferFilled pts time interval is greater than 3 seconds");
+        }
+        MEDIA_LOG_D("OnBufferFilled buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
+        inputBufferQueue->ReturnBuffer(inputBuffer, true);
+        return;
+    }
+    OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+}
+
+void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
+    StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue)
+{
+    MEDIA_LOG_D("OnTransCoderBufferFilled");
+    if (inputBuffer->flag_ == 1) {
+        eosCount_++;
+        if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
+            MEDIA_LOG_I("video is eos");
+            videoIsEos = true;
+        } else if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
+            MEDIA_LOG_I("audio is eos");
         }
     }
-    bufferPtsMap_[trackIndex] = currentBufferPts;
-    if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
-        MEDIA_LOG_I("OnBufferFilled pts time interval is greater than 3 seconds");
+    if (eosCount_ == preFilterCount_) {
+        eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
     }
-    inputBuffer->pts_ = inputBuffer->pts_; // us
-    MEDIA_LOG_D("OnBufferFilled buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
-    inputBufferQueue->ReturnBuffer(inputBuffer, true);
+    if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
+        lastAudioPts_ = inputBuffer->pts_;
+        if (inputBuffer->pts_ <= lastVideoPts_ || videoIsEos) {
+            inputBufferQueue->ReturnBuffer(inputBuffer, true);
+        } else {
+            std::unique_lock<std::mutex> lock(stopMutex_);
+            stopCondition_.wait_for(lock, std::chrono::milliseconds(US_TO_MS));
+            inputBufferQueue->ReturnBuffer(inputBuffer, true);
+        }
+    } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
+        lastVideoPts_ = inputBuffer->pts_;
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.notify_all();
+        inputBufferQueue->ReturnBuffer(inputBuffer, true);
+    } else {
+        inputBufferQueue->ReturnBuffer(inputBuffer, true);
+    }
 }
 
 void MuxerFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)

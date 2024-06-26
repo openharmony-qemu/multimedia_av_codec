@@ -233,7 +233,7 @@ void BufferConverter::GetFormat(Format &format)
         return;
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_WIDTH)) {
-        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride / pixelSize_);
+        format.PutIntValue(Tag::VIDEO_WIDTH, usrRect_.wStride);
     }
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.hStride);
@@ -260,18 +260,18 @@ void BufferConverter::SetFormat(const Format &format)
     if (format.GetIntValue(Tag::VIDEO_PIXEL_FORMAT, pixelFormat)) {
         SetPixFormat(static_cast<VideoPixelFormat>(pixelFormat));
     }
-    if (format.GetIntValue(Tag::VIDEO_DISPLAY_WIDTH, width) || format.GetIntValue(Tag::VIDEO_WIDTH, width)) {
+    if (format.GetIntValue(Tag::VIDEO_PIC_WIDTH, width) || format.GetIntValue(Tag::VIDEO_DISPLAY_WIDTH, width)) {
         SetWidth(width);
     }
-    if (format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_HEIGHT, height)) {
+    if (format.GetIntValue(Tag::VIDEO_PIC_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height)) {
         SetHeight(height);
     }
-    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride)) {
+    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride) || format.GetIntValue(Tag::VIDEO_WIDTH, wStride)) {
         SetWidthStride(rect_.wStride);
     } else {
         hwRect_.wStride = wStride;
     }
-    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride)) {
+    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride) && !format.GetIntValue(Tag::VIDEO_HEIGHT, hStride)) {
         SetHeightStride(rect_.hStride);
     } else {
         hwRect_.hStride = hStride;
@@ -368,7 +368,11 @@ inline void BufferConverter::SetHeightStride(const int32_t hStride)
 
 bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
 {
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, false, "buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "buffer is nullptr");
+    if (buffer->memory_ == nullptr) {
+        AVCODEC_LOGW("memory is nullptr");
+        return true;
+    }
     isSharedMemory_ = buffer->memory_->GetMemoryType() == MemoryType::SHARED_MEMORY;
     if (isSharedMemory_) {
         AVCODEC_LOGW("AVBuffer is shared memory");
@@ -394,11 +398,15 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
     } else {
         void *planesInfoPtr = nullptr;
         surfaceBuffer->GetPlanesInfo(&planesInfoPtr);
-        CHECK_AND_RETURN_RET_LOG(planesInfoPtr != nullptr, false, "planes info is nullptr");
-        auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
-        CHECK_AND_RETURN_RET_LOG(planesInfo->planeCount > 1, false, "planes count is %{public}d",
-                                 planesInfo->planeCount);
-        SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
+        if (planesInfoPtr == nullptr) {
+            AVCODEC_LOGW("planes info is nullptr");
+            hwRect_.hStride = height;
+        } else {
+            auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
+            CHECK_AND_RETURN_RET_LOG(planesInfo->planeCount > 1, false, "planes count is %{public}d",
+                                     planesInfo->planeCount);
+            SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
+        }
     }
     // pixelSize
     CHECK_AND_RETURN_RET_LOG(width != 0, false, "width is 0");

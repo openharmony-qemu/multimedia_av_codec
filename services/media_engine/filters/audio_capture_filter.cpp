@@ -155,9 +155,8 @@ Status AudioCaptureFilter::DoPrepare()
         MEDIA_LOG_E("callback is nullptr");
         return Status::ERROR_NULL_POINTER;
     }
-    callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+    return callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_RAW_AUDIO);
-    return Status::OK;
 }
 
 Status AudioCaptureFilter::DoStart()

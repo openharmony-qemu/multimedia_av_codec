@@ -52,6 +52,10 @@ public:
     void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
+    Status StartReferenceParser(int64_t startTimeMs);
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+
     Status StartAudioTask();
     Status SelectTrack(int32_t trackId);
 
@@ -72,6 +76,7 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
+    bool IsRenderNextVideoFrameSupported();
 
     bool IsDrmProtected();
     // drm callback

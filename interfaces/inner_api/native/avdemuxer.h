@@ -103,6 +103,10 @@ public:
 
     virtual int32_t GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos) = 0;
 
+    virtual int32_t StartReferenceParser(int64_t startTimeMs) = 0;
+    virtual int32_t GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) = 0;
+    virtual int32_t GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) = 0;
+
     virtual int32_t GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
         int64_t presentationTimeUs, uint32_t &frameIndex) = 0;
 

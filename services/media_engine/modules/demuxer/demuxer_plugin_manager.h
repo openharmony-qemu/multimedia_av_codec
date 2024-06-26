@@ -42,7 +42,7 @@ class BaseStreamDemuxer;
 
 class DataSourceImpl : public Plugins::DataSource {
 public:
-    explicit DataSourceImpl(std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID);
+    explicit DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream, int32_t streamID);
     ~DataSourceImpl() override = default;
     Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
@@ -98,8 +98,8 @@ public:
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     int32_t GetStreamID(int32_t trackId);
     int32_t GetInnerTrackID(int32_t trackId);
-    bool IsDash();
-    bool IsSubtitle();
+    bool IsDash() const;
+    bool IsSubtitle() const;
     Status StopPlugin(int32_t streamId);
     Status StartPlugin(int32_t streamId, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
@@ -109,16 +109,16 @@ public:
     void UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId);
     std::shared_ptr<Meta> GetUserMeta();
     uint32_t GetCurrentBitRate();
-    size_t GetStreamCount();
+    size_t GetStreamCount() const;
     void SetResetEosStatus(bool flag);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
-    bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
-    void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, std::string pluginName, int32_t id);
+    bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
+    void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     Status InitDefaultPlay();
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo, bool isAddTrack,
         bool isAddTempTrack);
-    Status AddGeneral(const Meta& format, Meta& formatNew);
+    static Status AddGeneral(const Meta& format, Meta& formatNew);
     void ClearTempTrackInfo();
 
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);

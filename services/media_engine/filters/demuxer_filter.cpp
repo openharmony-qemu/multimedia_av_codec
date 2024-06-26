@@ -113,7 +113,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
-    MEDIA_LOG_I("Init");
+    MEDIA_LOG_I("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
     MEDIA_LOG_D("DemuxerFilter Init for drm callback");
@@ -173,12 +173,10 @@ Status DemuxerFilter::DoPrepare()
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
         return Status::ERROR_INVALID_PARAMETER;
     }
+    int32_t successNodeCount = 0;
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
-        if (meta == nullptr) {
-            MEDIA_LOG_E("meta is invalid, index: %zu", index);
-            return Status::ERROR_INVALID_PARAMETER;
-        }
+        FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
         std::string mime;
         if (!meta->GetData(Tag::MIME_TYPE, mime)) {
             MEDIA_LOG_E("mimeType not found, index: %zu", index);
@@ -206,6 +204,11 @@ Status DemuxerFilter::DoPrepare()
             FaultDemuxerEventInfoWrite(streamType);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
+        successNodeCount++;
+    }
+    if (successNodeCount == 0) {
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;
 }
@@ -370,6 +373,27 @@ Status DemuxerFilter::Reset()
         track_id_map_.clear();
     }
     return demuxer_->Reset();
+}
+
+Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::StartReferenceParser");
+    MEDIA_LOG_D("StartReferenceParser entered");
+    return demuxer_->StartReferenceParser(startTimeMs);
+}
+
+Status DemuxerFilter::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetFrameLayerInfo");
+    MEDIA_LOG_D("GetFrameLayerInfo entered");
+    return demuxer_->GetFrameLayerInfo(videoSample, frameLayerInfo);
+}
+
+Status DemuxerFilter::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetGopLayerInfo");
+    MEDIA_LOG_D("GetGopLayerInfo entered");
+    return demuxer_->GetGopLayerInfo(gopId, gopLayerInfo);
 }
 
 void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
@@ -637,6 +661,13 @@ Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
 {
     disabledMediaTracks_.emplace(mediaType);
     return demuxer_->DisableMediaTrack(mediaType);
+}
+
+bool DemuxerFilter::IsRenderNextVideoFrameSupported()
+{
+    MEDIA_LOG_D("DemuxerFilter::OnDumpInfo called.");
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsRenderNextVideoFrameSupported();
 }
 } // namespace Pipeline
 } // namespace Media

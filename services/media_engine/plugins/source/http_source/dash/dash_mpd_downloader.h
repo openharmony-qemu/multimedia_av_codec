@@ -115,7 +115,7 @@ public:
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
     void SetHdrStart(bool isHdrStart);
     void SetInterruptState(bool isInterruptNeeded);
-    std::string GetUrl();
+    std::string GetUrl() const;
 
 private:
     void ParseManifest();
@@ -187,7 +187,7 @@ private:
     bool PutStreamToDownload();
     void GetDrmInfos(std::vector<DashDrmInfo>& drmInfos);
     void ProcessDrmInfos();
-    void GetDrmInfos(const std::string &drmId, DashList<DashDescriptor *> &contentProtections,
+    void GetDrmInfos(const std::string &drmId, const DashList<DashDescriptor *> &contentProtections,
                      std::vector<DashDrmInfo> &drmInfoList);
     void BuildDashSegment(std::list<std::shared_ptr<SubSegmentIndex>> &subSegIndexList) const;
     void GetStreamDescriptions(const std::string &periodBaseUrl, DashStreamDescription &streamDesc,

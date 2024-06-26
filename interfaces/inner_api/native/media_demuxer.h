@@ -85,6 +85,7 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
     std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
+    bool IsRenderNextVideoFrameSupported();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
@@ -103,6 +104,11 @@ public:
 
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
+
+    Status StartReferenceParser(int64_t startTimeMs);
+    Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+    
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
 
@@ -167,6 +173,7 @@ private:
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
+    int64_t ParserRefInfo();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -203,7 +210,6 @@ private:
     ConditionVariable firstFrameCond_;
     uint64_t firstFrameCount_ = 0;
     bool doPrepareFrame_{false};
-    bool waitForDataFail_{false};
 
     std::atomic<bool> isDecodeOptimizationEnabled_ {false};
     std::atomic<float> speed_ {1.0f};
@@ -218,6 +224,9 @@ private:
     std::atomic<bool> isSelectBitRate_ = false;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
+
+    std::unique_ptr<Task> parserRefInfoTask_;
+    bool isFirstParser = true;
 };
 } // namespace Media
 } // namespace OHOS

@@ -308,6 +308,57 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     }
 }
 
+static void RunRefParserDemuxer(const std::string &filePath, const std::string &fileMode)
+{
+    auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
+    int32_t fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        printf("open file failed\n");
+        return;
+    }
+    innerSourceDemo->CreateWithFD(fd, 0, innerSourceDemo->GetFileSize(filePath));
+    auto innerDemuxerDemo = std::make_shared<InnerDemuxerDemo>();
+    innerDemuxerDemo->CreateWithSource(innerSourceDemo->avsource_);
+    int32_t trackCount = 0;
+    int64_t duration = 0;
+    Format source_format = innerSourceDemo->GetSourceFormat();
+    source_format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
+    source_format.GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, duration);
+    printf("====>duration:%" PRId64 " total tracks:%d\n", duration, trackCount);
+    int32_t trackType = 0;
+    int32_t videoTrackIdx = 0;
+    for (int32_t i = 0; i < trackCount; i++) {
+        Format trackFormat = innerSourceDemo->GetTrackFormat(i);
+        trackFormat.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, trackType);
+        if (trackType == 1) {                     // 视频轨道
+            innerDemuxerDemo->SelectTrackByID(i); // 添加轨道
+            videoTrackIdx = i;
+        }
+    }
+    uint32_t buffersize = 1024 * 1024;
+    std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<OHOS::Media::AVBuffer> avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
+    innerDemuxerDemo->StartReferenceParser(0);
+    FrameLayerInfo frameLayerInfo;
+    bool isEosFlag = true;
+    while (isEosFlag) {
+        innerDemuxerDemo->ReadSampleBuffer(videoTrackIdx, avBuffer);
+        if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+            cout << "read sample end" << endl;
+            isEosFlag = false;
+        }
+        cout << "size: " << avBuffer->memory_->GetSize() << ",pts: " << avBuffer->pts_ << ", dts: " << avBuffer->dts_
+             << endl;
+        innerDemuxerDemo->GetFrameLayerInfo(avBuffer, frameLayerInfo);
+        cout << "isDiscardable: " << frameLayerInfo.isDiscardable << ", gopId: " << frameLayerInfo.gopId
+             << ", layer: " << frameLayerInfo.layer << endl;
+    }
+    innerDemuxerDemo->Destroy();
+    if (fileMode == "0" && fd > 0) {
+        close(fd);
+    }
+}
+
 static void RunNativeDemuxerLoop(const std::string &filePath, const std::string &fileMode)
 {
     time_t startTime = 0;
@@ -395,7 +446,7 @@ static void RunNativeDemuxerAllFormat(const std::string &fileMode)
     return;
 }
 
-void AVSourceDemuxerDemoCase(void)
+void PrintPrompt()
 {
     cout << "Please select a demuxer demo(default native demuxer demo): " << endl;
     cout << "0:native_demuxer" << endl;
@@ -406,6 +457,12 @@ void AVSourceDemuxerDemoCase(void)
     cout << "5:ffmpeg_demuxer multithread" << endl;
     cout << "6:native_demuxer all format" << endl;
     cout << "7:native_demuxer drm test" << endl;
+    cout << "8:ffmpeg_demuxe ref test" << endl;
+}
+
+void AVSourceDemuxerDemoCase(void)
+{
+    PrintPrompt();
     string mode;
     string fileMode;
     string filePath;
@@ -441,6 +498,12 @@ void AVSourceDemuxerDemoCase(void)
         RunNativeDemuxerAllFormat(fileMode);
     } else if (mode == "7") {
         RunDrmNativeDemuxer(filePath, fileMode);
+    } else if (mode == "8") {
+        if (fileMode == "0") {
+            RunRefParserDemuxer(filePath, fileMode);
+            return;
+        }
+        printf("only support local file\n");
     } else {
         printf("select 0 or 1\n");
     }

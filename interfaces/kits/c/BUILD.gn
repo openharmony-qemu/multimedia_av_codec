@@ -247,6 +247,7 @@ ohos_shared_library("native_media_acodec") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:libhitracechain",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
@@ -344,6 +345,7 @@ ohos_shared_library("native_media_vdec") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:libhitracechain",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]

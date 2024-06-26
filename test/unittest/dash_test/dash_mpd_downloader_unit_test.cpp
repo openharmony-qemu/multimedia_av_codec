@@ -14,35 +14,44 @@
  */
 
 #include "dash_mpd_downloader_unit_test.h"
+#include <iostream>
 #include "dash_mpd_downloader.h"
 #include "utils/time_utils.h"
+#include "http_server_demo.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-static const std::string MPD_SEGMENT_BASE =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_HEV1/DASH_SDR_H265_HEV1.mpd";
-static const std::string MPD_SEGMENT_LIST =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentList/index_only720P.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE =
-    "http://poster-inland.hwcloudtest.cn/AiMaxEngine/DASH_LOCAL/DASH_SDR_H265_2K_segmentTemplate/index_only720P.mpd";
+static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:46666/test_dash/segment_list/index.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:46666/test_dash/segment_template/index.mpd";
 }
 
 using namespace testing::ext;
 
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 std::shared_ptr<DashMpdDownloader> g_mpdDownloader = nullptr;
 
 void DashMpdDownloaderUnitTest::SetUpTestCase(void)
 {
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+    std::cout << "start" << std::endl;
+
     g_mpdDownloader = std::make_shared<DashMpdDownloader>();
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    g_mpdDownloader->SetStatusCallback(statusCallback);
     g_mpdDownloader->Open(MPD_SEGMENT_BASE);
 }
 
 void DashMpdDownloaderUnitTest::TearDownTestCase(void)
 {
     g_mpdDownloader = nullptr;
+    g_server->StopServer();
+    g_server = nullptr;
 }
 
 void DashMpdDownloaderUnitTest::SetUp(void) {}

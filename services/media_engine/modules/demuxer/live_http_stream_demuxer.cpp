@@ -49,7 +49,7 @@ LiveHttpStreamDemuxer::LiveHttpStreamDemuxer()
 LiveHttpStreamDemuxer::~LiveHttpStreamDemuxer()
 {
     MEDIA_LOG_I("~LiveHttpStreamDemuxer called");
-    Reset();
+    ResetAllCache();
 }
 
 bool LiveHttpStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size,
@@ -106,7 +106,7 @@ bool LiveHttpStreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size
     return PullDataWithoutCache(streamID, offset, size, bufferPtr);
 }
 
-Status LiveHttpStreamDemuxer::Init(std::string uri)
+Status LiveHttpStreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("VodStreamDemuxer::Init");
     MEDIA_LOG_I("VodStreamDemuxer::Init called");
@@ -146,7 +146,7 @@ bool LiveHttpStreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset,
             tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_W("PullDataWithCache, not cache begin.");
-            return ret == Status::OK;
+            return true;
         }
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());
@@ -256,6 +256,7 @@ Status LiveHttpStreamDemuxer::ResetCache(int32_t streamID)
 {
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         cacheDataMap_[streamID].Reset();
+        cacheDataMap_.erase(streamID);
     }
     return Status::OK;
 }
@@ -266,12 +267,6 @@ Status LiveHttpStreamDemuxer::ResetAllCache()
         iter.second.Reset();
     }
     cacheDataMap_.clear();
-    return Status::OK;
-}
-
-Status LiveHttpStreamDemuxer::Reset()
-{
-    ResetAllCache();
     return Status::OK;
 }
 
@@ -310,7 +305,7 @@ Status LiveHttpStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset,
         ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
-            if (buffer->streamID != streamID) {
+            if (buffer != nullptr && buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32
                     ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
@@ -320,7 +315,7 @@ Status LiveHttpStreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset,
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
-    if (0 == expectedLen) {
+    if (expectedLen == 0) {
         return Status::END_OF_STREAM;
     }
     return Status::ERROR_NOT_ENOUGH_DATA;
@@ -332,7 +327,7 @@ Status LiveHttpStreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset,
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
-            if (buffer->streamID != streamID) {
+            if (buffer != nullptr && buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32
                     ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);

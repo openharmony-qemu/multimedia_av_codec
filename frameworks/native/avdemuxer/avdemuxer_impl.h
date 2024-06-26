@@ -41,6 +41,9 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback) override;
     int32_t GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos) override;
     int32_t Init(std::shared_ptr<AVSource> source);
+    int32_t StartReferenceParser(int64_t startTimeMs) override;
+    int32_t GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
+    int32_t GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
     int32_t GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
         int64_t presentationTimeUs, uint32_t &frameIndex) override;
     int32_t GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,

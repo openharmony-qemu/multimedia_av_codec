@@ -36,28 +36,6 @@ namespace {
 std::atomic<int32_t> g_vdecCount = 0;
 std::string g_vdecName = "";
 
-void MultiThreadCreateVDec()
-{
-    std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
-    std::shared_ptr<VDecCallbackTest> adecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
-    ASSERT_NE(nullptr, adecCallback);
-
-    std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
-    ASSERT_NE(nullptr, videoDec);
-
-    EXPECT_LE(g_vdecCount.load(), 64); // 64: max instances supported
-    if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
-        g_vdecCount++;
-        cout << "create successed, num:" << g_vdecCount.load() << endl;
-    } else {
-        cout << "create failed, num:" << g_vdecCount.load() << endl;
-        return;
-    }
-    sleep(1);
-    videoDec->Release();
-    g_vdecCount--;
-}
-
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 struct OH_AVCodecCallback GetVoidCallback()
 {
@@ -265,9 +243,57 @@ INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC, SW_AVC));
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_001, TestSize.Level1)
 {
-    SET_THREAD_NUM(100);
+    auto func = []() {
+        std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
+        std::shared_ptr<VDecCallbackTest> adecCallback = std::make_shared<VDecCallbackTest>(vdecSignal);
+        ASSERT_NE(nullptr, adecCallback);
+
+        std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+        ASSERT_NE(nullptr, videoDec);
+
+        EXPECT_LE(g_vdecCount.load(), 100); // 100: max instances supported
+        if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
+            g_vdecCount++;
+            cout << "create successed, num:" << g_vdecCount.load() << endl;
+        } else {
+            cout << "create failed, num:" << g_vdecCount.load() << endl;
+            return;
+        }
+        sleep(10); // 10: existence time
+        videoDec->Release();
+        g_vdecCount--;
+    };
     g_vdecCount = 0;
-    GTEST_RUN_TASK(MultiThreadCreateVDec);
+    SET_THREAD_NUM(100); // 100: num of thread
+    GTEST_RUN_TASK(func);
+    cout << "remaining num: " << g_vdecCount.load() << endl;
+}
+
+/**
+ * @tc.name: VideoDecoder_Multithread_Create_002
+ * @tc.desc: try create 100 instances by mime
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoDecoder_Multithread_Create_002, TestSize.Level1)
+{
+    auto func = []() {
+        std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
+        std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
+        ASSERT_NE(nullptr, videoDec);
+        if (videoDec->CreateVideoDecMockByMime(CodecMimeType::VIDEO_AVC.data())) {
+            g_vdecCount++;
+            cout << "create successed, num:" << g_vdecCount.load() << endl;
+        } else {
+            cout << "create failed, num:" << g_vdecCount.load() << endl;
+            return;
+        }
+        sleep(10); // 10: existence time
+        videoDec->Release();
+        EXPECT_GE(g_vdecCount.load(), 64); // 64: num of instances
+    };
+    g_vdecCount = 0;
+    SET_THREAD_NUM(100); // 100: num of thread
+    GTEST_RUN_TASK(func);
     cout << "remaining num: " << g_vdecCount.load() << endl;
 }
 
@@ -1293,10 +1319,11 @@ HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
 {
-    VCodecTestCode param = VCodecTestCode::SW_AVC;
+    VCodecTestCode param = VCodecTestCode::HW_AVC;
     CreateByNameWithParam(param);
     SetFormatWithParam(param);
     PrepareSource(param);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetVideoDecryptionConfig());
 }
 } // namespace
