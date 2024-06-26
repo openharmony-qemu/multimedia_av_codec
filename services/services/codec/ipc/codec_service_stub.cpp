@@ -110,8 +110,9 @@ int32_t CodecServiceStub::DestroyStub()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServiceStub::DumpInfo(int32_t fd)
+int32_t CodecServiceStub::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
+    (void)args;
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return std::static_pointer_cast<CodecServer>(codecServer_)->DumpInfo(fd);
 }

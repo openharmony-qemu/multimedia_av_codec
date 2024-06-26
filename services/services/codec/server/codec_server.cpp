@@ -32,9 +32,17 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
-constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
-constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
-constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
+enum DumpIndex : uint32_t {
+    DUMP_INDEX_FORWARD_CALLER_PID          = 0x01'01'01'00,
+    DUMP_INDEX_FORWARD_CALLER_UID          = 0x01'01'02'00,
+    DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME = 0x01'01'03'00,
+    DUMP_INDEX_CALLER_PID                  = 0x01'01'04'00,
+    DUMP_INDEX_CALLER_UID                  = 0x01'01'05'00,
+    DUMP_INDEX_CALLER_PROCESS_NAME         = 0x01'01'06'00,
+    DUMP_INDEX_STATUS                      = 0x01'01'07'00,
+    DUMP_INDEX_LAST_ERROR                  = 0x01'01'08'00,
+    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
+};
 constexpr uint32_t DUMP_OFFSET_8 = 8;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
@@ -604,40 +612,44 @@ int32_t CodecServer::GetInputFormat(Format &format)
 
 int32_t CodecServer::DumpInfo(int32_t fd)
 {
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, AVCS_ERR_OK, "Get a invalid fd");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     Format codecFormat;
     int32_t ret = codecBase_->GetOutputFormat(codecFormat);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Get codec format failed.");
 
     AVCodecDumpControler dumpControler;
-    std::string codecInfo = "Video_Codec_Info";
-
     auto statusIt = CODEC_STATE_MAP.find(status_);
-    dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);
-    dumpControler.AddInfo(DUMP_STATUS_INDEX, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
-    dumpControler.AddInfo(DUMP_LAST_ERROR_INDEX, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
+    if (forwardCaller_.pid != -1 || !forwardCaller_.processName.empty()) {
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "Forward_Caller_Pid", std::to_string(caller_.pid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_UID, "Forward_Caller_Uid", std::to_string(caller_.uid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME,
+            "Forward_Caller_Process_Name", caller_.processName);
+    }
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "Caller_Pid", std::to_string(caller_.pid));
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_UID, "Caller_Uid", std::to_string(caller_.uid));
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "Caller_Process_Name", caller_.processName);
+    dumpControler.AddInfo(DUMP_INDEX_STATUS, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
+    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
-    uint32_t dumpIndex = 3;
+    uint32_t infoIndex = 1;
     for (auto iter : VIDEO_DUMP_TABLE) {
+        uint32_t dumpIndex = DUMP_INDEX_CODEC_INFO_START + (infoIndex++ << DUMP_OFFSET_8);
         if (iter.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-            dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
-                                                       codecFormat, iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
+            dumpControler.AddInfoFromFormatWithMapping(dumpIndex, codecFormat,
+                                                       iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
         } else if (iter.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-            dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
-                                                       codecFormat, iter.first, iter.second, SCALE_TYPE_STRING_MAP);
+            dumpControler.AddInfoFromFormatWithMapping(dumpIndex, codecFormat,
+                                                       iter.first, iter.second, SCALE_TYPE_STRING_MAP);
         } else {
-            dumpControler.AddInfoFromFormat(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8), codecFormat,
-                                            iter.first, iter.second);
+            dumpControler.AddInfoFromFormat(dumpIndex, codecFormat, iter.first, iter.second);
         }
-        dumpIndex++;
     }
     std::string dumpString;
     dumpControler.GetDumpString(dumpString);
-    if (fd != -1) {
-        write(fd, dumpString.c_str(), dumpString.size());
-        dumpString = codecBase_->GetHidumperInfo();
-        write(fd, dumpString.c_str(), dumpString.size());
-    }
+    dumpString += codecBase_->GetHidumperInfo();
+    dumpString += "\n";
+    write(fd, dumpString.c_str(), dumpString.size());
     return AVCS_ERR_OK;
 }
 

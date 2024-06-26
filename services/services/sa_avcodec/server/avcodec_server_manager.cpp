@@ -34,19 +34,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServerManager"};
-constexpr uint32_t DUMP_MENU_INDEX = 0x01000000;
-constexpr uint32_t DUMP_INSTANCE_INDEX = 0x01010000;
-constexpr uint32_t DUMP_PID_INDEX = 0x01010100;
-constexpr uint32_t DUMP_UID_INDEX = 0x01010200;
-constexpr uint32_t DUMP_OFFSET_16 = 16;
-
-const std::vector<const std::string> SA_DUMP_MENU_DUMP_TABLE = {
-    "All", "Codec"
-};
-
-const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::string> STUB_TYPE_STRING_MAP = {
-    { OHOS::MediaAVCodec::AVCodecServerManager::StubType::CODEC,  "Codec"}
-};
 } // namespace
 
 namespace OHOS {
@@ -57,70 +44,21 @@ AVCodecServerManager& AVCodecServerManager::GetInstance()
     return instance;
 }
 
-void WriteFd(int32_t fd, std::string& str)
-{
-    if (fd != -1) {
-        write(fd, str.c_str(), str.size());
-    }
-    str.clear();
-}
-
-int32_t WriteInfo(int32_t fd, std::string& dumpString, std::vector<Dumper> dumpers, bool needDetail)
-{
-    WriteFd(fd, dumpString);
-
-    if (needDetail) {
-        int32_t instanceIndex = 0;
-        for (auto iter : dumpers) {
-            AVCodecDumpControler dumpControler;
-            dumpControler.AddInfo(DUMP_INSTANCE_INDEX, std::string("Instance_") +
-                std::to_string(instanceIndex++) + "_Info");
-            dumpControler.AddInfo(DUMP_PID_INDEX, "PID", std::to_string(iter.pid_));
-            dumpControler.AddInfo(DUMP_UID_INDEX, "UID", std::to_string(iter.uid_));
-            dumpControler.GetDumpString(dumpString);
-            WriteFd(fd, dumpString);
-
-            int32_t ret = iter.entry_(fd);
-            std::string lineBreak = "\n";
-            WriteFd(fd, lineBreak);
-            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, OHOS::INVALID_OPERATION, "Call dumper callback failed");
-        }
-    }
-
-    return OHOS::NO_ERROR;
-}
-
-void AVCodecServerManager::DumpServer(int32_t fd, StubType stubType, std::unordered_set<std::u16string> &argSets)
-{
-    auto itServeName = STUB_TYPE_STRING_MAP.find(stubType);
-    CHECK_AND_RETURN_LOG(itServeName != STUB_TYPE_STRING_MAP.end(), "Get a unknow stub type!");
-
-    std::string ServeName = itServeName->second;
-    std::string dumpString = "[" + ServeName + "_Server]\n";
-    bool dumpFlag = argSets.find(u"All") != argSets.end();
-    dumpFlag = dumpFlag || (argSets.find(std::wstring_convert<
-        std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(ServeName)) != argSets.end());
-    int32_t ret = WriteInfo(fd, dumpString, dumperTbl_[stubType], dumpFlag);
-    CHECK_AND_RETURN_LOG(ret == OHOS::NO_ERROR,
-        "Failed to write %{public}s server information", ServeName.c_str());
-}
-
 int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
-    std::unordered_set<std::u16string> argSets;
-    for (decltype(args.size()) index = 0; index < args.size(); ++index) {
-        argSets.insert(args[index]);
+    if (fd < 0) {
+        return OHOS::NO_ERROR;
     }
+    std::lock_guard<std::mutex> lock(mutex_);
 
-#ifdef SUPPORT_CODEC
-    DumpServer(fd, StubType::CODEC, argSets);
-#endif
-    int32_t ret = AVCodecXCollie::GetInstance().Dump(fd);
-    CHECK_AND_RETURN_RET_LOG(ret == OHOS::NO_ERROR, OHOS::INVALID_OPERATION,
-                             "Failed to write xcollie dump information");
+    constexpr std::string_view dumpStr = "[Codec_Server]\n";
+    write(fd, dumpStr.data(), dumpStr.size());
 
-    if (argSets.empty() || argSets.find(u"h") != argSets.end() || argSets.find(u"help") != argSets.end()) {
-        PrintDumpMenu(fd);
+    int32_t instanceIndex = 0;
+    for (auto iter : codecStubMap_) {
+        std::string instanceStr = std::string("    Instance_") + std::to_string(instanceIndex++) + "_Info\n";
+        write(fd, instanceStr.data(), instanceStr.size());
+        (void)iter.first->Dump(fd, args);
     }
 
     return OHOS::NO_ERROR;
@@ -202,13 +140,6 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     pid_t pid = IPCSkeleton::GetCallingPid();
     codecStubMap_[object] = pid;
 
-    Dumper dumper;
-    dumper.entry_ = [stub](int32_t fd) -> int32_t { return stub->DumpInfo(fd); };
-    dumper.pid_ = pid;
-    dumper.uid_ = IPCSkeleton::GetCallingUid();
-    dumper.remoteObject_ = object;
-    dumperTbl_[StubType::CODEC].emplace_back(dumper);
-
     SetCritical(true);
     AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
     return AVCS_ERR_OK;
@@ -234,7 +165,6 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
 {
     std::lock_guard<std::mutex> lock(mutex_);
     pid_t pid = IPCSkeleton::GetCallingPid();
-    DestroyDumper(type, object);
     auto compare_func = [object](std::pair<sptr<IRemoteObject>, pid_t> objectPair) -> bool {
         return objectPair.first == object;
     };
@@ -275,7 +205,6 @@ void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stu
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    DestroyDumperForPid(pid);
     AVCODEC_LOGI("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
     EraseObject(codecStubMap_, pid);
     AVCODEC_LOGI("codec stub services(%{public}zu).", codecStubMap_.size());
@@ -286,37 +215,6 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     executor_.Clear();
     if (codecStubMap_.size() == 0) {
         SetCritical(false);
-    }
-}
-
-void AVCodecServerManager::DestroyDumper(StubType type, sptr<IRemoteObject> object)
-{
-    for (auto it = dumperTbl_[type].begin(); it != dumperTbl_[type].end(); it++) {
-        if (it->remoteObject_ == object) {
-            (void)dumperTbl_[type].erase(it);
-            AVCODEC_LOGD("AVCodecServerManager::DestroyDumper");
-            if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-                AVCODEC_LOGW("failed to call InstanceDump");
-            }
-            return;
-        }
-    }
-}
-
-void AVCodecServerManager::DestroyDumperForPid(pid_t pid)
-{
-    for (auto& dumpers : dumperTbl_) {
-        for (auto it = dumpers.second.begin(); it != dumpers.second.end();) {
-            if (it->pid_ == pid) {
-                it = dumpers.second.erase(it);
-                AVCODEC_LOGD("AVCodecServerManager::DestroyDumperForPid");
-            } else {
-                it++;
-            }
-        }
-    }
-    if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-        AVCODEC_LOGW("failed to call InstanceDump");
     }
 }
 
@@ -361,27 +259,6 @@ void AVCodecServerManager::AsyncExecutor::HandleAsyncExecution()
         freeList_.swap(tempList);
     }
     tempList.clear();
-}
-
-void AVCodecServerManager::PrintDumpMenu(int32_t fd)
-{
-    AVCodecDumpControler dumpControler;
-    dumpControler.AddInfo(DUMP_MENU_INDEX, "[AVCodec Dump Menu]");
-    uint32_t index = 1;
-    for (auto iter : SA_DUMP_MENU_DUMP_TABLE) {
-        dumpControler.AddInfo(DUMP_MENU_INDEX + (index << DUMP_OFFSET_16), iter);
-        index++;
-    }
-
-    std::string dumpString;
-    dumpControler.GetDumpString(dumpString);
-    dumpString += "\n";
-    dumpString += "Add args to get more infomation about avcodec components.\n";
-    dumpString += "Example: hidumper -s AVCodecService -a \"All\"\n";
-
-    if (fd != -1) {
-        write(fd, dumpString.c_str(), dumpString.size());
-    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
