@@ -28,7 +28,7 @@
 #include "meta/meta_key.h"
 #include "temporal_scalability.h"
 #include "meta/video_types.h"
-#include "native_avcodec_base.h"
+#include "surface_type.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecParamChecker"};
@@ -540,8 +540,8 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
     }
     PrintParam(matrixCoefficientsExist, Tag::VIDEO_SCALE_TYPE, scalingMode);
 
-    if (scalingMode < static_cast<int32_t>(OH_ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
-        scalingMode > static_cast<int32_t>(OH_ScalingMode::SCALING_MODE_SCALE_CROP)) {
+    if (scalingMode < static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
+        scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCALE_TYPE, scalingMode);
         return AVCS_ERR_INVALID_VAL;
     }
