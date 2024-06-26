@@ -82,6 +82,11 @@ inline int64_t AvTime2Us(int64_t hTime)
     return hTime / AV_CODEC_USECOND;
 }
 
+inline int64_t AvUs2Time(int64_t hTime)
+{
+    return hTime * AV_CODEC_USECOND;
+}
+
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { SeekMode::SEEK_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
     { SeekMode::SEEK_NEXT_SYNC, AVSEEK_FLAG_FRAME },
@@ -1593,6 +1598,60 @@ bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
     int nalUnitType = (data[naluPos] >> 1) & 0x3f; // get H.265 nal_unit_type
     return nalUnitType == 0 || nalUnitType == 2 || nalUnitType == 4 || // 0: TRAIL_N, 2: TSA_N, 4: STSA_N
         nalUnitType == 6 || nalUnitType == 8; // 6: RADL_N, 8: RASL_N
+}
+
+Status FFmpegDemuxerPlugin::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+    int64_t presentationTimeUs, uint32_t &frameIndex)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "GetFrameIndexByPresentationTimeUs failed due to formatContext_ is nullptr.");
+
+    FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
+        "GetFrameIndexByPresentationTimeUs failed due to trackIndex is out of range");
+
+    FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
+        Status::ERROR_MISMATCHED_TYPE, "GetFrameIndexByPresentationTimeUs failed due to fileType is not MP4.");
+
+    auto avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "GetFrameIndexByPresentationTimeUs failed due to avStream is nullptr.");
+
+    presentationTimeUs = AvUs2Time(ConvertTimeToFFmpeg(presentationTimeUs, avStream->time_base));
+
+    int index = av_index_search_timestamp(avStream, presentationTimeUs, AVSEEK_FLAG_ANY);
+    if (index < 0) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    frameIndex = static_cast<uint32_t>(index);
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+    uint32_t frameIndex, int64_t &presentationTimeUs)
+{
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "GetPresentationTimeUsByFrameIndex failed due to formatContext_ is nullptr.");
+
+    FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
+        "GetPresentationTimeUsByFrameIndex failed due to trackIndex is out of range");
+
+    FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
+        Status::ERROR_MISMATCHED_TYPE, "GetPresentationTimeUsByFrameIndex failed due to fileType is not MP4.");
+
+    auto avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "GetPresentationTimeUsByFrameIndex failed due to avStream is nullptr.");
+
+    const AVIndexEntry *entry = avformat_index_get_entry(avStream, frameIndex);
+    FALSE_RETURN_V_MSG_E(entry != nullptr, Status::ERROR_NULL_POINTER, "Invalid frameIndex");
+
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        int64_t inputPts = ConvertPts(entry->timestamp, avStream->start_time);
+        presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
+    } else {
+        presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(entry->timestamp, avStream->time_base));
+    }
+    return Status::OK;
 }
 
 namespace { // plugin set

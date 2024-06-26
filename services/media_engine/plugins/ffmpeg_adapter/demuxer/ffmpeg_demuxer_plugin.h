@@ -70,6 +70,10 @@ public:
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
+    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex) override;
+    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) override;
 
 private:
     struct IOContext {

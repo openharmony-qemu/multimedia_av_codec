@@ -108,6 +108,10 @@ public:
     Status StartReferenceParser(int64_t startTimeMs);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+    
+    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
+    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
+
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

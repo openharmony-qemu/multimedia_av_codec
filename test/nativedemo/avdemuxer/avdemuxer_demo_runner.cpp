@@ -243,6 +243,19 @@ static void RunDrmNativeDemuxer(const std::string &filePath, const std::string &
     }
 }
 
+static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemuxerDemo)
+{
+    uint32_t trackIndex = 1;
+    int64_t presentationTimeUs = 100000;    // pts 100000
+    uint32_t frameIndex = 0;
+    innerDemuxerDemo->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    printf("GetFrameIndexByPresentationTimeUs, frameIndex = %d\n", frameIndex);
+    presentationTimeUs = 0;
+    frameIndex = 100;    // frameIndex 100
+    innerDemuxerDemo->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    printf("GetPresentationTimeUsByFrameIndex, presentationTimeUs = %lld\n", presentationTimeUs);
+}
+
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
@@ -277,6 +290,7 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     sharedMemory->Init();
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount); // demuxer run
     printf("seek to 1s,mode:SEEK_NEXT_SYNC\n");
+    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
     innerDemuxerDemo->SeekToTime(g_seekTime, SeekMode::SEEK_NEXT_SYNC); // 测试seek功能
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
     printf("seek to 1s,mode:SEEK_PREVIOUS_SYNC\n");

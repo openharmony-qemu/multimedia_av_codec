@@ -1626,5 +1626,39 @@ bool MediaDemuxer::IsRenderNextVideoFrameSupported()
     return videoTrackId_ != TRACK_ID_DUMMY && !IsTrackDisabled(Plugins::MediaType::VIDEO) &&
         !isDataSrcLiveStream;
 }
+
+Status MediaDemuxer::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+    int64_t presentationTimeUs, uint32_t &frameIndex)
+{
+    MEDIA_LOG_D("GetFrameIndexByPresentationTimeUs");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+        "GetFrameIndexByPresentationTimeUs failed due to demuxerPluginManager_ is nullptr.");
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+    FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER,
+        "GetFrameIndexByPresentationTimeUs failed due to get demuxer plugin failed.");
+
+    Status ret = pluginTemp->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("MediaDemuxer GetFrameIndexByPresentationTimeUs failed");
+    }
+    return ret;
+}
+
+Status MediaDemuxer::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+    uint32_t frameIndex, int64_t &presentationTimeUs)
+{
+    MEDIA_LOG_D("GetPresentationTimeUsByFrameIndex");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+        "GetPresentationTimeUsByFrameIndex failed due to demuxerPluginManager_ is nullptr.");
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+    FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER,
+        "GetPresentationTimeUsByFrameIndex failed due to get demuxer plugin failed.");
+
+    Status ret = pluginTemp->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("MediaDemuxer GetPresentationTimeUsByFrameIndex failed");
+    }
+    return ret;
+}
 } // namespace Media
 } // namespace OHOS

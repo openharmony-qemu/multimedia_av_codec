@@ -223,5 +223,28 @@ int32_t AVDemuxerImpl::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInf
     return StatusToAVCodecServiceErrCode(demuxerEngine_->GetGopLayerInfo(gopId, gopLayerInfo));
 }
 
+int32_t AVDemuxerImpl::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+    int64_t presentationTimeUs, uint32_t &frameIndex)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGD("GetFrameIndexByPresentationTimeUs");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Demuxer engine does not exist");
+    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetFrameIndexByPresentationTimeUs(trackIndex,
+        presentationTimeUs, frameIndex));
+    return ret;
+}
+
+int32_t AVDemuxerImpl::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+    uint32_t frameIndex, int64_t &presentationTimeUs)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGD("GetPresentationTimeUsByFrameIndex");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Demuxer engine does not exist");
+    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetPresentationTimeUsByFrameIndex(trackIndex,
+        frameIndex, presentationTimeUs));
+    return ret;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
