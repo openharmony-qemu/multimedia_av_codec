@@ -20,7 +20,7 @@
 #include "avcodec_common.h"
 #include "meta/format.h"
 #include "avcodec_video_encoder.h"
-#include "videoenc_ndk_inner_sample.h"
+#include "videoenc_inner_sample.h"
 #include "native_avcapability.h"
 
 using namespace std;

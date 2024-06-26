@@ -18,7 +18,7 @@
 #include "iconsumer_surface.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
-#include "videodec_ndk_sample.h"
+#include "videodec_sample.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;

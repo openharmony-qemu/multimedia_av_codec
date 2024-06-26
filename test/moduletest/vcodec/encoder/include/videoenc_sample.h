@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VIDEOENC_NDK_SAMPLE_H
-#define VIDEOENC_NDK_SAMPLE_H
+#ifndef VIDEOENC_SAMPLE_H
+#define VIDEOENC_SAMPLE_H
 
 #include <iostream>
 #include <cstdio>
@@ -162,4 +162,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // VIDEODEC_NDK_SAMPLE_H
+#endif // VIDEODEC_SAMPLE_H

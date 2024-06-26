@@ -20,7 +20,7 @@
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "native_avcodec_videoencoder.h"
-#include "videoenc_ndk_sample.h"
+#include "videoenc_sample.h"
 #include "native_avcapability.h"
 using namespace std;
 using namespace OHOS;

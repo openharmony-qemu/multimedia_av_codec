@@ -23,7 +23,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "videodec_ndk_sample.h"
+#include "videodec_sample.h"
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
 using namespace std;

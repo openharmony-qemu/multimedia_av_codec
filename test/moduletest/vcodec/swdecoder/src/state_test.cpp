@@ -23,7 +23,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "videodec_ndk_sample.h"
+#include "videodec_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;

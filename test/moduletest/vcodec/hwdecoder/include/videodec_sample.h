@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VIDEODEC_NDK_SAMPLE_H
-#define VIDEODEC_NDK_SAMPLE_H
+#ifndef VIDEODEC_SAMPLE_H
+#define VIDEODEC_SAMPLE_H
 
 #include <iostream>
 #include <cstdio>
@@ -164,4 +164,4 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData);
-#endif // VIDEODEC_NDK_SAMPLE_H
+#endif // VIDEODEC_SAMPLE_H
