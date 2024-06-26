@@ -308,10 +308,10 @@ Status DecoderSurfaceFilter::DoStart()
 Status DecoderSurfaceFilter::DoPause()
 {
     MEDIA_LOG_I("Pause enter.");
+    isPaused_ = true;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
-    isPaused_ = true;
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
     if (videoDecoder_ != nullptr) {
@@ -324,11 +324,11 @@ Status DecoderSurfaceFilter::DoResume()
 {
     MEDIA_LOG_I("Resume enter.");
     refreshTotalPauseTime_ = true;
+    isPaused_ = false;
     if (!IS_FILTER_ASYNC) {
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
-    isPaused_ = false;
     return Status::OK;
 }
 

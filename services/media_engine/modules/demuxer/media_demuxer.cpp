@@ -941,13 +941,13 @@ Status MediaDemuxer::ResumeAllTask()
 
 Status MediaDemuxer::PauseForPrepareFrame()
 {
-    MEDIA_LOG_I("Pause");
+    MEDIA_LOG_I("PauseForPrepareFrame");
     isPaused_ = true;
-    if (streamDemuxer_) {
+    if (streamDemuxer_ != nullptr) {
         streamDemuxer_->SetIsIgnoreParse(true);
         streamDemuxer_->Pause();
     }
-    if (source_) {
+    if (source_ != nullptr) {
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
@@ -1012,8 +1012,10 @@ Status MediaDemuxer::Resume()
     if (!doPrepareFrame_) {
         ResumeAllTask();
     } else {
-        streamDemuxer_->SetIsIgnoreParse(false);
-        taskMap_[videoTrackId_]->Start();
+        if (taskMap_[videoTrackId_] != nullptr) {
+            streamDemuxer_->SetIsIgnoreParse(false);
+            taskMap_[videoTrackId_]->Start();
+        }
     }
     isPaused_ = false;
     return Status::OK;
@@ -1085,7 +1087,9 @@ Status MediaDemuxer::Start()
             it++;
         }
     } else {
-        taskMap_[videoTrackId_]->Start();
+        if (taskMap_[videoTrackId_] != nullptr) {
+            taskMap_[videoTrackId_]->Start();
+        }
     }
     MEDIA_LOG_I("Demuxer thread started.");
     source_->Start();
@@ -1122,7 +1126,8 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
         MEDIA_LOG_D("Stop was executed before and PrepareFrame.");
         firstFrameCount_ = 0;
         ret = Start();
-    } else if ((firstFrameCount_ == DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
+    } else if ((firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
+        waitForDataFail_ = false;
         firstFrameCount_ = 0;
         ret = Resume();
     } else {
