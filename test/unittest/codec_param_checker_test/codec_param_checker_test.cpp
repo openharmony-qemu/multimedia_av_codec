@@ -1085,11 +1085,11 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSiz
 }
 
 /**
- * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1501
+ * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1601
  * @tc.desc: video codec configure valid scaling mode
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1501, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1601, TestSize.Level3)
 {
     SetFormatBasicParam(true);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE,
@@ -1099,11 +1099,11 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1501, TestS
 }
 
 /**
- * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1502
+ * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1602
  * @tc.desc: video codec configure invalid scaling mode
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1502, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1602, TestSize.Level3)
 {
     SetFormatBasicParam(true);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE, INT32_MAX));
@@ -1112,11 +1112,11 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1502, TestS
 }
 
 /**
- * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1503
+ * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1603
  * @tc.desc: video codec configure invalid scaling mode
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1503, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1603, TestSize.Level3)
 {
     SetFormatBasicParam(true);
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE, INT32_MIN));
