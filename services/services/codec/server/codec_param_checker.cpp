@@ -511,7 +511,8 @@ int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScena
     CHECK_AND_RETURN_RET_LOG(scenario != CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
         AVCS_ERR_UNSUPPORT, "Param invalid, not supported to set LTR frame count in temporal scalability scenario");
 
-    auto ltrCap = capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    auto ltrCap =
+        capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
     if (ltrCap == capData.featuresMap.end()) {
         AVCODEC_LOGW("Not support LTR but set LTR frame count");
         format.RemoveKey(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT);
