@@ -252,12 +252,15 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
-    auto ret = DoStart();
+    Status ret = Status::OK;
+    if (isPaused_.load()) {
+        ret = DoResume();
+    } else {
+        ret = DoStart();
+    }
     if (ret != Status::OK) {
         MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
-    } else {
-        isNeedStartDecoder_ = false;
     }
     return ret;
 }
@@ -289,31 +292,26 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
+    if (isPaused_.load()) {
+        MEDIA_LOG_I("DoStart after pause to execute resume.");
+        return DoResume();
+    }
     if (!IS_FILTER_ASYNC) {
-        if (isPaused_.load()) {
-            return DoResume();
-        }
         isThreadExit_ = false;
         isPaused_ = false;
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    auto ret = videoDecoder_->Start();
-    if (!isNeedStartDecoder_.load()) {
-        isNeedStartDecoder_ = true;
-        MEDIA_LOG_I("Already start videoDecoder and enter.");
-        return Status::OK;
-    }
-    return ret;
+    return videoDecoder_->Start();
 }
 
 Status DecoderSurfaceFilter::DoPause()
 {
     MEDIA_LOG_I("Pause enter.");
     if (!IS_FILTER_ASYNC) {
-        isPaused_ = true;
         condBufferAvailable_.notify_all();
     }
+    isPaused_ = true;
     videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
     if (videoDecoder_ != nullptr) {
@@ -327,10 +325,10 @@ Status DecoderSurfaceFilter::DoResume()
     MEDIA_LOG_I("Resume enter.");
     refreshTotalPauseTime_ = true;
     if (!IS_FILTER_ASYNC) {
-        isPaused_ = false;
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
+    isPaused_ = false;
     return Status::OK;
 }
 
@@ -341,6 +339,7 @@ Status DecoderSurfaceFilter::DoStop()
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
+    isPaused_ = false;
 
     timeval tv;
     gettimeofday(&tv, 0);

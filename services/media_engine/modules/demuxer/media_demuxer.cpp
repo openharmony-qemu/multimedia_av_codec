@@ -57,6 +57,7 @@ constexpr uint32_t RETRY_DELAY_TIME_US = 100000; // 100ms, Delay time for RETRY 
 constexpr uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wait long time.
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
+constexpr uint32_t DEFAULT_PREPARE_FRAME_COUNT = 1; // Default prepare frame count 1.
 
 class MediaDemuxer::AVBufferQueueProducerListener : public IRemoteStub<IProducerListener> {
 public:
@@ -938,6 +939,28 @@ Status MediaDemuxer::ResumeAllTask()
     return Status::OK;
 }
 
+Status MediaDemuxer::PauseForPrepareFrame()
+{
+    MEDIA_LOG_I("Pause");
+    isPaused_ = true;
+    if (streamDemuxer_) {
+        streamDemuxer_->SetIsIgnoreParse(true);
+        streamDemuxer_->Pause();
+    }
+    if (source_) {
+        source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
+        source_->Pause();
+    }
+    if (taskMap_[videoTrackId_] != nullptr) {
+        taskMap_[videoTrackId_]->PauseAsync();
+        taskMap_[videoTrackId_]->Pause();
+    }
+    if (source_ != nullptr) {
+        source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
+    }
+    return Status::OK;
+}
+
 Status MediaDemuxer::Pause()
 {
     MEDIA_LOG_I("Pause");
@@ -986,7 +1009,12 @@ Status MediaDemuxer::Resume()
     if (source_) {
         source_->Resume();
     }
-    ResumeAllTask();
+    if (!doPrepareFrame_) {
+        ResumeAllTask();
+    } else {
+        streamDemuxer_->SetIsIgnoreParse(false);
+        taskMap_[videoTrackId_]->Start();
+    }
     isPaused_ = false;
     return Status::OK;
 }
@@ -1045,15 +1073,19 @@ Status MediaDemuxer::Start()
     }
     isThreadExit_ = false;
     isStopped_ = false;
-    auto it = bufferQueueMap_.begin();
-    while (it != bufferQueueMap_.end()) {
-        uint32_t trackId = it->first;
-        if (taskMap_[trackId] == nullptr) {
-            MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
-        } else {
-            taskMap_[trackId]->Start();
+    if (!doPrepareFrame_) {
+        auto it = bufferQueueMap_.begin();
+        while (it != bufferQueueMap_.end()) {
+            uint32_t trackId = it->first;
+            if (taskMap_[trackId] == nullptr) {
+                MEDIA_LOG_W("track " PUBLIC_LOG_U32 " task is not exist, start failed.", trackId);
+            } else {
+                taskMap_[trackId]->Start();
+            }
+            it++;
         }
-        it++;
+    } else {
+        taskMap_[videoTrackId_]->Start();
     }
     MEDIA_LOG_I("Demuxer thread started.");
     source_->Start();
@@ -1083,18 +1115,35 @@ bool MediaDemuxer::HasVideo()
 
 Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
 {
-    MEDIA_LOG_I("PrepareFrame enter.");
+    MEDIA_LOG_D("PrepareFrame enter.");
     doPrepareFrame_ = true;
-    Start();
+    Status ret == Status::OK;
+    if (isStopped_) {
+        MEDIA_LOG_D("Stop was executed before and PrepareFrame.");
+        firstFrameCount_ = 0;
+        ret = Start();
+    } else if ((firstFrameCount_ == DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
+        firstFrameCount_ = 0;
+        ret = Resume();
+    } else {
+        ret = Start();
+    }
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("PrepareFrame and start demuxer failed.");
+        doPrepareFrame_ = false;
+        return ret;
+    }
     AutoLock lock(firstFrameMutex_);
     bool res = firstFrameCond_.WaitFor(lock, LOCK_WAIT_TIME, [this] {
-         return firstFrameCount_ == taskMap_.size();
+         return firstFrameCount_ == DEFAULT_PREPARE_FRAME_COUNT;
     });
+    MEDIA_LOG_I("PrepareFrame res= %{public}d", res);
     doPrepareFrame_ = false;
     if (!res) {
-        MEDIA_LOG_E("PrepareFrame wait data failed res= %{public}d", res);
+        waitForDataFail_ = true;
+        eventReceiver_->OnEvent({"demuxer", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN});
     }
-    return Pause();
+    return PauseForPrepareFrame();
 }
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
