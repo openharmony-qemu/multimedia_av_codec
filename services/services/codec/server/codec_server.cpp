@@ -226,7 +226,7 @@ int32_t CodecServer::Configure(const Format &format)
         auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_, codecName_);
         CHECK_AND_RETURN_RET_LOG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL, "Failed to get codec scenario");
         scenario_ = scenario.value();
-        paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecType_, codecName_, scenario_);
+        paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG(paramCheckRet == AVCS_ERR_OK || paramCheckRet == AVCS_ERR_CODEC_PARAM_INCORRECT,
             paramCheckRet, "Params in format is not valid.");
         CodecScenarioInit(config);
@@ -585,7 +585,7 @@ int32_t CodecServer::SetParameter(const Format &format)
         Format oldFormat;
         int32_t ret = codecBase_->GetOutputFormat(oldFormat);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Failed to get codec format");
-        ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecType_, codecName_, scenario_);
+        ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
     }
 
