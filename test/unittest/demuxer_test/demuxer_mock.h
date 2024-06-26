@@ -50,6 +50,10 @@ public:
     {
         return AV_ERR_OK;
     }
+    virtual int32_t GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex) = 0;
+    virtual int32_t GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) = 0;
 };
 
 class __attribute__((visibility("default"))) AVDemuxerMockFactory {

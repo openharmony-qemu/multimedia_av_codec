@@ -1609,6 +1609,9 @@ Status FFmpegDemuxerPlugin::GetFrameIndexByPresentationTimeUs(uint32_t trackInde
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
         "GetPresentationTimeUsByFrameIndex failed due to trackIndex is out of range");
 
+    FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
+        Status::ERROR_MISMATCHED_TYPE, "GetFrameIndexByPresentationTimeUs failed due to fileType is not MP4.");
+
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "GetFrameIndexByPresentationTimeUs failed due to avStream is nullptr.");
@@ -1631,6 +1634,9 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackInde
 
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
         "GetPresentationTimeUsByFrameIndex failed due to trackIndex is out of range");
+
+    FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
+        Status::ERROR_MISMATCHED_TYPE, "GetPresentationTimeUsByFrameIndex failed due to fileType is not MP4.");
 
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
