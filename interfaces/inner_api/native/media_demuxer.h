@@ -169,6 +169,7 @@ private:
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
     int64_t ParserRefInfo();
+    void TryRecvParserTask();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -222,7 +223,8 @@ private:
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 
     std::unique_ptr<Task> parserRefInfoTask_;
-    bool isFirstParser = true;
+    bool isFirstParser_ = true;
+    bool isParserTaskEnd_ = false;
 };
 } // namespace Media
 } // namespace OHOS

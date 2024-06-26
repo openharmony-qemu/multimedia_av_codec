@@ -51,7 +51,7 @@ struct PicRefInfo {
     uint32_t streamId = 0;
     uint32_t poc = 0;
     int32_t layerId = -1;
-    bool isDependent = true;
+    bool isDiscardable = false;
     SliceType sliceType = SliceType::UNKNOWN_SLICE_TYPE;
     std::vector<uint32_t> refList;
 };
@@ -59,7 +59,7 @@ struct PicRefInfo {
 class RefParser {
 public:
     explicit RefParser(std::vector<uint32_t> IFramePos);
-    virtual ~RefParser() = default;
+    virtual ~RefParser();
     virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts);
     virtual Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize);
     virtual Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize);
@@ -75,6 +75,7 @@ protected:
                       PicRefInfo &curPicRefInfo);
     void FillGopLayerInfo(uint32_t gopSize, uint32_t disposableNum, uint32_t disposableExtNum,
                           GopLayerInfo &gopLayerInfo);
+    void DumpGopInfo(uint32_t gopId, uint32_t gopSize);
     uint8_t nalLenSize_ = DEFAULT_NAL_LEN_SIZE; // nalu长度所占字节数
     std::map<uint32_t, PicRefInfo> picRefInfo_;
     std::vector<uint32_t> IFramePos_;
