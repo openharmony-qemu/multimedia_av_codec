@@ -534,11 +534,11 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
     (void)capData;
     (void)scenario;
     int32_t scalingMode;
-    bool matrixCoefficientsExist = format.GetIntValue(Tag::VIDEO_SCALE_TYPE, scalingMode);
-    if (!matrixCoefficientsExist) {
+    bool scalingModeExist = format.GetIntValue(Tag::VIDEO_SCALE_TYPE, scalingMode);
+    if (!scalingModeExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(matrixCoefficientsExist, Tag::VIDEO_SCALE_TYPE, scalingMode);
+    PrintParam(scalingModeExist, Tag::VIDEO_SCALE_TYPE, scalingMode);
 
     if (scalingMode < static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
         scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
