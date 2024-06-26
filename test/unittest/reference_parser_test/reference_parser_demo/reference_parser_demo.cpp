@@ -18,8 +18,9 @@
 #include <string>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <iostream>
+#include <fstream>
 #include "media_description.h"
-#include "layer_info_ipbbb.h"
 
 using namespace std;
 
@@ -28,9 +29,11 @@ using json = nlohmann::json;
 namespace {
 constexpr const char *SOURCE_DIR = "/data/test/media/";
 constexpr uint32_t MAX_SCENE_NUM = static_cast<uint32_t>(OHOS::MediaAVCodec::MP4Scene::SCENE_MAX);
-constexpr const char *VIDEO_FILE_NAME[MAX_SCENE_NUM] = {"RP_IPBBB.mp4"};
+constexpr const char *VIDEO_FILE_NAME[MAX_SCENE_NUM] = {
+    "RP_IPB_0", "RP_IPB_1", "RP_IPPP_0", "RP_IPPP_1", "IPPP_SCALA_0", "IPPP_SCALA_1", "SDTP", "SDTP_EXT"};
 constexpr int32_t MAX_BUFFER_SIZE = 8294400;
 constexpr int32_t MILL_TO_MICRO = 1000;
+constexpr uint32_t MIN_REMAIN_LAYERS = 2;
 } // namespace
 
 void from_json(const nlohmann::json &j, JsonGopInfo &gop)
@@ -66,16 +69,10 @@ ReferenceParserDemo::~ReferenceParserDemo()
 
 int32_t ReferenceParserDemo::InitScene(MP4Scene scene)
 {
-    switch (scene) {
-        case MP4Scene::LOWDELAY_B_SCALA:
-            gopJson_ = GopInfoIPBBB;
-            frameLayerJson_ = FrameLayerInfoIPBBB;
-            break;
-        default:
-            cout << "Please input correct scene!" << endl;
-            return -1;
-    }
-    string filePath = string(SOURCE_DIR) + string(VIDEO_FILE_NAME[static_cast<uint32_t>(scene)]);
+    string path = string(SOURCE_DIR) + string(VIDEO_FILE_NAME[static_cast<uint32_t>(scene)]);
+    std::ifstream(path + "_gop.json") >> gopJson_;
+    std::ifstream(path + "_frame.json") >> frameLayerJson_;
+    string filePath = path + ".mp4";
     fd_ = open(filePath.c_str(), O_RDONLY);
     struct stat fileStatus {};
     if (stat(filePath.c_str(), &fileStatus) != 0) {
@@ -153,17 +150,20 @@ bool ReferenceParserDemo::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dt
     return true;
 }
 
-bool ReferenceParserDemo::CheckGopLayerResult()
+bool ReferenceParserDemo::CheckGopLayerResult(GopLayerInfo &GopLayerInfo, uint32_t gopid)
 {
     return true;
+}
+
+int32_t ReferenceParserDemo::GetMaxDiscardLayer(GopLayerInfo &GopLayerInfo)
+{
+    return GopLayerInfo.layerCount - 1 - MIN_REMAIN_LAYERS;
 }
 
 bool ReferenceParserDemo::DoAccurateSeek(int64_t seekTimeMs)
 {
     demuxer_->SelectTrackByID(videoTrackId_);
     demuxer_->ReadSampleBuffer(videoTrackId_, buffer_);
-    startDts_ = buffer_->dts_;
-    startPts_ = buffer_->pts_;
     demuxer_->SeekToTime(seekTimeMs, SeekMode::SEEK_PREVIOUS_SYNC);
     demuxer_->StartReferenceParser(seekTimeMs);
     FrameLayerInfo frameInfo;
@@ -173,8 +173,6 @@ bool ReferenceParserDemo::DoAccurateSeek(int64_t seekTimeMs)
         if (buffer_->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
             break;
         }
-        buffer_->dts_ -= startDts_;
-        buffer_->pts_ -= startPts_;
         demuxer_->GetFrameLayerInfo(buffer_, frameInfo);
         pts = buffer_->pts_;
         if (!frameInfo.isDiscardable) {
@@ -184,6 +182,46 @@ bool ReferenceParserDemo::DoAccurateSeek(int64_t seekTimeMs)
             return false;
         }
     }
+    return true;
+}
+
+bool ReferenceParserDemo::DoVariableSpeedPlay(int64_t playTimeMs)
+{
+    demuxer_->SelectTrackByID(videoTrackId_);
+    demuxer_->SeekToTime(playTimeMs, SeekMode::SEEK_PREVIOUS_SYNC);
+    buffer_->pts_ = -1L;
+    while (buffer_->pts_ < playTimeMs * MILL_TO_MICRO) {
+        demuxer_->ReadSampleBuffer(videoTrackId_, buffer_);
+    }
+
+    cout << "StartReferenceParser" << std::endl;
+    demuxer_->StartReferenceParser(playTimeMs);
+    FrameLayerInfo frameInfo;
+    do {
+        demuxer_->ReadSampleBuffer(videoTrackId_, buffer_);
+        demuxer_->GetFrameLayerInfo(buffer_, frameInfo);
+        if (!CheckFrameLayerResult(frameInfo, buffer_->dts_)) {
+            return false;
+        }
+        if (frameInfo.layer != -1) {
+            if (checkedGopId_ != frameInfo.gopId) {
+                GopLayerInfo gopLayerInfo;
+                demuxer_->GetGopLayerInfo(frameInfo.gopId, gopLayerInfo);
+                if (!CheckGopLayerResult(gopLayerInfo, frameInfo.gopId)) {
+                    return false;
+                }
+                checkedGopId_ = frameInfo.gopId;
+                maxDiscardLayer_ = GetMaxDiscardLayer(gopLayerInfo);
+            }
+            isDiscard_ = frameInfo.layer <= maxDiscardLayer_;
+        } else {
+            isDiscard_ = frameInfo.isDiscardable;
+        }
+        
+        if (!isDiscard_) {
+            usleep(decIntervalUs_);
+        }
+    } while (!(buffer_->flag_ & AVCODEC_BUFFER_FLAG_EOS));
     return true;
 }
 
