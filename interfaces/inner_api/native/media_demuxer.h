@@ -149,6 +149,7 @@ private:
     Status SeekToTimePre(bool jumperRestartPlugin);
     Status SeekToTimeAfter(bool jumperRestartPlugin);
     bool ChangeStream(uint32_t trackId);
+    Status PauseForPrepareFrame();
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
@@ -201,6 +202,7 @@ private:
     std::shared_ptr<BaseStreamDemuxer> subStreamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
+    bool waitForDataFail_{false};
 
     Mutex firstFrameMutex_{};
     ConditionVariable firstFrameCond_;
