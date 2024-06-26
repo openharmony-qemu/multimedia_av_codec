@@ -93,7 +93,6 @@ void DemuxerFuncNdkTest::TearDown()
         OH_AVBuffer_Destroy(avBuffer);
         avBuffer = nullptr;
     }
-    
 }
 } // namespace Media
 } // namespace OHOS
@@ -168,6 +167,210 @@ static void SetEndFlag(bool &audioIsEnd, bool &videoIsEnd)
     videoIsEnd = true;
 }
 
+static void AvcParam(OH_AVFormat *paramFormat)
+{
+    int64_t duration = 0;
+    int64_t startTime = 0;
+    const char* artist = nullptr;
+    const char* album = nullptr;
+    const char* albumArtist = nullptr;
+    const char* date = nullptr;
+    const char* comment = nullptr;
+    const char* genre = nullptr;
+    const char* copyright = nullptr;
+    const char* language = nullptr;
+    const char* description = nullptr;
+    const char* lyrics = nullptr;
+    const char* title = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_DURATION, &duration));
+    ASSERT_EQ(2465900, duration);
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_TITLE, &title));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ARTIST, &artist));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ALBUM, &album));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ALBUM_ARTIST, &albumArtist));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_DATE, &date));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_COMMENT, &comment));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_GENRE, &genre));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_COPYRIGHT, &copyright));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_LANGUAGE, &language));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_DESCRIPTION, &description));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_LYRICS, &lyrics));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_START_TIME, &startTime));
+    ASSERT_EQ(0, startTime);
+}
+static void AvcAudioParam(OH_AVFormat *paramFormat)
+{
+    int32_t codedSample = 0;
+    int32_t audioFormat = 0;
+    int32_t audioCount = 0;
+    int32_t sampleRate = 0;
+    int32_t aacisAdts = 0;
+    int64_t layout = 0;
+    const char* mimeType = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &audioFormat));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &codedSample));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AAC_IS_ADTS, &aacisAdts));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
+    ASSERT_EQ(9, audioFormat);
+    ASSERT_EQ(2, audioCount);
+    ASSERT_EQ(48000, sampleRate);
+    ASSERT_EQ(16, codedSample);
+    ASSERT_EQ(1, aacisAdts);
+    ASSERT_EQ(3, layout);
+
+}
+
+static void AvcVideoParam(OH_AVFormat *paramFormat)
+{
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    int32_t rotation = 0;
+    double frameRate = 0.0;
+    int32_t profile = 0;
+    int32_t flag = 0;
+    int32_t characteristics = 0;
+    int32_t coefficients = 0;
+    int32_t mode = 0;
+    int64_t bitrate = 0;
+    int32_t primaries = 0;
+    int32_t videoIsHdrvivid = 0;
+    const char* mimeType = nullptr;
+    double sar = 0.0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_WIDTH, &currentWidth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_HEIGHT, &currentHeight));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_ROTATION, &rotation));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_BITRATE, &bitrate));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &mode));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_RANGE_FLAG, &flag));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &characteristics));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, &coefficients));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
+    ASSERT_FALSE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(0, strcmp(mimeType, "video/avc"));
+    ASSERT_EQ(1920, currentWidth);
+    ASSERT_EQ(1080, currentHeight);
+    ASSERT_EQ(90, rotation);
+    ASSERT_EQ(30.010003334444814, frameRate);
+    ASSERT_EQ(20442398, bitrate);
+}
+
+static void HevcParam(OH_AVFormat *paramFormat)
+{
+    int64_t duration = 0;
+    int64_t startTime = 0;
+    const char* artist = nullptr;
+    const char* album = nullptr;
+    const char* albumArtist = nullptr;
+    const char* date = nullptr;
+    const char* comment = nullptr;
+    const char* genre = nullptr;
+    const char* copyright = nullptr;
+    const char* language = nullptr;
+    const char* description = nullptr;
+    const char* lyrics = nullptr;
+    const char* title = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_DURATION, &duration));
+    ASSERT_EQ(4120000, duration);
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_TITLE, &title));
+    ASSERT_EQ(0, strcmp(title, "title"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ARTIST, &artist));
+    ASSERT_EQ(0, strcmp(artist, "artist"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ALBUM, &album));
+    ASSERT_EQ(0, strcmp(album, "album"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_ALBUM_ARTIST, &albumArtist));
+    ASSERT_EQ(0, strcmp(albumArtist, "album artist"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_DATE, &date));
+    ASSERT_EQ(0, strcmp(date, "2023"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_COMMENT, &comment));
+    ASSERT_EQ(0, strcmp(comment, "comment"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_GENRE, &genre));
+    ASSERT_EQ(0, strcmp(genre, "genre"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_COPYRIGHT, &copyright));
+    ASSERT_EQ(0, strcmp(copyright, "Copyright"));
+    ASSERT_FALSE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_LANGUAGE, &language));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_DESCRIPTION, &description));
+    ASSERT_EQ(0, strcmp(description, "description"));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_LYRICS, &lyrics));
+    ASSERT_EQ(0, strcmp(lyrics, "lyrics"));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_START_TIME, &startTime));
+    ASSERT_EQ(0, startTime);
+}
+
+static void HevcAudioParam(OH_AVFormat *paramFormat)
+{
+    int32_t codedSample = 0;
+    int32_t audioFormat = 0;
+    int32_t audioCount = 0;
+    int32_t sampleRate = 0;
+    int32_t aacisAdts = 0;
+    int64_t layout = 0;
+    const char* mimeType = nullptr;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &audioFormat));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &codedSample));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_AAC_IS_ADTS, &aacisAdts));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(9, audioFormat);
+    ASSERT_EQ(2, audioCount);
+    ASSERT_EQ(44100, sampleRate);
+    ASSERT_EQ(16, codedSample);
+    ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
+    ASSERT_EQ(1, aacisAdts);
+    ASSERT_EQ(3, layout);
+
+}
+
+static void HevcVideoParam(OH_AVFormat *paramFormat)
+{
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    int32_t rotation = 0;
+    double frameRate = 0.0;
+    int32_t profile = 0;
+    int32_t flag = 0;
+    int32_t characteristics = 0;
+    int32_t coefficients = 0;
+    int32_t mode = 0;
+    int64_t bitrate = 0;
+    int32_t primaries = 0;
+    int32_t videoIsHdrvivid = 0;
+    const char* mimeType = nullptr;
+    double sar = 0.0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_WIDTH, &currentWidth));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_HEIGHT, &currentHeight));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_ROTATION, &rotation));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_BITRATE, &bitrate));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &mode));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_RANGE_FLAG, &flag));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &characteristics));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, &coefficients));
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
+    ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    ASSERT_EQ(0, strcmp(mimeType, "video/hevc"));
+    ASSERT_EQ(1920, currentWidth);
+    ASSERT_EQ(1080, currentHeight);
+    ASSERT_EQ(25, frameRate);
+    ASSERT_EQ(4162669, bitrate);
+    ASSERT_EQ(0, flag);
+    ASSERT_EQ(2, characteristics);
+    ASSERT_EQ(2, coefficients);
+    ASSERT_EQ(2, primaries);
+    ASSERT_EQ(1, sar);
+}
 /**
  * @tc.number    : DEMUXER_FUNCTION_0200
  * @tc.name      : create source with no permission URI
@@ -2546,7 +2749,7 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1300, TestSize.Level0)
 }
 
 /**
- * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1400
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1600
  * @tc.name      : demux hevc ts video
  * @tc.desc      : function test
  */
@@ -2562,71 +2765,10 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1400, TestSize.Level0)
     demuxer = OH_AVDemuxer_CreateWithSource(source);
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
+    HevcParam(sourceFormat);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(2, g_trackCount);
-    int32_t currentWidth = 0;
-    int32_t currentHeight = 0;
-    int32_t rotation = 0;
-    double frameRate = 0.0;
-    int32_t profile = 0;
-    int32_t flag = 0;
-    int32_t characteristics = 0;
-    int32_t coefficients = 0;
-    int32_t mode = 0;
-    int64_t bitrate = 0;
-    int32_t primaries = 0;
-    int32_t audioFormat = 0;
-    int32_t audioCount = 0;
-    int32_t sampleRate = 0;
-    //size_t bufferSize;
-    //uint8_t *codecConfig = nullptr;
-    int64_t duration = 0;
-    int64_t layout = 0;
-    //int64_t timestamp = 0;
-    //int64_t bufferDur = 0;
-    int64_t startTime = 0;
-    int32_t videoIsHdrvivid = 0;
-    int32_t codedSample = 0;
-    int32_t aacisAdts = 0;
-    double sar = 0.0;
-    const char* mimeType = nullptr;
-    const char* artist = nullptr;
-    const char* album = nullptr;
-    const char* albumArtist = nullptr;
-    const char* date = nullptr;
-    const char* comment = nullptr;
-    const char* genre = nullptr;
-    const char* copyright = nullptr;
-    const char* language = nullptr;
-    const char* description = nullptr;
-    const char* lyrics = nullptr;
-    const char* title = nullptr;
     const char* config = nullptr;
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
-    ASSERT_EQ(4120000, duration);
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
-    ASSERT_EQ(0, strcmp(title, "title"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
-    ASSERT_EQ(0, strcmp(artist, "artist"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
-    ASSERT_EQ(0, strcmp(album, "album"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &albumArtist));
-    ASSERT_EQ(0, strcmp(albumArtist, "album artist"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &date));
-    ASSERT_EQ(0, strcmp(date, "2023"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &comment));
-    ASSERT_EQ(0, strcmp(comment, "comment"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &genre));
-    ASSERT_EQ(0, strcmp(genre, "genre"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COPYRIGHT, &copyright));
-    ASSERT_EQ(0, strcmp(copyright, "Copyright"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LANGUAGE, &language));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DESCRIPTION, &description));
-    ASSERT_EQ(0, strcmp(description, "description"));
-    ASSERT_TRUE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LYRICS, &lyrics));
-    ASSERT_EQ(0, strcmp(lyrics, "lyrics"));
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
-    ASSERT_EQ(0, startTime);
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
@@ -2645,57 +2787,20 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1400, TestSize.Level0)
             if ((audioIsEnd && (tarckType == 0) && index == 0) || (videoIsEnd && (tarckType == 1) && index == 1)) {
                 continue;
             }
-            ASSERT_FALSE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_CONFIG, &config));
-            //cout<< "------config-----" << config << endl;
-            //ASSERT_EQ(2473, bufferSize);
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            ASSERT_FALSE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_CONFIG, &config));
             if (tarckType == 0) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &audioFormat));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &codedSample));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AAC_IS_ADTS, &aacisAdts));
-                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
-                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-                ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
-                ASSERT_EQ(9, audioFormat);
-                ASSERT_EQ(2, audioCount);
-                ASSERT_EQ(44100, sampleRate);
-                ASSERT_EQ(16, codedSample);
-                ASSERT_EQ(1, aacisAdts);
-                ASSERT_EQ(3, layout);
+                HevcAudioParam(trackFormat);
             } else if (tarckType == 1) {
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
-                ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_PROFILE, &profile));
-                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &mode));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_RANGE_FLAG, &flag));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &characteristics));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, &coefficients));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
-                ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_VIDEO_SAR, &sar));
-                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-                ASSERT_EQ(0, strcmp(mimeType, "video/hevc"));
-                ASSERT_EQ(1920, currentWidth);
-                ASSERT_EQ(1080, currentHeight);
-                ASSERT_EQ(25, frameRate);
-                ASSERT_EQ(4162669, bitrate);
-                ASSERT_EQ(0, flag);
-                ASSERT_EQ(2, characteristics);
-                ASSERT_EQ(2, coefficients);
-                ASSERT_EQ(2, primaries);
-                ASSERT_EQ(1, sar);
+                HevcVideoParam(trackFormat);
             }
         }
     }
     close(fd);
 }
+
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1500
  * @tc.name      : demux hevc ts video
@@ -2715,82 +2820,8 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1500, TestSize.Level0)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(2, g_trackCount);
-    int32_t currentWidth = 0;
-    int32_t currentHeight = 0;
-    int32_t rotation = 0;
-    double frameRate = 0.0;
-    int32_t profile = 0;
-    int32_t flag = 0;
-    int32_t characteristics = 0;
-    int32_t coefficients = 0;
-    int32_t mode = 0;
-    int64_t bitrate = 0;
-    int32_t primaries = 0;
-    int32_t audioFormat = 0;
-    int32_t audioCount = 0;
-    int32_t sampleRate = 0;
-    //size_t bufferSize;
-    //uint8_t *codecConfig = nullptr;
-    int64_t duration = 0;
-    int64_t layout = 0;
-    //int64_t timestamp = 0;
-    //int64_t bufferDur = 0;
-    int64_t startTime = 0;
-    int32_t videoIsHdrvivid = 0;
-    int32_t codedSample = 0;
-    int32_t aacisAdts = 0;
-    double sar = 0.0;
-    const char* mimeType = nullptr;
-    const char* artist = nullptr;
-    const char* album = nullptr;
-    const char* albumArtist = nullptr;
-    const char* date = nullptr;
-    const char* comment = nullptr;
-    const char* genre = nullptr;
-    const char* copyright = nullptr;
-    const char* language = nullptr;
-    const char* description = nullptr;
-    const char* lyrics = nullptr;
-    const char* title = nullptr;
+    AvcParam(sourceFormat);
     const char* config = nullptr;
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &duration));
-    //cout<< "------duration-----" << duration << endl;
-    ASSERT_EQ(2465900, duration);
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_TITLE, &title));
-    //ASSERT_EQ(0, strcmp(title, "title"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ARTIST, &artist));
-    //ASSERT_EQ(0, strcmp(artist, "artist"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM, &album));
-    //ASSERT_EQ(0, strcmp(album, "album"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_ALBUM_ARTIST, &albumArtist));
-    //ASSERT_EQ(0, strcmp(albumArtist, "album artist"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DATE, &date));
-    //ASSERT_EQ(0, strcmp(date, "2024"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &comment));
-    //ASSERT_EQ(0, strcmp(comment, "comment"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_GENRE, &genre));
-    //ASSERT_EQ(0, strcmp(genre, "genre"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COPYRIGHT, &copyright));
-    //ASSERT_EQ(0, strcmp(copyright, "Copyright"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LANGUAGE, &language));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_DESCRIPTION, &description));
-    //ASSERT_EQ(0, strcmp(description, "description"));
-    ASSERT_FALSE(OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_LYRICS, &lyrics));
-    //ASSERT_EQ(0, strcmp(lyrics, "lyrics"));
-    ASSERT_TRUE(OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_START_TIME, &startTime));
-    ASSERT_EQ(0, startTime);
-    //cout<< "------title-----" << title << endl;
-    // cout<< "------artist-----" << artist << endl;
-    // cout<< "------artist-----" << artist << endl;
-    // cout<< "------album-----" << album << endl;
-    // cout<< "------albumArtist-----" << albumArtist << endl;
-    // cout<< "------date-----" << date << endl;
-    // cout<< "------comment-----" << comment << endl;
-    // cout<< "------genre-----" << genre << endl;
-    // cout<< "------copyright-----" << copyright << endl;
-    // cout<< "------description-----" << description << endl;
-    // cout<< "------lyrics-----" << lyrics << endl;
-    //cout<< "------startTime-----" << startTime << endl;
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
@@ -2810,59 +2841,13 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1500, TestSize.Level0)
                 continue;
             }
             ASSERT_FALSE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_CONFIG, &config));
-            //cout<< "------config-----" << config << endl;
-            //ASSERT_EQ(2473, bufferSize);
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (tarckType == 0) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &audioFormat));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioCount));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &sampleRate));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &codedSample));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AAC_IS_ADTS, &aacisAdts));
-                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
-                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-                // cout<< "------mimeType-----" << mimeType << endl;
-                // cout<< "------sampleRate-----" << sampleRate << endl;
-                // cout<< "------codedSample-----" << codedSample << endl;
-                // cout<< "------aacisAdts-----" << aacisAdts << endl;
-                // cout<< "------layout-----" << layout << endl;
-                // cout<< "------audioFormat-----" << audioFormat << endl;
-                // cout<< "------audioCount-----" << audioCount << endl;
-                ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
-                ASSERT_EQ(9, audioFormat);
-                ASSERT_EQ(2, audioCount);
-                ASSERT_EQ(48000, sampleRate);
-                ASSERT_EQ(16, codedSample);
-                ASSERT_EQ(1, aacisAdts);
-                ASSERT_EQ(3, layout);
+                AvcAudioParam(trackFormat);
             } else if (tarckType == 1) {
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &currentWidth));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &currentHeight));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
-                ASSERT_TRUE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_PROFILE, &profile));
-                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &mode));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_RANGE_FLAG, &flag));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, &characteristics));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, &coefficients));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
-                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
-                ASSERT_FALSE(OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_VIDEO_SAR, &sar));
-                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-                ASSERT_EQ(0, strcmp(mimeType, "video/avc"));
-                ASSERT_EQ(1920, currentWidth);
-                ASSERT_EQ(1080, currentHeight);
-                ASSERT_EQ(90, rotation);
-                ASSERT_EQ(30.010003334444814, frameRate);
-                ASSERT_EQ(20442398, bitrate);
-                // ASSERT_EQ(0, flag);
-                // ASSERT_EQ(2, characteristics);
-                // ASSERT_EQ(2, coefficients);
-                // ASSERT_EQ(2, primaries);
-                // ASSERT_EQ(1, sar);
+                AvcVideoParam(trackFormat);
             }
         }
     }

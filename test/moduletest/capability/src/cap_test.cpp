@@ -314,7 +314,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0025, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0026
- * @tc.name      : 能力查询是否支持LTR 265
+ * @tc.name      : 能力查询是否支持LTRH265
  * @tc.desc      : function test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0026, TestSize.Level1)
@@ -329,7 +329,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0026, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0027
- * @tc.name      : 能力查询是否支持LTR 265
+ * @tc.name      : 能力查询是否支持LTRH265
  * @tc.desc      : function test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0027, TestSize.Level1)
@@ -339,7 +339,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0027, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0028
- * @tc.name      : 能力查询是否支持低时延 265
+ * @tc.name      : 能力查询是否支持低时延H265
  * @tc.desc      : function test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0028, TestSize.Level1)
@@ -354,7 +354,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0028, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0029
- * @tc.name      : 能力查询是否支持低时延 265
+ * @tc.name      : 能力查询是否支持低时延H265
  * @tc.desc      : function test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0029, TestSize.Level1)
@@ -368,7 +368,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0029, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0030
- * @tc.name      : 能力查询是否支持分层编码 265
+ * @tc.name      : 能力查询是否支持分层编码H265
  * @tc.desc      : function test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level1)
@@ -383,7 +383,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0031
- * @tc.name      : 能力查询是否支持分层编码 265
+ * @tc.name      : 能力查询是否支持分层编码H265
  * @tc.desc      : function test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0031, TestSize.Level1)
@@ -393,7 +393,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0031, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0032
- * @tc.name      : 编码，查询低时延的能力值 265
+ * @tc.name      : 编码，查询低时延的能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0032, TestSize.Level1)
@@ -404,7 +404,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0032, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0033
- * @tc.name      : 解码，查询低时延的能力值 265 
+ * @tc.name      : 解码，查询低时延的能力值H265 
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0033, TestSize.Level1)
@@ -415,7 +415,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0033, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0034
- * @tc.name      : 解码，查询分层编码的能力值 265
+ * @tc.name      : 解码，查询分层编码的能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0034, TestSize.Level2)
@@ -427,7 +427,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0034, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0035
- * @tc.name      : 编码，查询分层编码的能力值 265
+ * @tc.name      : 编码，查询分层编码的能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0035, TestSize.Level1)
@@ -438,7 +438,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0035, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0036
- * @tc.name      : 解码，查询LTR能力值 265
+ * @tc.name      : 解码，查询LTR能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0036, TestSize.Level2)
@@ -450,13 +450,14 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0036, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0037
- * @tc.name      : 编码，查询LTR的能力值 265
+ * @tc.name      : 编码，查询LTR的能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0037, TestSize.Level1)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC,
+         true, HARDWARE);
         ASSERT_NE(nullptr, capability);
         format = OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE);
         ASSERT_NE(nullptr, format);
@@ -465,7 +466,8 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0037, TestSize.Level1)
             format, OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, &ltrnum), true);
         EXPECT_EQ(ltrnum, 10);
     } else {
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC,
+         true, HARDWARE);
         ASSERT_NE(nullptr, capability);
         ASSERT_EQ(nullptr, OH_AVCapability_GetFeatureProperties(capability, VIDEO_ENCODER_LONG_TERM_REFERENCE));
     }
