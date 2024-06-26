@@ -682,6 +682,11 @@ void CodecServer::SetCallerInfo(const Meta &callerInfo)
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
 
+    if (caller_.pid == -1) {
+        caller_.pid = getprocpid();
+        caller_.uid = getuid();
+    }
+
     EXPECT_AND_LOGI((forwardCaller_.pid >= 0) || (!forwardCaller_.processName.empty()),
         "Forward caller pid: %{public}d, process name: %{public}s",
         forwardCaller_.pid, forwardCaller_.processName.c_str());
