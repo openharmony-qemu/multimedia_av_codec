@@ -393,7 +393,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0031, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0032
- * @tc.name      : 编码，查询低时延的能力值H265
+ * @tc.name      : 编码,查询低时延的能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0032, TestSize.Level1)
@@ -404,7 +404,7 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0032, TestSize.Level1)
 }
 /**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0033
- * @tc.name      : 解码，查询低时延的能力值H265 
+ * @tc.name      : 解码,查询低时延的能力值H265
  * @tc.desc      : api test
  */
 HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0033, TestSize.Level1)
