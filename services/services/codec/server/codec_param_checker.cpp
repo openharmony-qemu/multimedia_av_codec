@@ -93,7 +93,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario s
 int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
-int32_t ClolorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t ColorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
@@ -112,7 +112,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     BitrateAndQualityChecker,
     VideoProfileChecker,
     QPChecker,
-    ClolorPrimariesChecker,
+    ColorPrimariesChecker,
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
@@ -127,7 +127,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     QPChecker,
     TemporalGopSizeChecker,
     TemporalGopReferenceModeChecker,
-    ClolorPrimariesChecker,
+    ColorPrimariesChecker,
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
@@ -442,7 +442,7 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
     return AVCS_ERR_OK;
 }
 
-int32_t ClolorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+int32_t ColorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
     (void)scenario;
