@@ -16,10 +16,6 @@
 #ifndef AVCODEC_SAMPLE_VIDEO_ENCODER_SAMPLE_H
 #define AVCODEC_SAMPLE_VIDEO_ENCODER_SAMPLE_H
 
-#include <mutex>
-#include <memory>
-#include <atomic>
-#include <thread>
 #include "video_sample_base.h"
 
 namespace OHOS {
@@ -28,6 +24,7 @@ namespace Sample {
 class VideoEncoderSample : public VideoSampleBase {
 public:
     VideoEncoderSample() {};
+    ~VideoEncoderSample() override;
 
 private:
     int32_t Init() override;

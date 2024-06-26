@@ -33,21 +33,24 @@ void CodecCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *use
 
 void CodecCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    CHECK_AND_RETURN(userData != nullptr);
+    CHECK_AND_RETURN_LOG(userData != nullptr, "User data is nullptr");
     (void)codec;
     SampleContext *context = static_cast<SampleContext *>(userData);
     auto originVideoWidth = context->sampleInfo->videoWidth;
     auto originVideoHeight = context->sampleInfo->videoHeight;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &context->sampleInfo->videoWidth);
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &context->sampleInfo->videoHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_WIDTH, &context->sampleInfo->videoWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_PIC_HEIGHT, &context->sampleInfo->videoHeight);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &context->sampleInfo->videoStrideWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &context->sampleInfo->videoSliceHeight);
 
-    AVCODEC_LOGW("Resolution: %{public}d*%{public}d => %{public}d*%{public}d", originVideoWidth, originVideoHeight,
-        context->sampleInfo->videoWidth, context->sampleInfo->videoHeight);
+    AVCODEC_LOGW("Resolution: %{public}d*%{public}d => %{public}d*%{public}d(%{public}d*%{public}d)",
+        originVideoWidth, originVideoHeight, context->sampleInfo->videoWidth, context->sampleInfo->videoHeight,
+        context->sampleInfo->videoStrideWidth, context->sampleInfo->videoSliceHeight);
 }
 
 void CodecCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
-    CHECK_AND_RETURN(userData != nullptr);
+    CHECK_AND_RETURN_LOG(userData != nullptr, "User data is nullptr");
     (void)codec;
     SampleContext *context = static_cast<SampleContext *>(userData);
     CodecBufferInfo bufferInfo = CodecBufferInfo(index, data);
@@ -57,7 +60,7 @@ void CodecCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH
 void CodecCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                             OH_AVCodecBufferAttr *attr, void *userData)
 {
-    CHECK_AND_RETURN(userData != nullptr);
+    CHECK_AND_RETURN_LOG(userData != nullptr, "User data is nullptr");
     (void)codec;
     SampleContext *context = static_cast<SampleContext *>(userData);
     CodecBufferInfo bufferInfo = CodecBufferInfo(index, data, *attr);
@@ -66,7 +69,7 @@ void CodecCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, O
 
 void CodecCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    CHECK_AND_RETURN(userData != nullptr);
+    CHECK_AND_RETURN_LOG(userData != nullptr, "User data is nullptr");
     (void)codec;
     SampleContext *context = static_cast<SampleContext *>(userData);
     CodecBufferInfo bufferInfo = CodecBufferInfo(index, buffer);
@@ -75,7 +78,7 @@ void CodecCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBu
 
 void CodecCallback::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    CHECK_AND_RETURN(userData != nullptr);
+    CHECK_AND_RETURN_LOG(userData != nullptr, "User data is nullptr");
     (void)codec;
     SampleContext *context = static_cast<SampleContext *>(userData);
     CodecBufferInfo bufferInfo = CodecBufferInfo(index, buffer);

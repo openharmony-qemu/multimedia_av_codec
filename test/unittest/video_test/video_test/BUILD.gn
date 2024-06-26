@@ -48,6 +48,7 @@ ohos_source_set("video_sample") {
     "./capbilities/video_codec/video_decoder/video_decoder.cpp",
     "./capbilities/video_codec/video_encoder/video_encoder.cpp",
     "./common/av_codec_sample_log.cpp",
+    "./common/sample_utils.cpp",
     "./sample/base/video_sample_base.cpp",
     "./sample/decoder/video_decoder_sample.cpp",
     "./sample/encoder/video_encoder_sample.cpp",

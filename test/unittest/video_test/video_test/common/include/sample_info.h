@@ -63,17 +63,17 @@ enum BitstreamType {
 };
 
 /*   CodecRunMode description
- *   +-----+------------+--------------+
- *   | Bit |     1      |      0       |
- *   +-----+------------+--------------+
- *   |Field| IsAVBuffer | IsBufferMode |
- *   +-----+------------+--------------+
+ *   +-----+-------+--------------+
+ *   | Bit |   1   |      0       |
+ *   +-----+------------+---------+
+ *   |Field| API11 | IsBufferMode |
+ *   +-----+------------+---------+
  */
 enum CodecRunMode {
-    SURFACE_ORIGIN          = (0 << 1) | 0,
-    BUFFER_SHARED_MEMORY    = (0 << 1) | 1,
-    SURFACE_AVBUFFER        = (1 << 1) | 0,
-    BUFFER_AVBUFFER         = (1 << 1) | 1,
+    SURFACE_API10   = (0 << 1) | 0,
+    BUFFER_API10    = (0 << 1) | 1,
+    SURFACE_API11   = (1 << 1) | 0,
+    BUFFER_API11    = (1 << 1) | 1,
 };
 
 enum SampleState {
@@ -104,12 +104,12 @@ struct SampleInfo {
     CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
     std::string codecMime = MIME_VIDEO_AVC.data();
-    int32_t videoWidth = 0;
-    int32_t videoHeight = 0;
+    int32_t videoWidth = 1280;
+    int32_t videoHeight = 720;
     double frameRate = SAMPLE_DEFAULT_FRAMERATE;
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
-    CodecRunMode codecRunMode = SURFACE_ORIGIN;
+    CodecRunMode codecRunMode = SURFACE_API10;
     int32_t frameInterval = -1;
     NativeWindow* window = nullptr;
     int32_t sampleRepeatTimes = 0;
@@ -128,6 +128,8 @@ struct SampleInfo {
     ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
     int32_t encoderSurfaceMaxInputBuffer = 0;
     int32_t pauseBeforeRunSample = 0;
+    int32_t videoStrideWidth = 0;
+    int32_t videoSliceHeight = 0;
 };
 
 struct CodecBufferInfo {
@@ -152,35 +154,6 @@ struct CodecBufferInfo {
 };
 static inline CodecBufferInfo eosBufferInfo =
     CodecBufferInfo(OH_AVCodecBufferAttr({0, 0, 0, AVCODEC_BUFFER_FLAGS_EOS}));
-
-class CodecUserData {
-public:
-    SampleInfo *sampleInfo = nullptr;
-
-    uint32_t inputFrameCount_ = 0;
-    std::mutex inputMutex_;
-    std::condition_variable inputCond_;
-    std::queue<CodecBufferInfo> inputBufferInfoQueue_;
-
-    uint32_t outputFrameCount_ = 0;
-    std::mutex outputMutex_;
-    std::condition_variable outputCond_;
-    std::queue<CodecBufferInfo> outputBufferInfoQueue_;
-
-    void ClearQueue()
-    {
-        {
-            std::unique_lock<std::mutex> lock(inputMutex_);
-            auto emptyQueue = std::queue<CodecBufferInfo>();
-            inputBufferInfoQueue_.swap(emptyQueue);
-        }
-        {
-            std::unique_lock<std::mutex> lock(outputMutex_);
-            auto emptyQueue = std::queue<CodecBufferInfo>();
-            outputBufferInfoQueue_.swap(emptyQueue);
-        }
-    }
-};
 } // Sample
 } // MediaAVCodec
 } // OHOS

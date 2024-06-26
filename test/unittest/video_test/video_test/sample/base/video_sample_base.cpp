@@ -61,7 +61,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     videoCodec_ = VideoCodecFactory::CreateVideoCodec(sampleInfo_.codecType);
     CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
-    ret = videoCodec_->Create(sampleInfo_.codecMime);
+    ret = videoCodec_->Create(sampleInfo_.codecMime, sampleInfo_.codecType & 0b1);  // 0b1: software codec mask
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
     context_ = std::make_shared<SampleContext>();
@@ -73,7 +73,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     }
     PrintSampleInfo(sampleInfo_);
     
-    ret = videoCodec_->Config(sampleInfo_, context_.get());
+    ret = videoCodec_->Config(sampleInfo_, reinterpret_cast<uintptr_t *>(context_.get()));
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
     releaseThread_ = nullptr;
@@ -128,12 +128,6 @@ void VideoSampleBase::Release()
     inputThread_.reset();
     outputThread_.reset();
     videoCodec_.reset();
-
-    if (sampleInfo_.window != nullptr && sampleInfo_.codecType == VIDEO_HW_ENCODER) {
-        OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
-        sampleInfo_.window = nullptr;
-    }
-
     context_.reset();
     dataProducer_.reset();
     outputFile_.reset();
@@ -148,21 +142,6 @@ void VideoSampleBase::StartRelease()
         AVCODEC_LOGI("Start to release");
         releaseThread_ = std::make_unique<std::thread>(&VideoSampleBase::Release, this);
     }
-}
-
-void VideoSampleBase::ThreadSleep(bool isValid)
-{
-    if (!isValid || sampleInfo_.frameInterval <= 0) {
-        return;
-    }
-
-    thread_local auto lastPushTime = std::chrono::system_clock::now();
-    auto beforeSleepTime = std::chrono::system_clock::now();
-    std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
-    lastPushTime = std::chrono::system_clock::now();
-
-    AVCODEC_LOGV("Sleep time: %{public}2.2fms",
-        static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
@@ -199,7 +178,42 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     }
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
-    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+    if (!(sampleInfo_.codecType & 0b10)) {   // 0b10: Video encoder mask
+        WriteOutputFileWithStrideYUV420(bufferAddr, bufferInfo.attr.size);
+    } else {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+    }
+}
+
+void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size)
+{
+    CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
+    CHECK_AND_RETURN_LOG(size >= (sampleInfo_.videoWidth * sampleInfo_.videoHeight), "Buffer is nullptr");
+    constexpr int8_t yuvSampleRatio = 2;
+
+    // copy Y
+    for (int32_t row = 0; row < sampleInfo_.videoHeight; row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), sampleInfo_.videoWidth);
+        bufferAddr += sampleInfo_.videoStrideWidth;
+    }
+    bufferAddr += (sampleInfo_.videoSliceHeight - sampleInfo_.videoHeight) * sampleInfo_.videoStrideWidth;
+
+    // copy UV
+    for (int32_t row = 0; row < (sampleInfo_.videoHeight / yuvSampleRatio); row++) {
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), sampleInfo_.videoWidth);
+        bufferAddr += sampleInfo_.videoStrideWidth;
+    }
+}
+
+void VideoSampleBase::PushEosFrame()
+{
+    auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
+    CHECK_AND_RETURN(bufferInfoOpt != std::nullopt);
+    auto &bufferInfo = bufferInfoOpt.value();
+
+    bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+
+    (void)videoCodec_->PushInputData(bufferInfo);
 }
 } // Sample
 } // MediaAVCodec
