@@ -45,17 +45,125 @@ void ReferenceParserTest::TearDown() {}
 } // namespace
 
 namespace {
+constexpr int64_t DEC_COST_TIME_MS = 6L;
 /**
- * @tc.number       : RP_FUNC_SCALIBILITY_0100
+ * @tc.number       : RP_FUNC_SEEK_IPB_0_0100
  * @tc.name         : do accurate seek
  * @tc.desc         : func test
  */
-HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPBBB_0100, TestSize.Level1)
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPB_0_0100, TestSize.Level1)
 {
-    shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
-    refParserDemo->SetDecIntervalMs(6); // 6
-    ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::LOWDELAY_B_SCALA));
-    ASSERT_EQ(true, refParserDemo->DoAccurateSeek(1650)); // 1650 is frame 99
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPB_0));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(1566)); // 1566 is frame 99
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_SEEK_IPB_0_0100
+ * @tc.name         : do accurate seek
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPB_1_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPB_1));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(1599)); // 1599 is frame 50
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_SEEK_IPPP_0_0100
+ * @tc.name         : do accurate seek
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_0_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPPP_0));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(500)); // 500 is frame 30
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_SEEK_IPPP_1_0100
+ * @tc.name         : do accurate seek
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_1_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPPP_1));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(27840)); // 27840 is frame 696
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_SEEK_IPPP_SCALA_0_0100
+ * @tc.name         : do accurate seek
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_SCALA_0_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPPP_SCALA_0));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(20040)); // 20040 is frame 501
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_SEEK_IPPP_SCALA_1_0100
+ * @tc.name         : do accurate seek
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_IPPP_SCALA_1_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPPP_SCALA_1));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(200)); // 200 is frame 5
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_SEEK_SDTP_0100
+ * @tc.name         : do accurate seek
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_SEEK_SDTP_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::SDTP));
+        ASSERT_EQ(true, refParserDemo->DoAccurateSeek(10266)); // 10266 is frame 310
+    }
+}
+
+/**
+ * @tc.number       : RP_FUNC_VAR_SPEED_IPB_0_0100
+ * @tc.name         : do var speed
+ * @tc.desc         : func test
+ */
+HWTEST_F(ReferenceParserTest, RP_FUNC_VAR_SPEED_IPB_0_0100, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<ReferenceParserDemo> refParserDemo = make_shared<ReferenceParserDemo>();
+        refParserDemo->SetDecIntervalMs(DEC_COST_TIME_MS);
+        ASSERT_EQ(0, refParserDemo->InitScene(MP4Scene::IPB_0));
+        ASSERT_EQ(true, refParserDemo->DoVariableSpeedPlay(416)); // 416 is frame 30
+    }
 }
 
 } // namespace

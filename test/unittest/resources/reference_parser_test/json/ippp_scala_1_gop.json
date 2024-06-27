@@ -1,0 +1,27 @@
+[
+    {
+        "gopid": 0,
+        "gopSize": 10,
+        "startFrameId": 0
+    },
+    {
+        "gopid": 1,
+        "gopSize": 10,
+        "startFrameId": 10
+    },
+    {
+        "gopid": 2,
+        "gopSize": 10,
+        "startFrameId": 20
+    },
+    {
+        "gopid": 3,
+        "gopSize": 10,
+        "startFrameId": 30
+    },
+    {
+        "gopid": 4,
+        "gopSize": 10,
+        "startFrameId": 40
+    }
+]
