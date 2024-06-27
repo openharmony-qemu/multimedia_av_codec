@@ -64,8 +64,8 @@ private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
-    bool CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool CheckIsEosBeforeTimeout(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offest);
     Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -74,11 +74,12 @@ private:
     bool SeekCacheBuffer(int64_t offset);
     void InitRingBuffer(uint32_t expectBufferDuration);
     void InitCacheBuffer(uint32_t expectBufferDuration);
-    void CacheData();
+
     bool HandleBuffering();
-    bool StartDownloadTask();
+    bool StartBuffering();
     size_t GetCurrentBufferSize();
-    bool HandleBreak();
+    bool HandleBreak(int32_t& sleepTime);
+    void ChangeDownloadPos();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -114,16 +115,16 @@ private:
     bool isFlv_ {false};
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
-    std::atomic<bool> canWrite_ {false};
+    std::atomic<bool> canWrite_ {true};
     std::atomic<bool> isNeedClean_ {false};
     std::atomic<bool> isHitSeeking_ {false};
     std::atomic<bool> isNeedDropData_ {false};
-    
-    std::shared_ptr<Task> downloadTask_;
-    unsigned int wantReadLength_ {0};
+
+    size_t wantReadLength_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
+    bool isBufferEnough_ {false};
     unsigned int bufferingTimes_ {0};
 };
 }
