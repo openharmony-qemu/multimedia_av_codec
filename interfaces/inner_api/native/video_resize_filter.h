@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include "filter/filter.h"
+#include "osal/task/task.h"
 #include "common/status.h"
 #include "common/log.h"
 
@@ -44,7 +45,7 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
-    Status NotifyEos();
+    Status NotifyNextFilterEos();
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -67,6 +68,8 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    void ReleaseBuffer();
+
     std::string name_;
     FilterType filterType_;
 
@@ -81,6 +84,13 @@ private:
     std::shared_ptr<Meta> configureParameter_;
 
     std::shared_ptr<Filter> nextFilter_;
+
+    std::shared_ptr<Task> releaseBufferTask_{nullptr};
+    std::mutex releaseBufferMutex_;
+    std::condition_variable releaseBufferCondition_;
+    std::vector<uint32_t> indexs_;
+    std::atomic<bool> isThreadExit_ = true;
+
     std::string bundleName_;
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
