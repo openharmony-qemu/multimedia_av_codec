@@ -676,6 +676,127 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_PROFILE_INVALID_TEST_0603, TestSize
 }
 
 /**
+ * @tc.name: ENCODE_KEY_COLOR_PRIMARIES_INVALID_TEST_0701
+ * @tc.desc: codec video configure color primaries unsupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_COLOR_PRIMARIES_INVALID_TEST_0701, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_COLOR_PRIMARIES, INT32_MIN));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_COLOR_PRIMARIES_INVALID_TEST_0702
+ * @tc.desc: codec video configure color primaries unsupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_COLOR_PRIMARIES_INVALID_TEST_0702, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_COLOR_PRIMARIES, INT32_MAX));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_COLOR_PRIMARIES_VALID_TEST_0703
+ * @tc.desc: codec video configure color primaries support
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_COLOR_PRIMARIES_VALID_TEST_0703, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format,
+        OH_MD_KEY_COLOR_PRIMARIES,
+        OH_ColorPrimary::COLOR_PRIMARY_BT709));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_TRANSFER_CHARACTERISTICS_VALID_TEST_0801
+ * @tc.desc: codec video configure transfer characteristics support
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_TRANSFER_CHARACTERISTICS_VALID_TEST_0801, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_TRANSFER_CHARACTERISTICS,
+        OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_LINEAR));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_TRANSFER_CHARACTERISTICS_INVALID_TEST_0802
+ * @tc.desc: codec video configure transfer characteristics unsupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_TRANSFER_CHARACTERISTICS_INVALID_TEST_0802, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, INT32_MIN));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_TRANSFER_CHARACTERISTICS_INVALID_TEST_0803
+ * @tc.desc: codec video configure transfer characteristics unsupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_TRANSFER_CHARACTERISTICS_INVALID_TEST_0803, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, INT32_MAX));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0901
+ * @tc.desc: codec video configure matrix coefficients support
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0901, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_MATRIX_COEFFICIENTS,
+        OH_MatrixCoefficient::MATRIX_COEFFICIENT_YCGCO));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0902
+ * @tc.desc: codec video configure matrix coefficients unsupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0902, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_MATRIX_COEFFICIENTS, INT32_MIN));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0903
+ * @tc.desc: codec video configure matrix coefficients unsupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MATRIX_COEFFICIENTS_VALID_TEST_0903, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_MATRIX_COEFFICIENTS, INT32_MAX));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(g_videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
  * @tc.name: DECODE_KEY_WIDTH_INVALID_TEST_1101
  * @tc.desc: codec video configure not exsit width
  * @tc.type: FUNC
@@ -961,5 +1082,45 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_ROTATION_INVALID_TEST_1502, TestSiz
             ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(videoDec));
         }
     }
+}
+
+/**
+ * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1601
+ * @tc.desc: video codec configure valid scaling mode
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1601, TestSize.Level3)
+{
+    SetFormatBasicParam(true);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE,
+        OH_ScalingMode::SCALING_MODE_SCALE_CROP));
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1602
+ * @tc.desc: video codec configure invalid scaling mode
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1602, TestSize.Level3)
+{
+    SetFormatBasicParam(true);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE, INT32_MAX));
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: DECODE_KEY_SCALING_MODE_VALID_TEST_1603
+ * @tc.desc: video codec configure invalid scaling mode
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1603, TestSize.Level3)
+{
+    SetFormatBasicParam(true);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE, INT32_MIN));
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 }
