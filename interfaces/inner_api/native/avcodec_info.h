@@ -61,6 +61,8 @@ enum class AVCapabilityFeature : int32_t {
     VIDEO_ENCODER_TEMPORAL_SCALABILITY = 0,
     VIDEO_ENCODER_LONG_TERM_REFERENCE = 1,
     VIDEO_LOW_LATENCY = 2,
+    VIDEO_WATERMARK = 3,
+    VIDEO_RPR = 4,
     MAX_VALUE
 };
 
