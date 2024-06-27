@@ -30,7 +30,7 @@ namespace {
 constexpr const char *SOURCE_DIR = "/data/test/media/";
 constexpr uint32_t MAX_SCENE_NUM = static_cast<uint32_t>(OHOS::MediaAVCodec::MP4Scene::SCENE_MAX);
 constexpr const char *VIDEO_FILE_NAME[MAX_SCENE_NUM] = {
-    "RP_IPB_0", "RP_IPB_1", "RP_IPPP_0", "RP_IPPP_1", "IPPP_SCALA_0", "IPPP_SCALA_1", "SDTP", "SDTP_EXT"};
+    "ipb_0", "ipb_1", "ippp_0", "ippp_1", "ippp_scala_0", "ippp_scala_1", "sdtp", "sdtp_ext"};
 constexpr int32_t MAX_BUFFER_SIZE = 8294400;
 constexpr int32_t MILL_TO_MICRO = 1000;
 constexpr uint32_t MIN_REMAIN_LAYERS = 2;
@@ -223,7 +223,7 @@ bool ReferenceParserDemo::DoVariableSpeedPlay(int64_t playTimeMs)
             return false;
         }
 
-        if(IsFrameDiscard(frameInfo, isDiscard_) != 0) {
+        if (IsFrameDiscard(frameInfo, isDiscard_) != 0) {
             return false;
         }
         
