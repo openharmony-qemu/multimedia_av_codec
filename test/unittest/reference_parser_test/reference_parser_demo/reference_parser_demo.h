@@ -37,14 +37,7 @@ struct JsonGopInfo {
 namespace OHOS {
 namespace MediaAVCodec {
 enum struct MP4Scene : uint32_t {
-    IPB_0 = 0,
-    IPB_1 = 1,
-    IPPP_0 = 2,
-    IPPP_1 = 3,
-    IPPP_SCALA_0 = 4,
-    IPPP_SCALA_1 = 5,
-    SDTP = 6,
-    SDTP_EXT = 7,
+    LOWDELAY_B_SCALA = 0,
     SCENE_MAX
 };
 
@@ -58,12 +51,10 @@ public:
 
 private:
     bool CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts);
-    bool CheckGopLayerResult(GopLayerInfo &GopLayerInfo, uint32_t gopid);
-    int32_t GetMaxDiscardLayer(GopLayerInfo &GopLayerInfo);
-    int32_t IsFrameDiscard(FrameLayerInfo &frameInfo, bool &isDiscard);
+    bool CheckGopLayerResult();
     void LoadJson();
     int32_t InitDemuxer(int64_t size);
-    MP4Scene scene_ = MP4Scene::IPB_0;
+    MP4Scene scene_ = MP4Scene::LOWDELAY_B_SCALA;
     int64_t decIntervalUs_ = 0;
     nlohmann::json gopJson_;
     nlohmann::json frameLayerJson_;
@@ -75,9 +66,8 @@ private:
     std::shared_ptr<AVSource> source_ = nullptr;
     std::shared_ptr<AVDemuxer> demuxer_ = nullptr;
     int32_t videoTrackId_ = 0;
-    int32_t checkedGopId_ = -1;
-    int32_t maxDiscardLayer_ = -1;
-    bool isDiscard_ = false;
+    int64_t startDts_ = 0L;
+    int64_t startPts_ = 0L;
 };
 
 } // namespace MediaAVCodec
