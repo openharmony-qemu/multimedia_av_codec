@@ -546,6 +546,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     videoDecoder_->ReleaseOutputBuffer(index, render);
     videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+        ResetSeekInfo();
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
                 outBuffer->pts_, outBuffer->flag_);
@@ -696,6 +697,13 @@ void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
     MEDIA_LOG_I("SetSeekTime enter.");
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
+}
+
+void DecoderSurfaceFilter::ResetSeekInfo()
+{
+    MEDIA_LOG_I("ResetSeekInfo enter.");
+    isSeek_ = false;
+    seekTimeUs_ = 0;
 }
 
 void DecoderSurfaceFilter::ParseDecodeRateLimit()
