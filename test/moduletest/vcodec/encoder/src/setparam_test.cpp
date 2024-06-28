@@ -1177,7 +1177,7 @@ HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_002, TestSize.Level1)
  */
 HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_003, TestSize.Level1)
 {
-    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.hevc")) {
+    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.avc")) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->INP_DIR = INP_DIR_720;
         vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1200,7 +1200,7 @@ HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_003, TestSize.Level1)
  */
 HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_004, TestSize.Level1)
 {
-    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.hevc")) {
+    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.avc")) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->INP_DIR = INP_DIR_720;
         vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
@@ -1223,7 +1223,7 @@ HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_004, TestSize.Level1)
  */
 HWTEST_F(HwEncSetParamNdkTest, SET_PROFILE_005, TestSize.Level1)
 {
-    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.hevc")) {
+    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.avc")) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->INP_DIR = INP_DIR_720;
         vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;

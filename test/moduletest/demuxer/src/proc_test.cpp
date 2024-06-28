@@ -66,7 +66,8 @@ constexpr uint64_t HEVC_BITRATE = 4162669;
 constexpr uint32_t ACTUAL_CHARACTERISTICS = 2;
 constexpr uint32_t ACTUAL_COEFFICIENTS = 2;
 constexpr uint32_t ACTUAL_PRIMARIES = 2;
-
+constexpr uint32_t AVC_ROTATION = 270;
+constexpr uint32_t HEVC_ROTATION = 90;
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
 void DemuxerProcNdkTest::SetUp()
@@ -276,7 +277,6 @@ static void HevcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_HEIGHT, &currentHeight));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_ROTATION, &rotation));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_FRAME_RATE, &frameRate));
-    ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
     ASSERT_TRUE(OH_AVFormat_GetLongValue(paramFormat, OH_MD_KEY_BITRATE, &bitrate));
     ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, &mode));
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_RANGE_FLAG, &flag));
@@ -286,6 +286,12 @@ static void HevcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+    if (!access("/system/lib64/media/", 0)) {
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
+        ASSERT_EQ(0, profile);
+    } else {
+        ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
+    }
     ASSERT_EQ(0, strcmp(mimeType, "video/hevc"));
     ASSERT_EQ(ACTUAL_CURRENTWIDTH, currentWidth);
     ASSERT_EQ(ACTUAL_CURRENTHEIGHT, currentHeight);
@@ -1429,11 +1435,11 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4300, TestSize.Level0)
     close(fd);
 }
 /**
- * @tc.number    : SUB_MP3_TITLE_RESOLUTION_4400
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4400
  * @tc.name      : demux hevc ts video
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4400, TestSize.Level0)
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
 {
     int tarckType = 0;
     const char *file = "/data/test/media/test_265_B_Gop25_4sec.mp4";
@@ -1448,7 +1454,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4400, TestSize.Level0)
     SetAllParam(sourceFormat);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(2, g_trackCount);
-    const char* config = nullptr;
     const char* mimeType = nullptr;
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1469,7 +1474,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4400, TestSize.Level0)
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            ASSERT_FALSE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_CONFIG, &config));
             ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
             if (tarckType == 0) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
@@ -1485,11 +1489,11 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4400, TestSize.Level0)
 }
 
 /**
- * @tc.number    : SUB_MP3_TITLE_RESOLUTION_4500
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4500
  * @tc.name      : demux avc ts video
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4500, TestSize.Level0)
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
 {
     int tarckType = 0;
     const char *file = "/data/test/media/test_264_B_Gop25_4sec.mp4";
@@ -1504,7 +1508,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4500, TestSize.Level0)
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(2, g_trackCount);
     SetAllParam(sourceFormat);
-    const char* config = nullptr;
     const char* mimeType = nullptr;
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1524,7 +1527,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4500, TestSize.Level0)
             if ((audioIsEnd && (tarckType == 0) && index == 0) || (videoIsEnd && (tarckType == 1) && index == 1)) {
                 continue;
             }
-            ASSERT_FALSE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_CONFIG, &config));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
             if (tarckType == 0) {
@@ -1537,5 +1539,116 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MP3_TITLE_RESOLUTION_4500, TestSize.Level0)
             }
         }
     }
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4600
+ * @tc.name      : demuxer AVC MP4 ,OH_MD_KEY_DURATION,OH_MD_KEY_CODEC_CONFIG
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4600, TestSize.Level0)
+{
+    int tarckType = 0;
+    uint8_t *codecConfig = nullptr;
+    int32_t rotation;
+    int32_t videoIsHdrvivid;
+    size_t bufferSize;
+    const char *file = "/data/test/media/single_rk.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    OH_AVCodecBufferAttr attr;
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
+                ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+            }
+        }
+    }
+    ASSERT_EQ(AVC_ROTATION, rotation);
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_4700
+ * @tc.name      : demuxer HEVC MP4 ,OH_MD_KEY_DURATION,OH_MD_KEY_CODEC_CONFIG
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4700, TestSize.Level0)
+{
+    int tarckType = 0;
+    uint8_t *codecConfig = nullptr;
+    int32_t rotation;
+    int32_t videoIsHdrvivid;
+    size_t bufferSize;
+    const char *file = "/data/test/media/single_60.mp4";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    OH_AVCodecBufferAttr attr;
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_TRUE(OH_AVFormat_GetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, &codecConfig, &bufferSize));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
+                if (!access("/system/lib64/media/", 0)) {
+                    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+                    ASSERT_EQ(1, videoIsHdrvivid);
+                } else {
+                    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+                }
+            }
+        }
+    }
+    ASSERT_EQ(HEVC_ROTATION, rotation);
     close(fd);
 }
