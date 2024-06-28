@@ -304,7 +304,8 @@ static void HevcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_EQ(1, sar);
 }
 
-static void IsHdrVivid(OH_AVFormat *paramFormat){
+static void IsHdrVivid(OH_AVFormat *paramFormat)
+{
     int32_t videoIsHdrvivid;
     if (!access("/system/lib64/media/", 0)) {
         ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));

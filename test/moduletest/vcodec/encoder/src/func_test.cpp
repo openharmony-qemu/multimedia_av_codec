@@ -2752,7 +2752,7 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_HEVC_CAPABILITY_5500, TestSize.Level2)
     if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
         EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
     }else {
-        ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(venc_, format));
+        ASSERT_EQ(AV_ERR_UNSUPPORT, OH_VideoEncoder_Configure(venc_, format));
     }
 }
 /**

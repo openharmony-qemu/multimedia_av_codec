@@ -553,23 +553,27 @@ HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_001, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1920x1080.h264";
-    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
-    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->needCheckOutputDesc = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/1920x1080.h264";
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_002
@@ -578,23 +582,27 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_001, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_002, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1920x1080.h265";
-    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
-    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->needCheckOutputDesc = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/1920x1080.h265";
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = DEFAULT_HEIGHT - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = DEFAULT_WIDTH - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_003
@@ -603,23 +611,27 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_002, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_003, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/3840x2160.h264";
-    vDecSample->DEFAULT_WIDTH = UHD_RESOLUTION[0];
-    vDecSample->DEFAULT_HEIGHT = UHD_RESOLUTION[1];
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->needCheckOutputDesc = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = UHD_RESOLUTION[1] - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = UHD_RESOLUTION[0] - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/3840x2160.h264";
+        vDecSample->DEFAULT_WIDTH = UHD_RESOLUTION[0];
+        vDecSample->DEFAULT_HEIGHT = UHD_RESOLUTION[1];
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = UHD_RESOLUTION[1] - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = UHD_RESOLUTION[0] - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_004
@@ -628,23 +640,27 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_003, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_004, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/3840x2160.h265";
-    vDecSample->DEFAULT_WIDTH = UHD_RESOLUTION[0];
-    vDecSample->DEFAULT_HEIGHT = UHD_RESOLUTION[1];
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->needCheckOutputDesc = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = UHD_RESOLUTION[1] - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = UHD_RESOLUTION[0] - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/3840x2160.h265";
+        vDecSample->DEFAULT_WIDTH = UHD_RESOLUTION[0];
+        vDecSample->DEFAULT_HEIGHT = UHD_RESOLUTION[1];
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = UHD_RESOLUTION[1] - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = UHD_RESOLUTION[0] - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_005
@@ -653,23 +669,27 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_005, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1104x622.h264";
-    vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
-    vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->needCheckOutputDesc = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/1104x622.h264";
+        vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
+        vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_006
@@ -678,23 +698,27 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_005, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_006, TestSize.Level0)
 {
-    auto vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1104x622.h265";
-    vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
-    vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->needCheckOutputDesc = true;
-    vDecSample->expectCropTop = 0;
-    vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
-    vDecSample->expectCropLeft = 0;
-    vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
+    if (g_codecName.find("hisi") != string::npos) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/1104x622.h265";
+        vDecSample->DEFAULT_WIDTH = HD_RESOLUTION[0];
+        vDecSample->DEFAULT_HEIGHT = HD_RESOLUTION[1];
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->needCheckOutputDesc = true;
+        vDecSample->expectCropTop = 0;
+        vDecSample->expectCropBottom = HD_RESOLUTION[1] - 1;
+        vDecSample->expectCropLeft = 0;
+        vDecSample->expectCropRight = HD_RESOLUTION[0] - 1;
 
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
-    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    } else {
+        cout << "hardware encoder is rk,skip." << endl;
+    }
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_007
