@@ -304,6 +304,15 @@ static void HevcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_EQ(1, sar);
 }
 
+static void IsHdrVivid(OH_AVFormat *paramFormat){
+    int32_t videoIsHdrvivid;
+    if (!access("/system/lib64/media/", 0)) {
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+        ASSERT_EQ(1, videoIsHdrvivid);
+    } else {
+        ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
+    }
+}
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_1400
  * @tc.name      : demuxer video and 2 audio file
@@ -1604,7 +1613,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4700, TestSize.Level0)
     int tarckType = 0;
     uint8_t *codecConfig = nullptr;
     int32_t rotation;
-    int32_t videoIsHdrvivid;
     size_t bufferSize;
     const char *file = "/data/test/media/single_60.mp4";
     int fd = open(file, O_RDONLY);
@@ -1640,12 +1648,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4700, TestSize.Level0)
             } else if (tarckType == 1) {
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
                 ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation));
-                if (!access("/system/lib64/media/", 0)) {
-                    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
-                    ASSERT_EQ(1, videoIsHdrvivid);
-                } else {
-                    ASSERT_FALSE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
-                }
+                IsHdrVivid(trackFormat);
             }
         }
     }
