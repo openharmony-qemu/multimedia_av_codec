@@ -150,13 +150,15 @@ MediaDemuxer::~MediaDemuxer()
 
 Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
 {
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_UNKNOWN,
-                         "GetShortestDecPath failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "StartReferenceParser failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(videoTrackId_ != TRACK_ID_DUMMY, Status::ERROR_UNKNOWN,
-                         "GetShortestDecPath failed due to video track is null");
+                         "StartReferenceParser failed due to video track is null");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "StartReferenceParser failed due to demuxerPluginManager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
-    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_UNKNOWN,
-                         "GetShortestDecPath failed due to video plugin is nullptr");
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
+                         "StartReferenceParser failed due to video plugin is nullptr");
     if (isFirstParser_) {
         isFirstParser_ = false;
         if (seekable_ != Plugins::Seekable::SEEKABLE) {
@@ -190,6 +192,10 @@ void MediaDemuxer::TryRecvParserTask()
 
 int64_t MediaDemuxer::ParserRefInfo()
 {
+    if (demuxerPluginManager_ == nullptr) {
+        MEDIA_LOG_D("ParserRefInfo failed due to demuxerPluginManager is nullptr");
+        return 0;
+    }
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
     if (videoPlugin == nullptr) {
         MEDIA_LOG_D("ParserRefInfo failed due to video plugin is nullptr");
@@ -206,10 +212,12 @@ int64_t MediaDemuxer::ParserRefInfo()
 
 Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_UNKNOWN,
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetFrameLayerInfo failed due to demuxerPluginManager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
-    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_UNKNOWN,
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
     return videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
@@ -217,9 +225,12 @@ Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, Fr
 
 Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_UNKNOWN, "GetGopLayerInfo failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetGopLayerInfo failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetGopLayerInfo failed due to demuxerPluginManager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
-    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_UNKNOWN,
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetGopLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
     return videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
