@@ -20,7 +20,7 @@
 #include "native_buffer_inner.h"
 #include "display_type.h"
 #include "iconsumer_surface.h"
-#include "videoenc_ndk_inner_sample.h"
+#include "videoenc_inner_sample.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "hdrcodec_ndk_sample.h"
+#include "hdrcodec_sample.h"
 
 #include <arpa/inet.h>
 #include <sys/time.h>

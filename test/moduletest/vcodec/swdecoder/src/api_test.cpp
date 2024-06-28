@@ -24,7 +24,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "videodec_ndk_sample.h"
+#include "videodec_sample.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avformat.h"
 #include "native_averrors.h"
@@ -1531,5 +1531,68 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA + AV_PIXEL_FORMAT_RGBA);
     ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_7200
+ * @tc.name      : OH_AVCapability_GetSupportedProfiles param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7200, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *profiles = nullptr;
+    uint32_t profileNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        EXPECT_GE(profiles[i], 0);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_7300
+ * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7300, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *levels = nullptr;
+    uint32_t levelNum = 0;
+    const int32_t *profiles = nullptr;
+    uint32_t profileNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        EXPECT_GE(profiles[i], 0);
+        ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, profiles[i], &levels, &levelNum);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_NE(nullptr, levels);
+        EXPECT_GT(levelNum, 0);
+        for (int j = 0; j < levelNum; j++) {
+            EXPECT_GE(levels[j], 0);
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_CAP_API_7400
+ * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7400, TestSize.Level2)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    ASSERT_NE(nullptr, capability);
+    ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, AVC_PROFILE_BASELINE, 1));
 }
 } // namespace

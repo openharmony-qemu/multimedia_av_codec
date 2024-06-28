@@ -19,7 +19,7 @@
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"
-#include "videodec_ndk_inner_sample.h"
+#include "videodec_inner_sample.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

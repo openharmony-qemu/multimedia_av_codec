@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VIDEOENC_NDK_INNER_SAMPLE_H
-#define VIDEOENC_NDK_INNER_SAMPLE_H
+#ifndef VIDEOENC_INNER_SAMPLE_H
+#define VIDEOENC_INNER_SAMPLE_H
 
 #include <iostream>
 #include <cstdio>
@@ -152,4 +152,4 @@ private:
 } // namespace MediaAVCodec
 } // namespace OHOS
 
-#endif // VIDEODEC_NDK_INNER_SAMPLE_H
+#endif // VIDEODEC_INNER_SAMPLE_H
