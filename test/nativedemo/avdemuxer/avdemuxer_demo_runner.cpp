@@ -253,7 +253,7 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
     presentationTimeUs = 0;
     frameIndex = 100;    // frameIndex 100
     innerDemuxerDemo->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
-    printf("GetPresentationTimeUsByFrameIndex, presentationTimeUs = %lld\n", presentationTimeUs);
+    printf("GetPresentationTimeUsByFrameIndex, presentationTimeUs = %" PRId64 "\n", presentationTimeUs);
 }
 
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
