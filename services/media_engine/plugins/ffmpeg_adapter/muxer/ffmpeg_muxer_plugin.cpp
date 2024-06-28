@@ -227,6 +227,7 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
     DeInitAvIoCtx(formatContext_->pb);
     formatContext_->pb = InitAvIoCtx(dataSink, 1);
     FALSE_RETURN_V_MSG_E(formatContext_->pb != nullptr, Status::ERROR_INVALID_OPERATION, "failed to create io");
+    isCanReadFile_ = dataSink->CanRead();
     return Status::NO_ERROR;
 }
 
@@ -652,7 +653,7 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead() && isFastStart_) {
+    if (isCanReadFile_ && isFastStart_) {
         av_dict_set(&options, "movflags", "faststart", 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
