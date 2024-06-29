@@ -89,8 +89,12 @@ public:
             int32_t width = buffer->GetWidth();
             int32_t height = buffer->GetHeight();
             int32_t stride = buffer->GetStride();
+            int32_t pixelbytes = 1;
+            if (stride >= width * 2) {
+                pixelbytes = 2;
+            }
             for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
-                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride, width);
+                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride, width * pixelbytes);
             }
         }
         cs_->ReleaseBuffer(buffer, -1);
@@ -316,7 +320,13 @@ bool VideoDecSample::WaitForEos()
     lock.unlock();
     int64_t tempTime = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     EXPECT_LE(frameOutputCount_, frameInputCount_);
-    EXPECT_GE(frameOutputCount_, frameInputCount_ / 2); // 2: at least half of the input frame
+    // Not all streams meet the requirement that the number of output frames is greater than
+    // half of the number of input NALs.
+    if (skipOutFrameHalfCheck_) {
+        EXPECT_GT(frameOutputCount_, 0);
+    } else {
+        EXPECT_GE(frameOutputCount_, frameInputCount_ / 2); // 2: at least half of the input frame
+    }
 
     signal_->isRunning_ = false;
     usleep(100); // 100: wait for callback
@@ -610,11 +620,15 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &stride_);
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &heightSlice_);
         }
+        int32_t pixelbytes = 1;
+        if (stride_ >= width_ * 2) {
+            pixelbytes = 2;
+        }
         for (int32_t i = 0; i < heightSlice_; ++i) {
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_ * pixelbytes);
         }
         for (int32_t i = 0; i < (height_ >> 1); ++i) { // 2: denom
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_);
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + (heightSlice_ + i) * stride_, width_ * pixelbytes);
         }
     }
     if (addr == nullptr) {
