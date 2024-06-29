@@ -207,35 +207,33 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
                      inputSize, memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        int32_t sampleNumTmp = -1;
-        sampleNumTmp = channels_ == ONE_CHANNEL ? inputSize / sizeof(int16_t) : inputSize / sizeof(int16_t) / 2; // 2ch
-        unsigned char* lamePcmBuffer = memory->GetAddr();
-        int outputSize = 0;
+    std::lock_guard<std::mutex> lock(avMutex_);
+    int32_t sampleNumTmp = -1; // -1:initialize invalid value
+    sampleNumTmp = channels_ == ONE_CHANNEL ? inputSize / sizeof(int16_t) : inputSize / sizeof(int16_t) / 2; // 2ch
+    unsigned char* lamePcmBuffer = memory->GetAddr();
+    int outputSize = 0;
 
-        const int sampleNum = static_cast<const int>(sampleNumTmp);
-        const short* inputPcmBuffer = reinterpret_cast<const short*>(lamePcmBuffer);
-        if (sampleNumTmp > 0) {
-            if (channels_ == 1) {
-                outputSize = lame_encode_buffer(lameInfo->gfp, inputPcmBuffer, inputPcmBuffer, sampleNum, lameMp3Buffer,
-                                                LAME_BUFFER_SIZE_DEFAULT);
-            } else {
-                outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, reinterpret_cast<short*>(lamePcmBuffer),
-                                                            sampleNumTmp, lameMp3Buffer, LAME_BUFFER_SIZE_DEFAULT);
-            }
-        } else if (sampleNumTmp == 0) {
-            outputSize = lame_encode_flush(lameInfo->gfp, lameMp3Buffer, LAME_BUFFER_SIZE_DEFAULT);
+    const int sampleNum = static_cast<const int>(sampleNumTmp);
+    const short* inputPcmBuffer = reinterpret_cast<const short*>(lamePcmBuffer);
+    if (sampleNumTmp > 0) {
+        if (channels_ == 1) { // 1:mono
+            outputSize = lame_encode_buffer(lameInfo->gfp, inputPcmBuffer, inputPcmBuffer, sampleNum, lameMp3Buffer,
+                                            LAME_BUFFER_SIZE_DEFAULT);
+        } else {
+            outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, reinterpret_cast<short*>(lamePcmBuffer),
+                                                        sampleNumTmp, lameMp3Buffer, LAME_BUFFER_SIZE_DEFAULT);
         }
-
-        if (outputSize < 0) {
-            AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
-            return Status::ERROR_UNKNOWN;
-        }
-        outputSize_ = outputSize;
-        pts_ = inputBuffer->pts_;
-        dataCallback_->OnInputBufferDone(inputBuffer);
+    } else if (sampleNumTmp == 0) {
+        outputSize = lame_encode_flush(lameInfo->gfp, lameMp3Buffer, LAME_BUFFER_SIZE_DEFAULT);
     }
+
+    if (outputSize < 0) {
+        AVCODEC_LOGE("AudioMp3EncoderPlugin lame encode error.");
+        return Status::ERROR_UNKNOWN;
+    }
+    outputSize_ = outputSize;
+    pts_ = inputBuffer->pts_;
+    dataCallback_->OnInputBufferDone(inputBuffer);
 
     return Status::OK;
 }
