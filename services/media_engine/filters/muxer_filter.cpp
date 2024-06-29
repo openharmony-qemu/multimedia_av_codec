@@ -315,14 +315,17 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
             videoIsEos = true;
         } else if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
             MEDIA_LOG_I("audio is eos");
+            audioIsEos = true;
         }
     }
-    if (eosCount_ == preFilterCount_) {
+    if ((eosCount_ == preFilterCount_) || (videoIsEos && audioIsEos)) {
         eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, Status::OK});
     }
     if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
         lastAudioPts_ = inputBuffer->pts_;
-        if (inputBuffer->pts_ <= lastVideoPts_ || videoIsEos) {
+        if (videoCodecMimeType_.empty()) {
+            inputBufferQueue->ReturnBuffer(inputBuffer, true);
+        } else if (inputBuffer->pts_ <= lastVideoPts_ || videoIsEos) {
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
         } else {
             std::unique_lock<std::mutex> lock(stopMutex_);

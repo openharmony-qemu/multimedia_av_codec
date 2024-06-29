@@ -88,6 +88,7 @@ private:
     int64_t lastVideoPts_{0};
     int64_t lastAudioPts_{0};
     bool videoIsEos{false};
+    bool audioIsEos{false};
     bool isTransCoderMode{false};
  
     std::mutex stopMutex_;
