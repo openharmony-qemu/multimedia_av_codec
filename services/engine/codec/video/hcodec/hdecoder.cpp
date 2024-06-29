@@ -366,6 +366,7 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
             }
         }
     }
+    SubmitDynamicBufferIfPossible(); // at least submit one out buffer to omx
     auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
         return info.owner == BufferOwner::OWNED_BY_OMX;
     });
