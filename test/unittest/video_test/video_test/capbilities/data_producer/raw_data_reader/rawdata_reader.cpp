@@ -41,8 +41,6 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
     int32_t bufferSize = GetBufferSize();
     inputFile_->read(reinterpret_cast<char *>(bufferAddr), bufferSize);
     info.attr.size = inputFile_->gcount();
-    info.attr.pts = frameCount_ *
-        ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
