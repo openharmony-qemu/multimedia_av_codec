@@ -540,7 +540,7 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
     bool dropRet = false;
     if (writeOffSet > 0) {
         int64_t secondParam = static_cast<int64_t>(dataLen) - writeOffSet;
-        if (secondParam<0) {
+        if (secondParam < 0) {
             secondParam = 0;
         }
         dropRet = currentRequest_->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet,
