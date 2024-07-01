@@ -16,12 +16,17 @@
 #include "video_resize_filter.h"
 #include "filter/filter_factory.h"
 #include "common/media_core.h"
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "detail_enhancer_video.h"
 #include "detail_enhancer_video_common.h"
+#endif
 
 namespace OHOS {
 namespace Media {
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 using namespace VideoProcessingEngine;
+#endif
 namespace Pipeline {
 
 static AutoRegisterFilter<VideoResizeFilter> g_registerVideoResizeFilter("builtin.transcoder.videoresize",
@@ -69,6 +74,7 @@ private:
     std::weak_ptr<VideoResizeFilter> videoResizeFilter_;
 };
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 class ResizeDetailEnhancerVideoCallback : public DetailEnhancerVideoCallback {
 public:
     explicit ResizeDetailEnhancerVideoCallback(std::shared_ptr<VideoResizeFilter> videoResizeFilter)
@@ -76,11 +82,11 @@ public:
     {
     }
 
-    void OnError(int32_t errorCode) override
+    void OnError(VPEAlgoErrCode errorCode) override
     {
     }
 
-    void OnState(int32_t state) override
+    void OnState(VPEAlgoState state) override
     {
     }
 
@@ -98,6 +104,8 @@ public:
 private:
     std::weak_ptr<VideoResizeFilter> videoResizeFilter_;
 };
+#endif
+
 
 VideoResizeFilter::VideoResizeFilter(std::string name, FilterType type): Filter(name, type)
 {
@@ -122,6 +130,7 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     videoEnhancer_ = DetailEnhancerVideo::Create();
     if (videoEnhancer_ != nullptr) {
         std::shared_ptr<DetailEnhancerVideoCallback> detailEnhancerVideoCallback =
@@ -130,6 +139,7 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     } else {
         MEDIA_LOG_I("Init videoEnhancer fail");
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        return;
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("VideoResize");
@@ -138,12 +148,14 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             return 0;
         });
     }
+#endif
 }
 
 Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     const DetailEnhancerParameters parameter_ = {"", DetailEnhancerLevel::DETAIL_ENH_LEVEL_MEDIUM};
     int32_t ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
     if (ret != 0) {
@@ -151,25 +163,36 @@ Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 sptr<Surface> VideoResizeFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     sptr<Surface> inputSurface = videoEnhancer_->GetInputSurface();
     inputSurface->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
     return inputSurface;
+#else
+    return nullptr;
+#endif
 }
 
 Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetOutputSurface");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     int32_t ret = videoEnhancer_->SetOutputSurface(surface);
     if (ret != 0) {
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 Status VideoResizeFilter::DoPrepare()
@@ -189,6 +212,7 @@ Status VideoResizeFilter::DoPrepare()
 Status VideoResizeFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     isThreadExit_ = false;
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
@@ -199,6 +223,9 @@ Status VideoResizeFilter::DoStart()
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 Status VideoResizeFilter::DoPause()
@@ -216,12 +243,25 @@ Status VideoResizeFilter::DoResume()
 Status VideoResizeFilter::DoStop()
 {
     MEDIA_LOG_I("Stop");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (releaseBufferTask_) {
+        isThreadExit_ = true;
+        releaseBufferCondition_.notify_all();
+        releaseBufferTask_->Stop();
+        MEDIA_LOG_I("releaseBufferTask_ Stop");
+    }
+    if (!videoEnhancer_) {
+        return Status::OK;
+    }
     int32_t ret = videoEnhancer_->Stop();
     if (ret != 0) {
         eventReceiver_->OnEvent({"VideoResizeFilter::DoStop error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 Status VideoResizeFilter::DoFlush()
@@ -250,6 +290,7 @@ Status VideoResizeFilter::NotifyNextFilterEos()
 void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     bool isEos = false;
     if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
         parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
@@ -264,6 +305,7 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         eventReceiver_->OnEvent({"VideoResizeFilter::SetParameter error", EventType::EVENT_ERROR,
             MSERR_UNSUPPORT_VID_PARAMS});
     }
+#endif
 }
 
 void VideoResizeFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -350,17 +392,20 @@ void VideoResizeFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index)
 {
     MEDIA_LOG_I("OnOutputBufferAvailable enter");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
+#endif
     MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void VideoResizeFilter::ReleaseBuffer()
 {
     MEDIA_LOG_I("ReleaseBuffer");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     while (!isThreadExit_) {
         std::vector<uint32_t> indexs;
         {
@@ -373,6 +418,7 @@ void VideoResizeFilter::ReleaseBuffer()
             videoEnhancer_->ReleaseOutputBuffer(index, true);
         }
     }
+#endif
     MEDIA_LOG_I("ReleaseBuffer end");
 }
 
