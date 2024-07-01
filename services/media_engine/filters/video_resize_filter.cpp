@@ -393,7 +393,7 @@ void VideoResizeFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void VideoResizeFilter::OnOutputBufferAvailable(uint32_t index)
 {
-    MEDIA_LOG_D("OnOutputBufferAvailable enter");
+    MEDIA_LOG_D("OnOutputBufferAvailable enter. index: %{public}u", index);
     {
         std::lock_guard<std::mutex> lock(releaseBufferMutex_);
         indexs_.push_back(index);
