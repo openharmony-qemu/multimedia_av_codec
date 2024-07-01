@@ -89,13 +89,11 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
 
-#ifdef USE_VIDEO_PROCESSING_ENGINE
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
     std::vector<uint32_t> indexs_;
     std::atomic<bool> isThreadExit_ = true;
-#endif
 
     std::string bundleName_;
     uint64_t instanceId_{0};
