@@ -1,8 +1,17 @@
-/******************************************************************************
-* Copyright (c) Huawei Technologies Co., Ltd. 2010-2020. All rights reserved.
-* File name      : HevcDec_Typedef.h
-* Version        : 1.00
-*******************************************************************************/
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef __HEVC_DEC_TYPE_DEF_H__ /* Macro sentry to avoid redundant including */
 #define __HEVC_DEC_TYPE_DEF_H__
@@ -30,13 +39,13 @@ typedef struct TagHEVC_DEC_INIT_PARAM {
     IHW265D_VIDEO_ALG_LOG_FXN logFxn;  // log output callback function
 } HEVC_DEC_INIT_PARAM;
 
-typedef struct TagHEVC_DEC_INARGS {
+typedef struct TagHevcDecInArgs {
     UINT8 *pStream;
     UINT32 uiStreamLen;
     UINT64 uiTimeStamp;
 } HEVC_DEC_INARGS;
 
-typedef struct TagHEVC_DEC_OUTARGS {
+typedef struct TagHevcDecOutArgs {
     UINT32 uiDecWidth;
     UINT32 uiDecHeight;
     UINT32 uiDecStride;

@@ -103,6 +103,11 @@ private:
         EOS,
         ERROR,
     };
+
+    enum PixelBitDepth : int32_t {
+        BitDepth_8bit = 8,
+        BitDepth_10bit = 10,
+    };
     
     bool IsActive() const;
     void CalculateBufferSize();
@@ -128,15 +133,20 @@ private:
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
+    int32_t DecodeFrameOnce();
+    void HevcFuncMatch();
+    void ReleaseHandle();
+    void ConvertDecOutToAVFrame(int32_t bitDepth);
+    static int32_t CheckHevcDecLibStatus();
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
 
     void* handle_;
     uint32_t decInstanceID_;
-    HEVC_DEC_INIT_PARAM initParams_ = {0};
-    HEVC_DEC_INARGS hevcDecoder_input_args_ = {0};
-    HEVC_DEC_OUTARGS hevcDecoder_output_args_ = {0};
+    HEVC_DEC_INIT_PARAM initParams_;
+    HEVC_DEC_INARGS hevcDecoderInputArgs_;
+    HEVC_DEC_OUTARGS hevcDecoderOutpusArgs_;
     HEVC_DEC_HANDLE hevcSDecoder_;
     CreateHevcDecoderFuncType hevcDecoderCreateFunc_;
     DecodeFuncType hevcDecoderDecodecFrameFunc_;
@@ -146,10 +156,6 @@ private:
     static std::mutex decoderCountMutex_;
     static std::vector<uint32_t> decInstanceIDSet_;
     static std::vector<uint32_t> freeIDSet_;
-
-    void HevcFuncMatch_();
-    void ReleaseHandle_();
-    void ConvertDecOutToAVFrame(int32_t bitDepth);
 
     Format format_;
     int32_t width_ = 0;
@@ -184,7 +190,7 @@ private:
     std::atomic<bool> isBufferAllocated_ = false;
 };
 
-void HEVC_DEC_Log(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_msg, ...);
+void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_msg, ...);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

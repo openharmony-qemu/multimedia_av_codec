@@ -33,10 +33,10 @@ namespace Codec {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "HevcDecoderLoader"};
 const char *HEVC_DEC_LIB_PATH = "libhevcdec_ohos.z.so";
-const char *HEVC_DEC_CreateFuncName = "HEVC_CreateDecoder";
-const char *HEVC_DEC_DecodeFrameFuncName = "HEVC_DecodeFrame";
-const char *HEVC_DEC_FlushFrameName = "HEVC_FlushFrame";
-const char *HEVC_DEC_DeleteFuncName = "HEVC_DeleteDecoder";
+const char *HEVC_DEC_CREATE_FUNC_NAME = "HEVC_CreateDecoder";
+const char *HEVC_DEC_DECODE_FRAME_FUNC_NAME = "HEVC_DecodeFrame";
+const char *HEVC_DEC_FLUSH_FRAME_FUNC_NAME = "HEVC_FlushFrame";
+const char *HEVC_DEC_DELETE_FUNC_NAME = "HEVC_DeleteDecoder";
 
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
@@ -90,7 +90,7 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
         if (handle_ == nullptr) {
             AVCODEC_LOGE("Load codec failed: %{public}s", HEVC_DEC_LIB_PATH);
         }
-        HevcFuncMatch_();
+        HevcFuncMatch();
         AVCODEC_LOGI("Num %{public}u HevcDecoder entered, state: Uninitialized", decInstanceID_);
     } else {
         AVCODEC_LOGE("HevcDecoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
@@ -98,23 +98,22 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
     }
 }
 
-void HevcDecoder::HevcFuncMatch_()
+void HevcDecoder::HevcFuncMatch()
 {
     if (handle_ != nullptr) {
-        hevcDecoderCreateFunc_ = reinterpret_cast<CreateHevcDecoderFuncType>(dlsym(handle_, HEVC_DEC_CreateFuncName));
-        hevcDecoderDecodecFrameFunc_ = reinterpret_cast<DecodeFuncType>(dlsym(handle_, HEVC_DEC_DecodeFrameFuncName));
-        hevcDecoderFlushFrameFunc_ = reinterpret_cast<FlushFuncType>(dlsym(handle_, HEVC_DEC_FlushFrameName));
-        hevcDecoderDeleteFunc_ = reinterpret_cast<DeleteFuncType>(dlsym(handle_, HEVC_DEC_DeleteFuncName));
-
-        if (hevcDecoderCreateFunc_ == nullptr || hevcDecoderDecodecFrameFunc_ == nullptr \
-            || hevcDecoderDeleteFunc_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr) {
+        hevcDecoderCreateFunc_ = reinterpret_cast<CreateHevcDecoderFuncType>(dlsym(handle_, HEVC_DEC_CREATE_FUNC_NAME));
+        hevcDecoderDecodecFrameFunc_ = reinterpret_cast<DecodeFuncType>(dlsym(handle_, HEVC_DEC_DECODE_FRAME_FUNC_NAME));
+        hevcDecoderFlushFrameFunc_ = reinterpret_cast<FlushFuncType>(dlsym(handle_, HEVC_DEC_FLUSH_FRAME_FUNC_NAME));
+        hevcDecoderDeleteFunc_ = reinterpret_cast<DeleteFuncType>(dlsym(handle_, HEVC_DEC_DELETE_FUNC_NAME));
+        if (hevcDecoderCreateFunc_ == nullptr || hevcDecoderDecodecFrameFunc_ == nullptr ||
+            hevcDecoderDeleteFunc_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr) {
                 AVCODEC_LOGE("HevcDecoder hevcFuncMatch_ failed!");
-                ReleaseHandle_();
+                ReleaseHandle();
         }
     }
 }
 
-void HevcDecoder::ReleaseHandle_()
+void HevcDecoder::ReleaseHandle()
 {
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     hevcDecoderCreateFunc_ = nullptr;
@@ -133,7 +132,7 @@ HevcDecoder::~HevcDecoder()
     ReleaseResource();
     callback_ = nullptr;
     mallopt(M_FLUSH_THREAD_CACHE, 0);
-    ReleaseHandle_();
+    ReleaseHandle();
     std::lock_guard<std::mutex> lock(decoderCountMutex_);
     freeIDSet_.push_back(decInstanceID_);
     auto it = std::find(decInstanceIDSet_.begin(), decInstanceIDSet_.end(), decInstanceID_);
@@ -164,7 +163,7 @@ int32_t HevcDecoder::Initialize()
 }
 
 void HevcDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
-                                 int32_t maxVal)
+                                      int32_t maxVal)
 {
     int32_t val32 = 0;
     if (format.GetIntValue(formatKey, val32) && val32 >= minVal && val32 <= maxVal) {
@@ -185,7 +184,7 @@ void HevcDecoder::ConfigureSurface(const Format &format, const std::string_view 
 
     if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
         VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21, 
+        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
             "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(formatKey, val);
@@ -243,7 +242,7 @@ int32_t HevcDecoder::Configure(const Format &format)
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
 
     initParams_.uiChannelID = decInstanceID_;
-    initParams_.logFxn = HEVC_DEC_Log;
+    initParams_.logFxn = HevcDecLog;
 
     state_ = State::CONFIGURED;
     
@@ -265,10 +264,11 @@ int32_t HevcDecoder::Start()
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     int32_t ret = 0;
     if (hevcSDecoder_ == nullptr && hevcDecoderCreateFunc_ != nullptr) {
-        ret = hevcDecoderCreateFunc_(&hevcSDecoder_, &initParams_);        
+        ret = hevcDecoderCreateFunc_(&hevcSDecoder_, &initParams_);
     }
     runLock.unlock();
-    CHECK_AND_RETURN_RET_LOG(ret == 0 && hevcSDecoder_ != nullptr, AVCS_ERR_INVALID_OPERATION, "hevc deocder create failed");
+    CHECK_AND_RETURN_RET_LOG(ret == 0 && hevcSDecoder_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+                             "hevc deocder create failed");
 
     if (!isBufferAllocated_) {
         for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
@@ -326,6 +326,8 @@ void HevcDecoder::InitBuffers()
             }
         }
     }
+    memset_s(&hevcDecoderInputArgs_, sizeof(HEVC_DEC_INARGS), 0, sizeof(HEVC_DEC_INARGS));
+    memset_s(&hevcDecoderOutpusArgs_, sizeof(HEVC_DEC_OUTARGS), 0, sizeof(HEVC_DEC_OUTARGS));
 }
 
 void HevcDecoder::ResetData()
@@ -423,7 +425,7 @@ int32_t HevcDecoder::Flush()
     if (hevcDecoderFlushFrameFunc_ != nullptr && hevcSDecoder_ != nullptr) {
         int32_t ret = 0;
         while (ret == 0) {
-            ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoder_output_args_);
+            ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
         }
     }
     runLock.unlock();
@@ -479,19 +481,20 @@ int32_t HevcDecoder::Release()
     return AVCS_ERR_OK;
 }
 
-void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType)
+void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_view &formatKey,
+                                      FormatDataType formatType)
 {
     CHECK_AND_RETURN_LOG(formatType == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
     int32_t val = 0;
     CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
     if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
         VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21, 
+        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
             "Set parameter failed: pixel format value %{public}d invalid", val);
         outputPixelFmt_ = vpf;
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
         GraphicPixelFormat surfacePixelFmt;
-        if (bitDepth_ == 10) {
+        if (bitDepth_ == BitDepth_10bit) {
             if (vpf == VideoPixelFormat::NV12) {
                 surfacePixelFmt = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
             } else {
@@ -546,8 +549,9 @@ int32_t HevcDecoder::SetParameter(const Format &format)
 int32_t HevcDecoder::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    if ((!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) && hevcDecoder_output_args_.uiDecStride != 0) {
-        int32_t stride = hevcDecoder_output_args_.uiDecStride;
+    if ((!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) &&
+        hevcDecoderOutpusArgs_.uiDecStride != 0) {
+        int32_t stride = hevcDecoderOutpusArgs_.uiDecStride;
         int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
@@ -555,7 +559,7 @@ int32_t HevcDecoder::GetOutputFormat(Format &format)
     if (bitDepth_ == 8) {
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
     } else {
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_ * 2);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_ * 2); // 2 10bit per pixel 2bits
     }
     format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
     format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
@@ -576,12 +580,12 @@ void HevcDecoder::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
     outputBufferSize_ = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
-    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);;
+    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE, outputBufferSize_);
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
-    } 
-    if (bitDepth_ == 10) {
-        outputBufferSize_ *= 2;
+    }
+    if (bitDepth_ == BitDepth_10bit) {
+        outputBufferSize_ *= 2; // 2 10bit per pixel 2bits
     }
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d, output "
                  "buffer size=%{public}d",
@@ -782,22 +786,20 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         if (bitDepth_ == 8) {
             format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
         } else {
-            format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_ * 2);
+            format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_ * 2); // 2 10bit per pixel 2bits
         }
-		format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
         if (sInfo_.surface) {
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
             sInfo_.requestConfig.width = width_;
             sInfo_.requestConfig.height = height_;
-            if (bitDepth_ == 10) {
-                if (targetPixelFmt == VideoPixelFormat::NV12) {
-                    sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
-                } else {
-                    sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
-                }
-            }   
+            if (bitDepth_ == BitDepth_10bit && targetPixelFmt == VideoPixelFormat::NV12) {
+                sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
+            } else if (bitDepth_ == BitDepth_10bit) {
+                sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
+            }
         }
         callback_->OnOutputFormatChanged(format_);
     }
@@ -873,61 +875,25 @@ void HevcDecoder::SendFrame()
     std::shared_ptr<HBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
-        hevcDecoder_input_args_.pStream = nullptr;
+        hevcDecoderInputArgs_.pStream = nullptr;
         isSendEos_ = true;
         AVCODEC_LOGI("Send eos end");
     } else {
-        hevcDecoder_input_args_.pStream = inputAVBuffer->memory_->GetAddr();
-        hevcDecoder_input_args_.uiStreamLen = static_cast<int32_t>(inputAVBuffer->memory_->GetSize());
-        hevcDecoder_input_args_.uiTimeStamp = inputAVBuffer->pts_;
+        hevcDecoderInputArgs_.pStream = inputAVBuffer->memory_->GetAddr();
+        hevcDecoderInputArgs_.uiStreamLen = static_cast<int32_t>(inputAVBuffer->memory_->GetSize());
+        hevcDecoderInputArgs_.uiTimeStamp = inputAVBuffer->pts_;
     }
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     while (true) {
-        if (hevcSDecoder_ != nullptr && hevcDecoderFlushFrameFunc_ != nullptr && hevcDecoderDecodecFrameFunc_ != nullptr) {
-            if (isSendEos_) {
-                ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoder_output_args_);
-            } else {
-                ret = hevcDecoderDecodecFrameFunc_(hevcSDecoder_, &hevcDecoder_input_args_, &hevcDecoder_output_args_);
-            }
-        } else {
-            AVCODEC_LOGW("hevcDecoderDecodecFrameFunc_ = nullptr || hevcSDecoder_ = nullptr || hevcDecoderFlushFrameFunc_ = nullptr, "
-                "cannot call decoder");
-            ret = -1;
-        }
+        ret = DecodeFrameOnce();
         if (ret != 0) {
             break;
         }
-        auto index = codecAvailQue_->Front();
-        CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
-        std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
-        int32_t bitDepth = hevcDecoder_output_args_.uiDecBitDepth;
-        if (bitDepth != 8 && bitDepth != 10) {
-            AVCODEC_LOGE("Unsupported bitDepth %{public}d", bitDepth);
-            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA);
-            state_ = State::ERROR;
-            runLock.unlock();
-            return;
-        }
-        ConvertDecOutToAVFrame(bitDepth);
-        int32_t status = AVCS_ERR_OK;
-        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height, bitDepth) == AVCS_ERR_OK) {
-            CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
-            frameBuffer = buffers_[INDEX_OUTPUT][index];
-            status = FillFrameBuffer(frameBuffer);
-        } else {
-            CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
-            callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
-            runLock.unlock();
-            return;
-        }
-        frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
-        FramePostProcess(frameBuffer, index, status, AVCS_ERR_OK);
-
         if (!isSendEos_) {
-            hevcDecoder_input_args_.uiStreamLen -= hevcDecoder_output_args_.uiDecStreamLen;
-            hevcDecoder_input_args_.pStream += hevcDecoder_output_args_.uiDecStreamLen;
+            hevcDecoderInputArgs_.uiStreamLen -= hevcDecoderOutpusArgs_.uiDecStreamLen;
+            hevcDecoderInputArgs_.pStream += hevcDecoderOutpusArgs_.uiDecStreamLen;
         }
     }
     runLock.unlock();
@@ -938,13 +904,52 @@ void HevcDecoder::SendFrame()
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
         FramePostProcess(buffers_[INDEX_OUTPUT][index], index, AVCS_ERR_OK, AVCS_ERR_OK);
         state_ = State::EOS;
-    } else if (ret < 0){
+    } else if (ret < 0) {
         AVCODEC_LOGE("decode frame error: ret = %{public}d", ret);
     }
 
     inputAvailQue_->Pop();
     inputBuffer->owner_ = HBuffer::Owner::OWNED_BY_USER;
     callback_->OnInputBufferAvailable(index, inputAVBuffer);
+}
+
+int32_t HevcDecoder::DecodeFrameOnce()
+{
+    int32_t ret = 0;
+    if (hevcSDecoder_ != nullptr && hevcDecoderFlushFrameFunc_ != nullptr &&
+        hevcDecoderDecodecFrameFunc_ != nullptr) {
+        if (isSendEos_) {
+            ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
+        } else {
+            ret = hevcDecoderDecodecFrameFunc_(hevcSDecoder_, &hevcDecoderInputArgs_, &hevcDecoderOutpusArgs_);
+        }
+    } else {
+        AVCODEC_LOGW("hevcDecoderDecodecFrameFunc_ = nullptr || hevcSDecoder_ = nullptr || "
+                        "hevcDecoderFlushFrameFunc_ = nullptr, cannot call decoder");
+        ret = -1;
+    }
+    int32_t bitDepth = hevcDecoderOutpusArgs_.uiDecBitDepth;
+    if (ret == 0) {
+        CHECK_AND_RETURN_RET_LOG(bitDepth == BitDepth_8bit || bitDepth == BitDepth_10bit, -1,
+                                 "Unsupported bitDepth %{public}d", bitDepth);
+        ConvertDecOutToAVFrame(bitDepth);
+        auto index = codecAvailQue_->Front();
+        CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+        std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
+        int32_t status = AVCS_ERR_OK;
+        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height, bitDepth) == AVCS_ERR_OK) {
+            CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+            frameBuffer = buffers_[INDEX_OUTPUT][index];
+            status = FillFrameBuffer(frameBuffer);
+        } else {
+            CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+            callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
+            return -1;
+        }
+        frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
+        FramePostProcess(frameBuffer, index, status, AVCS_ERR_OK);
+    }
+    return ret;
 }
 
 int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer)
@@ -954,7 +959,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         targetPixelFmt = VideoPixelFormat::NV12;
     }
     AVPixelFormat ffmpegFormat = AVPixelFormat::AV_PIX_FMT_NV12;
-    if (bitDepth_ == 10) {
+    if (bitDepth_ == BitDepth_10bit) {
         ffmpegFormat = AVPixelFormat::AV_PIX_FMT_P010LE;
     } else {
         ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
@@ -1009,27 +1014,27 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     if (cachedFrame_ == nullptr) {
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
     }
-    cachedFrame_->data[0] = hevcDecoder_output_args_.pucOutYUV[0];
-    cachedFrame_->data[1] = hevcDecoder_output_args_.pucOutYUV[1];
-    cachedFrame_->data[2] = hevcDecoder_output_args_.pucOutYUV[2];
+    cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
+    cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
+    cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 v channel
     if (bitDepth == 8) {
         cachedFrame_->format = static_cast<int>(AVPixelFormat::AV_PIX_FMT_YUV420P);
-        cachedFrame_->linesize[0] = hevcDecoder_output_args_.uiDecStride;
-        cachedFrame_->linesize[1] = hevcDecoder_output_args_.uiDecStride >> 1;
-        cachedFrame_->linesize[2] = hevcDecoder_output_args_.uiDecStride >> 1;
+        cachedFrame_->linesize[0] = hevcDecoderOutpusArgs_.uiDecStride;
+        cachedFrame_->linesize[1] = hevcDecoderOutpusArgs_.uiDecStride >> 1; // 1 u channel
+        cachedFrame_->linesize[2] = hevcDecoderOutpusArgs_.uiDecStride >> 1; // 2 v channel
     } else {
         cachedFrame_->format = static_cast<int>(AVPixelFormat::AV_PIX_FMT_YUV420P10LE);
-        cachedFrame_->linesize[0] = hevcDecoder_output_args_.uiDecStride * 2;
-        cachedFrame_->linesize[1] = hevcDecoder_output_args_.uiDecStride;
-        cachedFrame_->linesize[2] = hevcDecoder_output_args_.uiDecStride;
-        if (outputPixelFmt_ == VideoPixelFormat::NV21) {
-            cachedFrame_->data[1] = hevcDecoder_output_args_.pucOutYUV[2];
-            cachedFrame_->data[2] = hevcDecoder_output_args_.pucOutYUV[1];
+        cachedFrame_->linesize[0] = hevcDecoderOutpusArgs_.uiDecStride * 2; // 2 10bit per pixel 2bits
+        cachedFrame_->linesize[1] = hevcDecoderOutpusArgs_.uiDecStride; // 1 u channel
+        cachedFrame_->linesize[2] = hevcDecoderOutpusArgs_.uiDecStride; // 2 v channel
+        if (outputPixelFmt_ == VideoPixelFormat::NV21) { // exchange uv channel
+            cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 u -> v
+            cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 2 v -> u
         }
     }
-    cachedFrame_->width = hevcDecoder_output_args_.uiDecWidth;
-    cachedFrame_->height = hevcDecoder_output_args_.uiDecHeight;
-    cachedFrame_->pts = hevcDecoder_output_args_.uiTimeStamp;
+    cachedFrame_->width = hevcDecoderOutpusArgs_.uiDecWidth;
+    cachedFrame_->height = hevcDecoderOutpusArgs_.uiDecHeight;
+    cachedFrame_->pts = hevcDecoderOutpusArgs_.uiTimeStamp;
 }
 
 void HevcDecoder::RenderFrame()
@@ -1150,7 +1155,7 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
 int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED || 
+    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED ||
                              state_ == State::FLUSHED), AVCS_ERR_INVALID_STATE,
                              "set output surface fail:  not in Initialized or Configured state");
     if (surface == nullptr || surface->IsConsumer()) {
@@ -1184,16 +1189,18 @@ int32_t HevcDecoder::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     return AVCS_ERR_OK;
 }
 
-int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
-{ 
+int32_t HevcDecoder::CheckHevcDecLibStatus()
+{
     void* handle = dlopen(HEVC_DEC_LIB_PATH, RTLD_LAZY);
     if (handle != nullptr) {
-        auto hevcDecoderCreateFunc = reinterpret_cast<CreateHevcDecoderFuncType>(dlsym(handle, HEVC_DEC_CreateFuncName));
-        auto hevcDecoderDecodecFrameFunc = reinterpret_cast<DecodeFuncType>(dlsym(handle, HEVC_DEC_DecodeFrameFuncName));
-        auto hevcDecoderFlushFrameFunc = reinterpret_cast<FlushFuncType>(dlsym(handle, HEVC_DEC_FlushFrameName));
-        auto hevcDecoderDeleteFunc = reinterpret_cast<DeleteFuncType>(dlsym(handle, HEVC_DEC_DeleteFuncName));
-        if (hevcDecoderCreateFunc == nullptr || hevcDecoderDecodecFrameFunc == nullptr \
-            || hevcDecoderDeleteFunc == nullptr || hevcDecoderFlushFrameFunc == nullptr) {
+        auto hevcDecoderCreateFunc = reinterpret_cast<CreateHevcDecoderFuncType>(
+            dlsym(handle, HEVC_DEC_CREATE_FUNC_NAME));
+        auto hevcDecoderDecodecFrameFunc = reinterpret_cast<DecodeFuncType>(
+            dlsym(handle, HEVC_DEC_DECODE_FRAME_FUNC_NAME));
+        auto hevcDecoderFlushFrameFunc = reinterpret_cast<FlushFuncType>(dlsym(handle, HEVC_DEC_FLUSH_FRAME_FUNC_NAME));
+        auto hevcDecoderDeleteFunc = reinterpret_cast<DeleteFuncType>(dlsym(handle, HEVC_DEC_DELETE_FUNC_NAME));
+        if (hevcDecoderCreateFunc == nullptr || hevcDecoderDecodecFrameFunc == nullptr ||
+            hevcDecoderDeleteFunc == nullptr || hevcDecoderFlushFrameFunc == nullptr) {
                 AVCODEC_LOGE("HevcDecoder hevcFuncMatch_ failed!");
                 hevcDecoderCreateFunc = nullptr;
                 hevcDecoderDecodecFrameFunc = nullptr;
@@ -1203,12 +1210,21 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
                 handle = nullptr;
             }
     }
-    if (handle != nullptr) {
-        dlclose(handle);
-        handle = nullptr;
-    } else {
+
+    if (handle == nullptr) {
         return AVCS_ERR_UNSUPPORT;
     }
+    dlclose(handle);
+    handle = nullptr;
+
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
+{
+    CHECK_AND_RETURN_RET_LOG(CheckHevcDecLibStatus() == AVCS_ERR_OK, AVCS_ERR_UNSUPPORT,
+                             "hevc decoder libs not available");
+
     for (uint32_t i = 0; i < SUPPORT_HEVC_DECODER_NUM; ++i) {
         CapabilityData capsData;
         capsData.codecName = static_cast<std::string>(SUPPORT_HEVC_DECODER[i].codecName);
@@ -1228,9 +1244,10 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         capsData.blockPerSecond.maxVal = VIDEO_BLOCKPERSEC_SIZE;
         capsData.blockSize.width = VIDEO_ALIGN_SIZE;
         capsData.blockSize.height = VIDEO_ALIGN_SIZE;
-        capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12), static_cast<int32_t>(VideoPixelFormat::NV21)};
+        capsData.pixFormat = {static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::NV21)};
         capsData.profiles = {static_cast<int32_t>(HEVC_PROFILE_MAIN), static_cast<int32_t>(HEVC_PROFILE_MAIN_10)};
-                            
+
         std::vector<int32_t> levels;
         for (int32_t j = 0; j <= static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_62); ++j) {
             levels.emplace_back(j);
@@ -1242,21 +1259,22 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
     return AVCS_ERR_OK;
 }
 
-std::string format(const char* fmt, ...) {
+std::string format(const char* fmt, ...)
+{
     va_list args;
     va_start(args, fmt);
-    size_t size = std::vsnprintf(nullptr, 0, fmt, args) + 1; // Extra space for '\0'
+    size_t size = vsnprintf_s(nullptr, 0, 0, fmt, args) + 1; // Extra space for '\0'
     va_end(args);
 
     std::vector<char> buf(size);
     va_start(args, fmt);
-    std::vsnprintf(buf.data(), buf.size(), fmt, args);
+    vsnprintf_s(buf.data(), buf.size(), buf.size()-1,  fmt, args);
     va_end(args);
 
     return std::string(buf.data(), buf.size() - 1); // We don't want the '\0' inside
 }
 
-void HEVC_DEC_Log(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_msg, ...)
+void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_msg, ...)
 {
     va_list args;
     va_start(args, (const char*)p_msg);
@@ -1270,32 +1288,25 @@ void HEVC_DEC_Log(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_m
 
     auto msg = std::string(buf.data(), buf.size() - 1);
     
-    if (eLevel <= IHW265VIDEO_ALG_LOG_ERROR) 
-    {
-        switch(eLevel)
-        {
-            case IHW265VIDEO_ALG_LOG_ERROR:
-            {
+    if (eLevel <= IHW265VIDEO_ALG_LOG_ERROR) {
+        switch(eLevel) {
+            case IHW265VIDEO_ALG_LOG_ERROR: {
                 AVCODEC_LOGE("%{public}s", msg.c_str());
                 break;
             }
-            case IHW265VIDEO_ALG_LOG_WARNING:
-            {
+            case IHW265VIDEO_ALG_LOG_WARNING: {
                 AVCODEC_LOGW("%{public}s", msg.c_str());
                 break;
             }
-            case IHW265VIDEO_ALG_LOG_INFO:
-            {
+            case IHW265VIDEO_ALG_LOG_INFO: {
                 AVCODEC_LOGI("%{public}s", msg.c_str());
                 break;
             }
-            case IHW265VIDEO_ALG_LOG_DEBUG:
-            {
+            case IHW265VIDEO_ALG_LOG_DEBUG: {
                 AVCODEC_LOGD("%{public}s", msg.c_str());
                 break;
             }
-            default:
-            {
+            default: {
                 AVCODEC_LOGI("%{public}s", msg.c_str());
                 break;
             }

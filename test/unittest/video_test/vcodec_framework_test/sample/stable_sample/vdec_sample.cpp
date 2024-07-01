@@ -90,11 +90,12 @@ public:
             int32_t height = buffer->GetHeight();
             int32_t stride = buffer->GetStride();
             int32_t pixelbytes = 1;
-            if (stride >= width * 2) {
-                pixelbytes = 2;
+            if (stride >= width * 2) { // 2 10bit per pixel 2bits
+                pixelbytes = 2; // 2 10bit per pixel 2bits
             }
             for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
-                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride, width * pixelbytes);
+                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride,
+                                               width * pixelbytes);
             }
         }
         cs_->ReleaseBuffer(buffer, -1);
@@ -621,14 +622,15 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &heightSlice_);
         }
         int32_t pixelbytes = 1;
-        if (stride_ >= width_ * 2) {
-            pixelbytes = 2;
+        if (stride_ >= width_ * 2) { // 2 10bit per pixel 2bits
+            pixelbytes = 2; // 2 10bit per pixel 2bits
         }
         for (int32_t i = 0; i < heightSlice_; ++i) {
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_ * pixelbytes);
         }
         for (int32_t i = 0; i < (height_ >> 1); ++i) { // 2: denom
-            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + (heightSlice_ + i) * stride_, width_ * pixelbytes);
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + (heightSlice_ + i) * stride_,
+                                           width_ * pixelbytes);
         }
     }
     if (addr == nullptr) {
