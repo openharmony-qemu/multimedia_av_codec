@@ -48,7 +48,8 @@ audio_framework_root_dir = "//foundation/multimedia/audio_framework"
 graphic_2d_root_dir = "//foundation/graphic/graphic_2d"
 c_utils_root_dir = "//commonlibrary/c_utils"
 drm_framework_root_dir = "//foundation/multimedia/drm_framework"
-video_processing_engine_root_dir = "//foundation/multimedia/video_processing_engine"
+video_processing_engine_root_dir =
+    "//foundation/multimedia/video_processing_engine"
 
 av_codec_defines = [
   "HST_ANY_WITH_NO_RTTI",
