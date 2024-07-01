@@ -566,7 +566,7 @@ int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageP
                    ->SetOutputBufferRenderTimestamp(index, renderTimestampNs);
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
 
-    bool ret = reply.WriteInt32(RenderOutputBufferAtTime(index, renderTimestampNs));
+    ret = reply.WriteInt32(RenderOutputBufferAtTime(index, renderTimestampNs));
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
