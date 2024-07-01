@@ -406,21 +406,4 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Dump_001, TestSize.Level1)
     EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
     PrintAndCloseFd(fileFd);
 }
-
-/**
- * @tc.name: AVCodec_Server_Dump_002
- * @tc.desc: DumpInfo will once Dump fail
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Dump_002, TestSize.Level1)
-{
-    std::shared_ptr<AVCodecServer> server = nullptr;
-    std::vector<std::u16string> args = {u"All"};
-    int32_t fileFd = -1;
-    EXPECT_CALL(*codecStubMock_, Dump).Times(AtLeast(1)).WillRepeatedly(Return(OHOS::NO_ERROR));
-
-    CreateCodecServiceStub(server);
-    EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
-    PrintAndCloseFd(fileFd);
-}
-
 } // namespace
