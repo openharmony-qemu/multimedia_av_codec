@@ -394,6 +394,14 @@ int32_t VideoDecSample::RenderOutputBuffer(uint32_t index)
     return videoDec_->RenderOutputBuffer(index);
 }
 
+int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    if (videoDec_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return videoDec_->RenderOutputBufferAtTime(index, renderTimestampNs);
+}
+
 int32_t VideoDecSample::FreeOutputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
@@ -768,8 +776,11 @@ int32_t VideoDecSample::OutputLoopInnerExt()
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
     } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
-        ret = RenderOutputBuffer(index);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail index: %d", index);
+        int64_t renderTimestamp =
+        chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now()).time_since_epoch().count();
+        ret = (renderAtTimeFlag_ == true) ? RenderOutputBufferAtTime(codec_, index, renderTimestamp) : RenderOutputBuffer(index);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputBuffer failed index: %d", index);
+        }
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
         if (!isSurfaceMode_ && NEED_DUMP && outFile_->is_open()) {

@@ -638,6 +638,21 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(struct OH_AVCodec *codec, uint32
     return AV_ERR_OK;
 }
 
+OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_t index, int64_t renderTimestampNs)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
+                             "Codec magic error!");
+    struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(videoDecObj->isSetBufferCallback_, AV_ERR_INVALID_STATE,
+                             "The callback of OH_AVBuffer is nullptr!");
+
+    int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, true);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "Video decoder render output buffer at time failed!");
+}
+
 OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t index)
 {
     AVCODEC_LOGD("In OH_VideoDecoder_FreeOutputData");

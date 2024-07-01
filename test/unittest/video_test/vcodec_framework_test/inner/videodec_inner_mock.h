@@ -42,6 +42,7 @@ public:
     int32_t FreeOutputData(uint32_t index) override;
     int32_t PushInputBuffer(uint32_t index) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
+    int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) override;
     int32_t FreeOutputBuffer(uint32_t index) override;
     bool IsValid() override;
     int32_t SetVideoDecryptionConfig() override;

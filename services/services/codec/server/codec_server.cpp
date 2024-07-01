@@ -574,6 +574,20 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     return ret;
 }
 
+int32_t CodecServer::ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    std::shared_lock<std::shared_mutex> freeLock(freeMutex_);
+    if (isFree_) {
+        AVCODEC_LOGE("In invalid state, free out");
+        return AVCS_ERR_INVALID_STATE;
+    }
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
+                             "In invalid state, %{public}s", GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->RenderOutputBuffer(index);
+}
+
 int32_t CodecServer::SetParameter(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);

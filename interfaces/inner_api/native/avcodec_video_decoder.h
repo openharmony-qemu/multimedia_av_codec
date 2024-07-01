@@ -159,6 +159,22 @@ public:
     virtual int32_t ReleaseOutputBuffer(uint32_t index, bool render) = 0;
 
     /**
+     * @brief Return the processed output buffer with render timestamp to the decoder, and notify the decoder to finish
+     * rendering the decoded data contained in the buffer on the output surface. If the output surface is not
+     * configured before, calling this interface only returns the output buffer corresponding to the specified index to
+     * the decoder. The timestamp may have special meaning depending on the destination surface.
+     *
+     * This function must be called during running
+     *
+     * @param index The index of the output buffer.
+     * @param renderTimestampNs The timestamp is associated with the output buffer when it is sent to the surface. The
+     * unit is nanosecond.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
+    virtual int32_t ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) = 0;
+
+    /**
      * @brief Sets the parameters to the decoder.
      *
      * This function must be called after {@link Configure}
@@ -223,7 +239,7 @@ public:
         (void)name;
         return nullptr;
     }
-    
+
     static int32_t CreateByMime(const std::string &mime, Format &format, std::shared_ptr<AVCodecVideoDecoder> &decoder)
     {
         (void)name;
@@ -259,7 +275,7 @@ public:
      * @version 3.1
      */
     static std::shared_ptr<AVCodecVideoDecoder> CreateByName(const std::string &name);
-    
+
     /**
      * @brief Instantiate the preferred decoder of the given mime type.
      *

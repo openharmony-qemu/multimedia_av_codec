@@ -244,6 +244,14 @@ int32_t VideoDecInnerMock::RenderOutputBuffer(uint32_t index)
     return AV_ERR_UNKNOWN;
 }
 
+int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    if (videoDec_ != nullptr) {
+        return videoDec_->RenderOutputBufferAtTime(index, renderTimestampNs);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
 int32_t VideoDecInnerMock::FreeOutputBuffer(uint32_t index)
 {
     if (videoDec_ != nullptr) {

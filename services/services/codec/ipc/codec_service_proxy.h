@@ -44,6 +44,7 @@ public:
     int32_t QueueInputParameter(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
+    int32_t ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) override;
     int32_t SetParameter(const Format &format) override;
     int32_t GetInputFormat(Format &format) override;
 

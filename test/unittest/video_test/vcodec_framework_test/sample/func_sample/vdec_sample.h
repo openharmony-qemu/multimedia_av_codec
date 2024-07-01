@@ -110,6 +110,7 @@ public:
     int32_t FreeOutputData(uint32_t index);
     int32_t PushInputBuffer(uint32_t index);
     int32_t RenderOutputBuffer(uint32_t index);
+    int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs);
     int32_t FreeOutputBuffer(uint32_t index);
     bool IsValid();
     int32_t SetVideoDecryptionConfig();
@@ -119,6 +120,7 @@ public:
     void SetSourceType(bool isH264Stream);
     bool needCheckSHA_ = false;
     int32_t testParam_ = VCodecTestParam::SW_AVC;
+    bool renderAtTimeFlag_ =false;
 
 private:
     void FlushInner();
