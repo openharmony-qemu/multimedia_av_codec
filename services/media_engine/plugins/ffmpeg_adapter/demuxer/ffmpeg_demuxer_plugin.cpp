@@ -379,10 +379,10 @@ Status FFmpegDemuxerPlugin::ParserRefInit(int64_t timeStampMs)
     AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
     FALSE_RETURN_V_MSG_E(videoStream != nullptr, Status::ERROR_UNKNOWN,
                          "ParserRefHeader failed due to video stream is null.");
-    FALSE_RETURN_V_MSG_E(videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ||
-                             videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
-                         Status::ERROR_UNKNOWN, "ParserRefHeader failed due to codec type not support." PUBLIC_LOG_D32,
-                         videoStream->codecpar->codec_id);
+    FALSE_RETURN_V_MSG_E(
+        videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
+        Status::ERROR_UNSUPPORTED_FORMAT, "ParserRefHeader failed due to codec type not support." PUBLIC_LOG_D32,
+        videoStream->codecpar->codec_id);
     CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
@@ -479,13 +479,14 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
-    MEDIA_LOG_D("GetFrameLayerInfo dts: " PUBLIC_LOG_D64, videoSample->dts_);
+    MEDIA_LOG_D("GetFrameLayerInfo called, dts: " PUBLIC_LOG_D64, videoSample->dts_);
     return referenceParser_->GetFrameLayerInfo(videoSample->dts_, frameLayerInfo);
 }
 
 Status FFmpegDemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
+    MEDIA_LOG_D("GetGopLayerInfo called, gopId: " PUBLIC_LOG_U32, gopId);
     return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
 }
 
@@ -1029,11 +1030,9 @@ void FFmpegDemuxerPlugin::NotifyInitializationCompleted()
 void FFmpegDemuxerPlugin::ParserBoxInfo()
 {
     int32_t videoStreamIdx = av_find_best_stream(formatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-    if (videoStreamIdx < 0) {
-        return;
-    }
-
+    FALSE_RETURN_MSG(videoStreamIdx >= 0, "ParserBoxInfo failed due to can not find video stream.");
     AVStream *videoStream = formatContext_->streams[videoStreamIdx];
+    FALSE_RETURN_MSG(videoStream != nullptr, "ParserBoxInfo failed due to video stream is null.");
     if (videoStream->avg_frame_rate.den == 0 || videoStream->avg_frame_rate.num == 0) {
         fps_ = videoStream->r_frame_rate.num / (double)videoStream->r_frame_rate.den;
     } else {

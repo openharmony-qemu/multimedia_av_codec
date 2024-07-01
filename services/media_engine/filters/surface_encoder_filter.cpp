@@ -244,6 +244,14 @@ void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (mediaCodec_ == nullptr) {
         return;
     }
+    bool isEos = false;
+    if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
+        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
+        if (isEos) {
+            NotifyEos();
+            return;
+        }
+    }
     mediaCodec_->SetParameter(parameter);
 }
 

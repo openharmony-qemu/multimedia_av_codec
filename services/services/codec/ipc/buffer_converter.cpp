@@ -260,18 +260,18 @@ void BufferConverter::SetFormat(const Format &format)
     if (format.GetIntValue(Tag::VIDEO_PIXEL_FORMAT, pixelFormat)) {
         SetPixFormat(static_cast<VideoPixelFormat>(pixelFormat));
     }
-    if (format.GetIntValue(Tag::VIDEO_PIC_WIDTH, width) || format.GetIntValue(Tag::VIDEO_DISPLAY_WIDTH, width)) {
+    if (format.GetIntValue(Tag::VIDEO_PIC_WIDTH, width) || format.GetIntValue(Tag::VIDEO_WIDTH, width)) {
         SetWidth(width);
     }
-    if (format.GetIntValue(Tag::VIDEO_PIC_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_DISPLAY_HEIGHT, height)) {
+    if (format.GetIntValue(Tag::VIDEO_PIC_HEIGHT, height) || format.GetIntValue(Tag::VIDEO_HEIGHT, height)) {
         SetHeight(height);
     }
-    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride) || format.GetIntValue(Tag::VIDEO_WIDTH, wStride)) {
+    if (!format.GetIntValue(Tag::VIDEO_STRIDE, wStride)) {
         SetWidthStride(rect_.wStride);
     } else {
         hwRect_.wStride = wStride;
     }
-    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride) && !format.GetIntValue(Tag::VIDEO_HEIGHT, hStride)) {
+    if (!format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride)) {
         SetHeightStride(rect_.hStride);
     } else {
         hwRect_.hStride = hStride;

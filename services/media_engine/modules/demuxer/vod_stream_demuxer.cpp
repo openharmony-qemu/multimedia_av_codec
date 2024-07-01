@@ -69,7 +69,7 @@ bool VodStreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t
 bool VodStreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
-        MEDIA_LOG_I("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
+        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
         if (cacheDataMap_[streamID].CheckCacheExist(offset)) {
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
             if (memory != nullptr && memory->GetSize() > 0) {
@@ -173,9 +173,9 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
         return false;
     }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
-        MEDIA_LOG_I("PullDataWithoutCache, cacheDataMap_ exist streamID , do nothing.");
+        MEDIA_LOG_D("PullDataWithoutCache, cacheDataMap_ exist streamID , do nothing.");
         if (IsDash()) {
-            MEDIA_LOG_I("dash PullDataWithoutCache, cacheDataMap_ exist streamID , merge it.");
+            MEDIA_LOG_D("dash PullDataWithoutCache, cacheDataMap_ exist streamID , merge it.");
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
             std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
                 bufferPtr->GetMemory()->GetSize() + memory->GetSize());
@@ -199,7 +199,7 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
         cacheDataMap_[streamID] = cacheTmp;
     }
     if (cacheDataMap_[streamID].GetData() == nullptr || cacheDataMap_[streamID].GetData()->GetMemory() == nullptr) {
-        MEDIA_LOG_I("PullDataWithoutCache, write cache data.");
+        MEDIA_LOG_D("PullDataWithoutCache, write cache data.");
         if (bufferPtr->GetMemory() == nullptr) {
             MEDIA_LOG_W("PullDataWithoutCache, write cache data error. memory is nullptr!");
         } else {
@@ -208,7 +208,7 @@ bool VodStreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, s
                 buffer->GetMemory()->Write(bufferPtr->GetMemory()->GetReadOnlyData(),
                     bufferPtr->GetMemory()->GetSize(), 0);
                 cacheDataMap_[streamID].Init(buffer, offset);
-                MEDIA_LOG_I("PullDataWithoutCache, write cache data success. offset=" PUBLIC_LOG_U64, offset);
+                MEDIA_LOG_D("PullDataWithoutCache, write cache data success. offset=" PUBLIC_LOG_U64, offset);
             } else {
                 MEDIA_LOG_W("PullDataWithoutCache, write cache data failed. memory is nullptr!");
             }
@@ -256,7 +256,7 @@ Status VodStreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size
     uint64_t totalSize = 0;
     if ((source_->GetSize(totalSize) == Status::OK) && (totalSize != 0)) {
         if (offset >= totalSize) {
-            MEDIA_LOG_W("Offset: " PUBLIC_LOG_U64 " is larger than totalSize: " PUBLIC_LOG_U64, offset, totalSize);
+            MEDIA_LOG_D("Offset: " PUBLIC_LOG_U64 " is larger than totalSize: " PUBLIC_LOG_U64, offset, totalSize);
             return Status::END_OF_STREAM;
         }
         if ((offset + readSize) > totalSize) {

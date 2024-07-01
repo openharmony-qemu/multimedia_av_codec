@@ -58,6 +58,7 @@ string g_m4aPath = TEST_FILE_PATH + string("audio/m4a_48000_1.m4a");
 string g_mp3Path = TEST_FILE_PATH + string("audio/mp3_48000_1_cover.mp3");
 string g_oggPath = TEST_FILE_PATH + string("audio/ogg_48000_1.ogg");
 string g_wavPath = TEST_FILE_PATH + string("audio/wav_48000_1.wav");
+string g_wavPath2 = TEST_FILE_PATH + string("wav_audio_test_202406290859.wav");
 string g_amrPath = TEST_FILE_PATH + string("audio/amr_nb_8000_1.amr");
 string g_amrPath2 = TEST_FILE_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividPath = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.mp4");
@@ -1962,5 +1963,34 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_4000, TestSize.Level1)
     ASSERT_EQ(formatVal_.title, "bom");
     ASSERT_EQ(formatVal_.artist, "张三");
     ASSERT_EQ(formatVal_.album, "a");
+}
+
+/**
+ * @tc.name: AVSource_ValidateMimeType_1000
+ * @tc.desc: validate MimeType when av_codec Type is mulaw
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_ValidateMimeType_1000, TestSize.Level1)
+{
+    fd_ = OpenFile(g_wavPath2);
+    size_ = GetFileSize(g_wavPath2);
+    printf("----%s----\n", g_wavPath2.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_EQ(formatVal_.codecMime, "audio/g711mu");
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 705600);
 }
 } // namespace

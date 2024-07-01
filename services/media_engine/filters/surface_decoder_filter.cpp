@@ -145,9 +145,9 @@ Status SurfaceDecoderFilter::NotifyNextFilterEos()
     MEDIA_LOG_I("NotifyNextFilterEos");
     for (auto iter : nextFiltersMap_) {
         for (auto filter : iter.second) {
-            Filter* tmp = (Filter*)filter.get();
-            SurfaceEncoderFilter* surfaceEncoderFilter = static_cast<SurfaceEncoderFilter*>(tmp);
-            surfaceEncoderFilter->NotifyEos();
+            std::shared_ptr<Meta> eosMeta = std::make_shared<Meta>();
+            eosMeta->Set<Tag::MEDIA_END_OF_STREAM>(true);
+            filter->SetParameter(eosMeta);
         }
     }
     return Status::OK;
