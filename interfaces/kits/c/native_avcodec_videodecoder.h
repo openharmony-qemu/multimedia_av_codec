@@ -372,7 +372,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(OH_AVCodec *codec, uint32_t inde
  * before, calling this interface only returns the output buffer corresponding to the specified index to the decoder.
  * The timestamp may have special meaning depending on the destination surface.
  * Invoker can use the timestamp to render the buffer at a specific time (at the VSYNC at or after the buffer
- * timestamp). For this to work, the timestamp needs to be reasonably close to the current SystemnanoTime. A few notes:
+ * timestamp). For this to work, the timestamp needs to be reasonably close to the current SystemNanoTime. A few notes:
  * 1. The buffer will not be returned to the codec until the timestamp has passed and the buffer is no longer used by
  *    the surface.
  * 2. Buffers are processed sequentially, so you may block subsequent buffers to be displayed on the surface.
@@ -390,7 +390,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(OH_AVCodec *codec, uint32_t inde
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}.
  * {@link AV_ERR_NO_MEMORY}, the codec has already released.
- * {@link AV_ERR_INVALID_VAL}, the parameter is invalid. 
+ * {@link AV_ERR_INVALID_VAL}, the parameter is invalid.
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.

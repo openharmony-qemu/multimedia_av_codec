@@ -257,7 +257,7 @@ int32_t VideoDecCapiMock::RenderOutputBuffer(uint32_t index)
 
 int32_t VideoDecCapiMock::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
-     return OH_VideoDecoder_RenderOutputBufferAtTime(codec_, index, renderTimestampNs);
+    return OH_VideoDecoder_RenderOutputBufferAtTime(codec_, index, renderTimestampNs);
 }
 
 int32_t VideoDecCapiMock::FreeOutputBuffer(uint32_t index)

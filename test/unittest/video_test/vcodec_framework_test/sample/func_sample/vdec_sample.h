@@ -120,7 +120,7 @@ public:
     void SetSourceType(bool isH264Stream);
     bool needCheckSHA_ = false;
     int32_t testParam_ = VCodecTestParam::SW_AVC;
-    bool renderAtTimeFlag_ =false;
+    bool renderAtTimeFlag_ = false;
 
 private:
     void FlushInner();

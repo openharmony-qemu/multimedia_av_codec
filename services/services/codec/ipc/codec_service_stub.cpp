@@ -130,68 +130,68 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
     std::string funcName =
         itFuncName != CODEC_FUNC_NAME.end() ? itFuncName->second : "CodecServiceStub OnRemoteRequest";
     switch (code) {
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER):
-        ret = QueueInputBuffer(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER):
-        ret = ReleaseOutputBuffer(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME):
-        ret = RenderOutputBufferAtTime(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::INIT):
-        ret = Init(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::CONFIGURE):
-        ret = Configure(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::START):
-        ret = Start(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::STOP):
-        ret = Stop(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::FLUSH):
-        ret = Flush(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RESET):
-        ret = Reset(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE):
-        ret = Release(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_EOS):
-        ret = NotifyEos(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::CREATE_INPUT_SURFACE):
-        ret = CreateInputSurface(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE):
-        ret = SetOutputSurface(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_OUTPUT_FORMAT):
-        ret = GetOutputFormat(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_PARAMETER):
-        ret = SetParameter(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_INPUT_FORMAT):
-        ret = GetInputFormat(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::DESTROY_STUB):
-        ret = DestroyStub(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ):
-        ret = SetListenerObject(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_DECRYPT_CONFIG):
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER):
+            ret = QueueInputBuffer(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER):
+            ret = ReleaseOutputBuffer(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME):
+            ret = RenderOutputBufferAtTime(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::INIT):
+            ret = Init(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::CONFIGURE):
+            ret = Configure(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::START):
+            ret = Start(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::STOP):
+            ret = Stop(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::FLUSH):
+            ret = Flush(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RESET):
+            ret = Reset(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE):
+            ret = Release(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_EOS):
+            ret = NotifyEos(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::CREATE_INPUT_SURFACE):
+            ret = CreateInputSurface(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE):
+            ret = SetOutputSurface(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_OUTPUT_FORMAT):
+            ret = GetOutputFormat(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_PARAMETER):
+            ret = SetParameter(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_INPUT_FORMAT):
+            ret = GetInputFormat(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::DESTROY_STUB):
+            ret = DestroyStub(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ):
+            ret = SetListenerObject(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_DECRYPT_CONFIG):
 #ifdef SUPPORT_DRM
-        ret = SetDecryptConfig(data, reply);
+            ret = SetDecryptConfig(data, reply);
 #endif
-        break;
-    default:
-        AVCODEC_LOGW("No member func supporting, applying default process, code:%{public}u", code);
-        return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+            break;
+        default:
+            AVCODEC_LOGW("No member func supporting, applying default process, code:%{public}u", code);
+            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to call member func %{public}s", funcName.c_str());
     return ret;
