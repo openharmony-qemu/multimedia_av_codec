@@ -1332,7 +1332,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());

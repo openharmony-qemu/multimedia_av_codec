@@ -574,8 +574,9 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     return ret;
 }
 
-int32_t CodecServer::ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
+    (void)renderTimestampNs;
     std::shared_lock<std::shared_mutex> freeLock(freeMutex_);
     if (isFree_) {
         AVCODEC_LOGE("In invalid state, free out");

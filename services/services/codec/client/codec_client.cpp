@@ -314,16 +314,16 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
     return ret;
 }
 
-int32_t CodecClient::ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(callbackMode_ != INVALID_CALLBACK, AVCS_ERR_INVALID_STATE, "The callback is invalid!");
     CHECK_AND_RETURN_RET_LOG(renderTimestampNs >= 0, AVCS_ERR_INVALID_VAL,
-                             "The renderTimestamp:%{public}lld value error", renderTimestampNs);
+                             "The renderTimestamp:%{public}" PRID64 " value error", renderTimestampNs);
 
-    int32_t ret = codecProxy_->ReleaseOutputBufferAtTime(index, renderTimestampNs);
-    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u, renderTimestamp:%{public}lld", index,
+    int32_t ret = codecProxy_->RenderOutputBufferAtTime(index, renderTimestampNs);
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u, renderTimestamp:%{public}" PRID64, index,
                     renderTimestampNs);
     return ret;
 }

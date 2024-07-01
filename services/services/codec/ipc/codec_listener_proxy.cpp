@@ -221,7 +221,7 @@ bool CodecListenerProxy::SetOutputBufferRenderTimestamp(uint32_t index, int64_t 
 {
     std::shared_ptr<AVBuffer> buffer = outputBufferCache_->FindBufferFromIndex(index);
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Input buffer in cache is nullptr");
-    buffer->pts = renderTimestampNs;
+    buffer->pts_ = renderTimestampNs;
     return true;
 }
 

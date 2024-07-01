@@ -339,8 +339,9 @@ int32_t CodecServiceProxy::ReleaseOutputBuffer(uint32_t index, bool render)
     return reply.ReadInt32();
 }
 
-int32_t CodecServiceProxy::ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+int32_t CodecServiceProxy::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
 {
+    MessageParcel data;
     MessageParcel reply;
     MessageOption option;
 
@@ -349,7 +350,7 @@ int32_t CodecServiceProxy::ReleaseOutputBufferAtTime(uint32_t index, int64_t ren
 
     data.WriteUint32(index);
     data.WriteInt64(renderTimestampNs);
-    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER_AT_TIME),
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME),
                                         data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 

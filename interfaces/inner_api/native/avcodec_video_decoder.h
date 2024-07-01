@@ -172,7 +172,7 @@ public:
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
      */
-    virtual int32_t ReleaseOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) = 0;
+    virtual int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) = 0;
 
     /**
      * @brief Sets the parameters to the decoder.
