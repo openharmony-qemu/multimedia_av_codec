@@ -46,7 +46,7 @@ BaseStreamDemuxer::BaseStreamDemuxer()
 
 BaseStreamDemuxer::~BaseStreamDemuxer()
 {
-    MEDIA_LOG_I("~BaseStreamDemuxer called");
+    MEDIA_LOG_D("~BaseStreamDemuxer called");
 }
 
 void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
@@ -64,7 +64,7 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
     std::shared_ptr<TypeFinder> typeFinder = std::make_shared<TypeFinder>();
     typeFinder->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamID);
     std::string type = typeFinder->FindMediaType();
-    MEDIA_LOG_I("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
+    MEDIA_LOG_D("SnifferMediaType result type: " PUBLIC_LOG_S, type.c_str());
     return type;
 }
 

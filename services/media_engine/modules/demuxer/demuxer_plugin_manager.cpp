@@ -112,7 +112,7 @@ DemuxerPluginManager::DemuxerPluginManager()
 
 DemuxerPluginManager::~DemuxerPluginManager()
 {
-    MEDIA_LOG_I("~DemuxerPluginManager called");
+    MEDIA_LOG_D("~DemuxerPluginManager called");
     for (auto& iter : streamInfoMap_) {
         if (iter.second.plugin) {
             iter.second.plugin->Deinit();
@@ -295,7 +295,7 @@ Status DemuxerPluginManager::AddTempTrackInfo(const Plugins::MediaInfo& mediaInf
 void DemuxerPluginManager::AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo,
     bool isAddTrack, bool isAddTempTrack)
 {
-    MEDIA_LOG_I("AddMediaInfo enter");
+    MEDIA_LOG_D("AddMediaInfo enter");
     AddGeneral(streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
     for (uint32_t index = 0; index < streamInfoMap_[streamID].mediaInfo.tracks.size(); index++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[index];

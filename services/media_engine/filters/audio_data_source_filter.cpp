@@ -220,7 +220,7 @@ void AudioDataSourceFilter::ReadLoop()
         MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
         return;
     }
-    MEDIA_LOG_I("AudioDataSourceFilter GetSize : %{public}zu", bufferSize);
+    MEDIA_LOG_D("AudioDataSourceFilter GetSize : %{public}zu", bufferSize);
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;

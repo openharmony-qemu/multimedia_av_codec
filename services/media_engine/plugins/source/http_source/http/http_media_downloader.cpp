@@ -586,7 +586,7 @@ void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
         FALSE_RETURN(buffer_ != nullptr);
         buffer_->SetReadBlocking(isReadBlockingAllowed);
     } else {
-        MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
+        MEDIA_LOG_D("SetReadBlockingFlag is unimplemented.");
     }
 }
 
