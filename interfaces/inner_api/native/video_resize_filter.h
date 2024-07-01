@@ -24,9 +24,11 @@
 
 namespace OHOS {
 namespace Media {
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 namespace VideoProcessingEngine {
     class DetailEnhancerVideo;
 }
+#endif
 namespace Pipeline {
 class VideoResizeFilter : public Filter, public std::enable_shared_from_this<VideoResizeFilter> {
 public:
@@ -78,16 +80,18 @@ private:
 
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     std::shared_ptr<VideoProcessingEngine::DetailEnhancerVideo> videoEnhancer_;
+#endif
 
     std::string codecMimeType_;
     std::shared_ptr<Meta> configureParameter_;
 
     std::shared_ptr<Filter> nextFilter_;
 
-    std::shared_ptr<Task> releaseBufferTask_{nullptr};
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
+    std::shared_ptr<Task> releaseBufferTask_{nullptr};
     std::vector<uint32_t> indexs_;
     std::atomic<bool> isThreadExit_ = true;
 
