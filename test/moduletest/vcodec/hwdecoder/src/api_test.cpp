@@ -69,7 +69,7 @@ void HwdecApiNdkTest::SetUpTestCase()
     cout << "g_codecName: " << g_codecName << endl;
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
-    cout << "g_codecNameHEVC: " << g_codecName_hevc << endl;
+    cout << "g_codecNameHEVC: " << g_codecNameHEVC << endl;
 }
 void HwdecApiNdkTest::TearDownTestCase() {}
 void HwdecApiNdkTest::SetUp()
