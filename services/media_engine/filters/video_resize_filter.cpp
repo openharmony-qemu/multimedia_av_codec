@@ -132,7 +132,6 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     filterCallback_ = callback;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     videoEnhancer_ = DetailEnhancerVideo::Create();
-#endif
     if (videoEnhancer_ != nullptr) {
         std::shared_ptr<DetailEnhancerVideoCallback> detailEnhancerVideoCallback =
             std::make_shared<ResizeDetailEnhancerVideoCallback>(shared_from_this());
@@ -142,6 +141,11 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return;
     }
+#else
+    MEDIA_LOG_E("Init videoEnhancer fail, no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    return;
+#endif
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("VideoResize");
         releaseBufferTask_->RegisterJob([this] {
@@ -412,11 +416,11 @@ void VideoResizeFilter::ReleaseBuffer()
             indexs = indexs_;
             indexs_.clear();
         }
-        for (auto &index : indexs) {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+        for (auto &index : indexs) {
             videoEnhancer_->ReleaseOutputBuffer(index, true);
-#endif
         }
+#endif
     }
     MEDIA_LOG_I("ReleaseBuffer end");
 }
