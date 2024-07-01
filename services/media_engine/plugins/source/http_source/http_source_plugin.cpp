@@ -258,7 +258,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     buffer->streamID = readDataInfo.nextStreamId_;
     
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
-    MEDIA_LOG_I("Read finished, read size = "
+    MEDIA_LOG_D("Read finished, read size = "
     PUBLIC_LOG_ZU
     ", nextStreamId = "
     PUBLIC_LOG_D32
