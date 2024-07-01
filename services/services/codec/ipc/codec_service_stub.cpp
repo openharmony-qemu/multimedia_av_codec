@@ -555,7 +555,7 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel
     return AVCS_ERR_OK;
 }
 
-int32_t RenderOutputBufferAtTime(data, reply)
+int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
 

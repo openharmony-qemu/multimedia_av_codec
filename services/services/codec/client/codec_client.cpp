@@ -320,10 +320,10 @@ int32_t CodecClient::RenderOutputBufferAtTime(uint32_t index, int64_t renderTime
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(callbackMode_ != INVALID_CALLBACK, AVCS_ERR_INVALID_STATE, "The callback is invalid!");
     CHECK_AND_RETURN_RET_LOG(renderTimestampNs >= 0, AVCS_ERR_INVALID_VAL,
-                             "The renderTimestamp:%{public}" PRID64 " value error", renderTimestampNs);
+                             "The renderTimestamp:%{public}" PRId64 " value error", renderTimestampNs);
 
     int32_t ret = codecProxy_->RenderOutputBufferAtTime(index, renderTimestampNs);
-    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u, renderTimestamp:%{public}" PRID64, index,
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u, renderTimestamp:%{public}" PRId64, index,
                     renderTimestampNs);
     return ret;
 }
