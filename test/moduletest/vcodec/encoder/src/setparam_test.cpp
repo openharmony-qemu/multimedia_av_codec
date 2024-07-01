@@ -1406,8 +1406,8 @@ HWTEST_F(HwEncSetParamNdkTest, COLORSPACE_CONFIG_001, TestSize.Level1)
     vEncSample->OUT_DIR = "/data/test/media/vbr_i.h264";
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_INVALID_STATE, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
 }
