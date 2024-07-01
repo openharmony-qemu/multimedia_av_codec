@@ -55,7 +55,7 @@ OH_AVCapability *cap_hevc = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
 string g_codecName;
-string g_codecName_hevc;
+string g_codecNameHEVC;
 OH_AVFormat *format;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
@@ -67,9 +67,9 @@ void HwdecApiNdkTest::SetUpTestCase()
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
     cout << "g_codecName: " << g_codecName << endl;
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
-    g_codecName_hevc = OH_AVCapability_GetName(cap_hevc);
-    cout << "g_codecName: " << g_codecName_hevc << endl;
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
+    cout << "g_codecNameHEVC: " << g_codecName_hevc << endl;
 }
 void HwdecApiNdkTest::TearDownTestCase() {}
 void HwdecApiNdkTest::SetUp()
