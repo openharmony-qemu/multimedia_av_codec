@@ -20,21 +20,12 @@
 #include <functional>
 #include <map>
 #include <list>
-#include <unordered_set>
 #include "iremote_object.h"
 #include "ipc_skeleton.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using DumperEntry = std::function<int32_t(int32_t)>;
-struct Dumper {
-    pid_t pid_;
-    pid_t uid_;
-    DumperEntry entry_;
-    sptr<IRemoteObject> remoteObject_;
-};
-
 class AVCodecServerManager : public NoCopyable {
 public:
     static AVCodecServerManager& GetInstance();
@@ -45,15 +36,11 @@ public:
     void DestroyStubObject(StubType type, sptr<IRemoteObject> object);
     void DestroyStubObjectForPid(pid_t pid);
     int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
-    void DestroyDumper(StubType type, sptr<IRemoteObject> object);
-    void DestroyDumperForPid(pid_t pid);
     void NotifyProcessStatus(const int32_t status);
     void SetCritical(const bool isKeyService);
 
 private:
     AVCodecServerManager();
-    void PrintDumpMenu(int32_t fd);
-    void DumpServer(int32_t fd, StubType stubType, std::unordered_set<std::u16string> &argSets);
 
 #ifdef SUPPORT_CODEC
     int32_t CreateCodecStubObject(sptr<IRemoteObject> &object);
@@ -82,11 +69,8 @@ private:
         std::mutex listMutex_;
     };
 
-    std::map<sptr<IRemoteObject>, pid_t> demuxerStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
-    std::map<sptr<IRemoteObject>, pid_t> sourceStubMap_;
-    std::map<StubType, std::vector<Dumper>> dumperTbl_;
     AsyncExecutor executor_;
     pid_t pid_ = 0;
     std::mutex mutex_;

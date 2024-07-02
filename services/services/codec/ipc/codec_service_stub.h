@@ -57,7 +57,7 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;
 #endif
-    int32_t DumpInfo(int32_t fd);
+    int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
 
 private:
     CodecServiceStub();

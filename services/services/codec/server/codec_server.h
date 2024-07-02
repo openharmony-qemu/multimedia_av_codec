@@ -45,12 +45,6 @@ public:
         ERROR,
     };
 
-    enum CodecType {
-        CODEC_TYPE_DEFAULT = 0,
-        CODEC_TYPE_VIDEO,
-        CODEC_TYPE_AUDIO
-    };
-
     typedef struct {
         std::shared_ptr<AVBuffer> inBuf;
         std::shared_ptr<AVBuffer> outBuf;
@@ -118,7 +112,6 @@ private:
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
-    CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     int32_t DrmVideoCencDecrypt(uint32_t index);
     void SetFreeStatus(bool isFree);
