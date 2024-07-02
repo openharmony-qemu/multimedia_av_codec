@@ -78,9 +78,9 @@ public:
         std::shared_ptr<AVBuffer> avBuffer_ = nullptr;
         std::shared_ptr<FSurfaceMemory> sMemory_ = nullptr;
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
-        int32_t width_ = 0;
-        int32_t height_ = 0;
-        int32_t bitDepth_ = 8;
+        int32_t width = 0;
+        int32_t height = 0;
+        int32_t bitDepth = BIT_DEPTH8BIT;
     };
 
 private:
@@ -105,8 +105,8 @@ private:
     };
 
     enum PixelBitDepth : int32_t {
-        BitDepth8bit = 8,
-        BitDepth10bit = 10,
+        BIT_DEPTH8BIT = 8,
+        BIT_DEPTH10BIT = 10,
     };
     
     bool IsActive() const;
@@ -190,7 +190,7 @@ private:
     std::atomic<bool> isBufferAllocated_ = false;
 };
 
-void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);
+void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -23,14 +23,6 @@
 #define SAMPLE_ID "[SAMPLE_ID]:" << TEST_ID
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
-#define CALLBACK_CHECK_LOG(index, signal)                                                                              \
-    do {                                                                                                               \
-                                                                                                                       \
-        UNITTEST_INFO_LOG("index:%d", index);                                                                          \
-        if ((signal)->isFlushing_ || !(signal)->isRunning_) {                                                          \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
@@ -91,7 +83,7 @@ void InDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *us
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     OH_AVCodecBufferAttr attr;
     vdec->HandleInputFrame(data, attr);
     vdec->PushInputData(index, attr);
@@ -102,7 +94,7 @@ void OutDataHandle(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCo
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     vdec->HandleOutputFrame(data, *attr);
     vdec->ReleaseOutputData(index);
 }
@@ -117,7 +109,7 @@ void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *u
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     OH_AVCodecBufferAttr attr;
     vdec->HandleInputFrame(data, attr);
     vdec->PushInputData(index, attr);
@@ -133,7 +125,7 @@ void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVC
         return;
     }
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     vdec->HandleOutputFrame(data, *attr);
     vdec->ReleaseOutputData(index);
 }
@@ -143,7 +135,7 @@ void InDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *use
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     signal->inQueue_.push(index);
     signal->inMemoryQueue_.push(data);
     signal->inCond_.notify_all();
@@ -154,7 +146,7 @@ void OutDataQueue(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCod
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     signal->outQueue_.push(index);
     signal->outMemoryQueue_.push(data);
     signal->outAttrQueue_.push(*attr);
@@ -166,7 +158,7 @@ void InBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     vdec->HandleInputFrame(buffer);
     vdec->PushInputData(index);
 }
@@ -176,7 +168,7 @@ void OutBufferHandle(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->outMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     vdec->HandleOutputFrame(buffer);
     vdec->ReleaseOutputData(index);
 }
@@ -191,7 +183,7 @@ void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     vdec->HandleInputFrame(buffer);
     vdec->PushInputData(index);
 }
@@ -206,7 +198,7 @@ void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, vo
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     vdec->HandleOutputFrame(buffer);
     vdec->ReleaseOutputData(index);
 }
@@ -217,7 +209,7 @@ void InBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void 
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->inMutex_);
     EXPECT_NO_THROW((void)OH_AVBuffer_GetAddr(buffer));
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     signal->inQueue_.push(index);
     signal->inBufferQueue_.push(buffer);
     signal->inCond_.notify_all();
@@ -229,7 +221,7 @@ void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->outMutex_);
     EXPECT_NO_THROW((void)OH_AVBuffer_GetAddr(buffer));
-    CALLBACK_CHECK_LOG(index, signal);
+    UNITTEST_INFO_LOG("index:%d", index);
     signal->outQueue_.push(index);
     signal->outBufferQueue_.push(buffer);
     signal->outCond_.notify_all();
