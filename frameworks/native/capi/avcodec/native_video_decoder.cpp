@@ -31,7 +31,7 @@
 #include "native_window.h"
 
 #ifdef SUPPORT_DRM
-#include "foundation/multimedia/drm_framework/interfaces/kits/c/drm_capi/common/native_drm_object.h"
+#include "native_drm_object.h"
 #endif
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoDecoder"};
