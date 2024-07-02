@@ -105,8 +105,8 @@ private:
     };
 
     enum PixelBitDepth : int32_t {
-        BitDepth_8bit = 8,
-        BitDepth_10bit = 10,
+        BitDepth8bit = 8,
+        BitDepth10bit = 10,
     };
     
     bool IsActive() const;
@@ -190,7 +190,7 @@ private:
     std::atomic<bool> isBufferAllocated_ = false;
 };
 
-void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_msg, ...);
+void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -58,7 +58,8 @@ int32_t HevcDecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
     return ret;
 }
 
-HevcDecoderLoader::HevcDecoderLoader() : VideoCodecLoader(HEVC_DECODER_LIB_PATH, HEVC_DECODER_CREATE_FUNC_NAME, HEVC_DECODER_GETCAPS_FUNC_NAME) {}
+HevcDecoderLoader::HevcDecoderLoader() : VideoCodecLoader(HEVC_DECODER_LIB_PATH,
+    HEVC_DECODER_CREATE_FUNC_NAME, HEVC_DECODER_GETCAPS_FUNC_NAME) {}
 
 void HevcDecoderLoader::CloseLibrary()
 {

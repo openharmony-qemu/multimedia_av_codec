@@ -101,8 +101,10 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
 void HevcDecoder::HevcFuncMatch()
 {
     if (handle_ != nullptr) {
-        hevcDecoderCreateFunc_ = reinterpret_cast<CreateHevcDecoderFuncType>(dlsym(handle_, HEVC_DEC_CREATE_FUNC_NAME));
-        hevcDecoderDecodecFrameFunc_ = reinterpret_cast<DecodeFuncType>(dlsym(handle_, HEVC_DEC_DECODE_FRAME_FUNC_NAME));
+        hevcDecoderCreateFunc_ = reinterpret_cast<CreateHevcDecoderFuncType>(dlsym(handle_,
+            HEVC_DEC_CREATE_FUNC_NAME));
+        hevcDecoderDecodecFrameFunc_ = reinterpret_cast<DecodeFuncType>(dlsym(handle_,
+            HEVC_DEC_DECODE_FRAME_FUNC_NAME));
         hevcDecoderFlushFrameFunc_ = reinterpret_cast<FlushFuncType>(dlsym(handle_, HEVC_DEC_FLUSH_FRAME_FUNC_NAME));
         hevcDecoderDeleteFunc_ = reinterpret_cast<DeleteFuncType>(dlsym(handle_, HEVC_DEC_DELETE_FUNC_NAME));
         if (hevcDecoderCreateFunc_ == nullptr || hevcDecoderDecodecFrameFunc_ == nullptr ||
@@ -494,7 +496,7 @@ void HevcDecoder::SetSurfaceParameter(const Format &format, const std::string_vi
         outputPixelFmt_ = vpf;
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val);
         GraphicPixelFormat surfacePixelFmt;
-        if (bitDepth_ == BitDepth_10bit) {
+        if (bitDepth_ == BitDepth10bit) {
             if (vpf == VideoPixelFormat::NV12) {
                 surfacePixelFmt = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
             } else {
@@ -556,7 +558,7 @@ int32_t HevcDecoder::GetOutputFormat(Format &format)
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
 
-    if (bitDepth_ == 8) {
+    if (bitDepth_ == BitDepth8bit) {
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
     } else {
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_ * 2); // 2 10bit per pixel 2bits
@@ -584,7 +586,7 @@ void HevcDecoder::CalculateBufferSize()
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize_ = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
-    if (bitDepth_ == BitDepth_10bit) {
+    if (bitDepth_ == BitDepth10bit) {
         outputBufferSize_ *= 2; // 2 10bit per pixel 2bits
     }
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d, output "
@@ -783,7 +785,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         CalculateBufferSize();
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-        if (bitDepth_ == 8) {
+        if (bitDepth_ == BitDepth8bit) {
             format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_);
         } else {
             format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, width_ * 2); // 2 10bit per pixel 2bits
@@ -795,9 +797,9 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
             std::lock_guard<std::mutex> sLock(surfaceMutex_);
             sInfo_.requestConfig.width = width_;
             sInfo_.requestConfig.height = height_;
-            if (bitDepth_ == BitDepth_10bit && targetPixelFmt == VideoPixelFormat::NV12) {
+            if (bitDepth_ == BitDepth10bit && targetPixelFmt == VideoPixelFormat::NV12) {
                 sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
-            } else if (bitDepth_ == BitDepth_10bit) {
+            } else if (bitDepth_ == BitDepth10bit) {
                 sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
             }
         }
@@ -886,12 +888,9 @@ void HevcDecoder::SendFrame()
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    while (true) {
+    while (ret == 0) {
         ret = DecodeFrameOnce();
-        if (ret != 0) {
-            break;
-        }
-        if (!isSendEos_) {
+        if (!isSendEos_ && ret == 0) {
             hevcDecoderInputArgs_.uiStreamLen -= hevcDecoderOutpusArgs_.uiDecStreamLen;
             hevcDecoderInputArgs_.pStream += hevcDecoderOutpusArgs_.uiDecStreamLen;
         }
@@ -930,7 +929,7 @@ int32_t HevcDecoder::DecodeFrameOnce()
     }
     int32_t bitDepth = hevcDecoderOutpusArgs_.uiDecBitDepth;
     if (ret == 0) {
-        CHECK_AND_RETURN_RET_LOG(bitDepth == BitDepth_8bit || bitDepth == BitDepth_10bit, -1,
+        CHECK_AND_RETURN_RET_LOG(bitDepth == BitDepth8bit || bitDepth == BitDepth10bit, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
         ConvertDecOutToAVFrame(bitDepth);
         auto index = codecAvailQue_->Front();
@@ -959,7 +958,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         targetPixelFmt = VideoPixelFormat::NV12;
     }
     AVPixelFormat ffmpegFormat = AVPixelFormat::AV_PIX_FMT_NV12;
-    if (bitDepth_ == BitDepth_10bit) {
+    if (bitDepth_ == BitDepth10bit) {
         ffmpegFormat = AVPixelFormat::AV_PIX_FMT_P010LE;
     } else {
         ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
@@ -1017,7 +1016,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
     cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
     cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 v channel
-    if (bitDepth == 8) {
+    if (bitDepth == BitDepth8bit) {
         cachedFrame_->format = static_cast<int>(AVPixelFormat::AV_PIX_FMT_YUV420P);
         cachedFrame_->linesize[0] = hevcDecoderOutpusArgs_.uiDecStride;
         cachedFrame_->linesize[1] = hevcDecoderOutpusArgs_.uiDecStride >> 1; // 1 u channel
@@ -1259,37 +1258,22 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
     return AVCS_ERR_OK;
 }
 
-std::string format(const char* fmt, ...)
+void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...)
 {
     va_list args;
+    size_t maxSize = 1024; // 1024 max size of one log
+    std::vector<char> buf(maxSize);
     va_start(args, fmt);
-    size_t size = vsnprintf_s(nullptr, 0, 0, fmt, args) + 1; // Extra space for '\0'
+    size_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1,  fmt, args);
     va_end(args);
-
-    std::vector<char> buf(size);
-    va_start(args, fmt);
-    vsnprintf_s(buf.data(), buf.size(), buf.size()-1,  fmt, args);
-    va_end(args);
-
-    return std::string(buf.data(), buf.size() - 1); // We don't want the '\0' inside
-}
-
-void HevcDecLog(UINT32 channel_id, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *p_msg, ...)
-{
-    va_list args;
-    va_start(args, (const char*)p_msg);
-    size_t size = std::vsnprintf(nullptr, 0, (const char*)p_msg, args) + 1; // Extra space for '\0'
-    va_end(args);
-
-    std::vector<char> buf(size);
-    va_start(args, (const char*)p_msg);
-    std::vsnprintf(buf.data(), buf.size(), (const char*)p_msg, args);
-    va_end(args);
+    if (size >= maxSize) {
+        size = maxSize - 1;
+    }
 
     auto msg = std::string(buf.data(), buf.size() - 1);
     
     if (eLevel <= IHW265VIDEO_ALG_LOG_ERROR) {
-        switch(eLevel) {
+        switch (eLevel) {
             case IHW265VIDEO_ALG_LOG_ERROR: {
                 AVCODEC_LOGE("%{public}s", msg.c_str());
                 break;
