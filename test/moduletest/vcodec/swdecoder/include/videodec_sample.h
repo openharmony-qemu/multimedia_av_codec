@@ -117,6 +117,7 @@ public:
     int64_t start_time = 0;
     int64_t end_time = 0;
     bool setParameters = false;
+    bool checkOutPut = true;
     OH_AVCodec *vdec_;
 
 private:

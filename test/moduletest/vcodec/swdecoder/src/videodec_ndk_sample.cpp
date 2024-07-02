@@ -193,9 +193,11 @@ void VDecNdkSample::CheckOutputDescription()
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
         if (picWidth != originalWidth || picHeight != originalHeight) {
             std::cout << "picWidth:" << picWidth << " picHeight:" << picHeight << std::endl;
+            std::cout << "errCount  !=:" << errCount << std::endl;
             errCount++;
         }
     } else {
+        std::cout << "errCount  newFormat == nullptr:" << errCount << std::endl;
         errCount++;
     }
     OH_AVFormat_Destroy(newFormat);
@@ -450,7 +452,9 @@ void VDecNdkSample::OutputFunc()
             }
             break;
         }
-        CheckOutputDescription();
+        if (dec_sample->checkOutPut) {
+            CheckOutputDescription();
+        }
         WriteOutputFrame(index, buffer, attr, outFile);
         if (errCount > 0) {
             break;
