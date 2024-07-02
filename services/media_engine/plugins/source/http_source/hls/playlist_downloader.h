@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include "download/downloader.h"
+#include "plugin/plugin_base.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,7 +35,6 @@ struct PlayListChangeCallback {
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
-    virtual void OnFirstTsReady(const std::string& url, const double& duration) = 0;
 };
 class PlayListDownloader {
 public:
@@ -44,7 +44,7 @@ public:
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
-    virtual void ParseManifest(const std::string& location) = 0;
+    virtual void ParseManifest(const std::string& location, bool isPreParse = false) = 0;
     virtual void SetPlayListCallback(PlayListChangeCallback* callback) = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
@@ -58,6 +58,9 @@ public:
     virtual bool IsLive() const = 0;
     virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
+    virtual void PreParseManifest(const std::string& location) = 0;
+    virtual bool IsParseAndNotifyFinished() = 0;
+    virtual void SetCallback(Callback* callback) = 0;
     void Resume();
     void Pause();
     void Close();

@@ -35,9 +35,7 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_buffer.h"
 #include "source/source.h"
-#include "live_datasource_stream_demuxer.h"
-#include "vod_stream_demuxer.h"
-#include "live_http_stream_demuxer.h"
+#include "stream_demuxer.h"
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
@@ -322,6 +320,44 @@ void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
 {
     AutoLock lock(mapMutex_);
+    if (source_ == nullptr) {
+        durationMs = -1;
+        return false;
+    }
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::GetDuration");
+    MEDIA_LOG_I("GetDuration enter");
+    int32_t retry {0};
+    do {
+        seekable_ = source_->GetSeekable();
+        retry++;
+        if (seekable_ == Seekable::INVALID) {
+            if (retry >= 20) { // 20 means retry times
+                break;
+            }
+            OSAL::SleepFor(10); // 10 means sleep time pre retry
+        }
+    } while (seekable_ == Seekable::INVALID);
+
+    FALSE_LOG(seekable_ != Seekable::INVALID);
+    MEDIA_LOG_I("GetDuration exit");
+    if (source_->IsSeekToTimeSupported()) {
+        duration_ = source_->GetDuration();
+        if (duration_ != Plugins::HST_TIME_NONE) {
+            MEDIA_LOG_I("InitMediaMetaData for hls, duration: " PUBLIC_LOG_D64, duration_);
+            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+        }
+        return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
+    }
+    
+    // not hls and seekable
+    if (seekable_ == Plugins::Seekable::SEEKABLE) {
+        duration_ = source_->GetDuration();
+        if (duration_ != Plugins::HST_TIME_NONE) {
+            MEDIA_LOG_I("InitMediaMetaData for not hls, duration: " PUBLIC_LOG_D64, duration_);
+            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+        }
+        return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
+    }
     return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
 }
 
@@ -402,8 +438,8 @@ Status MediaDemuxer::ProcessDrmInfos()
 Status MediaDemuxer::ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     MEDIA_LOG_D("ProcessVideoStartTime,  trackId: %{public}u", trackId);
-    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported()
-        && seekable_ == Plugins::Seekable::SEEKABLE && !(demuxerPluginManager_->IsDash())) {
+    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported() &&
+        demuxerPluginManager_ != nullptr && !(demuxerPluginManager_->IsDash())) {
         MEDIA_LOG_D("add start time, videoStartTime_: %{public}" PRId64 ", sample->pts_: %{public}" PRId64,
          videoStartTime_, sample->pts_);
         sample->pts_ += Plugins::HstTime2Us(videoStartTime_);
@@ -490,23 +526,12 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "plugin set source failed.");
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
-    seekable_ = source_->GetSeekable();
-    FALSE_RETURN_V_MSG_E(seekable_ != Plugins::Seekable::INVALID, Status::ERROR_NULL_POINTER,
-        "Set data source failed due to get seekable failed.");
 
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams);
     demuxerPluginManager_->InitDefaultPlay(streams);
 
-    ReportIsLiveStreamEvent();
-    if (seekable_ == Plugins::Seekable::SEEKABLE) {
-        Flush();
-        streamDemuxer_ = std::make_shared<VodStreamDemuxer>();
-    } else if (source_->IsNeedPreDownload() && source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
-        streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
-    } else {
-        streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
-    }
+    streamDemuxer_ = std::make_shared<StreamDemuxer>();
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
@@ -549,7 +574,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
     subtitleStreams[0].type = StreamType::SUBTITLE;
     subtitleStreams[0].streamId = demuxerPluginManager_->GetStreamCount();
     demuxerPluginManager_->InitDefaultPlay(subtitleStreams);
-    subStreamDemuxer_ = std::make_shared<VodStreamDemuxer>();
+    subStreamDemuxer_ = std::make_shared<StreamDemuxer>();
     subStreamDemuxer_->SetSource(subtitleSource_);
     subStreamDemuxer_->Init(subSource->GetSourceUri());
 
@@ -1174,13 +1199,6 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32
 {
     AutoLock lock(mapMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
-    if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
-        int64_t duration = source_->GetDuration();
-        if (duration != Plugins::HST_TIME_NONE) {
-            MEDIA_LOG_I("InitMediaMetaData for hls, duration: " PUBLIC_LOG_D64, duration);
-            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration));
-        }
-    }
     mediaMetaData_.trackMetas.clear();
     mediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
@@ -1538,6 +1556,18 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
+            break;
+        }
+        case PluginEventType::SOURCE_INFO: {
+            MEDIA_LOG_D("OnEvent source info start");
+            SourceInfo info = AnyCast<SourceInfo>(event.param);
+            duration_ = info.duration * 1000 * 1000; // 1000
+            if (duration_ != Plugins::HST_TIME_NONE && mediaMetaData_.globalMeta) {
+                mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+            }
+            seekable_ = info.seekable;
+            ReportIsLiveStreamEvent();
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_INFO, event.param});
             break;
         }
         default:

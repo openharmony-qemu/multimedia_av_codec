@@ -69,7 +69,7 @@ struct M3U8 {
     M3U8(std::string uri, std::string name);
     ~M3U8();
     void InitTagUpdatersMap();
-    bool Update(const std::string& playList);
+    bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;

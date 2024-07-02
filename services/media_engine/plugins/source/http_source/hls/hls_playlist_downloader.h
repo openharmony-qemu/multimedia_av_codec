@@ -30,7 +30,7 @@ public:
 
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;
-    void ParseManifest(const std::string& location) override;
+    void ParseManifest(const std::string& location, bool isPreParse = false) override;
     void SetPlayListCallback(PlayListChangeCallback* callback) override;
     int64_t GetDuration() const override;
     Seekable GetSeekable() const override;
@@ -43,14 +43,18 @@ public:
     uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
-    void FirstTsUpdateLoop();
     void SetInterruptState(bool isInterruptNeeded) override;
     void SetMimeType(const std::string& mimeType) override;
+    void PreParseManifest(const std::string& location) override;
+    bool IsParseAndNotifyFinished() override;
+    void SetCallback(Callback* callback) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
     std::shared_ptr<M3U8VariantStream> GetNewVariant();
-
+private:
+    void UpdateSourceInfo();
+    void UpdateMasterInfo(bool isPreParse);
 private:
     std::string url_ {};
     std::atomic<bool> isInterruptNeeded_{false};
@@ -58,8 +62,11 @@ private:
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
     std::shared_ptr<M3U8VariantStream> newVariant_;
-    std::shared_ptr<Task> firstTsTask_;
     std::string mimeType_;
+    std::atomic<bool> isParseFinished_ {false};
+    std::atomic<bool> isNotifyPlayListFinished_ {false};
+    std::atomic<bool> isSourceInfoUpdated_ {false};
+    Callback* sourceInfoCallback_ {nullptr};
 };
 }
 }

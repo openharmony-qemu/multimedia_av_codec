@@ -298,6 +298,7 @@ void DashMediaDownloader::SetPlayStrategy(PlayStrategy* playStrategy)
 
 Status DashMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
+    GetSeekable();
     return mpdDownloader_->GetStreamInfo(streams);
 }
 
