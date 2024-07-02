@@ -99,7 +99,7 @@ void TemporalScalability::LTRDecision()
     temporalPoc_ = poc_ % temporalGopSize_;
 
     if (temporalPoc_ == 0) {
-        isMarkLTR_ = 1;
+        isMarkLTR_ = true;
         if (poc_ == 0) {
             isUseLTR_ = false;
             ltrPoc_ = 0;
@@ -108,11 +108,11 @@ void TemporalScalability::LTRDecision()
             ltrPoc_ = poc_ - temporalGopSize_;
         }
     } else if (temporalPoc_ == 1) {
-        isMarkLTR_ = 0;
+        isMarkLTR_ = false;
         isUseLTR_ = false;
         ltrPoc_ = poc_ - 1;
     } else {
-        isMarkLTR_ = 0;
+        isMarkLTR_ = false;
         if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
             isUseLTR_ = false;
             ltrPoc_ = poc_ - 1;
@@ -126,7 +126,7 @@ void TemporalScalability::LTRDecision()
 void TemporalScalability::DisposableDecision()
 {
     uint32_t flag = AVCODEC_BUFFER_FLAG_NONE;
-    if (isMarkLTR_ == 0) {
+    if (!isMarkLTR_) {
         if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
             temporalPoc_ != temporalGopSize_ - 1 && poc_ != gopSize_ - 1) {
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
