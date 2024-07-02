@@ -1270,7 +1270,7 @@ void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, 
         size = maxSize - 1;
     }
 
-    auto msg = std::string(buf.data(), buf.size() - 1);
+    auto msg = std::string(buf.data(), size);
     
     if (eLevel <= IHW265VIDEO_ALG_LOG_ERROR) {
         switch (eLevel) {

@@ -32,8 +32,8 @@ ohos_static_library("av_codec_video_loader") {
 
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/fcodec_loader.cpp",
-    "$av_codec_root_dir/services/engine/codec/video/hevc_decoder_loader.cpp",
     "$av_codec_root_dir/services/engine/codec/video/hcodec_loader.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/hevc_decoder_loader.cpp",
     "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
   ]
 

@@ -45,9 +45,9 @@ group("vcodec_framework_test") {
     deps = [
       ":video_buffer_converter_unit_test",
       ":videodec_capi_unit_test",
+      ":videodec_hevcdec_unit_test",
       ":videodec_inner_unit_test",
       ":videodec_stable_unit_test",
-      ":videodec_hevcdec_unit_test",
     ]
     if (av_codec_support_hcodec) {
       deps += [
