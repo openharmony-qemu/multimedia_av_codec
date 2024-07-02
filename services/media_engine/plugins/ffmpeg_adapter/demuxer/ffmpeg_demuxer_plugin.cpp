@@ -326,6 +326,36 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
     MEDIA_LOG_I("Destroy FFmpeg Demuxer Plugin successfully.");
 }
 
+void FFmpegDemuxerPlugin::Dump(const DumpParam &dumpParam)
+{
+    std::string path;
+    switch (dumpParam.mode) {
+        case DUMP_READAT_INPUT:
+            path = "Readat_index." + std::to_string(dumpParam.index) + "_offset." + std::to_string(dumpParam.offset) +
+                "_size." + std::to_string(dumpParam.size);
+            break;
+        case DUMP_AVPACKET_OUTPUT:
+            path = "AVPacket_index." + std::to_string(dumpParam.index) + "_track." +
+                std::to_string(dumpParam.trackId) + "_pts." + std::to_string(dumpParam.pts) + "_pos." +
+                std::to_string(dumpParam.pos);
+            break;
+        case DUMP_AVBUFFER_OUTPUT:
+            path = "AVBuffer_track." + std::to_string(dumpParam.trackId) + "_index." +
+                std::to_string(dumpParam.index) + "_pts." + std::to_string(dumpParam.pts);
+            break;
+        default:
+            return;
+    }
+    std::ofstream ofs;
+    path = "/data/ff_dump/" + path;
+    ofs.open(path, std::ios::out); //  | std::ios::app
+    if (ofs.is_open()) {
+        ofs.write(dumpParam.buf, dumpParam.size);
+        ofs.close();
+    }
+    MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
+}
+
 Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs)
 {
     FALSE_RETURN_V_MSG_E(timeStampMs >= 0 && timeStampMs * 1000 < formatContext_->duration,
@@ -1641,36 +1671,6 @@ bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
     int nalUnitType = (data[naluPos] >> 1) & 0x3f; // get H.265 nal_unit_type
     return nalUnitType == 0 || nalUnitType == 2 || nalUnitType == 4 || // 0: TRAIL_N, 2: TSA_N, 4: STSA_N
         nalUnitType == 6 || nalUnitType == 8; // 6: RADL_N, 8: RASL_N
-}
-
-void FFmpegDemuxerPlugin::Dump(const DumpParam &dumpParam)
-{
-    std::string path;
-    switch (dumpParam.mode) {
-        case DUMP_READAT_INPUT:
-            path = "Readat_index." + std::to_string(dumpParam.index) + "_offset." + std::to_string(dumpParam.offset) +
-                "_size." + std::to_string(dumpParam.size);
-            break;
-        case DUMP_AVPACKET_OUTPUT:
-            path = "AVPacket_index." + std::to_string(dumpParam.index) + "_track." +
-                std::to_string(dumpParam.trackId) + "_pts." + std::to_string(dumpParam.pts) + "_pos." +
-                std::to_string(dumpParam.pos);
-            break;
-        case DUMP_AVBUFFER_OUTPUT:
-            path = "AVBuffer_track." + std::to_string(dumpParam.trackId) + "_index." +
-                std::to_string(dumpParam.index) + "_pts." + std::to_string(dumpParam.pts);
-            break;
-        default:
-            return;
-    }
-    std::ofstream ofs;
-    path = "/data/ff_dump/" + path;
-    ofs.open(path, std::ios::out); //  | std::ios::app
-    if (ofs.is_open()) {
-        ofs.write(dumpParam.buf, dumpParam.size);
-        ofs.close();
-    }
-    MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
 }
 
 namespace { // plugin set
