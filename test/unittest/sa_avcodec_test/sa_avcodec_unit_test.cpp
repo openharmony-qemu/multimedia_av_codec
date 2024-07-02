@@ -392,80 +392,18 @@ void PrintAndCloseFd(int32_t fd)
 }
 
 /**
- * @tc.name: AVCodec_Server_DumpInfo_001
+ * @tc.name: AVCodec_Server_Dump_001
  * @tc.desc: DumpInfo will once Dump success
  */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_DumpInfo_001, TestSize.Level1)
+HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_Dump_001, TestSize.Level1)
 {
     std::shared_ptr<AVCodecServer> server = nullptr;
     std::vector<std::u16string> args = {u"All"};
     int32_t fileFd = open(DUMP_FILE_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
-    EXPECT_CALL(*codecStubMock_, DumpInfo(fileFd)).Times(AtLeast(1)).WillRepeatedly(Return(OHOS::NO_ERROR));
+    EXPECT_CALL(*codecStubMock_, Dump).Times(AtLeast(1)).WillRepeatedly(Return(OHOS::NO_ERROR));
 
     CreateCodecServiceStub(server);
     EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
     PrintAndCloseFd(fileFd);
-}
-
-/**
- * @tc.name: AVCodec_Server_DumpInfo_002
- * @tc.desc: DumpInfo will once Dump fail
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_DumpInfo_002, TestSize.Level1)
-{
-    std::shared_ptr<AVCodecServer> server = nullptr;
-    std::vector<std::u16string> args = {u"All"};
-    int32_t fileFd = open(DUMP_FILE_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
-    EXPECT_CALL(*codecStubMock_, DumpInfo(fileFd)).Times(AtLeast(1)).WillRepeatedly(Return(-1));
-
-    CreateCodecServiceStub(server);
-    EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
-    PrintAndCloseFd(fileFd);
-}
-
-/**
- * @tc.name: AVCodec_Server_DumpInfo_003
- * @tc.desc: DumpInfo will once Dump Switch_bitstream_dump
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_DumpInfo_003, TestSize.Level1)
-{
-    std::shared_ptr<AVCodecServer> server = nullptr;
-    std::vector<std::u16string> args = {u"All", u"Switch_bitstream_dump"};
-    int32_t fileFd = open(DUMP_FILE_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
-    EXPECT_CALL(*codecStubMock_, DumpInfo(fileFd)).Times(AtLeast(1)).WillRepeatedly(Return(OHOS::NO_ERROR));
-
-    CreateCodecServiceStub(server);
-    EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
-    PrintAndCloseFd(fileFd);
-}
-
-/**
- * @tc.name: AVCodec_Server_DumpInfo_004
- * @tc.desc: DumpInfo will once Dump no detail
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_DumpInfo_004, TestSize.Level1)
-{
-    std::shared_ptr<AVCodecServer> server = nullptr;
-    std::vector<std::u16string> args;
-    int32_t fileFd = open(DUMP_FILE_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
-    EXPECT_CALL(*codecStubMock_, DumpInfo(fileFd)).Times(0);
-
-    CreateCodecServiceStub(server);
-    EXPECT_EQ(server->Dump(fileFd, args), OHOS::NO_ERROR);
-    PrintAndCloseFd(fileFd);
-}
-
-/**
- * @tc.name: AVCodec_Server_DumpInfo_005
- * @tc.desc: DumpInfo with invalid fd
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_DumpInfo_005, TestSize.Level1)
-{
-    std::shared_ptr<AVCodecServer> server = nullptr;
-    std::vector<std::u16string> args;
-    EXPECT_CALL(*codecStubMock_, DumpInfo(0)).Times(0);
-
-    CreateCodecServiceStub(server);
-    EXPECT_EQ(server->Dump(0, args), OHOS::INVALID_OPERATION);
 }
 } // namespace
