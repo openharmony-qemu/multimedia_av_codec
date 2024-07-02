@@ -452,7 +452,7 @@ void VDecNdkSample::OutputFunc()
             }
             break;
         }
-        if (dec_sample->checkOutPut){
+        if (dec_sample->checkOutPut) {
             CheckOutputDescription(); 
         }
         WriteOutputFrame(index, buffer, attr, outFile);
