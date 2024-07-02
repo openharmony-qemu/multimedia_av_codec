@@ -124,7 +124,8 @@ private:
     bool CanDropHevcPkt(const AVPacket& pkt);
     void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    void ParserBoxInfo();
+    Status ParserBoxInfo();
+    Status ParserFirstDts();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -154,6 +155,8 @@ private:
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
+    int64_t firstDts_ = 0;
+    bool isSdtpExist_ = false;
     std::mutex syncMutex_;
 };
 } // namespace Ffmpeg
