@@ -32,6 +32,8 @@ constexpr double BUFFER_LOW_LIMIT  = 0.3;
 constexpr double BYTE_TO_BIT = 8.0;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
+constexpr uint32_t READ_TIME_OUT = 30 * 1000;
+constexpr uint32_t READ_RETRY_TIME = 5;
 
 DashMediaDownloader::DashMediaDownloader() noexcept
 {
@@ -97,6 +99,14 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
 
+    if (CheckReadTimeOut(segmentDownloader)) {
+        if (callback_ != nullptr) {
+            MEDIA_LOG_E("Check read time out, OnEvent");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
+        return Status::END_OF_STREAM;
+    }
+
     DashReadRet ret = segmentDownloader->Read(readDataInfo.streamId_, buff, readDataInfo.wantReadLength_,
                                               readDataInfo.realReadLength_, readDataInfo.nextStreamId_);
     if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_)) {
@@ -105,12 +115,27 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_TIMEOUT) {
         if (callback_ != nullptr) {
-            MEDIA_LOG_I("Read time out, OnEvent");
+            MEDIA_LOG_E("Read time out, OnEvent");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
         return Status::END_OF_STREAM;
     }
     return Status::OK;
+}
+
+bool DashMediaDownloader::CheckReadTimeOut(std::shared_ptr<DashSegmentDownloader> &segmentDownloader)
+{
+    readTime_ = 0;
+    while (segmentDownloader != nullptr && segmentDownloader->GetRingBufferSize() == 0 && !isInterruptNeeded_) {
+        if (readTime_ >= READ_TIME_OUT) {
+            segmentDownloader->Close(true, true);
+            segmentDownloader->CloseRequest();
+            return true;
+        }
+        OSAL::SleepFor(READ_RETRY_TIME);
+        readTime_ += READ_RETRY_TIME;
+    }
+    return false;
 }
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
