@@ -32,7 +32,7 @@ typedef enum {
     IHW265VIDEO_ALG_LOG_DEBUG       // print debug info, used for developer debug
 } IHW265VIDEO_ALG_LOG_LEVEL;
 
-typedef void (*IHW265D_VIDEO_ALG_LOG_FXN)(UINT32 uiChannelID, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pszMsg, ...);;
+typedef void (*IHW265D_VIDEO_ALG_LOG_FXN)(UINT32 uiChannelID, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pszMsg, ...);
 
 typedef struct TagHevcDecInitParam {
     UINT32 uiChannelID;  // [in] channel ID, used for channel info
