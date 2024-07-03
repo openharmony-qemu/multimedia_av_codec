@@ -119,19 +119,9 @@ void PrintSampleInfo(const SampleInfo &info)
     AVCODEC_LOGI("====== Video sample config ======");
 }
 
-void ShowCmdCursor()
-{
-    std::cout << "\033[?25h" << std::flush;
-}
-
-void HideCmdCursor()
-{
-    std::cout << "\033[?25l" << std::flush;
-}
-
 void PrintProgress(int32_t times, int32_t frames)
 {
-    std::cout << "\r\033[K" << "Repeat times left: " << times << ", frames: " << frames << std::flush;
+    std::cout << "\r\033[K" << "Repeat times left: " << times << ", frames: " << frames  << " " << std::flush;
 }
 } // Sample
 } // MediaAVCodec
