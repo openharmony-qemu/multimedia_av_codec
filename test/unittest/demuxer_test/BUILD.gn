@@ -80,7 +80,10 @@ ohos_unittest("demuxer_capi_unit_test") {
   } else {
     av_codec_path = "\"/system/lib\""
   }
-  defines = [ "AV_CODEC_PATH=${av_codec_path}", "DEMUXER_CAPI_UNIT_TEST" ]
+  defines = [
+    "AV_CODEC_PATH=${av_codec_path}",
+    "DEMUXER_CAPI_UNIT_TEST",
+  ]
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   deps = [
@@ -203,7 +206,10 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
   } else {
     av_codec_path = "\"/system/lib\""
   }
-  defines = [ "AV_CODEC_PATH=${av_codec_path}", "DEMUXER_CAPI_UNIT_TEST" ]
+  defines = [
+    "AV_CODEC_PATH=${av_codec_path}",
+    "DEMUXER_CAPI_UNIT_TEST",
+  ]
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   deps = [
