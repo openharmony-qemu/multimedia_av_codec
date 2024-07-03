@@ -48,11 +48,14 @@ const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
                          MimeType::IMAGE_BMP}},
     {OutputFormat::AMR, {MimeType::AUDIO_AMR_NB, MimeType::AUDIO_AMR_WB}},
     {OutputFormat::MP3, {MimeType::AUDIO_MPEG, MimeType::IMAGE_JPG}},
+    {OutputFormat::WAV, {MimeType::AUDIO_RAW, MimeType::AUDIO_G711MU}},
 };
 
 const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
     {MimeType::AUDIO_MPEG, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
     {MimeType::AUDIO_AAC, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT}},
+    {MimeType::AUDIO_RAW, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::AUDIO_SAMPLE_FORMAT}},
+    {MimeType::AUDIO_G711MU, {Tag::AUDIO_SAMPLE_RATE, Tag::AUDIO_CHANNEL_COUNT, Tag::MEDIA_BITRATE}},
     {MimeType::VIDEO_AVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_MPEG4, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::VIDEO_HEVC, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
@@ -415,6 +418,7 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         {Plugins::OutputFormat::M4A, MimeType::MEDIA_M4A},
         {Plugins::OutputFormat::AMR, MimeType::MEDIA_AMR},
         {Plugins::OutputFormat::MP3, MimeType::MEDIA_MP3},
+        {Plugins::OutputFormat::WAV, MimeType::MEDIA_WAV},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);

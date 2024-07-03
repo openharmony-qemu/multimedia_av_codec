@@ -23,6 +23,7 @@
 #include "securec.h"
 #include "common/log.h"
 #include "ffmpeg_utils.h"
+#include "ffmpeg_converter.h"
 #include "meta/mime_type.h"
 
 namespace {
@@ -32,7 +33,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
@@ -68,6 +69,9 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_AMR_WB:
             cap.SetMime(MimeType::AUDIO_AMR_WB);
             return true;
+        case AV_CODEC_ID_PCM_S16LE:
+            cap.SetMime(MimeType::AUDIO_RAW);
+            return true;
         default:
             break;
     }
@@ -90,6 +94,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "mp3") {
         auto cap = Capability(MimeType::MEDIA_MP3);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "wav") {
+        auto cap = Capability(MimeType::MEDIA_WAV);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -530,6 +538,15 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels); // channels
     FALSE_RETURN_V_MSG_E(ret && channels > 0, Status::ERROR_MISMATCHED_TYPE,
         "get audio channels failed! channels:%{public}d", channels);
+    if (codeID == AV_CODEC_ID_PCM_U8) {
+        AudioSampleFormat sampleFormat = INVALID_WIDTH;
+        ret = trackDesc->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat); // sampleFormat
+        FALSE_RETURN_V_MSG_E(ret, Status::ERROR_MISMATCHED_TYPE, "get audio sample format failed!");
+        ret = Raw2CodecId(sampleFormat, codeID);
+        FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_DATA,
+            "this mimeType do not support! mimeType:%{public}s, sampleFormat:%{public}d",
+            MimeType::AUDIO_RAW, sampleFormat);
+    }
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
@@ -538,12 +555,22 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
     st->codecpar->channels = channels;
-    int32_t frameSize = 0;
     if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
+        int32_t frameSize = 0;
         trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize); // frame size
         FALSE_RETURN_V_MSG_E(frameSize > 0, Status::ERROR_MISMATCHED_TYPE,
             "get audio sample per frame failed! audio sample per frame:%{public}d", frameSize);
         st->codecpar->frame_size = frameSize;
+    }
+    if (trackDesc->Find(Tag::AUDIO_CHANNEL_LAYOUT) != trackDesc->end()) {
+        AudioChannelLayout channelLayout = UNKNOWN;
+        trackDesc->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
+        auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
+        MEDIA_LOG_D("channelLayout:" PUBLIC_LOG_D64 ", ffChannelLayout:" PUBLIC_LOG_U64,
+            channelLayout, ffChannelLayout);
+        FALSE_RETURN_V_MSG_E(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_DATA,
+            "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
+        st->codecpar->channel_layout = ffChannelLayout;
     }
     trackIndex = st->index;
     return SetCodecParameterOfTrack(st, trackDesc);

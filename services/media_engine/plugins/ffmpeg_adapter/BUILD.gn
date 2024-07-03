@@ -60,6 +60,7 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
 
   sources = [
     "common/ffmpeg_utils.cpp",
+    "common/ffmpeg_converter.cpp",
     "common/stream_parser_manager.cpp",
     "muxer/ffmpeg_muxer_plugin.cpp",
   ]

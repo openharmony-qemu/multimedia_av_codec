@@ -20,7 +20,6 @@
 #include <unordered_map>
 #include "common/log.h"
 #include "meta/mime_type.h"
-#include "meta/audio_types.h"
 #include "ffmpeg_utils.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -41,6 +40,8 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::AUDIO_AAC, AV_CODEC_ID_AAC},
         {MimeType::AUDIO_AMR_NB, AV_CODEC_ID_AMR_NB},
         {MimeType::AUDIO_AMR_WB, AV_CODEC_ID_AMR_WB},
+        {MimeType::AUDIO_RAW, AV_CODEC_ID_PCM_U8},
+        {MimeType::AUDIO_G711MU, AV_CODEC_ID_PCM_MULAW},
         {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
         {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
         {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
@@ -49,6 +50,23 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::IMAGE_BMP, AV_CODEC_ID_BMP},
     };
     auto it = table.find(mime);
+    if (it != table.end()) {
+        codecId = it->second;
+        return true;
+    }
+    return false;
+}
+
+bool Raw2CodecId(AudioSampleFormat sampleFormat, AVCodecID &codecId)
+{
+    static const std::unordered_map<AudioSampleFormat, AVCodecID> table = {
+        {AudioSampleFormat::SAMPLE_U8, AV_CODEC_ID_PCM_U8},
+        {AudioSampleFormat::SAMPLE_S16LE, AV_CODEC_ID_PCM_S16LE},
+        {AudioSampleFormat::SAMPLE_S24LE, AV_CODEC_ID_PCM_S24LE},
+        {AudioSampleFormat::SAMPLE_S32LE, AV_CODEC_ID_PCM_S32LE},
+        {AudioSampleFormat::SAMPLE_F32LE, AV_CODEC_ID_PCM_F32LE},
+    };
+    auto it = table.find(sampleFormat);
     if (it != table.end()) {
         codecId = it->second;
         return true;
