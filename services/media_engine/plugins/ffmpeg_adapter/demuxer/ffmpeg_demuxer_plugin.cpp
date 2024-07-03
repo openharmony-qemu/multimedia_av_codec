@@ -433,7 +433,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit(int64_t timeStampMs)
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
     ParserSdtpInfo *sc = (ParserSdtpInfo *)videoStream->priv_data;
     if (sc->sdtpCount > 0 && sc->sdtpData != nullptr && ParserFirstDts() == Status::OK) {
-        MEDIA_LOG_E("sdtp exist" PUBLIC_LOG_D32, sc->sdtpCount);
+        MEDIA_LOG_I("sdtp exist, count is: " PUBLIC_LOG_D32, sc->sdtpCount);
         if (referenceParser_->ParserSdtpData(sc->sdtpData, sc->sdtpCount) == Status::OK) {
             isSdtpExist_ = true;
             return Status::END_OF_STREAM;
@@ -543,7 +543,7 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
     if (isSdtpExist_) {
         uint32_t frameId = TimeStampUs2FrameId(videoSample->dts_ - firstDts_, fps_);
         MEDIA_LOG_D("Success get frameId: " PUBLIC_LOG_U32, frameId);
-        referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
+        return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
     }
     return referenceParser_->GetFrameLayerInfo(videoSample->dts_, frameLayerInfo);
 }
