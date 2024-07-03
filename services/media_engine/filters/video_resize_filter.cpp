@@ -106,7 +106,6 @@ private:
 };
 #endif
 
-
 VideoResizeFilter::VideoResizeFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
@@ -422,7 +421,6 @@ void VideoResizeFilter::ReleaseBuffer()
         }
 #endif
     }
-    MEDIA_LOG_I("ReleaseBuffer end");
 }
 
 void VideoResizeFilter::SetFaultEvent(const std::string &errMsg, int32_t ret)
