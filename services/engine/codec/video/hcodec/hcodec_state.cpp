@@ -105,7 +105,7 @@ void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint3
 {
     if (event == CODEC_EVENT_ERROR) {
         SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
-        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
+        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
     } else {
         SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
     }
