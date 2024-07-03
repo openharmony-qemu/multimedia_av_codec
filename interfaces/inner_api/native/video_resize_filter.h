@@ -71,7 +71,6 @@ protected:
 
 private:
     void ReleaseBuffer();
-
     std::string name_;
     FilterType filterType_;
 

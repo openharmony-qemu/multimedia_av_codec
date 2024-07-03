@@ -34,7 +34,6 @@ public:
         : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
-
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -43,7 +42,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -52,7 +50,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
