@@ -820,7 +820,7 @@ bool HCodec::WaitFence(const sptr<SyncFence>& fence)
         }
         return true;
     } else {
-        HLOGE("wait fence time out, cost more than %" PRId64 " ms", WAIT_FENCE_MS);
+        HLOGE("wait fence time out, cost more than %u ms", WAIT_FENCE_MS);
         return false;
     }
 }
