@@ -26,6 +26,7 @@
 #include "hcodec_dfx.h"
 #include "type_converter.h"
 #include "surface_buffer.h"
+#include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -73,6 +74,7 @@ int32_t HDecoder::SetupPort(const Format &format)
         HLOGI("user don't set valid frame rate, use default 30.0");
         frameRate = 30.0;  // default frame rate 30.0
     }
+    codecRate_ = frameRate.value();
 
     PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                             codingType_, std::nullopt, frameRate.value()};
@@ -283,6 +285,7 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         } else {
             HLOGW("succ to set frameRate %.f", frameRate.value());
         }
+        codecRate_ = frameRate.value();
     }
     return AVCS_ERR_OK;
 }
@@ -772,6 +775,13 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     SCOPED_TRACE_WITH_ID(info.bufferId);
     flushCfg_.timestamp = info.omxBuffer->pts;
     info.lastFlushTime = chrono::steady_clock::now();
+    if (std::abs(lastFlushRate_ - codecRate_) > std::numeric_limits<float>::epsilon()) {
+        sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
+        extraData->ExtraSet("VIDEO_RATE", codecRate_);
+        info.surfaceBuffer->SetExtraData(extraData);
+        lastFlushRate_ = codecRate_;
+        HLOGD("flush video rate(%d)", static_cast<int32_t>(codecRate_));
+    }
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, flushCfg_);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",

@@ -100,6 +100,8 @@ private:
     BufferFlushConfig flushCfg_;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
+    double lastFlushRate_ = 0.0;
+    double codecRate_ = 0.0;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H
