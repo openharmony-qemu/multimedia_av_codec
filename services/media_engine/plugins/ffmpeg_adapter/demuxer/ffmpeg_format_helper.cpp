@@ -81,7 +81,8 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
-    {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP}
+    {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
+    {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
 };
 
 static std::map<std::string, FileType> g_convertFfmpegFileType = {
@@ -96,6 +97,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"flv", FileType::FLV},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
+    {"webvtt", FileType::VTT},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
