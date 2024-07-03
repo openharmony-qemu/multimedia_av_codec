@@ -227,6 +227,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
 
 Downloader::~Downloader()
 {
+    Stop(false);
     if (client_ != nullptr) {
         client_->Deinit();
         client_ = nullptr;
