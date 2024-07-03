@@ -114,6 +114,7 @@ public:
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
     bool IsM3u8Request() const;
+    void GetLocation(std::string& location) const;
 private:
     void WaitHeaderUpdated() const;
     std::string url_;

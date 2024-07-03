@@ -96,7 +96,6 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
 private:
-    void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);
     bool GetProtocolByUri();

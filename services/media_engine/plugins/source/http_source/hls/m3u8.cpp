@@ -103,7 +103,7 @@ M3U8::~M3U8()
     }
 }
 
-bool M3U8::Update(const std::string& playList)
+bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
 {
     if (playList_ == playList) {
         MEDIA_LOG_I("playlist does not change ");
@@ -117,7 +117,9 @@ bool M3U8::Update(const std::string& playList)
         MEDIA_LOG_I("Not a media playlist, but a master playlist! " PUBLIC_LOG_S, playList.c_str());
         return false;
     }
-    files_.clear();
+    if (isNeedCleanFiles) {
+        files_.clear();
+    }
     MEDIA_LOG_I("media playlist " PUBLIC_LOG_S, playList.c_str());
     auto tags = ParseEntries(playList);
     UpdateFromTags(tags);
@@ -462,7 +464,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
     variants_.emplace_back(stream);
     defaultVariant_ = stream;
-    m3u8->Update(playList_);
+    m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;

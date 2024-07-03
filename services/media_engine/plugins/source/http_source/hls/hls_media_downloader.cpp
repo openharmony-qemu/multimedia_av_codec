@@ -50,6 +50,8 @@ constexpr int FIRST_CACHE_WATER_LINE = 50 * 1024;
 constexpr int SECOND_CACHE_WATER_LINE = 100 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
+constexpr int SEEK_STATUS_RETRY_TIMES = 100;
+constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -66,7 +68,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
     wantReadLenth_ = PLAY_WATER_LINE;
@@ -85,7 +87,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
 
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
 }
 
@@ -101,7 +103,7 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>(downloader_);
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
 }
@@ -218,12 +220,17 @@ bool HlsMediaDownloader::CheckReadStatus()
         MEDIA_LOG_I("HLS read stop.");
         return true;
     }
-    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
-        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+
+    // eos: buffer is empty, palylist is empty, request is finished, hls is vod, do not select bitrate
+    bool isEos = buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+                 downloadRequest_->IsEos() && playListDownloader_ != nullptr &&
+                 (playListDownloader_->GetDuration() > 0) &&
+                 playListDownloader_->IsParseAndNotifyFinished();
+    if (isEos) {
         MEDIA_LOG_I("HLS read Eos.");
         return true;
     }
-    if (playListDownloader_->GetDuration() > 0 &&
+    if (playListDownloader_->GetDuration() > 0 && playListDownloader_->IsParseAndNotifyFinished() &&
         static_cast<int64_t>(seekTime_) >= playListDownloader_->GetDuration()) {
         MEDIA_LOG_I("HLS read Eos.");
         return true;
@@ -398,14 +405,26 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
+    AutoLock lock(switchMutex_);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
+    isSeekingFlag = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
+    int32_t retry {0};
+    do {
+        retry++;
+        if (retry >= SEEK_STATUS_RETRY_TIMES) { // 100 means retry times
+            MEDIA_LOG_I("Seek may be failed");
+            break;
+        }
+        OSAL::SleepFor(SEEK_STATUS_SLEEP_TIME); // 50 means sleep time pre retry
+    } while (!playListDownloader_->IsParseAndNotifyFinished());
     buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
     buffer_->SetActive(true);
     SeekToTs(seekTime, mode);
     MEDIA_LOG_I("SeekToTime end\n");
+    isSeekingFlag = false;
     return true;
 }
 
@@ -428,11 +447,11 @@ Seekable HlsMediaDownloader::GetSeekable() const
 void HlsMediaDownloader::SetCallback(Callback* cb)
 {
     callback_ = cb;
+    playListDownloader_->SetCallback(cb);
 }
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
-    AutoLock lock(firstTsMutex_);
     for (int i = 0; i < static_cast<int>(playList.size()); i++) {
         auto fragment = playList[i];
         auto ret = std::find_if(backPlayList_.begin(), backPlayList_.end(), [&](PlayInfo playInfo) {
@@ -681,8 +700,9 @@ std::vector<uint32_t> HlsMediaDownloader::GetBitRates()
 
 bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
 {
+    AutoLock lock(switchMutex_);
     if (playListDownloader_->IsBitrateSame(bitRate)) {
-        return 1;
+        return true;
     }
     // report change bitrate start
     ReportBitrateStart(bitRate);
@@ -701,7 +721,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     playListDownloader_->Start();
     isSelectingBitrate_ = true;
     playListDownloader_->UpdateManifest();
-    return 1;
+    return true;
 }
 
 void HlsMediaDownloader::SeekToTs(uint64_t seekTime, SeekMode mode)
@@ -779,7 +799,10 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
             totalBits_, downloadTime * 1000);
     }
-    if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_) {
+
+    // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
+    if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_ &&
+        playListDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
         AutoSelectBitrate(bitRate);
     }
 }
@@ -988,21 +1011,6 @@ size_t HlsMediaDownloader::GetTotalBufferSize()
 size_t HlsMediaDownloader::GetRingBufferSize()
 {
     return buffer_->GetSize();
-}
-
-void HlsMediaDownloader::OnFirstTsReady(const std::string& url, const double& duration)
-{
-    AutoLock lock(firstTsMutex_);
-    if (isDownloadStarted_) {
-        return;
-    }
-    PlayInfo playInfo;
-    playInfo.url_ = url;
-    playInfo.duration_ = duration;
-    fragmentDownloadStart[playInfo.url_] = true;
-    fragmentPushed[playInfo.url_] = true;
-    isDownloadStarted_ = true;
-    PutRequestIntoDownloader(playInfo);
 }
 
 void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)

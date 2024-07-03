@@ -25,7 +25,6 @@
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
-#include "demuxer/data_packer.h"
 #include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
@@ -231,6 +230,7 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    int64_t duration_ {0};
 };
 } // namespace Media
 } // namespace OHOS

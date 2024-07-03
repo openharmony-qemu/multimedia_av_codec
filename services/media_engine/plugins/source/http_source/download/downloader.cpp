@@ -213,6 +213,11 @@ bool DownloadRequest::IsM3u8Request() const
     return false;
 }
 
+void DownloadRequest::GetLocation(std::string& location) const
+{
+    location = location_;
+}
+
 Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
 {
     shouldStartNextRequest = true;
