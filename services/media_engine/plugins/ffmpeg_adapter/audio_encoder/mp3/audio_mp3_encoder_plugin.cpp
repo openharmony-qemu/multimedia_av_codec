@@ -327,28 +327,19 @@ Status AudioMp3EncoderPlugin::Flush()
 Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& parameter)
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-
-    if (parameter->Find(Tag::AUDIO_CHANNEL_COUNT) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_);
-    } else {
+    if (!parameter->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_CHANNEL_COUNT");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (parameter->Find(Tag::AUDIO_SAMPLE_RATE) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
-    } else {
+    if (!parameter->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_SAMPLE_RATE");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (parameter->Find(Tag::AUDIO_SAMPLE_FORMAT) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
-    } else {
+    if (!parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_SAMPLE_FORMAT");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (parameter->Find(Tag::MEDIA_BITRATE) != parameter->end()) {
-        parameter->Get<Tag::MEDIA_BITRATE>(bitrate_);
-    } else {
+    if (!parameter->Get<Tag::MEDIA_BITRATE>(bitrate_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no MEDIA_BITRATE of mp3 encoder CBR");
         return Status::ERROR_INVALID_PARAMETER;
     }
