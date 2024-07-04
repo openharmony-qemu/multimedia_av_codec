@@ -2035,6 +2035,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
     ASSERT_EQ(ret, AV_ERR_OK);
 }
 
+#ifndef DEMUXER_CAPI_UNIT_TEST
 /**
  * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1000
  * @tc.desc: Get frameIndex by pts
@@ -2176,4 +2177,5 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ConversionTest_1001, TestSize.Level1)
     printf("Frame index: %u converted to PTS: %" PRId64 "\n", frameIndex1, presentationTimeUs1);
     ASSERT_EQ(presentationTimeUs1, 1633333);
 }
+#endif
 } // namespace
