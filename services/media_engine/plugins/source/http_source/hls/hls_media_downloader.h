@@ -113,7 +113,7 @@ PRIVATE:
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
-    int32_t GetLastDecrptyRealLen();
+    uint32_t GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen);
 
 PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;

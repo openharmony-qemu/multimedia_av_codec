@@ -507,15 +507,16 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     }
 }
 
-int32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen)
+uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen)
 {
     uint32_t writeLen = 0;
     uint32_t realLen;
     errno_t err {0};
     writeLen =
-        ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
+        ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) *
+        DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
     if (afterAlignRemainedLength_ > 0) {
-        err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, 
+        err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_,
                        afterAlignRemainedBuffer_, afterAlignRemainedLength_);
         if (err!=0) {
             MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64, afterAlignRemainedLength_);
@@ -523,7 +524,8 @@ int32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint3
     }
     uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
                             writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
-    err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint, minWriteLen);
+    err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_,
+                   minWriteLen, writeDataPoint, minWriteLen);
     if (err!=0) {
         MEDIA_LOG_D("minWriteLen: ", PUBLIC_LOG_D32, minWriteLen);
     }
