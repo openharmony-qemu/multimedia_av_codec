@@ -47,6 +47,7 @@ public:
     void SetMimeType(const std::string& mimeType) override;
     void PreParseManifest(const std::string& location) override;
     bool IsParseAndNotifyFinished() override;
+    bool IsParseFinished() override;
     void SetCallback(Callback* callback) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();

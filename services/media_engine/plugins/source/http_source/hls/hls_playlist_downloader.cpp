@@ -73,6 +73,11 @@ bool HlsPlayListDownloader::IsParseAndNotifyFinished()
     return isParseFinished_ && isNotifyPlayListFinished_;
 }
 
+bool HlsPlayListDownloader::IsParseFinished()
+{
+    return isParseFinished_;
+}
+
 int64_t HlsPlayListDownloader::GetDuration() const
 {
     if (!master_) {
