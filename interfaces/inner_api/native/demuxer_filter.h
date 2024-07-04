@@ -131,6 +131,7 @@ private:
     std::string videoMime_;
     std::string audioMime_;
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
+    std::atomic<bool> hasSubtitle_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

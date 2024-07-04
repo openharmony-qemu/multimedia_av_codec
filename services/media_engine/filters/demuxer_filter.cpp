@@ -139,6 +139,7 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
 {
+    hasSubtitle_ = true;
     return demuxer_->SetSubtitleSource(source);
 }
 
@@ -544,6 +545,8 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
         return true;
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W("mediaType disabled, index: %zu", index);
+        return true;
+    } else if (mediaType == Plugins::MediaType::SUBTITLE && !hasSubtitle_) {
         return true;
     }
     return false;
