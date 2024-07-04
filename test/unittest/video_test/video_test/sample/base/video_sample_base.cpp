@@ -125,12 +125,12 @@ void VideoSampleBase::Release()
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
-    inputThread_.reset();
-    outputThread_.reset();
-    videoCodec_.reset();
-    context_.reset();
-    dataProducer_.reset();
-    outputFile_.reset();
+    inputThread_ = nullptr;
+    outputThread_ = nullptr;
+    videoCodec_ = nullptr;
+    context_ = nullptr;
+    dataProducer_ = nullptr;
+    outputFile_ = nullptr;
 
     AVCODEC_LOGI("Succeed");
     doneCond_.notify_all();
