@@ -519,7 +519,7 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint
         err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_,
                        afterAlignRemainedBuffer_, afterAlignRemainedLength_);
         if (err!=0) {
-            MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64, afterAlignRemainedLength_);
+            MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64, afterAlignRemainedLength_);
         }
     }
     uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
@@ -527,7 +527,7 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint
     err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_,
                    minWriteLen, writeDataPoint, minWriteLen);
     if (err!=0) {
-        MEDIA_LOG_D("minWriteLen: ", PUBLIC_LOG_D32, minWriteLen);
+        MEDIA_LOG_D("minWriteLen: " PUBLIC_LOG_D32, minWriteLen);
     }
     realLen = writeLen + afterAlignRemainedLength_;
     AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
@@ -547,7 +547,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
                            DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
                            writeDataPoint, waitLen);
             if (err!=0) {
-                MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64,
+                MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64,
                             DECRYPT_UNIT_LEN - afterAlignRemainedLength_);
             }
             afterAlignRemainedLength_ += waitLen;
@@ -572,7 +572,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     afterAlignRemainedLength_ = 0;
     err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     if (err!=0) {
-        MEDIA_LOG_D("DECRYPT_UNIT_LEN: ", PUBLIC_LOG_D32, DECRYPT_UNIT_LEN);
+        MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D32, DECRYPT_UNIT_LEN);
     }
     writeDataPoint += writeLen;
     waitLen -= writeLen;
@@ -580,7 +580,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
         afterAlignRemainedLength_ = waitLen;
         err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
         if (err!=0) {
-            MEDIA_LOG_D("waitLen: ", PUBLIC_LOG_D32, waitLen);
+            MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32, waitLen);
         }
     }
     return true;
