@@ -632,6 +632,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
             buf->sMemory_ = std::make_shared<FSurfaceMemory>(&sInfo_);
             CHECK_AND_CONTINUE_LOG(buf->sMemory_->GetSurfaceBuffer() != nullptr,
                                    "output surface memory %{public}d create fail", i);
+            outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(buf->sMemory_->GetBase(), buf->sMemory_->GetSize());
             AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, addr=%{public}p, size=%{public}d, "
                          "stride=%{public}d",
@@ -943,8 +944,8 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
         codecAvailQue_->Pop();
         frameBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
         if (sInfo_.surface) {
-            outAVBuffer4Surface_->pts_ = frameBuffer->avBuffer_->pts_;
-            outAVBuffer4Surface_->flag_ = frameBuffer->avBuffer_->flag_;
+            outAVBuffer4Surface_[index]->pts_ = frameBuffer->avBuffer_->pts_;
+            outAVBuffer4Surface_[index]->flag_ = frameBuffer->avBuffer_->flag_;
         }
         if (ret == AVERROR_EOF) {
             std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -957,7 +958,8 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
                 sendCv_.notify_one();
             }
         }
-        callback_->OnOutputBufferAvailable(index, sInfo_.surface ? outAVBuffer4Surface_ : frameBuffer->avBuffer_);
+        callback_->OnOutputBufferAvailable(index,
+                                           sInfo_.surface ? outAVBuffer4Surface_[index] : frameBuffer->avBuffer_);
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT);
@@ -1116,7 +1118,7 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
     oLock.unlock();
     if (frameBuffer->owner_ == FBuffer::Owner::OWNED_BY_USER) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory_;
-        int32_t ret = FlushSurfaceMemory(surfaceMemory, frameBuffer->avBuffer_->pts_);
+        int32_t ret = FlushSurfaceMemory(surfaceMemory, outAVBuffer4Surface_[index]->pts_);
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGW("Update surface memory failed: %{public}d", static_cast<int32_t>(ret));
         } else {
@@ -1156,7 +1158,6 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
         renderTask_ = std::make_shared<TaskThread>("RenderFrame");
         renderTask_->RegisterHandler([this] { (void)RenderFrame(); });
     }
-    outAVBuffer4Surface_ = AVBuffer::CreateAVBuffer();
     AVCODEC_LOGI("Set surface success");
     return AVCS_ERR_OK;
 }
