@@ -258,11 +258,12 @@ size_t InnerDemuxerParserSample::GetFileSize(const std::string& filePath)
 bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
 {
     int64_t pts = GetPtsFromWorkPts(workPts);
-    if (pts > duration / 1000.0) {
+    float durationNum = 0.0;
+    if (pts > duration / durationNum) {
         cout << "pts > duration" << endl;
         return true;
     }
-    int32_t ret;
+    int32_t ret = 0;
     ret = this->demuxer_->StartReferenceParser(pts);
     cout << "StartReferenceParser pts:" << pts << endl;
     if (ret != 0) {
@@ -278,6 +279,7 @@ bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
     usleep(usleepTime);
     FrameLayerInfo frameLayerInfo;
     bool isEosFlag = true;
+    int32_t ptsNum = 1000;
     while (isEosFlag) {
         ret = this->demuxer_->ReadSampleBuffer(videoTrackIdx, avBuffer);
         if (ret != 0) {
@@ -285,7 +287,7 @@ bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
             isEosFlag = false;
             break;
         }
-        if (avBuffer->pts_ >= pts * 1000 || avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        if (avBuffer->pts_ >= pts * ptsNum || avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             cout << "read sample end" << endl;
             isEosFlag = false;
             break;
@@ -305,15 +307,13 @@ bool InnerDemuxerParserSample::RunSeekScene(WorkPts workPts)
 bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
 {
     int64_t pts = GetPtsFromWorkPts(workPts);
-    int32_t ret;
+    int32_t ret = 0;
     ret = demuxer_->SeekToTime(pts, Media::SeekMode::SEEK_PREVIOUS_SYNC);
     if (ret != 0) {
-        cout << "SeekToTime fail ret:" << ret << endl;
         return false;
     }
     ret = this->demuxer_->StartReferenceParser(pts);
     if (ret != 0) {
-        cout << "StartReferenceParser fail ret:" << ret << endl;
         return false;
     }
     usleep(usleepTime);
@@ -321,42 +321,34 @@ bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
     GopLayerInfo gopLayerInfo;
     bool isEosFlag = true;
     bool checkResult = true;
+    int num = 0;
     while (isEosFlag) {
         ret = this->demuxer_->ReadSampleBuffer(videoTrackIdx, avBuffer);
         if (ret != 0) {
-            cout << "ReadSampleBuffer fail ret:" << ret << endl;
             isEosFlag = false;
             break;
         }
         if (avBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
-            cout << "read sample end" << endl;
             isEosFlag = false;
             break;
         }
-        if (avBuffer->pts_ >= pts * 1000) {
+        if (avBuffer->pts_ >= pts * num) {
             ret = this->demuxer_->GetFrameLayerInfo(avBuffer, frameLayerInfo);
             if (ret != 0) {
-                cout << "GetFrameLayerInfo fail ret:" << ret << endl;
                 checkResult = false;
                 break;
             }
-            cout << "GetFrameLayerInfo isDiscardable: " << frameLayerInfo.isDiscardable << ", gopId: " << frameLayerInfo.gopId
-                 << ", layer: " << frameLayerInfo.layer << ", dts_: " << avBuffer->dts_ << ", pts_: " << avBuffer->pts_ << endl;
             checkResult = CheckFrameLayerResult(frameLayerInfo, avBuffer->dts_, true);
             if (!checkResult) {
-                cout << "CheckFrameLayerResult is false!!" << endl;
                 break;
             }
             ret = this->demuxer_->GetGopLayerInfo(frameLayerInfo.gopId, gopLayerInfo);
             if (ret != 0) {
-                cout << "GetGopLayerInfo fail ret:" << ret << endl;
                 checkResult = false;
                 break;
             }
-            cout << "CheckGopLayerResult gopSize: " << gopLayerInfo.gopSize << ", layerCount: " << gopLayerInfo.layerCount << endl;
             checkResult = CheckGopLayerResult(gopLayerInfo, frameLayerInfo.gopId);
             if (!checkResult) {
-                cout << "CheckGopLayerResult is false!!" << endl;
                 break;
             }
         }
@@ -364,7 +356,7 @@ bool InnerDemuxerParserSample::RunSpeedScene(WorkPts workPts)
     return checkResult;
 }
 
-bool InnerDemuxerParserSample::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts, bool speedScene) 
+bool InnerDemuxerParserSample::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts, bool speedScene)
 {
     JsonFrameLayerInfo frame = frameMap_[dts];
     if ((frame.discardable && info.isDiscardable) || (!frame.discardable && !info.isDiscardable)) {
@@ -381,7 +373,10 @@ bool InnerDemuxerParserSample::CheckFrameLayerResult(FrameLayerInfo &info, int64
 bool InnerDemuxerParserSample::CheckGopLayerResult(GopLayerInfo &info, int32_t gopId)
 {
     JsonGopInfo frame = frameGopMap_[gopId];
-    if ((frame.gopSize != info.gopSize) || (frame.layerCount != info.layerCount) || (!std::equal(frame.layerFrameNum.begin(), frame.layerFrameNum.end(), info.layerFrameNum.begin()))) {
+    bool conditionOne = (frame.gopSize != info.gopSize);
+    bool conditionTwo = (frame.layerCount != info.layerCount);
+    bool conditionThree = (!std::equal(frame.layerFrameNum.begin(), frame.layerFrameNum.end(), info.layerFrameNum.begin()));
+    if (conditionOne || conditionTwo || conditionThree) {
         return false;
     }
     return true;
@@ -402,16 +397,17 @@ uint32_t InnerDemuxerParserSample::GetGopIdFromFrameId(int32_t frameId)
 int64_t InnerDemuxerParserSample::GetPtsFromWorkPts(WorkPts workPts)
 {
     int64_t pts = 0;
+    float num = 1000.0;
     switch (workPts) {
         case WorkPts::START_PTS:
             pts = 0;
             break;
         case WorkPts::END_PTS:
-            pts = duration / 1000.0;
+            pts = duration / num;
             break;
         case WorkPts::RANDOM_PTS:
             srand(time(NULL));
-            pts = rand() % duration / 1000.0;
+            pts = rand() % duration / num;
             break;
         case WorkPts::SPECIFIED_PTS:
             pts = specified_pts;
