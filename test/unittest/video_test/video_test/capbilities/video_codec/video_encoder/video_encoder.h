@@ -31,14 +31,50 @@ public:
     int32_t Stop() override;
     int32_t Reset() override;
     OH_AVFormat *GetFormat() override;
-    int32_t PushInputData(CodecBufferInfo &info) override;
-    int32_t FreeOutputData(uint32_t bufferIndex) override;
 
 private:
     int32_t NotifyEndOfStream();
-    int32_t SetCallback(uintptr_t * const sampleContext);
-    int32_t Configure(const SampleInfo &sampleInfo);
+    int32_t Configure(const SampleInfo &sampleInfo) override;
     int32_t GetSurface(SampleInfo &sampleInfo);
+};
+
+/********************* API10 *********************/
+class VideoEncoderAPI10 : public VideoEncoder {
+public:
+    int32_t FreeOutput(uint32_t bufferIndex) override;
+
+protected:
+    int32_t SetCallback(uintptr_t * const sampleContext) override;
+};
+
+class VideoEncoderAPI10Buffer : public VideoEncoderAPI10 {
+public:
+    int32_t PushInput(CodecBufferInfo &info) override;
+};
+
+class VideoEncoderAPI10Surface : public VideoEncoderAPI10 {
+public:
+    int32_t PushInput(CodecBufferInfo &info) override;
+};
+
+/********************* API11 *********************/
+class VideoEncoderAPI11 : public VideoEncoder {
+public:
+    int32_t PushInput(CodecBufferInfo &info) override;
+    int32_t FreeOutput(uint32_t bufferIndex) override;
+
+protected:
+    int32_t SetCallback(uintptr_t * const sampleContext) override;
+};
+
+class VideoEncoderAPI11Buffer : public VideoEncoderAPI11 {
+public:
+    int32_t PushInput(CodecBufferInfo &info) override;
+};
+
+class VideoEncoderAPI11Surface : public VideoEncoderAPI11 {
+public:
+    int32_t PushInput(CodecBufferInfo &info) override;
 };
 } // Sample
 } // MediaAVCodec
