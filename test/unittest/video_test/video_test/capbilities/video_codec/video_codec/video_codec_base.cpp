@@ -39,7 +39,7 @@ std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoCodec(CodecType ty
         case VIDEO_SW_ENCODER:
             codec = CreateVideoEncoder(mode);
             break;
-        default: 
+        default:
             AVCODEC_LOGW("Not supported codec type, %{public}d", type);
     }
     return codec;
@@ -61,7 +61,7 @@ std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoDecoder(CodecRunMo
         case API11_BUFFER:
             codec = std::make_shared<VideoDecoderAPI11Buffer>();
             break;
-        default: 
+        default:
             AVCODEC_LOGW("Not supported codec run mode: %{public}d", mode);
     }
     return codec;
@@ -83,7 +83,7 @@ std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoEncoder(CodecRunMo
         case API11_BUFFER:
             codec = std::make_shared<VideoEncoderAPI11Buffer>();
             break;
-        default: 
+        default:
             AVCODEC_LOGW("Not supported codec run mode: %{public}d", mode);
     }
     return codec;
