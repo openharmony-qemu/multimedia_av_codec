@@ -47,6 +47,7 @@
 #include "layer_info_three_layer_hevc.h"
 #include "layer_info_two_layer_avc.h"
 #include "layer_info_two_layer_hevc.h"
+#include <random>
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
@@ -71,6 +72,7 @@ void from_json(const nlohmann::json &j, JsonFrameLayerInfo &frame)
 
 namespace OHOS {
 namespace MediaAVCodec {
+std::random_device rd;
 InnerDemuxerParserSample::InnerDemuxerParserSample(const std::string &filePath)
 {
     fd = open(filePath.c_str(), O_RDONLY);
@@ -375,7 +377,8 @@ bool InnerDemuxerParserSample::CheckGopLayerResult(GopLayerInfo &info, int32_t g
     JsonGopInfo frame = frameGopMap_[gopId];
     bool conditionOne = (frame.gopSize != info.gopSize);
     bool conditionTwo = (frame.layerCount != info.layerCount);
-    bool conditionThree = (!std::equal(frame.layerFrameNum.begin(), frame.layerFrameNum.end(), info.layerFrameNum.begin()));
+    bool conditionThree = (!std::equal(frame.layerFrameNum.begin(), 
+                                        frame.layerFrameNum.end(), info.layerFrameNum.begin()));
     if (conditionOne || conditionTwo || conditionThree) {
         return false;
     }
@@ -407,7 +410,7 @@ int64_t InnerDemuxerParserSample::GetPtsFromWorkPts(WorkPts workPts)
             break;
         case WorkPts::RANDOM_PTS:
             srand(time(NULL));
-            pts = rand() % duration / num;
+            pts = rd() % duration / num;
             break;
         case WorkPts::SPECIFIED_PTS:
             pts = specified_pts;

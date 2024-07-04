@@ -69,9 +69,6 @@ void InnerParsercNdkTest::SetUp() {}
 void InnerParsercNdkTest::TearDown() {}
 } // namespace
 
-
-
-
 namespace {
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_API_0010
@@ -136,7 +133,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_API_0040, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_API_0050
- * @tc.name      : GetGopLayerInfo with error gopID 
+ * @tc.name      : GetGopLayerInfo with error gopID
  * @tc.desc      : api test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_API_0050, TestSize.Level1)
@@ -346,7 +343,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0120, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0130
- * @tc.name      : Pts corresponding to the Nth frame for startTimeMs is the start position in gop30 fps30 3-layer-frame seek scene
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs is the start position in 3-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0130, TestSize.Level1)
@@ -438,7 +435,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0180, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0190
- * @tc.name      : Pts corresponding to the Nth frame for startTimeMs is the last frame in 3-layer-frame double speed play seek scene
+ * @tc.name      : Pts corresponding to the Nth frame for startTimeMs is the last frame in 3-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0190, TestSize.Level1)
@@ -453,7 +450,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0190, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0200
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in 4-layer-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions for startTimeMs in 4-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0200, TestSize.Level1)
@@ -468,7 +465,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0200, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0210
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in 2-layer-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions for startTimeMs in 2-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0210, TestSize.Level1)
@@ -483,7 +480,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0210, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0220
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in Ltr-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in Ltr-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0220, TestSize.Level1)
@@ -498,7 +495,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0220, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0230
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in gop30 IPB-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions for startTimeMs in gop30 IPB
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0230, TestSize.Level1)
@@ -513,7 +510,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0230, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0240
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in sdtp-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in sdtp
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0240, TestSize.Level1)
@@ -765,7 +762,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0100, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0110
- * @tc.name      : Seek back and forth according to the preset direction and duration in gop60 fps30 3-layer-frame seek scene
+ * @tc.name      : Seek back and forth according to the preset direction and duration in gop60 fps30 3-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0110, TestSize.Level1)
@@ -782,8 +779,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0110, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0120
- * @tc.name      : Seek from the beginning to the end and from the end to the beginning repeat 10 times in gop30 fps60 3-layer-frame seek scene
-                *:开头seek到末尾，末尾seek到开头，反复10次，gop30 fps60 3层参考关系
+ * @tc.name      : from the beginning to the end and from the end to the beginning repeat 10 times in 3-layer-frame 
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0120, TestSize.Level1)
@@ -832,7 +828,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0140, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0150
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in an I-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in an I
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0150, TestSize.Level1)
@@ -848,7 +844,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0150, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0160
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in all I-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions for startTimeMs in all I-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0160, TestSize.Level1)
@@ -871,14 +867,15 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0170, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_3_layer_frame_hevc);
+    shared_ptr<InnerDemuxerParserSample> parserSample = nullptr;
+    parserSample = make_shared<InnerDemuxerParserSample>(g_file_3_layer_frame_hevc);
     parserSample->InitParameter(MP4Scene::THREE_LAYER_FRAME_HEVC);
     ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::START_PTS));
 }
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0180
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in 3-layer-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions for startTimeMs in 3-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0180, TestSize.Level1)
@@ -918,7 +915,8 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0200, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_4_layer_frame_hevc);
+    shared_ptr<InnerDemuxerParserSample> parserSample = nullptr;
+    parserSample = make_shared<InnerDemuxerParserSample>(g_file_4_layer_frame_hevc);
     parserSample->InitParameter(MP4Scene::FOUR_LAYER_FRAME_HEVC);
     ASSERT_TRUE(parserSample->RunSpeedScene(WorkPts::RANDOM_PTS));
 }
