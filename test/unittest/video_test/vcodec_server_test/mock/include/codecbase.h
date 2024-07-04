@@ -39,7 +39,7 @@ enum class CallbackFlag : uint8_t {
     INVALID_CALLBACK,
 };
 const OHOS::MediaAVCodec::Range DEFAULT_RANGE = {96, 4096};
-const OHOS::MediaAVCodec::Range HEVC_DECODER_RANGE = {64, 1920};
+const OHOS::MediaAVCodec::Range HEVC_DECODER_RANGE = {2, 1920};
 const std::vector<int32_t> DEFALUT_PIXFORMAT = {1, 2, 3};
 const std::vector<int32_t> HEVC_DECODER_PIXFORMAT = {2, 3};
 

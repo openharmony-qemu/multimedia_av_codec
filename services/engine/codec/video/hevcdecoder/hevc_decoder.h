@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -75,8 +75,8 @@ public:
             OWNED_BY_SURFACE,
         };
 
-        std::shared_ptr<AVBuffer> avBuffer_ = nullptr;
-        std::shared_ptr<FSurfaceMemory> sMemory_ = nullptr;
+        std::shared_ptr<AVBuffer> avBuffer = nullptr;
+        std::shared_ptr<FSurfaceMemory> sMemory = nullptr;
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width = 0;
         int32_t height = 0;
@@ -118,7 +118,7 @@ private:
     void ReleaseBuffers();
     void StopThread();
     void ReleaseResource();
-    int32_t UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t bufferType);
+    int32_t UpdateOutputBuffer(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void RenderFrame();
@@ -127,11 +127,12 @@ private:
                              int32_t maxVal = INT_MAX);
     void FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
-    int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
+    int32_t AllocateOutputBuffer(int32_t bufferCnt);
     int32_t FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
     int32_t DecodeFrameOnce();
     void HevcFuncMatch();
@@ -161,7 +162,6 @@ private:
     int32_t width_ = 0;
     int32_t height_ = 0;
     int32_t inputBufferSize_ = 0;
-    int32_t outputBufferSize_ = 0;
     SurfaceControl sInfo_;
     int32_t bitDepth_ = 8;
     // // Receive frame
