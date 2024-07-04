@@ -31,19 +31,24 @@ public:
     virtual int32_t Stop() = 0;
     virtual int32_t Reset() = 0;
     virtual OH_AVFormat *GetFormat() = 0;
-    virtual int32_t PushInputData(CodecBufferInfo &info) = 0;
-    virtual int32_t FreeOutputData(uint32_t bufferIndex) = 0;
+    virtual int32_t PushInput(CodecBufferInfo &info) = 0;
+    virtual int32_t FreeOutput(uint32_t bufferIndex) = 0;
 
 protected:
+    virtual int32_t SetCallback(uintptr_t * const sampleContext) = 0;
+    virtual int32_t Configure(const SampleInfo &sampleInfo) = 0;
     static std::string GetCodecName(const std::string &codecMime, bool isEncoder, bool isSoftware);
 
     std::shared_ptr<OH_AVCodec> codec_ = nullptr;
-    CodecRunMode runMode_ = SURFACE_API10;
 };
 
 class VideoCodecFactory {
 public:
-    static std::shared_ptr<VideoCodecBase> CreateVideoCodec(CodecType type);
+    static std::shared_ptr<VideoCodecBase> CreateVideoCodec(CodecType type, CodecRunMode mode);
+
+private:
+    static std::shared_ptr<VideoCodecBase> CreateVideoDecoder(CodecRunMode mode);
+    static std::shared_ptr<VideoCodecBase> CreateVideoEncoder(CodecRunMode mode);
 };
 } // Sample
 } // MediaAVCodec

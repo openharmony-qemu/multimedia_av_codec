@@ -68,7 +68,6 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleCon
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
     CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
-    runMode_ = sampleInfo.codecRunMode;
 
     // Configure video encoder
     int32_t ret = Configure(sampleInfo);
@@ -131,43 +130,6 @@ OH_AVFormat *VideoEncoder::GetFormat()
     return OH_VideoEncoder_GetOutputDescription(codec_.get());
 }
 
-int32_t VideoEncoder::PushInputData(CodecBufferInfo &info)
-{
-    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-
-    int32_t ret = AV_ERR_OK;
-    if (info.attr.flags == AVCODEC_BUFFER_FLAGS_EOS && !(runMode_ & 0b01)) { // 0b01: Buffer mode mask
-        ret = NotifyEndOfStream();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Notify EOS failed");
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
-
-    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
-        ret = OH_VideoEncoder_PushInputBuffer(codec_.get(), info.bufferIndex);
-    } else {
-        ret = OH_VideoEncoder_PushInputData(codec_.get(), info.bufferIndex, info.attr);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoder::FreeOutputData(uint32_t bufferIndex)
-{
-    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
-
-    int32_t ret = AV_ERR_OK;
-    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoEncoder_FreeOutputBuffer(codec_.get(), bufferIndex);
-    } else {
-        ret = OH_VideoEncoder_FreeOutputData(codec_.get(), bufferIndex);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
-        "Free output data failed, ret: %{public}d", ret);
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
 int32_t VideoEncoder::NotifyEndOfStream()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
@@ -175,19 +137,6 @@ int32_t VideoEncoder::NotifyEndOfStream()
     int32_t ret = OH_VideoEncoder_NotifyEndOfStream(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
         "Notify end of stream failed, ret: %{public}d", ret);
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoder::SetCallback(uintptr_t * const sampleContext)
-{
-    int32_t ret = AV_ERR_OK;
-    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
-    } else {
-        ret = OH_VideoEncoder_SetCallback(codec_.get(), AVCodecAsyncCallback, sampleContext);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
-
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -228,6 +177,88 @@ int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
             sampleInfo.window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
         }
     }
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI10::FreeOutput(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+
+    int32_t ret = OH_VideoEncoder_FreeOutputData(codec_.get(), bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Free output data failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI10::SetCallback(uintptr_t *const sampleContext)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+
+    int32_t ret = OH_VideoEncoder_SetCallback(codec_.get(), AVCodecAsyncCallback, sampleContext);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI10Buffer::PushInput(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_VideoEncoder_PushInputData(codec_.get(), info.bufferIndex, info.attr);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI10Surface::PushInput(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(info.attr.flags == AVCODEC_BUFFER_FLAGS_EOS, AVCODEC_SAMPLE_ERR_ERROR,
+        "Not EOS frame but called notify EOS");
+
+    int32_t ret = OH_VideoEncoder_NotifyEndOfStream(codec_.get());
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Notify EOS failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI11::FreeOutput(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+
+    int32_t ret = OH_VideoEncoder_FreeOutputBuffer(codec_.get(), bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Free output buffer failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI11::SetCallback(uintptr_t *const sampleContext)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+    
+    int32_t ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI11Buffer::PushInput(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
+    ret = OH_VideoEncoder_PushInputBuffer(codec_.get(), info.bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input buffer failed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoderAPI11Surface::PushInput(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(info.attr.flags == AVCODEC_BUFFER_FLAGS_EOS, AVCODEC_SAMPLE_ERR_ERROR,
+        "Not EOS frame but called notify EOS");
+
+    int32_t ret = OH_VideoEncoder_NotifyEndOfStream(codec_.get());
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Notify EOS failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 } // Sample

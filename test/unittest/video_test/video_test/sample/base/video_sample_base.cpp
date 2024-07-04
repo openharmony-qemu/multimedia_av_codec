@@ -58,7 +58,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     int32_t ret = dataProducer_->Init(sampleInfo_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
     
-    videoCodec_ = VideoCodecFactory::CreateVideoCodec(sampleInfo_.codecType);
+    videoCodec_ = VideoCodecFactory::CreateVideoCodec(sampleInfo_.codecType, sampleInfo_.codecRunMode);
     CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
     ret = videoCodec_->Create(sampleInfo_.codecMime, sampleInfo_.codecType & 0b1);  // 0b1: software codec mask
@@ -213,7 +213,7 @@ void VideoSampleBase::PushEosFrame()
 
     bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
 
-    (void)videoCodec_->PushInputData(bufferInfo);
+    (void)videoCodec_->PushInput(bufferInfo);
 }
 } // Sample
 } // MediaAVCodec

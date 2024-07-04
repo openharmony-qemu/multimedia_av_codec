@@ -27,19 +27,64 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoCodec(CodecType type)
+std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoCodec(CodecType type, CodecRunMode mode)
 {
     std::shared_ptr<VideoCodecBase> codec = nullptr;
     switch (type) {
         case VIDEO_HW_DECODER:
         case VIDEO_SW_DECODER:
-            codec = std::make_shared<VideoDecoder>();
+            codec = CreateVideoDecoder(mode);
             break;
         case VIDEO_HW_ENCODER:
-            codec = std::make_shared<VideoEncoder>();
+        case VIDEO_SW_ENCODER:
+            codec = CreateVideoEncoder(mode);
             break;
-        default:
-            AVCODEC_LOGW("Not supported codec type");
+        default: 
+            AVCODEC_LOGW("Not supported codec type, %{public}d", type);
+    }
+    return codec;
+}
+
+std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoDecoder(CodecRunMode mode)
+{
+    std::shared_ptr<VideoCodecBase> codec = nullptr;
+    switch (mode) {
+        case API10_SURFACE:
+            codec = std::make_shared<VideoDecoderAPI10Surface>();
+            break;
+        case API10_BUFFER:
+            codec = std::make_shared<VideoDecoderAPI10Buffer>();
+            break;
+        case API11_SURFACE:
+            codec = std::make_shared<VideoDecoderAPI11Surface>();
+            break;
+        case API11_BUFFER:
+            codec = std::make_shared<VideoDecoderAPI11Buffer>();
+            break;
+        default: 
+            AVCODEC_LOGW("Not supported codec run mode: %{public}d", mode);
+    }
+    return codec;
+}
+
+std::shared_ptr<VideoCodecBase> VideoCodecFactory::CreateVideoEncoder(CodecRunMode mode)
+{
+    std::shared_ptr<VideoCodecBase> codec = nullptr;
+    switch (mode) {
+        case API10_SURFACE:
+            codec = std::make_shared<VideoEncoderAPI10Surface>();
+            break;
+        case API10_BUFFER:
+            codec = std::make_shared<VideoEncoderAPI10Buffer>();
+            break;
+        case API11_SURFACE:
+            codec = std::make_shared<VideoEncoderAPI11Surface>();
+            break;
+        case API11_BUFFER:
+            codec = std::make_shared<VideoEncoderAPI11Buffer>();
+            break;
+        default: 
+            AVCODEC_LOGW("Not supported codec run mode: %{public}d", mode);
     }
     return codec;
 }
