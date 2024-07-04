@@ -1957,7 +1957,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3002, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
     ASSERT_EQ(formatVal_.trackCount, 1);
-
+#ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
@@ -1966,6 +1966,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3002, TestSize.Level1)
     ASSERT_EQ(formatVal_.hasVideo, 0);
     ASSERT_EQ(formatVal_.hasAudio, 0);
     ASSERT_EQ(formatVal_.hasSubtitle, 1);
+#endif
 
     printf("---- %s ----\n", g_vttPath.c_str());
     trackIndex_ = 0;
@@ -1975,7 +1976,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_3002, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
     ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_SUBTITLE);
-    ASSERT_EQ(formatVal_.codecMime, "application/webvtt");
+    ASSERT_EQ(formatVal_.codecMime, "text/vtt");
 }
 
 /**

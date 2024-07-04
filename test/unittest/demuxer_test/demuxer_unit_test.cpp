@@ -66,6 +66,7 @@ string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
+string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -1925,6 +1926,60 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Demuxer_ReadSample_3002
+ * @tc.desc: copy current sample to buffer(vtt)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
+{
+    InitResource(g_vttPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    int32_t vttIndex = 0;
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            auto vttStr = reinterpret_cast<char *>(sharedMem_->GetAttr());
+            switch (vttIndex) {
+                case 0:
+                    ASSERT_EQ(strcmp(vttStr, "testA"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 500000);
+                    ASSERT_EQ(info_.size, 5);
+                    break;
+                case 1:
+                    ASSERT_EQ(strcmp(vttStr, "testBB"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 1001000);
+                    ASSERT_EQ(info_.size, 6);
+                    break;
+                case 2:
+                    ASSERT_EQ(strcmp(vttStr, "testCCC"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2003000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 0:
+                    ASSERT_EQ(strcmp(vttStr, "testDDDD"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2100000);
+                    ASSERT_EQ(info_.size, 8);
+                    break;
+                default:
+                    break;
+            }
+            CountFrames(idx);
+        }
+        vttIndex++;
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 4);
+    RemoveValue();
+}
+
+/**
  * @tc.name: Demuxer_SeekToTime_3000
  * @tc.desc: seek to the specified time(srt)
  * @tc.type: FUNC
@@ -1938,6 +1993,39 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
     }
     list<int64_t> toPtsList = {160, 2000, 4000, 7000}; // ms
     vector<int32_t> subVals = {5, 5, 5, 5, 5, 5, 4, 4, 4, 2, 2, 2};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], subVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_3002
+ * @tc.desc: seek to the specified time(vtt)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3002, TestSize.Level1)
+{
+    InitResource(g_vttPath, LOCAL);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {500, 1000, 2000, 3000}; // ms
+    vector<int32_t> subVals = {4, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2, 2};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
