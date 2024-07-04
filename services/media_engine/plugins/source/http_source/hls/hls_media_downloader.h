@@ -220,6 +220,8 @@ PRIVATE:
     bool isBufferEnough_ {true};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
+    bool lastDecryptWriteError_ {false};
+    uint32_t lastRealLen_ {0};
 };
 }
 }
