@@ -34,7 +34,6 @@ std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
-constexpr int64_t TIMESTAMP_US = 1000;
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
@@ -228,6 +227,7 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
     DeInitAvIoCtx(formatContext_->pb);
     formatContext_->pb = InitAvIoCtx(dataSink, 1);
     FALSE_RETURN_V_MSG_E(formatContext_->pb != nullptr, Status::ERROR_INVALID_OPERATION, "failed to create io");
+    canReadFile_ = dataSink->CanRead();
     return Status::NO_ERROR;
 }
 
@@ -323,6 +323,10 @@ Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
     FALSE_RETURN_V_MSG_E(keys.size() > 0, Status::ERROR_INVALID_DATA, "user meta is empty!");
     av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
     for (auto& k: keys) {
+        if (k.compare(0, 16, "com.openharmony.") != 0) { // 16 "com.openharmony." length
+            MEDIA_LOG_E("the meta key %{public}s must com.openharmony.xxx!", k.c_str());
+            continue;
+        }
         std::string key = "moov_level_meta_key_" + k;
         std::string value = "";
         int32_t dataInt = 0;
@@ -653,7 +657,7 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead() && isFastStart_) {
+    if (canReadFile_ && isFastStart_) {
         av_dict_set(&options, "movflags", "faststart", 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
@@ -711,7 +715,7 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->data = sample->memory_->GetAddr();
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * TIMESTAMP_US, st->time_base);
+    cachePacket_->pts = ConvertTimeToFFmpegByUs(sample->pts_, st->time_base);
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;

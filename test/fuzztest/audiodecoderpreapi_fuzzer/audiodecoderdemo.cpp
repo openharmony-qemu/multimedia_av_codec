@@ -310,6 +310,7 @@ bool ADecDemoAuto::RunCase(const uint8_t *data, size_t size)
         << " ms" << std::endl;
     DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
     DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
+    sleep(1);
     return true;
 }
 

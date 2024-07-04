@@ -60,13 +60,13 @@ HWTEST_F(M3u8UnitTest, UpdateTest, TestSize.Level1)
     std::string testPlaylist = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n...";
 
     // 测试有效的播放列表更新
-    EXPECT_TRUE(m3u8.Update(testPlaylist));
+    EXPECT_TRUE(m3u8.Update(testPlaylist, true));
 
     // 测试当播放列表不变时的更新
-    EXPECT_TRUE(m3u8.Update(testPlaylist));
+    EXPECT_TRUE(m3u8.Update(testPlaylist, true));
 
     // 测试无效的播放列表更新
-    EXPECT_FALSE(m3u8.Update("Invalid Playlist"));
+    EXPECT_FALSE(m3u8.Update("Invalid Playlist", true));
 }
 
 HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST, TestSize.Level1)

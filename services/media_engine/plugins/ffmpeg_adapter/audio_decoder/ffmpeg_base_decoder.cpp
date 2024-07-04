@@ -215,7 +215,8 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         isFirst = false;
         format_->SetData(Tag::AUDIO_SAMPLE_FORMAT,
                          FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
-        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayout(avCodecContext_->channel_layout);
+        auto layout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(avCodecContext_->channel_layout,
+                                                                         avCodecContext_->channels);
         if (avCodecContext_->channel_layout == 0 && avCodecContext_->channels == 1) { // 1 channel: mono
             layout = AudioChannelLayout::MONO;
             avCodecContext_->channel_layout = AV_CH_LAYOUT_MONO;

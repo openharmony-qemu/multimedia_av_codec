@@ -41,7 +41,7 @@ public:
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
 
 private:
-    int32_t isMarkLTR_ = 0;
+    bool isMarkLTR_ = false;
     bool isUseLTR_ = false;
     int32_t ltrPoc_ = 0;
     int32_t poc_ = 0;

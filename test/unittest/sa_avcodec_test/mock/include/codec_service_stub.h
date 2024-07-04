@@ -46,7 +46,7 @@ public:
     MOCK_METHOD(CodecServiceStub *, Create, ());
     MOCK_METHOD(int32_t, Init, (AVCodecType type, bool isMimeType, const std::string &name));
     MOCK_METHOD(int32_t, DestroyStub, ());
-    MOCK_METHOD(int32_t, DumpInfo, (int32_t fd));
+    MOCK_METHOD(int32_t, Dump, (int32_t fd, const std::vector<std::u16string>& args));
 };
 
 class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public NoCopyable {
@@ -58,7 +58,7 @@ public:
     ~CodecServiceStub();
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
     int32_t DestroyStub() override;
-    int32_t DumpInfo(int32_t fd);
+    int32_t Dump(int32_t fd, const std::vector<std::u16string>& args);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

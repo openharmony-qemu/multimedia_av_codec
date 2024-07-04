@@ -20,7 +20,7 @@
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"
 #include "display_type.h"
-#include "videoenc_ndk_sample.h"
+#include "videoenc_sample.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
@@ -142,6 +142,7 @@ int32_t VEncNdkSample::ConfigureVideoEncoder()
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, 1);
     if (DEFAULT_BITRATE_MODE == CQ) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
     }

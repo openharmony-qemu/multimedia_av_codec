@@ -369,12 +369,10 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
     auto inCnt = std::count_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
         return info.owner == BufferOwner::OWNED_BY_OMX;
     });
-    auto outCnt = std::count_if(outputBufferPool_.begin(), outputBufferPool_.end(), [](const BufferInfo& info) {
-        return info.owner == BufferOwner::OWNED_BY_OMX;
-    });
-    while (inCnt > outCnt) {
+    inCnt++; // at least submit one out buffer to omx
+    while (inCnt > 0) {
         SubmitDynamicBufferIfPossible();
-        outCnt++;
+        inCnt--;
     }
     return AVCS_ERR_OK;
 }
@@ -845,6 +843,8 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     NotifySurfaceToRenderOutputBuffer(info);
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
+    } else {
+        SubmitDynamicBufferIfPossible();
     }
 }
 

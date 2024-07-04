@@ -27,7 +27,7 @@
 namespace OHOS {
 namespace Media {
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 50 * 1024 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 20 * 1024 * 1024;
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;

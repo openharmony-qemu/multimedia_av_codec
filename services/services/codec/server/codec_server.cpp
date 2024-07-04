@@ -32,9 +32,17 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
-constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
-constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
-constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
+enum DumpIndex : uint32_t {
+    DUMP_INDEX_FORWARD_CALLER_PID          = 0x01'01'01'00,
+    DUMP_INDEX_FORWARD_CALLER_UID          = 0x01'01'02'00,
+    DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME = 0x01'01'03'00,
+    DUMP_INDEX_CALLER_PID                  = 0x01'01'04'00,
+    DUMP_INDEX_CALLER_UID                  = 0x01'01'05'00,
+    DUMP_INDEX_CALLER_PROCESS_NAME         = 0x01'01'06'00,
+    DUMP_INDEX_STATUS                      = 0x01'01'07'00,
+    DUMP_INDEX_LAST_ERROR                  = 0x01'01'08'00,
+    DUMP_INDEX_CODEC_INFO_START            = 0x01'02'00'00,
+};
 constexpr uint32_t DUMP_OFFSET_8 = 8;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
@@ -45,11 +53,6 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_
     {OHOS::MediaAVCodec::CodecServer::FLUSHED, "flushed"},
     {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "end of stream"},
     {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
-};
-
-const std::vector<std::pair<std::string_view, const std::string>> DEFAULT_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
 };
 
 const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
@@ -64,21 +67,6 @@ const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TAB
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "Max_Input_Buffer_Count"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "Max_Output_Buffer_Count"},
-};
-
-const std::vector<std::pair<std::string_view, const std::string>> AUDIO_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, "Channel_Count"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SAMPLE_RATE, "Sample_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
-};
-
-const std::map<OHOS::MediaAVCodec::CodecServer::CodecType, std::vector<std::pair<std::string_view, const std::string>>>
-    CODEC_DUMP_TABLE = {
-        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_DEFAULT, DEFAULT_DUMP_TABLE},
-        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_VIDEO, VIDEO_DUMP_TABLE},
-        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_AUDIO, AUDIO_DUMP_TABLE},
 };
 
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
@@ -226,7 +214,7 @@ int32_t CodecServer::Configure(const Format &format)
         auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_, codecName_);
         CHECK_AND_RETURN_RET_LOG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL, "Failed to get codec scenario");
         scenario_ = scenario.value();
-        paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecType_, codecName_, scenario_);
+        paramCheckRet = CodecParamChecker::CheckConfigureValid(config, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG(paramCheckRet == AVCS_ERR_OK || paramCheckRet == AVCS_ERR_CODEC_PARAM_INCORRECT,
             paramCheckRet, "Params in format is not valid.");
         CodecScenarioInit(config);
@@ -574,6 +562,21 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     return ret;
 }
 
+int32_t CodecServer::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    (void)renderTimestampNs;
+    std::shared_lock<std::shared_mutex> freeLock(freeMutex_);
+    if (isFree_) {
+        AVCODEC_LOGE("In invalid state, free out");
+        return AVCS_ERR_INVALID_STATE;
+    }
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
+                             "In invalid state, %{public}s", GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->RenderOutputBuffer(index);
+}
+
 int32_t CodecServer::SetParameter(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -585,7 +588,7 @@ int32_t CodecServer::SetParameter(const Format &format)
         Format oldFormat;
         int32_t ret = codecBase_->GetOutputFormat(oldFormat);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Failed to get codec format");
-        ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecType_, codecName_, scenario_);
+        ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
     }
 
@@ -624,52 +627,44 @@ int32_t CodecServer::GetInputFormat(Format &format)
 
 int32_t CodecServer::DumpInfo(int32_t fd)
 {
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, AVCS_ERR_OK, "Get a invalid fd");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     Format codecFormat;
     int32_t ret = codecBase_->GetOutputFormat(codecFormat);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Get codec format failed.");
-    CodecType codecType = GetCodecType();
-    auto it = CODEC_DUMP_TABLE.find(codecType);
-    const auto &dumpTable = it != CODEC_DUMP_TABLE.end() ? it->second : DEFAULT_DUMP_TABLE;
-    AVCodecDumpControler dumpControler;
-    std::string codecInfo;
-    switch (codecType) {
-        case CODEC_TYPE_VIDEO:
-            codecInfo = "Video_Codec_Info";
-            break;
-        case CODEC_TYPE_DEFAULT:
-            codecInfo = "Codec_Info";
-            break;
-        case CODEC_TYPE_AUDIO:
-            codecInfo = "Audio_Codec_Info";
-            break;
-    }
-    auto statusIt = CODEC_STATE_MAP.find(status_);
-    dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);
-    dumpControler.AddInfo(DUMP_STATUS_INDEX, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
-    dumpControler.AddInfo(DUMP_LAST_ERROR_INDEX, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
-    uint32_t dumpIndex = 3;
-    for (auto iter : dumpTable) {
+    AVCodecDumpControler dumpControler;
+    auto statusIt = CODEC_STATE_MAP.find(status_);
+    if (forwardCaller_.pid != -1 || !forwardCaller_.processName.empty()) {
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "Forward_Caller_Pid", std::to_string(caller_.pid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_UID, "Forward_Caller_Uid", std::to_string(caller_.uid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME,
+            "Forward_Caller_Process_Name", caller_.processName);
+    }
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "Caller_Pid", std::to_string(caller_.pid));
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_UID, "Caller_Uid", std::to_string(caller_.uid));
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "Caller_Process_Name", caller_.processName);
+    dumpControler.AddInfo(DUMP_INDEX_STATUS, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
+    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
+
+    uint32_t infoIndex = 1;
+    for (auto iter : VIDEO_DUMP_TABLE) {
+        uint32_t dumpIndex = DUMP_INDEX_CODEC_INFO_START + (infoIndex++ << DUMP_OFFSET_8);
         if (iter.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
-            dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
-                                                       codecFormat, iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
+            dumpControler.AddInfoFromFormatWithMapping(dumpIndex, codecFormat,
+                                                       iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
         } else if (iter.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-            dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
-                                                       codecFormat, iter.first, iter.second, SCALE_TYPE_STRING_MAP);
+            dumpControler.AddInfoFromFormatWithMapping(dumpIndex, codecFormat,
+                                                       iter.first, iter.second, SCALE_TYPE_STRING_MAP);
         } else {
-            dumpControler.AddInfoFromFormat(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8), codecFormat,
-                                            iter.first, iter.second);
+            dumpControler.AddInfoFromFormat(dumpIndex, codecFormat, iter.first, iter.second);
         }
-        dumpIndex++;
     }
     std::string dumpString;
     dumpControler.GetDumpString(dumpString);
-    if (fd != -1) {
-        write(fd, dumpString.c_str(), dumpString.size());
-        dumpString = codecBase_->GetHidumperInfo();
-        write(fd, dumpString.c_str(), dumpString.size());
-    }
+    dumpString += codecBase_->GetHidumperInfo();
+    dumpString += "\n";
+    write(fd, dumpString.c_str(), dumpString.size());
     return AVCS_ERR_OK;
 }
 
@@ -681,6 +676,11 @@ void CodecServer::SetCallerInfo(const Meta &callerInfo)
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardCaller_.pid);
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_UID, forwardCaller_.uid);
     (void)callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardCaller_.processName);
+
+    if (caller_.pid == -1) {
+        caller_.pid = getprocpid();
+        caller_.uid = getuid();
+    }
 
     EXPECT_AND_LOGI((forwardCaller_.pid >= 0) || (!forwardCaller_.processName.empty()),
         "Forward caller pid: %{public}d, process name: %{public}s",
@@ -884,21 +884,6 @@ void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, buffer);
     }
-}
-
-CodecServer::CodecType CodecServer::GetCodecType()
-{
-    CodecType codecType;
-
-    if ((codecName_.find("Video") != codecName_.npos) || (codecName_.find("video") != codecName_.npos)) {
-        codecType = CodecType::CODEC_TYPE_VIDEO;
-    } else if ((codecName_.find("Audio") != codecName_.npos) || (codecName_.find("audio") != codecName_.npos)) {
-        codecType = CodecType::CODEC_TYPE_AUDIO;
-    } else {
-        codecType = CodecType::CODEC_TYPE_DEFAULT;
-    }
-
-    return codecType;
 }
 
 int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)

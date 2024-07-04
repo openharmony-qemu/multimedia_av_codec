@@ -72,7 +72,6 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
-    void OnFirstTsReady(const std::string& url, const double& duration) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
@@ -111,6 +110,7 @@ PRIVATE:
     bool HandleBuffering();
     bool HandleCache();
     bool CheckReadStatus();
+    Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
 PRIVATE:
@@ -211,7 +211,6 @@ PRIVATE:
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
-    Mutex firstTsMutex_ {};
     std::string mimeType_;
     unsigned int wantReadLenth_ {0};
     bool isInterrupt_ {false};
@@ -219,6 +218,8 @@ PRIVATE:
     bool isFirstFrameArrived_ {false};
     unsigned int bufferingTimes_ {0};
     bool isBufferEnough_ {true};
+    std::atomic<bool> isSeekingFlag {false};
+    Mutex switchMutex_ {};
 };
 }
 }

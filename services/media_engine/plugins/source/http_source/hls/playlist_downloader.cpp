@@ -26,6 +26,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
+constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
 void PlayListDownloader::PlayListDownloaderInit()
 {
     dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
@@ -179,6 +180,12 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
+    int32_t contentlen = downloadRequest_->GetFileContentLength();
+    std::string location;
+    downloadRequest_->GetLocation(location);
+    if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
+        PreParseManifest(location);
+    }
     return true;
 }
 
@@ -203,7 +210,7 @@ void PlayListDownloader::SetStatusCallback(StatusCallbackFunc cb)
     statusCallback_ = cb;
 }
 
-void PlayListDownloader::ParseManifest(const std::string& location)
+void PlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     MEDIA_LOG_E("Should not call this ParseManifest");
 }

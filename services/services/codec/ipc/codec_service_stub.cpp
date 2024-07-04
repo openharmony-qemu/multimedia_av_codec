@@ -64,6 +64,8 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
      "CodecServiceStub DestroyStub"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_DECRYPT_CONFIG),
      "CodecServiceStub SetDecryptConfig"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME),
+     "CodecServiceStub RenderOutputBufferAtTime"},
 };
 } // namespace
 
@@ -110,8 +112,9 @@ int32_t CodecServiceStub::DestroyStub()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServiceStub::DumpInfo(int32_t fd)
+int32_t CodecServiceStub::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
+    (void)args;
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return std::static_pointer_cast<CodecServer>(codecServer_)->DumpInfo(fd);
 }
@@ -133,6 +136,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER):
             ret = ReleaseOutputBuffer(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RENDER_OUTPUT_BUFFER_AT_TIME):
+            ret = RenderOutputBufferAtTime(data, reply);
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::INIT):
             ret = Init(data, reply);
@@ -185,7 +191,7 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
 #endif
             break;
         default:
-            AVCODEC_LOGW("No member func supporting, applying default process");
+            AVCODEC_LOGW("No member func supporting, applying default process, code:%{public}u", code);
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to call member func %{public}s", funcName.c_str());
@@ -334,6 +340,13 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(uint32_t index, bool render)
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->ReleaseOutputBuffer(index, render);
+}
+
+int32_t CodecServiceStub::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->RenderOutputBufferAtTime(index, renderTimestampNs);
 }
 
 int32_t CodecServiceStub::SetParameter(const Format &format)
@@ -539,6 +552,22 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel
     bool render = data.ReadBool();
 
     bool ret = reply.WriteInt32(ReleaseOutputBuffer(index, render));
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::RenderOutputBufferAtTime(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+
+    uint32_t index = data.ReadUint32();
+    int64_t renderTimestampNs = data.ReadInt64();
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec listener is nullptr");
+    bool ret = static_cast<CodecListenerProxy *>(listener_.GetRefPtr())
+                   ->SetOutputBufferRenderTimestamp(index, renderTimestampNs);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
+
+    ret = reply.WriteInt32(RenderOutputBufferAtTime(index, renderTimestampNs));
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }

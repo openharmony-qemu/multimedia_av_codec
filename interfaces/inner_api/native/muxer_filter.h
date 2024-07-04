@@ -33,6 +33,8 @@ public:
     explicit MuxerFilter(std::string name, FilterType type);
     ~MuxerFilter() override;
     Status SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format);
+    Status SetTransCoderMode();
+    int64_t GetCurrentPtsMs();
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
     Status DoStart() override;
@@ -54,7 +56,9 @@ public:
         const std::shared_ptr<FilterLinkCallback> &callback) override;
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
     void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
-        sptr<AVBufferQueueProducer> inputBufferQueue);
+        StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue);
+    void OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
+        StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue);
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     const std::string &GetContainerFormat(Plugins::OutputFormat format);
@@ -71,6 +75,7 @@ private:
     int32_t preFilterCount_{0};
     int32_t startCount_{0};
     int32_t stopCount_{0};
+    int32_t eosCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
     std::string videoCodecMimeType_;
     std::string audioCodecMimeType_;
@@ -79,6 +84,15 @@ private:
     int32_t appUid_ {0};
     int32_t appPid_ {0};
     Plugins::OutputFormat outputFormat_{Plugins::OutputFormat::DEFAULT};
+
+    int64_t lastVideoPts_{0};
+    int64_t lastAudioPts_{0};
+    bool videoIsEos{false};
+    bool audioIsEos{false};
+    bool isTransCoderMode{false};
+ 
+    std::mutex stopMutex_;
+    std::condition_variable stopCondition_;
 };
 } // namespace Pipeline
 } // namespace MEDIA

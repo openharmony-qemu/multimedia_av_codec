@@ -127,11 +127,12 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(MediaAVCodec::MediaType type)
 {
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = nullptr;
-    for (auto &downloader : segmentDownloaders_) {
-        if (downloader->GetStreamType() == type) {
-            segmentDownloader = downloader;
-            break;
-        }
+    auto iter = std::find_if(segmentDownloaders_.begin(), segmentDownloaders_.end(),
+        [&](const std::shared_ptr<DashSegmentDownloader> &downloader) {
+            return downloader->GetStreamType() == type;
+        });
+    if (iter != segmentDownloaders_.end()) {
+        segmentDownloader = *iter;
     }
 
     return segmentDownloader;
@@ -297,6 +298,7 @@ void DashMediaDownloader::SetPlayStrategy(PlayStrategy* playStrategy)
 
 Status DashMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
+    GetSeekable();
     return mpdDownloader_->GetStreamInfo(streams);
 }
 
@@ -477,11 +479,12 @@ void DashMediaDownloader::GetSegmentToDownload(int downloadStreamId, bool stream
 bool DashMediaDownloader::SelectBitrateInternal(uint32_t bitrate)
 {
     std::shared_ptr<DashSegmentDownloader> segmentDownloader;
-    for (const auto &downloader : segmentDownloaders_) {
-        if (downloader->GetStreamType() == MediaAVCodec::MEDIA_TYPE_VID) {
-            segmentDownloader = downloader;
-            break;
-        }
+    auto iter = std::find_if(segmentDownloaders_.begin(), segmentDownloaders_.end(),
+        [&](const std::shared_ptr<DashSegmentDownloader> &downloader) {
+            return downloader->GetStreamType() == MediaAVCodec::MEDIA_TYPE_VID;
+        });
+    if (iter != segmentDownloaders_.end()) {
+        segmentDownloader = *iter;
     }
 
     if (segmentDownloader == nullptr) {

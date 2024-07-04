@@ -1057,54 +1057,7 @@ HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
 HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
-    server_->codecName_ = "video";
-    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
-    int32_t fileFd = -1;
-
-    EXPECT_CALL(*codecBaseMock_, GetOutputFormat()).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    int32_t ret = server_->DumpInfo(fileFd);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-/**
- * @tc.name: DumpInfo_Valid_Test_002
- * @tc.desc: 2. DumpInfo codec type is audio
- */
-HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_002, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->codecName_ = "audio";
-    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
-    int32_t fileFd = -1;
-
-    EXPECT_CALL(*codecBaseMock_, GetOutputFormat()).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    int32_t ret = server_->DumpInfo(fileFd);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-/**
- * @tc.name: DumpInfo_Valid_Test_003
- * @tc.desc: 3. DumpInfo codec type is default
- */
-HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_003, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
-    int32_t fileFd = -1;
-
-    EXPECT_CALL(*codecBaseMock_, GetOutputFormat()).Times(1).WillOnce(Return(AVCS_ERR_OK));
-    int32_t ret = server_->DumpInfo(fileFd);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-/**
- * @tc.name: DumpInfo_Valid_Test_004
- * @tc.desc: 4. DumpInfo fileFd is zero
- */
-HWTEST_F(CodecServerUnitTest, DumpInfo_Valid_Test_004, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
+    server_->forwardCaller_.processName = "DumpInfo_Valid_Test_001";
     int32_t fileFd = 0;
 
     EXPECT_CALL(*codecBaseMock_, GetOutputFormat()).Times(1).WillOnce(Return(AVCS_ERR_OK));

@@ -81,6 +81,7 @@ private:
     int32_t lameInitFlag;
     int32_t channels_;
     int64_t bitrate_;
+    int64_t pts_;
 
     int32_t sampleRate_;
     int32_t maxInputSize_;

@@ -98,8 +98,6 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     }
     MEDIA_LOG_I("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
 
-    ActivateMode();
-
     MEDIA_LOG_I("SetSource exit.");
     return Status::OK;
 }
@@ -268,6 +266,13 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
+    } else if (event.type == PluginEventType::SOURCE_INFO) {
+        MEDIA_LOG_I("source info start from source.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else {
+        MEDIA_LOG_E("on event error.");
     }
 }
 
@@ -287,28 +292,6 @@ void Source::SetInterruptState(bool isInterruptNeeded)
     if (plugin_) {
         plugin_->SetInterruptState(isInterruptNeeded_);
     }
-}
-
-void Source::ActivateMode()
-{
-    MediaAVCodec::AVCodecTrace trace("Source::ActivateMode");
-    MEDIA_LOG_I("ActivateMode enter");
-    int32_t retry {0};
-    do {
-        if (plugin_) {
-            seekable_ = plugin_->GetSeekable();
-        }
-        retry++;
-        if (seekable_ == Seekable::INVALID) {
-            if (retry >= 20) { // 20 means retry times
-                break;
-            }
-            OSAL::SleepFor(10); // 10 means sleep time pre retry
-        }
-    } while (seekable_ == Seekable::INVALID);
-
-    FALSE_LOG(seekable_ != Seekable::INVALID);
-    MEDIA_LOG_I("ActivateMode exit");
 }
 
 Plugins::Seekable Source::GetSeekable()

@@ -25,6 +25,11 @@ declare_args() {
   av_codec_support_bitstream_dump = true
   av_codec_support_drm = false
   av_codec_enable_special_codec = false
+  av_codec_support_video_processing_engine = false
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_video_processing_engine)) {
+    av_codec_support_video_processing_engine = true
+  }
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -43,6 +48,8 @@ audio_framework_root_dir = "//foundation/multimedia/audio_framework"
 graphic_2d_root_dir = "//foundation/graphic/graphic_2d"
 c_utils_root_dir = "//commonlibrary/c_utils"
 drm_framework_root_dir = "//foundation/multimedia/drm_framework"
+video_processing_engine_root_dir =
+    "//foundation/multimedia/video_processing_engine"
 
 av_codec_defines = [
   "HST_ANY_WITH_NO_RTTI",

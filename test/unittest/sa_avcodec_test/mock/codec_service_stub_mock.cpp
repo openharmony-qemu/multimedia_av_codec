@@ -73,13 +73,13 @@ int32_t CodecServiceStub::DestroyStub()
     return mock->DestroyStub();
 }
 
-int32_t CodecServiceStub::DumpInfo(int32_t fd)
+int32_t CodecServiceStub::Dump(int32_t fd, const std::vector<std::u16string>& args)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
     UNITTEST_INFO_LOG("fd:%d", fd);
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->DumpInfo(fd);
+    return mock->Dump(fd, args);
 }
 
 } // namespace MediaAVCodec

@@ -55,6 +55,7 @@ public:
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
     Status SetInputSurface(sptr<Surface> surface);
+    Status SetTransCoderMode();
     sptr<Surface> GetInputSurface();
     Status Start();
     Status Stop();
@@ -87,6 +88,7 @@ private:
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
     std::atomic<bool> isThreadExit_ = true;
+    bool isTransCoderMode = false;
 
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;

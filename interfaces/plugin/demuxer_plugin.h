@@ -157,6 +157,12 @@ struct DemuxerPlugin : public PluginBase {
         (void)drmInfo;
         return Status::OK;
     }
+
+    virtual Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex) = 0;
+
+    virtual Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) = 0;
 };
 
 /// Demuxer plugin api major number.

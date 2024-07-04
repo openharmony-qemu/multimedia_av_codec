@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -51,7 +51,7 @@ struct PicRefInfo {
     uint32_t streamId = 0;
     uint32_t poc = 0;
     int32_t layerId = -1;
-    bool isDependent = true;
+    bool isDiscardable = false;
     SliceType sliceType = SliceType::UNKNOWN_SLICE_TYPE;
     std::vector<uint32_t> refList;
 };
@@ -59,11 +59,12 @@ struct PicRefInfo {
 class RefParser {
 public:
     explicit RefParser(std::vector<uint32_t> IFramePos);
-    virtual ~RefParser() = default;
-    virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId);
+    virtual ~RefParser();
+    virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts);
     virtual Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize);
     virtual Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize);
     virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
+    virtual Status GetFrameLayerInfo(int64_t dts, FrameLayerInfo &frameLayerInfo);
     virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
 
 protected:
@@ -74,6 +75,7 @@ protected:
                       PicRefInfo &curPicRefInfo);
     void FillGopLayerInfo(uint32_t gopSize, uint32_t disposableNum, uint32_t disposableExtNum,
                           GopLayerInfo &gopLayerInfo);
+    void DumpGopInfo(uint32_t gopId, uint32_t gopSize);
     uint8_t nalLenSize_ = DEFAULT_NAL_LEN_SIZE; // nalu长度所占字节数
     std::map<uint32_t, PicRefInfo> picRefInfo_;
     std::vector<uint32_t> IFramePos_;
@@ -81,6 +83,8 @@ protected:
     std::map<uint32_t, GopLayerInfo> gopLayerInfoMap_;
     bool isEof_ = false;
     uint32_t curParserStreamId_ = 0;
+    int64_t curParserDts_ = 0;
+    std::map<int64_t, uint32_t> dts2streamId_;
     FILE *dumpFile_ = nullptr;
 };
 } // Plugins

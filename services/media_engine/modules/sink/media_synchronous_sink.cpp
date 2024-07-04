@@ -31,7 +31,7 @@ void MediaSynchronousSink::Init()
 
 MediaSynchronousSink::~MediaSynchronousSink()
 {
-    MEDIA_LOG_I("~MediaSynchronousSink enter .");
+    MEDIA_LOG_D("~MediaSynchronousSink enter .");
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
         syncCenter->RemoveSynchronizer(this);

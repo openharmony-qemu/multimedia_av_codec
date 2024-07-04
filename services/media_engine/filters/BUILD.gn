@@ -20,6 +20,11 @@ config("av_codec_media_engine_filters_config") {
     "MEDIA_OHOS",
   ]
 
+  if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
+  }
+
   cflags = [
     "-O2",
     "-fPIC",
@@ -41,6 +46,11 @@ config("av_codec_media_engine_filters_config") {
     "$drm_framework_root_dir/services/drm_service/ipc",
     "$graphic_2d_root_dir/interfaces/inner_api",
   ]
+
+  if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+    include_dirs += [ "$video_processing_engine_root_dir/interfaces/inner_api" ]
+  }
 }
 
 ohos_shared_library("av_codec_media_engine_filters") {
@@ -65,10 +75,13 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "demuxer_filter.cpp",
     "muxer_filter.cpp",
     "subtitle_sink_filter.cpp",
+    "surface_decoder_adapter.cpp",
+    "surface_decoder_filter.cpp",
     "surface_encoder_adapter.cpp",
     "surface_encoder_filter.cpp",
     "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
+    "video_resize_filter.cpp",
   ]
 
   deps = [
@@ -100,6 +113,11 @@ ohos_shared_library("av_codec_media_engine_filters") {
   }
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]
+  }
+
+  if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+    external_deps += [ "video_processing_engine:videoprocessingengine" ]
   }
 
   subsystem_name = "multimedia"

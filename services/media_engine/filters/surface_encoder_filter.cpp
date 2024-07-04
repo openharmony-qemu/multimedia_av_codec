@@ -34,7 +34,6 @@ public:
         : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
-
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -43,7 +42,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -52,7 +50,6 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
-
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -142,6 +139,13 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");
     mediaCodec_->SetInputSurface(surface);
+    return Status::OK;
+}
+
+Status SurfaceEncoderFilter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    mediaCodec_->SetTransCoderMode();
     return Status::OK;
 }
 
@@ -237,6 +241,14 @@ void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (mediaCodec_ == nullptr) {
         return;
     }
+    bool isEos = false;
+    if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
+        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
+        if (isEos) {
+            NotifyEos();
+            return;
+        }
+    }
     mediaCodec_->SetParameter(parameter);
 }
 
@@ -277,6 +289,7 @@ Status SurfaceEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("OnLinked");
+    onLinkedResultCallback_ = callback;
     return Status::OK;
 }
 
@@ -298,6 +311,9 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
 {
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
+    if (onLinkedResultCallback_) {
+        onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
+    }
 }
 
 void SurfaceEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,10 +30,11 @@ public:
     ~ReferenceParserManager();
     static bool Init();
 
-    Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId);
+    Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts);
     Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize);
     Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
+    Status GetFrameLayerInfo(int64_t dts, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
     
 private:

@@ -24,7 +24,6 @@
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
-#include "demuxer/data_packer.h"
 #include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
@@ -90,7 +89,6 @@ public:
     virtual ~BaseStreamDemuxer();
 
     virtual Status Init(const std::string& uri) = 0;
-    virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
     virtual Status Start() = 0;
@@ -111,7 +109,7 @@ public:
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
     std::string SnifferMediaType(int32_t streamID);
-    bool IsDash();
+    bool IsDash() const;
     void SetIsDash(bool flag);
     Status SetNewVideoStreamID(int32_t streamID);
     int32_t GetNewVideoStreamID();

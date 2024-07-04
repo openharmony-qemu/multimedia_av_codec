@@ -195,6 +195,14 @@ int32_t AVCodecVideoDecoderImpl::ReleaseOutputBuffer(uint32_t index, bool render
     return codecClient_->ReleaseOutputBuffer(index, render);
 }
 
+int32_t AVCodecVideoDecoderImpl::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecClient_->RenderOutputBufferAtTime(index, renderTimestampNs);
+}
+
 int32_t AVCodecVideoDecoderImpl::SetParameter(const Format &format)
 {
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");

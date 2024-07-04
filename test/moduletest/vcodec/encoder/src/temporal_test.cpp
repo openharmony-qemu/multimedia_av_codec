@@ -926,9 +926,11 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_011, TestSize.Level0)
         vEncApi11Sample->SURF_INPUT = false;
         vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
         vEncApi11Sample->OUT_DIR = "/data/test/media/LTR_FUNC_011.h264";
+        vEncApi11Sample->enableLTR = true;
         vEncApi11Sample->ltrParam.enableUseLtr = true;
         vEncApi11Sample->ltrParam.ltrCount = 5;
         vEncApi11Sample->ltrParam.ltrInterval = 5;
+        vEncApi11Sample->ltrParam.useLtrIndex = 1;
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
@@ -984,9 +986,11 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_013, TestSize.Level0)
         vEncApi11Sample->SURF_INPUT = false;
         vEncApi11Sample->DEFAULT_KEY_FRAME_INTERVAL = -1;
         vEncApi11Sample->OUT_DIR = "/data/test/media/LTR_FUNC_013.h265";
+        vEncApi11Sample->enableLTR = true;
         vEncApi11Sample->ltrParam.enableUseLtr = true;
         vEncApi11Sample->ltrParam.ltrCount = 5;
         vEncApi11Sample->ltrParam.ltrInterval = 5;
+        vEncApi11Sample->ltrParam.useLtrIndex = 1;
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());

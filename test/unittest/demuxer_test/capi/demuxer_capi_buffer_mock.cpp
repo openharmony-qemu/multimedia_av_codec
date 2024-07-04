@@ -116,5 +116,17 @@ int32_t DemuxerCapiMock::GetMediaKeySystemInfo()
 {
     return AV_ERR_OK;
 }
+
+int32_t DemuxerCapiMock::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+    int64_t presentationTimeUs, uint32_t &frameIndex)
+{
+    return AV_ERR_OK;
+}
+
+int32_t DemuxerCapiMock::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+    uint32_t frameIndex, int64_t &presentationTimeUs)
+{
+    return AV_ERR_OK;
+}
 }
 }

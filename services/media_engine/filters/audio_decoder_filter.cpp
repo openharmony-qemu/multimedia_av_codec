@@ -330,7 +330,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     FALSE_RETURN(onLinkedResultCallback_ != nullptr);
-    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
+    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta_);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
