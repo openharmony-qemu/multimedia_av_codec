@@ -19,7 +19,7 @@
 #include "hcodec.h"
 
 namespace OHOS::MediaAVCodec {
-class HDecoder : public HCodec, public std::enable_shared_from_this<HDecoder> {
+class HDecoder : public HCodec {
 public:
     HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, false) {}
@@ -64,7 +64,7 @@ private:
     void OnReleaseOutputBuffer(const BufferInfo &info) override;
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
-    GSError OnBufferReleasedByConsumer(uint64_t surfaceId);
+    GSError OnBufferReleasedByConsumer(uint64_t surfaceId) override;
     void OnGetBufferFromSurface(const ParamSP& param) override;
     bool RequestAndFindBelongTo(
         sptr<SurfaceBuffer>& buffer, sptr<SyncFence>& fence, std::vector<BufferInfo>::iterator& iter);
