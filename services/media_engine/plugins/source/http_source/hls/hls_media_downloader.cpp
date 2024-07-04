@@ -545,8 +545,8 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
                            DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
                            writeDataPoint, waitLen);
             if (err!=0) {
-                MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64, DECRYPT_UNIT_LEN -
-                            afterAlignRemainedLength_);
+                MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64,
+                            DECRYPT_UNIT_LEN - afterAlignRemainedLength_);
             }
             afterAlignRemainedLength_ += waitLen;
             return true;
