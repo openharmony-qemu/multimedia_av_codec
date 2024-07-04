@@ -507,6 +507,31 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     }
 }
 
+int32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen)
+{
+    uint32_t writeLen = 0;
+    uint32_t realLen;
+    errno_t err {0};
+    writeLen =
+        ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
+    if (afterAlignRemainedLength_ > 0) {
+        err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, 
+                       afterAlignRemainedBuffer_, afterAlignRemainedLength_);
+        if (err!=0) {
+            MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64, afterAlignRemainedLength_);
+        }
+    }
+    uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
+                            writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
+    err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint, minWriteLen);
+    if (err!=0) {
+        MEDIA_LOG_D("minWriteLen: ", PUBLIC_LOG_D32, minWriteLen);
+    }
+    realLen = writeLen + afterAlignRemainedLength_;
+    AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
+    return realLen;
+}
+
 bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
 {
     uint32_t writeLen = 0;
@@ -515,32 +540,18 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     errno_t err {0};
     uint32_t realLen;
     if (!lastDecryptWriteError_) {
-        if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
-            err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
-                afterAlignRemainedLength_, data, len);
+        if ((waitLen + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
+            err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
+                           DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
+                           writeDataPoint, waitLen);
             if (err!=0) {
                 MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64, DECRYPT_UNIT_LEN -
                             afterAlignRemainedLength_);
             }
-            afterAlignRemainedLength_ += len;
+            afterAlignRemainedLength_ += waitLen;
             return true;
         }
-        writeLen =
-            ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
-        if (afterAlignRemainedLength_ > 0) {
-            err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_, afterAlignRemainedLength_);
-            if (err!=0) {
-                MEDIA_LOG_D("afterAlignRemainedLength_: ", PUBLIC_LOG_D64, afterAlignRemainedLength_);
-            }
-        }
-        uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
-                                writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
-        err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint, minWriteLen);
-        if (err!=0) {
-            MEDIA_LOG_D("minWriteLen: ", PUBLIC_LOG_D32, minWriteLen);
-        }
-        realLen = writeLen + afterAlignRemainedLength_;
-        AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
+        realLen = GetLastDecrptyRealLen(writeDataPoint, waitLen);
     } else {
         realLen = lastRealLen_;
     }
