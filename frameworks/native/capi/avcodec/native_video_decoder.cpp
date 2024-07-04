@@ -648,7 +648,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
     CHECK_AND_RETURN_RET_LOG(videoDecObj->isSetBufferCallback_, AV_ERR_INVALID_STATE,
                              "The callback of OH_AVBuffer is nullptr!");
 
-    int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBuffer(index, true);
+    int32_t ret = videoDecObj->videoDecoder_->ReleaseOutputBufferAtTime(index, renderTimestampNs);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder render output buffer at time failed!");
     return AV_ERR_OK;

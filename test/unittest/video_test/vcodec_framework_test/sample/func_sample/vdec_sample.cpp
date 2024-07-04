@@ -777,7 +777,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
     } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         int64_t renderTimestamp =
-            chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now()).time_since_epoch().count();
+            chrono::duration_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         ret =
             (renderAtTimeFlag_ == true) ? RenderOutputBufferAtTime(index, renderTimestamp) : RenderOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputBuffer failed index: %d", index);

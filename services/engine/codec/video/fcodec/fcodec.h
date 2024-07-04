@@ -146,7 +146,7 @@ private:
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
     // Running
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
-    std::shared_ptr<AVBuffer> outAVBuffer4Surface_ = nullptr;
+    std::vector<std::shared_ptr<AVBuffer>> outAVBuffer4Surface_;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
