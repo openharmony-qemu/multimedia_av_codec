@@ -374,7 +374,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0140, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0150
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in an I-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in an I
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0150, TestSize.Level1)
@@ -420,7 +420,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0170, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H264_FUNC_0180
- * @tc.name      : Randomly generating Pts corresponding to the N existing positions frame for startTimeMs in 3-layer-frame double speed play seek scene
+ * @tc.name      : Randomly generating Pts corresponding to the N existing positions for startTimeMs in 3-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H264_FUNC_0180, TestSize.Level1)
@@ -703,7 +703,8 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0070, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_4_layer_frame_hevc);
+    shared_ptr<InnerDemuxerParserSample> parserSample = nullptr;
+    parserSample = make_shared<InnerDemuxerParserSample>(g_file_4_layer_frame_hevc);
     parserSample->InitParameter(MP4Scene::FOUR_LAYER_FRAME_HEVC);
     ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
 }
@@ -779,7 +780,7 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0110, TestSize.Level1)
 
 /**
  * @tc.number    : DEMUXER_REFERENCE_H265_FUNC_0120
- * @tc.name      : from the beginning to the end and from the end to the beginning repeat 10 times in 3-layer-frame 
+ * @tc.name      : from the beginning to the end and from the end to the beginning repeat 10 times in 3-layer-frame
  * @tc.desc      : func test
  */
 HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0120, TestSize.Level1)
@@ -820,7 +821,8 @@ HWTEST_F(InnerParsercNdkTest, DEMUXER_REFERENCE_H265_FUNC_0140, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    shared_ptr<InnerDemuxerParserSample> parserSample = make_shared<InnerDemuxerParserSample>(g_file_3_layer_frame_hevc);
+    shared_ptr<InnerDemuxerParserSample> parserSample = nullptr;
+    parserSample = make_shared<InnerDemuxerParserSample>(g_file_3_layer_frame_hevc);
     parserSample->InitParameter(MP4Scene::THREE_LAYER_FRAME_HEVC);
     ASSERT_TRUE(parserSample->RunSeekScene(WorkPts::RANDOM_PTS));
 }

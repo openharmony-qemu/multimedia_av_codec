@@ -377,8 +377,8 @@ bool InnerDemuxerParserSample::CheckGopLayerResult(GopLayerInfo &info, int32_t g
     JsonGopInfo frame = frameGopMap_[gopId];
     bool conditionOne = (frame.gopSize != info.gopSize);
     bool conditionTwo = (frame.layerCount != info.layerCount);
-    bool conditionThree = (!std::equal(frame.layerFrameNum.begin(), 
-                                        frame.layerFrameNum.end(), info.layerFrameNum.begin()));
+    bool conditionThree = (!std::equal(frame.layerFrameNum.begin(),
+                            frame.layerFrameNum.end(), info.layerFrameNum.begin()));
     if (conditionOne || conditionTwo || conditionThree) {
         return false;
     }
