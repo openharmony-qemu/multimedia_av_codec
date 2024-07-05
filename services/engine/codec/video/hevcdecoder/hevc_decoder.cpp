@@ -18,6 +18,7 @@
 #include <thread>
 #include <dlfcn.h>
 #include <malloc.h>
+#include "syspara/parameters.h"
 #include "securec.h"
 #include "avcodec_trace.h"
 #include "avcodec_log.h"
@@ -58,6 +59,8 @@ constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+constexpr uint32_t PATH_MAX_LEN = 128;
+constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
@@ -140,6 +143,16 @@ HevcDecoder::~HevcDecoder()
     if (it != decInstanceIDSet_.end()) {
         decInstanceIDSet_.erase(it);
     }
+
+    if (dumpInFile_ != nullptr) {
+        dumpInFile_->close();
+    }
+    if (dumpOutFile_ != nullptr) {
+        dumpInFile_->close();
+    }
+    if (dumpConvertFile_ != nullptr) {
+        dumpInFile_->close();
+    }
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
@@ -159,9 +172,49 @@ int32_t HevcDecoder::Initialize()
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
 
+    OpenDumpFile();
     state_ = State::INITIALIZED;
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
+}
+
+void HevcDecoder::OpenDumpFile()
+{
+    std::string dumpModeStr = OHOS::system::GetParameter("hevcdecoder.dump", "0");
+    AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
+    if (dumpModeStr != "1") {
+        return;
+    }
+
+    char fileName[PATH_MAX_LEN] = {0};
+    int ret = 0;
+    ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
+    if (ret > 0) {
+        dumpInFile_ = std::make_shared<std::ofstream>();
+        dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
+        if (!dumpInFile_->is_open()) {
+            AVCODEC_LOGW("fail open file %{public}s", fileName);
+            dumpInFile_ = nullptr;
+        }
+    }
+    ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
+    if (ret > 0) {
+        dumpOutFile_ = std::make_shared<std::ofstream>();
+        dumpOutFile_->open(fileName, std::ios::out | std::ios::binary);
+        if (!dumpOutFile_->is_open()) {
+            AVCODEC_LOGW("fail open file %{public}s", fileName);
+            dumpOutFile_ = nullptr;
+        }
+    }
+    ret = sprintf_s(fileName, sizeof(fileName), "%s/outConvert_%p.data", DUMP_PATH, this);
+    if (ret > 0) {
+        dumpConvertFile_ = std::make_shared<std::ofstream>();
+        dumpConvertFile_->open(fileName, std::ios::out | std::ios::binary);
+        if (!dumpConvertFile_->is_open()) {
+            AVCODEC_LOGW("fail open file %{public}s", fileName);
+            dumpConvertFile_ = nullptr;
+        }
+    }
 }
 
 void HevcDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
@@ -628,7 +681,7 @@ int32_t HevcDecoder::SetSurfaceCfg(int32_t bufferCnt)
     sInfo_.requestConfig.format = surfacePixelFmt;
     if (sInfo_.surface != nullptr) {
         CHECK_AND_RETURN_RET_LOG(sInfo_.surface->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
-                                AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
+                                 AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
 
         format_.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val32);
         sInfo_.scalingMode = static_cast<ScalingMode>(val32);
@@ -763,7 +816,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         targetPixelFmt = VideoPixelFormat::NV12;
     }
 
-    bool formatChanged_ = false;
+    bool formatChanged = false;
     if (width_ != width || height_ != height || bitDepth_ != bitDepth) {
         AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d, "
                      "bitDepth: %{public}d->%{public}d", width_, width, height_, height, bitDepth_, bitDepth);
@@ -787,21 +840,21 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
             }
         }
         sLock.unlock();
-        formatChanged_ = true;
+        formatChanged = true;
     }
     if (sInfo_.surface == nullptr) {
         std::lock_guard<std::mutex> oLock(outputMutex_);
-        CHECK_AND_RETURN_RET_LOG((UpdateOutputBuffer(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY, 
+        CHECK_AND_RETURN_RET_LOG((UpdateOutputBuffer(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
                                  "Update output buffer failed, index=%{public}u", index);
     } else {
         CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
                                  "Update buffer failed");
     }
-    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_STRIDE) || formatChanged_) {
+    if (!format_.ContainKey(OHOS::Media::Tag::VIDEO_STRIDE) || formatChanged) {
         int32_t stride = GetSurfaceBufferStride(buffers_[INDEX_OUTPUT][index]);
         CHECK_AND_RETURN_RET_LOG(stride > 0, AVCS_ERR_NO_MEMORY, "get GetSurfaceBufferStride failed");
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
-        if (formatChanged_) {
+        if (formatChanged) {
             callback_->OnOutputFormatChanged(format_);
         }
     }
@@ -893,6 +946,11 @@ void HevcDecoder::SendFrame()
         hevcDecoderInputArgs_.uiTimeStamp = inputAVBuffer->pts_;
     }
 
+    if (dumpInFile_ && dumpInFile_->is_open()) {
+        dumpInFile_->write(reinterpret_cast<char*>(inputAVBuffer->memory_->GetAddr()),
+                           static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
+    }
+
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     while (ret == 0) {
@@ -939,6 +997,7 @@ int32_t HevcDecoder::DecodeFrameOnce()
         CHECK_AND_RETURN_RET_LOG(bitDepth == BIT_DEPTH8BIT || bitDepth == BIT_DEPTH10BIT, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
         ConvertDecOutToAVFrame(bitDepth);
+        DumpOutputBuffer(bitDepth);
         auto index = codecAvailQue_->Front();
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
@@ -989,6 +1048,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         surfaceInfo.surfaceFence = frameBuffer->sMemory->GetFence();
     }
     ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
+    DumpConvertOut(surfaceInfo);
     frameBuffer->avBuffer->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
     return ret;
@@ -1041,6 +1101,52 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     cachedFrame_->width = hevcDecoderOutpusArgs_.uiDecWidth;
     cachedFrame_->height = hevcDecoderOutpusArgs_.uiDecHeight;
     cachedFrame_->pts = hevcDecoderOutpusArgs_.uiTimeStamp;
+}
+
+void HevcDecoder::DumpOutputBuffer(int32_t bitDepth)
+{
+    if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
+        return;
+    }
+    int32_t pixelBytes = 1;
+    if (bitDepth == BIT_DEPTH10BIT) {
+        pixelBytes = 2; // 2
+    }
+    for (int32_t i = 0; i < cachedFrame_->height; i++) {
+        dumpOutFile_->write(reinterpret_cast<char *>(cachedFrame_->data[0] + i * cachedFrame_->linesize[0]),
+                            static_cast<int32_t>(cachedFrame_->width * pixelBytes));
+    }
+    for (int32_t i = 0; i < cachedFrame_->height / 2; i++) {  // 2
+        dumpOutFile_->write(reinterpret_cast<char *>(cachedFrame_->data[1] + i * cachedFrame_->linesize[1]),
+                            static_cast<int32_t>(cachedFrame_->width * pixelBytes / 2));  // 2
+    }
+    for (int32_t i = 0; i < cachedFrame_->height / 2; i++) {  // 2
+        dumpOutFile_->write(reinterpret_cast<char *>(cachedFrame_->data[2] + i * cachedFrame_->linesize[2]),
+                            static_cast<int32_t>(cachedFrame_->width * pixelBytes / 2)); // 2
+    }
+}
+
+void HevcDecoder::DumpConvertOut(struct SurfaceInfo &surfaceInfo)
+{
+    if (!dumpConvertFile_ || !dumpConvertFile_->is_open()) {
+        return;
+    }
+    if (surfaceInfo.scaleData[0] != nullptr) {
+        int32_t srcPos = 0;
+        int32_t dataSize = surfaceInfo.scaleLineSize[0];
+        int32_t writeSize = dataSize > surfaceInfo.surfaceStride ? surfaceInfo.surfaceStride : dataSize;
+        for (int32_t i = 0; i < height_; i++) {
+            dumpConvertFile_->write(reinterpret_cast<char *>(surfaceInfo.scaleData[0] + srcPos), writeSize);
+            srcPos += dataSize;
+        }
+        srcPos = 0;
+        dataSize = surfaceInfo.scaleLineSize[1];
+        writeSize = dataSize > surfaceInfo.surfaceStride ? surfaceInfo.surfaceStride : dataSize;
+        for (int32_t i = 0; i < height_ / 2; i++) {  // 2
+            dumpConvertFile_->write(reinterpret_cast<char *>(surfaceInfo.scaleData[1] + srcPos), writeSize);
+            srcPos += dataSize;
+        }
+    }
 }
 
 void HevcDecoder::RenderFrame()

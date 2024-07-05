@@ -20,6 +20,8 @@
 #include <list>
 #include <map>
 #include <shared_mutex>
+#include <functional>
+#include <fstream>
 #include <tuple>
 #include <vector>
 #include <optional>
@@ -109,6 +111,9 @@ private:
         BIT_DEPTH10BIT = 10,
     };
     
+    void OpenDumpFile();
+    void DumpOutputBuffer(int32_t bitDepth);
+    void DumpConvertOut(struct SurfaceInfo &surfaceInfo);
     bool IsActive() const;
     void CalculateBufferSize();
     int32_t AllocateBuffers();
@@ -188,6 +193,9 @@ private:
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
+    std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
+    std::shared_ptr<std::ofstream> dumpConvertFile_ = nullptr;
 };
 
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);
