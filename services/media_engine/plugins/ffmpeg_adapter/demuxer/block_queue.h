@@ -19,7 +19,6 @@
 #include <mutex>
 #include <condition_variable>
 #include <deque>
-#include "common/log.h"
 
 namespace OHOS {
 namespace Media {
@@ -81,7 +80,8 @@ public:
         if (que_.empty() && !isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Pop.", name_.c_str());
             return {};
-        } else if (que_.empty() && isActive_) {
+        }
+        (que_.empty() && isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
@@ -104,7 +104,8 @@ public:
         if (que_.empty() && !isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Front.", name_.c_str());
             return {};
-        } else if (que_.empty() && isActive_) {
+        }
+        (que_.empty() && isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
@@ -126,7 +127,8 @@ public:
         if (que_.empty() && !isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Back.", name_.c_str());
             return {};
-        } else if (que_.empty() && isActive_) {
+        }
+        (que_.empty() && isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
@@ -161,6 +163,7 @@ public:
     }
 
 private:
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_FOUNDATION, "HiStreamer" };
     void ClearUnprotected()
     {
         if (que_.empty()) {
