@@ -43,7 +43,6 @@ protected:
     void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size);
     void PushEosFrame();
 
-    std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;

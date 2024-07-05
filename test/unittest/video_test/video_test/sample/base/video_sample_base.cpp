@@ -49,28 +49,29 @@ VideoSampleBase::~VideoSampleBase()
 int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(videoCodec_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(context_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     
     context_ = std::make_shared<SampleContext>();
     context_->sampleInfo = std::make_shared<SampleInfo>(sampleInfo);
     auto &info = *context_->sampleInfo;
+    auto &videoCodec = context_->videoCodec_;
 
     dataProducer_ = DataProducerFactory::CreateDataProducer(info.dataProducerInfo);
     CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
     int32_t ret = dataProducer_->Init(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
     
-    videoCodec_ = VideoCodecFactory::CreateVideoCodec(info.codecType, info.codecRunMode);
-    CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
+    videoCodec = VideoCodecFactory::CreateVideoCodec(info.codecType, info.codecRunMode);
+    CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
-    ret = videoCodec_->Create(info.codecMime, info.codecType & 0b1);  // 0b1: software codec mask
+    ret = videoCodec->Create(info.codecMime, info.codecType & 0b1);  // 0b1: software codec mask
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
     PrintSampleInfo(info);
     
-    ret = videoCodec_->Config(info, reinterpret_cast<uintptr_t *>(context_.get()));
+    ret = videoCodec->Config(info, reinterpret_cast<uintptr_t *>(context_.get()));
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
     releaseThread_ = nullptr;
@@ -81,10 +82,11 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 int32_t VideoSampleBase::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    auto &videoCodec = context_->videoCodec_;
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
-    int32_t ret = videoCodec_->Start();
+    int32_t ret = videoCodec->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec start failed");
 
     ret = StartThread();
@@ -124,7 +126,6 @@ void VideoSampleBase::Release()
     }
     inputThread_ = nullptr;
     outputThread_ = nullptr;
-    videoCodec_ = nullptr;
     context_ = nullptr;
     dataProducer_ = nullptr;
     outputFile_ = nullptr;
@@ -211,7 +212,7 @@ void VideoSampleBase::PushEosFrame()
 
     bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
 
-    (void)videoCodec_->PushInput(bufferInfo);
+    (void)context_->videoCodec_->PushInput(bufferInfo);
 }
 } // Sample
 } // MediaAVCodec

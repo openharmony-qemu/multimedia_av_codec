@@ -67,7 +67,7 @@ void VideoEncoderSample::BufferInputThread()
 
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, info.frameInterval);
 
-        ret = videoCodec_->PushInput(bufferInfo);
+        ret = context_->videoCodec_->PushInput(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
@@ -112,7 +112,7 @@ void VideoEncoderSample::SurfaceInputThread()
         buffer = nullptr;
     }
     OH_NativeWindow_DestroyNativeWindowBuffer(buffer);
-    videoCodec_->PushInput(eosBufferInfo);
+    context_->videoCodec_->PushInput(eosBufferInfo);
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     StartRelease();
 }
@@ -132,7 +132,7 @@ void VideoEncoderSample::OutputThread()
         DumpOutput(bufferInfo);
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
 
-        int32_t ret = videoCodec_->FreeOutput(bufferInfo.bufferIndex);
+        int32_t ret = context_->videoCodec_->FreeOutput(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
