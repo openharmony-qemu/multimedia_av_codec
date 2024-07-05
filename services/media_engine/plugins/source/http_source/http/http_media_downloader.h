@@ -119,12 +119,14 @@ private:
     std::atomic<bool> isNeedClean_ {false};
     std::atomic<bool> isHitSeeking_ {false};
     std::atomic<bool> isNeedDropData_ {false};
+    std::atomic<bool> isServerAcceptRange_ {false};
 
     size_t wantReadLength_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
     bool isBufferEnough_ {false};
+    bool isErrorBreak_ {false};
     unsigned int bufferingTimes_ {0};
 };
 }

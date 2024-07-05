@@ -213,6 +213,11 @@ bool DownloadRequest::IsM3u8Request() const
     return false;
 }
 
+bool DownloadRequest::IsServerAcceptRange() const
+{
+    return headerInfo_.isServerAcceptRange;
+}
+
 void DownloadRequest::GetLocation(std::string& location) const
 {
     location = location_;
@@ -685,6 +690,28 @@ size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, 
     return size * nitems;
 }
 
+// Check if this server supports range download. (HTTP)
+void Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+{
+    if (!strncmp(key, "Accept-Ranges", strlen("Accept-Ranges")) ||
+        !strncmp(key, "accept-ranges", strlen("accept-ranges"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        if (!strncmp(StringTrim(token), "bytes", strlen("bytes"))) {
+            info->isServerAcceptRange = true;
+            MEDIA_LOG_I("Accept-Ranges: bytes");
+        }
+    }
+    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
+        !strncmp(key, "content-range", strlen("content-range"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        std::string tokenStr = (std::string)token;
+        if (tokenStr.find("bytes") != std::string::npos) {
+            info->isServerAcceptRange = true;
+            MEDIA_LOG_I("Content-Range: " PUBLIC_LOG_S, tokenStr.c_str());
+        }
+    }
+}
+
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
@@ -732,6 +759,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     }
 
     StrncmpContentRange(info, key, next, size, nitems);
+    HandleRange(info, key, next, size, nitems);
 
     return size * nitems;
 }

@@ -260,6 +260,7 @@ bool HttpMediaDownloader::HandleBuffering()
         }
         if (HandleBreak(sleepTime)) {
             MEDIA_LOG_D("HandleBreak");
+            isErrorBreak_ = true;
             break;
         }
         OSAL::SleepFor(BUFFERING_SLEEP_TIME);
@@ -297,8 +298,11 @@ bool HttpMediaDownloader::StartBuffering()
         cacheWaterLine = PLAY_WATER_LINE;
     }
 
-    bool isEos = downloadRequest_->IsEos();
-    if (isFirstFrameArrived_ && GetCurrentBufferSize() < cacheWaterLine && !isEos) {
+    bool isEos = false;
+    if (downloadRequest_ != nullptr) {
+        isEos = downloadRequest_->IsEos();
+    }
+    if (isFirstFrameArrived_ && GetCurrentBufferSize() < cacheWaterLine && !isEos && !isErrorBreak_) {
         bufferingTimes_++;
         if (bufferingTimes_ == FIRST_TIMES) {
             wantReadLength_ = FIRST_CACHE_WATER_LINE;
@@ -447,6 +451,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         if (StartBuffering()) {
             return Status::ERROR_AGAIN;
         }
+        isErrorBreak_ = false;
         return ReadCacheBuffer(buff, readDataInfo);
     }
 }
@@ -491,6 +496,7 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
 
 void HttpMediaDownloader::ChangeDownloadPos()
 {
+    MEDIA_LOG_D("ChangeDownloadPos in.");
     isNeedDropData_ = true;
     downloader_->Pause();
     isNeedDropData_ = false;
@@ -504,6 +510,7 @@ void HttpMediaDownloader::ChangeDownloadPos()
         MEDIA_LOG_E("Downloader seek fail.");
     }
     downloader_->Resume();
+    MEDIA_LOG_D("ChangeDownloadPos out.");
 }
 
 bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
@@ -511,6 +518,11 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
     MEDIA_LOG_D("Seek hit.");
     readOffset_ = static_cast<size_t>(offset);
     cacheMediaBuffer_->Seek(offset);
+
+    if (!isServerAcceptRange_) {
+        MEDIA_LOG_D("Don't support range, return true.");
+        return true;
+    }
 
     size_t fileContentLength = downloadRequest_->GetFileContentLength();
     size_t downloadOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
@@ -558,6 +570,13 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
         return HandleSeekHit(offset);
     }
     MEDIA_LOG_D("Seek miss.");
+    cacheMediaBuffer_->Seek(offset);
+    readOffset_ = static_cast<size_t>(offset);
+
+    if (!isServerAcceptRange_) {
+        MEDIA_LOG_D("Don't support range, return true.");
+        return true;
+    }
 
     isNeedClean_ = true;
     downloader_->Pause();
@@ -570,8 +589,6 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
     result = downloader_->Seek(offset);
     if (result) {
         writeOffset_ = static_cast<size_t>(offset);
-        cacheMediaBuffer_->Seek(offset);
-        readOffset_ = static_cast<size_t>(offset);
         MEDIA_LOG_D("Seek out.");
     } else {
         MEDIA_LOG_D("Download seek fail.");
@@ -663,6 +680,9 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     if (isNeedClean_) {
         return true;
     }
+
+    isServerAcceptRange_ = downloadRequest_->IsServerAcceptRange();
+
     size_t hasWriteSize = 0;
     while (hasWriteSize < len && !isInterruptNeeded_.load()) {
         if (isNeedClean_) {
