@@ -29,6 +29,8 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegEncoderPlugin" };
+
 namespace {
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 8192;

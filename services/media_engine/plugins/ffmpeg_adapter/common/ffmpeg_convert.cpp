@@ -16,6 +16,10 @@
 #include "common/log.h"
 #include "securec.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegEncoderPlugin"};
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
