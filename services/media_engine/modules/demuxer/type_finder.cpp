@@ -25,6 +25,10 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager_v2.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 using namespace Plugins;
