@@ -669,14 +669,14 @@ void HDecoder::CancelBufferToSurface(BufferInfo& info)
 int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
-    std::weak_ptr<HDecoder> weakThis = weak_from_this();
+    std::weak_ptr<HCodec> weakThis = weak_from_this();
     GSError err = surface->RegisterReleaseListener([weakThis, surfaceId](sptr<SurfaceBuffer>&) {
-        std::shared_ptr<HDecoder> decoder = weakThis.lock();
-        if (decoder == nullptr) {
+        std::shared_ptr<HCodec> codec = weakThis.lock();
+        if (codec == nullptr) {
             LOGI("decoder is gone");
             return GSERROR_OK;
         }
-        return decoder->OnBufferReleasedByConsumer(surfaceId);
+        return codec->OnBufferReleasedByConsumer(surfaceId);
     });
     if (err != GSERROR_OK) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed, GSError=%d", surfaceId, err);
