@@ -16,6 +16,10 @@
 #include "audio_data_source_filter.h"
 #include "common/log.h"
 #include "filter/filter_factory.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
  
 namespace OHOS {
 namespace Media {
@@ -104,6 +108,7 @@ Status AudioDataSourceFilter::DoPrepare()
 Status AudioDataSourceFilter::DoStart()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoStart");
+    nextFilter_->Start();
     eos_ = false;
     if (taskPtr_) {
         taskPtr_->Start();
@@ -135,6 +140,9 @@ Status AudioDataSourceFilter::DoStop()
     // stop task firstly
     if (taskPtr_) {
         taskPtr_->Stop();
+    }
+    if (nextFilter_) {
+        nextFilter_->Stop();
     }
     return Status::OK;
 }

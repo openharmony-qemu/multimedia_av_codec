@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,8 +16,13 @@
 
 #include "audio_decoder_filter.h"
 #include "filter/filter_factory.h"
+#include "common/log.h"
 #include "common/media_core.h"
 #include "avcodec_sysevent.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
 
 namespace OHOS {
 namespace Media {
@@ -113,23 +118,24 @@ void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status AudioDecoderFilter::DoPrepare()
 {
     MEDIA_LOG_I("AudioDecoderFilter::Prepare.");
+    Status ret = Status::OK;
     switch (filterType_) {
         case FilterType::FILTERTYPE_AENC:
             MEDIA_LOG_I("AudioDecoderFilter::FILTERTYPE_AENC.");
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+            ret = filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_ENCODED_AUDIO);
             break;
         case FilterType::FILTERTYPE_ADEC:
-            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+            ret = filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                 StreamType::STREAMTYPE_RAW_AUDIO);
             break;
         default:
             break;
     }
-    return Status::OK;
+    return ret;
 }
 
-Status AudioDecoderFilter::PrepareFrame(bool renderFirstFrame)
+Status AudioDecoderFilter::DoPrepareFrame(bool renderFirstFrame)
 {
     MEDIA_LOG_I("AudioDecoderFilter::PrepareFrame.");
     (void)renderFirstFrame;
@@ -222,21 +228,6 @@ Status AudioDecoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter,
     return Status::OK;
 }
 
-Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
-{
-    MEDIA_LOG_I("AudioDecoderFilter::ChangePlugin.");
-    std::string mime;
-    meta_ = meta;
-    bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
-    if (!mimeGetRes && eventReceiver_ != nullptr) {
-        MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
-        return Status::ERROR_UNSUPPORTED_FORMAT;
-    }
-    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
-    return mediaCodec_->ChangePlugin(mime, false, meta);
-}
-
 FilterType AudioDecoderFilter::GetFilterType()
 {
     return filterType_;
@@ -249,7 +240,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     onLinkedResultCallback_ = callback;
     meta_ = meta;
     std::string mime;
-    bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
+    bool mimeGetRes = meta_->Get<Tag::MIME_TYPE>(mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
@@ -330,7 +321,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     FALSE_RETURN(onLinkedResultCallback_ != nullptr);
-    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta_);
+    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
