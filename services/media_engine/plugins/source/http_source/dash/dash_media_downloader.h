@@ -77,6 +77,7 @@ private:
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type);
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
+    bool CheckReadTimeOut(std::shared_ptr<DashSegmentDownloader> &segmentDownloader);
 
 private:
 
@@ -94,6 +95,7 @@ private:
     DashPreparedAction preparedAction_;
     std::mutex switchMutex_;
     uint64_t expectDuration_{0};
+    uint64_t readTime_ {0};
 };
 }
 }

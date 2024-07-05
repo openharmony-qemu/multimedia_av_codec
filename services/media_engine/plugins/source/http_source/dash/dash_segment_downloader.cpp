@@ -28,7 +28,6 @@ constexpr uint32_t VID_RING_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr uint32_t AUD_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 constexpr int32_t RECORD_TIME_INTERVAL = 500;
@@ -217,18 +216,6 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashRead
             }
             return true;
         }
-    }
-
-    readTime_ = 0;
-    while (buffer_->GetSize() == 0) {
-        if (readTime_ >= TIME_OUT) {
-            Close(true, true);
-            CloseRequest();
-            ret = DASH_READ_TIMEOUT;
-            return true;
-        }
-        OSAL::SleepFor(5);  // 5
-        readTime_ += 5;
     }
     return false;
 }

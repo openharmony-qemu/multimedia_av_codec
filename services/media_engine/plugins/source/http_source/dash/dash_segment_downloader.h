@@ -183,7 +183,6 @@ private:
     bool startedPlayStatus_{false};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;
-    uint64_t readTime_ {0};
     bool isCleaningBuffer_{false};
 
     // support ringbuffer size of duration
