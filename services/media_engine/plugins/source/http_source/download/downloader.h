@@ -27,6 +27,10 @@
 #include <chrono>
 #include "securec.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {

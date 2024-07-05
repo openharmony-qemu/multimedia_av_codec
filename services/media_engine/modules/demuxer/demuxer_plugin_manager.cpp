@@ -38,6 +38,10 @@
 #include "base_stream_demuxer.h"
 #include "media_demuxer.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 
