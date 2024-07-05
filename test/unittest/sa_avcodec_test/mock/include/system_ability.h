@@ -19,7 +19,6 @@
 #include <gmock/gmock.h>
 #include <memory>
 #include <refbase.h>
-#include "hilog/log.h"
 #include "iremote_object.h"
 #include "iservice_registry.h"
 
