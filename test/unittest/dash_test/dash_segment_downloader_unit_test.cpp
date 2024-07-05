@@ -176,8 +176,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     segmentDownloader = nullptr;
 
     EXPECT_EQ(result, DASH_READ_OK);
-    EXPECT_EQ(realStreamId, 1);
-    EXPECT_GE(realReadLength, 0);
+    EXPECT_EQ(readDataInfo.nextStreamId_, 1);
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER, TestSize.Level1)
