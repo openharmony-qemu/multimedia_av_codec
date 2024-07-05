@@ -165,9 +165,13 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     }
 
     unsigned char buffer[1024];
-    uint32_t realReadLength = 0;
-    int32_t realStreamId = 1;
-    DashReadRet result = segmentDownloader->Read(1, buffer, 1024, realReadLength, realStreamId);
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 1;
+    readDataInfo.wantReadLength_ = 1024;
+    readDataInfo.realReadLength_ = 0;
+    readDataInfo.nextStreamId_ = 1;
+    std::atomic<bool> isInterruptNeeded{false};
+    DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
 
