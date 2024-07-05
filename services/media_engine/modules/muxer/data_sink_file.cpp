@@ -19,6 +19,10 @@
 #include <fcntl.h>
 #include "common/log.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 DataSinkFile::DataSinkFile(FILE *file) : file_(file), pos_(0), end_(-1), isCanRead_(true)

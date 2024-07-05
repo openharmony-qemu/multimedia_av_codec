@@ -18,7 +18,6 @@
 #include <map>
 #include <algorithm>
 #include "dash_mpd_util.h"
-#include "common/log.h"
 
 namespace OHOS {
 namespace Media {
