@@ -177,6 +177,7 @@ ohos_shared_library("av_codec_client") {
 
   public_external_deps = [
     "drm_framework:drm_framework",
+    "drm_framework:drm_service",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -288,7 +289,6 @@ ohos_shared_library("av_codec_client") {
     "bounds_checking_function:libsec_static",
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
-    "drm_framework:drm_service",
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
