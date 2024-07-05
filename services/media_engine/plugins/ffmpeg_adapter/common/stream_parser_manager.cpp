@@ -21,6 +21,7 @@
 
 namespace {
 const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
