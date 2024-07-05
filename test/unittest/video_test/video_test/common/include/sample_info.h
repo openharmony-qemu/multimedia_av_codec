@@ -112,7 +112,7 @@ struct SampleInfo {
 
     CodecRunMode codecRunMode = API11_SURFACE;
     int32_t frameInterval = -1;
-    NativeWindow* window = nullptr;
+    std::shared_ptr<NativeWindow> window = nullptr;
     int32_t sampleRepeatTimes = 0;
     int32_t demoRepeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;

@@ -50,7 +50,7 @@ int32_t VideoDecoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleCon
 
     // SetSurface from video decoder
     if (sampleInfo.window != nullptr) {
-        ret = OH_VideoDecoder_SetSurface(codec_.get(), sampleInfo.window);
+        ret = OH_VideoDecoder_SetSurface(codec_.get(), sampleInfo.window.get());
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Set surface failed, ret: %{public}d", ret);
     }

@@ -51,7 +51,6 @@ protected:
     std::unique_ptr<std::thread> outputThread_ = nullptr;
 
     std::mutex mutex_;
-    SampleInfo sampleInfo_;
     std::shared_ptr<SampleContext> context_ = nullptr;
     std::condition_variable doneCond_;
 };

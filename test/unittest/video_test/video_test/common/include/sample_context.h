@@ -22,7 +22,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 struct SampleContext {
-    SampleInfo *sampleInfo = nullptr;
+    std::shared_ptr<SampleInfo> sampleInfo = nullptr;
     SampleBufferQueue inputBufferQueue;
     SampleBufferQueue outputBufferQueue;
 };

@@ -219,6 +219,9 @@ inline void SetCodecRunMode(SampleInfo &info, const char * const value)
 inline void SetFrameInterval(SampleInfo &info, const char * const value)
 {
     info.frameInterval = std::stol(value);
+    if (info.frameInterval < 0) {
+        info.frameInterval = 1000 / info.frameRate;   // 1000ms
+    }
 }
 
 inline void SetSampleRepeatTimes(SampleInfo &info, const char * const value)

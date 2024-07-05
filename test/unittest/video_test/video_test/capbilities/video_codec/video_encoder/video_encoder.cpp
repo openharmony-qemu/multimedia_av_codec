@@ -163,20 +163,23 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 
 int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
 {
-    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
-        int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &sampleInfo.window);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
-            "Get surface failed, ret: %{public}d", ret);
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
-            sampleInfo.videoWidth, sampleInfo.videoHeight);
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_USAGE, 16425);      // 16425: Window usage
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT,
-            ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
+    // 0b01: buffer mode mask
+    CHECK_AND_RETURN_RET(!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01), AVCODEC_SAMPLE_ERR_OK);
 
-        if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
-            sampleInfo.window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
-        }
+    NativeWindow *window = nullptr;
+    int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &window);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && window, AVCODEC_SAMPLE_ERR_ERROR,
+        "Get surface failed, ret: %{public}d", ret);
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
+        sampleInfo.videoWidth, sampleInfo.videoHeight);
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE, 16425);      // 16425: Window usage
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
+        ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
+
+    if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
+        window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
     }
+    sampleInfo.window = std::shared_ptr<NativeWindow>(window, OH_NativeWindow_DestroyNativeWindow);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

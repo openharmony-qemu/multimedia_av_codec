@@ -28,6 +28,11 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecoderSample"};
+
+void ReleaseNativeWindowMock(NativeWindow *window)
+{
+    (void)window;
+}
 }
 
 namespace OHOS {
@@ -43,8 +48,9 @@ VideoDecoderSample::~VideoDecoderSample()
 
 int32_t VideoDecoderSample::Init()
 {
-    if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
-        int32_t ret = CreateWindow(sampleInfo_.window);
+    auto &info = *context_->sampleInfo;
+    if (!(info.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
+        int32_t ret = CreateWindow(info.window);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
     }
     return AVCODEC_SAMPLE_ERR_OK;
@@ -65,6 +71,7 @@ int32_t VideoDecoderSample::StartThread()
 void VideoDecoderSample::InputThread()
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
+    auto &info = *context_->sampleInfo;
     while (true) {
         auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
         CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
@@ -76,7 +83,7 @@ void VideoDecoderSample::InputThread()
             context_->inputBufferQueue.GetFrameCount(),
             bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, sampleInfo_.frameInterval);
+        ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, info.frameInterval);
 
         ret = videoCodec_->PushInput(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
@@ -89,6 +96,7 @@ void VideoDecoderSample::InputThread()
 
 void VideoDecoderSample::OutputThread()
 {
+    auto &info = *context_->sampleInfo;
     while (true) {
         auto bufferInfoOpt = context_->outputBufferQueue.DequeueBuffer();
         CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
@@ -99,7 +107,7 @@ void VideoDecoderSample::OutputThread()
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
 
         DumpOutput(bufferInfo);
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, sampleInfo_.frameInterval);
+        ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
 
         int32_t ret = videoCodec_->FreeOutput(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
@@ -110,17 +118,17 @@ void VideoDecoderSample::OutputThread()
     StartRelease();
 }
 
-int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
+int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
 {
-    if (sampleInfo_.codecConsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
+    sptr<OHOS::Surface> surfaceProducer;
+    if (context_->sampleInfo->codecConsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
         surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer("VideoCodecDemo");
         OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
         surfaceConsumer_->RegisterConsumerListener(listener);
         auto producer = surfaceConsumer_->GetProducer();
-        auto surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
-        window = CreateNativeWindowFromSurface(&surfaceProducer);
+        surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
         CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
-    } else if (sampleInfo_.codecConsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
+    } else if (context_->sampleInfo->codecConsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
@@ -130,9 +138,9 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
         rosenWindow_->SetTurnScreenOn(!rosenWindow_->IsTurnScreenOn());
         rosenWindow_->SetKeepScreenOn(true);
         rosenWindow_->Show();
-        surfaceConsumer_ = rosenWindow_->GetSurfaceNode()->GetSurface();
-        window = CreateNativeWindowFromSurface(&surfaceConsumer_);
+        surfaceProducer = rosenWindow_->GetSurfaceNode()->GetSurface();
     }
+    window = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(CreateNativeWindowFromSurface(&surfaceProducer)), ReleaseNativeWindowMock);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -145,7 +153,7 @@ void VideoDecoderSample::OnBufferAvailable()
     int32_t flushFence;
     surfaceConsumer_->AcquireBuffer(buffer, flushFence, timestamp, damage);
 
-    if (sampleInfo_.needDumpOutput) {
+    if (context_->sampleInfo->needDumpOutput) {
         CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
         DumpOutput(bufferInfo);
     }
