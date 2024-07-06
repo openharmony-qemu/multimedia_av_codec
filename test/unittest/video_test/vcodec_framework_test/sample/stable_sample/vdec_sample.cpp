@@ -611,8 +611,6 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
         signal_->isOutEos_ = true;
         signal_->eosCond_.notify_all();
-        signal_->outFile_->close();
-        signal_->outFile_ = nullptr;
         return AV_ERR_OK;
     }
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
