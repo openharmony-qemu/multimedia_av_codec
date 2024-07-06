@@ -312,7 +312,7 @@ std::shared_ptr<Tag> TagFactory::CreateTagByName(const std::string& name, const 
     return nullptr;
 }
 
-static std::vector<std::string> Split(const std::string &s, const char *delim)
+static std::vector<std::string> Split(const std::string& s, const char* delim)
 {
     std::vector<std::string> ret;
     if (delim == nullptr)
