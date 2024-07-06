@@ -541,7 +541,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     uint32_t waitLen = len;
     errno_t err {0};
     uint32_t realLen;
-    if (!lastDecryptWriteError_) {
+    if (!isLastDecryptWriteError_) {
         if ((waitLen + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
             err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
                            DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
@@ -559,12 +559,12 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     }
     totalLen_ += realLen;
     if (!buffer_->WriteBuffer(decryptCache_, realLen)) {
-        lastDecryptWriteError_ = true;
+        isLastDecryptWriteError_ = true;
         lastRealLen_ = realLen;
         return false;
     }
     lastRealLen_ = 0;
-    lastDecryptWriteError_ = false;
+    isLastDecryptWriteError_ = false;
     err = memset_s(decryptCache_, realLen, 0x00, realLen);
     if (err != 0) {
         MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
