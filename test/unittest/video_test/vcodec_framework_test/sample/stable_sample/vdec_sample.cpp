@@ -90,8 +90,8 @@ public:
             int32_t height = buffer->GetHeight();
             int32_t stride = buffer->GetStride();
             int32_t pixelbytes = 1;
-            if (stride >= width * 2) { // 2 10bit per pixel 2bits
-                pixelbytes = 2; // 2 10bit per pixel 2bits
+            if (stride >= width * 2) { // 2 10bit per pixel 2 bytes
+                pixelbytes = 2; // 2 10bit per pixel 2 bytes
             }
             for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
                 (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride,
@@ -611,6 +611,8 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
         signal_->isOutEos_ = true;
         signal_->eosCond_.notify_all();
+        signal_->outFile_->close();
+        signal_->outFile_ = nullptr;
         return AV_ERR_OK;
     }
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
@@ -622,8 +624,8 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
             OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &heightSlice_);
         }
         int32_t pixelbytes = 1;
-        if (stride_ >= width_ * 2) { // 2 10bit per pixel 2bits
-            pixelbytes = 2; // 2 10bit per pixel 2bits
+        if (stride_ >= width_ * 2) { // 2 10bit per pixel 2 bytes
+            pixelbytes = 2; // 2 10bit per pixel 2 bytes
         }
         for (int32_t i = 0; i < heightSlice_; ++i) {
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_ * pixelbytes);
