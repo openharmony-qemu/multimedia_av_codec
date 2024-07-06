@@ -81,7 +81,7 @@ public:
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Pop.", name_.c_str());
             return {};
         }
-        (que_.empty() && isActive_) {
+        if (que_.empty() && isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
@@ -105,7 +105,7 @@ public:
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Front.", name_.c_str());
             return {};
         }
-        (que_.empty() && isActive_) {
+        if (que_.empty() && isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }
@@ -128,7 +128,7 @@ public:
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Back.", name_.c_str());
             return {};
         }
-        (que_.empty() && isActive_) {
+        if (que_.empty() && isActive_) {
             MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
             condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -120,12 +120,12 @@ Status AudioSinkFilter::DoStart()
 Status AudioSinkFilter::DoPause()
 {
     MEDIA_LOG_I("audio sink filter pause start");
-    if (state_ == FilterState::PAUSED || state_ == FilterState::STOPPED) {
+    if (state_ == FilterState::PAUSED) {
         return Status::OK;
     }
     // only worked when state is working
     if (state_ != FilterState::READY && state_ != FilterState::RUNNING) {
-        MEDIA_LOG_W("audio sink cannot pause when not working");
+        MEDIA_LOG_W("audio sink cannot pause when not working.");
         return Status::ERROR_INVALID_OPERATION;
     }
     state_ = FilterState::PAUSED;
@@ -137,6 +137,9 @@ Status AudioSinkFilter::DoPause()
 Status AudioSinkFilter::DoResume()
 {
     MEDIA_LOG_I("audio sink filter resume");
+    if (state_ == FilterState::RUNNING) {
+        return Status::OK;
+    }
     // only worked when state is paused
     if (state_ == FilterState::PAUSED) {
         forceUpdateTimeAnchorNextTime_ = true;
@@ -151,6 +154,11 @@ Status AudioSinkFilter::DoResume()
 
 Status AudioSinkFilter::DoFlush()
 {
+    // only worked when state is working
+    if (state_ != FilterState::PAUSED && state_ != FilterState::STOPPED) {
+        MEDIA_LOG_W("audio sink cannot flush when not paused or stopped");
+        return Status::ERROR_INVALID_OPERATION;
+    }
     MEDIA_LOG_I("audio sink flush start");
     if (audioSink_ != nullptr) {
         audioSink_->Flush();
@@ -161,6 +169,9 @@ Status AudioSinkFilter::DoFlush()
 
 Status AudioSinkFilter::DoStop()
 {
+    if (state_ == FilterState::STOPPED) {
+        return Status::OK;
+    }
     MEDIA_LOG_I("audio sink stop start");
     if (audioSink_ != nullptr) {
         audioSink_->Stop();
@@ -174,9 +185,10 @@ Status AudioSinkFilter::DoRelease()
 {
     return audioSink_->Release();
 }
+
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
-    audioSink_->DrainOutputBuffer(dropFrame);
+    audioSink_->DrainOutputBuffer();
     return Status::OK;
 }
 
@@ -269,6 +281,13 @@ Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
     MEDIA_LOG_I("AudioSinkFilter::SetIsTransitent in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetIsTransitent(isTransitent);
+}
+
+Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
+{
+    MEDIA_LOG_I("AudioSinkFilter::ChangeTrack in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->ChangeTrack(meta, eventReceiver_);
 }
 
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,

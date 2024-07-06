@@ -14,6 +14,8 @@
  */
 
 #include "subtitle_sink.h"
+
+#include "common/log.h"
 #include "syspara/parameters.h"
 #include "meta/format.h"
 

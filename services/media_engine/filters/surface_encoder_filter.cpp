@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 
+#include "common/log.h"
 #include "filter/filter_factory.h"
 #include "surface_encoder_adapter.h"
 

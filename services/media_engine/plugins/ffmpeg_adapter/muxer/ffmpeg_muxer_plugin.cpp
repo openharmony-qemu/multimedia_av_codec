@@ -26,6 +26,8 @@
 #include "meta/mime_type.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer"};
+
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;

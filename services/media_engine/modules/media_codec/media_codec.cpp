@@ -19,6 +19,7 @@
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
 #include "osal/utils/dump_buffer.h"
+#include "common/log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MEDIA_CODEC, "HiStreamer" };

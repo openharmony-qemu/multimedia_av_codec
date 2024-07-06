@@ -22,6 +22,10 @@
 #include "detail_enhancer_video_common.h"
 #endif
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
