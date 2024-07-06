@@ -507,7 +507,7 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     }
 }
 
-uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen)
+uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen)
 {
     uint32_t writeLen = 0;
     uint32_t realLen;
@@ -518,7 +518,7 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint
     if (afterAlignRemainedLength_ > 0) {
         err = memcpy_s(decryptBuffer_, afterAlignRemainedLength_,
                        afterAlignRemainedBuffer_, afterAlignRemainedLength_);
-        if (err!=0) {
+        if (err != 0) {
             MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64, afterAlignRemainedLength_);
         }
     }
@@ -526,7 +526,7 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint
                             writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
     err = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_,
                    minWriteLen, writeDataPoint, minWriteLen);
-    if (err!=0) {
+    if (err != 0) {
         MEDIA_LOG_D("minWriteLen: " PUBLIC_LOG_D32, minWriteLen);
     }
     realLen = writeLen + afterAlignRemainedLength_;
@@ -546,7 +546,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
             err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
                            DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
                            writeDataPoint, waitLen);
-            if (err!=0) {
+            if (err != 0) {
                 MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64,
                             DECRYPT_UNIT_LEN - afterAlignRemainedLength_);
             }
@@ -566,12 +566,12 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     lastRealLen_ = 0;
     lastDecryptWriteError_ = false;
     err = memset_s(decryptCache_, realLen, 0x00, realLen);
-    if (err!=0) {
+    if (err != 0) {
         MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
     }
     afterAlignRemainedLength_ = 0;
     err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
-    if (err!=0) {
+    if (err != 0) {
         MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64, DECRYPT_UNIT_LEN);
     }
     writeDataPoint += writeLen;
@@ -579,7 +579,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     if (waitLen > 0) {
         afterAlignRemainedLength_ = waitLen;
         err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
-        if (err!=0) {
+        if (err != 0) {
             MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32, waitLen);
         }
     }
