@@ -259,7 +259,7 @@ void MediaDemuxer::AccelerateTrackTask(uint32_t trackId)
         return;
     }
     MEDIA_LOG_I("AccelerateTrackTask trackId:" PUBLIC_LOG_U32, trackId);
-    task->second->UpdataDelayTime();
+    task->second->UpdateDelayTime();
 }
 
 void MediaDemuxer::SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded)
