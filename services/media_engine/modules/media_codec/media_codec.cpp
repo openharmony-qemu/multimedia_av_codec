@@ -181,7 +181,7 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<AudioBaseCodecCallbac
     CHECK_AND_RETURN_RET_LOG(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
         (int32_t)Status::ERROR_INVALID_STATE, "state != INITIALIZED and state != CONFIGURED");
     CHECK_AND_RETURN_RET_LOG(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
-                         "codecCallback is nullptr");
+                             "codecCallback is nullptr");
     mediaCodecCallback_ = codecCallback;
     return (int32_t)Status::OK;
 }

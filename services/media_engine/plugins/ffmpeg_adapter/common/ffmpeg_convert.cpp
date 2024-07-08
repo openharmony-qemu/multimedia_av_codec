@@ -116,8 +116,7 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
         resampleCache_.assign(destLength, 0);
         for (size_t i = 0; i < destLength / 2; i++) {                                                           // 2
             auto resCode = memcpy_s(&resampleCache_[0] + i * 2, sizeof(uint8_t) * 2, srcBuffer + i * 3 + 1, 2); // 2 3 1
-            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION,
-                "Memcpy failed at 24 bits/sample.");
+            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy fail at 24 bits/sample");
         }
         destBuffer = resampleCache_.data();
     } else {
