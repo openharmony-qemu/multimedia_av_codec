@@ -151,47 +151,45 @@ int32_t HEncoder::SetQpRange(const Format &format, bool isCfg)
 
 int32_t HEncoder::SetColorAspects(const Format &format)
 {
-    int range = -1;
-    ColorPrimary primary = COLOR_PRIMARY_UNSPECIFIED;
-    TransferCharacteristic transfer = TRANSFER_CHARACTERISTIC_UNSPECIFIED;
-    MatrixCoefficient matrix = MATRIX_COEFFICIENT_UNSPECIFIED;
+    int range = 0;
+    int primary = static_cast<int>(COLOR_PRIMARY_UNSPECIFIED);
+    int transfer = static_cast<int>(TRANSFER_CHARACTERISTIC_UNSPECIFIED);
+    int matrix = static_cast<int>(MATRIX_COEFFICIENT_UNSPECIFIED);
 
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
         HLOGI("user set range flag %d", range);
     }
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, *(int *)&primary)) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, primary)) {
         HLOGI("user set primary %d", primary);
     }
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, *(int *)&transfer)) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, transfer)) {
         HLOGI("user set transfer %d", transfer);
     }
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, *(int *)&matrix)) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, matrix)) {
         HLOGI("user set matrix %d", matrix);
     }
-    if (range == -1 && primary == COLOR_PRIMARY_UNSPECIFIED && transfer == TRANSFER_CHARACTERISTIC_UNSPECIFIED &&
-        matrix == MATRIX_COEFFICIENT_UNSPECIFIED) {
-        return AVCS_ERR_OK;
+    if (primary < 0 || primary > UINT8_MAX ||
+        transfer < 0 || transfer > UINT8_MAX ||
+        matrix < 0 || matrix > UINT8_MAX) {
+        HLOGW("invalid color");
+        return AVCS_ERR_INVALID_VAL;
     }
 
     CodecVideoColorspace param;
     InitOMXParamExt(param);
     param.portIndex = OMX_DirInput;
-
-    param.aspects.range = RANGE_UNSPECIFIED;
-    if (range != -1) {
-        param.aspects.range = TypeConverter::RangeFlagToOmxRangeType(static_cast<bool>(range));
-    }
-    param.aspects.primaries = TypeConverter::InnerPrimaryToOmxPrimary(primary);
-    param.aspects.transfer = TypeConverter::InnerTransferToOmxTransfer(transfer);
-    param.aspects.matrixCoeffs = TypeConverter::InnerMatrixToOmxMatrix(matrix);
+    param.aspects.range = static_cast<bool>(range);
+    param.aspects.primaries = static_cast<uint8_t>(primary);
+    param.aspects.transfer = static_cast<uint8_t>(transfer);
+    param.aspects.matrixCoeffs = static_cast<uint8_t>(matrix);
 
     if (!SetParameter(OMX_IndexColorAspects, param, true)) {
         HLOGE("failed to set CodecVideoColorSpace");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("set omx color aspects (full range:%d, primary:%d, "
-          "transfer:%d, matrix:%d) succ",
-          param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
+    HLOGI("set color aspects (isFullRange %d, primary %u, transfer %u, matrix %u) succ",
+          param.aspects.range, param.aspects.primaries,
+          param.aspects.transfer, param.aspects.matrixCoeffs);
     return AVCS_ERR_OK;
 }
 
