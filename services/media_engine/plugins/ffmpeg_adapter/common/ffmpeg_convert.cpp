@@ -97,25 +97,27 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
 #if defined(_WIN32) || !defined(OHOS_LITE)
     if (resamplePara_.bitsPerSample == 8) { // 8
         CHECK_AND_RETURN_RET_LOG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
-                           "resample 8bit to other format can not support");
+                                 "resample 8bit to other format can not support");
         destLength = srcLength * 2; // 2
         resampleCache_.reserve(destLength);
         resampleCache_.assign(destLength, 0);
         for (size_t i{0}; i < destLength / 2; i++) {                                                    // 2
             auto resCode = memcpy_s(&resampleCache_[0] + i * 2 + 1, sizeof(uint8_t), srcBuffer + i, 1); // 0 2 1
-            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy failed at 8 bits/sample.");
+            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION,
+                "Memcpy failed at 8 bits/sample.");
             *(&resampleCache_[0] + i * 2 + 1) += 0x80; // 2 0x80
         }
         destBuffer = resampleCache_.data();
     } else if (resamplePara_.bitsPerSample == 24) { // 24
         CHECK_AND_RETURN_RET_LOG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
-                           "resample 24bit to other format can not support");
+                                 "resample 24bit to other format can not support");
         destLength = srcLength / 3 * 2; // 3 2
         resampleCache_.reserve(destLength);
         resampleCache_.assign(destLength, 0);
         for (size_t i = 0; i < destLength / 2; i++) {                                                           // 2
             auto resCode = memcpy_s(&resampleCache_[0] + i * 2, sizeof(uint8_t) * 2, srcBuffer + i * 3 + 1, 2); // 2 3 1
-            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy failed at 24 bits/sample.");
+            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION,
+                "Memcpy failed at 24 bits/sample.");
         }
         destBuffer = resampleCache_.data();
     } else {
@@ -187,14 +189,13 @@ Status Scale::Init(const ScalePara &scalePara, uint8_t **dstData, int32_t *dstLi
     });
     auto ret = av_image_alloc(dstData, dstLineSize, scalePara_.dstWidth, scalePara_.dstHeight, scalePara_.dstFfFmt,
                               scalePara_.align);
-    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_UNKNOWN, "could not allocate destination image" PUBLIC_LOG_D32, ret);
-    AVCODEC_LOGD("av_image_alloc call, ret: " PUBLIC_LOG_U32 "dstPixelFormat_: " PUBLIC_LOG_U32, ret,
-                scalePara_.dstFfFmt);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_UNKNOWN, "could not allocate destination image %{public}d", ret);
+    AVCODEC_LOGD("av_image_alloc call, ret: %{public}ud dstPixelFormat_: %{public}ud", ret, scalePara_.dstFfFmt);
     // av_image_alloc can make sure that dstLineSize last element is 0
     for (int32_t i = 0; dstLineSize[i] > 0; i++) {
-        AVCODEC_LOGD("dstLineSize[" PUBLIC_LOG_D32 "]: " PUBLIC_LOG_D32, i, dstLineSize[i]);
+        AVCODEC_LOGD("dstLineSize[%{public}d]: %{public}d", i, dstLineSize[i]);
         if (dstData[i] && !dstLineSize[i]) {
-            AVCODEC_LOGE("scale frame is broken, i: " PUBLIC_LOG_D32, i);
+            AVCODEC_LOGE("scale frame is broken, i: %{public}d", i);
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -204,7 +205,7 @@ Status Scale::Init(const ScalePara &scalePara, uint8_t **dstData, int32_t *dstLi
 Status Scale::Convert(uint8_t **srcData, const int32_t *srcLineSize, uint8_t **dstData, int32_t *dstLineSize)
 {
     auto res = sws_scale(swsCtx_.get(), srcData, srcLineSize, 0, scalePara_.srcHeight, dstData, dstLineSize);
-    CHECK_AND_RETURN_RET_LOG(res >= 0, Status::ERROR_UNKNOWN, "sws_scale fail: " PUBLIC_LOG_D32, res);
+    CHECK_AND_RETURN_RET_LOG(res >= 0, Status::ERROR_UNKNOWN, "sws_scale fail: %{public}d", res);
     return Status::OK;
 }
 #endif

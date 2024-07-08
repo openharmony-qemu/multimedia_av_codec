@@ -128,9 +128,8 @@ bool FFmpegAACEncoderPlugin::CheckSampleFormat()
         return false;
     }
     AudioSampleFormat2AVSampleFormat(audioSampleFormat_, srcFmt_);
-    AVCODEC_LOGE("AUDIO_SAMPLE_FORMAT found,srcFmt:%{public}d to "
-                "ffmpeg-srcFmt_:%{public}d ",
-                (int32_t)audioSampleFormat_, (int32_t)srcFmt_);
+    AVCODEC_LOGE("AUDIO_SAMPLE_FORMAT found,srcFmt:%{public}d to ffmpeg-srcFmt_:%{public}d",
+                 (int32_t)audioSampleFormat_, (int32_t)srcFmt_);
     needResample_ = CheckResample();
     return true;
 }
@@ -208,9 +207,8 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
         fmt = it->second;
         return true;
     }
-    AVCODEC_LOGE("AudioSampleFormat2AVSampleFormat fail, from fmt:%{public}d to "
-                "fmt:%{public}d",
-                (int32_t)audioFmt, (int32_t)fmt);
+    AVCODEC_LOGE("AudioSampleFormat2AVSampleFormat fail, from fmt:%{public}d to fmt:%{public}d",
+                 (int32_t)audioFmt, (int32_t)fmt);
     return false;
 }
 
@@ -507,8 +505,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
         AVCODEC_LOGI("avCodecContext_->sample_rate %{public}d", avCodecContext_->sample_rate);
         AVCODEC_LOGI("avCodecContext_->bit_rate %{public}lld", avCodecContext_->bit_rate);
         AVCODEC_LOGI("avCodecContext_->channel_layout  %{public}lld", avCodecContext_->channel_layout);
-        AVCODEC_LOGI("avCodecContext_->sample_fmt %{public}d",
-                    static_cast<int32_t>(*(avCodec_.get()->sample_fmts)));
+        AVCODEC_LOGI("avCodecContext_->sample_fmt %{public}d", static_cast<int32_t>(*(avCodec_.get()->sample_fmts)));
         AVCODEC_LOGI("avCodecContext_ old srcFmt_ %{public}d", static_cast<int32_t>(srcFmt_));
         AVCODEC_LOGI("avCodecContext_->codec_id %{public}d", static_cast<int32_t>(avCodec_.get()->id));
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
@@ -661,9 +658,8 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
         return Status::ERROR_UNKNOWN;
     }
     if (memory->GetSize() > memory->GetCapacity()) {
-        AVCODEC_LOGE("send input buffer is > allocate size. size : "
-                    "%{public}d, allocate size : %{public}d",
-                    memory->GetSize(), memory->GetCapacity());
+        AVCODEC_LOGE("send input buffer is > allocate size. size : %{public}d, allocate size : %{public}d",
+                     memory->GetSize(), memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
     auto errCode = PcmFillFrame(inputBuffer);
@@ -752,9 +748,8 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
 
     cachedFrame_->nb_samples = static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->channels);
     if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
-        AVCODEC_LOGD("Input frame size not match, input samples: %{public}d, "
-                    "frame_size: %{public}d",
-                    cachedFrame_->nb_samples, avCodecContext_->frame_size);
+        AVCODEC_LOGD("Input frame size not match, input samples: %{public}d, frame_size: %{public}d",
+                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
     int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);

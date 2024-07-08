@@ -168,7 +168,7 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codec
     CHECK_AND_RETURN_RET_LOG(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
         (int32_t)Status::ERROR_INVALID_STATE, "state != INITIALIZED and state != CONFIGURED");
     CHECK_AND_RETURN_RET_LOG(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
-        "codecCallback is nullptr");
+                             "codecCallback is nullptr");
     codecCallback_ = codecCallback;
     auto ret = codecPlugin_->SetDataCallback(this);
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "ret != Status::OK");
@@ -330,12 +330,14 @@ int32_t MediaCodec::Release()
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Release");
     AVCODEC_LOGI("Release enter");
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-        AVCODEC_LOGW("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
+        AVCODEC_LOGW("codec Release, state isnot completely correct, state =%{public}s .",
+                     StateToString(state_).data());
         return (int32_t)Status::OK;
     }
 
     if (state_ == CodecState::INITIALIZING) {
-        AVCODEC_LOGW("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
+        AVCODEC_LOGW("codec Release, state isnot completely correct, state =%{public}s .",
+                     StateToString(state_).data());
         state_ = CodecState::RELEASING;
         return (int32_t)Status::OK;
     }
@@ -383,7 +385,7 @@ int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 {
     AutoLock lock(stateMutex_);
     CHECK_AND_RETURN_RET_LOG(state_ != CodecState::UNINITIALIZED, (int32_t)Status::ERROR_INVALID_STATE,
-                         "status incorrect,get output format failed.");
+                             "status incorrect,get output format failed.");
     CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "codecPlugin_ is nullptr");
     CHECK_AND_RETURN_RET_LOG(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER, "parameter is nullptr");
     auto ret = codecPlugin_->GetParameter(parameter);
@@ -404,8 +406,7 @@ Status MediaCodec::AttachBufffer()
     if (inputBufferQueue_ == nullptr) {
         inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
     }
-    CHECK_AND_RETURN_RET_LOG(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,
-                         "inputBufferQueue_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
     CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
@@ -516,18 +517,19 @@ int32_t MediaCodec::PrepareInputBufferQueue()
                 AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY, INPUT_BUFFER_QUEUE_NAME);
         }
         CHECK_AND_RETURN_RET_LOG(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
-                             "inputBufferQueue_ is nullptr");
+                                 "inputBufferQueue_ is nullptr");
         inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
         for (uint32_t i = 0; i < inputBuffers.size(); i++) {
             inputBufferQueueProducer_->AttachBuffer(inputBuffers[i], false);
             inputBufferVector_.push_back(inputBuffers[i]);
         }
     }
-    CHECK_AND_RETURN_RET_LOG(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
+                             "inputBufferQueue_ is nullptr");
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
     sptr<IConsumerListener> listener = new InputBufferAvailableListener(this);
     CHECK_AND_RETURN_RET_LOG(inputBufferQueueConsumer_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
-                         "inputBufferQueueConsumer_ is nullptr");
+                             "inputBufferQueueConsumer_ is nullptr");
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     return (int32_t)ret;
 }
@@ -541,7 +543,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
     auto ret = codecPlugin_->GetOutputBuffers(outputBuffers);
     CHECK_AND_RETURN_RET_LOG(ret == Status::OK, (int32_t)ret, "GetOutputBuffers failed");
     CHECK_AND_RETURN_RET_LOG(outputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
-                         "outputBufferQueueProducer_ is nullptr");
+                             "outputBufferQueueProducer_ is nullptr");
     if (outputBuffers.empty()) {
         int outputBufferNum = 30;
         std::shared_ptr<Meta> outputBufferConfig = std::make_shared<Meta>();
@@ -555,7 +557,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
             auto avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
             std::shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, outputBufferCapacity_);
             CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, (int32_t)Status::ERROR_INVALID_STATE,
-                                 "outputBuffer is nullptr");
+                                     "outputBuffer is nullptr");
             if (outputBufferQueueProducer_->AttachBuffer(outputBuffer, false) == Status::OK) {
                 AVCODEC_LOGD("Attach output buffer. index: %{public}d, bufferId: %{public}" PRIu64, i,
                             outputBuffer->GetUniqueId());
