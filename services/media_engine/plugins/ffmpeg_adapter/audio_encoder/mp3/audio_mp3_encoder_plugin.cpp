@@ -153,19 +153,16 @@ bool AudioMp3EncoderPlugin::CheckFormat()
             return false;
         }
     }
-    if (sampleRate_ < SAMPLE_RATE_16000 && bitrate_ > BIT_RATE_64000) {
-        AVCODEC_LOGE("sample<16k,bitrate must <=64k");
-        return false;
-    } else if (sampleRate_ < SAMPLE_RATE_32000 && bitrate_ > BIT_RATE_160000) {
-        AVCODEC_LOGE("sample<32k,bitrate must <=160k");
-        return false;
-    } else if (sampleRate_ >= SAMPLE_RATE_32000 && bitrate_ < BIT_RATE_32000) {
-        AVCODEC_LOGE("sample>=32k,bitrate must >=32k");
-        return false;
-    }
     if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin sampleFmt not supported");
         return false;
+    }
+    if (sampleRate_ < SAMPLE_RATE_16000 && bitrate_ > BIT_RATE_64000) {
+        bitrate_ = BIT_RATE_64000;
+    } else if (sampleRate_ < SAMPLE_RATE_32000 && bitrate_ > BIT_RATE_160000) {
+        bitrate_ = BIT_RATE_160000;
+    } else if (sampleRate_ >= SAMPLE_RATE_32000 && bitrate_ < BIT_RATE_32000) {
+        bitrate_ = BIT_RATE_32000;
     }
     return true;
 }
