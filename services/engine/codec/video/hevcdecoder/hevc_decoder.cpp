@@ -709,6 +709,7 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
             buf->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
             CHECK_AND_CONTINUE_LOG(buf->sMemory->GetSurfaceBuffer() != nullptr,
                                    "output surface memory %{public}d create fail", i);
+            outAVBuffer4Surface_.emplace_back(AVBuffer::CreateAVBuffer());
             buf->avBuffer = AVBuffer::CreateAVBuffer(buf->sMemory->GetBase(), buf->sMemory->GetSize());
             AVCODEC_LOGI("Allocate output surface buffer success: index=%{public}d, addr=%{public}p, size=%{public}d, "
                          "stride=%{public}d",
@@ -1060,10 +1061,10 @@ void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32
         codecAvailQue_->Pop();
         frameBuffer->owner_ = HBuffer::Owner::OWNED_BY_USER;
         if (sInfo_.surface) {
-            outAVBuffer4Surface_->pts_ = frameBuffer->avBuffer->pts_;
-            outAVBuffer4Surface_->flag_ = frameBuffer->avBuffer->flag_;
+            outAVBuffer4Surface_[index]->pts_ = frameBuffer->avBuffer->pts_;
+            outAVBuffer4Surface_[index]->flag_ = frameBuffer->avBuffer->flag_;
         }
-        callback_->OnOutputBufferAvailable(index, sInfo_.surface ? outAVBuffer4Surface_ : frameBuffer->avBuffer);
+        callback_->OnOutputBufferAvailable(index, sInfo_.surface ? outAVBuffer4Surface_[index] : frameBuffer->avBuffer);
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT);
@@ -1247,7 +1248,7 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
     oLock.unlock();
     if (frameBuffer->owner_ == HBuffer::Owner::OWNED_BY_USER) {
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory;
-        int32_t ret = FlushSurfaceMemory(surfaceMemory, frameBuffer->avBuffer->pts_);
+        int32_t ret = FlushSurfaceMemory(surfaceMemory, outAVBuffer4Surface_[index]->pts_);
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGW("Update surface memory failed: %{public}d", static_cast<int32_t>(ret));
         } else {
@@ -1288,7 +1289,6 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
         renderTask_ = std::make_shared<TaskThread>("RenderFrame");
         renderTask_->RegisterHandler([this] { (void)RenderFrame(); });
     }
-    outAVBuffer4Surface_ = AVBuffer::CreateAVBuffer();
     AVCODEC_LOGI("Set surface success");
     return AVCS_ERR_OK;
 }
