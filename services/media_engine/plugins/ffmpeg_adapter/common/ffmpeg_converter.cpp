@@ -21,7 +21,7 @@
 #include "ffmpeg_converter.h"
 namespace {
 constexpr int US_PER_SECOND = 1000000;
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "FFmpegEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "FFmpegEncoderPlugin"};
 }
 namespace OHOS {
 namespace Media {
