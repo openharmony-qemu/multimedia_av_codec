@@ -83,7 +83,7 @@ void VideoEncoderSample::SurfaceInputThread()
     auto &info = *context_->sampleInfo;
     while (true) {
         uint32_t frameCount = context_->inputBufferQueue.IncFrameCount();
-        uint64_t pts = frameCount *
+        uint64_t pts = static_cast<uint64_t>(frameCount) *
             ((info.frameInterval == 0) ? 1 : info.frameInterval) * 1000; // 1000: 1ms to us
         (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), SET_UI_TIMESTAMP, pts);
         int fenceFd = -1;
