@@ -206,6 +206,12 @@ bool TesterCodecBase::ConfigureEncoder()
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, opt_.qpRange->qpMin);
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, opt_.qpRange->qpMax);
     }
+    if (opt_.repeatAfter.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, opt_.repeatAfter.value());
+    }
+    if (opt_.repeatMaxCnt.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, opt_.repeatMaxCnt.value());
+    }
     if (!opt_.isBufferMode && !opt_.perFrameParamsMap.empty()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, 1);
         opt_.enableInputCb = true;
@@ -267,6 +273,9 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
             meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR,
                 static_cast<int32_t>(param.ltrParam->useLTRPoc));
         }
+    }
+    if (param.discard.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, param.discard.value());
     }
     return true;
 }

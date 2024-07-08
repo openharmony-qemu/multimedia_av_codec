@@ -86,6 +86,7 @@ protected:
         OMX_EMPTY_BUFFER_DONE,
         OMX_FILL_BUFFER_DONE,
         GET_BUFFER_FROM_SURFACE,
+        CHECK_IF_REPEAT,
         CHECK_IF_STUCK,
         FORCE_SHUTDOWN,
     };
@@ -216,6 +217,7 @@ protected:
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
+    virtual void RepeatIfNecessary(const ParamSP& param) {}
 
     // output buffer circulation
     virtual void SubmitDynamicBufferIfPossible() {}
