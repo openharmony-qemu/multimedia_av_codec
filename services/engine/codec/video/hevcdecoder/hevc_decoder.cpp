@@ -812,11 +812,6 @@ int32_t HevcDecoder::UpdateSurfaceMemory(uint32_t index)
 
 int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, int bitDepth)
 {
-    VideoPixelFormat targetPixelFmt = outputPixelFmt_;
-    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-        targetPixelFmt = VideoPixelFormat::NV12;
-    }
-
     bool formatChanged = false;
     if (width_ != width || height_ != height || bitDepth_ != bitDepth) {
         AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d, "
@@ -838,7 +833,7 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
         if (bitDepth_ == BIT_DEPTH10BIT) {
-            if (targetPixelFmt == VideoPixelFormat::NV12) {
+            if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
                 sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
             } else {
                 sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010;
