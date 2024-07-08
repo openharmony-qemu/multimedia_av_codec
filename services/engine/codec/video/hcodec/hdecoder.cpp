@@ -188,7 +188,7 @@ void HDecoder::UpdateColorAspects()
     if (!GetParameter(OMX_IndexColorAspects, param, true)) {
         return;
     }
-    HLOGI("range:%d, primary:%d, transfer:%d, matrix:%d)",
+    HLOGI("isFullRange %d, primary %u, transfer %u, matrix %u",
         param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
     if (outputFormat_) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param.aspects.range);
