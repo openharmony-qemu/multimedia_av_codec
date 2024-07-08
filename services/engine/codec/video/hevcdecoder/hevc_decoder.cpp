@@ -137,11 +137,13 @@ HevcDecoder::~HevcDecoder()
     ReleaseResource();
     callback_ = nullptr;
     ReleaseHandle();
-    std::lock_guard<std::mutex> lock(decoderCountMutex_);
-    freeIDSet_.push_back(decInstanceID_);
-    auto it = std::find(decInstanceIDSet_.begin(), decInstanceIDSet_.end(), decInstanceID_);
-    if (it != decInstanceIDSet_.end()) {
-        decInstanceIDSet_.erase(it);
+    if (decInstanceID_ < VIDEO_INSTANCE_SIZE) {
+        std::lock_guard<std::mutex> lock(decoderCountMutex_);
+        freeIDSet_.push_back(decInstanceID_);
+        auto it = std::find(decInstanceIDSet_.begin(), decInstanceIDSet_.end(), decInstanceID_);
+        if (it != decInstanceIDSet_.end()) {
+            decInstanceIDSet_.erase(it);
+        }
     }
 
     if (dumpInFile_ != nullptr) {
