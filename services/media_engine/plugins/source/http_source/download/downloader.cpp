@@ -515,7 +515,7 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
     if (info->contentLen <= 0) {
-        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
+        info->isChunked = true;
     }
 }
 
@@ -654,15 +654,6 @@ char* StringTrim(char* str)
 }
 }
 
-void Downloader::FLVProcess(bool &isTrunck, long &contentLen, const std::string &url)
-{
-    if (isTrunck != true) {
-        if (static_cast<int32_t>(url.find(".flv")) != -1) {
-            contentLen = LIVE_CONTENT_LENGTH;
-        }
-    }
-}
-
 size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
@@ -709,7 +700,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         FALSE_RETURN_V(token != nullptr, size * nitems);
         info->contentLen = atol(StringTrim(token));
         if (info->contentLen <= 0) {
-            FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
+            info->isChunked = true;
         }
     }
 
