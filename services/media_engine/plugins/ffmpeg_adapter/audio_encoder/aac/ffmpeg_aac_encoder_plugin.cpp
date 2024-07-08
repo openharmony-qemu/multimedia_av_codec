@@ -20,7 +20,6 @@
 #include <set>
 #include <string>
 #include "avcodec_codec_name.h"
-#include "common/log.h"
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
 
@@ -125,11 +124,11 @@ bool FFmpegAACEncoderPlugin::CheckSampleRate(const int sampleRate)
 bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 {
     if (supportedSampleFormats.find(audioSampleFormat_) == supportedSampleFormats.end()) {
-        MEDIA_LOG_E("input sample format not supported,srcFmt_=%{public}d", (int32_t)srcFmt_);
+        AVCODEC_LOGE("input sample format not supported,srcFmt_=%{public}d", (int32_t)srcFmt_);
         return false;
     }
     AudioSampleFormat2AVSampleFormat(audioSampleFormat_, srcFmt_);
-    MEDIA_LOG_E("AUDIO_SAMPLE_FORMAT found,srcFmt:%{public}d to "
+    AVCODEC_LOGE("AUDIO_SAMPLE_FORMAT found,srcFmt:%{public}d to "
                 "ffmpeg-srcFmt_:%{public}d ",
                 (int32_t)audioSampleFormat_, (int32_t)srcFmt_);
     needResample_ = CheckResample();
@@ -142,7 +141,7 @@ bool FFmpegAACEncoderPlugin::CheckChannelLayout()
         static_cast<AudioChannelLayout>(srcLayout_));
     // channel layout not available
     if (av_get_channel_layout_nb_channels(ffmpegChlayout) != channels_) {
-        MEDIA_LOG_E("channel layout channels mismatch");
+        AVCODEC_LOGE("channel layout channels mismatch");
         return false;
     }
     return true;
@@ -151,7 +150,7 @@ bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 bool FFmpegAACEncoderPlugin::CheckBitRate() const
 {
     if (bitRate_ < AAC_MIN_BIT_RATE || bitRate_ > AAC_MAX_BIT_RATE) {
-        MEDIA_LOG_E("parameter bit_rate illegal");
+        AVCODEC_LOGE("parameter bit_rate illegal");
         return false;
     }
     return true;
@@ -160,27 +159,27 @@ bool FFmpegAACEncoderPlugin::CheckBitRate() const
 bool FFmpegAACEncoderPlugin::CheckFormat()
 {
     if (!CheckSampleFormat()) {
-        MEDIA_LOG_E("sampleFormat not supported");
+        AVCODEC_LOGE("sampleFormat not supported");
         return false;
     }
 
     if (!CheckBitRate()) {
-        MEDIA_LOG_E("bitRate not supported");
+        AVCODEC_LOGE("bitRate not supported");
         return false;
     }
 
     if (!CheckSampleRate(sampleRate_)) {
-        MEDIA_LOG_E("sample rate not supported");
+        AVCODEC_LOGE("sample rate not supported");
         return false;
     }
 
     if (channels_ < MIN_CHANNELS || channels_ > MAX_CHANNELS || channels_ == INVALID_CHANNELS) {
-        MEDIA_LOG_E("channels not supported");
+        AVCODEC_LOGE("channels not supported");
         return false;
     }
 
     if (!CheckChannelLayout()) {
-        MEDIA_LOG_E("channelLayout not supported");
+        AVCODEC_LOGE("channelLayout not supported");
         return false;
     }
 
@@ -201,7 +200,7 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
     };
     // 使用迭代器遍历 unordered_map
     for (auto itM = formatTable.begin(); itM != formatTable.end(); ++itM) {
-        MEDIA_LOG_E("formatTable key:%{public}d   Value:%{public}d ", (int32_t)itM->first, (int32_t)itM->second);
+        AVCODEC_LOGE("formatTable key:%{public}d   Value:%{public}d ", (int32_t)itM->first, (int32_t)itM->second);
     }
 
     auto it = formatTable.find(audioFmt);
@@ -209,7 +208,7 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
         fmt = it->second;
         return true;
     }
-    MEDIA_LOG_E("AudioSampleFormat2AVSampleFormat fail, from fmt:%{public}d to "
+    AVCODEC_LOGE("AudioSampleFormat2AVSampleFormat fail, from fmt:%{public}d to "
                 "fmt:%{public}d",
                 (int32_t)audioFmt, (int32_t)fmt);
     return false;
@@ -217,36 +216,36 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
 
 Status FFmpegAACEncoderPlugin::Init()
 {
-    MEDIA_LOG_I("Init enter");
+    AVCODEC_LOGI("Init enter");
     return Status::OK;
 }
 
 Status FFmpegAACEncoderPlugin::Start()
 {
-    MEDIA_LOG_I("Start enter");
+    AVCODEC_LOGI("Start enter");
     Status status = AllocateContext("aac");
     if (status != Status::OK) {
-        MEDIA_LOG_D("Allocat aac context failed, status = %{public}d", status);
+        AVCODEC_LOGD("Allocat aac context failed, status = %{public}d", status);
         return status;
     }
     if (!CheckFormat()) {
-        MEDIA_LOG_D("Format check failed.");
+        AVCODEC_LOGD("Format check failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     status = InitContext();
     if (status != Status::OK) {
-        MEDIA_LOG_D("Init context failed, status = %{public}d", status);
+        AVCODEC_LOGD("Init context failed, status = %{public}d", status);
         return status;
     }
     status = OpenContext();
     if (status != Status::OK) {
-        MEDIA_LOG_D("Open context failed, status = %{public}d", status);
+        AVCODEC_LOGD("Open context failed, status = %{public}d", status);
         return status;
     }
 
     status = InitFrame();
     if (status != Status::OK) {
-        MEDIA_LOG_D("Init frame failed, status = %{public}d", status);
+        AVCODEC_LOGD("Init frame failed, status = %{public}d", status);
         return status;
     }
     return Status::OK;
@@ -259,7 +258,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
         return Status::ERROR_INVALID_DATA;
     }
     if (memory->GetSize() == 0 && !(inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
-        MEDIA_LOG_E("size is 0, but flag is not 1");
+        AVCODEC_LOGE("size is 0, but flag is not 1");
         return Status::ERROR_INVALID_DATA;
     }
     Status ret;
@@ -272,7 +271,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
         if (ret == Status::OK) {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
             if (inputBuffer->meta_ == nullptr) {
-                MEDIA_LOG_E("encoder input buffer or meta is nullptr");
+                AVCODEC_LOGE("encoder input buffer or meta is nullptr");
                 return Status::ERROR_INVALID_DATA;
             }
             bufferMeta_ = inputBuffer->meta_;
@@ -286,7 +285,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
 Status FFmpegAACEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     if (!outputBuffer) {
-        MEDIA_LOG_E("queue out buffer is nullptr.");
+        AVCODEC_LOGE("queue out buffer is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     std::lock_guard<std::mutex> lock(avMutex_);
@@ -305,25 +304,25 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     std::string header;
     GetAdtsHeader(header, headerSize, avCodecContext_, avPacket_->size);
     if (headerSize == 0) {
-        MEDIA_LOG_E("Get header failed.");
+        AVCODEC_LOGE("Get header failed.");
         return Status::ERROR_UNKNOWN;
     }
     int32_t writeBytes = memory->Write(
         reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize, 0);
     if (writeBytes < headerSize) {
-        MEDIA_LOG_E("Write header failed");
+        AVCODEC_LOGE("Write header failed");
         return Status::ERROR_UNKNOWN;
     }
 
     int32_t outputSize = avPacket_->size + headerSize;
     if (memory->GetCapacity() < outputSize) {
-        MEDIA_LOG_E("Output buffer capacity is not enough");
+        AVCODEC_LOGE("Output buffer capacity is not enough");
         return Status::ERROR_NO_MEMORY;
     }
 
     auto len = memory->Write(avPacket_->data, avPacket_->size, headerSize);
     if (len < avPacket_->size) {
-        MEDIA_LOG_E("write packet data failed, len = %{public}d", len);
+        AVCODEC_LOGE("write packet data failed, len = %{public}d", len);
         return Status::ERROR_UNKNOWN;
     }
 
@@ -339,23 +338,23 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
 
 Status FFmpegAACEncoderPlugin::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    MEDIA_LOG_D("ReceiveBuffer enter");
+    AVCODEC_LOGD("ReceiveBuffer enter");
     (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     Status status;
     if (ret >= 0) {
-        MEDIA_LOG_D("receive one packet");
+        AVCODEC_LOGD("receive one packet");
         status = ReceivePacketSucc(outBuffer);
     } else if (ret == AVERROR_EOF) {
         outBuffer->flag_ = BUFFER_FLAG_EOS;
         avcodec_flush_buffers(avCodecContext_.get());
         status = Status::END_OF_STREAM;
-        MEDIA_LOG_E("ReceiveBuffer EOF");
+        AVCODEC_LOGE("ReceiveBuffer EOF");
     } else if (ret == AVERROR(EAGAIN)) {
         status = Status::ERROR_NOT_ENOUGH_DATA;
-        MEDIA_LOG_E("ReceiveBuffer EAGAIN");
+        AVCODEC_LOGE("ReceiveBuffer EAGAIN");
     } else {
-        MEDIA_LOG_E("audio encoder receive unknow error: %{public}s", OSAL::AVStrError(ret).c_str());
+        AVCODEC_LOGE("audio encoder receive unknow error: %{public}s", OSAL::AVStrError(ret).c_str());
         status = Status::ERROR_UNKNOWN;
     }
     av_packet_unref(avPacket_.get());
@@ -366,7 +365,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
 {
     Status status = SendFrameToFfmpeg();
     if (status == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_D("SendFrameToFfmpeg no one frame data");
+        AVCODEC_LOGD("SendFrameToFfmpeg no one frame data");
         // last frame mark eos
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
             dataCallback_->OnOutputBufferDone(outBuffer_);
@@ -379,7 +378,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
             if (outBuffer_ == nullptr) {
-                MEDIA_LOG_E("SendOutputBuffer ERROR_NULL_POINTER");
+                AVCODEC_LOGE("SendOutputBuffer ERROR_NULL_POINTER");
                 return Status::ERROR_NULL_POINTER;
             }
             outBuffer_->meta_ = bufferMeta_;
@@ -387,21 +386,21 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
         int32_t fifoSize = av_audio_fifo_size(fifo_);
         if (fifoSize >= avCodecContext_->frame_size) {
             outputBuffer->flag_ = 0; // not eos
-            MEDIA_LOG_D("fifoSize:%{public}d need another encoder", fifoSize);
+            AVCODEC_LOGD("fifoSize:%{public}d need another encoder", fifoSize);
             dataCallback_->OnOutputBufferDone(outBuffer_);
             return Status::ERROR_AGAIN;
         }
         dataCallback_->OnOutputBufferDone(outBuffer_);
         return Status::OK;
     } else {
-        MEDIA_LOG_E("SendOutputBuffer-ReceiveBuffer error");
+        AVCODEC_LOGE("SendOutputBuffer-ReceiveBuffer error");
     }
     return status;
 }
 
 Status FFmpegAACEncoderPlugin::Reset()
 {
-    MEDIA_LOG_I("Reset enter");
+    AVCODEC_LOGI("Reset enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
@@ -411,7 +410,7 @@ Status FFmpegAACEncoderPlugin::Reset()
 
 Status FFmpegAACEncoderPlugin::Release()
 {
-    MEDIA_LOG_I("Release enter");
+    AVCODEC_LOGI("Release enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
@@ -420,7 +419,7 @@ Status FFmpegAACEncoderPlugin::Release()
 
 Status FFmpegAACEncoderPlugin::Flush()
 {
-    MEDIA_LOG_I("Flush enter");
+    AVCODEC_LOGI("Flush enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
@@ -435,7 +434,7 @@ Status FFmpegAACEncoderPlugin::Flush()
 Status FFmpegAACEncoderPlugin::ReAllocateContext()
 {
     if (!codecContextValid_) {
-        MEDIA_LOG_D("Old avcodec context not valid, no need to reallocate");
+        AVCODEC_LOGD("Old avcodec context not valid, no need to reallocate");
         return Status::OK;
     }
 
@@ -453,7 +452,7 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
     if (res != 0) {
-        MEDIA_LOG_E("avcodec reopen error %{public}s", OSAL::AVStrError(res).c_str());
+        AVCODEC_LOGE("avcodec reopen error %{public}s", OSAL::AVStrError(res).c_str());
         return Status::ERROR_UNKNOWN;
     }
     avCodecContext_ = tmpContext;
@@ -504,17 +503,17 @@ Status FFmpegAACEncoderPlugin::OpenContext()
 {
     {
         std::unique_lock lock(avMutex_);
-        MEDIA_LOG_I("avCodecContext_->channels " PUBLIC_LOG_D32, avCodecContext_->channels);
-        MEDIA_LOG_I("avCodecContext_->sample_rate " PUBLIC_LOG_D32, avCodecContext_->sample_rate);
-        MEDIA_LOG_I("avCodecContext_->bit_rate " PUBLIC_LOG_D64, avCodecContext_->bit_rate);
-        MEDIA_LOG_I("avCodecContext_->channel_layout " PUBLIC_LOG_D64, avCodecContext_->channel_layout);
-        MEDIA_LOG_I("avCodecContext_->sample_fmt " PUBLIC_LOG_D32,
+        AVCODEC_LOGI("avCodecContext_->channels " PUBLIC_LOG_D32, avCodecContext_->channels);
+        AVCODEC_LOGI("avCodecContext_->sample_rate " PUBLIC_LOG_D32, avCodecContext_->sample_rate);
+        AVCODEC_LOGI("avCodecContext_->bit_rate " PUBLIC_LOG_D64, avCodecContext_->bit_rate);
+        AVCODEC_LOGI("avCodecContext_->channel_layout " PUBLIC_LOG_D64, avCodecContext_->channel_layout);
+        AVCODEC_LOGI("avCodecContext_->sample_fmt " PUBLIC_LOG_D32,
                     static_cast<int32_t>(*(avCodec_.get()->sample_fmts)));
-        MEDIA_LOG_I("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, static_cast<int32_t>(srcFmt_));
-        MEDIA_LOG_I("avCodecContext_->codec_id " PUBLIC_LOG_D32, static_cast<int32_t>(avCodec_.get()->id));
+        AVCODEC_LOGI("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, static_cast<int32_t>(srcFmt_));
+        AVCODEC_LOGI("avCodecContext_->codec_id " PUBLIC_LOG_D32, static_cast<int32_t>(avCodec_.get()->id));
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
         if (res != 0) {
-            MEDIA_LOG_E("avcodec open error %{public}s", OSAL::AVStrError(res).c_str());
+            AVCODEC_LOGE("avcodec open error %{public}s", OSAL::AVStrError(res).c_str());
             return Status::ERROR_UNKNOWN;
         }
         av_log_set_level(AV_LOG_DEBUG);
@@ -522,7 +521,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
         codecContextValid_ = true;
     }
     if (avCodecContext_->frame_size <= 0) {
-        MEDIA_LOG_E("frame size invalid");
+        AVCODEC_LOGE("frame size invalid");
     }
     int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
@@ -538,7 +537,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
         };
         resample_ = std::make_shared<Ffmpeg::Resample>();
         if (resample_->Init(resamplePara) != Status::OK) {
-            MEDIA_LOG_E("Resmaple init failed.");
+            AVCODEC_LOGE("Resmaple init failed.");
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -555,49 +554,49 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
             return false;
         }
     }
-    MEDIA_LOG_I("CheckResample need resample");
+    AVCODEC_LOGI("CheckResample need resample");
     return true;
 }
 
 Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
     int32_t type;
-    MEDIA_LOG_I("GetMetaData enter");
+    AVCODEC_LOGI("GetMetaData enter");
     if (meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type)) {
         aacName_ = (type == 1 ? "aac" : "aac_latm");
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_)) {
         if (channels_ < MIN_CHANNELS || channels_ > MAX_CHANNELS) {
-            MEDIA_LOG_E("AUDIO_CHANNEL_COUNT error");
+            AVCODEC_LOGE("AUDIO_CHANNEL_COUNT error");
             return Status::ERROR_INVALID_PARAMETER;
         }
     } else {
-        MEDIA_LOG_E("no AUDIO_CHANNEL_COUNT");
+        AVCODEC_LOGE("no AUDIO_CHANNEL_COUNT");
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (!meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_)) {
-        MEDIA_LOG_E("no AUDIO_SAMPLE_RATE");
+        AVCODEC_LOGE("no AUDIO_SAMPLE_RATE");
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (!meta->Get<Tag::MEDIA_BITRATE>(bitRate_)) {
-        MEDIA_LOG_E("no MEDIA_BITRATE, set to 32k");
+        AVCODEC_LOGE("no MEDIA_BITRATE, set to 32k");
         bitRate_ = AAC_DEFAULT_BIT_RATE;
     }
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
-        MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
+        AVCODEC_LOGD("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
     } else {
-        MEDIA_LOG_E("no AUDIO_SAMPLE_FORMAT");
+        AVCODEC_LOGE("no AUDIO_SAMPLE_FORMAT");
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
-        MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
+        AVCODEC_LOGI("maxInputSize: %{public}d", maxInputSize_);
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_)) {
-        MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
+        AVCODEC_LOGI("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
     } else {
         auto iter = channelLayoutMap.find(channels_);
         if (iter == channelLayoutMap.end()) {
-            MEDIA_LOG_E("channel layout not found, channels: %{public}d", channels_);
+            AVCODEC_LOGE("channel layout not found, channels: %{public}d", channels_);
             return Status::ERROR_UNKNOWN;
         } else {
             srcLayout_ = static_cast<AudioChannelLayout>(iter->second);
@@ -608,11 +607,11 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 
 Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I("SetParameter enter");
+    AVCODEC_LOGI("SetParameter enter");
     std::lock_guard<std::mutex> lock(parameterMutex_);
     Status ret = GetMetaData(meta);
     if (!CheckFormat()) {
-        MEDIA_LOG_E("CheckFormat fail");
+        AVCODEC_LOGE("CheckFormat fail");
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *meta;
@@ -626,7 +625,7 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
-    MEDIA_LOG_I("GetParameter maxInputSize_: %{public}d", maxInputSize_);
+    AVCODEC_LOGI("GetParameter maxInputSize_: %{public}d", maxInputSize_);
     // add codec meta
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
@@ -636,20 +635,20 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 
 Status FFmpegAACEncoderPlugin::InitFrame()
 {
-    MEDIA_LOG_I("InitFrame enter");
+    AVCODEC_LOGI("InitFrame enter");
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     cachedFrame_->format = avCodecContext_->sample_fmt;
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     if (ret < 0) {
-        MEDIA_LOG_E("Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
+        AVCODEC_LOGE("Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
         return Status::ERROR_NO_MEMORY;
     }
 
     if (!(fifo_ =
               av_audio_fifo_alloc(avCodecContext_->sample_fmt, avCodecContext_->channels, cachedFrame_->nb_samples))) {
-        MEDIA_LOG_E("Could not allocate FIFO");
+        AVCODEC_LOGE("Could not allocate FIFO");
     }
     return Status::OK;
 }
@@ -658,18 +657,18 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
 {
     auto memory = inputBuffer->memory_;
     if (memory->GetSize() < 0) {
-        MEDIA_LOG_E("SendEncoder buffer size is less than 0. size : %{public}d", memory->GetSize());
+        AVCODEC_LOGE("SendEncoder buffer size is less than 0. size : %{public}d", memory->GetSize());
         return Status::ERROR_UNKNOWN;
     }
     if (memory->GetSize() > memory->GetCapacity()) {
-        MEDIA_LOG_E("send input buffer is > allocate size. size : "
+        AVCODEC_LOGE("send input buffer is > allocate size. size : "
                     "%{public}d, allocate size : %{public}d",
                     memory->GetSize(), memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
     auto errCode = PcmFillFrame(inputBuffer);
     if (errCode != Status::OK) {
-        MEDIA_LOG_E("SendEncoder PcmFillFrame error");
+        AVCODEC_LOGE("SendEncoder PcmFillFrame error");
         return errCode;
     }
     return Status::OK;
@@ -678,33 +677,33 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
 Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (!inputBuffer) {
-        MEDIA_LOG_D("inputBuffer is nullptr");
+        AVCODEC_LOGD("inputBuffer is nullptr");
         return Status::ERROR_INVALID_PARAMETER;
     }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
-        MEDIA_LOG_D("Frame make writable failed: %{public}s", OSAL::AVStrError(ret).c_str());
+        AVCODEC_LOGD("Frame make writable failed: %{public}s", OSAL::AVStrError(ret).c_str());
         return Status::ERROR_UNKNOWN;
     }
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
     if (!isEos) {
         auto status = SendEncoder(inputBuffer);
         if (status != Status::OK) {
-            MEDIA_LOG_E("input push in fifo fail");
+            AVCODEC_LOGE("input push in fifo fail");
             return status;
         }
     } else {
-        MEDIA_LOG_I("input eos");
+        AVCODEC_LOGI("input eos");
     }
     return Status::OK;
 }
 
 Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 {
-    MEDIA_LOG_D("SendFrameToFfmpeg enter");
+    AVCODEC_LOGD("SendFrameToFfmpeg enter");
     int32_t fifoSize = av_audio_fifo_size(fifo_);
     if (fifoSize < avCodecContext_->frame_size) {
-        MEDIA_LOG_D("fifoSize:%{public}d not enough", fifoSize);
+        AVCODEC_LOGD("fifoSize:%{public}d not enough", fifoSize);
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
@@ -717,7 +716,7 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
     int readRet =
         av_audio_fifo_read(fifo_, reinterpret_cast<void **>(cachedFrame_->data), avCodecContext_->frame_size);
     if (readRet < 0) {
-        MEDIA_LOG_E("fifo read error");
+        AVCODEC_LOGE("fifo read error");
         return Status::ERROR_UNKNOWN;
     }
     cachedFrame_->linesize[0] = readRet * av_get_bytes_per_sample(avCodecContext_->sample_fmt);
@@ -725,20 +724,20 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
     if (ret == 0) {
         return Status::OK;
     } else if (ret == AVERROR(EAGAIN)) {
-        MEDIA_LOG_E("skip this frame because data not enough, msg:%{public}s", OSAL::AVStrError(ret).data());
+        AVCODEC_LOGE("skip this frame because data not enough, msg:%{public}s", OSAL::AVStrError(ret).data());
         return Status::ERROR_NOT_ENOUGH_DATA;
     } else if (ret == AVERROR_EOF) {
-        MEDIA_LOG_D("eos send frame, msg:%{public}s", OSAL::AVStrError(ret).data());
+        AVCODEC_LOGD("eos send frame, msg:%{public}s", OSAL::AVStrError(ret).data());
         return Status::END_OF_STREAM;
     } else {
-        MEDIA_LOG_D("Send frame unknown error: %{public}s", OSAL::AVStrError(ret).c_str());
+        AVCODEC_LOGD("Send frame unknown error: %{public}s", OSAL::AVStrError(ret).c_str());
         return Status::ERROR_UNKNOWN;
     }
 }
 
 Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    MEDIA_LOG_D("PcmFillFrame enter, buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
+    AVCODEC_LOGD("PcmFillFrame enter, buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
     auto memory = inputBuffer->memory_;
     auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     const uint8_t *srcBuffer = memory->GetAddr();
@@ -747,13 +746,13 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     size_t destBufferSize = srcBufferSize;
     if (needResample_ && resample_ != nullptr) {
         if (resample_->Convert(srcBuffer, srcBufferSize, destBuffer, destBufferSize) != Status::OK) {
-            MEDIA_LOG_E("Convert sample format failed");
+            AVCODEC_LOGE("Convert sample format failed");
         }
     }
 
     cachedFrame_->nb_samples = static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->channels);
     if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
-        MEDIA_LOG_D("Input frame size not match, input samples: %{public}d, "
+        AVCODEC_LOGD("Input frame size not match, input samples: %{public}d, "
                     "frame_size: %{public}d",
                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
@@ -770,14 +769,14 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     int32_t cacheSize = av_audio_fifo_size(fifo_);
     int32_t ret = av_audio_fifo_realloc(fifo_, cacheSize + cachedFrame_->nb_samples);
     if (ret < 0) {
-        MEDIA_LOG_E("realloc ret: %{public}d, cacheSize: %{public}d", ret, cacheSize);
+        AVCODEC_LOGE("realloc ret: %{public}d, cacheSize: %{public}d", ret, cacheSize);
     }
-    MEDIA_LOG_D("realloc nb_samples:%{public}d cacheSize:%{public}d channels:%{public}d",
+    AVCODEC_LOGD("realloc nb_samples:%{public}d cacheSize:%{public}d channels:%{public}d",
         cachedFrame_->nb_samples, cacheSize, avCodecContext_->channels);
     int32_t writeSamples =
         av_audio_fifo_write(fifo_, reinterpret_cast<void **>(cachedFrame_->data), cachedFrame_->nb_samples);
     if (writeSamples < cachedFrame_->nb_samples) {
-        MEDIA_LOG_E("write smaples: %{public}d, nb_samples: %{public}d", writeSamples, cachedFrame_->nb_samples);
+        AVCODEC_LOGE("write smaples: %{public}d, nb_samples: %{public}d", writeSamples, cachedFrame_->nb_samples);
     }
     return Status::OK;
 }
@@ -797,7 +796,7 @@ Status FFmpegAACEncoderPlugin::Stop()
         outBuffer_.reset();
         outBuffer_ = nullptr;
     }
-    MEDIA_LOG_I("Stop");
+    AVCODEC_LOGI("Stop");
     return ret;
 }
 
@@ -816,7 +815,7 @@ Status FFmpegAACEncoderPlugin::CloseCtxLocked()
     if (avCodecContext_ != nullptr) {
         auto res = avcodec_close(avCodecContext_.get());
         if (res != 0) {
-            MEDIA_LOG_E("avcodec close failed: %{public}s", OSAL::AVStrError(res).c_str());
+            AVCODEC_LOGE("avcodec close failed: %{public}s", OSAL::AVStrError(res).c_str());
             return Status::ERROR_UNKNOWN;
         }
     }

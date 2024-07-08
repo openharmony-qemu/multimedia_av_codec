@@ -20,7 +20,6 @@
 #include <utility>
 #include <string_view>
 #include "osal/utils/util.h"
-#include "common/log.h"
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "meta/mime_type.h"
@@ -85,7 +84,7 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
                 AVCodecCodecName::AUDIO_DECODER_APE_NAME, definition, cap);
             break;
         default:
-            MEDIA_LOG_I("codec is not supported right now");
+            AVCODEC_LOGI("codec is not supported right now");
     }
 }
 
