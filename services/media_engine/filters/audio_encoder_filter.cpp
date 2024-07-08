@@ -215,7 +215,7 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     if (mediaCodec_) {
         std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
         mediaCodec_->GetOutputFormat(parameter);
-        int32_t frameSize = 1024;
+        int32_t frameSize = 0;
         if (parameter->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != parameter->end() &&
             parameter->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize)) {
             configureParameter_->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
