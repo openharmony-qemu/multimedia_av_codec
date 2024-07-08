@@ -80,7 +80,10 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "source/source.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base"
+  ]
 
   public_configs = [ "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config" ]
 

@@ -13,11 +13,14 @@
  * limitations under the License.
  */
 #include "ffmpeg_convert.h"
+
+#include <string>
+
 #include "avcodec_log.h"
 #include "securec.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegConvert"};
 }
 
 namespace OHOS {

@@ -503,14 +503,14 @@ Status FFmpegAACEncoderPlugin::OpenContext()
 {
     {
         std::unique_lock lock(avMutex_);
-        AVCODEC_LOGI("avCodecContext_->channels " PUBLIC_LOG_D32, avCodecContext_->channels);
-        AVCODEC_LOGI("avCodecContext_->sample_rate " PUBLIC_LOG_D32, avCodecContext_->sample_rate);
-        AVCODEC_LOGI("avCodecContext_->bit_rate " PUBLIC_LOG_D64, avCodecContext_->bit_rate);
-        AVCODEC_LOGI("avCodecContext_->channel_layout " PUBLIC_LOG_D64, avCodecContext_->channel_layout);
-        AVCODEC_LOGI("avCodecContext_->sample_fmt " PUBLIC_LOG_D32,
+        AVCODEC_LOGI("avCodecContext_->channels %{public}d", avCodecContext_->channels);
+        AVCODEC_LOGI("avCodecContext_->sample_rate %{public}d", avCodecContext_->sample_rate);
+        AVCODEC_LOGI("avCodecContext_->bit_rate %{public}lld", avCodecContext_->bit_rate);
+        AVCODEC_LOGI("avCodecContext_->channel_layout  %{public}lld", avCodecContext_->channel_layout);
+        AVCODEC_LOGI("avCodecContext_->sample_fmt %{public}d",
                     static_cast<int32_t>(*(avCodec_.get()->sample_fmts)));
-        AVCODEC_LOGI("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, static_cast<int32_t>(srcFmt_));
-        AVCODEC_LOGI("avCodecContext_->codec_id " PUBLIC_LOG_D32, static_cast<int32_t>(avCodec_.get()->id));
+        AVCODEC_LOGI("avCodecContext_ old srcFmt_ %{public}d", static_cast<int32_t>(srcFmt_));
+        AVCODEC_LOGI("avCodecContext_->codec_id %{public}d", static_cast<int32_t>(avCodec_.get()->id));
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
         if (res != 0) {
             AVCODEC_LOGE("avcodec open error %{public}s", OSAL::AVStrError(res).c_str());
@@ -592,7 +592,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         AVCODEC_LOGI("maxInputSize: %{public}d", maxInputSize_);
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_)) {
-        AVCODEC_LOGI("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
+        AVCODEC_LOGI("srcLayout_: %{public}llu", srcLayout_);
     } else {
         auto iter = channelLayoutMap.find(channels_);
         if (iter == channelLayoutMap.end()) {
@@ -737,7 +737,7 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 
 Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    AVCODEC_LOGD("PcmFillFrame enter, buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
+    AVCODEC_LOGD("PcmFillFrame enter, buffer->pts %{public}lld", inputBuffer->pts_);
     auto memory = inputBuffer->memory_;
     auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     const uint8_t *srcBuffer = memory->GetAddr();
