@@ -832,6 +832,8 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, width_-1);
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, height_-1);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, 0);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, 0);
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
