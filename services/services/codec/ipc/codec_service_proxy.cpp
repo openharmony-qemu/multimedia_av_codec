@@ -122,6 +122,7 @@ int32_t CodecServiceProxy::Stop()
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::STOP), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
+    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->ClearListenerCache();
     return reply.ReadInt32();
 }
 
@@ -137,6 +138,7 @@ int32_t CodecServiceProxy::Flush()
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::FLUSH), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
+    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->ClearListenerCache();
     return reply.ReadInt32();
 }
 
