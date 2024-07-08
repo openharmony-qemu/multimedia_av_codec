@@ -1534,7 +1534,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD) && index == MEDIA_TYPE_AUD) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID) && index == MEDIA_TYPE_VID)) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD) && index == MEDIA_TYPE_AUD) 
+            || (videoIsEnd && (tarckType == MEDIA_TYPE_VID) && index == MEDIA_TYPE_VID)) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));

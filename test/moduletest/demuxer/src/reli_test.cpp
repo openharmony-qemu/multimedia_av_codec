@@ -960,7 +960,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5700, TestSize.Level0)
 
             if (tarckType == MEDIA_TYPE_AUD && attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
                 aKeyCount++;
-            } else if (tarckType == MEDIA_TYPE_VID && attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+            } else if (tarckType == MEDIA_TYPE_VID && attr.flags & 
+            OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
                 vKeyCount++;
             }
         }
