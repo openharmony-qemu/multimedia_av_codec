@@ -141,7 +141,7 @@ Status AudioSinkFilter::DoResume()
         return Status::OK;
     }
     // only worked when state is paused
-    if (state_ == FilterState::PAUSED) {
+    if (state_ == FilterState::PAUSED || state_ == FilterState::RUNNING) {
         forceUpdateTimeAnchorNextTime_ = true;
         state_ = FilterState::RUNNING;
         if (frameCnt_ > 0) {

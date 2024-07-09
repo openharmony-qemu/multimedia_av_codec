@@ -13,14 +13,11 @@
  * limitations under the License.
  */
 #include "ffmpeg_convert.h"
-
-#include <string>
-
-#include "avcodec_log.h"
+#include "common/log.h"
 #include "securec.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegConvert"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -41,18 +38,18 @@ Status Resample::Init(const ResamplePara &resamplePara)
                                resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
         auto swrContext = swr_alloc();
         if (swrContext == nullptr) {
-            AVCODEC_LOGE("cannot allocate swr context");
+            MEDIA_LOG_E("cannot allocate swr context");
             return Status::ERROR_NO_MEMORY;
         }
         int32_t error = swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt,
                                             resamplePara_.sampleRate, &resamplePara_.channelLayout,
                                             resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
         if (error < 0) {
-            AVCODEC_LOGE("swr init error");
+            MEDIA_LOG_E("swr init error");
             return Status::ERROR_UNKNOWN;
         }
         if (swr_init(swrContext) != 0) {
-            AVCODEC_LOGE("swr init error");
+            MEDIA_LOG_E("swr init error");
             return Status::ERROR_UNKNOWN;
         }
         swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
@@ -70,18 +67,18 @@ Status Resample::InitSwrContext(const ResamplePara &resamplePara)
     resamplePara_ = resamplePara;
     auto swrContext = swr_alloc();
     if (swrContext == nullptr) {
-        AVCODEC_LOGE("cannot allocate swr context");
+        MEDIA_LOG_E("cannot allocate swr context");
         return Status::ERROR_NO_MEMORY;
     }
     int32_t error =
         swr_alloc_set_opts2(&swrContext, &resamplePara_.channelLayout, resamplePara_.destFmt, resamplePara_.sampleRate,
                             &resamplePara_.channelLayout, resamplePara_.srcFfFmt, resamplePara_.sampleRate, 0, nullptr);
     if (error < 0) {
-        AVCODEC_LOGE("swr init error");
+        MEDIA_LOG_E("swr init error");
         return Status::ERROR_UNKNOWN;
     }
     if (swr_init(swrContext) != 0) {
-        AVCODEC_LOGE("swr init error");
+        MEDIA_LOG_E("swr init error");
         return Status::ERROR_UNKNOWN;
     }
     swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
@@ -96,27 +93,26 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
 {
 #if defined(_WIN32) || !defined(OHOS_LITE)
     if (resamplePara_.bitsPerSample == 8) { // 8
-        CHECK_AND_RETURN_RET_LOG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
-                                 "resample 8bit to other format can not support");
+        FALSE_RETURN_V_MSG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
+                           "resample 8bit to other format can not support");
         destLength = srcLength * 2; // 2
         resampleCache_.reserve(destLength);
         resampleCache_.assign(destLength, 0);
         for (size_t i{0}; i < destLength / 2; i++) {                                                    // 2
             auto resCode = memcpy_s(&resampleCache_[0] + i * 2 + 1, sizeof(uint8_t), srcBuffer + i, 1); // 0 2 1
-            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION,
-                "Memcpy failed at 8 bits/sample.");
+            FALSE_RETURN_V_MSG_E(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy failed at 8 bits/sample.");
             *(&resampleCache_[0] + i * 2 + 1) += 0x80; // 2 0x80
         }
         destBuffer = resampleCache_.data();
     } else if (resamplePara_.bitsPerSample == 24) { // 24
-        CHECK_AND_RETURN_RET_LOG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
-                                 "resample 24bit to other format can not support");
+        FALSE_RETURN_V_MSG(resamplePara_.destFmt == AV_SAMPLE_FMT_S16, Status::ERROR_UNIMPLEMENTED,
+                           "resample 24bit to other format can not support");
         destLength = srcLength / 3 * 2; // 3 2
         resampleCache_.reserve(destLength);
         resampleCache_.assign(destLength, 0);
         for (size_t i = 0; i < destLength / 2; i++) {                                                           // 2
             auto resCode = memcpy_s(&resampleCache_[0] + i * 2, sizeof(uint8_t) * 2, srcBuffer + i * 3 + 1, 2); // 2 3 1
-            CHECK_AND_RETURN_RET_LOG(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy fail at 24 bits/sample");
+            FALSE_RETURN_V_MSG_E(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy failed at 24 bits/sample.");
         }
         destBuffer = resampleCache_.data();
     } else {
@@ -132,7 +128,7 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
         auto res = swr_convert(swrCtx_.get(), resampleChannelAddr_.data(), resamplePara_.destSamplesPerFrame,
                                tmpInput.data(), samples);
         if (res < 0) {
-            AVCODEC_LOGE("resample input failed");
+            MEDIA_LOG_E("resample input failed");
             destLength = 0;
         } else {
             destBuffer = resampleCache_.data();
@@ -154,7 +150,7 @@ static std::string AVStrError(int errnum)
 Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
 {
     if (outputFrame == nullptr || inputFrame == nullptr) {
-        AVCODEC_LOGE("Frame null pointer");
+        MEDIA_LOG_E("Frame null pointer");
         return Status::ERROR_NO_MEMORY;
     }
 
@@ -164,7 +160,7 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
 
     auto ret = swr_convert_frame(swrCtx_.get(), outputFrame, inputFrame);
     if (ret < 0) {
-        AVCODEC_LOGE("convert frame failed, %{public}s", AVStrError(ret).c_str());
+        MEDIA_LOG_E("convert frame failed, %{public}s", AVStrError(ret).c_str());
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -180,7 +176,7 @@ Status Scale::Init(const ScalePara &scalePara, uint8_t **dstData, int32_t *dstLi
     auto swsContext =
         sws_getContext(scalePara_.srcWidth, scalePara_.srcHeight, scalePara_.srcFfFmt, scalePara_.dstWidth,
                        scalePara_.dstHeight, scalePara_.dstFfFmt, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-    CHECK_AND_RETURN_RET_LOG(swsContext != nullptr, Status::ERROR_UNKNOWN, "sws_getContext fail");
+    FALSE_RETURN_V_MSG_E(swsContext != nullptr, Status::ERROR_UNKNOWN, "sws_getContext fail");
     swsCtx_ = std::shared_ptr<SwsContext>(swsContext, [](struct SwsContext *ptr) {
         if (ptr != nullptr) {
             sws_freeContext(ptr);
@@ -188,13 +184,14 @@ Status Scale::Init(const ScalePara &scalePara, uint8_t **dstData, int32_t *dstLi
     });
     auto ret = av_image_alloc(dstData, dstLineSize, scalePara_.dstWidth, scalePara_.dstHeight, scalePara_.dstFfFmt,
                               scalePara_.align);
-    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_UNKNOWN, "could not allocate destination image %{public}d", ret);
-    AVCODEC_LOGD("av_image_alloc call, ret: %{public}ud dstPixelFormat_: %{public}ud", ret, scalePara_.dstFfFmt);
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN, "could not allocate destination image" PUBLIC_LOG_D32, ret);
+    MEDIA_LOG_D("av_image_alloc call, ret: " PUBLIC_LOG_U32 "dstPixelFormat_: " PUBLIC_LOG_U32, ret,
+                scalePara_.dstFfFmt);
     // av_image_alloc can make sure that dstLineSize last element is 0
     for (int32_t i = 0; dstLineSize[i] > 0; i++) {
-        AVCODEC_LOGD("dstLineSize[%{public}d]: %{public}d", i, dstLineSize[i]);
+        MEDIA_LOG_D("dstLineSize[" PUBLIC_LOG_D32 "]: " PUBLIC_LOG_D32, i, dstLineSize[i]);
         if (dstData[i] && !dstLineSize[i]) {
-            AVCODEC_LOGE("scale frame is broken, i: %{public}d", i);
+            MEDIA_LOG_E("scale frame is broken, i: " PUBLIC_LOG_D32, i);
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -204,7 +201,7 @@ Status Scale::Init(const ScalePara &scalePara, uint8_t **dstData, int32_t *dstLi
 Status Scale::Convert(uint8_t **srcData, const int32_t *srcLineSize, uint8_t **dstData, int32_t *dstLineSize)
 {
     auto res = sws_scale(swsCtx_.get(), srcData, srcLineSize, 0, scalePara_.srcHeight, dstData, dstLineSize);
-    CHECK_AND_RETURN_RET_LOG(res >= 0, Status::ERROR_UNKNOWN, "sws_scale fail: %{public}d", res);
+    FALSE_RETURN_V_MSG_E(res >= 0, Status::ERROR_UNKNOWN, "sws_scale fail: " PUBLIC_LOG_D32, res);
     return Status::OK;
 }
 #endif
