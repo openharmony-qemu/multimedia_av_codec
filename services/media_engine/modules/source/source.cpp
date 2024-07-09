@@ -266,11 +266,6 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
-    } else if (event.type == PluginEventType::SOURCE_INFO) {
-        MEDIA_LOG_I("source info start from source.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
     } else {
         MEDIA_LOG_E("on event error.");
     }
@@ -297,7 +292,19 @@ void Source::SetInterruptState(bool isInterruptNeeded)
 Plugins::Seekable Source::GetSeekable()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Plugins::Seekable::INVALID, "GetSeekable, Source plugin is nullptr");
-    return plugin_->GetSeekable();
+    int32_t retry {0};
+    seekable_ = Seekable::INVALID;
+    do {
+        seekable_ = plugin_->GetSeekable();
+        retry++;
+        if (seekable_ == Seekable::INVALID) {
+            if (retry >= 20) { // 20 means retry times
+                break;
+            }
+            OSAL::SleepFor(10); // 10 means sleep time pre retry
+        }
+    } while (seekable_ == Seekable::INVALID);
+    return seekable_;
 }
 
 std::string Source::GetUriSuffix(const std::string& uri)

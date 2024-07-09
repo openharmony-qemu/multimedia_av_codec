@@ -48,13 +48,11 @@ public:
     void PreParseManifest(const std::string& location) override;
     bool IsParseAndNotifyFinished() override;
     bool IsParseFinished() override;
-    void SetCallback(Callback* callback) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
     std::shared_ptr<M3U8VariantStream> GetNewVariant();
 private:
-    void UpdateSourceInfo();
     void UpdateMasterInfo(bool isPreParse);
 private:
     std::string url_ {};
@@ -66,8 +64,6 @@ private:
     std::string mimeType_;
     std::atomic<bool> isParseFinished_ {false};
     std::atomic<bool> isNotifyPlayListFinished_ {false};
-    std::atomic<bool> isSourceInfoUpdated_ {false};
-    Callback* sourceInfoCallback_ {nullptr};
 };
 }
 }
