@@ -27,6 +27,7 @@ enum class CodecType : int32_t {
     AVCODEC_INVALID = -1,
     AVCODEC_HCODEC = 0,
     AVCODEC_VIDEO_CODEC,
+    AVCODEC_VIDEO_HEVC_DECODER,
     AVCODEC_AUDIO_CODEC,
 };
 } // namespace MediaAVCodec
