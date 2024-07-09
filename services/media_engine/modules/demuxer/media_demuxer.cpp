@@ -161,7 +161,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
                          "StartReferenceParser failed due to video plugin is nullptr");
     if (isFirstParser_) {
         isFirstParser_ = false;
-        if (seekable_ != Plugins::Seekable::SEEKABLE) {
+        if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
             MEDIA_LOG_E("Do not support online video");
             return Status::ERROR_INVALID_OPERATION;
         }
