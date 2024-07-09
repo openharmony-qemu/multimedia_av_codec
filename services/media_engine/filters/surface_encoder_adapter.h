@@ -71,6 +71,8 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<const Format> attribute,
+        std::shared_ptr<Format> parameter);
 
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
 
@@ -87,9 +89,11 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
+    std::deque<pair<int64_t, int64_t>> pauseResumeQueue_;
     std::atomic<bool> isThreadExit_ = true;
     bool isTransCoderMode = false;
 
+    std::mutex checkFramesMutex_;
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};

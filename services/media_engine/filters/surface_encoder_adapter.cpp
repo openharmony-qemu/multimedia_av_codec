@@ -69,6 +69,30 @@ private:
     std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
 };
 
+class MediaCodecParameterWithAttrCallback {
+    virtual void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<const Format> attribute,
+        std::shared_ptr<Format> parameter) = 0;
+}
+
+class DroppedFramesCallback : public MediaAVCodec::MediaCodecParameterWithAttrCallback {
+public:
+    explicit DroppedFramesCallback(std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter)
+        : surfaceEncoderAdapter_(std::move(surfaceEncoderAdapter))
+    {
+    }
+
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<const Format> attribute,
+        std::shared_ptr<Format> parameter) override
+    {
+        if (surfaceEncoderAdapter_) {
+            surfaceEncoderAdapter_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
+        }
+    }
+
+private:
+    std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
+}
+
 SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter create");
@@ -107,7 +131,15 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
             return 0;
         });
     }
-    return Status::OK;
+    std::shared_ptr<MediaAVCodec::MediaCodecParameterWithAttrCallback> droppedFramesCallback =
+        std::make_shared<DroppedFramesCallback>(shared_from_this());
+    int32_t ret = codecServer_->SetCallback(droppedFramesCallback);
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        SetFaultEvent("DroppedFramesCallback::DroppedFramesCallback error", ret);
+        return Status::ERROR_UNKNOWN;
+    }
 }
 
 void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
@@ -286,6 +318,11 @@ Status SurfaceEncoderAdapter::Pause()
 {
     MEDIA_LOG_I("Pause");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Pause");
+    std::lock_guard<std::mutex> lock(checkFramesMutex_);
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    int64_t pauseTime_ = static_cast<int64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<int64_t>(timestamp.tv_nsec);
+    pauseResumeQueue_.push_back({pauseTime_, 0});
     return Status::OK;
 }
 
@@ -293,6 +330,11 @@ Status SurfaceEncoderAdapter::Resume()
 {
     MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Resume");
+    std::lock_guard<std::mutex> lock(checkFramesMutex_);
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    int64_t resumeTime_ = static_cast<int64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<int64_t>(timestamp.tv_nsec);
+    pauseResumeQueue_.push_back({resumeTime_, 1});
     isResume_ = true;
     return Status::OK;
 }
@@ -521,6 +563,36 @@ void SurfaceEncoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid,
     appPid_ = appPid;
     bundleName_ = bundleName;
     instanceId_ = instanceId;
+}
+
+void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<const Format> attribute,
+    std::shared_ptr<Format> parameter)
+{
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable");
+    std::lock_guard<std::mutex> lock(checkFramesMutex_);
+    if (pauseResumeQueue_.empty()) {
+        parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, true); // true means not discard
+        codecServer_->QueueInputParameter(index);
+        return ;
+    }
+    int64_t pts = 0;
+    bool ret = parameter->GetLongValue(Tag::MEDIA_TIME_STAMP, pts);
+    if (pauseResumeQueue_[0].second == 1) { // resume
+        if (pts < pauseResumeQueue_[0].first) {
+            parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, false); // false means discard
+        } else {
+            pauseResumeQueue_.pop_front();
+            parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, true); // true means not discard
+        }
+    } else { // pause
+        if (pts < pauseResumeQueue_[0].first) {
+            parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, true); // true means not discard
+        } else {
+            pauseResumeQueue_.pop_front();
+            parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, false); // false means discard
+        }
+    }
+    codecServer_->QueueInputParameter(index);
 }
 } // namespace MEDIA
 } // namespace OHOS
