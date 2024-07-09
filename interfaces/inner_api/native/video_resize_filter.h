@@ -39,7 +39,7 @@ public:
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
     sptr<Surface> GetInputSurface();
-    Status SetOutputSurface(sptr<Surface> surface);
+    Status SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height);
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
