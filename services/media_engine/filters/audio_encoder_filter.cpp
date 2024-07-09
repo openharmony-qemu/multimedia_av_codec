@@ -212,6 +212,15 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioEncoderFilterLinkCallback>(shared_from_this());
+    if (mediaCodec_) {
+        std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+        mediaCodec_->GetOutputFormat(parameter);
+        int32_t frameSize = 0;
+        if (parameter->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != parameter->end() &&
+            parameter->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize)) {
+            configureParameter_->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
+        }
+    }
     auto ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
     if (ret != Status::OK) {
         SetFaultEvent("AudioEncoderFilter::LinkNext error", (int32_t)ret);
