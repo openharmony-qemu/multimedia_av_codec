@@ -100,7 +100,7 @@ InnerDemuxerParserSample::InnerDemuxerParserSample(const std::string &filePath)
             printf("GetTrackFormat is failed\n");
         }
         track_format_.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
-        if (trackType == 1) {
+        if (trackType == MEDIA_TYPE_VID) {
             ret = this->demuxer_->SelectTrackByID(i);
             if (ret != 0) {
                 printf("SelectTrackByID is failed\n");

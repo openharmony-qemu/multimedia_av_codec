@@ -1794,7 +1794,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_4300, TestSize.Level1)
                 isEnd = true;
                 cout << "is end !!!!!!!!!!!!!!!" << endl;
             }
-            if (index == 0) {
+            if (index == MEDIA_TYPE_AUD) {
                 count++;
             }
         }
