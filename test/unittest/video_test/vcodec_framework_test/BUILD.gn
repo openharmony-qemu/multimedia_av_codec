@@ -148,6 +148,10 @@ ohos_unittest("videodec_inner_unit_test") {
     "window_manager:libwm",
   ]
 
+  public_external_deps = [
+    "drm_framework:drm_framework",
+  ]
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -236,6 +240,10 @@ ohos_unittest("videoenc_inner_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
+  ]
+
+  public_external_deps = [
+    "drm_framework:drm_framework",
   ]
 
   resource_config_file =
