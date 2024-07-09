@@ -48,6 +48,7 @@ struct HeaderInfo {
     long contentLen {0};
     bool isChunked {false};
     bool isClosed {false};
+    bool isServerAcceptRange {false};
 
     void Update(const HeaderInfo* info)
     {
@@ -118,6 +119,7 @@ public:
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
     bool IsM3u8Request() const;
+    bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
 private:
     void WaitHeaderUpdated() const;
@@ -176,6 +178,7 @@ private:
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static void HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
