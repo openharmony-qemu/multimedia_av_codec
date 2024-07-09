@@ -146,9 +146,6 @@ ohos_unittest("videodec_inner_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
-  ]
-
-  public_external_deps = [
     "drm_framework:drm_framework",
   ]
 
@@ -240,9 +237,6 @@ ohos_unittest("videoenc_inner_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
-  ]
-
-  public_external_deps = [
     "drm_framework:drm_framework",
   ]
 
