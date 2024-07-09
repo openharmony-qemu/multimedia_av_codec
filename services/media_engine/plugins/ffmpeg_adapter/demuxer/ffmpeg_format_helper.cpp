@@ -40,6 +40,10 @@ extern "C" {
 #define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {

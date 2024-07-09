@@ -18,8 +18,6 @@
 #include <algorithm>
 #include <memory>
 
-#include "common/log.h"
-
 namespace OHOS {
 namespace Media {
 using namespace std;

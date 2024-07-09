@@ -28,8 +28,10 @@ namespace MediaAVCodec {
 #define LOG_DOMAIN_HCODEC        0xD002B32
 #undef  LOG_DOMAIN_TEST
 #define LOG_DOMAIN_TEST          0xD002B36
-#undef  LOG_DOMAIN_DEMUXER_MUXER
-#define LOG_DOMAIN_DEMUXER_MUXER 0xD002B3A
+#undef  LOG_DOMAIN_DEMUXER
+#define LOG_DOMAIN_DEMUXER       0xD002B3A
+#undef  LOG_DOMAIN_MUXER
+#define LOG_DOMAIN_MUXER         0xD002B3B
 
 #ifndef AVCODEC_LOG_USE_NO_DICT_LOG
 #define AVCODEC_LOG(level, fmt, args...)                                    \

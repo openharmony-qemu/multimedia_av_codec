@@ -22,8 +22,6 @@
 #include <list>
 #include <chrono>
 
-#include "common/log.h"
-
 namespace OHOS {
 namespace Media {
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;

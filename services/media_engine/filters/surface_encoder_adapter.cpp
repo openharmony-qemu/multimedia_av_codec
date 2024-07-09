@@ -24,6 +24,11 @@
 #include "native_avcodec_base.h"
 #include "avcodec_trace.h"
 #include "avcodec_sysevent.h"
+#include "common/log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
 
 constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
