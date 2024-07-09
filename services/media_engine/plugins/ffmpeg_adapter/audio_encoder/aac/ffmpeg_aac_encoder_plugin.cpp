@@ -30,7 +30,7 @@ using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "FfmpegAacEncoderPlugin" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "HiStreamer" };
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t ADTS_HEADER_SIZE = 7;
@@ -44,7 +44,6 @@ constexpr int32_t AAC_MAX_BIT_RATE = 500000;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 constexpr int32_t NS_PER_US = 1000;
-constexpr int32_t AAC_FRAME_SIZE = 1024;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -616,7 +615,6 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *meta;
-    audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_FRAME_SIZE);
     return ret;
 }
 
