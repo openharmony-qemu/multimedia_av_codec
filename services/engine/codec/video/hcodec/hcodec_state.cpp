@@ -459,6 +459,9 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::GET_BUFFER_FROM_SURFACE:
             codec_->OnGetBufferFromSurface(info.param);
             break;
+        case MsgWhat::CHECK_IF_REPEAT:
+            codec_->RepeatIfNecessary(info.param);
+            break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
             if (codec_->outPortHasChanged_) {
                 codec_->SubmitDynamicBufferIfPossible();
