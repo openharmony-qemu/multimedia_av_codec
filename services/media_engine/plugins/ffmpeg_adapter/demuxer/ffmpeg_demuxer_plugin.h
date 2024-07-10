@@ -97,7 +97,7 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
     std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
-    static int CheckContextIsValid(void* opaque);
+    static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);
@@ -113,7 +113,7 @@ private:
     void ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
-    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer,const uint8_t *writeData, int32_t writeSize);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool GetNextFrame(const uint8_t *data, const uint32_t size);

@@ -35,7 +35,7 @@
 #include "avcodec_sysevent.h"
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
-#include "syspara/parameters.h" 
+#include "syspara/parameters.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
 #define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
@@ -900,7 +900,7 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
     return 0;
 }
 
-int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque)
+int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
 {
     int ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
@@ -911,19 +911,7 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque)
         MEDIA_LOG_I("AVReadPacket return EOS");
         return AVERROR_EOF;
     }
-    return 0;
-}
 
-// Write packet data into the buffer provided by ffmpeg
-int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
-{
-    int ret = CheckContextIsValid(opaque);
-    FALSE_RETURN_V(ret == 0, ret);
-
-    ret = -1;
-    auto ioContext = static_cast<IOContext*>(opaque);
-    auto buffer = std::make_shared<Buffer>();
-    auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
     if (ioContext->fileSize > 0) {
         FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
@@ -932,6 +920,20 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
         }
     }
+    return 0;
+}
+
+// Write packet data into the buffer provided by ffmpeg
+int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
+{
+    int ret = CheckContextIsValid(opaque, bufSize);
+    FALSE_RETURN_V(ret == 0, ret);
+
+    ret = -1;
+    auto ioContext = static_cast<IOContext*>(opaque);
+    auto buffer = std::make_shared<Buffer>();
+    auto bufData = buffer->WrapMemory(buf, bufSize, 0);
+
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
@@ -981,12 +983,12 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
         case SEEK_SET:
             newPos = static_cast<uint64_t>(offset);
             ioContext->offset = newPos;
-            MEDIA_LOG_I("AVSeek whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64 ", newPos = " PUBLIC_LOG_U64 ".",
+            MEDIA_LOG_D("AVSeek whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64 ", newPos = " PUBLIC_LOG_U64 ".",
                 whence, offset, newPos);
             break;
         case SEEK_CUR:
             newPos = ioContext->offset + offset;
-            MEDIA_LOG_I("AVSeek whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64 ", newPos = " PUBLIC_LOG_U64 ".",
+            MEDIA_LOG_D("AVSeek whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64 ", newPos = " PUBLIC_LOG_U64 ".",
                 whence, offset, newPos);
             break;
         case SEEK_END:
@@ -999,7 +1001,7 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
                 "AVSeek failed due to dataSource is nullptr.");
             if (ioContext->dataSource->GetSize(mediaDataSize) == Status::OK && (mediaDataSize > 0)) {
                 newPos = mediaDataSize + offset;
-                MEDIA_LOG_I("AVSeek whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64
+                MEDIA_LOG_D("AVSeek whence: " PUBLIC_LOG_D32 ", pos = " PUBLIC_LOG_D64
                     ", newPos = " PUBLIC_LOG_U64 ".", whence, offset, newPos);
             }
             break;
@@ -1011,7 +1013,7 @@ int64_t FFmpegDemuxerPlugin::AVSeek(void* opaque, int64_t offset, int whence)
     if (whence != AVSEEK_SIZE) {
         ioContext->offset = newPos;
     }
-    MEDIA_LOG_I("Current offset: " PUBLIC_LOG_D64 ", new pos: " PUBLIC_LOG_U64 ".",
+    MEDIA_LOG_D("Current offset: " PUBLIC_LOG_D64 ", new pos: " PUBLIC_LOG_U64 ".",
         ioContext->offset, newPos);
     return newPos;
 }
