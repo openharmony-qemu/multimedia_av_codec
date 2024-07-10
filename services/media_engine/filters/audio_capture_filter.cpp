@@ -19,6 +19,10 @@
 #include "source/audio_capture/audio_capture_module.h"
 #include "avcodec_trace.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -261,7 +265,7 @@ void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("GetParameter");
-    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::SetParameter");
+    MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::GetParameter");
     audioCaptureModule_->GetParameter(meta);
 }
 
@@ -369,7 +373,7 @@ int32_t AudioCaptureFilter::GetMaxAmplitude()
 {
     MEDIA_LOG_I("GetMaxAmplitude");
     if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info ");
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
         return (int32_t)Status::ERROR_INVALID_OPERATION;
     }
     return audioCaptureModule_->GetMaxAmplitude();

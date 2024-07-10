@@ -16,6 +16,7 @@
 #include "avcodec_log.h"
 #include "codecbase.h"
 #include "fcodec_loader.h"
+#include "hevc_decoder_loader.h"
 #include "hcodec_loader.h"
 #define PRINT_HILOG
 #include "unittest_log.h"
@@ -45,6 +46,15 @@ std::shared_ptr<CodecBase> FCodecLoader::CreateByName(const std::string &name)
     return mock->CreateFCodecByName(name);
 }
 
+std::shared_ptr<CodecBase> HevcDecoderLoader::CreateByName(const std::string &name)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("name: %s", name.c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->CreateHevcDecoderByName(name);
+}
+
 int32_t HCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -63,6 +73,17 @@ int32_t FCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
     auto item = mock->GetFCapabilityList();
+    caps = item.second;
+    return item.first;
+}
+
+int32_t HevcDecoderLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("HevcDecoder");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    auto item = mock->GetHevcDecoderCapabilityList();
     caps = item.second;
     return item.first;
 }

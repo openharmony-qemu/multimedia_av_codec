@@ -30,6 +30,7 @@ using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "HiStreamer" };
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t ADTS_HEADER_SIZE = 7;

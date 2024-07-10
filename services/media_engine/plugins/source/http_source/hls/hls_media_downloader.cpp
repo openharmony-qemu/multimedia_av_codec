@@ -63,7 +63,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     isBuffering_ = true;
     totalRingBufferSize_ = RING_BUFFER_SIZE;
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -81,7 +81,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     totalRingBufferSize_ = expectDuration_ * currentBitrate_;
     MEDIA_LOG_I("user define buffer duration.");
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
     steadyClock_.Reset();
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -98,7 +98,7 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
     buffer_->Init();
     totalRingBufferSize_ = RING_BUFFER_SIZE;
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -293,13 +293,13 @@ bool HlsMediaDownloader::HandleBuffering()
             isBuffering_ = false;
             break;
         }
-        if (downloadRequest_ == nullptr) {
-            OSAL::SleepFor(SLEEP_TIME::REQUEST_SLEEP_TIME);
-            continue;
-        }
         if (CheckBreakCondition()) {
             isBuffering_ = false;
             break;
+        }
+        if (downloadRequest_ == nullptr) {
+            OSAL::SleepFor(SLEEP_TIME::REQUEST_SLEEP_TIME);
+            continue;
         }
         OSAL::SleepFor(SLEEP_TIME::BUFFERING_SLEEP_TIME);
         sleepTime += SLEEP_TIME::BUFFERING_SLEEP_TIME;
@@ -450,16 +450,33 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
     playListDownloader_->SetCallback(cb);
 }
 
+void HlsMediaDownloader::ResetPlaylistCapacity(size_t size)
+{
+    size_t remainCapacity = playList_->Capacity() - playList_->Size();
+    if (remainCapacity >= size) {
+        return;
+    }
+    size_t newCapacity = playList_->Size() + size;
+    playList_->ResetCapacity(newCapacity);
+}
+
+void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
+{
+    if (playListDownloader_->IsParseFinished() && (GetSeekable() == Seekable::UNSEEKABLE)) {
+        if (backPlayList_.size() > 0) {
+            backPlayList_.clear();
+        }
+        return;
+    }
+    backPlayList_.push_back(fragment);
+}
+
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
+    ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
     for (int i = 0; i < static_cast<int>(playList.size()); i++) {
         auto fragment = playList[i];
-        auto ret = std::find_if(backPlayList_.begin(), backPlayList_.end(), [&](PlayInfo playInfo) {
-                   return playInfo.url_ == fragment.url_;
-        });
-        if (ret == backPlayList_.end()) {
-            backPlayList_.push_back(fragment);
-        }
+        PlaylistBackup(fragment);
         if (isSelectingBitrate_ && (GetSeekable() == Seekable::SEEKABLE)) {
             bool isFileIndexSame = (havePlayedTsNum_ - i) == 1 ? true : false; // 1
             if (isFileIndexSame) {

@@ -99,9 +99,8 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
     if (ret < 0) {
         MEDIA_LOG_E("Failed to read, errno " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
         return;
-    } else {
-        MEDIA_LOG_I("Read success.");
     }
+    MEDIA_LOG_I("Read success.");
     playList_ = m3u8;
     ParseManifest(playList_);
 }

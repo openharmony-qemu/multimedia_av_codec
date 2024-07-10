@@ -32,7 +32,6 @@ enum ShortOption {
     OPT_API_TYPE = UINT8_MAX + 1,
     OPT_IS_ENCODER,
     OPT_IS_BUFFER_MODE,
-    OPT_LTR_FRAME_COUNT,
     OPT_REPEAT_CNT,
     OPT_MAX_READ_CNT,
     OPT_PROTOCOL,
@@ -40,6 +39,8 @@ enum ShortOption {
     OPT_FRAME_RATE,
     OPT_TIME_OUT,
     OPT_IS_HIGH_PERF_MODE,
+    OPT_SET_PARAMETER,
+    OPT_SET_PER_FRAME,
     // encoder only
     OPT_MOCK_FRAME_CNT,
     OPT_COLOR_RANGE,
@@ -52,13 +53,14 @@ enum ShortOption {
     OPT_BITRATE,
     OPT_QUALITY,
     OPT_QP_RANGE,
+    OPT_LTR_FRAME_COUNT,
+    OPT_REPEAT_AFTER,
+    OPT_REPEAT_MAX_CNT,
     // decoder only
     OPT_RENDER,
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
     OPT_FLUSH_CNT,
-    OPT_SET_PARAMETER,
-    OPT_SET_PER_FRAME
 };
 
 static struct option g_longOptions[] = {
@@ -69,7 +71,6 @@ static struct option g_longOptions[] = {
     {"apiType",         required_argument,  nullptr, OPT_API_TYPE},
     {"isEncoder",       required_argument,  nullptr, OPT_IS_ENCODER},
     {"isBufferMode",    required_argument,  nullptr, OPT_IS_BUFFER_MODE},
-    {"ltrFrameCount",   required_argument,  nullptr, OPT_LTR_FRAME_COUNT},
     {"repeatCnt",       required_argument,  nullptr, OPT_REPEAT_CNT},
     {"maxReadFrameCnt", required_argument,  nullptr, OPT_MAX_READ_CNT},
     {"protocol",        required_argument,  nullptr, OPT_PROTOCOL},
@@ -77,6 +78,8 @@ static struct option g_longOptions[] = {
     {"frameRate",       required_argument,  nullptr, OPT_FRAME_RATE},
     {"timeout",         required_argument,  nullptr, OPT_TIME_OUT},
     {"isHighPerfMode",  required_argument,  nullptr, OPT_IS_HIGH_PERF_MODE},
+    {"setParameter",    required_argument,  nullptr, OPT_SET_PARAMETER},
+    {"setPerFrame",     required_argument,  nullptr, OPT_SET_PER_FRAME},
     // encoder only
     {"mockFrameCnt",    required_argument,  nullptr, OPT_MOCK_FRAME_CNT},
     {"colorRange",      required_argument,  nullptr, OPT_COLOR_RANGE},
@@ -89,13 +92,14 @@ static struct option g_longOptions[] = {
     {"bitRate",         required_argument,  nullptr, OPT_BITRATE},
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
     {"qpRange",         required_argument,  nullptr, OPT_QP_RANGE},
+    {"ltrFrameCount",   required_argument,  nullptr, OPT_LTR_FRAME_COUNT},
+    {"repeatAfter",     required_argument,  nullptr, OPT_REPEAT_AFTER},
+    {"repeatMaxCnt",    required_argument,  nullptr, OPT_REPEAT_MAX_CNT},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
-    {"setParameter",    required_argument,  nullptr, OPT_SET_PARAMETER},
-    {"setPerFrame",     required_argument,  nullptr, OPT_SET_PER_FRAME},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -109,7 +113,6 @@ void ShowUsage()
     std::cout << " --apiType            0: codecbase, 1: new capi, 2: old capi." << std::endl;
     std::cout << " --isEncoder          1 is test encoder, 0 is test decoder" << std::endl;
     std::cout << " --isBufferMode       0 is surface mode, 1 is buffer mode." << std::endl;
-    std::cout << " --ltrFrameCount      The number of long-term reference frames." << std::endl;
     std::cout << " --repeatCnt          repeat test, default is 1" << std::endl;
     std::cout << " --maxReadFrameCnt    read up to frame count from input file" << std::endl;
     std::cout << " --protocol           video protocol. 0 is H264, 1 is H265" << std::endl;
@@ -117,7 +120,9 @@ void ShowUsage()
     std::cout << " --frameRate          video frame rate." << std::endl;
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
     std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
-    // encoder only
+    std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
+    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1" << std::endl;
+    std::cout << " [encoder only]" << std::endl;
     std::cout << " --mockFrameCnt       when read up to maxReadFrameCnt, just send old frames" << std::endl;
     std::cout << " --colorRange         color range. 1 is full range, 0 is limited range." << std::endl;
     std::cout << " --colorPrimary       color primary. see H.273 standard." << std::endl;
@@ -132,12 +137,14 @@ void ShowUsage()
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
     std::cout << " --qpRange            target encode qpRange, eg. 13,42" << std::endl;
+    std::cout << " --ltrFrameCount      The number of long-term reference frames." << std::endl;
+    std::cout << " --repeatAfter        repeat previous frame after target ms" << std::endl;
+    std::cout << " --repeatMaxCnt       repeat previous frame up to target times" << std::endl;
+    std::cout << " [decoder only]" << std::endl;
+    std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
-    std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
-    std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
-    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -167,9 +174,6 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_IS_BUFFER_MODE:
                 opt.isBufferMode = stol(optarg);
                 break;
-            case OPT_LTR_FRAME_COUNT:
-                opt.ltrFrameCount = stol(optarg);
-                break;
             case OPT_REPEAT_CNT:
                 opt.repeatCnt = stol(optarg);
                 break;
@@ -191,6 +195,13 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_IS_HIGH_PERF_MODE:
                 opt.isHighPerfMode = stol(optarg);
                 break;
+            case OPT_SET_PARAMETER:
+                opt.ParseParamFromCmdLine(false, optarg);
+                break;
+            case OPT_SET_PER_FRAME:
+                opt.ParseParamFromCmdLine(true, optarg);
+                break;
+            // encoder only
             case OPT_MOCK_FRAME_CNT:
                 opt.mockFrameCnt = stol(optarg);
                 break;
@@ -229,6 +240,16 @@ CommandOpt Parse(int argc, char *argv[])
                 opt.qpRange = range;
                 break;
             }
+            case OPT_LTR_FRAME_COUNT:
+                opt.ltrFrameCount = stol(optarg);
+                break;
+            case OPT_REPEAT_AFTER:
+                opt.repeatAfter = stol(optarg);
+                break;
+            case OPT_REPEAT_MAX_CNT:
+                opt.repeatMaxCnt = stol(optarg);
+                break;
+            // decoder only
             case OPT_RENDER:
                 opt.render = stol(optarg);
                 break;
@@ -240,12 +261,6 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_FLUSH_CNT:
                 opt.flushCnt = stol(optarg);
-                break;
-            case OPT_SET_PARAMETER:
-                opt.ParseParamFromCmdLine(false, optarg);
-                break;
-            case OPT_SET_PER_FRAME:
-                opt.ParseParamFromCmdLine(true, optarg);
                 break;
             default:
                 break;
@@ -320,6 +335,11 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         LTRParam ltr;
         value >> ltr.markAsLTR >> c >> ltr.useLTR >> c >> ltr.useLTRPoc;
         perFrameParamsMap[frameNo].ltrParam = ltr;
+    }
+    if (key == "discard") {
+        bool discard;
+        value >> discard;
+        perFrameParamsMap[frameNo].discard = discard;
     }
 }
 

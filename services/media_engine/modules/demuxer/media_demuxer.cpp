@@ -41,6 +41,7 @@
 #include "demuxer_plugin_manager.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
@@ -161,7 +162,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
                          "StartReferenceParser failed due to video plugin is nullptr");
     if (isFirstParser_) {
         isFirstParser_ = false;
-        if (seekable_ != Plugins::Seekable::SEEKABLE) {
+        if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
             MEDIA_LOG_E("Do not support online video");
             return Status::ERROR_INVALID_OPERATION;
         }
@@ -259,7 +260,7 @@ void MediaDemuxer::AccelerateTrackTask(uint32_t trackId)
         return;
     }
     MEDIA_LOG_I("AccelerateTrackTask trackId:" PUBLIC_LOG_U32, trackId);
-    task->second->UpdataDelayTime();
+    task->second->UpdateDelayTime();
 }
 
 void MediaDemuxer::SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded)

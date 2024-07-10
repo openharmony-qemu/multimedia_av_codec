@@ -161,7 +161,7 @@ private:
     std::string name_;
     const size_t capacity_;
     std::atomic<bool> isActive_;
-    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "BlockQueue"};
+    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "BlockQueue"};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

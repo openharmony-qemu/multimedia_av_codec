@@ -87,6 +87,7 @@ public:
     static uint64_t sampleTimout_;
     static uint64_t threadNum_;
     int32_t sampleId_ = 0;
+    bool skipOutFrameHalfCheck_ = false;
 
 private:
     int32_t SetAVBufferAttr(OH_AVBuffer *avBuffer, OH_AVCodecBufferAttr &attr);

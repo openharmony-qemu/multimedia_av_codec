@@ -113,6 +113,8 @@ PRIVATE:
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
+    void ResetPlaylistCapacity(size_t size);
+    void PlaylistBackup(const PlayInfo& fragment);
 PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};

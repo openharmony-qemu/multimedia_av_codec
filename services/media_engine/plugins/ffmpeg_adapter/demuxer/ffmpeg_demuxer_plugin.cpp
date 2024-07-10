@@ -35,6 +35,10 @@
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+}
+
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
 #define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
 #define AV_CODEC_USECOND (static_cast<int64_t>(1000) * AV_CODEC_NSECOND)
