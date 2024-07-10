@@ -41,7 +41,6 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       maxInputSize_(-1),
       nextPts_(0),
       durationTime_(0.f),
-      samplerate_(0),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
@@ -219,10 +218,10 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         if (InitResample() != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
-        samplerate_ = avCodecContext_->sample_rate;
-        durationTime_ = TIME_BASE_FFMPEG / samplerate_;
+        uint32_t sampleRate = avCodecContext_->sample_rate;
+        durationTime_ = TIME_BASE_FFMPEG / sampleRate;
     }
-    nextPts_ = cachedFrame_->pts + cachedFrame_->nb_samples * durationTime_;
+    nextPts_ = cachedFrame_->pts + static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
     auto outFrame = cachedFrame_;
     if (needResample_) {
         if (ConvertPlanarFrame(outBuffer) != Status::OK) {

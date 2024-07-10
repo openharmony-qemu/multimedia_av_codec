@@ -82,7 +82,6 @@ private:
     int32_t maxInputSize_;
     int64_t nextPts_;
     float durationTime_;
-    uint32_t samplerate_;
     std::string name_;
 
     std::shared_ptr<AVCodec> avCodec_;
