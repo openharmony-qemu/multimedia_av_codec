@@ -327,21 +327,16 @@ static std::vector<std::string> Split(const std::string& s, const char* delim)
     std::string::size_type last = 0;
     auto index = s.find(delim, last);
     while (index != std::string::npos) {
-        if (index - last > 0) {
+        if (index > last) {
             ret.push_back(s.substr(last, index - last));
         }
         last = index + delimLen;
-        // 如果last超出了s的长度，跳出循环
-        if (last >= s.size()) {
-            break;
-        }
         index = s.find(delim, last);
     }
-    // 最后一段子字符串的处理
-    if (s.empty()) {
-        ret.push_back(s);
-    } else if (last <= s.size()) {
+    if (last < s.size()) {
         ret.push_back(s.substr(last));
+    } else if (last == s.size()) {
+        ret.push_back("");
     }
     return ret;
 }
