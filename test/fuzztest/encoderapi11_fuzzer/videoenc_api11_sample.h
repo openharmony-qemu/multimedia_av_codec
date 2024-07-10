@@ -62,8 +62,7 @@ public:
     uint32_t defaultBitrateMode = CBR;
     OH_AVPixelFormat defaultPixFmt = AV_PIXEL_FORMAT_NV12;
     uint32_t defaultKeyFrameInterval = 1000;
-    const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
-    const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *inpDir = "/data/test/media/1280_720_nv.yuv";
     int32_t CreateVideoEncoder();
     int32_t ConfigureVideoEncoderFuzz(int32_t data);
     int32_t ConfigureVideoEncoder();

@@ -215,7 +215,7 @@ int32_t VEncAPI11FuzzSample::OpenFile()
         (void)OH_VideoEncoder_Stop(venc_);
         return AV_ERR_UNKNOWN;
     }
-    inFile_->open(INP_DIR, ios::in | ios::binary);
+    inFile_->open(inpDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         cout << "file open fail" << endl;
         isRunning_.store(false);
@@ -246,6 +246,9 @@ int32_t VEncAPI11FuzzSample::StartVideoEncoder()
         if (ret != AV_ERR_OK) {
             return ret;
         }
+    }
+    if (OpenFile() != AV_ERR_OK) {
+        return AV_ERR_UNKNOWN;
     }
     ret = OH_VideoEncoder_Start(venc_);
     GetStride();
@@ -290,12 +293,10 @@ int32_t VEncAPI11FuzzSample::PushData(OH_AVBuffer *buffer, uint32_t index, int32
         return -1;
     }
     int32_t size = OH_AVBuffer_GetCapacity(buffer);
-
     if (size < (defaultWidth * stride_ + (defaultWidth * stride_ / DOUBLE))) {
         return -1;
     }
     attr.size = ReadOneFrameYUV420SP(fileBuffer);
-    
     if (inFile_->eof()) {
         SetEOS(index, buffer);
         return 0;
@@ -318,15 +319,17 @@ uint32_t VEncAPI11FuzzSample::ReadOneFrameYUV420SP(uint8_t *dst)
     // copy Y
     for (uint32_t i = 0; i < defaultWidth; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
-        if (!ReturnZeroIfEOS(defaultWidth))
+        if (!ReturnZeroIfEOS(defaultWidth)) {
             return 0;
+        }
         dst += stride_;
     }
     // copy UV
     for (uint32_t i = 0; i < defaultWidth / DOUBLE; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), defaultWidth);
-        if (!ReturnZeroIfEOS(defaultWidth))
+        if (!ReturnZeroIfEOS(defaultWidth)) {
             return 0;
+        }
         dst += stride_;
     }
     return dst - start;

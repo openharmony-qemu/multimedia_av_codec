@@ -28,15 +28,11 @@ using namespace OHOS::Media;
 void RunNormalEncoder()
 {
     auto vEncSample = make_unique<VEncAPI11FuzzSample>();
-    vEncSample->DEFAULT_WIDTH = 1280;
-    vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->CreateVideoEncoder();
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
     vEncSample->WaitForEOS();
-
 }
 
 bool g_needRunNormalEncoder = true;
