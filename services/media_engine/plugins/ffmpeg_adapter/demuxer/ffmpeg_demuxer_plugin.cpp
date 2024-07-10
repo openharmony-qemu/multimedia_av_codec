@@ -1527,11 +1527,10 @@ void FFmpegDemuxerPlugin::ResetEosStatus()
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("ReadSample");
     MEDIA_LOG_D("Read Sample.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
-        "Read Sample failed due to no track has been selected.");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -1560,11 +1559,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = SetEosSample(sample);
         if (ret == Status::OK) {
             MEDIA_LOG_I("Last Buffer  trackid:" PUBLIC_LOG_D32 ", pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
-                ", pos=" PUBLIC_LOG_D64 "",
-                trackId,
-                trackDfxInfoMap_[trackId].lastPts,
-                trackDfxInfoMap_[trackId].lastDurantion,
-                trackDfxInfoMap_[trackId].lastPos);
+                ", pos=" PUBLIC_LOG_D64 "", trackId, trackDfxInfoMap_[trackId].lastPts,
+                trackDfxInfoMap_[trackId].lastDurantion, trackDfxInfoMap_[trackId].lastPos);
             cacheQueue_.Pop(trackId);
         }
         return ret;
@@ -1583,10 +1579,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("GetNextSampleSize");
     MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "Have not set data source.");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected.");
-
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
