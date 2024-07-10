@@ -80,9 +80,9 @@ private:
     bool isFirst;
     bool hasExtra_;
     int32_t maxInputSize_;
-    int64_t next_pts_;
-    float duration_time_;
-    uint32_t sample_rate_;
+    int64_t nextPts_;
+    float durationTime_;
+    uint32_t samplerate_;
     std::string name_;
 
     std::shared_ptr<AVCodec> avCodec_;

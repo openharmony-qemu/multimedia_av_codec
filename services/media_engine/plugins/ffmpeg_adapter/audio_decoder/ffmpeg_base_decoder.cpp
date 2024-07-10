@@ -39,9 +39,9 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
     : isFirst(true),
       hasExtra_(false),
       maxInputSize_(-1),
-      next_pts_(0),
-      duration_time_(0.f),
-      sample_rate_(0),
+      nextPts_(0),
+      durationTime_(0.f),
+      samplerate_(0),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
@@ -160,7 +160,7 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
         if (cachedFrame_->pts == AV_NOPTS_VALUE) {
-            cachedFrame_->pts = next_pts_;
+            cachedFrame_->pts = nextPts_;
         }
 
         status = ReceiveFrameSucc(outBuffer);
@@ -219,10 +219,10 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         if (InitResample() != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
-        sample_rate_ = avCodecContext_->sample_rate;
-        duration_time_ = TIME_BASE_FFMPEG / sample_rate_;
+        samplerate_ = avCodecContext_->sample_rate;
+        durationTime_ = TIME_BASE_FFMPEG / samplerate_;
     }
-    next_pts_ = cachedFrame_->pts + cachedFrame_->nb_samples * duration_time_;
+    nextPts_ = cachedFrame_->pts + cachedFrame_->nb_samples * durationTime_;
     auto outFrame = cachedFrame_;
     if (needResample_) {
         if (ConvertPlanarFrame(outBuffer) != Status::OK) {
@@ -253,7 +253,7 @@ Status FfmpegBaseDecoder::Reset()
         avCodecContext_.reset();
         avCodecContext_ = nullptr;
     }
-    next_pts_ = 0;
+    nextPts_ = 0;
     return Status::OK;
 }
 
@@ -274,7 +274,7 @@ Status FfmpegBaseDecoder::Flush()
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
-    next_pts_ = 0;
+    nextPts_ = 0;
     return Status::OK;
 }
 
