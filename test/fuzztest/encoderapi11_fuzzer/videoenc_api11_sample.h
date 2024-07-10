@@ -62,14 +62,18 @@ public:
     uint32_t defaultBitrateMode = CBR;
     OH_AVPixelFormat defaultPixFmt = AV_PIXEL_FORMAT_NV12;
     uint32_t defaultKeyFrameInterval = 1000;
-    int32_t CreateVideoEncoder(const char *codecName);
+    const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    int32_t CreateVideoEncoder();
     int32_t ConfigureVideoEncoderFuzz(int32_t data);
+    int32_t ConfigureVideoEncoder();
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
     int32_t SetParameter(int32_t data);
     void GetStride();
     void WaitForEOS();
+    int32_t OpenFile();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     int64_t GetSystemTimeUs();
     int32_t Start();
@@ -80,9 +84,12 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void InputFunc();
     void InputFuncSurface();
+    uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
+    void ReleaseInFile();
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void ReleaseSignal();
+    int32_t PushData(OH_AVBuffer *buffer, uint32_t index, int32_t &result);
     void StopInloop();
     VEncSignal *signal_;
     uint32_t errCount = 0;
@@ -92,6 +99,7 @@ public:
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::thread> inputLoop_;
+    std::unique_ptr<std::ifstream> inFile_;
     std::unordered_map<uint32_t, OH_AVBuffer *> inBufferMap_;
     OH_AVCodec *venc_;
     OH_AVCodecCallback cb_;
