@@ -21,6 +21,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
+constexpr float TIME_BASE_FFMPEG = 1000000.f;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_U8,
@@ -38,10 +39,9 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
     : isFirst(true),
       hasExtra_(false),
       maxInputSize_(-1),
-      bufferNum_(1),
-      bufferIndex_(1),
-      preBufferGroupPts_(0),
-      curBufferGroupPts_(0),
+      next_pts_(0),
+      duration_time(0.f),
+      sample_rate_(0),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
@@ -159,22 +159,10 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     Status status;
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
-        if (cachedFrame_->pts != AV_NOPTS_VALUE) {
-            preBufferGroupPts_ = curBufferGroupPts_;
-            curBufferGroupPts_ = cachedFrame_->pts;
-            if (bufferIndex_ >= bufferNum_) {
-                bufferNum_ = bufferIndex_;
-            }
-            bufferIndex_ = 1;
-        } else {
-            bufferIndex_++;
-            if (preBufferGroupPts_ == 0) {
-                cachedFrame_->pts = curBufferGroupPts_;
-            } else {
-                cachedFrame_->pts =
-                    curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
-            }
+        if (cachedFrame_->pts == AV_NOPTS_VALUE) {
+            cachedFrame_->pts = next_pts_;
         }
+
         status = ReceiveFrameSucc(outBuffer);
         dataCallback_->OnOutputBufferDone(outBuffer);
     } else if (ret == AVERROR_EOF) {
@@ -231,7 +219,10 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         if (InitResample() != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
+        sample_rate_ = avCodecContext_->sample_rate;
+        duration_time = TIME_BASE_FFMPEG / sample_rate_;
     }
+    next_pts_ = cachedFrame_->pts + cachedFrame_->nb_samples * duration_time;
     auto outFrame = cachedFrame_;
     if (needResample_) {
         if (ConvertPlanarFrame(outBuffer) != Status::OK) {
@@ -262,7 +253,7 @@ Status FfmpegBaseDecoder::Reset()
         avCodecContext_.reset();
         avCodecContext_ = nullptr;
     }
-    preBufferGroupPts_ = 0;
+    next_pts_ = 0;
     return Status::OK;
 }
 
@@ -283,7 +274,7 @@ Status FfmpegBaseDecoder::Flush()
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
-    preBufferGroupPts_ = 0;
+    next_pts_ = 0;
     return Status::OK;
 }
 

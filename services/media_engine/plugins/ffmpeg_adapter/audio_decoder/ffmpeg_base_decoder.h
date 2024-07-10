@@ -10,7 +10,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the License..
  */
 #ifndef FFMPEG_BASE_DECODER_H
 #define FFMPEG_BASE_DECODER_H
@@ -80,10 +80,9 @@ private:
     bool isFirst;
     bool hasExtra_;
     int32_t maxInputSize_;
-    int32_t bufferNum_;
-    int32_t bufferIndex_;
-    int64_t preBufferGroupPts_;
-    int64_t curBufferGroupPts_;
+    int64_t next_pts_;
+    float duration_time;
+    uint32_t sample_rate_;
     std::string name_;
 
     std::shared_ptr<AVCodec> avCodec_;
