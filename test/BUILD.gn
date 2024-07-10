@@ -117,6 +117,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderconfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encodersetparameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/hwdecoder_fuzzer:HwdecoderFuzzTest",
+      "fuzztest/hwdecoderapi11_fuzzer:HwdecoderApi11FuzzTest",
       "fuzztest/swdecoderconfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderresource_fuzzer:SwdecoderResourceFuzzTest",
       "fuzztest/swdecodersetparameter_fuzzer:SwdecoderSetParameterFuzzTest",
