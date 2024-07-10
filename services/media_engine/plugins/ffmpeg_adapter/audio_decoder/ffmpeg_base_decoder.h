@@ -81,7 +81,7 @@ private:
     bool hasExtra_;
     int32_t maxInputSize_;
     int64_t next_pts_;
-    float duration_time;
+    float duration_time_;
     uint32_t sample_rate_;
     std::string name_;
 
