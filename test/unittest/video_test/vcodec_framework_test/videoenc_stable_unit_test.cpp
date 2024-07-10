@@ -952,6 +952,155 @@ AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_001
+ * @tc.desc: key repeat previous frame is invalid
+ * @tc.type: FUNC
+ */
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_RepeatPreviousFrame_001, TestSize.Level1,
+                VideoEncSample::threadNum_)
+{
+    constexpr int32_t repeatPreviousFrame = 0;
+    auto venc = make_shared<VideoEncSample>();
+    auto signal = make_shared<VideoEncSignal>(venc);
+    venc->frameCount_ = 30; // 30: input frame num
+    venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    venc->inPath_ = "1280_720_nv.yuv";
+    venc->outPath_ = GetTestName();
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame));
+    EXPECT_EQ(venc->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(venc->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(venc->Configure(), AV_ERR_INVALID_VAL) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_002
+ * @tc.desc: key repeat previous frame is invalid
+ * @tc.type: FUNC
+ */
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_RepeatPreviousFrame_001, TestSize.Level1,
+                VideoEncSample::threadNum_)
+{
+    constexpr int32_t repeatPreviousFrame = -1;
+    auto venc = make_shared<VideoEncSample>();
+    auto signal = make_shared<VideoEncSignal>(venc);
+    venc->frameCount_ = 30; // 30: input frame num
+    venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    venc->inPath_ = "1280_720_nv.yuv";
+    venc->outPath_ = GetTestName();
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame));
+    EXPECT_EQ(venc->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(venc->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(venc->Configure(), AV_ERR_INVALID_VAL) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_003
+ * @tc.desc: key repeat previous frame max count is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_003, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = 0;
+    auto venc = make_shared<VideoEncSample>();
+    auto signal = make_shared<VideoEncSignal>(venc);
+    venc->frameCount_ = 30; // 30: input frame num
+    venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    venc->inPath_ = "1280_720_nv.yuv";
+    venc->outPath_ = GetTestName();
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame));
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount));
+    EXPECT_EQ(venc->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(venc->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(venc->Configure(), AV_ERR_INVALID_VAL) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_004
+ * @tc.desc: key repeat previous frame max count is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_004, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = -1;
+    auto venc = make_shared<VideoEncSample>();
+    auto signal = make_shared<VideoEncSignal>(venc);
+    venc->frameCount_ = 30; // 30: input frame num
+    venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    venc->inPath_ = "1280_720_nv.yuv";
+    venc->outPath_ = GetTestName();
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame));
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount));
+    EXPECT_EQ(venc->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(venc->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(venc->Configure(), AV_ERR_INVALID_VAL) << SAMPLE_ID;
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_005
+ * @tc.desc: key repeat previous frame max count is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_005, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = 10;
+    auto venc = make_shared<VideoEncSample>();
+    auto signal = make_shared<VideoEncSignal>(venc);
+    venc->frameCount_ = 30; // 30: input frame num
+    venc->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    venc->inPath_ = "1280_720_nv.yuv";
+    venc->outPath_ = GetTestName();
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame));
+    EXPECT_TRUE(OH_AVFormat_SetLongValue(venc->dyFormat_,
+        Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount));
+    EXPECT_EQ(venc->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(venc->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(venc->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
 } // namespace
 
 int main(int argc, char **argv)
