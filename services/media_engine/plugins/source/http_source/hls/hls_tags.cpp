@@ -332,7 +332,7 @@ static std::vector<std::string> Split(const std::string& s, const char* delim)
         }
         last = index + delimLen;
         // 如果last超出了s的长度，跳出循环
-        if (last > s.size()) {
+        if (last >= s.size()) {
             break;
         }
         index = s.find(delim, last);
