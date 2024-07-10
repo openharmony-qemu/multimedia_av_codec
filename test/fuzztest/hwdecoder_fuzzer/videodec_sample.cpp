@@ -75,7 +75,6 @@ private:
 
 VDecFuzzSample::~VDecFuzzSample()
 {
-
     if (nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
