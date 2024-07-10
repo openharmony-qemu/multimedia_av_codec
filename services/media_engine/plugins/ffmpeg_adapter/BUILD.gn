@@ -108,6 +108,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
     "media_foundation:media_foundation",
+    "init:libbegetutil",
   ]
 
   relative_install_dir = "media/media_plugins"

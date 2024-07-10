@@ -22,6 +22,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <fstream>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
@@ -34,6 +35,7 @@
 #include "avcodec_sysevent.h"
 #include "ffmpeg_demuxer_plugin.h"
 #include "meta/format.h"
+#include "syspara/parameters.h" 
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
 #define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
@@ -350,7 +352,7 @@ void FFmpegDemuxerPlugin::Dump(const DumpParam &dumpParam)
     path = "/data/ff_dump/" + path;
     ofs.open(path, std::ios::out); //  | std::ios::app
     if (ofs.is_open()) {
-        ofs.write(dumpParam.buf, dumpParam.size);
+        ofs.write((char*)dumpParam.buf, dumpParam.size);
         ofs.close();
     }
     MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
@@ -787,18 +789,19 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
 
     if (samplePacket->isEOS) {
-        // MEDIA_LOG_I("Last Buffer  trackid:" PUBLIC_LOG_S32 ", pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64 ", pos=" PUBLIC_LOG_D64 "",
-        //     tempPkt->stream_index,
-        //     trackDfxInfoMap_[tempPkt->stream_index].lastPts,
-        //     trackDfxInfoMap_[tempPkt->stream_index].lastDurantion,
-        //     trackDfxInfoMap_[tempPkt->stream_index].lastPos);
+        MEDIA_LOG_I("Last Buffer  trackid:" PUBLIC_LOG_D32 ", pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
+            ", pos=" PUBLIC_LOG_D64 "",
+            tempPkt->stream_index,
+            trackDfxInfoMap_[tempPkt->stream_index].lastPts,
+            trackDfxInfoMap_[tempPkt->stream_index].lastDurantion,
+            trackDfxInfoMap_[tempPkt->stream_index].lastPos);
     } else {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
         trackDfxInfoMap_[tempPkt->stream_index].lastPos = tempPkt->pos;
     }
-    DumpParam dumpParam {DUMP_AVBUFFER_OUTPUT & dumpMode_, tempPkt->data + samplePacket->offset, tempPkt->stream_index,
-         -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
+    DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), tempPkt->data + samplePacket->offset,
+        tempPkt->stream_index, -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
     Dump(dumpParam);
 
     if (copySize < remainSize) {
@@ -934,7 +937,8 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     MEDIA_LOG_D("Want data size:" PUBLIC_LOG_D32 ", Get data size:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64
         ", readatIndex:" PUBLIC_LOG_D32, bufSize, dataSize, ioContext->offset, readatIndex_.load());
-    DumpParam dumpParam {DUMP_READAT_INPUT & ioContext->dumpMode, buf, -1, ioContext->offset, dataSize, readatIndex_++, -1, -1};
+    DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & ioContext->dumpMode), buf, -1, ioContext->offset,
+        dataSize, readatIndex_++, -1, -1};
     Dump(dumpParam);
     switch (result) {
         case Status::OK:
@@ -1322,7 +1326,7 @@ void FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
         }
     }
-    DumpParam dumpParam {DUMP_AVPACKET_OUTPUT & dumpMode_, pkt->data, pkt->stream_index, -1, pkt->size,
+    DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
         avpacketIndex_++, pkt->pts, pkt->pos};
     Dump(dumpParam);
 }
@@ -1345,7 +1349,7 @@ void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             av_packet_unref(pkt);
             break;
         }
-        DumpParam dumpParam {DUMP_AVPACKET_OUTPUT & dumpMode_, pkt->data, pkt->stream_index, -1, pkt->size,
+        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
             avpacketIndex_++, pkt->pts, pkt->pos};
         Dump(dumpParam);
 
