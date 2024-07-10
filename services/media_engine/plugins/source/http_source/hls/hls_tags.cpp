@@ -319,21 +319,18 @@ static std::vector<std::string> Split(const std::string& s, const char* delim)
         ret.push_back(s);
         return ret;
     }
-
-    size_t delim_len = std::strlen(delim);
-    if (delim_len == 0) {
+    size_t delimLen = std::strlen(delim);
+    if (delimLen == 0) {
         ret.push_back(s);
         return ret;
     }
-
-    std::vector<std::string> ret;
     std::string::size_type last = 0;
     auto index = s.find(delim, last);
     while (index != std::string::npos) {
         if (index - last > 0) {
             ret.push_back(s.substr(last, index - last));
         }
-        last = index + delim_len;
+        last = index + delimLen;
         // 如果last超出了s的长度，跳出循环
         if (last > s.size()) {
             break;
