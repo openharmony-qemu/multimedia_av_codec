@@ -788,14 +788,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
 
-    if (samplePacket->isEOS) {
-        MEDIA_LOG_I("Last Buffer  trackid:" PUBLIC_LOG_D32 ", pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
-            ", pos=" PUBLIC_LOG_D64 "",
-            tempPkt->stream_index,
-            trackDfxInfoMap_[tempPkt->stream_index].lastPts,
-            trackDfxInfoMap_[tempPkt->stream_index].lastDurantion,
-            trackDfxInfoMap_[tempPkt->stream_index].lastPos);
-    } else {
+    if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
         trackDfxInfoMap_[tempPkt->stream_index].lastPos = tempPkt->pos;
@@ -1566,6 +1559,12 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         MEDIA_LOG_W("File is end, push EOS buffer to user queue for track " PUBLIC_LOG_U32 "", trackId);
         ret = SetEosSample(sample);
         if (ret == Status::OK) {
+            MEDIA_LOG_I("Last Buffer  trackid:" PUBLIC_LOG_D32 ", pts=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
+                ", pos=" PUBLIC_LOG_D64 "",
+                trackId,
+                trackDfxInfoMap_[trackId].lastPts,
+                trackDfxInfoMap_[trackId].lastDurantion,
+                trackDfxInfoMap_[trackId].lastPos);
             cacheQueue_.Pop(trackId);
         }
         return ret;
