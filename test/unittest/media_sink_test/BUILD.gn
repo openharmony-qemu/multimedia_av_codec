@@ -65,7 +65,7 @@ ohos_unittest("av_audio_sink_unit_test") {
   public_configs = []
 
   if (av_codec_support_test) {
-    sources = [ 
+    sources = [
       "./audio_sink_test.cpp",
       "./subtitle_sink_test.cpp",
       "./video_sink_test.cpp",
