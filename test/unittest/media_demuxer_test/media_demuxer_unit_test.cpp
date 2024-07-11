@@ -103,7 +103,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
 
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue = AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+	AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
     EXPECT_EQ(demuxer->SelectTrack(2), Status::OK);
@@ -114,7 +115,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Seek_004, TestSize.Level1)
     string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue = AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+	AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
 
@@ -127,7 +129,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Stop_005, TestSize.Level1)
     string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue = AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
 
