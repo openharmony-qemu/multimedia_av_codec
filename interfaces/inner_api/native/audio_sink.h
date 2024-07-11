@@ -57,8 +57,13 @@ public:
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
-    Status SetIsTransitent(bool isTransitent);
+    Status SetIsTransitent(bool isTransitent, bool isSeekCompleted);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status WaitSeekCompleted();
+    Status SetPlayerId(std::string playerId);
+    bool GetSeekCompleted();
+
+    std::condition_variable seekCondition_{};
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -103,6 +108,10 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
+    std::string playerId_;
+    std::mutex seekCompletedLock_{};
+    bool seekCompleted_{false};
+    std::unique_ptr<Task> seekTask_;
 };
 }
 }

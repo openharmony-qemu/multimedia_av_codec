@@ -276,11 +276,11 @@ Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
     return res;
 }
 
-Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
+Status AudioSinkFilter::SetIsTransitent(bool isTransitent, bool isSeekCompleted)
 {
     MEDIA_LOG_I("AudioSinkFilter::SetIsTransitent in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
-    return audioSink_->SetIsTransitent(isTransitent);
+    return audioSink_->SetIsTransitent(isTransitent, isSeekCompleted);
 }
 
 Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
@@ -288,6 +288,29 @@ Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
     MEDIA_LOG_I("AudioSinkFilter::ChangeTrack in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->ChangeTrack(meta, eventReceiver_);
+}
+
+Status AudioSinkFilter::WaitSeekCompleted()
+{
+    MEDIA_LOG_I("AudioSinkFilter::WaitSeekCompleted in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->WaitSeekCompleted();
+}
+
+Status AudioSinkFilter::SetPlayerId(std::string playerId)
+{
+    MEDIA_LOG_D("AudioSinkFilter::SetPlayerId in");
+    return audioSink_->SetPlayerId(playerId);
+}
+
+std::condition_variable& AudioSinkFilter::GetSeekCondition()
+{
+    return audioSink_->seekCondition_;
+}
+
+bool AudioSinkFilter::GetSeekCompleted()
+{
+    return audioSink_->GetSeekCompleted();
 }
 
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
