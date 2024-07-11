@@ -1314,7 +1314,7 @@ int32_t HCodec::OnAllocateComponent()
         return AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
-    HLOGE("create omx node %s succ", caps_.compName.c_str());
+    HLOGI("create omx node %s succ", caps_.compName.c_str());
     PrintCaller();
     return AVCS_ERR_OK;
 }
