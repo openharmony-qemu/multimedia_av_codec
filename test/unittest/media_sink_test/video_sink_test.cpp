@@ -33,6 +33,7 @@ public:
 
     void OnEvent(const Event &event)
     {
+        (void)event;
     }
 
 private:
