@@ -217,7 +217,7 @@ Status AudioSink::Flush()
                 seekCompleted_.store(true);
                 MEDIA_LOG_I("AudioSink Flush Job end, notify completed");
             }
-            seekCondition_.notify_all();
+            seekCondition_.NotifyAll();
         });
     } else {
         ret = plugin_->Flush();
