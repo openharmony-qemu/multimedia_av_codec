@@ -41,7 +41,6 @@ static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audi
 {
     if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
         audioIsEnd = true;
-        cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
     } else {
         audioFrame++;
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
@@ -54,10 +53,8 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
 {
     if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
         videoIsEnd = true;
-        cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
     } else {
         videoFrame++;
-        cout << "video track !!!!!" << endl;
         if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
             vKeyCount++;
         }
@@ -68,12 +65,10 @@ static void SetVarValue(OH_AVCodecBufferAttr attr, const int &tarckType, bool &a
 {
     if (tarckType == MEDIA_TYPE_AUD && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
         audioIsEnd = true;
-        cout << "audio is end !!!!!!!!!!!!!!!" << endl;
     }
 
     if (tarckType == MEDIA_TYPE_VID && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
         videoIsEnd = true;
-        cout << "video is end !!!!!!!!!!!!!!!" << endl;
     }
 }
 
