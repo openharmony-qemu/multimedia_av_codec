@@ -416,7 +416,7 @@ int32_t VDecApi11FuzzSample::PushData(uint32_t index, OH_AVBuffer *buffer)
         SetEOS(buffer, index);
         return 1;
     }
-    uint32_t bufferSize = reinterpret_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
      ((ch[1] & 0xFF) << SIXTEEN) | ((ch[0] & 0xFF) << TWENTY_FOUR));
 
     return SendData(bufferSize, index, buffer);

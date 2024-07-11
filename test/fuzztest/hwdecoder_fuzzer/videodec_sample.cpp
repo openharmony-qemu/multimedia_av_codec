@@ -475,7 +475,7 @@ int32_t VDecFuzzSample::Release()
 
 int32_t VDecFuzzSample::Stop()
 {
-    StopInloop();
+    StopInLoop();
     clearIntqueue(signal_->outIdxQueue_);
     clearBufferqueue(signal_->attrQueue_);
     ReleaseInFile();

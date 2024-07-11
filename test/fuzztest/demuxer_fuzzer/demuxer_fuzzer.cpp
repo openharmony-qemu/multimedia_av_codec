@@ -37,30 +37,6 @@ static int64_t GetFileSize(const char *fileName)
     return fileSize;
 }
 
-static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audioFrame, int &aKeyCount)
-{
-    if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-        audioIsEnd = true;
-    } else {
-        audioFrame++;
-        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-            aKeyCount++;
-        }
-    }
-}
-
-static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &videoFrame, int &vKeyCount)
-{
-    if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-        videoIsEnd = true;
-    } else {
-        videoFrame++;
-        if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-            vKeyCount++;
-        }
-    }
-}
-
 static void SetVarValue(OH_AVCodecBufferAttr attr, const int &tarckType, bool &audioIsEnd, bool &videoIsEnd)
 {
     if (tarckType == MEDIA_TYPE_AUD && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
@@ -101,7 +77,7 @@ void RunNormalDemuxer()
     OH_AVMemory *memory = OH_AVMemory_Create(width * height);
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
-            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType);
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
