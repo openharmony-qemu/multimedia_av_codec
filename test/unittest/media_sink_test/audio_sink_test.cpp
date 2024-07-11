@@ -109,6 +109,7 @@ HWTEST(TestAudioSink, find_audio_sink_audio_effect, TestSize.Level1)
 HWTEST(TestAudioSink, find_audio_sink_audio_reset_sync_info, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
     audioSink->ResetSyncInfo();
     SUCCEED();
 }
@@ -116,6 +117,7 @@ HWTEST(TestAudioSink, find_audio_sink_audio_reset_sync_info, TestSize.Level1)
 HWTEST(TestAudioSink, find_audio_sink_audio_change_track, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     meta->SetData(Tag::APP_UID, 0);
     std::shared_ptr<Pipeline::EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
