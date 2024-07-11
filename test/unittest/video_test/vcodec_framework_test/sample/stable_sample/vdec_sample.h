@@ -68,6 +68,7 @@ public:
     int32_t HandleInputFrame(OH_AVBuffer *data);
     int32_t HandleOutputFrame(OH_AVBuffer *data);
     bool WaitForEos();
+    bool CheckCapabilitySupport();
 
     int32_t Operate();
     uint32_t frameCount_ = 10;
