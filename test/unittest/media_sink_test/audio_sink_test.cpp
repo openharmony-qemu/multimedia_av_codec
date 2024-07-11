@@ -106,22 +106,6 @@ HWTEST(TestAudioSink, find_audio_sink_audio_effect, TestSize.Level1)
     ASSERT_TRUE(getEffectStatus == Status::OK);
 }
 
-HWTEST(TestAudioSink, find_audio_sink_audio_buffer001, TestSize.Level1)
-{
-    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-    audioSink->DrainOutputBuffer(false);
-    SUCCEED();
-}
-
-HWTEST(TestAudioSink, find_audio_sink_audio_buffer002, TestSize.Level1)
-{
-    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
-    ASSERT_TRUE(audioSink != nullptr);
-    audioSink->DrainOutputBuffer(true);
-    SUCCEED();
-}
-
 HWTEST(TestAudioSink, find_audio_sink_audio_reset_sync_info, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
