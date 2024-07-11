@@ -174,9 +174,10 @@ Status AudioSink::PauseSub()
 Status AudioSink::Pause()
 {
     Status ret = Status::OK;
-    if(isTransitent_) {
-        if(seekTask_ == nullptr) {
-            seekTask_ = std::make_unique<Task>("AudioSinkSeek", playerId_, TaskType::AUDIO, TaskPriority::NORMAL, false);
+    if (isTransitent_) {
+        if (seekTask_ == nullptr) {
+            seekTask_ = std::make_unique<Task>("AudioSinkSeek", playerId_, TaskType::AUDIO,
+                TaskPriority::NORMAL, false);
         }
         seekTask_->SubmitJobOnce([this] {
             MEDIA_LOG_I("AudioSink Pause SubmitJobOnce");
@@ -204,8 +205,9 @@ Status AudioSink::Flush()
 {
     Status ret = Status::OK;
     if (isTransitent_) {
-        if(seekTask_ == nullptr) {
-            seekTask_ = std::make_unique<Task>("AudioSinkSeek", playerId_, TaskType::AUDIO, TaskPriority::NORMAL, false);
+        if (seekTask_ == nullptr) {
+            seekTask_ = std::make_unique<Task>("AudioSinkSeek", playerId_, TaskType::AUDIO,
+                TaskPriority::NORMAL, false);
         }
         seekTask_->SubmitJobOnce([this] {
             MEDIA_LOG_I("AudioSink Flush Job");
@@ -523,7 +525,7 @@ Status AudioSink::WaitSeekCompleted()
     {
         std::unique_lock<std::mutex> lock(seekCompletedLock_);
         MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor");
-        seekCondition_.wait_for(lock, std::chrono::milliseconds(1000), [this]() {
+        seekCondition_.wait_for(lock, std::chrono::milliseconds(1000), [this]() { //1000ms
             return seekCompleted_;
         });
         MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor end");
@@ -537,7 +539,8 @@ Status AudioSink::SetPlayerId(std::string playerId)
     return Status::OK;
 }
 
-bool AudioSink::GetSeekCompleted() {
+bool AudioSink::GetSeekCompleted()
+{
     return seekCompleted_;
 }
 

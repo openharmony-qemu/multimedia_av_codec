@@ -78,6 +78,7 @@ private:
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
     void ReportEosEventAndDrain();
+    Status PauseSub();
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
