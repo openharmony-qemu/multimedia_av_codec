@@ -14,7 +14,9 @@
  */
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "native_avcapability.h"
 #include "heap_memory_thread.h"
+#include "native_avmagic.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
 
