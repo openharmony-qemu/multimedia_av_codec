@@ -63,14 +63,8 @@ Source::~Source()
 void Source::SetCallback(Callback* callback)
 {
     MEDIA_LOG_I("SetCallback entered.");
-    if (callback == nullptr) {
-        MEDIA_LOG_E("callback is nullptr");
-        return;
-    }
-    if (mediaDemuxerCallback_ == nullptr) {
-        MEDIA_LOG_E("mediaDemuxerCallback is nullptr");
-        return;
-    }
+    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
+    FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     mediaDemuxerCallback_->SetCallbackWrap(callback);
 }
 

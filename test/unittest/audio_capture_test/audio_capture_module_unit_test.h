@@ -33,8 +33,8 @@ public:
     void TearDown(void);
 
 protected:
-    // std::shared_ptr<AudioCaptureModule> audioCaptureModule_ {nullptr};
-
+    std::shared_ptr<AudioCaptureModule> audioCaptureModule_{nullptr};
+    std::shared_ptr<Meta> audioCaptureParameter_{nullptr};
     int32_t appTokenId_{0};
     int32_t appUid_{0};
     int32_t appPid_{0};
@@ -42,6 +42,8 @@ protected:
     int32_t sampleRate_{48000};
     int32_t channel_{1};
     int64_t bitRate_{48000};
+    uint64_t instanceId_{0};
+    std::string bundleName_{"AudioCaptureModule"};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
