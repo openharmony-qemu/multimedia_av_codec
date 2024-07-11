@@ -217,16 +217,6 @@ bool VideoDecSample::Create()
     return true;
 }
 
-bool VideoDecSample::CheckCapabilitySupport()
-{
-    OH_AVCodecCategory category = isHardware_ ? HARDWARE : SOFTWARE;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(mime_.c_str(), false, category);
-    std::string category_str = isHardware_ ? "Hardware" : "software";
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(capability != nullptr, false, "%{public}s %{public}s decoder not support!",
-                                      mime_.c_str(), category_str.c_str());
-    return true;
-}
-
 bool VideoDecSample::CreateByMime()
 {
     TITLE_LOG;

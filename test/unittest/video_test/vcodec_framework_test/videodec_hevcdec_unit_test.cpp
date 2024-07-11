@@ -335,21 +335,19 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_001, TestSize.Le
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -368,21 +366,19 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_AVBuffer_001, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -401,21 +397,19 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_001, Tes
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -435,21 +429,19 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_002, Tes
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -468,22 +460,20 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_003, Tes
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -503,22 +493,20 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_004, Tes
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -538,21 +526,19 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -573,21 +559,19 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -607,22 +591,20 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -643,22 +625,20 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
     vdec->samplePixel_ = AV_PIXEL_FORMAT_NV21;
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 INSTANTIATE_TEST_SUITE_P(, VideoDecHevcDecTest, testing::Values("Flush", "Stop", "Reset"));
@@ -679,22 +659,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_001, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -713,21 +691,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_002, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -746,21 +722,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_003, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataOperate;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataOperate;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -780,23 +754,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_004, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -816,22 +788,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_005, TestSize.Leve
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -851,22 +821,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_001, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -886,21 +854,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_002, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -920,21 +886,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_003, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataOperate;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataOperate;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -955,23 +919,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_004, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -992,22 +954,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_main10_005, TestSi
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1027,24 +987,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_001, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataQueue;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataQueue;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1064,22 +1022,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_002, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1100,22 +1056,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_003, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataQueue;
-        cb.onNeedOutputData = OutDataOperate;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataQueue;
+    cb.onNeedOutputData = OutDataOperate;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1137,24 +1091,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_004, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1176,23 +1128,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_005, Te
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1213,24 +1163,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataQueue;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataQueue;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1251,22 +1199,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1288,22 +1234,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataQueue;
-        cb.onNeedOutputData = OutDataOperate;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataQueue;
+    cb.onNeedOutputData = OutDataOperate;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1326,24 +1270,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataHandle;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataHandle;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1366,23 +1308,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_With_Queue_main10_
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecAsyncCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputData = InDataOperate;
-        cb.onNeedOutputData = OutDataQueue;
-        EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecAsyncCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputData = InDataOperate;
+    cb.onNeedOutputData = OutDataQueue;
+    EXPECT_EQ(vdec->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1401,22 +1341,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_001, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1435,21 +1373,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_002, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1468,21 +1404,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_003, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferOperate;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferOperate;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1502,23 +1436,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_004, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1538,22 +1470,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_005, Test
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1574,22 +1504,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1610,21 +1538,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1645,21 +1571,19 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferOperate;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferOperate;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1681,23 +1605,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1719,22 +1641,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_main10_00
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferHandle;
-        signal->isRunning_ = true;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferHandle;
+    signal->isRunning_ = true;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1754,24 +1674,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferQueue;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferQueue;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1791,22 +1709,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1827,22 +1743,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferQueue;
-        cb.onNewOutputBuffer = OutBufferOperate;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferQueue;
+    cb.onNewOutputBuffer = OutBufferOperate;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1864,24 +1778,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1903,23 +1815,21 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1940,24 +1850,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferQueue;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferQueue;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -1978,22 +1886,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -2015,22 +1921,20 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferQueue;
-        cb.onNewOutputBuffer = OutBufferOperate;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferQueue;
+    cb.onNewOutputBuffer = OutBufferOperate;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->inputLoop_ = make_unique<thread>([&signal]() { InputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -2053,24 +1957,22 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferHandle;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferHandle;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
@@ -2093,23 +1995,27 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     vdec->sampleWidth_ = 720;
     vdec->sampleHeight_ = 1280;
     vdec->outPath_ = GetTestName();
-    if (vdec->CheckCapabilitySupport()) {
-        EXPECT_EQ(vdec->Create(), true);
-        struct OH_AVCodecCallback cb;
-        cb.onError = OnErrorVoid;
-        cb.onStreamChanged = OnStreamChangedVoid;
-        cb.onNeedInputBuffer = InBufferOperate;
-        cb.onNewOutputBuffer = OutBufferQueue;
-        EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
-        signal->isRunning_ = true;
-        vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Create(), true);
+    struct OH_AVCodecCallback cb;
+    cb.onError = OnErrorVoid;
+    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onNeedInputBuffer = InBufferOperate;
+    cb.onNewOutputBuffer = OutBufferQueue;
+    EXPECT_EQ(vdec->RegisterCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
+    EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
+    signal->isRunning_ = true;
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
+    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
-        EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
-    }
+    EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
+    EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
+}
+
+bool CheckCapabilitySupport()
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+    return capability != nullptr;
 }
 } //namespace
 
@@ -2135,5 +2041,8 @@ int main(int argc, char **argv)
         }
     }
     testing::InitGoogleTest(&argc, argv);
+    if (!CheckCapabilitySupport()) {
+        testing::GTEST_FLAG(filter) = "-*";
+    }
     return RUN_ALL_TESTS();
 }
