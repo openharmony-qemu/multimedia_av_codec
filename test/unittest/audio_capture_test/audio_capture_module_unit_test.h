@@ -20,7 +20,7 @@
 #include "audio_capture_module.h"
 
 namespace OHOS {
-namespace MediaAVCodec {
+namespace Media {
 class AudioCaptureModuleUnitTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
@@ -33,7 +33,7 @@ public:
     void TearDown(void);
 
 protected:
-    std::shared_ptr<AudioCaptureModule> audioCaptureModule_{nullptr};
+    std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     std::shared_ptr<Meta> audioCaptureParameter_{nullptr};
     int32_t appTokenId_{0};
     int32_t appUid_{0};
@@ -45,6 +45,6 @@ protected:
     uint64_t instanceId_{0};
     std::string bundleName_{"AudioCaptureModule"};
 };
-} // namespace MediaAVCodec
+} // namespace Media
 } // namespace OHOS
 #endif // AUDIO_CAPTURE_MODULE_UNIT_TEST_H

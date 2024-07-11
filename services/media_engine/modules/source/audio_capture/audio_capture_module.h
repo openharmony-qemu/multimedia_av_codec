@@ -28,7 +28,7 @@ namespace OHOS {
 namespace Media {
 namespace AudioCaptureModule {
 using ValueType = Any;
-
+class AudioCapturerCallbackImpl;
 class AudioCaptureModuleCallback {
 public:
     virtual ~AudioCaptureModuleCallback() = default;
