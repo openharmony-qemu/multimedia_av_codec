@@ -54,6 +54,10 @@ uint64_t GetFileSize(int32_t fd)
     }
     return fileSize;
 }
+bool isNumber(const std::string& str)
+{
+    return str.find_first_not_of("0123456789") == std::string::npos;
+}
 }
 Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
 {
@@ -289,8 +293,10 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
     }
     MEDIA_LOG_D("uri: %{private}s", uri.c_str());
     std::smatch fdUriMatch;
-    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)?offset=(.*)&size=(.*)")) ||
+    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
+    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >=2 && isNumber(fdUriMatch[1].str()),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
