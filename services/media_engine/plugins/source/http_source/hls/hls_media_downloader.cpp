@@ -216,11 +216,6 @@ void HlsMediaDownloader::Resume()
 
 bool HlsMediaDownloader::CheckReadStatus()
 {
-    if (!isBufferEnough_) {
-        MEDIA_LOG_I("HLS read stop.");
-        return true;
-    }
-
     // eos: buffer is empty, palylist is empty, request is finished, hls is vod, do not select bitrate
     bool isEos = buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
                  downloadRequest_->IsEos() && playListDownloader_ != nullptr &&
@@ -262,18 +257,15 @@ bool HlsMediaDownloader::CheckReadTimeOut()
 
 bool HlsMediaDownloader::CheckBreakCondition()
 {
-    bool isEos = downloadRequest_->IsEos();
-    if (isEos && buffer_->GetSize() == 0) {
-        MEDIA_LOG_I("isEos break");
-        return true;
-    }
     if (downloadErrorState_) {
         MEDIA_LOG_I("downloadErrorState break");
         return true;
     }
-    bool isClose = downloadRequest_->IsClosed();
-    if (isClose && buffer_->GetSize() == 0) {
-        MEDIA_LOG_I("isClose break");
+    if (playList_->Empty() && (downloadRequest_ != nullptr) &&
+        downloadRequest_->IsEos() && playListDownloader_ != nullptr &&
+        (playListDownloader_->GetDuration() > 0) &&
+        playListDownloader_->IsParseAndNotifyFinished()) {
+        MEDIA_LOG_I("download complete break");
         return true;
     }
     return false;
@@ -287,6 +279,7 @@ bool HlsMediaDownloader::HandleBuffering()
     MEDIA_LOG_I("HandleBuffering begin.");
     int32_t sleepTime = 0;
     isBufferEnough_ = false;
+    bool isDownloadComplete = false;
     while (!isInterrupt_) {
         if (buffer_->GetSize() >= wantReadLenth_) {
             isBufferEnough_ = true;
@@ -295,11 +288,8 @@ bool HlsMediaDownloader::HandleBuffering()
         }
         if (CheckBreakCondition()) {
             isBuffering_ = false;
+            isDownloadComplete = true;
             break;
-        }
-        if (downloadRequest_ == nullptr) {
-            OSAL::SleepFor(SLEEP_TIME::REQUEST_SLEEP_TIME);
-            continue;
         }
         OSAL::SleepFor(SLEEP_TIME::BUFFERING_SLEEP_TIME);
         sleepTime += SLEEP_TIME::BUFFERING_SLEEP_TIME;
@@ -308,6 +298,10 @@ bool HlsMediaDownloader::HandleBuffering()
         }
     }
     if (!isBufferEnough_) {
+        if (isDownloadComplete) {
+            MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
         return isBuffering_;
     }
     if (!isReadFrame_) {
@@ -362,16 +356,17 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
+    readDataInfo.isEos_ = CheckReadStatus();
+    if (readDataInfo.isEos_) {
+        readDataInfo.realReadLength_ = 0;
+        return Status::END_OF_STREAM;
+    }
+
     if (HandleBuffering()) {
         MEDIA_LOG_I("Read return error again.");
         return Status::ERROR_AGAIN;
     }
-    if (CheckReadStatus()) {
-        readDataInfo.isEos_ = true;
-        readDataInfo.realReadLength_ = 0;
-        return Status::END_OF_STREAM;
-    }
-    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE) {
+    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE && !CheckReadStatus()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
