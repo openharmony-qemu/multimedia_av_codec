@@ -180,9 +180,9 @@ Status AudioSink::Pause()
                 TaskPriority::NORMAL, false);
         }
         seekTask_->SubmitJobOnce([this] {
-            MEDIA_LOG_I("AudioSink Pause SubmitJobOnce");
+            MEDIA_LOG_I("AudioSink Pause Job start");
             PauseSub();
-            MEDIA_LOG_I("AudioSink Pause SubmitJobOnce end");
+            MEDIA_LOG_I("AudioSink Pause Job end");
         });
     } else {
         ret = PauseSub();
@@ -213,11 +213,11 @@ Status AudioSink::Flush()
             MEDIA_LOG_I("AudioSink Flush Job");
             plugin_->Flush();
             {
-                std::unique_lock<std::mutex> lock(seekCompletedLock_);
-                seekCompleted_ = true;
-                seekCondition_.notify_all();
+                AutoLock lock(seekCompletedLock_);
+                seekCompleted_.store(true);
                 MEDIA_LOG_I("AudioSink Flush Job end, notify completed");
             }
+            seekCondition_.notify_all();
         });
     } else {
         ret = plugin_->Flush();
@@ -252,7 +252,7 @@ Status AudioSink::SetIsTransitent(bool isTransitent, bool isSeekCompleted)
 {
     MEDIA_LOG_I("AudioSink::SetIsTransitent entered. ");
     isTransitent_ = isTransitent;
-    seekCompleted_ = isSeekCompleted;
+    seekCompleted_.store(isSeekCompleted);
     return Status::OK;
 }
 
@@ -522,26 +522,19 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
 
 Status AudioSink::WaitSeekCompleted()
 {
-    {
-        std::unique_lock<std::mutex> lock(seekCompletedLock_);
-        MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor");
-        seekCondition_.wait_for(lock, std::chrono::milliseconds(1000), [this]() { //1000ms
-            return seekCompleted_;
-        });
-        MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor end");
-    }
+    AutoLock lock(seekCompletedLock_);
+    MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor");
+    seekCondition_.WaitFor(lock, 5000, [this]() { //5000ms
+        return seekCompleted_.load();
+    });
+    MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor end");
     return Status::OK;
 }
 
-Status AudioSink::SetPlayerId(std::string playerId)
+Status AudioSink::SetPlayerId(std::string& playerId)
 {
     playerId_ = playerId;
     return Status::OK;
-}
-
-bool AudioSink::GetSeekCompleted()
-{
-    return seekCompleted_;
 }
 
 } // namespace MEDIA

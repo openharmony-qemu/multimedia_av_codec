@@ -297,20 +297,10 @@ Status AudioSinkFilter::WaitSeekCompleted()
     return audioSink_->WaitSeekCompleted();
 }
 
-Status AudioSinkFilter::SetPlayerId(std::string playerId)
+Status AudioSinkFilter::SetPlayerId(std::string& playerId)
 {
     MEDIA_LOG_D("AudioSinkFilter::SetPlayerId in");
     return audioSink_->SetPlayerId(playerId);
-}
-
-std::condition_variable& AudioSinkFilter::GetSeekCondition()
-{
-    return audioSink_->seekCondition_;
-}
-
-bool AudioSinkFilter::GetSeekCompleted()
-{
-    return audioSink_->GetSeekCompleted();
 }
 
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,

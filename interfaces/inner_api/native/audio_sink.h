@@ -60,10 +60,7 @@ public:
     Status SetIsTransitent(bool isTransitent, bool isSeekCompleted);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status WaitSeekCompleted();
-    Status SetPlayerId(std::string playerId);
-    bool GetSeekCompleted();
-
-    std::condition_variable seekCondition_{};
+    Status SetPlayerId(std::string& playerId);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -109,9 +106,10 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
-    std::string playerId_;
-    std::mutex seekCompletedLock_{};
-    bool seekCompleted_{false};
+    std::string playerId_{""};
+    FairMutex seekCompletedLock_{};
+    std::atomic<bool> seekCompleted_{false};
+    ConditionVariable seekCondition_{};
     std::unique_ptr<Task> seekTask_;
 };
 }

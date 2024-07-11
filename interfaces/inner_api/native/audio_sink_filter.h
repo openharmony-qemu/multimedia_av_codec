@@ -77,11 +77,7 @@ public:
 
     Status WaitSeekCompleted();
 
-    Status SetPlayerId(std::string playerId);
-    
-    std::condition_variable& GetSeekCondition();
-
-    bool GetSeekCompleted();
+    Status SetPlayerId(std::string& playerId);
 
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
