@@ -480,7 +480,7 @@ void MediaSyncManager::SetMediaStartPts(int64_t startPts)
     startPts_ = startPts;
 }
 
-void ReportEos(IMediaSynchronizer* supplier)
+void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
 {
     if (supplier == nullptr) {
         return;
