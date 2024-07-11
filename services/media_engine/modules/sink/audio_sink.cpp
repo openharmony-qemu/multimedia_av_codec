@@ -261,6 +261,10 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
 void AudioSink::ReportEosEventAndDrain()
 {
     isEos_ = true;
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        syncCenter->ReportEos(this);
+    }
     Event event {
         .srcFilter = "AudioSink",
         .type = EventType::EVENT_COMPLETE,

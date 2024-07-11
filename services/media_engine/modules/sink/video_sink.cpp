@@ -70,8 +70,8 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     FALSE_RETURN_V(buffer != nullptr, false);
     int64_t waitTime = 0;
     bool render = true;
+    auto syncCenter = syncCenter_.lock();
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
-        auto syncCenter = syncCenter_.lock();
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
         if (!isRenderStarted_.load()) {
             isRenderStarted_ = true;
@@ -96,6 +96,9 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         lastTimeStamp_ = buffer->pts_ - firstPts_;
     } else {
         MEDIA_LOG_I("Video sink EOS");
+        if (syncCenter) {
+            syncCenter->ReportEos(this);
+        }
         return -1;
     }
     if ((render && waitTime >= 0) || lastFrameDropped_) {

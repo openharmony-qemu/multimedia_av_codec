@@ -91,6 +91,8 @@ public:
      */
     void ReportPrerolled(IMediaSynchronizer* supplier) override;
 
+    void ReportEos(IMediaSynchronizer* supplier) override;
+
     void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
 
     void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;

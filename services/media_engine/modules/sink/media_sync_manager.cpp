@@ -236,9 +236,7 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     seekingMediaTime_ = mediaTime;
     alreadySetSyncersShouldWait_ = false; // set already as false
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
-    int8_t oldSyncerPriority = currentSyncerPriority_;
     ResetTimeAnchorNoLock(); // reset the time anchor
-    currentSyncerPriority_ = oldSyncerPriority;
     frameAfterSeeked_ = true;
     return Status::OK;
 }
@@ -480,6 +478,17 @@ bool MediaSyncManager::InSeeking()
 void MediaSyncManager::SetMediaStartPts(int64_t startPts)
 {
     startPts_ = startPts;
+}
+
+void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
+{
+    if (supplier == nullptr) {
+        return;
+    }
+    OHOS::Media::AutoLock lock(clockMutex_);
+    if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
+        currentSyncerPriority_ = IMediaSynchronizer::NONE;
+    }
 }
 } // namespace Pipeline
 } // namespace Media
