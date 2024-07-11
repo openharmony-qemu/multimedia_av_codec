@@ -20,10 +20,10 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 ##############################fuzztest##########################################
 ohos_fuzztest("HwdecoderApi11FuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoder_fuzzer"
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
-    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoder_fuzzer/include",
+    "$MEDIA_ROOT_DIR/test/fuzztest/hwdecoderapi11_fuzzer/include",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   ]
   cflags = [
