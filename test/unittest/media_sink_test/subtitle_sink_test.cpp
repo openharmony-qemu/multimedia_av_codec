@@ -15,7 +15,6 @@
 
 #include "gtest/gtest.h"
 #include "filter/filter.h"
-#include "common/log.h"
 #include "subtitle_sink.h"
 #include "sink/media_synchronous_sink.h"
 
@@ -30,12 +29,10 @@ class TestEventReceiver : public EventReceiver {
 public:
     explicit TestEventReceiver()
     {
-        MEDIA_LOG_I("TestEventReceiver ctor ");
     }
 
     void OnEvent(const Event &event)
     {
-        MEDIA_LOG_I("TestEventReceiver OnEvent " PUBLIC_LOG_S, event.srcFilter.c_str());
     }
 
 private:
