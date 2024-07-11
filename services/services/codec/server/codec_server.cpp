@@ -615,6 +615,12 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterCallba
     return AVCS_ERR_UNSUPPORT;
 }
 
+int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
+{
+    (void)callback;
+    return AVCS_ERR_UNSUPPORT;
+}
+
 int32_t CodecServer::GetInputFormat(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -792,7 +798,6 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    AVCODEC_LOGD("on output buffer index: %{public}d", index);
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
 
     if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&

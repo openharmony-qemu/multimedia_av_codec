@@ -28,6 +28,7 @@ class CodecClientCallback;
 class CodecClient : public MediaCodecCallback,
                     public AVCodecCallback,
                     public MediaCodecParameterCallback,
+                    public MediaCodecParameterWithAttrCallback,
                     public ICodecService,
                     public std::enable_shared_from_this<CodecClient> {
 public:
@@ -56,6 +57,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag) override;
@@ -71,6 +73,8 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) override;
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
+                                           std::shared_ptr<Format> parameter) override;
 
 private:
     int32_t CreateListenerObject();
@@ -97,6 +101,7 @@ private:
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
+    std::shared_ptr<MediaCodecParameterWithAttrCallback> paramWithAttrCallback_ = nullptr;
     std::shared_ptr<BufferConverter> converter_ = nullptr;
 
     std::shared_mutex mutex_;

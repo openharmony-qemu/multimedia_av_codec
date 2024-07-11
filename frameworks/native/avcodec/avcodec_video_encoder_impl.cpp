@@ -32,8 +32,8 @@ std::shared_ptr<AVCodecVideoEncoder> VideoEncoderFactory::CreateByMime(const std
 
     int32_t ret = CreateByMime(mime, format, impl);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
-        "AVCodec video encoder impl init failed, %{public}s",
-        AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+                             "AVCodec video encoder impl init failed, %{public}s",
+                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
 
     return impl;
 }
@@ -45,14 +45,14 @@ std::shared_ptr<AVCodecVideoEncoder> VideoEncoderFactory::CreateByName(const std
 
     int32_t ret = CreateByName(name, format, impl);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK || impl != nullptr, nullptr,
-        "AVCodec video encoder impl init failed, %{public}s",
-        AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
+                             "AVCodec video encoder impl init failed, %{public}s",
+                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
 
     return impl;
 }
 
-int32_t VideoEncoderFactory::CreateByMime(const std::string &mime,
-                                          Format &format, std::shared_ptr<AVCodecVideoEncoder> &encoder)
+int32_t VideoEncoderFactory::CreateByMime(const std::string &mime, Format &format,
+                                          std::shared_ptr<AVCodecVideoEncoder> &encoder)
 {
     auto impl = std::make_shared<AVCodecVideoEncoderImpl>();
 
@@ -64,8 +64,8 @@ int32_t VideoEncoderFactory::CreateByMime(const std::string &mime,
     return AVCS_ERR_OK;
 }
 
-int32_t VideoEncoderFactory::CreateByName(const std::string &name,
-                                          Format &format, std::shared_ptr<AVCodecVideoEncoder> &encoder)
+int32_t VideoEncoderFactory::CreateByName(const std::string &name, Format &format,
+                                          std::shared_ptr<AVCodecVideoEncoder> &encoder)
 {
     auto impl = std::make_shared<AVCodecVideoEncoderImpl>();
 
@@ -239,6 +239,15 @@ int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecCal
 }
 
 int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
+{
+    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecClient_->SetCallback(callback);
+}
+
+int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
 {
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");

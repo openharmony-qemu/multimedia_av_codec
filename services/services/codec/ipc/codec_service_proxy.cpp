@@ -334,6 +334,7 @@ int32_t CodecServiceProxy::ReleaseOutputBuffer(uint32_t index, bool render)
 
     data.WriteUint32(index);
     data.WriteBool(render);
+    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteOutputBufferToParcel(index, data);
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
