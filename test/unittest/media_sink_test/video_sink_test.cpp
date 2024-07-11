@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "gtest/gtest.h"
+#include "filter/filter.h"
+#include "common/log.h"
+#include "video_sink.h"
+#include "sink/media_synchronous_sink.h"
+
+using namespace testing::ext;
+
+namespace OHOS {
+namespace Media {
+namespace Test {
+using namespace Pipeline;
+
+class TestEventReceiver : public EventReceiver {
+public:
+    explicit TestEventReceiver()
+    {
+        MEDIA_LOG_I("TestEventReceiver ctor ");
+    }
+
+    void OnEvent(const Event &event)
+    {
+        MEDIA_LOG_I("TestEventReceiver OnEvent " PUBLIC_LOG_S, event.srcFilter.c_str());
+    }
+
+private:
+};
+
+std::shared_ptr<VideoSink> VideoSinkCreate()
+{
+    auto videoSink = std::make_shared<VideoSink>();
+    std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    videoSink->SetEventReceiver(testEventReceiver);
+    auto meta = std::make_shared<Meta>();
+    videoSink->SetParameter(meta);
+    videoSink->ResetRenderStarted();
+    videoSink->ResetSyncInfo();
+    videoSink->SetLastPts(0);
+    videoSink->SetFirstPts(HST_TIME_NONE);
+    auto syncCenter = std::make_shared<MediaSyncManager>();
+    videoSink->SetSyncCenter(syncCenter);
+    videoSink->SetSeekFlag();
+    return videoSink;
+}
+
+HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
+{
+    auto sink = VideoSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
+    uint64_t latency = 0;
+    sink->GetLatency(latency);
+    AVBufferConfig config;
+    config.size = 4;
+    config.memoryType = MemoryType::SHARED_MEMORY;
+    const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    ASSERT_TRUE(buffer != nullptr);
+    buffer->flag_ = 0; // not eos
+    sink->DoSyncWrite(buffer);
+    buffer->flag_ = BUFFER_FLAG_EOS;
+    sink->DoSyncWrite(buffer);
+    (void)sink->CheckBufferLatenessMayWait(buffer);
+}
+
+HWTEST(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
+{
+    auto sink = VideoSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
+    AVBufferConfig config;
+    config.size = 4;
+    config.memoryType = MemoryType::SHARED_MEMORY;
+    const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    buffer->flag_ = 0; // not eos
+    sink->DoSyncWrite(buffer);
+    const std::shared_ptr<AVBuffer> buffer2 = AVBuffer::CreateAVBuffer(config);
+    buffer->flag_ = 0; // not eos
+    sink->DoSyncWrite(buffer2);
+    (void)sink->CheckBufferLatenessMayWait(buffer);
+}
+
+HWTEST(TestVideoSink, do_sync_write_eos, TestSize.Level1)
+{
+    auto sink = VideoSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
+    AVBufferConfig config;
+    config.size = 4;
+    config.memoryType = MemoryType::SHARED_MEMORY;
+    const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    buffer->flag_ = 1; // eos
+    sink->DoSyncWrite(buffer);
+    sink->DoSyncWrite(buffer);
+    buffer->flag_ = BUFFER_FLAG_EOS;
+    sink->DoSyncWrite(buffer);
+    (void)sink->CheckBufferLatenessMayWait(buffer);
+}
+}  // namespace Test
+}  // namespace Media
+}  // namespace OHOS
