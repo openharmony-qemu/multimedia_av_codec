@@ -57,8 +57,10 @@ public:
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
-    Status SetIsTransitent(bool isTransitent);
+    Status SetIsTransitent(bool isTransitent, bool isSeekCompleted);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status WaitSeekCompleted();
+    Status SetPlayerId(std::string& playerId);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -73,6 +75,7 @@ private:
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
     void ReportEosEventAndDrain();
+    Status PauseSub();
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -103,6 +106,11 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
+    std::string playerId_{""};
+    FairMutex seekCompletedLock_{};
+    std::atomic<bool> seekCompleted_{false};
+    ConditionVariable seekCondition_{};
+    std::unique_ptr<Task> seekTask_;
 };
 }
 }
