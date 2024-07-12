@@ -25,7 +25,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "MediaCodec" };
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
-constexpr int32_t TIME_OUT_MS = 500;
+constexpr int32_t TIME_OUT_MS = 50;
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
 } // namespace

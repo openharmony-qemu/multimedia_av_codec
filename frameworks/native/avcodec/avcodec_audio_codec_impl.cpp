@@ -28,7 +28,7 @@ constexpr const char *INPUT_BUFFER_QUEUE_NAME = "AVCodecAudioCodecImpl";
 const std::string_view ASYNC_HANDLE_INPUT = "OS_ACodecIn";
 const std::string_view ASYNC_OUTPUT_FRAME = "OS_ACodecOut";
 constexpr uint8_t LOGD_FREQUENCY = 5;
-constexpr uint8_t TIME_OUT_MS = 5;
+constexpr uint8_t TIME_OUT_MS = 50;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1000;
 constexpr int64_t MILLISECONDS = 100;
 } // namespace
