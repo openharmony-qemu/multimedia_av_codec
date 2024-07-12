@@ -142,4 +142,48 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Stop_005, TestSize.Level1)
     EXPECT_EQ(demuxer->Stop(), Status::OK);
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnBufferAvailable_006, TestSize.Level1)
+{
+    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+
+    demuxer->OnBufferAvailable(0);
+
+    DownloadInfo downloadInfo;
+    EXPECT_EQ(demuxer->GetDownloadInfo(downloadInfo), Status::OK);
+
+    demuxer->SetPlayerId("1");
+
+    demuxer->SetDumpInfo(false, 111);
+    demuxer->SetDumpInfo(true, 111);
+    std::shared_ptr<Meta> userMeta = demuxer->GetUserMeta();
+
+    int64_t durationMs;
+    EXPECT_EQ(demuxer->GetDuration(durationMs), true);
+    EXPECT_EQ(demuxer->PauseTaskByTrackId(0), Status::OK);
+    EXPECT_EQ(demuxer->Reset(), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_007, TestSize.Level1)
+{
+    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+
+    std::vector<uint32_t> bitRates;
+    EXPECT_EQ(demuxer->GetBitRates(bitRates), Status::OK);
+    EXPECT_GT(bitRates.size(), 0);
+
+    EXPECT_EQ(demuxer->SelectBitRate(bitRates[0]), Status::OK);
+}
+
 }
