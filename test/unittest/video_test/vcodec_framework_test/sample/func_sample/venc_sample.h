@@ -117,6 +117,8 @@ public:
     void SetIsHdrVivid(bool isHdrVivid);
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool needCheckSHA_ = false;
+    bool needSleep_ = false;
+    static bool needDump_;
 
 private:
     void FlushInner();
