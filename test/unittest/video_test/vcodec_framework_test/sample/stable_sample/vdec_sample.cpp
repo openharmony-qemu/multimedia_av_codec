@@ -185,6 +185,7 @@ private:
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
         std::string name = "VideoCodec_" + std::to_string(sampleId_) + "_" + std::to_string(queue_.size());
+        obj.rosenWindow_ = Rosen::Window::Create(name, option);
         UNITTEST_CHECK_AND_RETURN_LOG(obj.rosenWindow_ != nullptr, "rosen window is nullptr.");
         UNITTEST_CHECK_AND_RETURN_LOG(obj.rosenWindow_->GetSurfaceNode() != nullptr, "surface node is nullptr.");
         obj.rosenWindow_->SetTurnScreenOn(!obj.rosenWindow_->IsTurnScreenOn());

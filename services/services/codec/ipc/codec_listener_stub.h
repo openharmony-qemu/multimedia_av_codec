@@ -22,6 +22,7 @@
 #include <thread>
 #include <unordered_map>
 #include "avcodec_common.h"
+#include "avcodec_log.h"
 #include "buffer_converter.h"
 #include "i_standard_codec_listener.h"
 
@@ -51,6 +52,7 @@ public:
     void SetMutex(std::shared_ptr<std::recursive_mutex> &mutex);
     void SetConverter(std::shared_ptr<BufferConverter> &converter);
     void SetNeedListen(const bool needListen);
+    void InitLabel(const uint64_t uid);
 
 private:
     void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
@@ -67,6 +69,9 @@ private:
     bool needListen_ = false;
     std::shared_ptr<std::recursive_mutex> syncMutex_;
     std::shared_ptr<BufferConverter> converter_ = nullptr;
+
+    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerStub"};
+    std::string tag_ = "";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

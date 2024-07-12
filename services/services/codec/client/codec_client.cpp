@@ -15,18 +15,15 @@
 
 #include "codec_client.h"
 #include "avcodec_errors.h"
-#include "avcodec_log.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecClient"};
-}
 using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
 int32_t CodecClient::Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec)
 {
+    OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecClient"};
     CHECK_AND_RETURN_RET_LOG(ipcProxy != nullptr, AVCS_ERR_INVALID_VAL, "Ipc proxy is nullptr.");
 
     codec = std::make_shared<CodecClient>(ipcProxy);
@@ -87,11 +84,42 @@ int32_t CodecClient::CreateListenerObject()
     return ret;
 }
 
+void CodecClient::InitLabel(AVCodecType type)
+{
+    static std::mutex g_mutex;
+    static uint64_t g_uid = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        uid_ = ++g_uid;
+    }
+    auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
+    switch (type) {
+        case AVCODEC_TYPE_VIDEO_ENCODER:
+            tag_ = "EncClient[";
+            break;
+        case AVCODEC_TYPE_VIDEO_DECODER:
+            tag_ = "DecClient[";
+            break;
+        default:
+            tag_ = "CodecClient[";
+            break;
+    }
+    tag_ += std::to_string(uid_) + "]";
+    label.tag = tag_.c_str();
+    if (codecProxy_ != nullptr) {
+        static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr())->InitLabel(uid_);
+    }
+    if (listenerStub_ != nullptr) {
+        listenerStub_->InitLabel(uid_);
+    }
+}
+
 int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name,
                           Meta &callerInfo, API_VERSION apiVersion)
 {
     (void)apiVersion;
     using namespace OHOS::Media;
+    InitLabel(type);
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getprocpid());
     callerInfo.SetData(Tag::AV_CODEC_CALLER_UID, getuid());
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, std::string(program_invocation_name));

@@ -857,7 +857,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
     EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
-#endif
+#endif // HMOS_TEST
+#endif // VIDEOENC_CAPI_UNIT_TEST
 
 /**
  * @tc.name: VideoEncoder_Start_001

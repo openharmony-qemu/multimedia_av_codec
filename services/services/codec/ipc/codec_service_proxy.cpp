@@ -15,14 +15,9 @@
 
 #include "codec_service_proxy.h"
 #include "avcodec_errors.h"
-#include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "buffer_client_producer.h"
-
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceProxy"};
-}
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -57,6 +52,14 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
 void CodecServiceProxy::SetListener(const sptr<CodecListenerStub> &listener)
 {
     listener_ = listener;
+}
+
+void CodecServiceProxy::InitLabel(const uint64_t uid)
+{
+    tag_ = "ServiceProxy[";
+    tag_ += std::to_string(uid) + "]";
+    auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
+    label.tag = tag_.c_str();
 }
 
 int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)

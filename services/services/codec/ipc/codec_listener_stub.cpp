@@ -18,13 +18,11 @@
 #include <sstream>
 #include <string>
 #include "avcodec_errors.h"
-#include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerStub"};
 constexpr uint8_t LOG_FREQ = 10;
 const std::map<OHOS::Media::MemoryType, std::string> MEMORYTYPE_MAP = {
     {OHOS::Media::MemoryType::VIRTUAL_MEMORY, "VIRTUAL_MEMORY"},
@@ -173,6 +171,15 @@ public:
                      serverCaches.str().c_str());
     }
 
+    void InitLabel(const uint64_t uid)
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        tag_ = isOutput_ ? "OutCache[" : "InCache[";
+        tag_ += std::to_string(uid) + "]";
+        auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
+        label.tag = tag_.c_str();
+    }
+
 private:
     void AVBufferToAVSharedMemory(const std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
     {
@@ -274,6 +281,9 @@ private:
     std::shared_mutex mutex_;
     std::unordered_map<uint32_t, BufferElem> caches_;
     std::shared_ptr<BufferConverter> converter_ = nullptr;
+
+    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "ClientCaches"};
+    std::string tag_ = "";
 };
 
 CodecListenerStub::CodecListenerStub()
@@ -504,7 +514,7 @@ bool CodecListenerStub::WriteInputParameterToParcel(uint32_t index, MessageParce
     auto &param = elem.parameter;
     CHECK_AND_RETURN_RET_LOG(elem.buffer != nullptr, false, "Get buffer is nullptr");
     CHECK_AND_RETURN_RET_LOG(param != nullptr, false, "Get format is nullptr");
-    EXPECT_AND_LOGI(!(param->GetMeta()->Empty()), "index:%{public}u,pts:%{public}" PRId64 ",paramter:%{public}s", index,
+    EXPECT_AND_LOGD(!(param->GetMeta()->Empty()), "index:%{public}u,pts:%{public}" PRId64 ",paramter:%{public}s", index,
                     elem.buffer->pts_, param->Stringify().c_str());
 
     return param->GetMeta()->ToParcel(data);
@@ -538,6 +548,16 @@ void CodecListenerStub::SetConverter(std::shared_ptr<BufferConverter> &converter
 void CodecListenerStub::SetNeedListen(const bool needListen)
 {
     needListen_ = needListen;
+}
+
+void CodecListenerStub::InitLabel(const uint64_t uid)
+{
+    tag_ = "ListenerStub[";
+    tag_ += std::to_string(uid) + "]";
+    auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
+    label.tag = tag_.c_str();
+    inputBufferCache_->InitLabel(uid);
+    outputBufferCache_->InitLabel(uid);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
