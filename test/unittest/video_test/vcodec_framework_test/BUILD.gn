@@ -35,8 +35,11 @@ vcodec_unittest_cflags = [
   "-Wextra",
   "-Wimplicit-fallthrough",
   "-Wsign-compare",
+  "-Wno-constant-conversion",
   "-Wno-unused-function",
   "-Wno-unused-parameter",
+  "-Dprivate=public",
+  "-Dprotected=public",
 ]
 
 group("vcodec_framework_test") {
@@ -97,9 +100,11 @@ ohos_unittest("videodec_capi_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   if (av_codec_support_drm) {
@@ -146,6 +151,7 @@ ohos_unittest("videodec_inner_unit_test") {
   external_deps = [
     "c_utils:utils",
     "drm_framework:drm_framework",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -274,9 +280,11 @@ ohos_unittest("videodec_hevcdec_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -308,9 +316,11 @@ ohos_unittest("videodec_stable_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =

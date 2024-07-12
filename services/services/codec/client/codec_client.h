@@ -17,6 +17,7 @@
 #define CODEC_CLIENT_H
 
 #include <shared_mutex>
+#include "avcodec_log.h"
 #include "buffer_converter.h"
 #include "codec_listener_stub.h"
 #include "i_codec_service.h"
@@ -28,6 +29,7 @@ class CodecClientCallback;
 class CodecClient : public MediaCodecCallback,
                     public AVCodecCallback,
                     public MediaCodecParameterCallback,
+                    public MediaCodecParameterWithAttrCallback,
                     public ICodecService,
                     public std::enable_shared_from_this<CodecClient> {
 public:
@@ -56,6 +58,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag) override;
@@ -71,11 +74,14 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) override;
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
+                                           std::shared_ptr<Format> parameter) override;
 
 private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
     void SetNeedListen(const bool needListen);
+    void InitLabel(AVCodecType type);
     typedef enum : uint32_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
@@ -97,11 +103,16 @@ private:
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
     std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
+    std::shared_ptr<MediaCodecParameterWithAttrCallback> paramWithAttrCallback_ = nullptr;
     std::shared_ptr<BufferConverter> converter_ = nullptr;
 
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;
+
+    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecClient"};
+    uint64_t uid_ = 0;
+    std::string tag_ = "";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

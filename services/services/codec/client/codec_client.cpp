@@ -15,18 +15,15 @@
 
 #include "codec_client.h"
 #include "avcodec_errors.h"
-#include "avcodec_log.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecClient"};
-}
 using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
 int32_t CodecClient::Create(const sptr<IStandardCodecService> &ipcProxy, std::shared_ptr<ICodecService> &codec)
 {
+    OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecClient"};
     CHECK_AND_RETURN_RET_LOG(ipcProxy != nullptr, AVCS_ERR_INVALID_VAL, "Ipc proxy is nullptr.");
 
     codec = std::make_shared<CodecClient>(ipcProxy);
@@ -87,11 +84,42 @@ int32_t CodecClient::CreateListenerObject()
     return ret;
 }
 
+void CodecClient::InitLabel(AVCodecType type)
+{
+    static std::mutex g_mutex;
+    static uint64_t g_uid = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        uid_ = ++g_uid;
+    }
+    auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
+    switch (type) {
+        case AVCODEC_TYPE_VIDEO_ENCODER:
+            tag_ = "EncClient[";
+            break;
+        case AVCODEC_TYPE_VIDEO_DECODER:
+            tag_ = "DecClient[";
+            break;
+        default:
+            tag_ = "CodecClient[";
+            break;
+    }
+    tag_ += std::to_string(uid_) + "]";
+    label.tag = tag_.c_str();
+    if (codecProxy_ != nullptr) {
+        static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr())->InitLabel(uid_);
+    }
+    if (listenerStub_ != nullptr) {
+        listenerStub_->InitLabel(uid_);
+    }
+}
+
 int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name,
                           Meta &callerInfo, API_VERSION apiVersion)
 {
     (void)apiVersion;
     using namespace OHOS::Media;
+    InitLabel(type);
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PID, getprocpid());
     callerInfo.SetData(Tag::AV_CODEC_CALLER_UID, getuid());
     callerInfo.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, std::string(program_invocation_name));
@@ -114,11 +142,10 @@ int32_t CodecClient::Configure(const Format &format)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
-    Format format_ = format;
     int32_t isSetParameterCb = (codecMode_ & CODEC_SET_PARAMETER_CALLBACK) != 0;
-    format_.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
+    const_cast<Format &>(format).PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
 
-    int32_t ret = codecProxy_->Configure(format_);
+    int32_t ret = codecProxy_->Configure(format);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     if (!hasOnceConfigured_) {
         hasOnceConfigured_ = ret == AVCS_ERR_OK;
@@ -376,10 +403,28 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterCallba
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
     CHECK_AND_RETURN_RET_LOG(!hasOnceConfigured_, AVCS_ERR_INVALID_STATE, "Need to configure encoder!");
+    CHECK_AND_RETURN_RET_LOG(paramWithAttrCallback_ == nullptr, AVCS_ERR_INVALID_STATE,
+                             "Already set parameter with atrribute callback!");
     codecMode_ |= CODEC_SET_PARAMETER_CALLBACK;
 
     paramCallback_ = callback;
     const std::shared_ptr<MediaCodecParameterCallback> &stubCallback = shared_from_this();
+    listenerStub_->SetCallback(stubCallback);
+    AVCODEC_LOGI("Parameter callback");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(!hasOnceConfigured_, AVCS_ERR_INVALID_STATE, "Need to configure encoder!");
+    CHECK_AND_RETURN_RET_LOG(paramCallback_ == nullptr, AVCS_ERR_INVALID_STATE, "Already set parameter callback!");
+    codecMode_ |= CODEC_SET_PARAMETER_CALLBACK;
+
+    paramWithAttrCallback_ = callback;
+    const std::shared_ptr<MediaCodecParameterWithAttrCallback> &stubCallback = shared_from_this();
     listenerStub_->SetCallback(stubCallback);
     AVCODEC_LOGI("Parameter callback");
     return AVCS_ERR_OK;
@@ -438,28 +483,40 @@ void CodecClient::OnOutputFormatChanged(const Format &format)
 
 void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
+    AVCODEC_LOGD("index:%{public}u", index);
     callback_->OnInputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
+    AVCODEC_LOGD("index:%{public}u", index);
     callback_->OnOutputBufferAvailable(index, info, flag, buffer);
 }
 
 void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCODEC_LOGD("index:%{public}u", index);
     videoCallback_->OnInputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCODEC_LOGD("index:%{public}u", index);
     videoCallback_->OnOutputBufferAvailable(index, buffer);
 }
 
 void CodecClient::OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter)
 {
+    AVCODEC_LOGD("index:%{public}u", index);
     paramCallback_->OnInputParameterAvailable(index, parameter);
+}
+
+void CodecClient::OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
+                                                    std::shared_ptr<Format> parameter)
+{
+    AVCODEC_LOGD("index:%{public}u", index);
+    paramWithAttrCallback_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

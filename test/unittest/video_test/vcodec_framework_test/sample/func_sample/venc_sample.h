@@ -38,12 +38,18 @@ public:
     std::condition_variable outCond_;
     std::queue<uint32_t> inIndexQueue_;
     std::queue<uint32_t> outIndexQueue_;
+
+    // API 9
     std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
     std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
     std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
+
+    // API 11
     std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
     std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
     std::queue<std::shared_ptr<FormatMock>> inFormatQueue_;
+    std::queue<std::shared_ptr<FormatMock>> inAttrQueue_;
+
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
@@ -85,6 +91,17 @@ private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;
 };
 
+class VEncParamWithAttrCallbackTest : public MediaCodecParameterWithAttrCallbackMock {
+public:
+    explicit VEncParamWithAttrCallbackTest(std::shared_ptr<VEncSignal> signal);
+    virtual ~VEncParamWithAttrCallbackTest();
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<FormatMock> attribute,
+                                           std::shared_ptr<FormatMock> parameter) override;
+
+private:
+    std::shared_ptr<VEncSignal> signal_ = nullptr;
+};
+
 class VideoEncSample : public NoCopyable {
 public:
     explicit VideoEncSample(std::shared_ptr<VEncSignal> signal);
@@ -96,6 +113,7 @@ public:
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
     int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb);
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
     int32_t Stop();
@@ -119,6 +137,10 @@ public:
     bool needCheckSHA_ = false;
     bool needSleep_ = false;
     static bool needDump_;
+    bool isAVBufferMode_ = false;
+    bool isHdrVivid_ = false;
+    bool isTemporalScalabilitySyncIdr_ = false;
+    bool isDiscardFrame_ = false;
 
 private:
     void FlushInner();
@@ -143,7 +165,7 @@ private:
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
-    void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock>buffer);
+    void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
     void CheckSHA();
     void PerformEosFrameAndVerifiedSHA();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
@@ -158,12 +180,9 @@ private:
     std::string outSurfacePath_;
     int32_t frameInputCount_ = 0;
     int32_t frameOutputCount_ = 0;
-    bool isAVBufferMode_ = false;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
-    bool isHdrVivid_ = false;
     bool isSetParamCallback_ = false;
-    bool isTemporalScalabilitySyncIdr_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

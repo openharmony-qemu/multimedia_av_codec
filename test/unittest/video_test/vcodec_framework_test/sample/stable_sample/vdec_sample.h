@@ -84,6 +84,7 @@ public:
 
     static bool isHardware_;
     static bool needDump_;
+    static bool isRosenWindow_;
     static uint64_t sampleTimout_;
     static uint64_t threadNum_;
     int32_t sampleId_ = 0;

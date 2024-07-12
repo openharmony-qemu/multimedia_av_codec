@@ -178,6 +178,28 @@ void VEncParamCallbackTest::OnInputParameterAvailable(uint32_t index, std::share
         return;
     }
     signal_->inIndexQueue_.push(index);
+    signal_->inAttrQueue_.push(nullptr);
+    signal_->inFormatQueue_.push(parameter);
+    signal_->inCond_.notify_all();
+}
+
+VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
+
+VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() {}
+
+void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t index,
+                                                                      std::shared_ptr<FormatMock> attribute,
+                                                                      std::shared_ptr<FormatMock> parameter)
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+    unique_lock<mutex> lock(signal_->inMutex_);
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
+        return;
+    }
+    signal_->inIndexQueue_.push(index);
+    signal_->inAttrQueue_.push(attribute);
     signal_->inFormatQueue_.push(parameter);
     signal_->inCond_.notify_all();
 }
@@ -245,6 +267,16 @@ int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 }
 
 int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb)
+{
+    if (videoEnc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    int32_t ret = videoEnc_->SetCallback(cb);
+    isSetParamCallback_ = ret == AV_ERR_OK;
+    return ret;
+}
+
+int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -603,22 +635,27 @@ void VideoEncSample::InputParamLoopFunc()
 
         int32_t index = signal_->inIndexQueue_.front();
         auto format = signal_->inFormatQueue_.front();
-        UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
-
-        format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-        format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-        format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        auto attr = signal_->inAttrQueue_.front();
+        if (attr != nullptr) {
+            int64_t pts = 0;
+            EXPECT_EQ(true, attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts));
+            UNITTEST_INFO_LOG("attribute: %s", attr->DumpInfo());
+        }
 
         if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
             format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
-            UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
         }
 
+        if (isDiscardFrame_ && (frameInputCount_ % 2) == 0) { // 2: encode half frames
+            format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
+        }
+        UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
         signal_->inIndexQueue_.pop();
         signal_->inFormatQueue_.pop();
+        signal_->inAttrQueue_.pop();
     }
 }
 

@@ -15,10 +15,14 @@
 
 #include "vdec_sample.h"
 #include <gtest/gtest.h>
+#include "../../../../../../window/window_manager/interfaces/innerkits/wm/window.h"
 #include "common/native_mfmagic.h"
 #include "native_avcapability.h"
 #include "native_avmagic.h"
 #include "surface/window.h"
+#include "surface_buffer.h"
+#include "ui/rs_surface_node.h"
+#include "window_option.h"
 
 #define PRINT_HILOG
 #define TEST_ID sampleId_
@@ -91,7 +95,7 @@ public:
             int32_t stride = buffer->GetStride();
             int32_t pixelbytes = 1;
             if (stride >= width * 2) { // 2 10bit per pixel 2 bytes
-                pixelbytes = 2; // 2 10bit per pixel 2 bytes
+                pixelbytes = 2;        // 2 10bit per pixel 2 bytes
             }
             for (int32_t i = 0; i < height * 3 / 2; ++i) { // 3: nom, 2: denom
                 (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i * stride,
@@ -136,12 +140,27 @@ public:
     {
         TITLE_LOG;
         WindowObject obj;
-        if (queue_.size() >= OFFSET_8) {
+        if (queue_.size() >= 2) { // 2: surface num
             obj = queue_.front();
             queue_.push(obj);
             queue_.pop();
             return;
         }
+        VideoDecSample::isRosenWindow_ ? CreateRosenWindow(obj) : CreateDumpWindow(obj);
+        queue_.push(std::move(obj));
+    }
+
+private:
+    typedef struct WindowObject {
+        OHNativeWindow *nativeWindow_ = nullptr;
+        sptr<IBufferConsumerListener> listener_ = nullptr;
+        sptr<Surface> consumer_ = nullptr;
+        sptr<Surface> producer_ = nullptr;
+        sptr<Rosen::Window> rosenWindow_ = nullptr;
+    } WindowObject;
+
+    void CreateDumpWindow(WindowObject &obj)
+    {
         obj.consumer_ = Surface::CreateSurfaceAsConsumer();
         if (queue_.empty()) {
             obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
@@ -155,19 +174,29 @@ public:
         obj.producer_ = Surface::CreateSurfaceAsProducer(p);
 
         obj.nativeWindow_ = CreateNativeWindowFromSurface(&obj.producer_);
-        queue_.push(std::move(obj));
     }
 
-private:
+    void CreateRosenWindow(WindowObject &obj)
+    {
+        sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
+        int32_t sizeModValue = static_cast<int32_t>(queue_.size()) % 2;                                // 2: surface num
+        Rosen::Rect rect = {720 * sizeModValue, (sampleId_ % VideoDecSample::threadNum_) * 320, 0, 0}; // 720 320: x y
+        option->SetWindowRect(rect);
+        option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
+        option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
+        std::string name = "VideoCodec_" + std::to_string(sampleId_) + "_" + std::to_string(queue_.size());
+        obj.rosenWindow_ = Rosen::Window::Create(name, option);
+        UNITTEST_CHECK_AND_RETURN_LOG(obj.rosenWindow_ != nullptr, "rosen window is nullptr.");
+        UNITTEST_CHECK_AND_RETURN_LOG(obj.rosenWindow_->GetSurfaceNode() != nullptr, "surface node is nullptr.");
+        obj.rosenWindow_->SetTurnScreenOn(!obj.rosenWindow_->IsTurnScreenOn());
+        obj.rosenWindow_->SetKeepScreenOn(true);
+        obj.rosenWindow_->Show();
+        obj.producer_ = obj.rosenWindow_->GetSurfaceNode()->GetSurface();
+        obj.nativeWindow_ = CreateNativeWindowFromSurface(&obj.producer_);
+    }
+
     int32_t sampleId_;
     std::shared_ptr<VideoDecSignal> signal_ = nullptr;
-
-    typedef struct WindowObject {
-        OHNativeWindow *nativeWindow_ = nullptr;
-        sptr<IBufferConsumerListener> listener_ = nullptr;
-        sptr<Surface> consumer_ = nullptr;
-        sptr<Surface> producer_ = nullptr;
-    } WindowObject;
     std::queue<WindowObject> queue_;
 };
 } // namespace MediaAVCodec
@@ -177,6 +206,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 bool VideoDecSample::needDump_ = false;
 bool VideoDecSample::isHardware_ = true;
+bool VideoDecSample::isRosenWindow_ = false;
 uint64_t VideoDecSample::sampleTimout_ = 180;
 uint64_t VideoDecSample::threadNum_ = 1;
 
@@ -363,8 +393,6 @@ int32_t VideoDecSample::Stop()
         ret = OH_VideoDecoder_Stop(codec_);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Stop failed");
     }
-    ret = isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
@@ -377,8 +405,6 @@ int32_t VideoDecSample::Flush()
         ret = OH_VideoDecoder_Flush(codec_);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Flush failed");
     }
-    ret = isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
@@ -623,7 +649,7 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         }
         int32_t pixelbytes = 1;
         if (stride_ >= width_ * 2) { // 2 10bit per pixel 2 bytes
-            pixelbytes = 2; // 2 10bit per pixel 2 bytes
+            pixelbytes = 2;          // 2 10bit per pixel 2 bytes
         }
         for (int32_t i = 0; i < heightSlice_; ++i) {
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i * stride_, width_ * pixelbytes);

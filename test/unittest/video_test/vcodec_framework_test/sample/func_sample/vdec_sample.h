@@ -119,6 +119,7 @@ public:
     void SetSource(const std::string &path);
     void SetSourceType(bool isH264Stream);
     bool needCheckSHA_ = false;
+    bool isAVBufferMode_ = false;
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool renderAtTimeFlag_ = false;
     static bool needDump_;
@@ -155,7 +156,6 @@ private:
     uint32_t datSize_ = 0;
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
-    bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
     int64_t time_ = 0;
