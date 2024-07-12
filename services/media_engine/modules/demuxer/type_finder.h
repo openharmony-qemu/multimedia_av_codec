@@ -67,8 +67,8 @@ private:
     std::vector<std::shared_ptr<Plugins::PluginInfo>> plugins_;
     std::atomic<bool> pluginRegistryChanged_;
     std::shared_ptr<Task> task_;
-    std::function<bool(int32_t, uint64_t, size_t)> checkRange_;
-    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
+    std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
     int32_t streamID_ = -1;
 };
