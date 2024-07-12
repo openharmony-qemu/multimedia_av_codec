@@ -119,9 +119,8 @@ protected:
     std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
     std::map<int32_t, DemuxerState> pluginStateMap_;
-    std::atomic<bool> isIgnoreParse_{false};
-    std::atomic<bool> isIgnoreRead_{false};
-    std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<Status> isIgnoreParse_{false};
+    std::atomic<Status> isInterruptNeeded_{false};
     std::string bundleName_ {};
     std::string uri_ {};
 public:

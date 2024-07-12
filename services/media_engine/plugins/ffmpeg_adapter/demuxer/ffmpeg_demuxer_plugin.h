@@ -87,7 +87,7 @@ private:
         int64_t offset {0};
         uint64_t fileSize {0};
         bool eos {false};
-        std::atomic<bool> timeout {false};
+        std::atomic<bool> retry {false};
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
         DumpMode dumpMode;
