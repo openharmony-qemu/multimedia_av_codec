@@ -41,6 +41,7 @@ int32_t DataProducerBase::Init(SampleInfo &info)
 
 int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
 {
+    bufferInfo.attr.size = 0;
     if ((frameCount_ >= sampleInfo_.maxFrames || IsEOS()) && !Repeat()) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;

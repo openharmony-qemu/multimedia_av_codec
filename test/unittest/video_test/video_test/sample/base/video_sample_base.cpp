@@ -65,7 +65,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
         "Create video encoder failed, no memory");
     ret = videoCodec->Create(info.codecMime, info.codecType & 0b1);  // 0b1: software codec mask
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video codec failed");
 
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
@@ -177,7 +177,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     }
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
-    if (!(info.codecType & 0b10)) {   // 0b10: Video encoder mask
+    if (info.codecType == VIDEO_HW_DECODER) {
         WriteOutputFileWithStrideYUV420(bufferAddr, bufferInfo.attr.size);
     } else {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);

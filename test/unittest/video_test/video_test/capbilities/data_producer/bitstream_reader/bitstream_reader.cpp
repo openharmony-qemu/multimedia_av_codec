@@ -160,7 +160,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         pBuffer -= ANNEXB_FRAME_HEAD_LEN;
         pPrereadBuffer_ = 0;
     } while (true);
-    if (prereadBuffer_.get()[pPrereadBuffer_ - 1] == 0) {
+    if (prereadBuffer_.get()[pPrereadBuffer_ - 1] == 0 && !IsEOS()) {
         bufferSize--;
         pPrereadBuffer_--;
     }
