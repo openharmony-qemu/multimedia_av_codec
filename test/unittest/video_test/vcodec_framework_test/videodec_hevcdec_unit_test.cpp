@@ -14,7 +14,9 @@
  */
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "native_avcapability.h"
 #include "heap_memory_thread.h"
+#include "native_avmagic.h"
 #include "unittest_utils.h"
 #include "vdec_sample.h"
 
@@ -2011,6 +2013,12 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_AVBuffer_With_Queu
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
+
+bool CheckCapabilitySupport()
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+    return capability != nullptr;
+}
 } //namespace
 
 int main(int argc, char **argv)
@@ -2035,5 +2043,8 @@ int main(int argc, char **argv)
         }
     }
     testing::InitGoogleTest(&argc, argv);
+    if (!CheckCapabilitySupport()) {
+        testing::GTEST_FLAG(filter) = "-*";
+    }
     return RUN_ALL_TESTS();
 }
