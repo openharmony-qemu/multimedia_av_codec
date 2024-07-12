@@ -57,24 +57,12 @@ StreamDemuxer::~StreamDemuxer()
     ResetAllCache();
 }
 
-bool StreamDemuxer::GetPeekRangeSub(int32_t streamID, uint64_t offset, size_t size,
-    std::shared_ptr<Buffer>& bufferPtr)
+Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
-    auto ret = PullData(streamID, offset, size, bufferPtr);
-    if (ret == Status::ERROR_AGAIN) {
-        isIgnoreRead_ = true;
-        return true;
-    } else {
-        isIgnoreRead_ = false;
-    }
-    return Status::OK == ret;
-}
-
-bool StreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
-{
-    if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
+    if (IsDash()) {
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
-        if (cacheDataMap_[streamID].CheckCacheExist(offset)) {
+        if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
+            MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
             if (memory != nullptr && memory->GetSize() > 0) {
                 MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data.");
@@ -82,31 +70,33 @@ bool StreamDemuxer::TryReadCache(int32_t streamID, uint64_t offset, size_t size,
             }
         }
     }
-    return false;
+    return PullData(streamID, offset, size, bufferPtr);
 }
 
-bool StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+{
+    if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
+        MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
+        auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
+        if (memory != nullptr && memory->GetSize() > 0) {
+            MEDIA_LOG_D("GetPeekRange read cache, Read data from cache data.");
+            return PullDataWithCache(streamID, offset, size, bufferPtr);
+        }
+    }
+    return PullDataWithoutCache(streamID, offset, size, bufferPtr);
+}
+
+Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
     if (bufferPtr == nullptr) {
         MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
-        return false;
+        Status::ERROR_INVALID_PARAMETER;
     }
-    bool ret = false;
     bufferPtr->streamID = streamID;
     if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-        if (IsDash()) {
-            ret = TryReadCache(streamID, offset, size, bufferPtr);
-            if (ret == true) {
-                return ret;
-            }
-        }
-        return GetPeekRangeSub(streamID, offset, size, bufferPtr);
+        return ReadFrameData(streamID, offset, size, bufferPtr);
     }
-    ret = TryReadCache(streamID, offset, size, bufferPtr);
-    if (ret == true) {
-        return ret;
-    }
-    return PullDataWithoutCache(streamID, offset, size, bufferPtr);
+    return ReadHeaderData(streamID, offset, size, bufferPtr);
 }
 
 Status StreamDemuxer::Init(const std::string& uri)
@@ -114,9 +104,9 @@ Status StreamDemuxer::Init(const std::string& uri)
     MediaAVCodec::AVCodecTrace trace("StreamDemuxer::Init");
     MEDIA_LOG_I("StreamDemuxer::Init called");
     checkRange_ = [](int32_t streamID, uint64_t offset, uint32_t size) {
-        return true;
+        return Status::OK;
     };
-    peekRange_ = [this](int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
+    peekRange_ = [this](int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> Status {
         return GetPeekRange(streamID, offset, size, bufferPtr);
     };
     getRange_ = peekRange_;
@@ -124,7 +114,7 @@ Status StreamDemuxer::Init(const std::string& uri)
     return Status::OK;
 }
 
-bool StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t size,
+Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
@@ -133,7 +123,7 @@ bool StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t 
     uint64_t offsetInCache = offset - cacheDataMap_[streamID].GetOffset();
     if (size <= memory->GetSize() - offsetInCache) {
         bufferPtr->GetMemory()->Write(memory->GetReadOnlyData() + offsetInCache, size, 0);
-        return true;
+        return Status::OK;
     }
     bufferPtr->GetMemory()->Write(memory->GetReadOnlyData() + offsetInCache, memory->GetSize() - offsetInCache, 0);
     uint64_t remainOffset = cacheDataMap_[streamID].GetOffset() + memory->GetSize();
@@ -141,7 +131,7 @@ bool StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t 
     std::shared_ptr<Buffer> tempBuffer = Buffer::CreateDefaultBuffer(remainSize);
     if (tempBuffer == nullptr || tempBuffer->GetMemory() == nullptr) {
         MEDIA_LOG_W("PullDataWithCache, Read data from cache data. only get partial data.");
-        return true;
+        return Status::ERROR_UNKNOWN;
     }
     Status ret = PullData(streamID, remainOffset, remainSize, tempBuffer);
     if (ret == Status::OK) {
@@ -149,13 +139,13 @@ bool StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t 
             tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_W("PullDataWithCache, not cache begin.");
-            return true;
+            return Status::OK;
         }
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());
         if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
             MEDIA_LOG_W("PullDataWithCache, Read data from cache data success. update cache data fail.");
-            return true;
+            return Status::ERROR_UNKNOWN;
         }
         mergedBuffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
         mergedBuffer->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
@@ -165,7 +155,7 @@ bool StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t 
             ", cache size: " PUBLIC_LOG_ZU, offset, cacheDataMap_[streamID].GetOffset(),
             cacheDataMap_[streamID].GetData()->GetMemory()->GetSize());
     }
-    return ret == Status::OK;
+    return ret;
 }
 
 bool StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size,
@@ -174,7 +164,7 @@ bool StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size
     Status ret = PullData(streamID, offset, size, bufferPtr);
     if (ret != Status::OK) {
         MEDIA_LOG_E("PullDataWithoutCache, PullData error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
-        return false;
+        return ret;
     }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         MEDIA_LOG_D("PullDataWithoutCache, cacheDataMap_ exist streamID , do nothing.");
@@ -185,7 +175,7 @@ bool StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size
                 bufferPtr->GetMemory()->GetSize() + memory->GetSize());
             if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
                 MEDIA_LOG_W("dash PullDataWithoutCache, Read data from cache data success. update cache data fail.");
-                return true;
+                return Status::ERROR_UNKNOWN;
             }
             MEDIA_LOG_I("dash PullDataWithoutCache merge before: cache offset: " PUBLIC_LOG_U64
                 ", cache size: " PUBLIC_LOG_ZU, cacheDataMap_[streamID].GetOffset(),
@@ -218,7 +208,7 @@ bool StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size
             }
         }
     }
-    return ret == Status::OK;
+    return ret;
 }
 
 Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
@@ -336,7 +326,11 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
         ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
-    if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
+    if (expectedLen == 0) {
+        return Status::END_OF_STREAM;
+    }
+    Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
+    if (ret == Status::OK) {
         if (IsDash()) {
             if (buffer != nullptr && buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
@@ -346,22 +340,21 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
             }
         }
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
-        return Status::OK;
-    }
-    if (expectedLen == 0) {
-        return Status::END_OF_STREAM;
+        return ret;
     }
     if (mediaDataSize_ == LIVE_CONTENT_LENGTH) {
         return Status::OK;
     }
-    return Status::ERROR_AGAIN;
+    MEDIA_LOG_W("Demuxer parse DEMUXER_STATE_PARSE_HEADER, getRange_ failed, ret = " PUBLIC_LOG_D32, ret);
+    return ret;
 }
 
 Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
-    if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
+    Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
+    if (ret == Status::OK) {
         if (IsDash()) {
             if (buffer != nullptr && buffer->streamID != streamID) {
                 SetNewVideoStreamID(buffer->streamID);
@@ -376,22 +369,19 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
             buffer->GetMemory()->GetSize() == 0) {
             MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                         " Read fail and try again");
-            if (isIgnoreParse_.load()) {
-                return Status::ERROR_WRONG_STATE;
-            } else {
-                return Status::ERROR_AGAIN;
-            }
+            return Status::ERROR_AGAIN;
         }
-        return Status::OK;
+        return ret;
     }
-    MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
-    return Status::END_OF_STREAM;
+    MEDIA_LOG_W("Demuxer parse DEMUXER_STATE_PARSE_FRAME, getRange_ failed, ret = " PUBLIC_LOG_D32, ret);
+    return ret;
 }
 
 Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
     FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
+    FALSE_RETURN_V(!isIgnoreParse_.load(), Status::ERROR_WRONG_STATE);
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;
