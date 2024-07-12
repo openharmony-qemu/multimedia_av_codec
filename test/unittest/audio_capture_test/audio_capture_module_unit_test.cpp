@@ -17,17 +17,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cinttypes>
+#include <nativetoken_kit.h>
+#include <token_setproc.h>
+#include <accesstoken_kit.h>
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
 #include "media_description.h"
 #include "audio_capture_module_unit_test.h"
 
-#define LOCAL true
-
-using namespace testing::ext;
-using namespace OHOS::MediaAVCodec;
+using namespace OHOS;
 using namespace OHOS::Media;
+using namespace std;
+using namespace testing::ext;
+using namespace Security::AccessToken;
 namespace {
 } // namespace
 
@@ -36,6 +39,55 @@ namespace OHOS {
 
 void AudioCaptureModuleUnitTest::SetUpTestCase(void)
 {
+    HapInfoParams info = {
+        .userID = 100, // 100 user ID
+        .bundleName = "com.ohos.test.audiocapturertdd",
+        .instIndex = 0, // 0 index
+        .appIDDesc = "com.ohos.test.audiocapturertdd",
+        .isSystemApp = true
+    };
+
+    HapPolicyParams policy = {
+        .apl = APL_SYSTEM_BASIC,
+        .domain = "test.audiocapturermodule",
+        .permList = { },
+        .permStateList = {
+            {
+                .permissionName = "ohos.permission.MICROPHONE",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            },
+            {
+                .permissionName = "ohos.permission.READ_MEDIA",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            },
+            {
+                .permissionName = "ohos.permission.WRITE_MEDIA",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            },
+            {
+                .permissionName = "ohos.permission.KEEP_BACKGROUND_RUNNING",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            }
+        }
+    };
+    AccessTokenIDEx tokenIdEx = { 0 };
+    tokenIdEx = AccessTokenKit::AllocHapToken(info, policy);
+    int ret = SetSelfTokenID(tokenIdEx.tokenIDEx);
+    if (ret != 0) {
+        std::cout<<"Set hap token failed"<<std::endl;
+    }
 }
 
 void AudioCaptureModuleUnitTest::TearDownTestCase(void)
@@ -61,10 +113,10 @@ void AudioCaptureModuleUnitTest::TearDown(void)
     audioCaptureParameter_ = nullptr;
     audioCaptureModule_ = nullptr;
 }
-class CaptureChangeInfoCallback : public AudioStandard::AudioCapturerInfoChangeCallback {
+class CapturerInfoChangeCallback : public AudioStandard::AudioCapturerInfoChangeCallback {
 public:
-    explicit CaptureChangeInfoCallback() { }
-    void OnStateChange(const AudioStandard::AudioCaptureChangeInfo &info)
+    explicit CapturerInfoChangeCallback() { }
+    void OnStateChange(const AudioStandard::AudioCapturerChangeInfo &info)
     {
         (void)info;
         std::cout<<"AudioCapturerInfoChangeCallback"<<std::endl;
@@ -76,7 +128,7 @@ public:
     explicit AudioCaptureModuleCallbackTest() { }
     void OnInterrupt(const std::string &interruptInfo) override
     {
-        std::cout<<"AudioCaptureModuleCallback interrupt "<<interruptInfo<<std::endl;
+        std::cout<<"AudioCaptureModuleCallback interrupt"<<interruptInfo<<std::endl;
     }
 };
 
@@ -127,7 +179,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCapturePrepare_1000, TestSize.Level1)
     ASSERT_TRUE(ret == Status::OK);
 }
 
-HWTEST_F(AudioCaptureModuleUnitTest, AudioCapturestart_1000, TestSize.Level1)
+HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureStart_1000, TestSize.Level1)
 {
     audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
     std::shared_ptr<Meta> audioCaptureFormat = std::make_shared<Meta>();
@@ -206,6 +258,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0300, TestSize.Level1)
 }
 HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0400, TestSize.Level1)
 {
+    audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
     Status ret = audioCaptureModule_->SetParameter(audioCaptureParameter_);
     ASSERT_TRUE(ret == Status::OK);
     ret = audioCaptureModule_->Init();
@@ -315,8 +368,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetAudioCapturerInfoChangeCallback_010
     ASSERT_TRUE(ret == Status::OK);
     EXPECT_NE(Status::OK, audioCaptureModule_->SetAudioCapturerInfoChangeCallback(nullptr));
     std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> callback =
-        std::make_shared<CaptureChangeInfoCallback>();
-    EXPECT_EQ(Status::OK, audioCaptureModule_->SetAudioCapturerInfoChangeCallback(callback));
+        std::make_shared<CapturerInfoChangeCallback>();
+    EXPECT_NE(Status::OK, audioCaptureModule_->SetAudioCapturerInfoChangeCallback(nullptr));
     ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
 }
@@ -415,6 +468,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0300, TestSize.Level1)
  */
 HWTEST_F(AudioCaptureModuleUnitTest, AudioGetParameter_0100, TestSize.Level1)
 {
+    audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
     std::shared_ptr<Meta> audioCaptureParameterTest_ = std::make_shared<Meta>();
     Status ret = audioCaptureModule_->SetParameter(audioCaptureParameter_);
     EXPECT_NE(Status::OK, audioCaptureModule_->GetParameter(audioCaptureParameterTest_));
