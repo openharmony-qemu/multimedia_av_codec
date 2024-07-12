@@ -107,6 +107,13 @@ static const std::map<AVCodecID, StreamType> g_streamParserMap = {
     { AV_CODEC_ID_HEVC, StreamType::HEVC },
 };
 
+static const std::vector<AVMediaType> g_streamMediaTypeVec = {
+    AVMEDIA_TYPE_AUDIO,
+    AVMEDIA_TYPE_VIDEO,
+    AVMEDIA_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_TIMEDMETA
+};
+
 static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_MJPEG,
     AV_CODEC_ID_PNG,
@@ -271,8 +278,8 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 bool IsSupportedTrack(const AVStream& avStream)
 {
     FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codec par is nullptr.");
-    if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
-        avStream.codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+    if (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
+        avStream.codecpar->codec_type) == g_streamMediaTypeVec.cend()) {
         MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_S ".",
             ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
         return false;

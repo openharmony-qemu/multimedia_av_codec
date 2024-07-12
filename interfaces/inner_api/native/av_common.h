@@ -43,6 +43,10 @@ enum MediaType : int32_t {
      * track is subtitle.
      */
     MEDIA_TYPE_SUBTITLE = 2,
+    /**
+     * track is timed metadata.
+     */
+    MEDIA_TYPE_TIMED_METADATA = 5,
 };
 
 /**
