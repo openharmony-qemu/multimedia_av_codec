@@ -22,6 +22,10 @@
 #include "detail_enhancer_video_common.h"
 #endif
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -186,12 +190,15 @@ sptr<Surface> VideoResizeFilter::GetInputSurface()
     }
 }
 
-Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface)
+Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height)
 {
     MEDIA_LOG_I("SetOutputSurface");
     int32_t ret = -1;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    ret = videoEnhancer_->SetOutputSurface(surface);
+    if (surface != nullptr) {
+        surface->SetRequestWidthAndHeight(width, height);
+        ret = videoEnhancer_->SetOutputSurface(surface);
+    }
 #endif
     if (ret != 0) {
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});

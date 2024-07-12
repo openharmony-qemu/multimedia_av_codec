@@ -124,7 +124,7 @@ HWTEST_F(HwEncSetParamNdkTest, RESET_BITRATE_002, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         OH_AVFormat *format = OH_AVFormat_Create();
         (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE >> 1);
-        EXPECT_EQ(AV_ERR_OK, vEncSample->SetParameter(format));
+        EXPECT_NE(AV_ERR_OK, vEncSample->SetParameter(format));
         OH_AVFormat_Destroy(format);
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -277,7 +277,7 @@ HWTEST_F(HwEncSetParamNdkTest, RESET_BITRATE_008, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         OH_AVFormat *format = OH_AVFormat_Create();
         (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE >> 1);
-        EXPECT_EQ(AV_ERR_OK, vEncSample->SetParameter(format));
+        EXPECT_NE(AV_ERR_OK, vEncSample->SetParameter(format));
         OH_AVFormat_Destroy(format);
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);

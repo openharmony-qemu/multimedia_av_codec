@@ -153,6 +153,10 @@ bool AudioMp3EncoderPlugin::CheckFormat()
             return false;
         }
     }
+    if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
+        AVCODEC_LOGE("AudioMp3EncoderPlugin sampleFmt not supported");
+        return false;
+    }
     if (sampleRate_ < SAMPLE_RATE_16000 && bitrate_ > BIT_RATE_64000) {
         AVCODEC_LOGE("sample<16k,bitrate must <=64k");
         return false;
@@ -161,10 +165,6 @@ bool AudioMp3EncoderPlugin::CheckFormat()
         return false;
     } else if (sampleRate_ >= SAMPLE_RATE_32000 && bitrate_ < BIT_RATE_32000) {
         AVCODEC_LOGE("sample>=32k,bitrate must >=32k");
-        return false;
-    }
-    if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
-        AVCODEC_LOGE("AudioMp3EncoderPlugin sampleFmt not supported");
         return false;
     }
     return true;
@@ -364,7 +364,7 @@ Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& paramete
         AVCODEC_LOGE("AudioMp3EncoderPlugin LAME parameter initialization error");
         return Status::ERROR_UNKNOWN;
     }
-    uint32_t frameSize = lame_get_framesize(lameInfo->gfp);
+    int32_t frameSize = lame_get_framesize(lameInfo->gfp);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
     lameInitFlag = 1;
     return Status::OK;

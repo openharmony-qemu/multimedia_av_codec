@@ -19,8 +19,10 @@
 #include <memory>
 #include <list>
 #include <mutex>
+#include <atomic>
 #include "dash_common.h"
 #include "download/downloader.h"
+#include "media_downloader.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
 
@@ -133,9 +135,7 @@ public:
     void Close(bool isAsync, bool isClean);
     void Pause();
     void Resume();
-    void CloseRequest();
-    DashReadRet Read(int32_t streamId, uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
-                     int32_t &realStreamId);
+    DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded);
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
@@ -162,7 +162,7 @@ private:
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
                           int32_t currentStreamId);
     std::shared_ptr<DashBufferSegment> GetCurrentSegment();
-    bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret);
+    bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret, const std::atomic<bool> &isInterruptNeeded);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
@@ -183,7 +183,7 @@ private:
     bool startedPlayStatus_{false};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;
-    uint64_t readTime_ {0};
+    uint64_t readTime_{0};
     bool isCleaningBuffer_{false};
 
     // support ringbuffer size of duration

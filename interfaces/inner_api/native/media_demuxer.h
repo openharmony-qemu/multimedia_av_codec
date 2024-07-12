@@ -123,7 +123,6 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    void ReportIsLiveStreamEvent();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
         std::string& videoMime);
     void InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo);

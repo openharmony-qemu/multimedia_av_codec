@@ -130,8 +130,8 @@ private:
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     bool isStarted_ = false;
     struct CallerInfo {
-        int32_t pid = -1;
-        int32_t uid = -1;
+        pid_t pid = -1;
+        uid_t uid = 0;
         std::string processName;
     } caller_, forwardCaller_;
     bool isSurfaceMode_ = false;

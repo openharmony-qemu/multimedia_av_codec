@@ -16,6 +16,11 @@
 #include "audio_sink.h"
 #include "syspara/parameters.h"
 #include "plugin/plugin_manager_v2.h"
+#include "common/log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
 
 namespace OHOS {
 namespace Media {
@@ -256,6 +261,10 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
 void AudioSink::ReportEosEventAndDrain()
 {
     isEos_ = true;
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        syncCenter->ReportEos(this);
+    }
     Event event {
         .srcFilter = "AudioSink",
         .type = EventType::EVENT_COMPLETE,

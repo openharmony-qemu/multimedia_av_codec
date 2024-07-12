@@ -315,17 +315,28 @@ std::shared_ptr<Tag> TagFactory::CreateTagByName(const std::string& name, const 
 static std::vector<std::string> Split(const std::string& s, const char* delim)
 {
     std::vector<std::string> ret;
+    if (delim == nullptr) {
+        ret.push_back(s);
+        return ret;
+    }
+    size_t delimLen = std::strlen(delim);
+    if (delimLen == 0) {
+        ret.push_back(s);
+        return ret;
+    }
     std::string::size_type last = 0;
     auto index = s.find(delim, last);
     while (index != std::string::npos) {
-        if (index - last > 0) {
+        if (index > last) {
             ret.push_back(s.substr(last, index - last));
         }
-        last = index + strlen(delim);
+        last = index + delimLen;
         index = s.find(delim, last);
     }
-    if (s.empty() || s.size() - last > 0) {
+    if (last < s.size()) {
         ret.push_back(s.substr(last));
+    } else if (last == s.size()) {
+        ret.push_back("");
     }
     return ret;
 }

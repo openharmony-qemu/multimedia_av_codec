@@ -24,7 +24,6 @@
 #include "buffer/avbuffer_queue_define.h"
 #include "plugin/audio_sink_plugin.h"
 #include "filter/filter.h"
-#include "common/log.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {

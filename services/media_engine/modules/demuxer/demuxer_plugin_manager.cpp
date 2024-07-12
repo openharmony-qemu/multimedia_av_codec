@@ -38,6 +38,10 @@
 #include "base_stream_demuxer.h"
 #include "media_demuxer.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 
@@ -241,7 +245,7 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
 
 Status DemuxerPluginManager::AddTrackMapInfo(int32_t streamID, int32_t trackIndex)
 {
-    MEDIA_LOG_I("DemuxerPluginManager::AddTrackMapInfo in");
+    MEDIA_LOG_D("DemuxerPluginManager::AddTrackMapInfo in");
     for (const auto& iter : trackInfoMap_) {
         if (iter.second.streamID == streamID && iter.second.innerTrackIndex == trackIndex) {
             return Status::OK;

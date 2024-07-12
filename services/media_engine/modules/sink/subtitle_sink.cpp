@@ -14,8 +14,14 @@
  */
 
 #include "subtitle_sink.h"
+
+#include "common/log.h"
 #include "syspara/parameters.h"
 #include "meta/format.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
 
 namespace OHOS {
 namespace Media {
@@ -191,9 +197,8 @@ Status SubtitleSink::PrepareInputBufferQueue()
 void SubtitleSink::DrainOutputBuffer(bool flushed)
 {
     Status ret;
-    if (inputBufferQueueConsumer_ == nullptr || isEos_.load()) {
-        return;
-    }
+    FALSE_RETURN(inputBufferQueueConsumer_ != nullptr);
+    FALSE_RETURN(!isEos_.load());
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer_);
     if (filledOutputBuffer_->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;

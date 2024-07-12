@@ -65,7 +65,11 @@ ohos_unittest("av_audio_sink_unit_test") {
   public_configs = []
 
   if (av_codec_support_test) {
-    sources = [ "./audio_sink_test.cpp" ]
+    sources = [
+      "./audio_sink_test.cpp",
+      "./subtitle_sink_test.cpp",
+      "./video_sink_test.cpp",
+    ]
   }
 
   deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]

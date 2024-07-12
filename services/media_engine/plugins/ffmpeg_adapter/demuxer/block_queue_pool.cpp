@@ -18,6 +18,9 @@
 #include "common/log.h"
 #include "block_queue_pool.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+}
 
 namespace OHOS {
 namespace Media {

@@ -20,6 +20,10 @@
 #include "dash_mpd_util.h"
 #include "utils/time_utils.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
