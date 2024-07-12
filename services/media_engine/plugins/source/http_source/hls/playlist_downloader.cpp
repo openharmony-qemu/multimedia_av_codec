@@ -123,7 +123,7 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
         false, "Invalid fd uri format: %{private}s", uri.c_str());
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
+        false, "Invalid fd uri format: %{private}s", uri.c_str());
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
