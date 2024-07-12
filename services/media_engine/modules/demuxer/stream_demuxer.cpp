@@ -90,7 +90,7 @@ Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t siz
 {
     if (bufferPtr == nullptr) {
         MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
-        Status::ERROR_INVALID_PARAMETER;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     bufferPtr->streamID = streamID;
     if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
@@ -158,7 +158,7 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
     return ret;
 }
 
-bool StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size,
+Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
     Status ret = PullData(streamID, offset, size, bufferPtr);
