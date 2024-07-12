@@ -624,8 +624,6 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
         return ret;
     }
 
-    this_thread::sleep_for(std::chrono::milliseconds(50)); // 50 ms
-
     frameInputCount_++;
     ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, ohNativeWindowBuffer, -1, region);
     delete rect;
