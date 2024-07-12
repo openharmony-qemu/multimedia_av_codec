@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
+#include "unittest_utils.h"
 #include "codeclist_mock.h"
 #include "venc_sample.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
@@ -579,6 +580,222 @@ HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_004, TestSize.Level1)
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_FreeOutputBuffer(codec_, 0));
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
 }
+#else
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_001
+ * @tc.desc: key repeat previous frame is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_001, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 0;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_002
+ * @tc.desc: key repeat previous frame is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_002, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = -1;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_003
+ * @tc.desc: key repeat previous frame is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_003, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = INT32_MIN;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_004
+ * @tc.desc: key repeat previous frame is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_004, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = 0;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_005
+ * @tc.desc: repeat the previous frame all the time
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_005, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = -1;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_006
+ * @tc.desc: repeat the previous frame all the time
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_006, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = INT32_MIN;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_007
+ * @tc.desc: repeat the previous frame one times
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_007, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 30;
+    constexpr int32_t repeatPreviousFrameMaxCount = 1;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 2 + 7;
+    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
+    EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_008
+ * @tc.desc: repeat the previous frame two times
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_008, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 20;
+    constexpr int32_t repeatPreviousFrameMaxCount = 2;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 7;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 7;
+    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
+    EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_009
+ * @tc.desc: repeat the previous frame three times
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_009, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 10;
+    constexpr int32_t repeatPreviousFrameMaxCount = 3;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 4 - 7;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 4 + 7;
+    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
+    EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+}
+
+#ifdef HMOS_TEST
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_010
+ * @tc.desc: repeat the previous frame two times
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_010, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 20;
+    constexpr int32_t repeatPreviousFrameMaxCount = 10;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
+    videoEnc_->needSleep_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 17;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 17;
+    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
+    EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatPreviousFrame_011
+ * @tc.desc: repeat the previous frame two times
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
+{
+    constexpr int32_t repeatPreviousFrame = 20;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatPreviousFrame);
+    videoEnc_->needSleep_ = true;
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 17;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 17;
+    EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
+    EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
+}
+#endif
 #endif
 
 /**
@@ -1453,3 +1670,17 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_017, TestSize.Level1)
 }
 #endif
 } // namespace
+
+int main(int argc, char **argv)
+{
+    testing::GTEST_FLAG(output) = "xml:./";
+    for (int i = 0; i < argc; ++i) {
+        cout << argv[i] << endl;
+        if (strcmp(argv[i], "--need_dump") == 0) {
+            VideoEncSample::needDump_ = true;
+            DecArgv(i, argc, argv);
+        }
+    }
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

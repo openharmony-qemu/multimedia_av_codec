@@ -121,6 +121,7 @@ public:
     bool needCheckSHA_ = false;
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool renderAtTimeFlag_ = false;
+    static bool needDump_;
 
 private:
     void FlushInner();

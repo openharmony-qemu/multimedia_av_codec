@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
+#include "unittest_utils.h"
 #include "vdec_sample.h"
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
@@ -1345,3 +1346,17 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 } // namespace
+
+int main(int argc, char **argv)
+{
+    testing::GTEST_FLAG(output) = "xml:./";
+    for (int i = 0; i < argc; ++i) {
+        cout << argv[i] << endl;
+        if (strcmp(argv[i], "--need_dump") == 0) {
+            VideoDecSample::needDump_ = true;
+            DecArgv(i, argc, argv);
+        }
+    }
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
