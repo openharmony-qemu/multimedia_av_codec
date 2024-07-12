@@ -135,6 +135,7 @@ public:
     int32_t maxInputSize = 0;
     int64_t end_time = 0;
     bool autoSwitchSurface = false;
+    std::atomic<bool> isFlushing_ { false };
     int32_t switchSurfaceFlag = 0;
     std::atomic<bool> isRunning_ { false };
     bool inputCallbackFlush = false;
