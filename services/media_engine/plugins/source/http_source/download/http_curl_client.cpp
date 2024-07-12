@@ -31,10 +31,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-const uint32_t MAX_STRING_LENGTH = 1024;
+const uint32_t MAX_STRING_LENGTH = 4096;
 const std::string USER_AGENT = "User-Agent";
-const std::string REFERER = "Referer";
-const std::string COOKIE = "Cookie";
 
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
@@ -192,38 +190,6 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
     return str;
 }
 
-void HttpCurlClient::CheckHeaderKey(const std::string &setKey, const std::string &setValue)
-{
-    if (setKey != USER_AGENT && setKey != REFERER && setKey != COOKIE) {
-        MEDIA_LOG_E("Setted invalid key " PUBLIC_LOG_S " .", setKey.c_str());
-        return;
-    }
-    if (setKey == USER_AGENT) {
-        if (!setValue.empty()) {
-            userAgent_ = setValue;
-            MEDIA_LOG_I("Setted User-Agent success.");
-        } else {
-            MEDIA_LOG_I("Setted User-Agent failed, value is empty.");
-        }
-    }
-    if (setKey == REFERER) {
-        if (!setValue.empty()) {
-            referer_ = setValue;
-            MEDIA_LOG_I("Setted Referer success.");
-        } else {
-            MEDIA_LOG_I("Setted Referer failed, value is empty.");
-        }
-    }
-    if (setKey == COOKIE) {
-        if (!setValue.empty()) {
-            cookie_ = setValue;
-            MEDIA_LOG_I("Setted Cookie success.");
-        } else {
-            MEDIA_LOG_I("Setted Cookie failed, value is empty.");
-        }
-    }
-}
-
 void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHeader)
 {
     if (httpHeader.empty()) {
@@ -235,7 +201,12 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         std::string setValue = iter->second;
         if (setKey.length() <= MAX_STRING_LENGTH && setValue.length() <= MAX_STRING_LENGTH) {
             ClearHeadTailSpace(setKey);
-            CheckHeaderKey(setKey, setValue);
+            std::string headerStr = setKey + ":" + setValue;
+            const char* str = headerStr.c_str();
+            headerList_ = curl_slist_append(headerList_, str);
+            if (setKey == USER_AGENT) {
+                isSetUA_ = true;
+            }
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
             MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
@@ -253,6 +224,9 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     std::map<std::string, std::string> header = httpHeader;
     HttpHeaderParse(header);
+    if (!isSetUA_) {
+        headerList_ = curl_slist_append(headerList_, "User-Agent: OpenHarmony OS UA");
+    }
     InitCurlEnvironment(url, timeoutMs);
     return Status::OK;
 }
@@ -328,19 +302,7 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
         MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeoutMs);
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeoutMs);
     }
-
     InitCurProxy(url);
-
-    MEDIA_LOG_I("InitCurlEnvironment userAgent: " PUBLIC_LOG_S " .", userAgent_.c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, userAgent_.c_str());
-    if (!referer_.empty()) {
-        MEDIA_LOG_I("InitCurlEnvironment referer success.");
-        curl_easy_setopt(easyHandle_, CURLOPT_REFERER, referer_.c_str());
-    }
-    if (!cookie_.empty()) {
-        MEDIA_LOG_I("InitCurlEnvironment cookie success.");
-        curl_easy_setopt(easyHandle_, CURLOPT_COOKIE, cookie_.c_str());
-    }
 }
 
 std::string HttpCurlClient::UrlParse(const std::string& url) const
@@ -375,16 +337,17 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
-    curl_slist *headers {nullptr};
-    headers = curl_slist_append(headers, "Connection: Keep-alive");
-    headers = curl_slist_append(headers, "Keep-Alive: timeout=120");
-    curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headers);
+    headerList_ = curl_slist_append(headerList_, "Accept: */*");
+    headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
+    headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
+    curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
     AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CURLcode returnCode = curl_easy_perform(easyHandle_);
-    if (headers != nullptr) {
-        curl_slist_free_all(headers);
+    if (headerList_ != nullptr) {
+        curl_slist_free_all(headerList_);
+        headerList_ = nullptr;
     }
     std::set <CURLcode> notRetrySet = {
         CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
