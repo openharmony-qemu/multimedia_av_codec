@@ -26,7 +26,6 @@ using namespace OHOS::Media;
 static VDecFuzzSample *g_vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t SPS_SIZE = 0x19;
 constexpr uint32_t PPS_SIZE = 0x05;
 constexpr uint32_t START_CODE_SIZE = 4;
@@ -37,20 +36,46 @@ constexpr uint8_t SPS[SPS_SIZE + START_CODE_SIZE] = {0x00, 0x00, 0x00, 0x01, 0x6
 constexpr uint8_t PPS[PPS_SIZE + START_CODE_SIZE] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xEF, 0x0F, 0x2C, 0x8B};
 bool g_isSurfMode = true;
 
+void RunNormalDecoder()
+{
+    VDecFuzzSample *vDecSample = new VDecFuzzSample();
+    vDecSample->defaultWidth = DEFAULT_WIDTH;
+    vDecSample->defaultHeight = DEFAULT_HEIGHT;
+    vDecSample->CreateVideoDecoder();
+    vDecSample->ConfigureVideoDecoder();
+    vDecSample->SetVideoDecoderCallback();
+    vDecSample->StartVideoDecoder();
+    vDecSample->WaitForEOS();
+    delete vDecSample;
+
+    vDecSample = new VDecFuzzSample();
+    vDecSample->isSurfMode = true;
+    vDecSample->defaultWidth = DEFAULT_WIDTH;
+    vDecSample->defaultHeight = DEFAULT_HEIGHT;
+    vDecSample->CreateVideoDecoder();
+    vDecSample->ConfigureVideoDecoder();
+    vDecSample->SetVideoDecoderCallback();
+    vDecSample->StartVideoDecoder();
+    vDecSample->WaitForEOS();
+    delete vDecSample;
+}
+
+bool g_needRunNormalDecoder = true;
 namespace OHOS {
 bool HwdecoderFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int32_t)) {
         return false;
     }
+    if (g_needRunNormalDecoder) {
+        g_needRunNormalDecoder = false;
+        RunNormalDecoder();
+    }
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     if (!g_vDecSample) {
         g_vDecSample = new VDecFuzzSample();
-        g_vDecSample->isSurfMode = g_isSurfMode;
-        g_isSurfMode = !g_isSurfMode;
         g_vDecSample->defaultWidth = DEFAULT_WIDTH;
         g_vDecSample->defaultHeight = DEFAULT_HEIGHT;
-        g_vDecSample->defaultFrameRate = DEFAULT_FRAME_RATE;
         g_vDecSample->CreateVideoDecoder();
         g_vDecSample->ConfigureVideoDecoder();
         g_vDecSample->SetVideoDecoderCallback();
