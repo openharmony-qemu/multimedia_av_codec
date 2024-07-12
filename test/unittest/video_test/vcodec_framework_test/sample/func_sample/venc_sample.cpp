@@ -719,7 +719,7 @@ int32_t VideoEncSample::OutputLoopInner()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
-    if (attr.flags == 0 || attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+    if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
         frameOutputCount_++;
     }
 
@@ -810,7 +810,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     int32_t size = attr.size;
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
-    if (attr.flags == 0 || attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+    if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
         frameOutputCount_++;
     }
     UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
@@ -979,7 +979,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     }
 
     if (needSleep_) {
-        this_thread::sleep_for(std::chrono::milliseconds(30)); // 46 ms
+        this_thread::sleep_for(std::chrono::milliseconds(30)); // 30 ms
     }
 
     ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, ohNativeWindowBuffer, -1, region);
