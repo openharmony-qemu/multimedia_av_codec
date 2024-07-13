@@ -101,12 +101,47 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_PAUSE, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE_01, TestSize.Level1)
 {
     HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader->Open(testUrl, httpHeader);
     downloader->Close(false);
+    EXPECT_TRUE(downloader->isStopped);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE_02, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    downloader->Open(testUrl, httpHeader);
+    downloader->Close(true);
+    EXPECT_TRUE(downloader->isStopped);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE_03, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    hlsMediaDownloader->isDownloadFinish_ = false;
+    downloader->Open(testUrl, httpHeader);
+    downloader->Close(true);
+    EXPECT_TRUE(downloader->isStopped);
+    delete downloader;
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CLOSE_04, TestSize.Level1)
+{
+    HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
+    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
+    hlsMediaDownloader->isDownloadFinish_ = true;
+    downloader->Open(testUrl, httpHeader);
+    downloader->Close(true);
     EXPECT_TRUE(downloader->isStopped);
     delete downloader;
     downloader = nullptr;
