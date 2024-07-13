@@ -249,6 +249,7 @@ AudioServerSinkPlugin::~AudioServerSinkPlugin()
 {
     MEDIA_LOG_I_T("~AudioServerSinkPlugin() entered.");
     ReleaseRender();
+    ReleaseFile();
 }
 
 Status AudioServerSinkPlugin::Init()
@@ -323,7 +324,6 @@ Status AudioServerSinkPlugin::Deinit()
 {
     MEDIA_LOG_D_T("Deinit entered");
     ReleaseRender();
-    ReleaseFile();
     return Status::OK;
 }
 
