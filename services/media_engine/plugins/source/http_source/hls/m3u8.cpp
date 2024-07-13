@@ -455,7 +455,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     } else {
         UpdateMasterPlaylist();
     }
-}
+}*
 
 void M3U8MasterPlaylist::UpdateMediaPlaylist()
 {
