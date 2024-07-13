@@ -27,20 +27,14 @@ av_codec_unittest_cflags = [
   "-fno-exceptions",
   "-Wall",
   "-fno-common",
-  "-fstack-protector-strong",
+  "-fstack-protector-all",
   "-Wshadow",
   "-FPIC",
   "-FS",
   "-O2",
   "-D_FORTIFY_SOURCE=2",
-  "-fvisibility=hidden",
   "-Wformat=2",
   "-Wdate-time",
-  "-Werror",
-  "-Wextra",
-  "-Wimplicit-fallthrough",
-  "-Wsign-compare",
-  "-Wunused-parameter",
 ]
 
 ##################################################################################################################
@@ -57,6 +51,8 @@ ohos_unittest("plugins_source_unit_test") {
     "$av_codec_root_dir/services/engine/codec/include/audio",
     "$av_codec_root_dir/services/engine/factory",
     "$av_codec_root_dir/services/media_engine/plugins/source",
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/inner_api/native",
   ]
 
   cflags = av_codec_unittest_cflags
@@ -64,11 +60,16 @@ ohos_unittest("plugins_source_unit_test") {
   cflags_cc = cflags
 
   public_configs = []
+  configs = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
 
   if (av_codec_support_test) {
     sources = [
-        "./file_fd_source_plugin_unit_test.cpp",
-        "./file_source_plugin_unit_test.cpp",
+      "$av_codec_root_dir//services/media_engine/plugins/source/file_fd_source_plugin.cpp",
+      "$av_codec_root_dir//services/media_engine/plugins/source/file_source_plugin.cpp",
+      "./file_fd_source_plugin_unit_test.cpp",
+      "./file_source_plugin_unit_test.cpp",
     ]
   }
 
@@ -81,24 +82,17 @@ ohos_unittest("plugins_source_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
-  public_configs = [ ]
+  public_configs = []
 
   external_deps = [
-    "ability_base:base",
-    "ability_base:want",
-    "ability_base:zuri",
-    "ability_runtime:ability_context_native",
-    "ability_runtime:ability_manager",
-    "ability_runtime:abilitykit_native",
-    "ability_runtime:app_context",
-    "ability_runtime:data_ability_helper",
-    "access_token:libaccesstoken_sdk",
-    "access_token:libnativetoken_shared",
-    "access_token:libtokensetproc_shared",
-    "audio_framework:audio_capturer",
+    "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
+    "safwk:system_ability_fwk",
   ]
 
   resource_config_file =
