@@ -51,6 +51,7 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::IMAGE_JPG, AV_CODEC_ID_MJPEG},
         {MimeType::IMAGE_PNG, AV_CODEC_ID_PNG},
         {MimeType::IMAGE_BMP, AV_CODEC_ID_BMP},
+        {MimeType::TIMED_METADATA, AV_CODEC_ID_FFMETADATA},
     };
     auto it = table.find(mime);
     if (it != table.end()) {

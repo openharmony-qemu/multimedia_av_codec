@@ -39,6 +39,8 @@ const std::string TEST_FILE_PATH = "/data/test/media/";
 const std::string INPUT_FILE_PATH = "/data/test/media/h264_720_480.dat";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr uint32_t AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST = 1 << 6;
+const std::string TIMED_METADATA_TRACK_MIMETYPE = "meta/timed-metadata";
+const std::string TIMED_METADATA_KEY = "com.openharmony.timed_metadata.test";
 } // namespace
 
 void AVMuxerUnitTest::SetUpTestCase() {}
@@ -1803,6 +1805,74 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
     EXPECT_EQ(ret, 0);
 
     close(fd);
+}
+
+/**
+ * @tc.name: Muxer_SetFlag_004
+ * @tc.desc: Muxer Write Sample for timed metadata track
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_004, TestSize.Level0)
+{
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Timedmetadata_track.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, vidTrackId);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_EQ(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+    ASSERT_GE(metaTrackId, 1);
+
+    int32_t ret = avmuxer_->SetTimedMetadata();
+    EXPECT_EQ(ret, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST;
+    ret = WriteSample(vidTrackId, inputFile_, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(vidTrackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    
+    auto inputFileMeta = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    extSize = 0;
+    inputFileMeta->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFileMeta->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+    eosFlag = false;
+    flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST;
+    ret = WriteSample(metaTrackId, inputFileMeta, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(metaTrackId, inputFileMeta, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 #endif
 } // namespace
