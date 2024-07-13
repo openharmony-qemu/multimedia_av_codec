@@ -66,6 +66,7 @@ string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
 string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
+string g_ptsConversionPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -2038,12 +2039,12 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
 #ifndef DEMUXER_CAPI_UNIT_TEST
 /**
  * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1000
- * @tc.desc: Get frameIndex by pts
+ * @tc.desc: Get frameIndex by pts(audio track)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1000, TestSize.Level1)
 {
-    InitResource(g_audioVividPath, LOCAL);
+    InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
@@ -2059,10 +2060,31 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1000, TestSi
 
 /**
  * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1001
- * @tc.desc: Get frameIndex by pts(not MP4)
+ * @tc.desc: Get frameIndex by pts(video track)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1001, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    uint32_t trackIndex = 1;
+    int64_t presentationTimeUs = 66666;
+    uint32_t frameIndex = 0;
+
+    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    ASSERT_EQ(ret, AV_ERR_OK);
+
+    ASSERT_EQ(frameIndex, 4);
+}
+
+/**
+ * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1002
+ * @tc.desc: Get frameIndex by pts(not MP4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_NE(source_, nullptr);
@@ -2079,32 +2101,88 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1001, TestSi
 }
 
 /**
+ * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1003
+ * @tc.desc: Get frameIndex by pts(non-standard pts & different track)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1003, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    // standard pts & video track
+    uint32_t trackIndex = 1;
+    int64_t presentationTimeUs = 166666;
+    uint32_t frameIndex = 0;
+    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(frameIndex, 10);
+
+    // non-standard pts & video track
+    trackIndex = 1;
+    presentationTimeUs = 166667;
+    frameIndex = 0;
+    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    ASSERT_NE(ret, AV_ERR_OK);
+
+    // standard pts & audio track
+    trackIndex = 0;
+    presentationTimeUs = 232199;
+    frameIndex = 0;
+    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(frameIndex, 10);
+}
+
+/**
  * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1000
- * @tc.desc: get pts by frameIndex
+ * @tc.desc: get pts by frameIndex(audio track)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1000, TestSize.Level1)
 {
-    InitResource(g_audioVividPath, LOCAL);
+    InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
     int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 10;
+    uint32_t frameIndex = 2;
 
     int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 232199);
+    ASSERT_EQ(presentationTimeUs, 46439);
 }
 
 /**
  * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1001
- * @tc.desc: get pts by frameIndex(not MP4)
+ * @tc.desc: get pts by frameIndex(video track)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1001, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+
+    uint32_t trackIndex = 1;
+    int64_t presentationTimeUs = 0;
+    uint32_t frameIndex = 2;
+
+    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    ASSERT_EQ(ret, AV_ERR_OK);
+
+    ASSERT_EQ(presentationTimeUs, 33333);
+}
+
+/**
+ * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1002
+ * @tc.desc: get pts by frameIndex(not MP4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_NE(source_, nullptr);
@@ -2121,61 +2199,55 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1001, TestSi
 }
 
 /**
- * @tc.name: Demuxer_ConversionTest_1000
- * @tc.desc: PTS FrameIndex convertion test(file g_mp4Path)
+ * @tc.name: Demuxer_PtsAndFrameIndexConversion_1000
+ * @tc.desc: pts and frameIndex convertion test(pts -> frameIndex -> pts)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_ConversionTest_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1000, TestSize.Level1)
 {
-    InitResource(g_mp4Path, LOCAL);
+    InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 100000;
+    int64_t presentationTimeUs = 92879;
     uint32_t frameIndex = 0;
 
     int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
     ASSERT_EQ(ret, AV_ERR_OK);
-    printf("PTS: %" PRId64 " converted to frame index: %u\n", presentationTimeUs, frameIndex);
     ASSERT_EQ(frameIndex, 4);
 
     int64_t presentationTimeUs1 = 0;
-    uint32_t frameIndex1 = 100;
 
-    ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex1, presentationTimeUs1);
+    ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    printf("Frame index: %u converted to PTS: %" PRId64 "\n", frameIndex1, presentationTimeUs1);
-    ASSERT_EQ(presentationTimeUs1, 3920000);
+    ASSERT_EQ(presentationTimeUs1, 92879);
 }
 
 /**
- * @tc.name: Demuxer_ConversionTest_1001
- * @tc.desc: PTS FrameIndex convertion test(file g_fmp4AvcPath)
+ * @tc.name: Demuxer_PtsAndFrameIndexConversion_1001
+ * @tc.desc: pts and frameIndex convertion test(frameIndex -> pts -> frameIndex)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_ConversionTest_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1001, TestSize.Level1)
 {
-    InitResource(g_fmp4AvcPath, LOCAL);
+    InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 40000;
-    uint32_t frameIndex = 0;
+    int64_t presentationTimeUs = 0;
+    uint32_t frameIndex = 4;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
-    printf("PTS: %" PRId64 " converted to frame index: %u\n", presentationTimeUs, frameIndex);
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(presentationTimeUs, 92879);
 
-    int64_t presentationTimeUs1 = 0;
-    uint32_t frameIndex1 = 100;
+    uint32_t frameIndex1 = 0;
 
-    ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex1, presentationTimeUs1);
+    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    printf("Frame index: %u converted to PTS: %" PRId64 "\n", frameIndex1, presentationTimeUs1);
-    ASSERT_EQ(presentationTimeUs1, 1633333);
+    ASSERT_EQ(frameIndex1, 4);
 }
 #endif
 } // namespace
