@@ -71,6 +71,11 @@ int32_t AVMuxerCapiMock::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffe
     return AV_ERR_UNKNOWN;
 }
 
+int32_t AVMuxerCapiMock::SetTimedMetadata()
+{
+    return AV_ERR_UNKNOWN;
+}
+
 int32_t AVMuxerCapiMock::SetRotation(int32_t rotation)
 {
     return OH_AVMuxer_SetRotation(muxer_, rotation);
