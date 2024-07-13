@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,7 +35,7 @@
 
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
@@ -273,7 +273,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.rendererFlags = audioRenderInfo_.rendererFlags;
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
     rendererOptions_.streamInfo.encoding =
-        mime_type_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
+        mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     MEDIA_LOG_I_T("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
@@ -324,6 +324,7 @@ Status AudioServerSinkPlugin::Deinit()
 {
     MEDIA_LOG_D_T("Deinit entered");
     ReleaseRender();
+    ReleaseFile();
     return Status::OK;
 }
 
@@ -570,8 +571,8 @@ void AudioServerSinkPlugin::SetUpMimeTypeSetter()
     paramsSetterMap_[Tag::MIME_TYPE] = [this](const ValueType &para) {
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<std::string>(para), Status::ERROR_MISMATCHED_TYPE,
                              "mimeType type should be string");
-        mime_type_ = AnyCast<std::string>(para);
-        MEDIA_LOG_I_T("Set mimeType: " PUBLIC_LOG_S, mime_type_.c_str());
+        mimeType_ = AnyCast<std::string>(para);
+        MEDIA_LOG_I_T("Set mimeType: " PUBLIC_LOG_S, mimeType_.c_str());
         return Status::OK;
     };
 }
@@ -754,7 +755,7 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
             MEDIA_LOG_E_T("set volume failed with code " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
         }
-        MEDIA_LOG_I_T("SetVolume succ");
+        MEDIA_LOG_I("SetVolume succ");
         audioRendererVolume_ = volume;
         return Status::OK;
     }
@@ -839,7 +840,6 @@ Status AudioServerSinkPlugin::PauseTransitent()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I_T("PauseTransitent entered.");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr) {
         MEDIA_LOG_E_T("audio renderer pauseTransitent fail");
         return Status::ERROR_UNKNOWN;
@@ -945,10 +945,10 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
         if (static_cast<size_t>(ret) > destLength) {
             MEDIA_LOG_W("audioRenderer_ return ret " PUBLIC_LOG_D32 "> destLength " PUBLIC_LOG_U64,
                 ret, destLength);
-            ret = destLength;
+            ret = static_cast<int32_t>(destLength);
         }
         destBuffer += ret;
-        destLength -= ret;
+        destLength -= static_cast<size_t>(ret);
         MEDIA_LOG_D("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
     }
     return destLength;
@@ -962,7 +962,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
         + std::to_string(inputBuffer->memory_->GetSize()));
     int32_t ret = 0;
-    if (mime_type_ == MimeType::AUDIO_AVS3DA) {
+    if (mimeType_ == MimeType::AUDIO_AVS3DA) {
         ret = WriteAudioVivid(inputBuffer);
         return ret >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
     }
@@ -1062,6 +1062,9 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
 Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
 {
     AudioStandard::Timestamp ts;
+    if (audioRenderer_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (!res) {
         return Status::ERROR_UNKNOWN;
@@ -1108,7 +1111,7 @@ void AudioServerSinkPlugin::DumpEntireAudioBuffer(uint8_t* buffer, const size_t&
         return;
     }
     (void)fwrite(buffer, bytesSingle, 1, entireDumpFile_);
-    (void) fflush(entireDumpFile_);
+    (void)fflush(entireDumpFile_);
 }
 
 void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle)
@@ -1125,11 +1128,11 @@ void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& 
         std::string path = "data/media/audio-sink-slice-" + std::to_string(sliceCount_) + ".pcm";
         sliceDumpFile_ = fopen(path.c_str(), "wb+");
     }
-    if (sliceDumpFile_ == nullptr) {
+    if (sliceDumpFile_  == nullptr) {
         return;
     }
     (void)fwrite(buffer, bytesSingle, 1, sliceDumpFile_);
-    (void) fflush(sliceDumpFile_);
+    (void)fflush(sliceDumpFile_);
 }
 } // namespace Plugin
 } // namespace Media
