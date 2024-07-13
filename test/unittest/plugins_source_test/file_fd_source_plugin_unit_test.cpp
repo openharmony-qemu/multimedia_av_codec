@@ -17,6 +17,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace FileFdSource {
+const std::string MEDIA_ROOT = "file:///data/test/media/";
+const std::string VIDEO_FILE1 = MEDIA_ROOT + "camera_info_parser.mp4";
 void OHOS::Media::Plugins::FileFdSource::FileFdSourceUnitTest::SetUpTestCase(void)
 {
 }
@@ -51,7 +53,7 @@ public:
     {
         return true;
     }
-}
+};
 
 /**
  * @tc.name: FileFdSource_SetSource_0100
@@ -60,8 +62,8 @@ public:
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0100, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("testURL");
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetSource(source));
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetSource(mediaSource));
 }
 /**
  * @tc.name: FileFdSource_SubmitBufferingStart_0100
@@ -70,13 +72,11 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0100, TestSize.Level1)
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitBufferingStart_0100, TestSize.Level1)
 {
-    std::shared_ptr<Plugins::Callback> sourceCallback = std::make_shared<SourceCallback>();
+    Plugins::Callback* sourceCallback = new SourceCallback();
     fileFdSourcePlugin_->SubmitBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
     fileFdSourcePlugin_->SubmitBufferingStart();
 
-    fileFdSourcePlugin_->PauseReadTimer();
-    fileFdSourcePlugin_->SubmitBufferingStart();
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
     fileFdSourcePlugin_->SubmitBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
@@ -89,63 +89,12 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitBufferingStart_0100, TestSize.
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitReadFail_0100, TestSize.Level1)
 {
     fileFdSourcePlugin_->SubmitReadFail();
-    std::shared_ptr<Plugins::Callback> sourceCallback = std::make_shared<SourceCallback>();
+    Plugins::Callback* sourceCallback = new SourceCallback();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
     fileFdSourcePlugin_->SubmitReadFail();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
     fileFdSourcePlugin_->SubmitReadFail();
 }
-/**
- * @tc.name: FileFdSource_StartTimerTask_0100
- * @tc.desc: FileFdSource_StartTimerTask_0100
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_StartTimerTask_0100, TestSize.Level1)
-{
-    fileFdSourcePlugin_->StartTimerTask();
-    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
-}
-/**
- * @tc.name: FileFdSource_PauseDownloadTask_0100
- * @tc.desc: FileFdSource_PauseDownloadTask_0100
- * @tc.type: FUNC
- */
-// HWTEST_F(FileFdSourceUnitTest, FileFdSource_PauseDownloadTask_0100, TestSize.Level1)
-// {
-//     fileFdSourcePlugin_->PauseDownloadTask(false); // branches
-
-//     fileFdSourcePlugin_->SubmitBufferingStart();
-//     fileFdSourcePlugin_->PauseDownloadTask(false);
-
-//     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
-//     fileFdSourcePlugin_->PauseDownloadTask(false);
-
-//     fileFdSourcePlugin_->SubmitBufferingStart();
-//     fileFdSourcePlugin_->PauseDownloadTask(true);
-//     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
-// }
-/**
- * @tc.name: FileFdSource_PauseTimerTask_0100
- * @tc.desc: FileFdSource_PauseTimerTask_0100
- * @tc.type: FUNC
- */
-// HWTEST_F(FileFdSourceUnitTest, FileFdSource_PauseTimerTask_0100, TestSize.Level1)
-// {
-//     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
-//     fileFdSourcePlugin_->PauseTimerTask();
-//     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
-// }
-/**
- * @tc.name: FileFdSource_HandleBuffering_0100
- * @tc.desc: FileFdSource_HandleBuffering_0100
- * @tc.type: FUNC
- */
-// HWTEST_F(FileFdSourceUnitTest, FileFdSource_HandleBuffering_0100, TestSize.Level1)
-// {
-//     EXPECT_EQ(false, fileFdSourcePlugin_->HandleBuffering());
-//     fileFdSourcePlugin_->SubmitBufferingStart();
-//     EXPECT_EQ(true, fileFdSourcePlugin_->HandleBuffering());
-// }
 /**
  * @tc.name: FileFdSource_read_0100
  * @tc.desc: FileFdSource_read_0100
@@ -155,7 +104,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0100, TestSize.Level1)
 {
     fileFdSourcePlugin_->SubmitBufferingStart();
     std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(0, buffer, 0, 1024));
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
 }
 /**
  * @tc.name: FileFdSource_read_0200
@@ -165,18 +114,20 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0100, TestSize.Level1)
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0200, TestSize.Level1)
 {
     std::shared_ptr<Buffer> buffer = nullptr;
-    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(0, buffer, 0, 1024));
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
 }
 /**
  * @tc.name: FileFdSource_ParseUriInfo_0100
  * @tc.desc: FileFdSource_ParseUriInfo_0100
  * @tc.type: FUNC
  */
-// HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0100, TestSize.Level1)
-// {
-//     std::string uri;
-//     EXPECT_NE(Status::OK, fileFdSourcePlugin_->ParseUriInfo(uri));
-// }
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0100, TestSize.Level1)
+{
+    std::string uri = "";
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
+    fileFdSourcePlugin_->SetSource(source);
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Reset());
+}
 /**
  * @tc.name: FileFdSource_Reset_0100
  * @tc.desc: FileFdSource_Reset_0100
@@ -187,37 +138,16 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_Reset_0100, TestSize.Level1)
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Reset());
 }
 /**
- * @tc.name: FileFdSource_PauseReadTimer_0100
- * @tc.desc: FileFdSource_PauseReadTimer_0100
- * @tc.type: FUNC
- */
-// HWTEST_F(FileFdSourceUnitTest, FileFdSource_PauseReadTimer_0100, TestSize.Level1)
-// {
-//     fileFdSourcePlugin_->PauseReadTimer();
-//     fileFdSourcePlugin_->Stop();
-//     fileFdSourcePlugin_->PauseReadTimer();
-//     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
-// }
-/**
  * @tc.name: FileFdSource_SetBundleName_0100
  * @tc.desc: FileFdSource_SetBundleName_0100
  * @tc.type: FUNC
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetBundleName_0100, TestSize.Level1)
 {
+    fileFdSourcePlugin_->Stop();
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
 }
-/**
- * @tc.name: FileFdSource_CacheData_0100
- * @tc.desc: FileFdSource_CacheData_0100
- * @tc.type: FUNC
- */
-// HWTEST_F(FileFdSourceUnitTest, FileFdSource_CacheData_0100, TestSize.Level1)
-// {
-//     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
-//     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
-// }
 } // namespace FileSource
 } // namespace Plugins
 } // namespace Media
