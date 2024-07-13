@@ -162,49 +162,73 @@ Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
-    int32_t ret = -1;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (videoEnhancer_ == nullptr) {
+        MEDIA_LOG_E("Configure videoEnhancer is null");
+        return Status::ERROR_NULL_POINTER;
+    }
     const DetailEnhancerParameters parameter_ = {"", DetailEnhancerLevel::DETAIL_ENH_LEVEL_MEDIUM};
-    ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
-#endif
+    int32_t ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
     if (ret != 0) {
+        MEDIA_LOG_E("videoEnhancer SetParameter fail");
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return Status::ERROR_UNKNOWN;
+    } else {
+        return Status::OK;
     }
-    return Status::OK;
+#else
+    MEDIA_LOG_E("no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 sptr<Surface> VideoResizeFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
-    sptr<Surface> inputSurface = nullptr;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    inputSurface = videoEnhancer_->GetInputSurface();
-#endif
+    if (videoEnhancer_ == nullptr) {
+        MEDIA_LOG_E("Configure videoEnhancer is null");
+        return nullptr;
+    }
+    sptr<Surface> inputSurface = videoEnhancer_->GetInputSurface();
     if (inputSurface != nullptr) {
         inputSurface->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
         return inputSurface;
-    } else {
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        return nullptr;
     }
+#else
+    MEDIA_LOG_E("no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height)
 {
     MEDIA_LOG_I("SetOutputSurface");
-    int32_t ret = -1;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    if (surface != nullptr) {
+    if (surface == nullptr) {
+        MEDIA_LOG_E("SetOutputSurface surface is null");
+        return Status::ERROR_NULL_POINTER;
+    } else {
         surface->SetRequestWidthAndHeight(width, height);
-        ret = videoEnhancer_->SetOutputSurface(surface);
     }
-#endif
+    if (videoEnhancer_ == nullptr) {
+        MEDIA_LOG_E("Configure videoEnhancer is null");
+        return Status::ERROR_NULL_POINTER;
+    }
+    int32_t ret = videoEnhancer_->SetOutputSurface(surface);
     if (ret != 0) {
+        MEDIA_LOG_E("videoEnhancer SetOutputSurface fail");
         eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    MEDIA_LOG_E("no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    return Status::ERROR_UNKNOWN;
+#endif  
 }
 
 Status VideoResizeFilter::DoPrepare()
@@ -228,15 +252,23 @@ Status VideoResizeFilter::DoStart()
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
     }
-    int32_t ret = -1;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-    ret = videoEnhancer_->Start();
-#endif
+    if (videoEnhancer_ == nullptr) {
+        MEDIA_LOG_E("DoStart videoEnhancer is null");
+        return Status::ERROR_NULL_POINTER;
+    }
+    int32_t ret = videoEnhancer_->Start();
     if (ret != 0) {
-        eventReceiver_->OnEvent({"VideoResizeFilter::DoStart error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        MEDIA_LOG_E("videoEnhancer Start fail");
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    MEDIA_LOG_E("no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 Status VideoResizeFilter::DoPause()
@@ -260,18 +292,22 @@ Status VideoResizeFilter::DoStop()
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
-    int32_t ret = -1;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     if (!videoEnhancer_) {
         return Status::OK;
     }
-    ret = videoEnhancer_->Stop();
-#endif
+    int32_t ret = videoEnhancer_->Stop();
     if (ret != 0) {
-        eventReceiver_->OnEvent({"VideoResizeFilter::DoStop error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        MEDIA_LOG_E("videoEnhancer Stop fail");
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+#else
+    MEDIA_LOG_E("no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    return Status::ERROR_UNKNOWN;
+#endif
 }
 
 Status VideoResizeFilter::DoFlush()
@@ -305,20 +341,33 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
         if (isEos) {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+            if (videoEnhancer_ ==nullptr) {
+                MEDIA_LOG_E("videoEnhancer is null");
+                return;
+            }
             videoEnhancer_->NotifyEos();
 #endif
             return;
         }
     }
-    int32_t ret = -1;
+
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (videoEnhancer_ == nullptr) {
+        MEDIA_LOG_E("videoEnhancer is null");
+        return;
+    }
     const DetailEnhancerParameters parameter_ = {"", DetailEnhancerLevel::DETAIL_ENH_LEVEL_MEDIUM};
-    ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
-#endif
+    int32_t ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
     if (ret != 0) {
-        eventReceiver_->OnEvent({"VideoResizeFilter::SetParameter error", EventType::EVENT_ERROR,
+        MEDIA_LOG_E("videoEnhancer SetParameter fail");
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR,
             MSERR_UNSUPPORT_VID_PARAMS});
     }
+#else
+    MEDIA_LOG_E("no VPE module");
+    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+#endif
+
 }
 
 void VideoResizeFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -423,8 +472,10 @@ void VideoResizeFilter::ReleaseBuffer()
             indexs_.clear();
         }
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-        for (auto &index : indexs) {
-            videoEnhancer_->ReleaseOutputBuffer(index, true);
+        if (videoEnhancer_) {
+            for (auto &index : indexs) {
+                videoEnhancer_->ReleaseOutputBuffer(index, true);
+            }
         }
 #endif
     }
