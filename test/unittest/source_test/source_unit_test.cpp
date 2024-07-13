@@ -101,7 +101,7 @@ HWTEST_F(SourceUnitTest, Source_SetBundleName_0200, TestSize.Level1)
     uint32_t time = 1; // 1 sleep
     sleep(time);
     std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
-    size_t expectedLen = 1024;
+    size_t expectedLen = 1024; // 1024 expectedLen
     source_->Read(0, buffer, 0, expectedLen);
     sleep(time);
     EXPECT_EQ(Status::OK, source_->Pause());
@@ -109,7 +109,6 @@ HWTEST_F(SourceUnitTest, Source_SetBundleName_0200, TestSize.Level1)
     EXPECT_EQ(Status::OK, source_->Resume());
     sleep(time);
     EXPECT_EQ(Status::OK, source_->Stop());
-
 }
 /**
  * @tc.name: Source_SetBundleName_0300
