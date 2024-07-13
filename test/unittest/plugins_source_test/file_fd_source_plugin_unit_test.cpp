@@ -94,6 +94,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitBufferingStart_0100, TestSize.
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
     fileFdSourcePlugin_->SubmitBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
+    delete sourceCallback;
+    sourceCallback = nullptr;
 }
 /**
  * @tc.name: FileFdSource_SubmitReadFail_0100
@@ -108,6 +110,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitReadFail_0100, TestSize.Level1
     fileFdSourcePlugin_->SubmitReadFail();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
     fileFdSourcePlugin_->SubmitReadFail();
+    delete sourceCallback;
+    sourceCallback = nullptr;
 }
 /**
  * @tc.name: FileFdSource_read_0100
