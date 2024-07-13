@@ -26,6 +26,12 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+std::string ToString(const std::list<std::string> &lists, char tab = ',');
+std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
+std::string Trim(std::string str);
+bool IsRegexValid(const std::string &regex);
+
 class HttpCurlClient : public NetworkClient {
 public:
     HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam);

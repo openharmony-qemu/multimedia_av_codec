@@ -52,11 +52,6 @@ void DownloaderUnitTest::TearDown(void)
     downloader.reset();
 }
 
-extern std::string ToString(const std::list<std::string> &lists, char tab = ',');
-extern std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
-extern std::string Trim(std::string str);
-extern bool IsRegexValid(const std::string &regex);
-
 HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
 {
     EXPECT_NE(downloader->client_, nullptr);
