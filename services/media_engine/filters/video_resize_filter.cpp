@@ -341,7 +341,7 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
         if (isEos) {
 #ifdef USE_VIDEO_PROCESSING_ENGINE
-            if (videoEnhancer_ ==nullptr) {
+            if (videoEnhancer_ == nullptr) {
                 MEDIA_LOG_E("videoEnhancer is null");
                 return;
             }
