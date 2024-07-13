@@ -135,6 +135,7 @@ std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
         {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
         {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
         {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
+        {AVMediaType::AVMEDIA_TYPE_TIMEDMETA, "timedmetadata"}
     };
     auto it = table.find(mediaType);
     if (it == table.end()) {

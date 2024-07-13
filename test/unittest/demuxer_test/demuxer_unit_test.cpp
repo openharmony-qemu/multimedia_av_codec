@@ -46,6 +46,7 @@ list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SY
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Path2 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
 string g_mp4Path4 = TEST_FILE_PATH + string("zero_track.mp4");
+string g_mp4Path5 = TEST_FILE_PATH + string("timed_metadata_track.mp4");
 string g_mkvPath2 = TEST_FILE_PATH + string("h264_opus_4sec.mkv");
 string g_tsPath = TEST_FILE_PATH + string("test_mpeg2_Gop25_4sec.ts");
 string g_aacPath = TEST_FILE_PATH + string("audio/aac_44100_1.aac");
@@ -158,7 +159,7 @@ void DemuxerUnitTest::SetInitValue()
             continue;
         }
         if (trackType == MediaType::MEDIA_TYPE_VID || trackType == MediaType::MEDIA_TYPE_AUD ||
-            trackType == MediaType::MEDIA_TYPE_SUBTITLE) {
+            trackType == MediaType::MEDIA_TYPE_SUBTITLE || trackType == MediaType::MEDIA_TYPE_TIMED_METADATA) {
             selectedTrackIds_.push_back(static_cast<uint32_t>(i));
             frames_[i] = 0;
             keyFrames_[i] = 0;
@@ -523,6 +524,37 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1000, TestSize.Level1)
     ASSERT_EQ(frames_[1], 174);
     ASSERT_EQ(keyFrames_[0], 5);
     ASSERT_EQ(keyFrames_[1], 174);
+    RemoveValue();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1050
+ * @tc.desc: Read sample test for timed metadata track
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1050, TestSize.Level1)
+{
+    InitResource(g_mp4Path5, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            CountFrames(idx);
+        }
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 601);
+    ASSERT_EQ(frames_[1], 601);
+    ASSERT_EQ(keyFrames_[0], 3);
+    ASSERT_EQ(keyFrames_[1], 601);
     RemoveValue();
 }
 

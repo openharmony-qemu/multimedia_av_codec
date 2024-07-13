@@ -75,6 +75,7 @@ private:
     static void ParseVideoTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseAudioTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
+    static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
 
@@ -88,6 +89,7 @@ private:
     static void PutInfoToFormat(const Tag key, const std::string_view &value, Meta &format);
     static void PutBufferToFormat(const Tag key, const uint8_t *addr, size_t size, Meta &format);
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
+    static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
 };
 } // namespace Ffmpeg
 } // namespace Plugins
