@@ -199,7 +199,7 @@ sptr<Surface> VideoResizeFilter::GetInputSurface()
 #else
     MEDIA_LOG_E("no VPE module");
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-    return Status::ERROR_UNKNOWN;
+    return nullptr;
 #endif
 }
 
