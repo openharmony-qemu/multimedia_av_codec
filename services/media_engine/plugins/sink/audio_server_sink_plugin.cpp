@@ -249,7 +249,6 @@ AudioServerSinkPlugin::~AudioServerSinkPlugin()
 {
     MEDIA_LOG_I_T("~AudioServerSinkPlugin() entered.");
     ReleaseRender();
-    ReleaseFile();
 }
 
 Status AudioServerSinkPlugin::Init()
@@ -572,7 +571,7 @@ void AudioServerSinkPlugin::SetUpMimeTypeSetter()
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<std::string>(para), Status::ERROR_MISMATCHED_TYPE,
                              "mimeType type should be string");
         mime_type_ = AnyCast<std::string>(para);
-        MEDIA_LOG_I_T("Set mimeType: " PUBLIC_LOG_S, mimeType_.c_str());
+        MEDIA_LOG_I_T("Set mimeType: " PUBLIC_LOG_S, mime_type_.c_str());
         return Status::OK;
     };
 }
@@ -822,7 +821,6 @@ Status AudioServerSinkPlugin::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I_T("Pause entered");
-    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr) {
         MEDIA_LOG_E_T("audio renderer pause fail");
         return Status::ERROR_UNKNOWN;
@@ -841,6 +839,7 @@ Status AudioServerSinkPlugin::PauseTransitent()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I_T("PauseTransitent entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ == nullptr) {
         MEDIA_LOG_E_T("audio renderer pauseTransitent fail");
         return Status::ERROR_UNKNOWN;
