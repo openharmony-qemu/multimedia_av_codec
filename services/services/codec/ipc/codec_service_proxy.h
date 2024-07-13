@@ -16,6 +16,7 @@
 #ifndef CODEC_SERVICE_PROXY_H
 #define CODEC_SERVICE_PROXY_H
 
+#include "avcodec_log.h"
 #include "codec_listener_stub.h"
 #include "i_standard_codec_service.h"
 #include "nocopyable.h"
@@ -54,10 +55,14 @@ public:
         const bool svpFlag) override;
 #endif
     void SetListener(const sptr<CodecListenerStub> &listener);
+    void InitLabel(const uint64_t uid);
 
 private:
     static inline BrokerDelegator<CodecServiceProxy> delegator_;
     sptr<CodecListenerStub> listener_;
+
+    const OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceProxy"};
+    std::string tag_ = "";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

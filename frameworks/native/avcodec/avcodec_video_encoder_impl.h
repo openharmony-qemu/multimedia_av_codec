@@ -44,6 +44,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Format &format);
 

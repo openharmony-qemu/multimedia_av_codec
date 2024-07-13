@@ -29,6 +29,7 @@ private:
     int32_t ToAnnexb(uint8_t *bufferAddr);
     uint8_t GetNaluType(uint8_t value);
     uint8_t GetNaluType(const uint8_t *const bufferAddr);
+    bool IsXPS(uint8_t naluType);
     bool IsIDR(uint8_t naluType);
     bool IsVCL(uint8_t nalType);
     bool IsEOS() override;

@@ -18,7 +18,6 @@
 #include <map>
 #include <algorithm>
 #include "dash_mpd_util.h"
-#include "common/log.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,7 +27,8 @@ constexpr uint32_t VID_RING_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr uint32_t AUD_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr int32_t TIME_OUT = 3 * 1000;
+constexpr uint32_t READ_TIME_OUT = 30 * 1000;
+constexpr uint32_t READ_RETRY_TIME = 5;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 constexpr int32_t RECORD_TIME_INTERVAL = 500;
@@ -126,6 +126,10 @@ void DashSegmentDownloader::Close(bool isAsync, bool isClean)
     buffer_->SetActive(false, isClean);
     downloader_->Cancel();
     downloader_->Stop(isAsync);
+
+    if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+        downloadRequest_->Close();
+    }
 }
 
 void DashSegmentDownloader::Pause()
@@ -142,19 +146,15 @@ void DashSegmentDownloader::Resume()
     downloader_->Resume();
 }
 
-void DashSegmentDownloader::CloseRequest()
+DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInfo,
+                                        const std::atomic<bool> &isInterruptNeeded)
 {
-    MEDIA_LOG_I("CloseRequest enter");
-    if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-        downloadRequest_->Close();
-    }
-}
-
-DashReadRet DashSegmentDownloader::Read(int32_t streamId, uint8_t *buff, uint32_t wantReadLength,
-                                        uint32_t &realReadLength, int32_t &realStreamId)
-{
+    int32_t streamId = readDataInfo.streamId_;
+    uint32_t wantReadLength = readDataInfo.wantReadLength_;
+    uint32_t &realReadLength = readDataInfo.realReadLength_;
+    int32_t &realStreamId = readDataInfo.nextStreamId_;
     DashReadRet ret = DASH_READ_OK;
-    if (IsSegmentFinished(realReadLength, ret)) {
+    if (IsSegmentFinished(realReadLength, ret, isInterruptNeeded)) {
         return ret;
     }
 
@@ -204,7 +204,8 @@ uint32_t DashSegmentDownloader::GetMaxReadLength(uint32_t wantReadLength,
     return maxReadLength;
 }
 
-bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret)
+bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret,
+                                              const std::atomic<bool> &isInterruptNeeded)
 {
     if ((downloadRequest_ != nullptr) && downloadRequest_->IsEos()) {
         ret = DASH_READ_SEGMENT_DOWNLOAD_FINISH;
@@ -220,15 +221,14 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashRead
     }
 
     readTime_ = 0;
-    while (buffer_->GetSize() == 0) {
-        if (readTime_ >= TIME_OUT) {
+    while (buffer_->GetSize() == 0 && !(isInterruptNeeded.load())) {
+        if (readTime_ >= READ_TIME_OUT) {
             Close(true, true);
-            CloseRequest();
             ret = DASH_READ_TIMEOUT;
             return true;
         }
-        OSAL::SleepFor(5);  // 5
-        readTime_ += 5;
+        OSAL::SleepFor(READ_RETRY_TIME);  // 5
+        readTime_ += READ_RETRY_TIME;
     }
     return false;
 }
@@ -436,7 +436,6 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     if (clearTail > 0) {
         isCleaningBuffer_ = true;
         Close(true, false);
-        CloseRequest();
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
@@ -456,7 +455,6 @@ void DashSegmentDownloader::ClearSegmentAll()
     MEDIA_LOG_I("CleanSegmentBuffer clean all");
     isCleaningBuffer_ = true;
     Close(true, true);
-    CloseRequest();
     downloader_ = std::make_shared<Downloader>("dashSegment");
     buffer_->Clear();
     segmentList_.clear();

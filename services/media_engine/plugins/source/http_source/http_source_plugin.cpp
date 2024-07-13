@@ -331,7 +331,7 @@ void HttpSourcePlugin::CloseUri()
     std::shared_ptr<MediaDownloader> downloader = downloader_;
     if (downloader != nullptr) {
         MEDIA_LOG_D("Close uri");
-        downloader->Close(false);
+        downloader->Close(true);
     }
     AutoLock lock(mutex_);
     downloader_ = nullptr;

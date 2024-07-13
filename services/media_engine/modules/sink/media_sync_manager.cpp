@@ -22,6 +22,10 @@
 #include "common/log.h"
 #include "osal/utils/steady_clock.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -232,9 +236,7 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     seekingMediaTime_ = mediaTime;
     alreadySetSyncersShouldWait_ = false; // set already as false
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
-    int8_t oldSyncerPriority = currentSyncerPriority_;
     ResetTimeAnchorNoLock(); // reset the time anchor
-    currentSyncerPriority_ = oldSyncerPriority;
     frameAfterSeeked_ = true;
     return Status::OK;
 }
@@ -393,7 +395,9 @@ int64_t MediaSyncManager::GetMediaTimeNow()
         currentMediaTime = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, GetSystemClock(),
             currentAbsMediaTime_, playRate_);
     }
-    FALSE_RETURN_V((currentMediaTime != HST_TIME_NONE), 0);
+    if (currentMediaTime == HST_TIME_NONE) {
+        return 0;
+    }
     if (startPts_ != HST_TIME_NONE) {
         currentMediaTime -= startPts_;
     }
@@ -474,6 +478,17 @@ bool MediaSyncManager::InSeeking()
 void MediaSyncManager::SetMediaStartPts(int64_t startPts)
 {
     startPts_ = startPts;
+}
+
+void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
+{
+    if (supplier == nullptr) {
+        return;
+    }
+    OHOS::Media::AutoLock lock(clockMutex_);
+    if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
+        currentSyncerPriority_ = IMediaSynchronizer::NONE;
+    }
 }
 } // namespace Pipeline
 } // namespace Media

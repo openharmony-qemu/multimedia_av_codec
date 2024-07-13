@@ -1119,6 +1119,9 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--need_dump") == 0) {
             VideoDecSample::needDump_ = true;
             DecArgv(i, argc, argv);
+        } else if (strcmp(argv[i], "--rosen") == 0) {
+            VideoDecSample::isRosenWindow_ = true;
+            DecArgv(i, argc, argv);
         } else if (strcmp(argv[i], "--fcodec") == 0) {
             VideoDecSample::isHardware_ = false;
             DecArgv(i, argc, argv);

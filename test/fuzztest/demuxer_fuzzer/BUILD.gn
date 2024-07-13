@@ -42,6 +42,8 @@ ohos_fuzztest("DemuxerFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
   ]
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 ###############################################################################

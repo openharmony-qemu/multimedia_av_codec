@@ -23,6 +23,10 @@
 #include "media_core.h"
 #include "parameters.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -272,11 +276,11 @@ Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
     return res;
 }
 
-Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
+Status AudioSinkFilter::SetIsTransitent(bool isTransitent, bool isSeekCompleted)
 {
     MEDIA_LOG_I("AudioSinkFilter::SetIsTransitent in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
-    return audioSink_->SetIsTransitent(isTransitent);
+    return audioSink_->SetIsTransitent(isTransitent, isSeekCompleted);
 }
 
 Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
@@ -284,6 +288,19 @@ Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
     MEDIA_LOG_I("AudioSinkFilter::ChangeTrack in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->ChangeTrack(meta, eventReceiver_);
+}
+
+Status AudioSinkFilter::WaitSeekCompleted()
+{
+    MEDIA_LOG_I("AudioSinkFilter::WaitSeekCompleted in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->WaitSeekCompleted();
+}
+
+Status AudioSinkFilter::SetPlayerId(std::string& playerId)
+{
+    MEDIA_LOG_D("AudioSinkFilter::SetPlayerId in");
+    return audioSink_->SetPlayerId(playerId);
 }
 
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,

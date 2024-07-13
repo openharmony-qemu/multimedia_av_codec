@@ -158,7 +158,7 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::INIT: {
-            int32_t err = OnAllocateComponent();
+            int32_t err = codec_->OnAllocateComponent();
             ReplyErrorCode(info.id, err);
             if (err == AVCS_ERR_OK) {
                 codec_->ChangeStateTo(codec_->initializedState_);
@@ -169,29 +169,6 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
             BaseState::OnMsgReceived(info);
         }
     }
-}
-
-int32_t HCodec::UninitializedState::OnAllocateComponent()
-{
-    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + codec_->caps_.compName);
-    codec_->compMgr_ = GetManager();
-    if (codec_->compMgr_ == nullptr) {
-        SLOGE("GetCodecComponentManager failed");
-        return AVCS_ERR_UNKNOWN;
-    }
-    codec_->compCb_ = new HdiCallback(codec_);
-    int32_t ret = codec_->compMgr_->CreateComponent(codec_->compNode_, codec_->componentId_, codec_->caps_.compName,
-                                                    0, codec_->compCb_);
-    if (ret != HDF_SUCCESS || codec_->compNode_ == nullptr) {
-        codec_->compCb_ = nullptr;
-        codec_->compMgr_ = nullptr;
-        SLOGE("CreateComponent failed, ret=%d", ret);
-        return AVCS_ERR_UNKNOWN;
-    }
-    codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + codec_->shortName_ + "]";
-    SLOGI("create omx node %s succ", codec_->caps_.compName.c_str());
-    codec_->PrintCaller();
-    return AVCS_ERR_OK;
 }
 
 void HCodec::UninitializedState::OnShutDown(const MsgInfo &info)
@@ -481,6 +458,9 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             break;
         case MsgWhat::GET_BUFFER_FROM_SURFACE:
             codec_->OnGetBufferFromSurface(info.param);
+            break;
+        case MsgWhat::CHECK_IF_REPEAT:
+            codec_->RepeatIfNecessary(info.param);
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
             if (codec_->outPortHasChanged_) {

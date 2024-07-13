@@ -50,7 +50,6 @@ private:
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
-    void CheckHeaderKey(const std::string& setKey, const std::string& setValue);
     void CheckRequestRange(long startPos, int len);
 
 private:
@@ -60,8 +59,8 @@ private:
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
     std::string userAgent_ {"OpenHarmony OS UA"};
-    std::string referer_ {};
-    std::string cookie_ {};
+    bool isSetUA_ {false};
+    struct curl_slist* headerList_ {nullptr};
 };
 }
 }

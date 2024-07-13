@@ -72,6 +72,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
@@ -130,8 +131,8 @@ private:
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     bool isStarted_ = false;
     struct CallerInfo {
-        int32_t pid = -1;
-        int32_t uid = -1;
+        pid_t pid = -1;
+        uid_t uid = 0;
         std::string processName;
     } caller_, forwardCaller_;
     bool isSurfaceMode_ = false;

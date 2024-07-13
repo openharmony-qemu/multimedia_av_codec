@@ -17,6 +17,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 group("av_codec_services_package") {
   deps = [
     "engine/codec/video/fcodec:fcodec",
+    "engine/codec/video/hevcdecoder:hevc_decoder",
     "etc:av_codec_service.cfg",
     "media_engine:av_codec_media_engine_package",
     "services:av_codec_service",

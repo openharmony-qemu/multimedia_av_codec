@@ -40,6 +40,10 @@ extern "C" {
 #define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -543,6 +547,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
         format.Set<Tag::AUDIO_AAC_IS_ADTS>(0);
     }
     format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
+    format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
 }
 
 void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format)

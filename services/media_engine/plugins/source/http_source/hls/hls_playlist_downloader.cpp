@@ -63,14 +63,14 @@ void HlsPlayListDownloader::SetPlayListCallback(PlayListChangeCallback* callback
     callback_ = callback;
 }
 
-void HlsPlayListDownloader::SetCallback(Callback* callback)
-{
-    sourceInfoCallback_ = callback;
-}
-
 bool HlsPlayListDownloader::IsParseAndNotifyFinished()
 {
     return isParseFinished_ && isNotifyPlayListFinished_;
+}
+
+bool HlsPlayListDownloader::IsParseFinished()
+{
+    return isParseFinished_;
 }
 
 int64_t HlsPlayListDownloader::GetDuration() const
@@ -103,9 +103,6 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 
 void HlsPlayListDownloader::NotifyListChange()
 {
-    if (isParseFinished_) {
-        UpdateSourceInfo();
-    }
     auto files = currentVariant_->m3u8_->files_;
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
@@ -174,21 +171,6 @@ void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
     master_->bLive_ = currentVariant_->m3u8_->IsLive();
     master_->duration_ = currentVariant_->m3u8_->GetDuration();
     isParseFinished_ = isPreParse ? false : true;
-}
-
-void HlsPlayListDownloader::UpdateSourceInfo()
-{
-    if (master_ && master_->isSimple_ && !isSourceInfoUpdated_) {
-        SourceInfo sourceInfo;
-        sourceInfo.duration = master_->bLive_ ? -1 : (int64_t)(master_->duration_ * 1000); // -1,1000
-        sourceInfo.seekable = master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
-        if (sourceInfoCallback_ != nullptr) {
-            sourceInfoCallback_->OnEvent({PluginEventType::SOURCE_INFO, {sourceInfo}, "source_info_callback"});
-            isSourceInfoUpdated_ = true;
-        } else {
-            MEDIA_LOG_E("UpdateSourceInfo sourceInfoCallback_ is null.");
-        }
-    }
 }
 
 void HlsPlayListDownloader::PreParseManifest(const std::string& location)

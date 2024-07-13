@@ -43,6 +43,9 @@ void CodecCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, 
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &context->sampleInfo->videoStrideWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &context->sampleInfo->videoSliceHeight);
 
+    auto &videoSliceHeight = context->sampleInfo->videoSliceHeight;
+    videoSliceHeight = videoSliceHeight == 0 ? context->sampleInfo->videoHeight : videoSliceHeight;
+
     AVCODEC_LOGW("Resolution: %{public}d*%{public}d => %{public}d*%{public}d(%{public}d*%{public}d)",
         originVideoWidth, originVideoHeight, context->sampleInfo->videoWidth, context->sampleInfo->videoHeight,
         context->sampleInfo->videoStrideWidth, context->sampleInfo->videoSliceHeight);

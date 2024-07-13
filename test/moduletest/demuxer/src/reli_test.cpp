@@ -138,15 +138,15 @@ void DemuxFunc(int i, int loop)
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer_list[i], 1));
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_track; index++) {
-            if ((audioIsEnd && (index == 0)) || (videoIsEnd && (index == 1))) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer_list[i], index, memory_list[i], &attr));
 
-            if ((index == 0) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+            if ((index == MEDIA_TYPE_AUD) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 audioIsEnd = true;
             }
-            if ((index == 1) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+            if ((index == MEDIA_TYPE_VID) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 videoIsEnd = true;
             }
         }
@@ -324,16 +324,16 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0400, TestSize.Level0)
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < 2; index++) {
 
-            if ((audioIsEnd && (index == 0)) || (videoIsEnd && (index == 1))) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if ((index == 0) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+            if ((index == MEDIA_TYPE_AUD) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 audioIsEnd = true;
                 cout << "    audio is end !!!!!!!!!!!!!!!" << endl;
             }
-            if ((index == 1) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+            if ((index == MEDIA_TYPE_VID) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 videoIsEnd = true;
                 cout << "   video is end !!!!!!!!!!!!!!!" << endl;
             }
@@ -383,14 +383,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0500, TestSize.Level3)
     }
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < 2; index++) {
-            if ((audioIsEnd && (index == 0)) || (videoIsEnd && (index == 1))) {
+            if ((audioIsEnd && (index == MEDIA_TYPE_AUD)) || (videoIsEnd && (index == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (index == 0) {
+            if (index == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (index == 1) {
+            } else if (index == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -490,14 +490,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4700, TestSize.Level2)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -890,14 +890,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5600, TestSize.Level0)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -947,20 +947,21 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5700, TestSize.Level0)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
 
-            if (tarckType == 0 && attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+            if (tarckType == MEDIA_TYPE_AUD && attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
                 aKeyCount++;
-            } else if (tarckType == 1 && attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+            } else if (tarckType == MEDIA_TYPE_VID && attr.flags &
+             OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
                 vKeyCount++;
             }
         }
@@ -995,14 +996,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1034,14 +1035,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1096,14 +1097,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1138,14 +1139,14 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6200, TestSize.Level3)
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1305,13 +1306,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6600, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1438,13 +1439,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6900, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 1) {
+            if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
-            } else if (tarckType == 0) {
+            } else if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame[index-1]);
             }
         }
@@ -1560,13 +1561,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7100, TestSize.Level3)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 1) {
+            if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
-            } else if (tarckType == 0) {
+            } else if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
             }
         }
@@ -1599,13 +1600,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7200, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1773,13 +1774,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7600, TestSize.Level2)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1809,13 +1810,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7700, TestSize.Level2)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1942,13 +1943,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8000, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -1978,13 +1979,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8100, TestSize.Level0)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -2014,13 +2015,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8200, TestSize.Level2)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -2050,13 +2051,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8300, TestSize.Level2)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -2086,13 +2087,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8400, TestSize.Level2)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
@@ -2120,13 +2121,13 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_8500, TestSize.Level2)
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+            if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-            if (tarckType == 0) {
+            if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame);
-            } else if (tarckType == 1) {
+            } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }

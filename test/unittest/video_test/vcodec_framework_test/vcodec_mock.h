@@ -59,6 +59,13 @@ public:
     virtual void OnInputParameterAvailable(uint32_t index, std::shared_ptr<FormatMock> parameter) = 0;
 };
 
+class MediaCodecParameterWithAttrCallbackMock : public NoCopyable {
+public:
+    virtual ~MediaCodecParameterWithAttrCallbackMock() = default;
+    virtual void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<FormatMock> attribute,
+                                           std::shared_ptr<FormatMock> parameter) = 0;
+};
+
 class VideoDecMock : public NoCopyable {
 public:
     virtual ~VideoDecMock() = default;
@@ -91,6 +98,7 @@ public:
     virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) = 0;
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb) = 0;
+    virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;

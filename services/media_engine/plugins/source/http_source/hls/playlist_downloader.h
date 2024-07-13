@@ -60,7 +60,7 @@ public:
     virtual void SetMimeType(const std::string& mimeType) = 0;
     virtual void PreParseManifest(const std::string& location) = 0;
     virtual bool IsParseAndNotifyFinished() = 0;
-    virtual void SetCallback(Callback* callback) = 0;
+    virtual bool IsParseFinished() = 0;
     void Resume();
     void Pause();
     void Close();

@@ -191,13 +191,28 @@ class MediaCodecParameterCallback {
 public:
     virtual ~MediaCodecParameterCallback() = default;
     /**
-     * Called when an error occurred.
+     * Called when an input parameter becomes available.
      *
-     * @param index The index of the available input parmaeter.
-     * @param parameter A {@link Format} object for a input parmaeter index that contains the data.
+     * @param index The index of the available input parameter.
+     * @param parameter A {@link Format} object containing the corresponding index input parameter.
      * @since 5.0
      */
     virtual void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) = 0;
+};
+
+class MediaCodecParameterWithAttrCallback {
+public:
+    virtual ~MediaCodecParameterWithAttrCallback() = default;
+    /**
+     * Called when an input parameter with attribute becomes available.
+     *
+     * @param index The index of the available input parameter.
+     * @param parameter A {@link Format} object containing the corresponding index input parameter.
+     * @param attribute A read only {@link Format} object containing the corresponding index input attribute.
+     * @since 5.0
+     */
+    virtual void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
+                                                   std::shared_ptr<Format> parameter) = 0;
 };
 
 class SurfaceBufferExtratDataKey {

@@ -49,6 +49,7 @@ enum CodecType {
     VIDEO_HW_DECODER = (0 << 1) | 0,
     VIDEO_SW_DECODER = (0 << 1) | 1,
     VIDEO_HW_ENCODER = (1 << 1) | 0,
+    VIDEO_SW_ENCODER = (1 << 1) | 1,
 };
 
 enum DataProducerType {
@@ -65,15 +66,15 @@ enum BitstreamType {
 /*   CodecRunMode description
  *   +-----+-------+--------------+
  *   | Bit |   1   |      0       |
- *   +-----+------------+---------+
+ *   +-----+-------+--------------+
  *   |Field| API11 | IsBufferMode |
- *   +-----+------------+---------+
+ *   +-----+-------+--------------+
  */
 enum CodecRunMode {
-    SURFACE_API10   = (0 << 1) | 0,
-    BUFFER_API10    = (0 << 1) | 1,
-    SURFACE_API11   = (1 << 1) | 0,
-    BUFFER_API11    = (1 << 1) | 1,
+    API10_SURFACE   = (0 << 1) | 0,
+    API10_BUFFER    = (0 << 1) | 1,
+    API11_SURFACE   = (1 << 1) | 0,
+    API11_BUFFER    = (1 << 1) | 1,
 };
 
 enum SampleState {
@@ -109,7 +110,7 @@ struct SampleInfo {
     double frameRate = SAMPLE_DEFAULT_FRAMERATE;
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
-    CodecRunMode codecRunMode = SURFACE_API10;
+    CodecRunMode codecRunMode = API11_SURFACE;
     int32_t frameInterval = -1;
     NativeWindow* window = nullptr;
     int32_t sampleRepeatTimes = 0;

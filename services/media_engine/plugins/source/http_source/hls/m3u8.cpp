@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <utility>
 #include <sstream>
-#include "common/log.h"
 #include "m3u8.h"
 
 namespace OHOS {

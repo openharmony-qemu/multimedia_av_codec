@@ -115,6 +115,8 @@ PRIVATE:
     bool CheckBreakCondition();
     uint32_t GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen);
 
+    void ResetPlaylistCapacity(size_t size);
+    void PlaylistBackup(const PlayInfo& fragment);
 PRIVATE:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};

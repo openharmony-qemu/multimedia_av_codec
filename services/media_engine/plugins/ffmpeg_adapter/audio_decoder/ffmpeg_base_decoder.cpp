@@ -21,6 +21,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
+constexpr float TIME_BASE_FFMPEG = 1000000.f;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_U8,
@@ -38,10 +39,8 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
     : isFirst(true),
       hasExtra_(false),
       maxInputSize_(-1),
-      bufferNum_(1),
-      bufferIndex_(1),
-      preBufferGroupPts_(0),
-      curBufferGroupPts_(0),
+      nextPts_(0),
+      durationTime_(0.f),
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
@@ -159,21 +158,8 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     Status status;
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
-        if (cachedFrame_->pts != AV_NOPTS_VALUE) {
-            preBufferGroupPts_ = curBufferGroupPts_;
-            curBufferGroupPts_ = cachedFrame_->pts;
-            if (bufferIndex_ >= bufferNum_) {
-                bufferNum_ = bufferIndex_;
-            }
-            bufferIndex_ = 1;
-        } else {
-            bufferIndex_++;
-            if (preBufferGroupPts_ == 0) {
-                cachedFrame_->pts = curBufferGroupPts_;
-            } else {
-                cachedFrame_->pts =
-                    curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
-            }
+        if (cachedFrame_->pts == AV_NOPTS_VALUE) {
+            cachedFrame_->pts = nextPts_;
         }
         status = ReceiveFrameSucc(outBuffer);
         dataCallback_->OnOutputBufferDone(outBuffer);
@@ -197,11 +183,6 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 
 Status FfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
-    if (convertedFrame_ == nullptr) {
-        AVCODEC_LOGE("av_frame_alloc failed");
-        return Status::ERROR_NO_MEMORY;
-    }
     if (resample_.ConvertFrame(convertedFrame_.get(), cachedFrame_.get()) != Status::OK) {
         AVCODEC_LOGE("convert frame failed");
         return Status::ERROR_UNKNOWN;
@@ -231,7 +212,10 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         if (InitResample() != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
+        uint32_t sampleRate = avCodecContext_->sample_rate;
+        durationTime_ = TIME_BASE_FFMPEG / sampleRate;
     }
+    nextPts_ = cachedFrame_->pts + static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
     auto outFrame = cachedFrame_;
     if (needResample_) {
         if (ConvertPlanarFrame(outBuffer) != Status::OK) {
@@ -251,6 +235,9 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     ioInfoMem->Write(outFrame->data[0], outputSize, 0);
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
+    if (needResample_) {
+        av_frame_unref(convertedFrame_.get());
+    }
     return Status::ERROR_AGAIN;
 }
 
@@ -262,7 +249,7 @@ Status FfmpegBaseDecoder::Reset()
         avCodecContext_.reset();
         avCodecContext_ = nullptr;
     }
-    preBufferGroupPts_ = 0;
+    nextPts_ = 0;
     return Status::OK;
 }
 
@@ -283,7 +270,7 @@ Status FfmpegBaseDecoder::Flush()
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
-    preBufferGroupPts_ = 0;
+    nextPts_ = 0;
     return Status::OK;
 }
 
@@ -402,6 +389,11 @@ Status FfmpegBaseDecoder::InitResample()
         if (ret != Status::OK) {
             AVCODEC_LOGE("Resmaple init failed.");
             return Status::ERROR_UNKNOWN;
+        }
+        convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
+        if (convertedFrame_ == nullptr) {
+            AVCODEC_LOGE("av_frame_alloc failed");
+            return Status::ERROR_NO_MEMORY;
         }
         needResample_ = true;
     }

@@ -41,6 +41,7 @@
 #include "demuxer_plugin_manager.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
@@ -161,7 +162,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
                          "StartReferenceParser failed due to video plugin is nullptr");
     if (isFirstParser_) {
         isFirstParser_ = false;
-        if (seekable_ != Plugins::Seekable::SEEKABLE) {
+        if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
             MEDIA_LOG_E("Do not support online video");
             return Status::ERROR_INVALID_OPERATION;
         }
@@ -259,7 +260,7 @@ void MediaDemuxer::AccelerateTrackTask(uint32_t trackId)
         return;
     }
     MEDIA_LOG_I("AccelerateTrackTask trackId:" PUBLIC_LOG_U32, trackId);
-    task->second->UpdataDelayTime();
+    task->second->UpdateDelayTime();
 }
 
 void MediaDemuxer::SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded)
@@ -337,17 +338,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
     }
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::GetDuration");
     MEDIA_LOG_I("GetDuration enter");
-    int32_t retry {0};
-    do {
-        seekable_ = source_->GetSeekable();
-        retry++;
-        if (seekable_ == Seekable::INVALID) {
-            if (retry >= 20) { // 20 means retry times
-                break;
-            }
-            OSAL::SleepFor(10); // 10 means sleep time pre retry
-        }
-    } while (seekable_ == Seekable::INVALID);
+    seekable_ = source_->GetSeekable();
 
     FALSE_LOG(seekable_ != Seekable::INVALID);
     MEDIA_LOG_I("GetDuration exit");
@@ -456,23 +447,6 @@ Status MediaDemuxer::ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVB
         sample->pts_ += Plugins::HstTime2Us(videoStartTime_);
     }
     return Status::OK;
-}
-
-void MediaDemuxer::ReportIsLiveStreamEvent()
-{
-    if (eventReceiver_ == nullptr) {
-        MEDIA_LOG_W("eventReceiver_ is nullptr!");
-        return;
-    }
-    if (seekable_ == Plugins::Seekable::INVALID) {
-        MEDIA_LOG_W("Seekable is invalid, do not report is_live_stream.");
-        return;
-    }
-    if (seekable_ == Plugins::Seekable::UNSEEKABLE) {
-        MEDIA_LOG_I("Report EventType::EVENT_IS_LIVE_STREAM.");
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_IS_LIVE_STREAM, true});
-        return;
-    }
 }
 
 Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
@@ -1567,18 +1541,6 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
-            break;
-        }
-        case PluginEventType::SOURCE_INFO: {
-            MEDIA_LOG_D("OnEvent source info start");
-            SourceInfo info = AnyCast<SourceInfo>(event.param);
-            duration_ = info.duration * 1000 * 1000; // 1000
-            if (duration_ != Plugins::HST_TIME_NONE && mediaMetaData_.globalMeta) {
-                mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
-            }
-            seekable_ = info.seekable;
-            ReportIsLiveStreamEvent();
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_INFO, event.param});
             break;
         }
         default:

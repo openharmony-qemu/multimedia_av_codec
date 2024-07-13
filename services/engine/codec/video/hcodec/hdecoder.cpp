@@ -188,7 +188,7 @@ void HDecoder::UpdateColorAspects()
     if (!GetParameter(OMX_IndexColorAspects, param, true)) {
         return;
     }
-    HLOGI("range:%d, primary:%d, transfer:%d, matrix:%d)",
+    HLOGI("isFullRange %d, primary %u, transfer %u, matrix %u",
         param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
     if (outputFormat_) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param.aspects.range);
@@ -669,14 +669,14 @@ void HDecoder::CancelBufferToSurface(BufferInfo& info)
 int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
 {
     uint64_t surfaceId = surface->GetUniqueId();
-    std::weak_ptr<HDecoder> weakThis = weak_from_this();
+    std::weak_ptr<HCodec> weakThis = weak_from_this();
     GSError err = surface->RegisterReleaseListener([weakThis, surfaceId](sptr<SurfaceBuffer>&) {
-        std::shared_ptr<HDecoder> decoder = weakThis.lock();
-        if (decoder == nullptr) {
+        std::shared_ptr<HCodec> codec = weakThis.lock();
+        if (codec == nullptr) {
             LOGI("decoder is gone");
             return GSERROR_OK;
         }
-        return decoder->OnBufferReleasedByConsumer(surfaceId);
+        return codec->OnBufferReleasedByConsumer(surfaceId);
     });
     if (err != GSERROR_OK) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed, GSError=%d", surfaceId, err);
@@ -847,6 +847,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
+    info.omxBuffer->pts = info.avBuffer->pts_;
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
