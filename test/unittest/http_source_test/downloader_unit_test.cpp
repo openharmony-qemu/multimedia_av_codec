@@ -42,12 +42,12 @@ void DownloaderUnitTest::TearDownTestCase(void)
 {
 }
 
-void DownloaderUnitTest::SetUp()
+void DownloaderUnitTest::SetUp(void)
 {
     downloader = std::make_shared<Downloader>("test");
 }
 
-void DownloaderUnitTest::TearDown()
+void DownloaderUnitTest::TearDown(void)
 {
     downloader.reset();
 }
@@ -55,21 +55,21 @@ void DownloaderUnitTest::TearDown()
 extern std::string ToString(const std::list<std::string> &lists, char tab = ',');
 extern std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
 extern std::string Trim(std::string str);
-extent bool IsRegexValid(const std::string &regex);
+extern bool IsRegexValid(const std::string &regex);
 
 HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
 {
     EXPECT_NE(downloader->client_, nullptr);
 }
 
-HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, ToString_EmptyList, TestSize.Level1)
 {
     list<string> lists;
     string result = ToString(lists);
     EXPECT_EQ(result, "");
 }
 
-HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, ToString_NoEmptyList, TestSize.Level1)
 {
     list<string> lists = {"Hello", "World"};
     string result = ToString(lists);
@@ -98,7 +98,7 @@ HWTEST_F(DownloaderUnitTest, InsertCharBefore_Test2, TestSize.Level1)
     EXPECT_EQ(expected, actual);
 }
 
-HWTEST_F(DownloaderUnitTest, InsertCharBefore_Test1, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, InsertCharBefore_Test3, TestSize.Level1)
 {
     string input = "hello world";
     char from = 'l';
@@ -151,14 +151,14 @@ HWTEST_F(DownloaderUnitTest, IsRegexValid_Test1, TestSize.Level1)
     EXPECT_EQ(result, false);
 }
 
-HWTEST_F(DownloaderUnitTest, IsRegexValid_Test1, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, IsRegexValid_Test2, TestSize.Level1)
 {
     string regex = "!@#$%^&*()";
     bool result = IsRegexValid(regex);
     EXPECT_EQ(result, false);
 }
 
-HWTEST_F(DownloaderUnitTest, IsRegexValid_Test1, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, IsRegexValid_Test3, TestSize.Level1)
 {
     string regex = "abc123";
     bool result = IsRegexValid(regex);
