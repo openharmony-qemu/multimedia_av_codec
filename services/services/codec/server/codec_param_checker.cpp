@@ -451,7 +451,7 @@ int32_t UniformlyScaledReferenceChecker(CapabilityData &capData, Format &format,
     int32_t mode = -1;
     format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
     using namespace OHOS::Media::Plugins;
-    if (mode == static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SACLED_REFERENCE)) {
+    if (mode == static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         int32_t temporalGopSize;
         bool temporalGopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
         if (!temporalGopSizeExist) {

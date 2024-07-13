@@ -46,7 +46,7 @@ TemporalScalability::~TemporalScalability()
 
 bool TemporalScalability::SwitchSvcSolution()
 {
-    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SACLED_REFERENCE)) {
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         return true;
     }
     if (temporalGopSize_ > DEFAULT_TEMPORAL_GOPSIZE) {
@@ -60,7 +60,7 @@ bool TemporalScalability::SwitchSvcSolution()
 
 int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize)
 {
-    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SACLED_REFERENCE)) {
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         return DEFAULT_VIDEO_LTR_FRAME_NUM;
     }
     return (tGopSize / DEFAULT_TEMPORAL_GOPSIZE) + 1;
@@ -143,7 +143,7 @@ void TemporalScalability::LTRDecision()
 {
     poc_ = frameNum_ % gopSize_;
     temporalPoc_ = poc_ % temporalGopSize_;
-    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SACLED_REFERENCE)) {
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         if (temporalPoc_ == 0) {
             isMarkLTR_ = true;
             if (poc_ == 0) {
@@ -188,7 +188,7 @@ void TemporalScalability::LTRDecision()
 
 uint32_t TemporalScalability::DisposableDecision()
 {
-    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SACLED_REFERENCE)) {
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         if (!isMarkLTR_) {
             if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
                 temporalPoc_ != temporalGopSize_ - 1 && poc_ != gopSize_ - 1) {
