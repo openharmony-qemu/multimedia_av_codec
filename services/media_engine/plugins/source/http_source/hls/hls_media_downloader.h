@@ -31,11 +31,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-#ifdef TESTING
-#define PRIVATE public
-#else
-#define PRIVATE private
-#endif
+
 enum BufferingTimes : int32_t {
     FIRST_TIMES = 1,
     SECOND_TIMES = 2,
@@ -89,7 +85,7 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
 
-PRIVATE:
+private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
@@ -117,7 +113,8 @@ PRIVATE:
 
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
-PRIVATE:
+
+private:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
     std::atomic<bool> usingExtraRingBuffer_ {false};

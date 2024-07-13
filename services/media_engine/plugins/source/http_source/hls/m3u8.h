@@ -111,6 +111,7 @@ struct M3U8 {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
+
 };
 
 struct M3U8Media {
@@ -151,6 +152,12 @@ struct M3U8MasterPlaylist {
     double duration_ {0};
     std::atomic<bool> isSimple_ {false};
     std::atomic<bool> bLive_ {false};
+    bool isDecryptAble_ { false };
+    bool isDecryptKeyReady_ { false };
+    uint8_t iv_[16] { 0 };
+    uint8_t key_[16] { 0 };
+    size_t keyLen_ { 0 };
+
 };
 }
 }

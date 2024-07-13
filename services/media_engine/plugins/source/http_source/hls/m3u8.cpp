@@ -169,16 +169,18 @@ void M3U8::InitTagUpdatersMap()
     };
 
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        isDecryptAble_ = true;
-        isDecryptKeyReady_ = false;
-        ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-        if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
-            (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
-            ProcessDrmInfos();
-        } else {
-            DownloadKey();
+        if (!isDecryptAble_ && !isDecryptKeyReady_) {
+            isDecryptAble_ = true;
+            isDecryptKeyReady_ = false;
+            ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+            if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
+                (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
+                ProcessDrmInfos();
+            } else {
+                DownloadKey();
+            }
+            // wait for key downloaded
         }
-        // wait for key downloaded
     };
 
     tagUpdatersMap_[HlsTag::EXTXMAP] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
@@ -463,6 +465,11 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
     variants_.emplace_back(stream);
     defaultVariant_ = stream;
+    m3u8->isDecryptAble_ = isDecryptAble_;
+    std::copy(std::begin(key_), std::end(key_), std::begin(m3u8->key_));
+    m3u8->isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
+    std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
+    keyLen_ = m3u8->keyLen_;
     m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
@@ -476,6 +483,21 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
     auto tags = ParseEntries(playList_);
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
+            case HlsTag::EXTXSESIONKEY:
+                auto m3u8 = std::make_shared<M3U8>(uri_, "");
+                m3u8->isDecryptAble_ = true;
+                m3u8->isDecryptKeyReady_ = false;
+                m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+                m3u8->DownloadKey();
+                while (!m3u8->isDecryptKeyReady_)
+                {
+                    Task::SleepInTask(10);
+                }
+                std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(key_));
+                isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
+                std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(iv_));
+                keyLen_ = m3u8->keyLen_;
+                break;
             case HlsTag::EXTXSTREAMINF:
             case HlsTag::EXTXIFRAMESTREAMINF: {
                 auto item = std::static_pointer_cast<AttributesTag>(tag);
