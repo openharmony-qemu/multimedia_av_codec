@@ -851,6 +851,8 @@ typedef enum OH_TemporalGopReferenceMode {
     ADJACENT_REFERENCE = 0,
     /** Refer to latest long-term reference frame. */
     JUMP_REFERENCE = 1,
+    /** Refer to latest long-term reference frame. */
+    UNIFORMLY_SACLED_REFERENCE = 2,
 } OH_TemporalGopReferenceMode;
 
 #ifdef __cplusplus

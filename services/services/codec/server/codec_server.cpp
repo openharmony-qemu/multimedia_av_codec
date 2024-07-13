@@ -230,8 +230,11 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 {
     switch (scenario_) {
         case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
-            temporalScalability_ = std::make_shared<TemporalScalability>();
+            temporalScalability_ = std::make_shared<TemporalScalability>(codecName_);
             temporalScalability_->ValidateTemporalGopParam(config);
+            if (!temporalScalability_->svcLTR_) {
+                temporalScalability_ = nullptr;
+            }
             break;
         default:
             break;
