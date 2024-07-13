@@ -852,7 +852,7 @@ typedef enum OH_TemporalGopReferenceMode {
     /** Refer to latest long-term reference frame. */
     JUMP_REFERENCE = 1,
     /** Refer to latest long-term reference frame. */
-    UNIFORMLY_SACLED_REFERENCE = 2,
+    UNIFORMLY_SCALED_REFERENCE = 2,
 } OH_TemporalGopReferenceMode;
 
 #ifdef __cplusplus
