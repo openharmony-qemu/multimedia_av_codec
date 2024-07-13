@@ -244,7 +244,7 @@ void PlayListDownloader::Close()
 {
     if (IsLive()) {
         MEDIA_LOG_I("updateTask_ Close.");
-        updateTask_->Stop();
+        updateTask_->StopAsync();
     }
 }
 
