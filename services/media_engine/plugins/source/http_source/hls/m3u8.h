@@ -144,6 +144,7 @@ struct M3U8MasterPlaylist {
     M3U8MasterPlaylist(const std::string& playList, const std::string& uri);
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
+    void DownloadSessionKey()
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> minimumVariant_;
@@ -157,7 +158,6 @@ struct M3U8MasterPlaylist {
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
-
 };
 }
 }

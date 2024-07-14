@@ -29,6 +29,8 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr uint32_t DRM_INFO_BASE64_DATA_MULTIPLE = 4;
 constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
+constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
+constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3*1024*1024;
 
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
@@ -477,26 +479,32 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     MEDIA_LOG_D("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
 }
 
+void M3U8MasterPlaylist::DownloadSessionKey()
+{
+    auto m3u8 = std::make_shared<M3U8>(uri_, "");
+    m3u8->isDecryptAble_ = true;
+    m3u8->isDecryptKeyReady_ = false;
+    m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+    m3u8->DownloadKey();
+    uint32_t downloadTime = 0;
+    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME) {
+        Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
+        downloadTime ++;
+    }
+    std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(key_));
+    isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
+    std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(iv_));
+    keyLen_ = m3u8->keyLen_;
+}
+
 void M3U8MasterPlaylist::UpdateMasterPlaylist()
 {
     MEDIA_LOG_I("master playlist " PUBLIC_LOG_S, playList_.c_str());
     auto tags = ParseEntries(playList_);
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
-            case HlsTag::EXTXSESIONKEY:
-                auto m3u8 = std::make_shared<M3U8>(uri_, "");
-                m3u8->isDecryptAble_ = true;
-                m3u8->isDecryptKeyReady_ = false;
-                m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-                m3u8->DownloadKey();
-                while (!m3u8->isDecryptKeyReady_)
-                {
-                    Task::SleepInTask(10);
-                }
-                std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(key_));
-                isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
-                std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(iv_));
-                keyLen_ = m3u8->keyLen_;
+            case HlsTag::EXTXSESSIONKEY:
+                DownloadSessionKey();
                 break;
             case HlsTag::EXTXSTREAMINF:
             case HlsTag::EXTXIFRAMESTREAMINF: {
