@@ -34,7 +34,7 @@ namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 4096;
 const std::string USER_AGENT = "User-Agent";
 
-std::string ToString(const std::list<std::string> &lists, char tab = ',')
+std::string ToString(const std::list<std::string> &lists, char tab)
 {
     std::string str;
     for (auto it = lists.begin(); it != lists.end(); ++it) {
