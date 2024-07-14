@@ -45,11 +45,15 @@ config("hls_unittest_cfg") {
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   cflags_cc = [
     "-std=c++17",
     "-fno-rtti",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   include_dirs = [
