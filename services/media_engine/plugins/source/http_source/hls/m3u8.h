@@ -111,7 +111,6 @@ struct M3U8 {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
-
 };
 
 struct M3U8Media {
@@ -144,13 +143,12 @@ struct M3U8MasterPlaylist {
     M3U8MasterPlaylist(const std::string& playList, const std::string& uri);
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
-    void DownloadSessionKey()
+    void DownloadSessionKey();
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> minimumVariant_;
     std::string uri_;
     std::string playList_;
-    double duration_ {0};
     std::atomic<bool> isSimple_ {false};
     std::atomic<bool> bLive_ {false};
     bool isDecryptAble_ { false };
