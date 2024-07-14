@@ -479,7 +479,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     MEDIA_LOG_D("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
 }
 
-void M3U8MasterPlaylist::DownloadSessionKey()
+void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 {
     auto m3u8 = std::make_shared<M3U8>(uri_, "");
     m3u8->isDecryptAble_ = true;
@@ -504,7 +504,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
             case HlsTag::EXTXSESSIONKEY:
-                DownloadSessionKey();
+                DownloadSessionKey(tag);
                 break;
             case HlsTag::EXTXSTREAMINF:
             case HlsTag::EXTXIFRAMESTREAMINF: {
