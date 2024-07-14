@@ -31,6 +31,9 @@ std::string ToString(const std::list<std::string> &lists, char tab = ',');
 std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
 std::string Trim(std::string str);
 bool IsRegexValid(const std::string &regex);
+std::string ReplaceCharacters(const std::string &input);
+bool IsMatch(const std::string &str, const std::string &patternStr);
+bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
 
 class HttpCurlClient : public NetworkClient {
 public:
