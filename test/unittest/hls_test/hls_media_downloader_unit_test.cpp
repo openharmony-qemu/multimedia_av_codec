@@ -71,7 +71,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_002, TestSize.Level1)
 {
     HlsMediaDownloader *downloader = new HlsMediaDownloader(10);
-    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(1000));
+    EXPECT_EQ(downloader->expectDuration_, static_cast<uint64_t>(10));
     delete downloader;
     downloader = nullptr;
 }

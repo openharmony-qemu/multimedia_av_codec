@@ -208,7 +208,7 @@ HWTEST_F(DownloaderUnitTest, IsMatch_02, TestSize.Level1)
     string str = "test";
     string patternStr = "*";
     bool result = IsMatch(str, patternStr);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 HWTEST_F(DownloaderUnitTest, IsMatch_03, TestSize.Level1)
@@ -216,7 +216,7 @@ HWTEST_F(DownloaderUnitTest, IsMatch_03, TestSize.Level1)
     string str = "test";
     string patternStr = "test";
     bool result = IsMatch(str, patternStr);
-    EXPECT_FALSE(result);
+    EXPECT_TRUE(result);
 }
 
 HWTEST_F(DownloaderUnitTest, IsMatch_04, TestSize.Level1)
@@ -248,7 +248,7 @@ HWTEST_F(DownloaderUnitTest, IsExcluded_02, TestSize.Level1)
     string str = "test";
     string exclusions = "test,example";
     string split = ",";
-    EXPECT_FALSE(IsExcluded(str, exclusions, split));
+    EXPECT_TRUE(IsExcluded(str, exclusions, split));
 }
 
 HWTEST_F(DownloaderUnitTest, IsExcluded_03, TestSize.Level1)
