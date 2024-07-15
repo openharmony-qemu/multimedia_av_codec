@@ -48,7 +48,7 @@ constexpr int32_t AAC_FRAME_SIZE = 1024;
 constexpr int32_t CORRECTION_SAMPLE_RATE = 8000;
 constexpr int32_t CORRECTION_BIT_RATE = 70000;
 constexpr int32_t CORRECTION_CHANNEL_COUNT = 2;
-constexpr double Q_SCALE = 1.2;
+constexpr float Q_SCALE = 1.2f;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -507,7 +507,7 @@ Status FFmpegAACEncoderPlugin::InitContext()
         avCodecContext_->flags |= AV_CODEC_FLAG_QSCALE;
         // Q_SCALE质量参数，对应FFmpeg 命令行工具的-q:a参数,范围通常是0.1~2。
         // 此处Q_SCALE:1.2 quality:141比较合适
-        int32_t quality = FF_QP2LAMBDA * Q_SCALE;
+        int32_t quality = static_cast<int32_t>(FF_QP2LAMBDA * Q_SCALE);
         avCodecContext_->global_quality = quality;
         MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", avCodecContext_->flags,
             avCodecContext_->global_quality);
