@@ -320,7 +320,7 @@ Status VideoResizeFilter::DoStop()
     int32_t ret = videoEnhancer_->Stop();
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer Stop fail");
-        if (eventReceiver_){
+        if (eventReceiver_) {
             eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         }
         return Status::ERROR_UNKNOWN;
