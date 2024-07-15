@@ -369,6 +369,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
+        format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_id));
     }
