@@ -395,7 +395,7 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
 {
     MEDIA_LOG_I("OnLinkedResult");
     if (mediaCodec_ == nullptr) {
-        return Status::ERROR_UNKNOWN;
+        return;
     }
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     if (onLinkedResultCallback_) {
