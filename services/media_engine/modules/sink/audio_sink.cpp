@@ -403,7 +403,7 @@ void AudioSink::DrainOutputBuffer()
     }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-        AutoLock lock(eosMutex_);
+        AutoLock eosLock(eosMutex_);
         eosInterruptType_ = EosInterruptState::INITIAL;
         if (eosTask_ == nullptr) {
             return;
