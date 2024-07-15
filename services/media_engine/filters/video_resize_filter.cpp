@@ -141,12 +141,16 @@ void VideoResizeFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         videoEnhancer_->RegisterCallback(detailEnhancerVideoCallback);
     } else {
         MEDIA_LOG_I("Init videoEnhancer fail");
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
         return;
     }
 #else
     MEDIA_LOG_E("Init videoEnhancer fail, no VPE module");
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    if (eventReceiver_) {
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    }
     return;
 #endif
     if (!releaseBufferTask_) {
@@ -171,14 +175,18 @@ Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
     int32_t ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer SetParameter fail");
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
         return Status::ERROR_UNKNOWN;
     } else {
         return Status::OK;
     }
 #else
     MEDIA_LOG_E("no VPE module");
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    if (eventReceiver_) {
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    }
     return Status::ERROR_UNKNOWN;
 #endif
 }
@@ -198,7 +206,9 @@ sptr<Surface> VideoResizeFilter::GetInputSurface()
     }
 #else
     MEDIA_LOG_E("no VPE module");
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    if (eventReceiver_) {
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    }
     return nullptr;
 #endif
 }
@@ -220,13 +230,17 @@ Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface, int32_t width,
     int32_t ret = videoEnhancer_->SetOutputSurface(surface);
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer SetOutputSurface fail");
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 #else
     MEDIA_LOG_E("no VPE module");
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    if (eventReceiver_) {
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    }
     return Status::ERROR_UNKNOWN;
 #endif
 }
@@ -234,6 +248,9 @@ Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface, int32_t width,
 Status VideoResizeFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
+    if (filterCallback_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     switch (filterType_) {
         case FilterType::FILTERTYPE_VIDRESIZE:
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
@@ -260,13 +277,17 @@ Status VideoResizeFilter::DoStart()
     int32_t ret = videoEnhancer_->Start();
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer Start fail");
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 #else
     MEDIA_LOG_E("no VPE module");
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    if (eventReceiver_) {
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    }
     return Status::ERROR_UNKNOWN;
 #endif
 }
@@ -299,13 +320,17 @@ Status VideoResizeFilter::DoStop()
     int32_t ret = videoEnhancer_->Stop();
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer Stop fail");
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_){
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 #else
     MEDIA_LOG_E("no VPE module");
-    eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    if (eventReceiver_) {
+        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+    }
     return Status::ERROR_UNKNOWN;
 #endif
 }
@@ -360,8 +385,10 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     int32_t ret = videoEnhancer_->SetParameter(parameter_, SourceType::VIDEO);
     if (ret != 0) {
         MEDIA_LOG_E("videoEnhancer SetParameter fail");
-        eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR,
-            MSERR_UNSUPPORT_VID_PARAMS});
+        if (eventReceiver_) {
+            eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR,
+                MSERR_UNSUPPORT_VID_PARAMS});
+        }
     }
 #else
     MEDIA_LOG_E("no VPE module");
@@ -382,7 +409,7 @@ Status VideoResizeFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, St
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<VideoResizeFilterLinkCallback>(shared_from_this());
     auto ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
-    if (ret != Status::OK) {
+    if (ret != Status::OK && eventReceiver_) {
         eventReceiver_->OnEvent({"VideoResizeFilter::LinkNext error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnLinked failed");
