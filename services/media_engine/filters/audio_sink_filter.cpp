@@ -80,6 +80,7 @@ Status AudioSinkFilter::DoInitAfterLink()
     audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
+    audioSink_->SetThreadGroupId(groupId_);
     return ret;
 }
 
