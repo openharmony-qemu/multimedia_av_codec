@@ -151,6 +151,9 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     Status ret = mediaCodec_->SetInputSurface(surface);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec SetInputSurface fail");
@@ -162,6 +165,9 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 Status SurfaceEncoderFilter::SetTransCoderMode()
 {
     MEDIA_LOG_I("SetTransCoderMode");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     mediaCodec_->SetTransCoderMode();
     return Status::OK;
 }
@@ -171,6 +177,10 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
     MEDIA_LOG_I("GetInputSurface");
     if (surface_) {
         return surface_;
+    }
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec GetInputSurface fail");
+        return nullptr;
     }
     surface_ = mediaCodec_->GetInputSurface();
     if (surface_ == nullptr) {
@@ -251,6 +261,9 @@ Status SurfaceEncoderFilter::Reset()
 Status SurfaceEncoderFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     Status ret = mediaCodec_->Flush();
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Flush fail");
@@ -276,6 +289,9 @@ Status SurfaceEncoderFilter::DoRelease()
 Status SurfaceEncoderFilter::NotifyEos()
 {
     MEDIA_LOG_I("NotifyEos");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     return mediaCodec_->NotifyEos();
 }
 
@@ -358,6 +374,9 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnLinkedResult");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     if (onLinkedResultCallback_) {
         onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
