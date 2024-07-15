@@ -122,9 +122,33 @@ Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
     return Status::OK;
 }
 
+Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
+{
+    MEDIA_LOG_I("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
+    newAudioStreamID_.store(streamID);
+    return Status::OK;
+}
+
+Status BaseStreamDemuxer::SetNewSubtitleStreamID(int32_t streamID)
+{
+    MEDIA_LOG_I("SetNewSubtitleStreamID id: " PUBLIC_LOG_D32, streamID);
+    newAudioStreamID_.store(streamID);
+    return Status::OK;
+}
+
 int32_t BaseStreamDemuxer::GetNewVideoStreamID()
 {
     return newVideoStreamID_.load();
+}
+
+int32_t BaseStreamDemuxer::GetNewAudioStreamID()
+{
+    return newAudioStreamID_.load();
+}
+
+int32_t BaseStreamDemuxer::GetNewSubtitleStreamID()
+{
+    return newSubtitleStreamID_.load();
 }
 
 } // namespace Media

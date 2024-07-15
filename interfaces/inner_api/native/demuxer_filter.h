@@ -56,7 +56,7 @@ public:
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
 
-    Status StartAudioTask();
+    Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;

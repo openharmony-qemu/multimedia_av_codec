@@ -435,9 +435,9 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
-Status DemuxerFilter::StartAudioTask()
+Status DemuxerFilter::StartTask(int32_t trackId)
 {
-    return demuxer_->StartAudioTask();
+    return demuxer_->StartTask(trackId);
 }
 
 Status DemuxerFilter::SelectTrack(int32_t trackId)
