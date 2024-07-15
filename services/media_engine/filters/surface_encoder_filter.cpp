@@ -145,7 +145,7 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
         MEDIA_LOG_E("mediaCodec Configure fail");
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        } 
+        }
     }
     return ret;
 }
