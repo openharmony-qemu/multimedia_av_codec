@@ -201,6 +201,22 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.quality.has_value()) {
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, opt_.quality.value());
     }
+    if (opt_.layerCnt.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
+        int32_t temporalGopSize = 0;
+        switch (opt_.layerCnt.value()) {
+            case 2:
+                temporalGopSize = 2;
+                break;
+            case 3:
+                temporalGopSize = 4;
+                break;
+            default:
+                break;
+        }
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2); // 2: gop mode
+    }
     EnableHighPerf(fmt);
     if (opt_.qpRange.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, opt_.qpRange->qpMin);

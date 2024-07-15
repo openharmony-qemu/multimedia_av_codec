@@ -59,6 +59,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
+    ret = SetTemperalLayer(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     ret = SetLTRParam(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -130,8 +134,16 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
-    if (ltrFrameNum <= 0) {
+    if (!caps_.port.video.isSupportLTR) {
+        HLOGW("platform not support LTR");
+        return AVCS_ERR_OK;
+    }
+    if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (enableTSVC_) {
+        HLOGW("user has enabled temporal scale, can not set LTR param");
         return AVCS_ERR_INVALID_VAL;
     }
     CodecLTRParam info;
@@ -141,7 +153,7 @@ int32_t HEncoder::SetLTRParam(const Format &format)
         HLOGE("configure LTR failed");
         return AVCS_ERR_INVALID_VAL;
     }
-    enableLTR = true;
+    enableLTR_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -163,6 +175,53 @@ int32_t HEncoder::SetQpRange(const Format &format, bool isCfg)
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("set qp range (%d~%d) succ", minQp, maxQp);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::SetTemperalLayer(const Format &format)
+{
+    int32_t enableTemporalScale = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enableTemporalScale) ||
+        (enableTemporalScale == 0)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportTSVC) {
+        HLOGW("platform not support temporal scale");
+        return AVCS_ERR_OK;
+    }
+    Media::Plugins::TemporalGopReferenceMode GopReferenceMode{};
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+        *reinterpret_cast<int *>(&GopReferenceMode)) ||
+        static_cast<int32_t>(GopReferenceMode) != 2) { // 2: gop mode
+        HLOGE("user enable temporal scalability but not set invalid temporal gop mode");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    int32_t temporalGopSize = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize)) {
+        HLOGE("user enable temporal scalability but not set invalid temporal gop size");
+        return AVCS_ERR_INVALID_VAL;
+    }
+
+    CodecTemperalLayerParam temperalLayerParam;
+    InitOMXParamExt(temperalLayerParam);
+    switch (temporalGopSize) {
+        case 2: // 2: picture size of the temporal group
+            temperalLayerParam.layerCnt = 2; // 2: layer of the temporal group
+            break;
+        case 4: // 4: picture size of the temporal group
+            temperalLayerParam.layerCnt = 3; // 3: layer of the temporal group
+            break;
+        default:
+            HLOGE("user set invalid temporal gop size %d", temporalGopSize);
+            return AVCS_ERR_INVALID_VAL;
+    }
+    
+    if (!SetParameter(OMX_IndexParamTemperalLayer, temperalLayerParam)) {
+        HLOGE("set temporal layer param failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set temporal layer param %d succ", temperalLayerParam.layerCnt);
+    enableTSVC_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -760,7 +819,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuf
 void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
                                          const shared_ptr<Media::Meta> &meta)
 {
-    if (!enableLTR) {
+    if (!enableLTR_) {
         return;
     }
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamLTR);
