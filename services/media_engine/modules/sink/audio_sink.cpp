@@ -14,7 +14,6 @@
 */
 
 #include "audio_sink.h"
-#include "osal/task/task.h"
 #include "syspara/parameters.h"
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
