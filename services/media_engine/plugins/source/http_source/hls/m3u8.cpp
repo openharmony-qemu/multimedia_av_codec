@@ -467,11 +467,13 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
     variants_.emplace_back(stream);
     defaultVariant_ = stream;
-    m3u8->isDecryptAble_ = isDecryptAble_;
-    std::copy(std::begin(key_), std::end(key_), std::begin(m3u8->key_));
-    m3u8->isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
-    std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
-    keyLen_ = m3u8->keyLen_;
+    if (isDecryptAble_) {
+        m3u8->isDecryptAble_ = isDecryptAble_;
+        std::copy(std::begin(key_), std::end(key_), std::begin(m3u8->key_));
+        m3u8->isDecryptKeyReady_ = isDecryptKeyReady_;
+        std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
+        m3u8->keyLen_ = keyLen_;
+    }
     m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
