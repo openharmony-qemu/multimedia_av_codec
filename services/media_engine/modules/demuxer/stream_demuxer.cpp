@@ -339,10 +339,13 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
             if (buffer != nullptr && buffer->streamID != streamID) {
-                SetNewVideoStreamID(buffer->streamID);
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32
-                    ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                return Status::END_OF_STREAM;
+                if (GetNewVideoStreamID() == streamID) {
+                    SetNewVideoStreamID(buffer->streamID);
+                } else if (GetNewAudioStreamID() == streamID) {
+                    SetNewAudioStreamID(buffer->streamID);
+                } else if (GetNewSubtitleStreamID() == streamID) {
+                    SetNewSubtitleStreamID(buffer->streamID);
+                } else {}
             }
         }
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
@@ -364,10 +367,13 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
         if (IsDash()) {
             if (buffer != nullptr && buffer->streamID != streamID) {
-                SetNewVideoStreamID(buffer->streamID);
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32
-                    ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                return Status::END_OF_STREAM;
+                if (GetNewVideoStreamID() == streamID) {
+                    SetNewVideoStreamID(buffer->streamID);
+                } else if (GetNewAudioStreamID() == streamID) {
+                    SetNewAudioStreamID(buffer->streamID);
+                } else if (GetNewSubtitleStreamID() == streamID) {
+                    SetNewSubtitleStreamID(buffer->streamID);
+                } else {}
             }
         }
         DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
