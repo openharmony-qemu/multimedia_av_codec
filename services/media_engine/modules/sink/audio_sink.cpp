@@ -397,7 +397,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     if (playingBufferDurationUs_ > 0) {
         latestBufferDuration_ = playingBufferDurationUs_ / speed_;
     } else {
-        latestBufferDuration_ = buffer->duration_;
+        latestBufferDuration_ = buffer->duration_ / speed_;
     }
     return render ? 0 : -1;
 }
