@@ -169,6 +169,10 @@ Status SurfaceDecoderFilter::NotifyNextFilterEos()
 Status SurfaceDecoderFilter::DoPrepare()
 {
     MEDIA_LOG_I("Prepare");
+    if (filterCallback_ == nullptr) {
+        MEDIA_LOG_E("filterCallback is null");
+        return Status::ERROR_UNKNOWN;
+    }
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_RAW_VIDEO);
     return Status::OK;
