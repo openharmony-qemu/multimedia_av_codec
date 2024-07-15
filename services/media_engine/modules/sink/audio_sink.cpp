@@ -21,6 +21,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
+constexpr int64_t EOS_DRAIN_INTERVAL_US = 200000; // try drain each 200ms
 }
 
 namespace OHOS {
@@ -129,6 +130,10 @@ Status AudioSink::Prepare()
         return ret;
     }
     state_ = Pipeline::FilterState::READY;
+    {
+        AutoLock lock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::NONE;
+    }
     return ret;
 }
 
@@ -154,6 +159,10 @@ Status AudioSink::Stop()
         return ret;
     }
     state_ = Pipeline::FilterState::INITIALIZED;
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ != EosInterruptState::NONE) {
+        eosInterruptType_ = EosInterruptState::STOP;
+    }
     return ret;
 }
 
@@ -188,6 +197,10 @@ Status AudioSink::Pause()
     } else {
         ret = PauseSub();
     }
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ == EosInterruptState::INITIAL || eosInterruptType_ == EosInterruptState::RESUME) {
+        eosInterruptType_ = EosInterruptState::PAUSE;
+    }
     return ret;
 }
 
@@ -199,6 +212,15 @@ Status AudioSink::Resume()
         return ret;
     }
     state_ = Pipeline::FilterState::RUNNING;
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ == EosInterruptState::PAUSE) {
+        eosInterruptType_ = EosInterruptState::RESUME;
+        if (!eosDraining_ && eosTask_ != nullptr) {
+            eosTask_->SubmitJobOnce([this] {
+                HandleEosInner();
+            });
+        }
+    }
     return ret;
 }
 
@@ -222,6 +244,10 @@ Status AudioSink::Flush()
         });
     } else {
         ret = plugin_->Flush();
+    }
+    {
+        AutoLock lock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::NONE;
     }
     return ret;
 }
@@ -304,8 +330,48 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
     lastBufferWriteTime_ = timeNow;
 }
 
-void AudioSink::ReportEosEventAndDrain()
+void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
+    eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
+}
+
+void AudioSink::HandleEosInner()
+{
+    AutoLock lock(eosMutex_);
+    eosDraining_ = true;
+    if (eosInterruptType_ != EosInterruptState::INITIAL && eosInterruptType_ != EosInterruptState::RESUME) {
+        MEDIA_LOG_W("drain audiosink interrupted");
+        eosDraining_ = false;
+        return;
+    }
+    uint64_t latency = 0;
+    if (plugin_->GetLatency(latency) != Status::OK) {
+        MEDIA_LOG_W("failed to get latency, drain directly");
+        DrainAndReportEosEvent();
+        return;
+    }
+    if (latency < EOS_DRAIN_INTERVAL_US) {
+        MEDIA_LOG_I("Drain audiosink and report EOS");
+        DrainAndReportEosEvent();
+        return;
+    }
+    if (eosTask_ == nullptr) {
+        MEDIA_LOG_W("Drain audiosink, eosTask_ is nullptr");
+        DrainAndReportEosEvent();
+        return;
+    }
+    MEDIA_LOG_D("Drain audiosink wait next INTERVAL, latency = " PUBLIC_LOG_U64, latency);
+    eosTask_->SubmitJobOnce([this] {
+            HandleEosInner();
+        }, EOS_DRAIN_INTERVAL_US, false);
+}
+ 
+void AudioSink::DrainAndReportEosEvent()
+{
+    plugin_->Drain();
+    plugin_->PauseTransitent();
+    eosInterruptType_ = EosInterruptState::NONE;
+    eosDraining_ = false;
     isEos_ = true;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
@@ -317,8 +383,6 @@ void AudioSink::ReportEosEventAndDrain()
     };
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
-    plugin_->Drain();
-    plugin_->PauseTransitent();
 }
 
 void AudioSink::DrainOutputBuffer()
@@ -338,8 +402,15 @@ void AudioSink::DrainOutputBuffer()
         return;
     }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
-        ReportEosEventAndDrain();
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        AutoLock eosLock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::INITIAL;
+        if (eosTask_ == nullptr) {
+            return;
+        }
+        eosTask_->SubmitJobOnce([this] {
+            HandleEosInner();
+        });
         return;
     }
     UpdateAudioWriteTimeMayWait();
