@@ -764,7 +764,11 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
             !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
-            info->contentLen = LIVE_CONTENT_LENGTH;
+            if (static_cast<int32_t>(mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos)) {
+                info->contentLen = LIVE_CONTENT_LENGTH;
+            } else {
+                info->contentLen = 0;
+            }
             std::string tokenStr = (std::string)token;
             MEDIA_LOG_I("Transfer-Encoding: " PUBLIC_LOG_S, tokenStr.c_str());
         }
