@@ -370,6 +370,8 @@ void AudioSink::DrainAndReportEosEvent()
 {
     plugin_->Drain();
     plugin_->PauseTransitent();
+    eosInterruptType_ = EosInterruptState::NONE;
+    eosDraining_ = false;
     isEos_ = true;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
