@@ -72,7 +72,7 @@ public:
     Status Resume();
     Status Flush();
 
-    Status StartAudioTask();
+    Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
@@ -123,9 +123,9 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
-        std::string& videoMime);
-    void InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo);
+    void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
+    void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
+        uint32_t& audioTrackId, uint32_t& subtitleTrackId, std::string& videoMime);
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     Status AddDemuxerCopyTask(uint32_t trackId, TaskType type);
@@ -148,9 +148,10 @@ private:
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
 
-    Status SeekToTimePre(bool jumperRestartPlugin);
-    Status SeekToTimeAfter(bool jumperRestartPlugin);
-    bool ChangeStream(uint32_t trackId);
+    Status SeekToTimePre();
+    Status SeekToTimeAfter();
+    bool SelectBitRateChangeStream(uint32_t trackId);
+    bool SelectTrackChangeStream(uint32_t trackId);
     Status PauseForPrepareFrame();
 
     Plugins::Seekable seekable_;
@@ -164,7 +165,6 @@ private:
     std::shared_ptr<Source> source_;
     std::shared_ptr<Source> subtitleSource_;
     MediaMetaData mediaMetaData_;
-    MediaMetaData subMediaMetaData_;
 
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
@@ -174,6 +174,12 @@ private:
     Status HandleRead(uint32_t trackId);
     int64_t ParserRefInfo();
     void TryRecvParserTask();
+
+    Status HandleSelectTrack(int32_t trackId);
+    Status HandleDashSelectTrack(int32_t trackId);
+    Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
+    void HandleStopPlugin(int32_t trackId);
+    void HandleStartPlugin(int32_t trackId);
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -196,7 +202,7 @@ private:
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
-    uint32_t extSubtitleTrackId_{TRACK_ID_DUMMY};
+    uint32_t subtitleTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
 
     std::atomic<bool> isStopped_ = false;
@@ -230,6 +236,11 @@ private:
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
     int64_t duration_ {0};
+
+    uint32_t selectTrackTrackID_ { TRACK_ID_DUMMY };
+    std::atomic<bool> isSelectTrack_ = false;
+    std::atomic<bool> shouldCheckAudioFramePts_ = false;
+    int64_t lastAudioPts_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

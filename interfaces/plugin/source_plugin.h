@@ -43,6 +43,12 @@ public:
     int32_t streamId;
     StreamType type;
     uint32_t bitRate;
+
+    int32_t video_height = 0;
+    int32_t video_width = 0;
+    std::string lang = "";
+    std::string video_type = "";
+    std::string track_name = "";
 };
 
 /**
