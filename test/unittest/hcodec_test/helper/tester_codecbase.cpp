@@ -205,11 +205,11 @@ bool TesterCodecBase::ConfigureEncoder()
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
         int32_t temporalGopSize = 0;
         switch (opt_.layerCnt.value()) {
-            case 2:
-                temporalGopSize = 2;
+            case 2: // 2: temporal layerCnt
+                temporalGopSize = 2; // 2: temporalGopSize
                 break;
-            case 3:
-                temporalGopSize = 4;
+            case 3: // 3: temporal layerCnt
+                temporalGopSize = 4; // 4: temporalGopSize
                 break;
             default:
                 break;
