@@ -210,7 +210,7 @@ Status SurfaceDecoderFilter::DoResume()
     Status ret = mediaCodec_->Resume();
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Resume fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});    
+        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
     }
     return ret;
 }
@@ -225,7 +225,7 @@ Status SurfaceDecoderFilter::DoStop()
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Stop fail");
         eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        return ret; 
+        return ret;
     }
     MEDIA_LOG_I("Stop done");
     return Status::OK;
