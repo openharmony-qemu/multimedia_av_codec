@@ -356,11 +356,11 @@ void AudioSink::HandleEosInner()
         return;
     }
     if (eosTask_ == nullptr) {
-        MEDIA_LOG_I("Drain audiosink, eosTask_ is nullptr");
+        MEDIA_LOG_W("Drain audiosink, eosTask_ is nullptr");
         DrainAndReportEosEvent();
         return;
     }
-    MEDIA_LOG_I("Drain audiosink wait next INTERVAL, latency = " PUBLIC_LOG_U64, latency);
+    MEDIA_LOG_D("Drain audiosink wait next INTERVAL, latency = " PUBLIC_LOG_U64, latency);
     eosTask_->SubmitJobOnce([this] {
             HandleEosInner();
         }, EOS_DRAIN_INTERVAL_US, false);
