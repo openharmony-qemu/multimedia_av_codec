@@ -46,19 +46,8 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    switch (static_cast<int>(codingType_)) {
-        case OMX_VIDEO_CodingAVC:
-            ret = SetupAVCEncoderParameters(format, frameRate);
-            break;
-        case CODEC_OMX_VIDEO_CodingHEVC:
-            ret = SetupHEVCEncoderParameters(format, frameRate);
-            break;
-        default:
-            break;
-    }
-    if (ret != AVCS_ERR_OK) {
-        HLOGW("set protocol param failed");
-    }
+    ConfigureProtocol(format, frameRate);
+
     ret = ConfigureOutputBitrate(format);
     if (ret != AVCS_ERR_OK) {
         HLOGW("ConfigureOutputBitrate failed");
@@ -79,6 +68,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
     ret = SetLowLatency(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SetRepeat(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -105,6 +98,30 @@ void HEncoder::CheckIfEnableCb(const Format &format)
         HLOGI("enable surface mode callback flag %d", enableCb);
         enableSurfaceModeInputCb_ = static_cast<bool>(enableCb);
     }
+}
+
+int32_t HEncoder::SetRepeat(const Format &format)
+{
+    int repeatMs = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, repeatMs)) {
+        return AVCS_ERR_OK;
+    }
+    if (repeatMs <= 0) {
+        HLOGW("invalid repeatMs %d", repeatMs);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    repeatUs_ = repeatMs * TIME_RATIO_S_TO_MS;
+
+    int repeatMaxCnt = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatMaxCnt)) {
+        return AVCS_ERR_OK;
+    }
+    if (repeatMaxCnt == 0) {
+        HLOGW("invalid repeatMaxCnt %d", repeatMaxCnt);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    repeatMaxCnt_ = repeatMaxCnt;
+    return AVCS_ERR_OK;
 }
 
 int32_t HEncoder::SetLTRParam(const Format &format)
@@ -151,47 +168,45 @@ int32_t HEncoder::SetQpRange(const Format &format, bool isCfg)
 
 int32_t HEncoder::SetColorAspects(const Format &format)
 {
-    int range = -1;
-    ColorPrimary primary = COLOR_PRIMARY_UNSPECIFIED;
-    TransferCharacteristic transfer = TRANSFER_CHARACTERISTIC_UNSPECIFIED;
-    MatrixCoefficient matrix = MATRIX_COEFFICIENT_UNSPECIFIED;
+    int range = 0;
+    int primary = static_cast<int>(COLOR_PRIMARY_UNSPECIFIED);
+    int transfer = static_cast<int>(TRANSFER_CHARACTERISTIC_UNSPECIFIED);
+    int matrix = static_cast<int>(MATRIX_COEFFICIENT_UNSPECIFIED);
 
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
         HLOGI("user set range flag %d", range);
     }
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, *(int *)&primary)) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, primary)) {
         HLOGI("user set primary %d", primary);
     }
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, *(int *)&transfer)) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, transfer)) {
         HLOGI("user set transfer %d", transfer);
     }
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, *(int *)&matrix)) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, matrix)) {
         HLOGI("user set matrix %d", matrix);
     }
-    if (range == -1 && primary == COLOR_PRIMARY_UNSPECIFIED && transfer == TRANSFER_CHARACTERISTIC_UNSPECIFIED &&
-        matrix == MATRIX_COEFFICIENT_UNSPECIFIED) {
-        return AVCS_ERR_OK;
+    if (primary < 0 || primary > UINT8_MAX ||
+        transfer < 0 || transfer > UINT8_MAX ||
+        matrix < 0 || matrix > UINT8_MAX) {
+        HLOGW("invalid color");
+        return AVCS_ERR_INVALID_VAL;
     }
 
     CodecVideoColorspace param;
     InitOMXParamExt(param);
     param.portIndex = OMX_DirInput;
-
-    param.aspects.range = RANGE_UNSPECIFIED;
-    if (range != -1) {
-        param.aspects.range = TypeConverter::RangeFlagToOmxRangeType(static_cast<bool>(range));
-    }
-    param.aspects.primaries = TypeConverter::InnerPrimaryToOmxPrimary(primary);
-    param.aspects.transfer = TypeConverter::InnerTransferToOmxTransfer(transfer);
-    param.aspects.matrixCoeffs = TypeConverter::InnerMatrixToOmxMatrix(matrix);
+    param.aspects.range = static_cast<bool>(range);
+    param.aspects.primaries = static_cast<uint8_t>(primary);
+    param.aspects.transfer = static_cast<uint8_t>(transfer);
+    param.aspects.matrixCoeffs = static_cast<uint8_t>(matrix);
 
     if (!SetParameter(OMX_IndexColorAspects, param, true)) {
         HLOGE("failed to set CodecVideoColorSpace");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("set omx color aspects (full range:%d, primary:%d, "
-          "transfer:%d, matrix:%d) succ",
-          param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
+    HLOGI("set color aspects (isFullRange %d, primary %u, transfer %u, matrix %u) succ",
+          param.aspects.range, param.aspects.primaries,
+          param.aspects.transfer, param.aspects.matrixCoeffs);
     return AVCS_ERR_OK;
 }
 
@@ -326,52 +341,89 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     return nullopt;
 }
 
-int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
+std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const Format &format)
 {
     VideoEncodeBitrateMode mode;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, *reinterpret_cast<int *>(&mode))) {
-        return AVCS_ERR_OK;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, *reinterpret_cast<int *>(&mode))) {
+        return mode;
     }
-    switch (mode) {
-        case CBR:
-        case VBR: {
-            optional<uint32_t> bitRate = GetBitRateFromUser(format);
-            if (!bitRate.has_value()) {
-                HLOGW("user set CBR/VBR mode but not set valid bitrate");
-                return AVCS_ERR_INVALID_VAL;
-            }
-            OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
-            InitOMXParam(bitrateType);
-            bitrateType.nPortIndex = OMX_DirOutput;
-            bitrateType.eControlRate = (mode == CBR) ? OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
-            bitrateType.nTargetBitrate = bitRate.value();
-            if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
-                HLOGE("failed to set OMX_IndexParamVideoBitrate");
-                return AVCS_ERR_UNKNOWN;
-            }
-            HLOGI("set %s mode and target bitrate %u bps succ", (mode == CBR) ? "CBR" : "VBR",
-                bitrateType.nTargetBitrate);
-            return AVCS_ERR_OK;
-        }
-        case CQ: {
-            int32_t quality;
-            if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) || quality < 0) {
-                HLOGW("user set CQ mode but not set valid quality");
-                return AVCS_ERR_INVALID_VAL;
-            }
-            ControlRateConstantQuality bitrateType;
-            InitOMXParamExt(bitrateType);
-            bitrateType.portIndex = OMX_DirOutput;
-            bitrateType.qualityValue = static_cast<uint32_t>(quality);
-            if (!SetParameter(OMX_IndexParamControlRateConstantQuality, bitrateType)) {
-                HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
-                return AVCS_ERR_UNKNOWN;
-            }
-            HLOGI("set CQ mode and target quality %u succ", bitrateType.qualityValue);
-            return AVCS_ERR_OK;
-        }
+    return nullopt;
+}
+
+int32_t HEncoder::SetConstantQualityMode(int32_t quality)
+{
+    ControlRateConstantQuality bitrateType;
+    InitOMXParamExt(bitrateType);
+    bitrateType.portIndex = OMX_DirOutput;
+    bitrateType.qualityValue = static_cast<uint32_t>(quality);
+    if (!SetParameter(OMX_IndexParamControlRateConstantQuality, bitrateType)) {
+        HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set CQ mode and target quality %u succ", bitrateType.qualityValue);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
+{
+    OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
+    InitOMXParam(bitrateType);
+    bitrateType.nPortIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
+        HLOGE("get OMX_IndexParamVideoBitrate failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+
+    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(format);
+    int32_t quality;
+    if (bitRateMode.has_value() && bitRateMode.value() == CQ &&
+        format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
+        return SetConstantQualityMode(quality);
+    }
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (bitRate.has_value()) {
+        bitrateType.nTargetBitrate = bitRate.value();
+    }
+    if (bitRateMode.has_value() && (bitRateMode.value() == VBR || bitRateMode.value() == CBR)) {
+        bitrateType.eControlRate = (bitRateMode.value() == CBR) ?
+            OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
+    }
+    if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
+        HLOGE("failed to set OMX_IndexParamVideoBitrate");
+        return AVCS_ERR_UNKNOWN;
+    }
+    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
+        static_cast<int64_t>(bitrateType.nTargetBitrate));
+    if (bitrateType.eControlRate == OMX_Video_ControlRateConstant ||
+        bitrateType.eControlRate == OMX_Video_ControlRateVariable) {
+        bitRateMode = bitrateType.eControlRate == OMX_Video_ControlRateConstant ? CBR : VBR;
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
+            static_cast<int32_t>(bitRateMode.value()));
+        HLOGI("set %s mode and target bitrate %u bps succ", (bitRateMode.value() == CBR) ? "CBR" : "VBR",
+            bitrateType.nTargetBitrate);
+    } else {
+        HLOGI("set default bitratemode and target bitrate %u bps succ", bitrateType.nTargetBitrate);
+    }
+    return AVCS_ERR_OK;
+}
+
+void HEncoder::ConfigureProtocol(const Format &format, std::optional<double> frameRate)
+{
+    int32_t ret = AVCS_ERR_OK;
+    switch (static_cast<int>(codingType_)) {
+        case OMX_VIDEO_CodingAVC:
+            ret = SetupAVCEncoderParameters(format, frameRate);
+            break;
+        case CODEC_OMX_VIDEO_CodingHEVC:
+            ret = SetupHEVCEncoderParameters(format, frameRate);
+            break;
         default:
-            return AVCS_ERR_INVALID_VAL;
+            break;
+    }
+    if (ret != AVCS_ERR_OK) {
+        HLOGW("set protocol param failed");
     }
 }
 
@@ -815,7 +867,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
         }
         BufferInfo info {};
         info.isInput = true;
-        info.owner = BufferOwner::OWNED_BY_US;
+        info.owner = BufferOwner::OWNED_BY_SURFACE;
         info.surfaceBuffer = nullptr;
         info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
@@ -844,7 +896,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
     }
-    // buffer mode
+    // buffer mode or surface callback mode
     uint32_t bufferId = 0;
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     SCOPED_TRACE_WITH_ID(bufferId);
@@ -858,61 +910,122 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
+
+    bool discard = false;
+    if (inputSurface_ && bufferInfo->avBuffer->meta_->GetData(
+        OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discard) && discard) {
+        HLOGI("inBufId = %u, discard by user, pts = %" PRId64, bufferId, bufferInfo->avBuffer->pts_);
+        bufferInfo->avBuffer->meta_->Clear();
+        ResetSlot(*bufferInfo);
+        ReplyErrorCode(msg.id, AVCS_ERR_OK);
+        return;
+    }
+    ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(*bufferInfo, bufferInfo->surfaceBuffer, bufferInfo->avBuffer->pts_,
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
-
-    ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     HCodec::OnQueueInputBuffer(mode, bufferInfo);
 }
 
 void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
 {
-    while (true) {
-        if (!GetOneBufferFromSurface()) {
-            break;
-        }
+    if (GetOneBufferFromSurface()) {
+        TraverseAvaliableBuffers();
     }
 }
 
 bool HEncoder::GetOneBufferFromSurface()
 {
     SCOPED_TRACE();
-    InSurfaceBufferEntry entry;
-    GSError ret = inputSurface_->AcquireBuffer(entry.buffer, entry.fence, entry.timestamp, entry.damage);
-    if (ret != GSERROR_OK || entry.buffer == nullptr) {
+    InSurfaceBufferEntry entry{};
+    entry.item = make_shared<BufferItem>();
+    GSError ret = inputSurface_->AcquireBuffer(
+        entry.item->buffer, entry.item->fence, entry.pts, entry.item->damage);
+    if (ret != GSERROR_OK || entry.item->buffer == nullptr) {
         return false;
     }
+    entry.item->generation = ++currGeneration_;
+    entry.item->surface = inputSurface_;
     avaliableBuffers_.push_back(entry);
-    if (debugMode_) {
-        HLOGI("acquire buffer succ, pts = %" PRId64 ", now we have %zu buffer wait to be encode",
-              entry.timestamp, avaliableBuffers_.size());
+    newestBuffer_ = entry;
+    HLOGD("generation = %" PRIu64 ", seq = %u, pts = %" PRId64 ", now list size = %zu",
+          entry.item->generation, entry.item->buffer->GetSeqNum(), entry.pts, avaliableBuffers_.size());
+    if (repeatUs_ != 0) {
+        SendRepeatMsg(entry.item->generation);
     }
-    FindAllIdleSlotAndSubmit();
     return true;
 }
 
-void HEncoder::FindAllIdleSlotAndSubmit()
+void HEncoder::SendRepeatMsg(uint64_t generation)
 {
-    while (true) {
-        if (avaliableBuffers_.empty()) {
-            return;
-        }
+    ParamSP param = make_shared<ParamBundle>();
+    param->SetValue("generation", generation);
+    SendAsyncMsg(MsgWhat::CHECK_IF_REPEAT, param, repeatUs_);
+}
+
+void HEncoder::RepeatIfNecessary(const ParamSP& param)
+{
+    uint64_t generation = 0;
+    param->GetValue("generation", generation);
+    if (inputPortEos_ || (repeatUs_ == 0) || newestBuffer_.item == nullptr ||
+        newestBuffer_.item->generation != generation) {
+        return;
+    }
+    if (repeatMaxCnt_ > 0 && newestBuffer_.repeatTimes >= repeatMaxCnt_) {
+        HLOGD("stop repeat generation = %" PRIu64 ", seq = %u, pts = %" PRId64 ", which has been repeated %d times",
+              generation, newestBuffer_.item->buffer->GetSeqNum(), newestBuffer_.pts, newestBuffer_.repeatTimes);
+        return;
+    }
+    if (avaliableBuffers_.size() >= MAX_LIST_SIZE) {
+        HLOGW("stop repeat, list size to big: %zu", avaliableBuffers_.size());
+        return;
+    }
+    int64_t newPts = newestBuffer_.pts + repeatUs_;
+    HLOGD("generation = %" PRIu64 ", seq = %u, pts %" PRId64 " -> %" PRId64,
+          generation, newestBuffer_.item->buffer->GetSeqNum(), newestBuffer_.pts, newPts);
+    newestBuffer_.pts = newPts;
+    newestBuffer_.repeatTimes++;
+    avaliableBuffers_.push_back(newestBuffer_);
+    SendRepeatMsg(generation);
+    TraverseAvaliableBuffers();
+}
+
+void HEncoder::TraverseAvaliableBuffers()
+{
+    while (!avaliableBuffers_.empty()) {
         auto it = find_if(inputBufferPool_.begin(), inputBufferPool_.end(),
-                          [](const BufferInfo &info) { return info.owner == BufferOwner::OWNED_BY_US; });
+                          [](const BufferInfo &info) { return info.owner == BufferOwner::OWNED_BY_SURFACE; });
         if (it == inputBufferPool_.end()) {
+            HLOGD("buffer cnt = %zu, but no avaliable slot", avaliableBuffers_.size());
             return;
         }
-        SubmitOneBuffer(*it);
+        InSurfaceBufferEntry entry = avaliableBuffers_.front();
+        avaliableBuffers_.pop_front();
+        SubmitOneBuffer(entry, *it);
     }
 }
 
-void HEncoder::SubmitOneBuffer(BufferInfo &info)
+void HEncoder::TraverseAvaliableSlots()
 {
-    InSurfaceBufferEntry entry = avaliableBuffers_.front();
-    avaliableBuffers_.pop_front();
-    if (entry.buffer == nullptr) {
+    for (BufferInfo& info : inputBufferPool_) {
+        if (info.owner != BufferOwner::OWNED_BY_SURFACE) {
+            continue;
+        }
+        if (avaliableBuffers_.empty() && !GetOneBufferFromSurface()) {
+            HLOGD("slot %u is avaliable, but no buffer", info.bufferId);
+            return;
+        }
+        InSurfaceBufferEntry entry = avaliableBuffers_.front();
+        avaliableBuffers_.pop_front();
+        SubmitOneBuffer(entry, info);
+    }
+}
+
+void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
+{
+    ChangeOwner(info, BufferOwner::OWNED_BY_US);
+    if (entry.item == nullptr) {
         HLOGI("got input eos");
         inputPortEos_ = true;
         info.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
@@ -920,19 +1033,19 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
         NotifyOmxToEmptyThisInBuffer(info);
         return;
     }
-    if (!WaitFence(entry.fence)) {
-        inputSurface_->ReleaseBuffer(entry.buffer, -1);
+    if (!WaitFence(entry.item->fence)) {
+        ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
         return;
     }
-    WrapSurfaceBufferToSlot(info, entry.buffer, entry.timestamp, 0);
-
+    WrapSurfaceBufferToSlot(info, entry.item->buffer, entry.pts, 0);
+    encodingBuffers_[info.bufferId] = entry;
     if (enableSurfaceModeInputCb_) {
-        info.avBuffer->pts_ = entry.timestamp;
+        info.avBuffer->pts_ = entry.pts;
         NotifyUserToFillThisInBuffer(info);
     } else {
         int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
-            inputSurface_->ReleaseBuffer(entry.buffer, -1);
+            ResetSlot(info);
         }
     }
 }
@@ -949,19 +1062,24 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         HLOGE("wrong ownership: buffer id=%d, owner=%s", bufferId, ToString(info->owner));
         return;
     }
-    ChangeOwner(*info, BufferOwner::OWNED_BY_US);
     if (inputSurface_) {
-        if (info->surfaceBuffer != nullptr) {
-            inputSurface_->ReleaseBuffer(info->surfaceBuffer, -1);
-        }
+        ResetSlot(*info);
         if (mode == RESUBMIT_BUFFER && !inputPortEos_) {
-            FindAllIdleSlotAndSubmit();
+            TraverseAvaliableSlots();
         }
     } else {
+        ChangeOwner(*info, BufferOwner::OWNED_BY_US);
         if (mode == RESUBMIT_BUFFER && !inputPortEos_) {
             NotifyUserToFillThisInBuffer(*info);
         }
     }
+}
+
+void HEncoder::ResetSlot(BufferInfo& info)
+{
+    ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
+    encodingBuffers_.erase(info.bufferId);
+    info.surfaceBuffer = nullptr;
 }
 
 void HEncoder::EncoderBuffersConsumerListener::OnBufferAvailable()
@@ -978,18 +1096,25 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
     }
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     avaliableBuffers_.push_back(InSurfaceBufferEntry {});
-    FindAllIdleSlotAndSubmit();
+    TraverseAvaliableBuffers();
 }
 
 void HEncoder::OnEnterUninitializedState()
 {
     if (inputSurface_) {
         inputSurface_->UnregisterConsumerListener();
-        HLOGI("return %zu stale buffer to surface", avaliableBuffers_.size());
-        for (auto& entry : avaliableBuffers_) {
-            inputSurface_->ReleaseBuffer(entry.buffer, -1);
-        }
     }
     avaliableBuffers_.clear();
+    newestBuffer_.item.reset();
+    encodingBuffers_.clear();
 }
+
+HEncoder::BufferItem::~BufferItem()
+{
+    if (surface && buffer) {
+        LOGI("release seq = %u", buffer->GetSeqNum());
+        surface->ReleaseBuffer(buffer, -1);
+    }
+}
+
 } // namespace OHOS::MediaAVCodec

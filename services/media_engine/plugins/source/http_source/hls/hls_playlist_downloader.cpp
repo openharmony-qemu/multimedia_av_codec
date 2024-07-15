@@ -26,8 +26,10 @@ namespace HttpPlugin {
 namespace {
 constexpr unsigned int SLEEP_TIME = 1;
 constexpr size_t RETRY_TIMES = 1000;
-constexpr int FIRST_TS_TIMEOUT = 400;
-constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
+constexpr int MIN_PRE_PARSE_NUM = 2; // at least 2 ts frag
+const std::string M3U8_START_TAG = "#EXTM3U";
+const std::string M3U8_END_TAG = "#EXT-X-ENDLIST";
+const std::string M3U8_TS_TAG = "#EXTINF";
 }
 // StateMachine thread: call plugin SetSource -> call Open
 // StateMachine thread: call plugin GetSeekable -> call GetSeekable
@@ -36,12 +38,6 @@ constexpr int FIRST_TS_TASK_SLEEP_MS = 5;
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
 void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    firstTsTask_ = std::make_shared<Task>(std::string("FirstTsLoop"));
-    firstTsTask_->RegisterJob([this] {
-        FirstTsUpdateLoop();
-        return 0;
-    });
-    firstTsTask_->Start();
     url_ = url;
     master_ = nullptr;
     SaveHttpHeader(httpHeader);
@@ -55,6 +51,7 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
 void HlsPlayListDownloader::UpdateManifest()
 {
     if (currentVariant_ && currentVariant_->m3u8_ && !currentVariant_->m3u8_->uri_.empty()) {
+        isNotifyPlayListFinished_ = false;
         DoOpen(currentVariant_->m3u8_->uri_);
     } else {
         MEDIA_LOG_E("UpdateManifest currentVariant_ not ready.");
@@ -64,6 +61,16 @@ void HlsPlayListDownloader::UpdateManifest()
 void HlsPlayListDownloader::SetPlayListCallback(PlayListChangeCallback* callback)
 {
     callback_ = callback;
+}
+
+bool HlsPlayListDownloader::IsParseAndNotifyFinished()
+{
+    return isParseFinished_ && isNotifyPlayListFinished_;
+}
+
+bool HlsPlayListDownloader::IsParseFinished()
+{
+    return isParseFinished_;
 }
 
 int64_t HlsPlayListDownloader::GetDuration() const
@@ -79,7 +86,7 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     // need wait master_ not null
     size_t times = 0;
     while (times < RETRY_TIMES && !isInterruptNeeded_) {
-        if (master_ && master_->isSimple_) {
+        if (master_ && master_->isSimple_ && isParseFinished_) {
             break;
         }
         OSAL::SleepFor(SLEEP_TIME); // 1 ms
@@ -119,9 +126,12 @@ void HlsPlayListDownloader::NotifyListChange()
         callback_->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
     }
     callback_->OnPlayListChanged(playList);
+    if (isParseFinished_) {
+        isNotifyPlayListFinished_ = true;
+    }
 }
 
-void HlsPlayListDownloader::ParseManifest(const std::string& location)
+void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     if (!location.empty()) {
         MEDIA_LOG_I("old url " PUBLIC_LOG_S " new url " PUBLIC_LOG_S, url_.c_str(), location.c_str());
@@ -134,25 +144,69 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location)
             UpdateManifest();
         } else {
             // need notify , avoid delay 5s
+            isParseFinished_ = isPreParse ? false : true;
             NotifyListChange();
         }
     } else {
         if (master_->isSimple_) {
-            bool ret = currentVariant_->m3u8_->Update(playList_);
+            bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
             if (ret) {
+                UpdateMasterInfo(isPreParse);
                 NotifyListChange();
             }
         } else {
             currentVariant_ = master_->defaultVariant_;
-            bool ret = currentVariant_->m3u8_->Update(playList_);
+            bool ret = currentVariant_->m3u8_->Update(playList_, true);
             if (ret) {
+                UpdateMasterInfo(isPreParse);
                 master_->isSimple_ = true;
-                master_->bLive_ = currentVariant_->m3u8_->IsLive();
-                master_->duration_ = currentVariant_->m3u8_->GetDuration();
                 NotifyListChange();
             }
         }
     }
+}
+
+void HlsPlayListDownloader::UpdateMasterInfo(bool isPreParse)
+{
+    master_->bLive_ = currentVariant_->m3u8_->IsLive();
+    master_->duration_ = currentVariant_->m3u8_->GetDuration();
+    isParseFinished_ = isPreParse ? false : true;
+}
+
+void HlsPlayListDownloader::PreParseManifest(const std::string& location)
+{
+    if (master_ && master_->isSimple_) {
+        return;
+    }
+    if (playList_.find(M3U8_START_TAG) == std::string::npos ||
+        playList_.find(M3U8_END_TAG) != std::string::npos) {
+        return;
+    }
+    int tsNum = 0;
+    int tsIndex = 0;
+    int firstTsTagIndex = 0;
+    int lastTsTagIndex = 0;
+    std::string tsTag = M3U8_TS_TAG;
+    int tsTagSize = tsTag.size();
+    while ((tsIndex = playList_.find(tsTag, tsIndex)) < playList_.length()) {
+        if (tsNum == 0) {
+            firstTsTagIndex = tsIndex;
+        }
+        tsNum++;
+        lastTsTagIndex = tsIndex;
+        if (tsNum >= MIN_PRE_PARSE_NUM) {
+            break;
+        }
+        tsIndex += tsTagSize;
+    }
+    if (tsNum < MIN_PRE_PARSE_NUM) {
+        return;
+    }
+    std::string backUpPlayList = playList_;
+    playList_ = playList_.substr(0, lastTsTagIndex).append(tsTag);
+    isParseFinished_ = false;
+    ParseManifest(location, true);
+    playList_ = backUpPlayList.erase(firstTsTagIndex, lastTsTagIndex - firstTsTagIndex);
 }
 
 void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
@@ -235,27 +289,6 @@ bool HlsPlayListDownloader::IsLive() const
         return false;
     }
     return master_->bLive_;
-}
-
-void HlsPlayListDownloader::FirstTsUpdateLoop()
-{
-    int runTimes = 0;
-    while (runTimes < FIRST_TS_TIMEOUT) {
-        if (currentVariant_ != nullptr && currentVariant_->m3u8_ != nullptr
-            && currentVariant_->m3u8_->isFirstFragmentReady_) {
-            std::string uri = currentVariant_->m3u8_->firstFragment_.uri;
-            double duration = currentVariant_->m3u8_->firstFragment_.duration;
-            MEDIA_LOG_I("first ts is ready.");
-            callback_->OnFirstTsReady(uri, duration);
-            break;
-        }
-        runTimes++;
-        OSAL::SleepFor(FIRST_TS_TASK_SLEEP_MS);
-    }
-    if (firstTsTask_ != nullptr) {
-        firstTsTask_->StopAsync();
-    }
-    MEDIA_LOG_I("first ts task stop, run times: " PUBLIC_LOG_D32 ". ", runTimes);
 }
 
 std::string HlsPlayListDownloader::GetUrl()

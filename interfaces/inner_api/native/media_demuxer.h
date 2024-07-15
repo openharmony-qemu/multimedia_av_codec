@@ -25,7 +25,6 @@
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
-#include "demuxer/data_packer.h"
 #include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
@@ -124,7 +123,6 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    void ReportIsLiveStreamEvent();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
         std::string& videoMime);
     void InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo);
@@ -231,6 +229,7 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    int64_t duration_ {0};
 };
 } // namespace Media
 } // namespace OHOS

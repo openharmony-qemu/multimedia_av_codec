@@ -70,17 +70,31 @@ public:
 
     void PopInQueue()
     {
-        inQueue_.pop();
-        inMemoryQueue_.pop();
-        inBufferQueue_.pop();
+        if (!inQueue_.empty()) {
+            inQueue_.pop();
+        }
+        if (!inMemoryQueue_.empty()) {
+            inMemoryQueue_.pop();
+        }
+        if (!inBufferQueue_.empty()) {
+            inBufferQueue_.pop();
+        }
     }
 
     void PopOutQueue()
     {
-        outQueue_.pop();
-        outAttrQueue_.pop();
-        outMemoryQueue_.pop();
-        outBufferQueue_.pop();
+        if (!outQueue_.empty()) {
+            outQueue_.pop();
+        }
+        if (!outAttrQueue_.empty()) {
+            outAttrQueue_.pop();
+        }
+        if (!outMemoryQueue_.empty()) {
+            outMemoryQueue_.pop();
+        }
+        if (!outBufferQueue_.empty()) {
+            outBufferQueue_.pop();
+        }
     }
 };
 

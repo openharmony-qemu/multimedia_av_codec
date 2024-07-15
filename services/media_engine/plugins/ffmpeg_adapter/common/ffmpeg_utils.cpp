@@ -22,6 +22,10 @@
 #include "meta/mime_type.h"
 #include "ffmpeg_utils.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
 #define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
 #define AV_CODEC_USECOND (static_cast<int64_t>(1000) * AV_CODEC_NSECOND)
@@ -48,6 +52,7 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::IMAGE_JPG, AV_CODEC_ID_MJPEG},
         {MimeType::IMAGE_PNG, AV_CODEC_ID_PNG},
         {MimeType::IMAGE_BMP, AV_CODEC_ID_BMP},
+        {MimeType::TIMED_METADATA, AV_CODEC_ID_FFMETADATA},
     };
     auto it = table.find(mime);
     if (it != table.end()) {
@@ -148,6 +153,7 @@ std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
         {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
         {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
         {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
+        {AVMediaType::AVMEDIA_TYPE_TIMEDMETA, "timedmetadata"}
     };
     auto it = table.find(mediaType);
     if (it == table.end()) {

@@ -35,8 +35,11 @@ vcodec_unittest_cflags = [
   "-Wextra",
   "-Wimplicit-fallthrough",
   "-Wsign-compare",
+  "-Wno-constant-conversion",
   "-Wno-unused-function",
   "-Wno-unused-parameter",
+  "-Dprivate=public",
+  "-Dprotected=public",
 ]
 
 group("vcodec_framework_test") {
@@ -45,6 +48,7 @@ group("vcodec_framework_test") {
     deps = [
       ":video_buffer_converter_unit_test",
       ":videodec_capi_unit_test",
+      ":videodec_hevcdec_unit_test",
       ":videodec_inner_unit_test",
       ":videodec_stable_unit_test",
     ]
@@ -81,6 +85,7 @@ ohos_unittest("videodec_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
     "./capi/vcodec_capi_mock_factory.cpp",
     "./capi/videodec_capi_mock.cpp",
     "./sample/func_sample/vdec_sample.cpp",
@@ -95,9 +100,11 @@ ohos_unittest("videodec_capi_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   if (av_codec_support_drm) {
@@ -131,6 +138,7 @@ ohos_unittest("videodec_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
     "./inner/vcodec_inner_mock_factory.cpp",
     "./inner/videodec_inner_mock.cpp",
     "./sample/func_sample/vdec_sample.cpp",
@@ -142,6 +150,8 @@ ohos_unittest("videodec_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "drm_framework:drm_framework",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -177,6 +187,7 @@ ohos_unittest("videoenc_capi_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
+    "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
     "./capi/vcodec_capi_mock_factory.cpp",
     "./capi/videoenc_capi_mock.cpp",
     "./sample/func_sample/venc_sample.cpp",
@@ -221,6 +232,7 @@ ohos_unittest("videoenc_inner_unit_test") {
   sources = [
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
+    "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
     "./inner/vcodec_inner_mock_factory.cpp",
     "./inner/videoenc_inner_mock.cpp",
     "./sample/func_sample/venc_sample.cpp",
@@ -232,6 +244,43 @@ ohos_unittest("videoenc_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "drm_framework:drm_framework",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "window_manager:libwm",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+#################################################################################################################videodec
+ohos_unittest("videodec_hevcdec_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = [
+    "./",
+    "./common",
+    "./sample/stable_sample",
+  ]
+
+  cflags = vcodec_unittest_cflags
+
+  sources = [
+    "$av_codec_root_dir/test/unittest/common/unittest_utils.cpp",
+    "./common/heap_memory_thread.cpp",
+    "./sample/stable_sample/vdec_sample.cpp",
+    "./videodec_hevcdec_unit_test.cpp",
+  ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
@@ -267,9 +316,11 @@ ohos_unittest("videodec_stable_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "window_manager:libwm",
   ]
 
   resource_config_file =

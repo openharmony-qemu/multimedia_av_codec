@@ -34,6 +34,11 @@ constexpr int32_t TWO_CHANNELS = 2;
 constexpr int32_t SUPPORT_SAMPLE_RATE = 9;
 constexpr int32_t SUPPORT_BIT_RATE = 16;
 constexpr int32_t ONE_THOUSAND_BITRATE = 1000; // 1khz
+constexpr int32_t SAMPLE_RATE_16000 = 16000;
+constexpr int32_t SAMPLE_RATE_32000 = 32000;
+constexpr int32_t BIT_RATE_32000 = 32000;
+constexpr int32_t BIT_RATE_64000 = 64000;
+constexpr int32_t BIT_RATE_160000 = 160000;
 
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4096;
 constexpr int32_t LAME_BUFFER_SIZE_DEFAULT = 8640;         // 1152*1.25+7200=8640
@@ -48,6 +53,7 @@ constexpr int32_t BIT_RATE_PICK[SUPPORT_BIT_RATE] = {8000, 16000, 32000, 40000, 
                                                      192000, 224000, 256000, 320000};
 constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050,
                                                            24000, 32000, 44100, 48000};
+constexpr int32_t DEFAULT_COMPRESSION_LEVEL = 5;
 
 Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register>& reg)
 {
@@ -131,7 +137,6 @@ bool AudioMp3EncoderPlugin::CheckFormat()
         AVCODEC_LOGE("AudioMp3EncoderPlugin channels not supported");
         return false;
     }
-
     for (int32_t i = 0; i < SUPPORT_BIT_RATE; i++) {
         if (bitrate_ == BIT_RATE_PICK[i]) {
             break;
@@ -140,7 +145,6 @@ bool AudioMp3EncoderPlugin::CheckFormat()
             return false;
         }
     }
-
     for (int32_t i = 0; i < SUPPORT_SAMPLE_RATE; i++) {
         if (sampleRate_ == SAMPLE_RATE_PICK[i]) {
             break;
@@ -149,9 +153,18 @@ bool AudioMp3EncoderPlugin::CheckFormat()
             return false;
         }
     }
-
     if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin sampleFmt not supported");
+        return false;
+    }
+    if (sampleRate_ < SAMPLE_RATE_16000 && bitrate_ > BIT_RATE_64000) {
+        AVCODEC_LOGE("sample<16k,bitrate must <=64k");
+        return false;
+    } else if (sampleRate_ < SAMPLE_RATE_32000 && bitrate_ > BIT_RATE_160000) {
+        AVCODEC_LOGE("sample<32k,bitrate must <=160k");
+        return false;
+    } else if (sampleRate_ >= SAMPLE_RATE_32000 && bitrate_ < BIT_RATE_32000) {
+        AVCODEC_LOGE("sample>=32k,bitrate must >=32k");
         return false;
     }
     return true;
@@ -314,58 +327,45 @@ Status AudioMp3EncoderPlugin::Flush()
 Status AudioMp3EncoderPlugin::SetParameter(const std::shared_ptr<Meta>& parameter)
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-
-    if (parameter->Find(Tag::AUDIO_CHANNEL_COUNT) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_);
-    } else {
+    if (!parameter->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_CHANNEL_COUNT");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (parameter->Find(Tag::AUDIO_SAMPLE_RATE) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
-    } else {
+    if (!parameter->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_SAMPLE_RATE");
         return Status::ERROR_INVALID_PARAMETER;
     }
-
-    if (parameter->Find(Tag::AUDIO_SAMPLE_FORMAT) != parameter->end()) {
-        parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
-    } else {
+    if (!parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no AUDIO_SAMPLE_FORMAT");
         return Status::ERROR_INVALID_PARAMETER;
     }
-
-    if (parameter->Find(Tag::MEDIA_BITRATE) != parameter->end()) {
-        parameter->Get<Tag::MEDIA_BITRATE>(bitrate_);
-    } else {
+    if (!parameter->Get<Tag::MEDIA_BITRATE>(bitrate_)) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. no MEDIA_BITRATE of mp3 encoder CBR");
         return Status::ERROR_INVALID_PARAMETER;
     }
-
     if (parameter->Find(Tag::AUDIO_MAX_INPUT_SIZE) != parameter->end()) {
         parameter->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
         AVCODEC_LOGD("AudioMp3EncoderPlugin SetParameter maxInputSize_: %{public}d", maxInputSize_);
     }
-
     if (!CheckFormat()) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin SetParameter error. CheckFormat fail");
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *parameter;
-
     lame_set_in_samplerate(lameInfo->gfp, sampleRate_);
-
+    lame_set_out_samplerate(lameInfo->gfp, sampleRate_);
     lame_set_num_channels(lameInfo->gfp, channels_);
-
+    lame_set_quality(lameInfo->gfp, DEFAULT_COMPRESSION_LEVEL);
     if (channels_ == 1) {
         lame_set_mode(lameInfo->gfp, MPEG_mode_e::MONO);
     }
-
     lame_set_brate(lameInfo->gfp, bitrate_ / ONE_THOUSAND_BITRATE);
     if (lame_init_params(lameInfo->gfp) < 0) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin LAME parameter initialization error");
         return Status::ERROR_UNKNOWN;
     }
+    int32_t frameSize = lame_get_framesize(lameInfo->gfp);
+    audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
     lameInitFlag = 1;
     return Status::OK;
 }

@@ -39,7 +39,9 @@ enum class CallbackFlag : uint8_t {
     INVALID_CALLBACK,
 };
 const OHOS::MediaAVCodec::Range DEFAULT_RANGE = {96, 4096};
+const OHOS::MediaAVCodec::Range HEVC_DECODER_RANGE = {2, 1920};
 const std::vector<int32_t> DEFALUT_PIXFORMAT = {1, 2, 3};
+const std::vector<int32_t> HEVC_DECODER_PIXFORMAT = {2, 3};
 
 const std::string CODEC_MIME_MOCK_00 = "video/codec_mime_00";
 const std::string CODEC_MIME_MOCK_01 = "video/codec_mime_01";
@@ -71,6 +73,20 @@ const std::vector<CapabilityData> FCODEC_CAPS = {{.codecName = "video.F.Decoder.
                                                   .width = DEFAULT_RANGE,
                                                   .height = DEFAULT_RANGE,
                                                   .pixFormat = DEFALUT_PIXFORMAT}};
+const std::vector<CapabilityData> HEVC_DECODER_CAPS = {{.codecName = "video.Hevc.Decoder.Name.00",
+                                                        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+                                                        .mimeType = CODEC_MIME_MOCK_00,
+                                                        .isVendor = false,
+                                                        .width = HEVC_DECODER_RANGE,
+                                                        .height = HEVC_DECODER_RANGE,
+                                                        .pixFormat = HEVC_DECODER_PIXFORMAT},
+                                                       {.codecName = "video.Hevc.Decoder.Name.01",
+                                                        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+                                                        .mimeType = CODEC_MIME_MOCK_01,
+                                                        .isVendor = false,
+                                                        .width = HEVC_DECODER_RANGE,
+                                                        .height = HEVC_DECODER_RANGE,
+                                                        .pixFormat = HEVC_DECODER_PIXFORMAT}};
 const std::vector<CapabilityData> HCODEC_CAPS = {{.codecName = "video.H.Decoder.Name.00",
                                                   .codecType = AVCODEC_TYPE_VIDEO_DECODER,
                                                   .mimeType = CODEC_MIME_MOCK_00,
@@ -132,9 +148,11 @@ public:
     ~CodecBaseMock() = default;
 
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateFCodecByName, (const std::string &name));
+    MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHevcDecoderByName, (const std::string &name));
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHCodecByName, (const std::string &name));
     MOCK_METHOD(RetAndCaps, GetHCapabilityList, ());
     MOCK_METHOD(RetAndCaps, GetFCapabilityList, ());
+    MOCK_METHOD(RetAndCaps, GetHevcDecoderCapabilityList, ());
 
     MOCK_METHOD(void, CodecBaseCtor, ());
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));

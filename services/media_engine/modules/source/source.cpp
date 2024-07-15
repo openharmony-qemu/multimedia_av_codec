@@ -24,6 +24,10 @@
 #include "plugin/plugin_manager_v2.h"
 #include "source.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 using namespace Plugins;
@@ -59,14 +63,8 @@ Source::~Source()
 void Source::SetCallback(Callback* callback)
 {
     MEDIA_LOG_I("SetCallback entered.");
-    if (callback == nullptr) {
-        MEDIA_LOG_E("callback is nullptr");
-        return;
-    }
-    if (mediaDemuxerCallback_ == nullptr) {
-        MEDIA_LOG_E("mediaDemuxerCallback is nullptr");
-        return;
-    }
+    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
+    FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     mediaDemuxerCallback_->SetCallbackWrap(callback);
 }
 
@@ -97,8 +95,6 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
         seekToTimeFlag_ = plugin_->IsSeekToTimeSupported();
     }
     MEDIA_LOG_I("SetSource seekToTimeFlag_: " PUBLIC_LOG_D32, seekToTimeFlag_);
-
-    ActivateMode();
 
     MEDIA_LOG_I("SetSource exit.");
     return Status::OK;
@@ -268,6 +264,8 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
+    } else {
+        MEDIA_LOG_E("on event error.");
     }
 }
 
@@ -289,15 +287,13 @@ void Source::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-void Source::ActivateMode()
+Plugins::Seekable Source::GetSeekable()
 {
-    MediaAVCodec::AVCodecTrace trace("Source::ActivateMode");
-    MEDIA_LOG_I("ActivateMode enter");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Plugins::Seekable::INVALID, "GetSeekable, Source plugin is nullptr");
     int32_t retry {0};
+    seekable_ = Seekable::INVALID;
     do {
-        if (plugin_) {
-            seekable_ = plugin_->GetSeekable();
-        }
+        seekable_ = plugin_->GetSeekable();
         retry++;
         if (seekable_ == Seekable::INVALID) {
             if (retry >= 20) { // 20 means retry times
@@ -306,15 +302,7 @@ void Source::ActivateMode()
             OSAL::SleepFor(10); // 10 means sleep time pre retry
         }
     } while (seekable_ == Seekable::INVALID);
-
-    FALSE_LOG(seekable_ != Seekable::INVALID);
-    MEDIA_LOG_I("ActivateMode exit");
-}
-
-Plugins::Seekable Source::GetSeekable()
-{
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Plugins::Seekable::INVALID, "GetSeekable, Source plugin is nullptr");
-    return plugin_->GetSeekable();
+    return seekable_;
 }
 
 std::string Source::GetUriSuffix(const std::string& uri)

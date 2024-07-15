@@ -20,6 +20,7 @@
 
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
+using namespace OHOS::MediaAVCodec;
 
 namespace {
 constexpr uint8_t FRAME_HEAD_LEN = 4;
@@ -34,7 +35,6 @@ constexpr uint8_t H265_VPS = 32;
 constexpr uint8_t H265_SPS = 33;
 constexpr uint8_t H265_PPS = 34;
 constexpr uint32_t BUFFER_COUNT = 59;
-constexpr bool NEED_DUMP = false;
 constexpr uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {
     0x3d, 0xc4, 0x3f, 0x67, 0x74, 0x18, 0xc6, 0xfb, 0xf3, 0x03, 0x56, 0x52, 0xf8, 0xa9, 0xf2, 0x7f,
     0x54, 0xdb, 0xfc, 0x69, 0x82, 0xeb, 0x30, 0x34, 0x62, 0x2f, 0x87, 0x92, 0xcc, 0x31, 0xa2, 0xd3,
@@ -69,7 +69,7 @@ void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_
         if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
             SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
         }
-        if (NEED_DUMP) {
+        if (VideoDecSample::needDump_) {
             if (!outFile->is_open()) {
                 cout << "output data fail" << endl;
                 continue;
@@ -201,7 +201,7 @@ void TestConsumerListener::OnBufferAvailable()
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    if (NEED_DUMP) {
+    if (VideoDecSample::needDump_) {
         (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
     }
     cs_->ReleaseBuffer(buffer, -1);
@@ -231,6 +231,7 @@ bool VideoDecSample::CreateVideoDecMockByMime(const std::string &mime)
     return videoDec_ != nullptr;
 }
 
+bool VideoDecSample::needDump_ = false;
 bool VideoDecSample::CreateVideoDecMockByName(const std::string &name)
 {
     videoDec_ = VCodecMockFactory::CreateVideoDecMockByName(name);
@@ -650,7 +651,7 @@ void VideoDecSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (!isSurfaceMode_ && NEED_DUMP) {
+    if (!isSurfaceMode_ && needDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -679,13 +680,13 @@ void VideoDecSample::OutputLoopFunc()
 
 int32_t VideoDecSample::OutputLoopInner()
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP || isSurfaceMode_, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
-    if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS && NEED_DUMP) {
+    if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS && needDump_) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
@@ -702,7 +703,7 @@ int32_t VideoDecSample::OutputLoopInner()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail, index: %d", index);
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (!isSurfaceMode_ && NEED_DUMP && outFile_->is_open()) {
+        if (!isSurfaceMode_ && needDump_ && outFile_->is_open()) {
             outFile_->close();
         }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
@@ -720,7 +721,7 @@ void VideoDecSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (!isSurfaceMode_ && NEED_DUMP) {
+    if (!isSurfaceMode_ && needDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -757,7 +758,7 @@ void VideoDecSample::CheckFormatKey()
 
 int32_t VideoDecSample::OutputLoopInnerExt()
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP || isSurfaceMode_, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_ || isSurfaceMode_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret;
@@ -777,13 +778,13 @@ int32_t VideoDecSample::OutputLoopInnerExt()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
     } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         int64_t renderTimestamp =
-            chrono::time_point_cast<chrono::nanoseconds>(chrono::system_clock::now()).time_since_epoch().count();
+            chrono::duration_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         ret =
             (renderAtTimeFlag_ == true) ? RenderOutputBufferAtTime(index, renderTimestamp) : RenderOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputBuffer failed index: %d", index);
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (!isSurfaceMode_ && NEED_DUMP && outFile_->is_open()) {
+        if (!isSurfaceMode_ && needDump_ && outFile_->is_open()) {
             outFile_->close();
         }
         if (needCheckSHA_) {

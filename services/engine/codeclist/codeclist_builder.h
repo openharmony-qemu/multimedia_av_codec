@@ -26,6 +26,11 @@ public:
     ~VideoCodecList() override = default;
     int32_t GetCapabilityList(std::vector<CapabilityData> &caps) override;
 };
+class VideoHevcDecoderList : public CodecListBase {
+public:
+    ~VideoHevcDecoderList() override = default;
+    int32_t GetCapabilityList(std::vector<CapabilityData> &caps) override;
+};
 class AudioCodecList : public CodecListBase {
 public:
     ~AudioCodecList() override = default;

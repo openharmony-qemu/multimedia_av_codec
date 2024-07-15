@@ -14,6 +14,7 @@
  */
 #include "media_codec.h"
 #include <shared_mutex>
+#include "common/log.h"
 #include "osal/task/autolock.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_trace.h"
@@ -21,9 +22,10 @@
 #include "osal/utils/dump_buffer.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "MediaCodec" };
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
-constexpr int32_t TIME_OUT_MS = 500;
+constexpr int32_t TIME_OUT_MS = 50;
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_FILE_NAME = "player_audio_decoder_output.pcm";
 } // namespace
@@ -689,7 +691,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     } while (ret != Status::OK && state_ == CodecState::RUNNING);
-
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
     } else if (state_ != CodecState::RUNNING) {
@@ -697,6 +698,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     } else {
         return Status::ERROR_NULL_POINTER;
     }
+    FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, Status::ERROR_INVALID_STATE, "plugin is null");
     ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         MEDIA_LOG_D("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");

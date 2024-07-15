@@ -31,6 +31,10 @@
 #include "data_sink_file.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer" };
+}
+
+namespace {
 using namespace OHOS::Media;
 using namespace Plugins;
 
@@ -42,7 +46,7 @@ const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
                             MimeType::VIDEO_AVC, MimeType::VIDEO_MPEG4,
                             MimeType::VIDEO_HEVC,
                             MimeType::IMAGE_JPG, MimeType::IMAGE_PNG,
-                            MimeType::IMAGE_BMP}},
+                            MimeType::IMAGE_BMP, MimeType::TIMED_METADATA}},
     {OutputFormat::M4A, {MimeType::AUDIO_AAC,
                          MimeType::IMAGE_JPG, MimeType::IMAGE_PNG,
                          MimeType::IMAGE_BMP}},
@@ -62,6 +66,7 @@ const std::map<std::string, std::set<std::string>> MUX_MIME_INFO = {
     {MimeType::IMAGE_JPG, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::IMAGE_PNG, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
     {MimeType::IMAGE_BMP, {Tag::VIDEO_WIDTH, Tag::VIDEO_HEIGHT}},
+    {MimeType::TIMED_METADATA, {Tag::TIMED_METADATA_KEY, Tag::TIMED_METADATA_SRC_TRACK}},
 };
 }
 

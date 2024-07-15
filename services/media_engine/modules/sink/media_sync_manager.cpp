@@ -22,6 +22,10 @@
 #include "common/log.h"
 #include "osal/utils/steady_clock.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -232,9 +236,8 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     seekingMediaTime_ = mediaTime;
     alreadySetSyncersShouldWait_ = false; // set already as false
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
-    int8_t oldSyncerPriority = currentSyncerPriority_;
     ResetTimeAnchorNoLock(); // reset the time anchor
-    currentSyncerPriority_ = oldSyncerPriority;
+    frameAfterSeeked_ = true;
     return Status::OK;
 }
 
@@ -247,6 +250,8 @@ Status MediaSyncManager::Reset()
         syncers_.clear();
         prerolledSyncers_.clear();
     }
+    frameAfterSeeked_ = false;
+    lastReportMediaTime_ = HST_TIME_NONE;
     return Status::OK;
 }
 
@@ -363,30 +368,42 @@ int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t anchorClockTime, int
     return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
+int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
+{
+    if ((newMediaProgressTime >= lastReportMediaTime_) || frameAfterSeeked_) {
+        lastReportMediaTime_ = newMediaProgressTime;
+    } else {
+        MEDIA_LOG_W("Avoid media time to go back without seek, from %{public}" PRId64 " to %{public}" PRId64,
+            lastReportMediaTime_.load(), newMediaProgressTime);
+    }
+    frameAfterSeeked_ = false;
+    return lastReportMediaTime_;
+}
+
 int64_t MediaSyncManager::GetMediaTimeNow()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (isSeeking_) {
-        MEDIA_LOG_D("GetMediaTimeNow seekingMediaTime_: %{public}" PRId64
-            ", pausedAbsMediaTime_:  %{public}" PRId64, seekingMediaTime_, pausedAbsMediaTime_);
+        // no need to bound media progress during seek
+        MEDIA_LOG_D("GetMediaTimeNow seekingMediaTime_: %{public}" PRId64, seekingMediaTime_);
         return seekingMediaTime_;
     }
+    int64_t currentMediaTime;
     if (clockState_ == State::PAUSED) {
-        MEDIA_LOG_D("GetMediaTimeNow pausedAbsMediaTime_: %{public}" PRId64, pausedAbsMediaTime_);
-        if (pausedAbsMediaTime_ == HST_TIME_NONE) {
-            return 0;
-        }
-        if (startPts_ != HST_TIME_NONE) {
-            return pausedAbsMediaTime_ - startPts_;
-        }
-        return pausedAbsMediaTime_;
+        currentMediaTime = pausedExactAbsMediaTime_;
+    } else {
+        currentMediaTime = SimpleGetMediaTimeExactly(currentAnchorClockTime_, delayTime_, GetSystemClock(),
+            currentAbsMediaTime_, playRate_);
     }
-    MEDIA_LOG_D("GetMediaTimeNow, currentAbsMediaTime_: %{public}" PRId64 ", pausedAbsMediaTime_: %{public}" PRId64,
-        currentAbsMediaTime_, pausedAbsMediaTime_);
+    if (currentMediaTime == HST_TIME_NONE) {
+        return 0;
+    }
     if (startPts_ != HST_TIME_NONE) {
-        return currentAbsMediaTime_ - startPts_;
+        currentMediaTime -= startPts_;
     }
-    return currentAbsMediaTime_;
+    currentMediaTime = BoundMediaProgress(currentMediaTime);
+    MEDIA_LOG_D("GetMediaTimeNow currentMediaTime: %{public}" PRId64, currentMediaTime);
+    return currentMediaTime;
 }
 
 int64_t MediaSyncManager::GetClockTimeNow()
@@ -461,6 +478,17 @@ bool MediaSyncManager::InSeeking()
 void MediaSyncManager::SetMediaStartPts(int64_t startPts)
 {
     startPts_ = startPts;
+}
+
+void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
+{
+    if (supplier == nullptr) {
+        return;
+    }
+    OHOS::Media::AutoLock lock(clockMutex_);
+    if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
+        currentSyncerPriority_ = IMediaSynchronizer::NONE;
+    }
 }
 } // namespace Pipeline
 } // namespace Media

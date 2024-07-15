@@ -19,6 +19,10 @@
 #include "surface_decoder_adapter.h"
 #include "meta/format.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -282,7 +286,6 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     MEDIA_LOG_I("OnLinked");
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
-
     MEDIA_LOG_I("OnLinked enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
     mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
     Status ret = mediaCodec_->Init(codecMimeType_);

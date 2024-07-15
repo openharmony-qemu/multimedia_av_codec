@@ -228,14 +228,14 @@ CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
 CapabilityData AudioCodeclistInfo::GetAmrwbEncoderCapability()
 {
     CapabilityData audioAmrwbCapability;
-    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRWB_NAME;
-    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
-    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB;
-    audioAmrnbCapability.isVendor = false;
-    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRWB);
-    audioAmrnbCapability.channels = Range(1, 1);
-    audioAmrnbCapability.sampleRate = AUDIO_AMRWB_SAMPLE_RATE;
-    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    audioAmrwbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRWB_NAME;
+    audioAmrwbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioAmrwbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB;
+    audioAmrwbCapability.isVendor = false;
+    audioAmrwbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRWB);
+    audioAmrwbCapability.channels = Range(1, 1);
+    audioAmrwbCapability.sampleRate = AUDIO_AMRWB_SAMPLE_RATE;
+    audioAmrwbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioAmrwbCapability;
 }
 

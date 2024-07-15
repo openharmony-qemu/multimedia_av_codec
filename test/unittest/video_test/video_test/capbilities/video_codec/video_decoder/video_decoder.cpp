@@ -43,7 +43,6 @@ int32_t VideoDecoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleCon
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
     CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
-    runMode_ = sampleInfo.codecRunMode;
 
     // Configure video decoder
     int32_t ret = Configure(sampleInfo);
@@ -110,54 +109,6 @@ OH_AVFormat *VideoDecoder::GetFormat()
     return OH_VideoDecoder_GetOutputDescription(codec_.get());
 }
 
-int32_t VideoDecoder::PushInputData(CodecBufferInfo &info)
-{
-    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-
-    int32_t ret = AV_ERR_OK;
-    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
-        ret = OH_VideoDecoder_PushInputBuffer(codec_.get(), info.bufferIndex);
-    } else {
-        ret = OH_VideoDecoder_PushInputData(codec_.get(), info.bufferIndex, info.attr);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex)
-{
-    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    
-    int32_t ret = AVCODEC_SAMPLE_ERR_OK;
-    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = !(runMode_ & 0b01) ?
-            OH_VideoDecoder_RenderOutputBuffer(codec_.get(), bufferIndex) :
-            OH_VideoDecoder_FreeOutputBuffer(codec_.get(), bufferIndex);
-    } else {
-        ret = !(runMode_ & 0b01) ?
-            OH_VideoDecoder_RenderOutputData(codec_.get(), bufferIndex) :
-            OH_VideoDecoder_FreeOutputData(codec_.get(), bufferIndex);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Free output data failed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoDecoder::SetCallback(uintptr_t * const sampleContext)
-{
-    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    int32_t ret = AV_ERR_OK;
-    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
-        ret = OH_VideoDecoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
-    } else {
-        ret = OH_VideoDecoder_SetCallback(codec_.get(), AVCodecAsyncCallback, sampleContext);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
-
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
 int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
@@ -177,6 +128,88 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_Destroy(format);
     format = nullptr;
 
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI10::PushInput(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_VideoDecoder_PushInputData(codec_.get(), info.bufferIndex, info.attr);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Push input data failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI10::SetCallback(uintptr_t *const sampleContext)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_VideoDecoder_SetCallback(codec_.get(), AVCodecAsyncCallback, sampleContext);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI10Buffer::FreeOutput(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    
+    int32_t ret = OH_VideoDecoder_FreeOutputData(codec_.get(), bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Free output data failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI10Surface::FreeOutput(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    
+    int32_t ret = OH_VideoDecoder_RenderOutputData(codec_.get(), bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Render output data failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI11::PushInput(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Set avbuffer attr failed, ret: %{public}d", ret);
+    ret = OH_VideoDecoder_PushInputBuffer(codec_.get(), info.bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Push input buffer failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI11::SetCallback(uintptr_t *const sampleContext)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_VideoDecoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Set callback failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI11Buffer::FreeOutput(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    
+    int32_t ret = OH_VideoDecoder_FreeOutputBuffer(codec_.get(), bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Free output buffer failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderAPI11Surface::FreeOutput(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    
+    int32_t ret = OH_VideoDecoder_RenderOutputBuffer(codec_.get(), bufferIndex);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Render output buffer failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 } // Sample

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,6 +35,7 @@
 
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
@@ -1061,6 +1062,9 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
 Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
 {
     AudioStandard::Timestamp ts;
+    if (audioRenderer_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (!res) {
         return Status::ERROR_UNKNOWN;
@@ -1107,7 +1111,7 @@ void AudioServerSinkPlugin::DumpEntireAudioBuffer(uint8_t* buffer, const size_t&
         return;
     }
     (void)fwrite(buffer, bytesSingle, 1, entireDumpFile_);
-    (void) fflush(entireDumpFile_);
+    (void)fflush(entireDumpFile_);
 }
 
 void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle)
@@ -1128,7 +1132,7 @@ void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& 
         return;
     }
     (void)fwrite(buffer, bytesSingle, 1, sliceDumpFile_);
-    (void) fflush(sliceDumpFile_);
+    (void)fflush(sliceDumpFile_);
 }
 } // namespace Plugin
 } // namespace Media
