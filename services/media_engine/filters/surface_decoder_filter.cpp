@@ -128,7 +128,9 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     Status ret = mediaCodec_->Configure(configFormat_);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
     }
     return ret;
 }
@@ -144,7 +146,9 @@ Status SurfaceDecoderFilter::SetOutputSurface(sptr<Surface> surface)
     Status ret = mediaCodec_->SetOutputSurface(outputSurface_);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec SetOutputSurface fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
     }
     return ret;
 }
@@ -180,7 +184,9 @@ Status SurfaceDecoderFilter::DoStart()
     Status ret = mediaCodec_->Start();
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Start fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        } 
     }
     return ret;
 }
@@ -195,7 +201,9 @@ Status SurfaceDecoderFilter::DoPause()
     Status ret = mediaCodec_->Pause();
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Pause fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
     }
     return ret;
 }
@@ -210,7 +218,9 @@ Status SurfaceDecoderFilter::DoResume()
     Status ret = mediaCodec_->Resume();
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Resume fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
     }
     return ret;
 }
@@ -224,7 +234,9 @@ Status SurfaceDecoderFilter::DoStop()
     Status ret = mediaCodec_->Stop();
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Stop fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        }
         return ret;
     }
     MEDIA_LOG_I("Stop done");
@@ -254,7 +266,9 @@ void SurfaceDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     auto ret = mediaCodec_->SetParameter(format);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec SetParameter fail");
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        } 
     }
 }
 
@@ -306,7 +320,9 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
         mediaCodec_->SetDecoderAdapterCallback(decoderSurfaceCallback);
     } else {
         MEDIA_LOG_E("Init mediaCodec fail");
-        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
+        } 
     }
     meta_ = meta;
     ret = Configure(meta);
