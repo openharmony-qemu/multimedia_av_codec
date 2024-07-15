@@ -160,6 +160,113 @@ HWTEST_F(DownloaderUnitTest, IsRegexValid_Test3, TestSize.Level1)
     EXPECT_EQ(result, true);
 }
 
+HWTEST_F(DownloaderUnitTest, ReplaceCharacters_01, TestSize.Level1)
+{
+    string input = "";
+    string output = ReplaceCharacters(input);
+    EXPECT_EQ(output, "");
+}
+
+HWTEST_F(DownloaderUnitTest, ReplaceCharacters_02, TestSize.Level1)
+{
+    string input = "abc";
+    string output = ReplaceCharacters(input);
+    EXPECT_EQ(output, "abc");
+}
+
+HWTEST_F(DownloaderUnitTest, ReplaceCharacters_03, TestSize.Level1)
+{
+    string input = "a.b.c";
+    string output = ReplaceCharacters(input);
+    EXPECT_EQ(output, "a\\.b\\.c");
+}
+
+HWTEST_F(DownloaderUnitTest, ReplaceCharacters_04, TestSize.Level1)
+{
+    string input = "a\\b\\c";
+    string output = ReplaceCharacters(input);
+    EXPECT_EQ(output, "a\\b\\c");
+}
+
+HWTEST_F(DownloaderUnitTest, ReplaceCharacters_05, TestSize.Level1)
+{
+    string input = "a\\b.c";
+    string output = ReplaceCharacters(input);
+    EXPECT_EQ(output, "a\\b\\.c");
+}
+
+HWTEST_F(DownloaderUnitTest, IsMatch_01, TestSize.Level1)
+{
+    string str = "test";
+    string patternStr = "";
+    bool result = IsMatch(str, patternStr);
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(DownloaderUnitTest, IsMatch_02, TestSize.Level1)
+{
+    string str = "test";
+    string patternStr = "*";
+    bool result = IsMatch(str, patternStr);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(DownloaderUnitTest, IsMatch_03, TestSize.Level1)
+{
+    string str = "test";
+    string patternStr = "test";
+    bool result = IsMatch(str, patternStr);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(DownloaderUnitTest, IsMatch_04, TestSize.Level1)
+{
+    string str = "test";
+    string patternStr = "t.*";
+    bool result = IsMatch(str, patternStr);
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(DownloaderUnitTest, IsMatch_05, TestSize.Level1)
+{
+    string str = "test";
+    string patternStr = "e.*";
+    bool result = IsMatch(str, patternStr);
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(DownloaderUnitTest, IsExcluded_01, TestSize.Level1)
+{
+    string str = "test";
+    string exclusions = "";
+    string split = ",";
+    EXPECT_FALSE(IsExcluded(str, exclusions, split));
+}
+
+HWTEST_F(DownloaderUnitTest, IsExcluded_02, TestSize.Level1)
+{
+    string str = "test";
+    string exclusions = "test,example";
+    string split = ",";
+    EXPECT_TRUE(IsExcluded(str, exclusions, split));
+}
+
+HWTEST_F(DownloaderUnitTest, IsExcluded_03, TestSize.Level1)
+{
+    string str = "test";
+    string exclusions = "example,sample";
+    string split = ",";
+    EXPECT_FALSE(IsExcluded(str, exclusions, split));
+}
+
+HWTEST_F(DownloaderUnitTest, IsExcluded_04, TestSize.Level1)
+{
+    string str = "test";
+    string exclusions = "example";
+    string split = ",";
+    EXPECT_FALSE(IsExcluded(str, exclusions, split));
+}
+
 }
 }
 }
