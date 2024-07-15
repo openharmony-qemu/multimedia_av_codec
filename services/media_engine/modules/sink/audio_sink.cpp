@@ -406,6 +406,7 @@ void AudioSink::DrainOutputBuffer()
         AutoLock eosLock(eosMutex_);
         eosInterruptType_ = EosInterruptState::INITIAL;
         if (eosTask_ == nullptr) {
+            DrainAndReportEosEvent();
             return;
         }
         eosTask_->SubmitJobOnce([this] {
