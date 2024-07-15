@@ -31,6 +31,7 @@
 #include "filter/filter.h"
 #include "media_sync_manager.h"
 #include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -55,7 +56,8 @@ public:
     Status DoFlush() override;
     Status DoRelease() override;
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
-    Status DoProcessOutputBuffer(int recvArg, bool dropFrame) override;
+    Status DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx, bool byRenderTime,
+                                 int64_t renderTime) override;
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
@@ -88,6 +90,13 @@ public:
     Status GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration);
     void SetBitrateStart();
     void OnOutputFormatChanged(const MediaAVCodec::Format &format);
+    Status StartSeekContinous();
+    Status StopSeekContinous();
+    void RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback);
+    void DeregisterVideoFrameReadyCallback();
+    int32_t GetDecRateUpperLimit();
+    void ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs = 0L);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -101,7 +110,9 @@ private:
     int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
-    Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer);
+    Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, bool byRenderTime,
+                               int64_t renderTime);
+    bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer);
 
     std::string name_;
     FilterType filterType_;
@@ -143,6 +154,7 @@ private:
     std::atomic<bool> doPrepareFrame_{false};
     bool renderFirstFrame_{false};
     Mutex formatChangeMutex_{};
+    int32_t rateUpperLimit_{0};
 
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;
@@ -152,6 +164,11 @@ private:
     std::atomic<int32_t> bitrateChange_{0};
     int32_t surfaceWidth_{0};
     int32_t surfaceHeight_{0};
+
+    std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
+    bool isInSeekContinous_{false};
+    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
+    std::atomic<bool> isRenderStarted_{false};
 };
 } // namespace Pipeline
 } // namespace Media

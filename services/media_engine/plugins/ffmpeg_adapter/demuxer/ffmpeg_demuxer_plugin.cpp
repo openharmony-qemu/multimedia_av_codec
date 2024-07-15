@@ -376,7 +376,7 @@ void FFmpegDemuxerPlugin::Dump(const DumpParam &dumpParam)
     MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
 }
 
-Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs)
+Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForward)
 {
     FALSE_RETURN_V_MSG_E(timeStampMs >= 0 && timeStampMs * MS_TO_SEC <= formatContext_->duration,
                          Status::ERROR_INVALID_PARAMETER,
@@ -391,6 +391,7 @@ Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs)
         parserState_ = false;
         MEDIA_LOG_I("pendingSeekMsTime: " PUBLIC_LOG_D64, pendingSeekMsTime_);
     }
+    updatePosIsForward_ = isForward;
     return Status::OK;
 }
 
@@ -470,6 +471,8 @@ Status FFmpegDemuxerPlugin::ParserRefInit(int64_t timeStampMs)
     AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
     FALSE_RETURN_V_MSG_E(videoStream != nullptr, Status::ERROR_UNKNOWN,
                          "ParserRefHeader failed due to video stream is null.");
+    FALSE_RETURN_V_MSG_E(ParserFirstDts() == Status::OK, Status::ERROR_UNKNOWN,
+                         "ParserRefHeader failed due to ParserFirstDts fail.");
     FALSE_RETURN_V_MSG_E(ParserBoxInfo() == Status::OK, Status::ERROR_UNKNOWN,
                          "ParserRefHeader failed due to ParserBoxInfo fail.");
     processingIFrame_.assign(IFramePos_.begin(), IFramePos_.end());
@@ -481,8 +484,8 @@ Status FFmpegDemuxerPlugin::ParserRefInit(int64_t timeStampMs)
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
     ParserSdtpInfo *sc = (ParserSdtpInfo *)videoStream->priv_data;
-    if (sc->sdtpCount > 0 && sc->sdtpData != nullptr && ParserFirstDts() == Status::OK) {
-        MEDIA_LOG_I("sdtp exist, count is: " PUBLIC_LOG_D32, sc->sdtpCount);
+    if (sc->sdtpCount > 0 && sc->sdtpData != nullptr) {
+        MEDIA_LOG_E("sdtp exist: " PUBLIC_LOG_D32, sc->sdtpCount);
         if (referenceParser_->ParserSdtpData(sc->sdtpData, sc->sdtpCount) == Status::OK) {
             isSdtpExist_ = true;
             return Status::END_OF_STREAM;
@@ -514,8 +517,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     int64_t dts = AvTime2Us(
         ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
     referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
-    if (ffmpegRet == AVERROR_EOF || (parserCurGopId_ + 1 < IFramePos_.size() &&
-                                     curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
+    int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
+    if (ffmpegRet == AVERROR_EOF ||
+        (parserCurGopId_ + 1 < iFramePosSize && curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
         MEDIA_LOG_I("IFramePos size: " PUBLIC_LOG_ZU ", processingIFrame size: " PUBLIC_LOG_ZU
                     ", curStreamId: " PUBLIC_LOG_U32 ",parserCurGopId: " PUBLIC_LOG_U32,
                     IFramePos_.size(), processingIFrame_.size(), curStreamId, parserCurGopId_);
@@ -527,10 +531,14 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         int32_t tmpGopId = parserCurGopId_;
         while (std::find(processingIFrame_.begin(), processingIFrame_.end(), IFramePos_[parserCurGopId_]) ==
                processingIFrame_.end()) {
-            parserCurGopId_ = (parserCurGopId_ + 1) % IFramePos_.size();
+            if (updatePosIsForward_) {
+                parserCurGopId_ = (parserCurGopId_ + 1) % iFramePosSize;
+            } else {
+                parserCurGopId_ = parserCurGopId_ == 0 ? iFramePosSize - 1 : parserCurGopId_ - 1 :;
+            }
         }
 
-        if (tmpGopId + 1 != parserCurGopId_) {
+        if (tmpGopId + 1 != parserCurGopId_ || !updatePosIsForward_) {
             av_packet_free(&pkt);
             return Status::END_OF_STREAM;
         }
@@ -597,11 +605,34 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
     return referenceParser_->GetFrameLayerInfo(videoSample->dts_, frameLayerInfo);
 }
 
+Status FFmpegDemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
+{
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
+    MEDIA_LOG_D("GetFrameLayerInfo called, dts: " PUBLIC_LOG_U32, frameId);
+    return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
+}
+
 Status FFmpegDemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
     MEDIA_LOG_D("GetGopLayerInfo called, gopId: " PUBLIC_LOG_U32, gopId);
     return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
+}
+
+Status FFmpegDemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
+{
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
+    IFramePos = IFramePos_;
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
+{
+    FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
+    int64_t tmpDts = offset ? (dts - firstDts_) : dts;
+    frameId = TimeStampUs2FrameId(tmpDts, fps_);
+    MEDIA_LOG_D("Success get frameId: " PUBLIC_LOG_D32 ", dts: " PUBLIC_LOG_D64, frameId, dts);
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::Reset()

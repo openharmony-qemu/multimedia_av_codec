@@ -66,10 +66,13 @@ public:
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
     Status ParserRefInit(int64_t timeStampMs) override;
-    Status ParserRefUpdatePos(int64_t timeStampMs) override;
+    Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override;
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override;
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
         int64_t presentationTimeUs, uint32_t &frameIndex) override;
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
@@ -165,6 +168,7 @@ private:
     int64_t firstDts_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
+    bool updatePosIsForward_ = true;
 
     // dfx
     struct TrackDfxInfo {

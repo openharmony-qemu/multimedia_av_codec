@@ -104,10 +104,15 @@ public:
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
 
-    Status StartReferenceParser(int64_t startTimeMs);
+    Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
-    
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos);
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
+    void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
+    void DeregisterVideoStreamReadyCallback();
+
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
 
@@ -230,6 +235,7 @@ private:
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
     int64_t duration_ {0};
+    std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

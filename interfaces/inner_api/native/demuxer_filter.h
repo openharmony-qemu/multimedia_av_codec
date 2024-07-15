@@ -23,6 +23,8 @@
 #include "meta/meta.h"
 #include "meta/media_types.h"
 #include "osal/task/mutex.h"
+#include "common/media_core.h"
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -52,9 +54,12 @@ public:
     void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
-    Status StartReferenceParser(int64_t startTimeMs);
+    Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos);
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
 
     Status StartAudioTask();
     Status SelectTrack(int32_t trackId);
@@ -89,6 +94,9 @@ public:
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
     Status DisableMediaTrack(Plugins::MediaType mediaType);
+    void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
+    void DeregisterVideoStreamReadyCallback();
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

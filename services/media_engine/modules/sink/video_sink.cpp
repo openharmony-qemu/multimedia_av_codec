@@ -73,10 +73,6 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     auto syncCenter = syncCenter_.lock();
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
-        if (!isRenderStarted_.load()) {
-            isRenderStarted_ = true;
-            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
-        }
         if (isFirstFrame_) {
             FALSE_RETURN_V(syncCenter != nullptr, false);
             isFirstFrame_ = false;
