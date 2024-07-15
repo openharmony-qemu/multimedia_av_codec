@@ -20,6 +20,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 }
 
 namespace OHOS {
@@ -288,6 +289,9 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
     if (latestBufferDuration_ <= 0) {
         return;
     }
+    if (latestBufferDuration_ > MAX_BUFFER_DURATION_US) {
+        latestBufferDuration_ = MAX_BUFFER_DURATION_US; // wait at most MAX_DURATION
+    }
     int64_t timeNow = Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
     if (!lastBufferWriteSuccess_) {
         int64_t writeSleepTime = latestBufferDuration_ - (timeNow - lastBufferWriteTime_);
@@ -390,7 +394,11 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         forceUpdateTimeAnchorNextTime_ = true;
     }
     latestBufferPts_ = buffer->pts_ - firstPts_;
-    latestBufferDuration_ = playingBufferDurationUs_ / speed_;
+    if (playingBufferDurationUs_ > 0) {
+        latestBufferDuration_ = playingBufferDurationUs_ / speed_;
+    } else {
+        latestBufferDuration_ = buffer->duration_ / speed_;
+    }
     return render ? 0 : -1;
 }
 
