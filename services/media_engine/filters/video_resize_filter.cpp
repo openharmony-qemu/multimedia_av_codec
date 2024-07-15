@@ -228,7 +228,7 @@ Status VideoResizeFilter::SetOutputSurface(sptr<Surface> surface, int32_t width,
     MEDIA_LOG_E("no VPE module");
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
     return Status::ERROR_UNKNOWN;
-#endif  
+#endif
 }
 
 Status VideoResizeFilter::DoPrepare()
@@ -367,7 +367,6 @@ void VideoResizeFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     MEDIA_LOG_E("no VPE module");
     eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
 #endif
-
 }
 
 void VideoResizeFilter::GetParameter(std::shared_ptr<Meta> &parameter)
