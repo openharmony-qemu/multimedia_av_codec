@@ -190,7 +190,7 @@ Status SurfaceDecoderFilter::DoStart()
         MEDIA_LOG_E("mediaCodec Start fail");
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        } 
+        }
     }
     return ret;
 }
@@ -272,7 +272,7 @@ void SurfaceDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         MEDIA_LOG_E("mediaCodec SetParameter fail");
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
-        } 
+        }
     }
 }
 
@@ -326,7 +326,7 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
         MEDIA_LOG_E("Init mediaCodec fail");
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
-        } 
+        }
     }
     meta_ = meta;
     ret = Configure(meta);
