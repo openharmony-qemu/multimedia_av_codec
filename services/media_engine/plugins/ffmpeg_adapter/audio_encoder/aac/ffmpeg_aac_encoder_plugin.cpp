@@ -506,9 +506,8 @@ Status FFmpegAACEncoderPlugin::InitContext()
         // 设置 AV_CODEC_FLAG_QSCALE 标志
         avCodecContext_->flags |= AV_CODEC_FLAG_QSCALE;
         // Q_SCALE质量参数，对应FFmpeg 命令行工具的-q:a参数,范围通常是0.1~2。
-        // 此处Q_SCALE:1.2 quality:141比较合适
-        int32_t quality = static_cast<int32_t>(FF_QP2LAMBDA * Q_SCALE);
-        avCodecContext_->global_quality = quality;
+        // 此处Q_SCALE:1.2 global_quality:141比较合适
+        avCodecContext_->global_quality = static_cast<int32_t>(FF_QP2LAMBDA * Q_SCALE);
         MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", avCodecContext_->flags,
             avCodecContext_->global_quality);
     }
