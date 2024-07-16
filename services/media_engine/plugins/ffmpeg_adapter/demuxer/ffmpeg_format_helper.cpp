@@ -95,6 +95,8 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"mpegts", FileType::MPEGTS},
     {"matroska,webm", FileType::MKV},
     {"amr", FileType::AMR},
+    {"amrnb", FileType::AMR},
+    {"amrwb", FileType::AMR},
     {"aac", FileType::AAC},
     {"mp3", FileType::MP3},
     {"flac", FileType::FLAC},
