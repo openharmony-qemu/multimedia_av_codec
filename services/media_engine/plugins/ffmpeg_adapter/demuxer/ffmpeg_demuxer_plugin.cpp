@@ -499,7 +499,6 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         parserRefFormatContext_->pb->eof_reached = 0;
         parserRefFormatContext_->pb->error = 0;
         if (parserRefIoContext_.retry) {
-
             parserRefIoContext_.retry = false;
             return Status::ERROR_AGAIN;
         }
@@ -919,7 +918,6 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             formatContext_->pb->eof_reached = 0;
             formatContext_->pb->error = 0;
             if (ioContext_.retry) {
-
                 ioContext_.retry = false;
                 return Status::ERROR_AGAIN;
             }
@@ -1553,6 +1551,10 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+    }
+
+    if (formatContext_->pb->error) {
+        formatContext_->pb->error = 0;
     }
     return Status::OK;
 }
