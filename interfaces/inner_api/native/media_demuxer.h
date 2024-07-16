@@ -108,6 +108,10 @@ public:
     Status StartReferenceParser(int64_t startTimeMs);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+    
+    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
+    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
+
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -149,6 +153,7 @@ private:
     Status SeekToTimePre(bool jumperRestartPlugin);
     Status SeekToTimeAfter(bool jumperRestartPlugin);
     bool ChangeStream(uint32_t trackId);
+    Status PauseForPrepareFrame();
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
@@ -170,6 +175,7 @@ private:
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
     int64_t ParserRefInfo();
+    void TryRecvParserTask();
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
@@ -201,6 +207,7 @@ private:
     std::shared_ptr<BaseStreamDemuxer> subStreamDemuxer_;
     std::string bundleName_ {};
     std::string playerId_;
+    bool waitForDataFail_{false};
 
     Mutex firstFrameMutex_{};
     ConditionVariable firstFrameCond_;
@@ -222,7 +229,8 @@ private:
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 
     std::unique_ptr<Task> parserRefInfoTask_;
-    bool isFirstParser = true;
+    bool isFirstParser_ = true;
+    bool isParserTaskEnd_ = false;
 };
 } // namespace Media
 } // namespace OHOS

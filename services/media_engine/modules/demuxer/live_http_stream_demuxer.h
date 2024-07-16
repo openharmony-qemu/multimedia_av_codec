@@ -45,7 +45,6 @@ public:
     ~LiveHttpStreamDemuxer() override;
 
     Status Init(const std::string& uri) override;
-    Status Reset() override;
     Status Pause() override;
     Status Resume() override;
     Status Start() override;

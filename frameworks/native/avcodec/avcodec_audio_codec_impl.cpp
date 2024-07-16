@@ -324,7 +324,7 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         CHECK_AND_CONTINUE_LOG(mediaCodecProducer_ != nullptr, "mediaCodecProducer_ is nullptr");
         ret = mediaCodecProducer_->RequestBuffer(emptyBuffer, avBufferConfig, TIME_OUT_MS);
         if (ret != Media::Status::OK) {
-            AVCODEC_LOGW("produceInputBuffer RequestBuffer fail, ret=%{public}d", ret);
+            AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer RequestBuffer fail, ret=%{public}d", ret);
             break;
         }
         CHECK_AND_CONTINUE_LOG(emptyBuffer != nullptr, "buffer is nullptr");

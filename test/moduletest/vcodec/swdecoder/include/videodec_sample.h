@@ -13,27 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef VIDEODEC_NDK_SAMPLE_H
-#define VIDEODEC_NDK_SAMPLE_H
+#ifndef VIDEODEC_SAMPLE_H
+#define VIDEODEC_SAMPLE_H
 
-#include <iostream>
-#include <cstdio>
-#include <unistd.h>
 #include <atomic>
+#include <cstdio>
 #include <fstream>
-#include <thread>
+#include <iostream>
 #include <mutex>
 #include <queue>
 #include <string>
+#include <thread>
+#include <unistd.h>
 #include <unordered_map>
-#include "securec.h"
 #include "native_avcodec_videodecoder.h"
-#include "nocopyable.h"
-#include "native_avmemory.h"
-#include "native_avformat.h"
 #include "native_averrors.h"
+#include "native_avformat.h"
+#include "native_avmemory.h"
+#include "nocopyable.h"
+#include "securec.h"
 #include "surface/window.h"
-#include "iconsumer_surface.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,28 +57,21 @@ public:
     int32_t RunVideoDec(std::string codeName = "");
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
-    const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
-    bool SF_OUTPUT = false;
+    bool SURFACE_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
-    uint32_t defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
-    uint32_t REPEAT_CALL_TIME = 10;
-    uint32_t MAX_SURF_NUM = 2;
-    double DEFAULT_FRAME_RATE = 30.0;
+    uint32_t originalWidth = 0;
+    uint32_t originalHeight = 0;
+    uint32_t DEFAULT_FRAME_RATE = 30;
+    uint32_t DEFAULT_ROTATION = 0;
+    int32_t maxInputSize = 0;
+    uint32_t DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_NV12;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
     bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     uint32_t frameCount_ = 0;
-    uint32_t repeat_time = 0;
-    // 解码输出数据预期
-    bool needCheckOutputDesc = false;
-    bool isResChangeStream = false;
-    uint32_t expectCropTop = 0;
-    uint32_t expectCropBottom = 0;
-    uint32_t expectCropLeft = 0;
-    uint32_t expectCropRight = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
@@ -89,34 +81,30 @@ public:
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
+    void Flush_buffer();
     int32_t Reset();
-    int32_t state_EOS();
     void SetEOS(uint32_t index);
+    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
+    void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
+    int32_t ReadData(uint32_t index, OH_AVMemory *buffer);
+    int32_t state_EOS();
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
     int32_t SetVideoDecoderCallback();
-    void testAPI();
-    int32_t SwitchSurface();
-    int32_t RepeatCallSetSurface();
+    int32_t SetSurface(OHNativeWindow *window);
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
     void CheckOutputDescription();
-    void AutoSwitchSurface();
-    void InputFunc();
-    int32_t PushData(uint32_t index, OH_AVMemory *buffer);
-    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
-    void ProcessOutputData(OH_AVMemory *buffer, uint32_t index);
     void OutputFunc();
-    void InputFuncTest();
-    void OutputFuncTest();
+    void WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile);
+    void InputFunc_AVCC();
+    OH_AVErrCode InputFunc_FUZZ(const uint8_t *data, size_t size);
     void ReleaseSignal();
-    void CreateSurface();
     void ReleaseInFile();
     void StopInloop();
-    void Flush_buffer();
     void StopOutloop();
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
@@ -126,30 +114,23 @@ public:
     int64_t outTimeArray[2000] = {};
     bool sleepOnFPS = false;
     bool repeatRun = false;
-    int64_t decode_count = 0;
     int64_t start_time = 0;
     int64_t end_time = 0;
-    bool autoSwitchSurface = false;
-    int32_t switchSurfaceFlag = 0;
-    std::atomic<bool> isRunning_ { false };
-    bool inputCallbackFlush = false;
-    bool inputCallbackStop = false;
-    bool outputCallbackFlush = false;
-    bool outputCallbackStop = false;
+    bool setParameters = false;
+    bool checkOutPut = true;
+    OH_AVCodec *vdec_;
+
 private:
+    std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::unordered_map<uint32_t, OH_AVMemory *> inBufferMap_;
     std::unordered_map<uint32_t, OH_AVMemory *> outBufferMap_;
-    OH_AVCodec *vdec_;
     OH_AVCodecAsyncCallback cb_;
-    int64_t timeStamp_ { 0};
+    int64_t timeStamp_ { 0 };
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
-    OHNativeWindow *nativeWindow[2] = {};
-    sptr<Surface> cs[2] = {};
-    sptr<Surface> ps[2] = {};
 };
 } // namespace Media
 } // namespace OHOS
@@ -159,4 +140,4 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData);
-#endif // VIDEODEC_NDK_SAMPLE_H
+#endif // VIDEODEC_SAMPLE_H

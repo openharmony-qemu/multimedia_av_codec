@@ -252,12 +252,15 @@ Status DecoderSurfaceFilter::DoPrepareFrame(bool renderFirstFrame)
     MEDIA_LOG_I("PrepareFrame enter.");
     doPrepareFrame_ = true;
     renderFirstFrame_ = renderFirstFrame;
-    auto ret = DoStart();
+    Status ret = Status::OK;
+    if (isPaused_.load()) {
+        ret = DoResume();
+    } else {
+        ret = DoStart();
+    }
     if (ret != Status::OK) {
         MEDIA_LOG_E("PrepareFrame decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
-    } else {
-        isNeedStartDecoder_ = false;
     }
     return ret;
 }
@@ -289,29 +292,24 @@ Status DecoderSurfaceFilter::HandleInputBuffer()
 Status DecoderSurfaceFilter::DoStart()
 {
     MEDIA_LOG_I("Start enter.");
+    if (isPaused_.load()) {
+        MEDIA_LOG_I("DoStart after pause to execute resume.");
+        return DoResume();
+    }
     if (!IS_FILTER_ASYNC) {
-        if (isPaused_.load()) {
-            return DoResume();
-        }
         isThreadExit_ = false;
         isPaused_ = false;
         readThread_ = std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, this);
         pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     }
-    auto ret = videoDecoder_->Start();
-    if (!isNeedStartDecoder_.load()) {
-        isNeedStartDecoder_ = true;
-        MEDIA_LOG_I("Already start videoDecoder and enter.");
-        return Status::OK;
-    }
-    return ret;
+    return videoDecoder_->Start();
 }
 
 Status DecoderSurfaceFilter::DoPause()
 {
     MEDIA_LOG_I("Pause enter.");
+    isPaused_ = true;
     if (!IS_FILTER_ASYNC) {
-        isPaused_ = true;
         condBufferAvailable_.notify_all();
     }
     videoSink_->ResetSyncInfo();
@@ -326,8 +324,8 @@ Status DecoderSurfaceFilter::DoResume()
 {
     MEDIA_LOG_I("Resume enter.");
     refreshTotalPauseTime_ = true;
+    isPaused_ = false;
     if (!IS_FILTER_ASYNC) {
-        isPaused_ = false;
         condBufferAvailable_.notify_all();
     }
     videoDecoder_->Start();
@@ -341,6 +339,7 @@ Status DecoderSurfaceFilter::DoStop()
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
+    isPaused_ = false;
 
     timeval tv;
     gettimeofday(&tv, 0);
@@ -547,6 +546,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     videoDecoder_->ReleaseOutputBuffer(index, render);
     videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+        ResetSeekInfo();
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
                 outBuffer->pts_, outBuffer->flag_);
@@ -697,6 +697,13 @@ void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
     MEDIA_LOG_I("SetSeekTime enter.");
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
+}
+
+void DecoderSurfaceFilter::ResetSeekInfo()
+{
+    MEDIA_LOG_I("ResetSeekInfo enter.");
+    isSeek_ = false;
+    seekTimeUs_ = 0;
 }
 
 void DecoderSurfaceFilter::ParseDecodeRateLimit()

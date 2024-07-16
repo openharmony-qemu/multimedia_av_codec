@@ -16,7 +16,7 @@
 #include "gtest/gtest.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
-#include "videoenc_ndk_sample.h"
+#include "videoenc_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"

@@ -18,7 +18,7 @@
 #include "iconsumer_surface.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
-#include "videodec_ndk_sample.h"
+#include "videodec_sample.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
@@ -168,14 +168,39 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
+    if (maxInputSize > 0) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, maxInputSize);
+    }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    originalHeight = DEFAULT_HEIGHT;
+    originalWidth = DEFAULT_WIDTH;
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, DEFAULT_ROTATION);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIXEL_FORMAT);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
+}
+
+void VDecNdkSample::CheckOutputDescription()
+{
+    OH_AVFormat *newFormat = OH_VideoDecoder_GetOutputDescription(vdec_);
+    if (newFormat != nullptr) {
+        int32_t picWidth = 0;
+        int32_t picHeight = 0;
+        OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_WIDTH, &picWidth);
+        OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
+        if (picWidth != originalWidth || picHeight != originalHeight) {
+            std::cout << "picWidth:" << picWidth << " picHeight:" << picHeight << std::endl;
+            std::cout << "errCount  !=:" << errCount << std::endl;
+            errCount++;
+        }
+    } else {
+        std::cout << "errCount  newFormat == nullptr:" << errCount << std::endl;
+        errCount++;
+    }
+    OH_AVFormat_Destroy(newFormat);
 }
 
 int32_t VDecNdkSample::RunVideoDec_Surface(string codeName)
@@ -426,6 +451,9 @@ void VDecNdkSample::OutputFunc()
                 Release();
             }
             break;
+        }
+        if (dec_sample->checkOutPut) {
+            CheckOutputDescription();
         }
         WriteOutputFrame(index, buffer, attr, outFile);
         if (errCount > 0) {

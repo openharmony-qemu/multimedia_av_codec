@@ -14,7 +14,6 @@
  */
 
 #include "video_decoder_sample.h"
-#include <chrono>
 #include "refbase.h"
 #include "surface/window.h"
 #include "surface.h"
@@ -25,10 +24,9 @@
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
+#include "sample_utils.h"
 
 namespace {
-using namespace std::chrono_literals;
-
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecoderSample"};
 }
 
@@ -78,13 +76,14 @@ void VideoDecoderSample::InputThread()
             context_->inputBufferQueue.GetFrameCount(),
             bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, sampleInfo_.frameInterval);
 
         ret = videoCodec_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
+    PushEosFrame();
     StartRelease();
 }
 
@@ -100,7 +99,7 @@ void VideoDecoderSample::OutputThread()
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
 
         DumpOutput(bufferInfo);
-        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, sampleInfo_.frameInterval);
 
         int32_t ret = videoCodec_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");

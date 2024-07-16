@@ -138,9 +138,13 @@ void AVMuxerEngineDemo::SetParameter()
 void AVMuxerEngineDemo::SetUserData()
 {
     std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
-    userMeta->SetData("com.os.version", 5); // 5 test version
-    userMeta->SetData("com.os.manufacturer", "HW");
-    userMeta->SetData("com.os.capture.fps", 30.00f); // 30.00f test capture fps
+    userMeta->SetData("com.openharmony.version", 5); // 5 test version
+    userMeta->SetData("com.openharmony.model", "LNA-AL00");
+    userMeta->SetData("com.openharmony.manufacturer", "HW");
+    userMeta->SetData("com.openharmony.marketing_name", "HW P60");
+    userMeta->SetData("com.openharmony.capture.fps", 30.00f); // 30.00f test capture fps
+    userMeta->SetData("model", "LNA-AL00");
+    userMeta->SetData("com.openharmony.flag", true);
     if (avmuxer_->SetUserMeta(userMeta) != Status::OK) {
         std::cout<<"set user meta failed!"<<std::endl;
     }

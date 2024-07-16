@@ -23,7 +23,7 @@ namespace MediaAVCodec {
 namespace Sample {
 class RawdataReader : public DataProducerBase {
 private:
-    int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
+    int32_t FillBuffer(CodecBufferInfo &info) override;
     int32_t GetBufferSize();
     bool IsEOS() override;
 };

@@ -156,5 +156,25 @@ int32_t InnerDemuxerDemo::SeekToTime(int64_t millisecond, Media::SeekMode mode)
     }
     return ret;
 }
+
+int32_t InnerDemuxerDemo::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+    int64_t presentationTimeUs, uint32_t &frameIndex)
+{
+    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    if (ret != 0) {
+        printf("GetFrameIndexByPresentationTimeUs is failed\n");
+    }
+    return ret;
+}
+
+int32_t InnerDemuxerDemo::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+    uint32_t frameIndex, int64_t &presentationTimeUs)
+{
+    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    if (ret != 0) {
+        printf("GetPresentationTimeUsByFrameIndex is failed\n");
+    }
+    return ret;
+}
 }
 }

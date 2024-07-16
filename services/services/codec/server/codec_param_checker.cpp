@@ -28,6 +28,7 @@
 #include "meta/meta_key.h"
 #include "temporal_scalability.h"
 #include "meta/video_types.h"
+#include "surface_type.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecParamChecker"};
@@ -83,20 +84,25 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
                                                         AVCodecType codecType);
 
 // Video codec checker
-int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t ResolutionChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t PixelFormatChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t FramerateChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t VideoProfileChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t ColorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
     std::optional<CodecScenario> (*)(CapabilityData &capData, const Format &format, AVCodecType codecType);
-using ParamCheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
+using ParamCheckerType = int32_t (*)(CapabilityData &capData, Format &format, CodecScenario scenario);
 using ScenarioCheckerListType = std::vector<ScenarioCheckerType>;
 using ParamCheckerListType = std::vector<ParamCheckerType>;
 const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
@@ -106,6 +112,10 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     BitrateAndQualityChecker,
     VideoProfileChecker,
     QPChecker,
+    ColorPrimariesChecker,
+    TransferCharacteristicsChecker,
+    MatrixCoefficientsChecker,
+    LTRFrameCountChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -117,6 +127,10 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     QPChecker,
     TemporalGopSizeChecker,
     TemporalGopReferenceModeChecker,
+    ColorPrimariesChecker,
+    TransferCharacteristicsChecker,
+    MatrixCoefficientsChecker,
+    LTRFrameCountChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -124,6 +138,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     PixelFormatChecker,
     FramerateChecker,
     RotaitonChecker,
+    ScalingModeChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -163,7 +178,6 @@ const std::unordered_map<CodecScenario, ParamCheckerListType> PARAMETER_CHECKERS
 std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
                                                         AVCodecType codecType)
 {
-    (void)codecType;
     int32_t enable = 0;
     std::optional<CodecScenario> scenario = std::nullopt;
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
@@ -191,9 +205,9 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
     return scenario;
 }
 
-int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t ResolutionChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
-    (void)codecType;
+    (void)scenario;
     int32_t width = 0;
     int32_t height = 0;
     bool widthExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
@@ -215,9 +229,9 @@ int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType c
     return AVCS_ERR_OK;
 }
 
-int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t PixelFormatChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
-    (void)codecType;
+    (void)scenario;
     int32_t pixelFormat;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
     if (!paramExist || pixelFormat == static_cast<int32_t>(VideoPixelFormat::SURFACE_FORMAT)) {
@@ -233,10 +247,10 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
     return AVCS_ERR_OK;
 }
 
-int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t FramerateChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
-    (void)codecType;
+    (void)scenario;
     double framerate;
     bool paramExist = format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
     PrintParam(paramExist, MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
@@ -252,9 +266,9 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType co
     return AVCS_ERR_OK;
 }
 
-int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
-    (void)codecType;
+    (void)scenario;
     int64_t bitrate;
     int32_t quality;
     int32_t bitrateMode;
@@ -305,9 +319,9 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     return AVCS_ERR_OK;
 }
 
-int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t VideoProfileChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
-    (void)codecType;
+    (void)scenario;
     int32_t profile;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, profile);
     if (paramExist == false) {
@@ -323,10 +337,10 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
     return AVCS_ERR_OK;
 }
 
-int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
-    (void)codecType;
+    (void)scenario;
     int32_t rotation;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotation);
     if (paramExist == false) {
@@ -342,10 +356,10 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
     return AVCS_ERR_OK;
 }
 
-int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
-    (void)codecType;
+    (void)scenario;
     constexpr int32_t MAX_QP = 51;
     int32_t qpMin;
     int32_t qpMax;
@@ -366,10 +380,10 @@ int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType
     return AVCS_ERR_OK;
 }
 
-int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
-    (void)codecType;
+    (void)scenario;
     int32_t gopSize;
     int32_t temporalGopSize;
     double frameRate;
@@ -408,10 +422,10 @@ int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecT
     return AVCS_ERR_OK;
 }
 
-int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)capData;
-    (void)codecType;
+    (void)scenario;
     int32_t mode;
     bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
     if (!modeExist) {
@@ -427,12 +441,118 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
     }
     return AVCS_ERR_OK;
 }
+
+int32_t ColorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t colorPrimaries;
+    bool colorPrimariesExist = format.GetIntValue(Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
+    if (!colorPrimariesExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(colorPrimariesExist, Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
+
+    if (colorPrimaries < static_cast<int32_t>(ColorPrimary::COLOR_PRIMARY_BT709) ||
+        colorPrimaries > static_cast<int32_t>(ColorPrimary::COLOR_PRIMARY_P3D65)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_PRIMARIES, colorPrimaries);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t transferCharacteristics;
+    bool transferCharacteristicsExist = format.GetIntValue(Tag::VIDEO_COLOR_TRC, transferCharacteristics);
+    if (!transferCharacteristicsExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(transferCharacteristicsExist, Tag::VIDEO_COLOR_TRC, transferCharacteristics);
+
+    if (transferCharacteristics < static_cast<int32_t>(TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709) ||
+        transferCharacteristics > static_cast<int32_t>(TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_TRC, transferCharacteristics);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t matrixCoefficients;
+    bool matrixCoefficientsExist = format.GetIntValue(Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
+    if (!matrixCoefficientsExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(matrixCoefficientsExist, Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
+
+    if (matrixCoefficients < static_cast<int32_t>(MatrixCoefficient::MATRIX_COEFFICIENT_IDENTITY) ||
+        matrixCoefficients > static_cast<int32_t>(MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_COLOR_MATRIX_COEFF, matrixCoefficients);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    int32_t ltrFrameCount;
+    bool ltrFrameCountExist = format.GetIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameCount);
+    if (!ltrFrameCountExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(ltrFrameCountExist, Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameCount);
+
+    CHECK_AND_RETURN_RET_LOG(scenario != CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
+        AVCS_ERR_UNSUPPORT, "Param invalid, not supported to set LTR frame count in temporal scalability scenario");
+
+    auto ltrCap =
+        capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    if (ltrCap == capData.featuresMap.end()) {
+        AVCODEC_LOGW("Not support LTR but set LTR frame count");
+        format.RemoveKey(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT);
+        return AVCS_ERR_OK;
+    }
+    int32_t maxLTRFrameCount = 0;
+    bool maxLTRFrameCountExist =
+        ltrCap->second.GetIntValue(Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameCount);
+    CHECK_AND_RETURN_RET_LOG(maxLTRFrameCountExist, AVCS_ERR_UNKNOWN, "Max LTR frame count not defined");
+
+    CHECK_AND_RETURN_RET_LOG(ltrFrameCount >= 0 && ltrFrameCount <= maxLTRFrameCount, AVCS_ERR_INVALID_VAL,
+        "Param invalid, LTR frame count range: %{public}d-%{public}d", 0, maxLTRFrameCount);
+
+    return AVCS_ERR_OK;
+}
+
+int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t scalingMode;
+    bool scalingModeExist = format.GetIntValue(Tag::VIDEO_SCALE_TYPE, scalingMode);
+    if (!scalingModeExist) {
+        return AVCS_ERR_OK;
+    }
+    PrintParam(scalingModeExist, Tag::VIDEO_SCALE_TYPE, scalingMode);
+
+    if (scalingMode < static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW) ||
+        scalingMode > static_cast<int32_t>(OHOS::ScalingMode::SCALING_MODE_SCALE_CROP)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_SCALE_TYPE, scalingMode);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecType codecType,
-                                               const std::string &codecName, CodecScenario scenario)
+int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, const std::string &codecName,
+                                               CodecScenario scenario)
 {
     AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
@@ -445,7 +565,7 @@ int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecTyp
 
     int32_t result = AVCS_ERR_OK;
     for (const auto &checker : checkers->second) {
-        auto ret = checker(capData.value(), format, codecType);
+        auto ret = checker(capData.value(), format, scenario);
         if (ret == AVCS_ERR_CODEC_PARAM_INCORRECT) {
             result = AVCS_ERR_CODEC_PARAM_INCORRECT;
         }
@@ -456,8 +576,7 @@ int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecTyp
 }
 
 int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Media::Format &oldFormat,
-                                               AVCodecType codecType, const std::string &codecName,
-                                               CodecScenario scenario)
+                                               const std::string &codecName, CodecScenario scenario)
 {
     AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
@@ -471,7 +590,7 @@ int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Medi
     MergeFormat(format, oldFormat);
 
     for (const auto &checker : checkers->second) {
-        auto ret = checker(capData.value(), oldFormat, codecType);
+        auto ret = checker(capData.value(), oldFormat, scenario);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
     }
     return AVCS_ERR_OK;

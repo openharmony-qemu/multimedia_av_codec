@@ -48,6 +48,7 @@ public:
 
     bool InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
                                    MessageParcel &data);
+    bool SetOutputBufferRenderTimestamp(uint32_t index, int64_t renderTimestampNs);
     void ClearListenerCache();
 private:
     static inline BrokerDelegator<CodecListenerProxy> delegator_;

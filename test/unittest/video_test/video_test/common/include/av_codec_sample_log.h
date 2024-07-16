@@ -35,6 +35,13 @@ extern const bool VERBOSE_LOG;
         }                                   \
     } else void (0)
 
+#define CHECK_AND_BREAK(cond)               \
+    if (1) {                                \
+        if (!(cond)) {                      \
+            break;                          \
+        }                                   \
+    } else void (0)
+
 #define CHECK_AND_RETURN(cond)              \
     if (1) {                                \
         if (!(cond)) {                      \

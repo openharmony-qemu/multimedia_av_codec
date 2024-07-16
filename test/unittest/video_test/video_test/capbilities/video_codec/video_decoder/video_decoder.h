@@ -25,16 +25,17 @@ namespace Sample {
 class VideoDecoder : public VideoCodecBase {
 public:
     int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
-    int32_t Config(SampleInfo &sampleInfo, SampleContext * const codecUserData) override;
+    int32_t Config(SampleInfo &sampleInfo, uintptr_t * const sampleContext) override;
     int32_t Start() override;
     int32_t Flush() override;
     int32_t Stop() override;
     int32_t Reset() override;
+    OH_AVFormat *GetFormat() override;
     int32_t PushInputData(CodecBufferInfo &info) override;
     int32_t FreeOutputData(uint32_t bufferIndex) override;
     
 private:
-    int32_t SetCallback(SampleContext * const codecUserData);
+    int32_t SetCallback(uintptr_t * const sampleContext);
     int32_t Configure(const SampleInfo &sampleInfo);
 };
 } // Sample

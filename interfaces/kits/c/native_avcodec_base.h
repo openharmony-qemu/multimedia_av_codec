@@ -313,7 +313,7 @@ extern const char *OH_MD_KEY_ROTATION;
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
-/* Key for video YUV value range flag, value type is bool */
+/* Key for video YUV value range flag, value type is bool, true for full range, false for limited range */
 extern const char *OH_MD_KEY_RANGE_FLAG;
 /* Key for video color primaries, value type is int32_t, see @OH_ColorPrimary */
 extern const char *OH_MD_KEY_COLOR_PRIMARIES;

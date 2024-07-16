@@ -79,6 +79,7 @@ public:
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetSeekTime(int64_t seekTimeUs);
+    void ResetSeekInfo();
     Status HandleInputBuffer();
     void OnDumpInfo(int32_t fd);
 
@@ -140,7 +141,6 @@ private:
     Mutex firstFrameMutex_{};
     ConditionVariable firstFrameCond_;
     std::atomic<bool> doPrepareFrame_{false};
-    std::atomic<bool> isNeedStartDecoder_{true};
     bool renderFirstFrame_{false};
     Mutex formatChangeMutex_{};
 

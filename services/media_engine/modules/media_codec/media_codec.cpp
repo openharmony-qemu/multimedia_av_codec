@@ -758,7 +758,7 @@ void MediaCodec::ClearBufferQueue()
 void MediaCodec::ClearInputBuffer()
 {
     MediaAVCodec::AVCodecTrace trace("MediaCodec::ClearInputBuffer");
-    MEDIA_LOG_I("ClearInputBuffer enter");
+    MEDIA_LOG_D("ClearInputBuffer enter");
     if (!inputBufferQueueConsumer_) {
         return;
     }

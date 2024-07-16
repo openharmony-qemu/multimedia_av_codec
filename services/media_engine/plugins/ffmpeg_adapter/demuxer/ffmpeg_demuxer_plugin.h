@@ -70,6 +70,10 @@ public:
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
+    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex) override;
+    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) override;
 
 private:
     struct IOContext {
@@ -120,7 +124,8 @@ private:
     bool CanDropHevcPkt(const AVPacket& pkt);
     void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    void ParserBoxInfo();
+    Status ParserBoxInfo();
+    Status ParserFirstDts();
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -150,6 +155,8 @@ private:
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
+    int64_t firstDts_ = 0;
+    bool isSdtpExist_ = false;
     std::mutex syncMutex_;
 };
 } // namespace Ffmpeg

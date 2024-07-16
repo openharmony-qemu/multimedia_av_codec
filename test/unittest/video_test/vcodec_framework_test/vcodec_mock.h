@@ -78,6 +78,7 @@ public:
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t PushInputBuffer(uint32_t index) = 0;
     virtual int32_t RenderOutputBuffer(uint32_t index) = 0;
+    virtual int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs) = 0;
     virtual int32_t FreeOutputBuffer(uint32_t index) = 0;
     virtual bool IsValid() = 0;
     virtual int32_t SetVideoDecryptionConfig() = 0;

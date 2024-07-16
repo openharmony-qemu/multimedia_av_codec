@@ -47,11 +47,12 @@ static OH_AVErrCode ret = AV_ERR_OK;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+static OH_AVBuffer *avBuffer = nullptr;
+static OH_AVFormat *format = nullptr;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
-
 void DemuxerFuncNdkTest::SetUpTestCase() {}
 void DemuxerFuncNdkTest::TearDownTestCase() {}
 void DemuxerFuncNdkTest::SetUp()
@@ -70,6 +71,10 @@ void DemuxerFuncNdkTest::TearDown()
         OH_AVFormat_Destroy(sourceFormat);
         sourceFormat = nullptr;
     }
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
 
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
@@ -82,6 +87,10 @@ void DemuxerFuncNdkTest::TearDown()
     if (demuxer != nullptr) {
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
+    }
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
     }
 }
 } // namespace Media

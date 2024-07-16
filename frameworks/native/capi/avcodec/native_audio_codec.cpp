@@ -27,7 +27,7 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_audio_codec_impl.h"
 #ifdef SUPPORT_DRM
-#include "foundation/multimedia/drm_framework/interfaces/kits/c/drm_capi/common/native_drm_object.h"
+#include "native_drm_object.h"
 #endif
 
 namespace {

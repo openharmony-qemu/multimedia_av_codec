@@ -90,7 +90,6 @@ public:
     virtual ~BaseStreamDemuxer();
 
     virtual Status Init(const std::string& uri) = 0;
-    virtual Status Reset() = 0;
     virtual Status Pause() = 0;
     virtual Status Resume() = 0;
     virtual Status Start() = 0;
@@ -111,7 +110,7 @@ public:
     bool GetIsIgnoreParse();
     Plugins::Seekable GetSeekable();
     std::string SnifferMediaType(int32_t streamID);
-    bool IsDash();
+    bool IsDash() const;
     void SetIsDash(bool flag);
     Status SetNewVideoStreamID(int32_t streamID);
     int32_t GetNewVideoStreamID();
