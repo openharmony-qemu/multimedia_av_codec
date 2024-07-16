@@ -238,6 +238,7 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
     ResetTimeAnchorNoLock(); // reset the time anchor
     frameAfterSeeked_ = true;
+    firstMediaTimeAfterSeek_ = HST_TIME_NONE;
     return Status::OK;
 }
 
