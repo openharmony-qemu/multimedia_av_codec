@@ -165,6 +165,18 @@ void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appNam
     bundleName_ = appName;
 }
 
+void DemuxerFilter::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
+{
+    MEDIA_LOG_I("RegisterVideoStreamReadyCallback step into");
+    demuxer_->RegisterVideoStreamReadyCallback(callback);
+}
+
+void DemuxerFilter::DeregisterVideoStreamReadyCallback()
+{
+    MEDIA_LOG_I("DeregisterVideoStreamReadyCallback step into");
+    demuxer_->DeregisterVideoStreamReadyCallback();
+}
+
 Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
