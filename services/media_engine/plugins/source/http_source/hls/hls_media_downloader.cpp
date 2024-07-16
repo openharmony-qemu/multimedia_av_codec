@@ -417,6 +417,8 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     memset_s(decryptCache_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
     memset_s(decryptBuffer_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
     afterAlignRemainedLength_ = 0;
+    isLastDecryptWriteError_ = false;
+    lastRealLen_ = 0;
     buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
