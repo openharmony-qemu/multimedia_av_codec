@@ -137,6 +137,7 @@ private:
     int64_t pausedAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedExactAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
+    int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
     int64_t startingTimeMediaUs_ {HST_TIME_NONE};
 
     float playRate_ {1.0f};
