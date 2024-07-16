@@ -401,7 +401,7 @@ int64_t MediaSyncManager::GetMediaTimeNow()
         return 0;
     }
     if (firstMediaTimeAfterSeek_ != HST_TIME_NONE && currentMediaTime < firstMediaTimeAfterSeek_) {
-        MEDIA_LOG_W("audio has not been rendered since seek);
+        MEDIA_LOG_W("audio has not been rendered since seek");
         currentMediaTime = firstMediaTimeAfterSeek_;
     }
     if (startPts_ != HST_TIME_NONE) {
