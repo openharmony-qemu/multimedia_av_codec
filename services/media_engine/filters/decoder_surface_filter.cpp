@@ -600,7 +600,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     if (!isInSeekContinous_) {
         videoSink_->SetLastPts(outBuffer->pts_);
     }
-    if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS) && !isInSeekContinous_) {
+    if ((outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) && !isInSeekContinous_) {
         ResetSeekInfo();
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
