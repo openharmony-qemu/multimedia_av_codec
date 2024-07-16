@@ -29,6 +29,8 @@ namespace Media {
 
 const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
 const int32_t APE_BUFFER_QUEUE_SIZE = 32;
+const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
+const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
 
 int64_t GetAudioLatencyFixDelay()
 {
@@ -151,6 +153,8 @@ Status AudioSink::Start()
 
 Status AudioSink::Stop()
 {
+    playRangeStartTime_ = DEFAULT_PLAY_RANGE_VALUE;
+    playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     if (seekTask_ != nullptr) {
         seekTask_->Stop();
     }
@@ -255,6 +259,14 @@ Status AudioSink::Flush()
 Status AudioSink::Release()
 {
     return plugin_->Deinit();
+}
+
+Status AudioSink::SetPlayRange(int64_t start, int64_t end)
+{
+    MEDIA_LOG_I("SetPlayRange enter.");
+    playRangeStartTime_ = start;
+    playRangeEndTime_ = end;
+    return Status::OK;
 }
 
 Status AudioSink::SetVolume(float volume)
@@ -401,7 +413,9 @@ void AudioSink::DrainOutputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }
-    if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
+    if ((filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) ||
+        ((playRangeEndTime_ != DEFAULT_PLAY_RANGE_VALUE) &&
+        (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS))) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         AutoLock eosLock(eosMutex_);
         eosInterruptType_ = EosInterruptState::INITIAL;
