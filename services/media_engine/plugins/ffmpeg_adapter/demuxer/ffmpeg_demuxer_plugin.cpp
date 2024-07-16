@@ -534,7 +534,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
             if (updatePosIsForward_) {
                 parserCurGopId_ = (parserCurGopId_ + 1) % iFramePosSize;
             } else {
-                parserCurGopId_ = parserCurGopId_ == 0 ? iFramePosSize - 1 : parserCurGopId_ - 1 :;
+                parserCurGopId_ = parserCurGopId_ == 0 ? iFramePosSize - 1 : parserCurGopId_ - 1;
             }
         }
 
@@ -560,7 +560,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
     }
 
     uint32_t gopSize = 0;
-    if (parserCurGopId_ + 1 < IFramePos_.size()) {
+    if (parserCurGopId_ + 1 < static_cast<int32_t>(IFramePos_.size())) {
         gopSize = IFramePos_[parserCurGopId_ + 1] - IFramePos_[parserCurGopId_];
     } else {
         gopSize = parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames - IFramePos_[parserCurGopId_];
