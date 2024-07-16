@@ -371,6 +371,9 @@ void FileFdSourcePlugin::CacheDataLoop()
     int size = read(fd_, cacheBuffer, bufferSize);
     MEDIA_LOG_D("CacheDataLoop fd read done");
     if (size <= 0) {
+        if (cacheBuffer != nullptr) {
+            delete[] cacheBuffer;
+        }
         HandleReadResult(bufferSize, size);
         return;
     }
