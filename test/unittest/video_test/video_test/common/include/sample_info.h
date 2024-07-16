@@ -131,6 +131,7 @@ struct SampleInfo {
     int32_t pauseBeforeRunSample = 0;
     int32_t videoStrideWidth = 0;
     int32_t videoSliceHeight = 0;
+    int32_t iFrameInterval = 2'000;
 };
 
 struct CodecBufferInfo {

@@ -35,6 +35,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_BITRATE_MODE,
     DEMO_ARG_CODEC_RUN_MODE,
     DEMO_ARG_FRAME_INTERVAL,
+    DEMO_ARG_I_FRAME_INTERVAL,
     DEMO_ARG_SAMPLE_REPEAT_TIMES,
     DEMO_ARG_DEMO_REPEAT_TIMES,
     DEMO_ARG_HDR_VIVID_VIDEO,
@@ -64,6 +65,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_BITRATE_MODE,                     "bitrate_mode"},
     {DEMO_ARG_CODEC_RUN_MODE,                   "codec_run_mode"},
     {DEMO_ARG_FRAME_INTERVAL,                   "frame_interval"},
+    {DEMO_ARG_I_FRAME_INTERVAL,                 "i_frame_interval"},
     {DEMO_ARG_SAMPLE_REPEAT_TIMES,              "sample_repeat_times"},
     {DEMO_ARG_DEMO_REPEAT_TIMES,                "demo_repeat_times"},
     {DEMO_ARG_HDR_VIVID_VIDEO,                  "hdr_vivid_video"},
@@ -93,6 +95,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"bitrate_mode",                     required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
     {"codec_run_mode",                   required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
     {"frame_interval",                   required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
+    {"i_frame_interval",                 required_argument,  nullptr, DEMO_ARG_I_FRAME_INTERVAL},
     {"sample_repeat_times",              required_argument,  nullptr, DEMO_ARG_SAMPLE_REPEAT_TIMES},
     {"demo_repeat_times",                required_argument,  nullptr, DEMO_ARG_DEMO_REPEAT_TIMES},
     {"hdr_vivid_video",                  required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
@@ -130,6 +133,7 @@ Video codec demo help:
     --codec_consumer                    0: Default;  1: Decoder render output
 
     --frame_interval                    frame push interval (ms)
+    --i_frame_interval                  i frame interval (ms)
     --sample_repeat_times               sample repeat times, data producer will seek to head while eos
     --demo_repeat_times                 demo repeat times, sample will destroy while eos
     --hdr_vivid_video                   input file is hdr vivid video? (0: false; 1: true)
@@ -224,6 +228,11 @@ inline void SetFrameInterval(SampleInfo &info, const char * const value)
     }
 }
 
+inline void SetIFrameInterval(SampleInfo &info, const char * const value)
+{
+    info.iFrameInterval = std::stol(value);
+}
+
 inline void SetSampleRepeatTimes(SampleInfo &info, const char * const value)
 {
     info.sampleRepeatTimes = std::stoul(value) - 1;
@@ -306,6 +315,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_BITRATE_MODE,                     SetBitrateMode},
     {DEMO_ARG_CODEC_RUN_MODE,                   SetCodecRunMode},
     {DEMO_ARG_FRAME_INTERVAL,                   SetFrameInterval},
+    {DEMO_ARG_I_FRAME_INTERVAL,                 SetIFrameInterval},
     {DEMO_ARG_SAMPLE_REPEAT_TIMES,              SetSampleRepeatTimes},
     {DEMO_ARG_DEMO_REPEAT_TIMES,                SetDemoRepeatTimes},
     {DEMO_ARG_HDR_VIVID_VIDEO,                  SetHdrVividVideo},
