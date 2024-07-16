@@ -527,8 +527,8 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
 
-Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, bool dropFrame, bool byIdx,
-                                                   uint32_t idx, bool byRenderTime, int64_t renderTime)
+Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx,
+                                                   bool byRenderTime, int64_t renderTime)
 {
     FALSE_RETURN_V(!dropFrame, Status::OK);
     if (!isRenderStarted_.load()) {
