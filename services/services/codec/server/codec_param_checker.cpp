@@ -437,7 +437,7 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
 
     using namespace OHOS::Media::Plugins;
     if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
-        mode >= static_cast<int32_t>(TemporalGopReferenceMode::UNKNOWN_REFERENCE_MODE)) {
+        mode >= static_cast<int32_t>(TemporalGopReferenceMode::UNKNOWN)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
         return AVCS_ERR_INVALID_VAL;
     }
