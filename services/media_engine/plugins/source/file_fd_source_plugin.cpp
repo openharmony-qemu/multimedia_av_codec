@@ -53,6 +53,9 @@ constexpr int32_t SEEK_TIME_UPPER               = 1000;
 constexpr int32_t RECORD_TIME_INTERVAL          = 1 * 1000;
 constexpr int32_t MILLISECOUND_TO_SECOND        = 1 * 1000;
 constexpr int32_t RETRY_TIMES                   = 3;
+constexpr int32_t TO_BYTE                       = 8
+constexpr int32_t PERCENT_100                   = 100;
+constexpr int32_t MAX_RANK                      = 100;
 constexpr float CACHE_LEVEL_1                   = 0.3;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
@@ -85,7 +88,7 @@ Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
     SourcePluginDef definition;
     definition.name = "FileFdSource";
     definition.description = "File Fd source";
-    definition.rank = 100; // 100: max rank
+    definition.rank = MAX_RANK; // 100: max rank
     Capability capability;
     capability.AppendFixedKey<std::vector<ProtocolType>>(Tag::MEDIA_PROTOCOL_TYPE, {ProtocolType::FD});
     definition.AddInCaps(capability);
@@ -513,7 +516,7 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
 {
     MEDIA_LOG_I("NotifyBufferingUpdate in.");
     if (waterLineAbove_ != 0) {
-        auto bp = ringBufferSize_ / waterLineAbove_ * 100;
+        auto bp = ringBufferSize_ / waterLineAbove_ * PERCENT_100;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
             MEDIA_LOG_I("Read OnEvent BUFFERING_PERCENT" PUBLIC_LOG_D64, bp);
             callback_->OnEvent({PluginEventType::BUFFERING_PERCENT,
@@ -556,7 +559,7 @@ void FileFdSourcePlugin::SetDemuxerState()
 
 Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate)
 {
-    currentBitRate_ = bitRate / 8; // 8b
+    currentBitRate_ = bitRate / TO_BYTE; // 8b
     MEDIA_LOG_I("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);
     // default cache 0.3s
     waterLineAbove_ = CACHE_LEVEL_1 * currentBitRate_;
