@@ -226,7 +226,8 @@
                 "video_capture_filter.h",
                 "surface_encoder_filter.h",
                 "muxer_filter.h",
-                "codec_capability_adapter.h"
+                "codec_capability_adapter.h",
+                "dragging_player.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }

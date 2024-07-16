@@ -655,8 +655,7 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
 
 void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs)
 {
-    bool isRenderAtTime = renderTimeNs > 0L;
-    Filter::ProcessOutputBuffer(isRender, 0, true, index, isRenderAtTime, renderTimeNs);
+    Filter::ProcessOutputBuffer(isRender, 0, true, index, renderTimeNs);
 }
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
