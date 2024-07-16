@@ -177,7 +177,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     }
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
-    if (info.codecType == VIDEO_HW_DECODER) {
+    if (!(info.codecType & 0b10)) {   // 0b10: Video encoder mask
         WriteOutputFileWithStrideYUV420(bufferAddr, bufferInfo.attr.size);
     } else {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);

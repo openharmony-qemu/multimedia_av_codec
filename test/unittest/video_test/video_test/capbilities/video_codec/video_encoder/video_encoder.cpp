@@ -127,7 +127,7 @@ int32_t VideoEncoder::Reset()
 OH_AVFormat *VideoEncoder::GetFormat()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, nullptr, "Decoder is null");
-    return OH_VideoEncoder_GetOutputDescription(codec_.get());
+    return OH_VideoEncoder_GetInputDescription(codec_.get());
 }
 
 int32_t VideoEncoder::NotifyEndOfStream()

@@ -115,7 +115,6 @@ void VideoDecoderSample::OutputThread()
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
-    StartRelease();
 }
 
 int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
