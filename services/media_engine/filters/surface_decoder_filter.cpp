@@ -325,7 +325,7 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     } else {
         MEDIA_LOG_E("Init mediaCodec fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         }
     }
     meta_ = meta;
