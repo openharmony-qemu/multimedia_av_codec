@@ -57,7 +57,6 @@ public:
     Status AddTrackQueue(uint32_t trackIndex);
     Status RemoveTrackQueue(uint32_t trackIndex);
     bool HasCache(uint32_t trackIndex);
-    void ResetQueue(uint32_t queueIndex);
     void FreeQueue(uint32_t queueIndex);
     bool Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block);
     std::shared_ptr<SamplePacket> Pop(uint32_t trackIndex);
@@ -80,6 +79,7 @@ private:
     uint32_t GetValidQueue();
     bool InnerQueueIsFull(uint32_t queueIndex);
     bool HasQueue(uint32_t trackIndex);
+    void ResetQueue(uint32_t queueIndex);
     std::recursive_mutex mutextCacheQ_ {};
 };
 } // namespace Media
