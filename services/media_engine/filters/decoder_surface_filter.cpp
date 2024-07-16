@@ -572,7 +572,12 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         }
         return Status::OK;
     }
-    videoDecoder_->ReleaseOutputBuffer(index, render);
+    if (outBuffer->pts_ < 0) {
+        MEDIA_LOG_W("Avoid render video frame with pts=%{public}" PUBLIC_LOG_D64, outBuffer->pts_);
+        videoDecoder_->ReleaseOutputBuffer(index, false);
+    } else {
+        videoDecoder_->ReleaseOutputBuffer(index, render);
+    }
     videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         ResetSeekInfo();
