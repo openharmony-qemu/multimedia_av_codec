@@ -519,9 +519,6 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
-    if (info->contentLen <= 0) {
-        info->isChunked = true;
-    }
 }
 
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
@@ -713,7 +710,7 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, si
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         info->contentLen = atol(StringTrim(token));
-        if (info->contentLen <= 0) {
+        if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
         }
     }
