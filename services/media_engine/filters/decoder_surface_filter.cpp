@@ -594,6 +594,9 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     }
     if (renderTime > 0L && render) {
         videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
+    } else if (outBuffer->pts_ < 0) {
+        MEDIA_LOG_W("Avoid render video frame with pts=%{public}" PUBLIC_LOG_D64, outBuffer->pts_);
+        videoDecoder_->ReleaseOutputBuffer(index, false);
     } else {
         videoDecoder_->ReleaseOutputBuffer(index, render);
     }

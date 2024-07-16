@@ -43,7 +43,7 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-
+constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
 SHA512_CTX c;
 unsigned char md[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
@@ -228,7 +228,7 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
-    if (maxInputSize > 0) {
+    if (maxInputSize != 0) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
     originalWidth = DEFAULT_WIDTH;
@@ -554,7 +554,9 @@ int32_t VDecNdkSample::PushData(uint32_t index, OH_AVMemory *buffer)
 int32_t VDecNdkSample::CheckAndReturnBufferSize(OH_AVMemory *buffer)
 {
     int32_t size = OH_AVMemory_GetSize(buffer);
-    if (maxInputSize > 0 && (size > maxInputSize)) {
+    if ((maxInputSize < 0) && (size < 0)) {
+        errCount++;
+    } else if ((maxInputSize > 0) && (size > SYS_MAX_INPUT_SIZE)) {
         errCount++;
     }
     return size;
