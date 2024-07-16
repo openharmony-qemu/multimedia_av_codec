@@ -56,8 +56,7 @@ public:
     Status DoFlush() override;
     Status DoRelease() override;
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
-    Status DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx, bool byRenderTime,
-                                 int64_t renderTime) override;
+    Status DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx, int64_t renderTime) override;
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
@@ -110,8 +109,7 @@ private:
     int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
-    Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, bool byRenderTime,
-                               int64_t renderTime);
+    Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer);
 
     std::string name_;

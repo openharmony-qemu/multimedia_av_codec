@@ -528,7 +528,7 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 }
 
 Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx,
-                                                   bool byRenderTime, int64_t renderTime)
+                                                   int64_t renderTime)
 {
     FALSE_RETURN_V(!dropFrame, Status::OK);
     if (!isRenderStarted_.load()) {
@@ -539,7 +539,7 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, 
     std::shared_ptr<AVBuffer> outputBuffer = nullptr;
     bool acquireRes = AcquireNextRenderBuffer(byIdx, index, outputBuffer);
     FALSE_RETURN_V(acquireRes, Status::OK);
-    ReleaseOutputBuffer(index, recvArg, outputBuffer, byRenderTime, renderTime);
+    ReleaseOutputBuffer(index, recvArg, outputBuffer, renderTime);
     return Status::OK;
 }
 
@@ -565,9 +565,9 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
 }
 
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
-                                                 bool byRenderTime, int64_t renderTime)
+                                                 int64_t renderTime)
 {
-    if (byRenderTime && render) {
+    if (renderTime > 0L && render) {
         videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
     } else {
         videoDecoder_->ReleaseOutputBuffer(index, render);
@@ -695,7 +695,7 @@ void DecoderSurfaceFilter::RenderLoop()
         if (waitTime > 0) {
             OSAL::SleepFor(waitTime / 1000); // 1000 convert to ms
         }
-        ReleaseOutputBuffer(nextTask.first, waitTime >= 0, nextTask.second, false, -1);
+        ReleaseOutputBuffer(nextTask.first, waitTime >= 0, nextTask.second, -1);
     }
 }
 
