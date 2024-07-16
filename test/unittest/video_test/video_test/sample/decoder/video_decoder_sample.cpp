@@ -139,7 +139,8 @@ int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
         rosenWindow_->Show();
         surfaceProducer = rosenWindow_->GetSurfaceNode()->GetSurface();
     }
-    window = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(CreateNativeWindowFromSurface(&surfaceProducer)), ReleaseNativeWindowMock);
+    window = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(
+        CreateNativeWindowFromSurface(&surfaceProducer)), ReleaseNativeWindowMock);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }

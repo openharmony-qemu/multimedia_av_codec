@@ -33,7 +33,7 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
     if (info.bufferAddr != nullptr) {
         bufferAddr = info.bufferAddr;
     } else {
-        bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
+        bufferAddr = static_cast<uint8_t>(sampleInfo_->codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
             OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
             OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
         CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
@@ -47,10 +47,10 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
 
 inline int32_t RawdataReader::GetBufferSize()
 {
-    int32_t size = sampleInfo_.pixelFormat == AV_PIXEL_FORMAT_RGBA ?
-        sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 :          // RGBA buffer size
-        sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;       // YUV420 buffer size
-    return sampleInfo_.isHDRVivid ? size * 2 : size;
+    int32_t size = sampleInfo_->pixelFormat == AV_PIXEL_FORMAT_RGBA ?
+        sampleInfo_->videoWidth * sampleInfo_->videoHeight * 3 :          // RGBA buffer size
+        sampleInfo_->videoWidth * sampleInfo_->videoHeight * 3 / 2;       // YUV420 buffer size
+    return sampleInfo_->isHDRVivid ? size * 2 : size;
 }
 
 bool RawdataReader::IsEOS()

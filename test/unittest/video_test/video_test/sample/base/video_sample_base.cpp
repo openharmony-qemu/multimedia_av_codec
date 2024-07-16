@@ -58,7 +58,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 
     dataProducer_ = DataProducerFactory::CreateDataProducer(info.dataProducerInfo);
     CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
-    int32_t ret = dataProducer_->Init(info);
+    int32_t ret = dataProducer_->Init(context_->sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
     
     videoCodec = VideoCodecFactory::CreateVideoCodec(info.codecType, info.codecRunMode);

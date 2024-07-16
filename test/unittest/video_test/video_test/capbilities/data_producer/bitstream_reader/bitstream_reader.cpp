@@ -85,7 +85,7 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
+    auto bufferAddr = static_cast<uint8_t>(sampleInfo_->codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
         OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
         OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Got invalid buffer");
@@ -94,10 +94,10 @@ int32_t BitstreamReader::FillBuffer(CodecBufferInfo &bufferInfo)
         int32_t ret = 0;
         int32_t frameSize = 0;
         int32_t naluType = 0;
-        if (sampleInfo_.dataProducerInfo.bitstreamType == BITSTREAM_TYPE_AVCC) {
+        if (sampleInfo_->dataProducerInfo.bitstreamType == BITSTREAM_TYPE_AVCC) {
             ret = ReadAvccSample(bufferAddr, frameSize);
             naluType = GetNaluType(bufferAddr[AVCC_FRAME_HEAD_LEN]);
-        } else if (sampleInfo_.dataProducerInfo.bitstreamType == BITSTREAM_TYPE_ANNEXB) {
+        } else if (sampleInfo_->dataProducerInfo.bitstreamType == BITSTREAM_TYPE_ANNEXB) {
             ret = ReadAnnexbSample(bufferAddr, frameSize);
             naluType = GetNaluType(bufferAddr);
         }
@@ -191,7 +191,7 @@ int32_t BitstreamReader::ToAnnexb(uint8_t *bufferAddr)
 
 inline uint8_t BitstreamReader::GetNaluType(uint8_t value)
 {
-    return sampleInfo_.codecMime == MIME_VIDEO_AVC ? (value & 0x1F) : ((value & 0x7E) >> 1);
+    return sampleInfo_->codecMime == MIME_VIDEO_AVC ? (value & 0x1F) : ((value & 0x7E) >> 1);
 }
 
 inline uint8_t BitstreamReader::GetNaluType(const uint8_t *const bufferAddr)
@@ -203,7 +203,7 @@ inline uint8_t BitstreamReader::GetNaluType(const uint8_t *const bufferAddr)
 
 bool BitstreamReader::IsXPS(uint8_t naluType)
 {
-    bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
+    bool isH264Stream = sampleInfo_->codecMime == MIME_VIDEO_AVC;
     if ((isH264Stream && ((naluType == AVC_SPS) || (naluType == AVC_PPS))) ||
         (!isH264Stream && ((naluType >= HEVC_VPS_NUT) && (naluType <= HEVC_PPS_NUT)))) {
         return true;
@@ -213,7 +213,7 @@ bool BitstreamReader::IsXPS(uint8_t naluType)
 
 bool BitstreamReader::IsIDR(uint8_t naluType)
 {
-    bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
+    bool isH264Stream = sampleInfo_->codecMime == MIME_VIDEO_AVC;
     if ((isH264Stream && (naluType == AVC_IDR)) ||
         (!isH264Stream && ((naluType >= HEVC_IDR_W_RADL) && (naluType <= HEVC_CRA_NUT)))) {
         return true;
@@ -223,7 +223,7 @@ bool BitstreamReader::IsIDR(uint8_t naluType)
 
 bool BitstreamReader::IsVCL(uint8_t nalType)
 {
-    bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
+    bool isH264Stream = sampleInfo_->codecMime == MIME_VIDEO_AVC;
     if ((isH264Stream && (nalType >= AVC_NON_IDR && nalType <= AVC_IDR)) ||
         (!isH264Stream && (nalType >= HEVC_TRAIL_N && nalType <= HEVC_CRA_NUT))) {
         return true;
