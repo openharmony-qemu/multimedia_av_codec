@@ -54,6 +54,7 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
+    Status DoSetPlayRange(int64_t start, int64_t end) override;
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
     Status DoProcessOutputBuffer(int recvArg, bool dropFrame) override;
 
@@ -148,6 +149,8 @@ private:
     int32_t appPid_ = -1;
     std::string bundleName_;
     uint64_t instanceId_ = 0;
+    int64_t playRangeStartTime_ = -1;
+    int64_t playRangeEndTime_ = -1;
 
     std::atomic<int32_t> bitrateChange_{0};
     int32_t surfaceWidth_{0};

@@ -49,6 +49,8 @@ public:
 
     Status DoRelease() override;
 
+    Status DoSetPlayRange(int64_t start, int64_t end) override;
+
     Status DoProcessInputBuffer(int recvArg, bool dropFrame) override;
 
     void SetParameter(const std::shared_ptr<Meta>& meta) override;

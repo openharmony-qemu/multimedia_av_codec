@@ -187,6 +187,13 @@ Status AudioSinkFilter::DoRelease()
     return audioSink_->Release();
 }
 
+Status AudioSinkFilter::DoSetPlayRange(int64_t start, int64_t end)
+{
+    MEDIA_LOG_I("DoSetPlayRange enter.");
+    audioSink_->SetPlayRange(start, end);
+    return Status::OK;
+}
+
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)
 {
     audioSink_->DrainOutputBuffer();

@@ -46,6 +46,7 @@ public:
     Status Resume();
     Status Flush();
     Status Release();
+    Status SetPlayRange(int64_t start, int64_t end);
     Status SetVolume(float volume);
     void DrainOutputBuffer();
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
@@ -115,6 +116,8 @@ private:
     float speed_ {1.0f};
     int32_t effectMode_ {-1};
     bool isApe_ {false};
+    int64_t playRangeStartTime_ = -1;
+    int64_t playRangeEndTime_ = -1;
     // vars for audio progress optimization
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
