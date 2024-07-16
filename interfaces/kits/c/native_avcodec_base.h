@@ -851,6 +851,9 @@ typedef enum OH_TemporalGopReferenceMode {
     ADJACENT_REFERENCE = 0,
     /** Refer to latest long-term reference frame. */
     JUMP_REFERENCE = 1,
+    /** Uniformly scaled reference structure, which has even distribution of video frames after drop the highest
+     *  enhance layer. The temporal group of pictures must be power of 2. */
+    UNIFORMLY_SCALED_REFERENCE = 2,
 } OH_TemporalGopReferenceMode;
 
 #ifdef __cplusplus
