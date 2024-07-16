@@ -385,6 +385,9 @@ void FileFdSourcePlugin::CacheDataLoop()
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I("CacheData ringbuffer is full wait 10ms");
         if (inSeek_ || isInterrupted_) {
+            if (cacheBuffer != nullptr) {
+                delete[] cacheBuffer;
+            }
             return;
         }
         usleep(TEN_MILLISECOUNDS);
