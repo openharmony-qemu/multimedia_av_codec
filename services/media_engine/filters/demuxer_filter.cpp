@@ -383,7 +383,7 @@ Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::StartReferenceParser");
     MEDIA_LOG_D("StartReferenceParser entered");
-    return demuxer_->StartReferenceParser(startTimeMs, bool isForward);
+    return demuxer_->StartReferenceParser(startTimeMs, isForward);
 }
 
 Status DemuxerFilter::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
