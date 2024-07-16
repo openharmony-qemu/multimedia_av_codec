@@ -126,7 +126,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
         }
         surface_ = nullptr;
         isUpdateCodecNeeded_ = false;
