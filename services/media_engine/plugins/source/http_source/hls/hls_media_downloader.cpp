@@ -543,6 +543,31 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint
     return realLen;
 }
 
+void HlsMediaDownloader::ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t writeDataPoint)
+{
+    lastRealLen_ = 0;
+    isLastDecryptWriteError_ = false;
+    errno_t err {0};
+    err = memset_s(decryptCache_, realLen, 0x00, realLen);
+    if (err != 0) {
+        MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
+    }
+    afterAlignRemainedLength_ = 0;
+    err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
+    if (err != 0) {
+        MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64, DECRYPT_UNIT_LEN);
+    }
+    writeDataPoint += writeLen;
+    waitLen -= writeLen;
+    if (waitLen > 0) {
+        afterAlignRemainedLength_ = waitLen;
+        err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
+        if (err != 0) {
+            MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32, waitLen);
+        }
+    }
+}
+
 bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
 {
     uint32_t writeLen = 0;
@@ -574,26 +599,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
         lastRealLen_ = realLen;
         return false;
     }
-    lastRealLen_ = 0;
-    isLastDecryptWriteError_ = false;
-    err = memset_s(decryptCache_, realLen, 0x00, realLen);
-    if (err != 0) {
-        MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
-    }
-    afterAlignRemainedLength_ = 0;
-    err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
-    if (err != 0) {
-        MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64, DECRYPT_UNIT_LEN);
-    }
-    writeDataPoint += writeLen;
-    waitLen -= writeLen;
-    if (waitLen > 0) {
-        afterAlignRemainedLength_ = waitLen;
-        err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
-        if (err != 0) {
-            MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32, waitLen);
-        }
-    }
+    ResetDecryptBuffer(waitLen, writeLen, realLen, writeDataPoint);
     return true;
 }
 
