@@ -17,6 +17,7 @@
 #define AVCODEC_SYSEVENT_H
 
 #include <string>
+#include <sys/types.h>
 #include "nocopyable.h"
 #include "hisysevent.h"
 
