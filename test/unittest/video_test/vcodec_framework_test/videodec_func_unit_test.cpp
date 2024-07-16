@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "meta/meta_key.h"
+#include "unittest_utils.h"
 #include "vdec_sample.h"
 #ifdef VIDEODEC_CAPI_UNIT_TEST
 #include "native_avmagic.h"
@@ -113,7 +114,6 @@ protected:
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
-    bool isAVBufferMode_ = false;
 #ifdef VIDEODEC_CAPI_UNIT_TEST
     OH_AVCodec *codec_ = nullptr;
 #endif
@@ -169,7 +169,7 @@ bool TEST_SUIT::CreateVideoCodecByMime(const std::string &decMime)
 
 bool TEST_SUIT::CreateVideoCodecByName(const std::string &decName)
 {
-    if (isAVBufferMode_) {
+    if (videoDec_->isAVBufferMode_) {
         if (videoDec_->CreateVideoDecMockByName(decName) == false ||
             videoDec_->SetCallback(vdecCallbackExt_) != AV_ERR_OK) {
             return false;
@@ -745,7 +745,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_005, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_001, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -761,7 +761,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -780,7 +780,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -799,7 +799,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_004, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
@@ -1031,7 +1031,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_001, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -1048,7 +1048,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_002, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -1334,7 +1334,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_SetDecryptionConfig_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
 {
-    isAVBufferMode_ = true;
+    videoDec_->isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -1345,3 +1345,17 @@ HWTEST_P(TEST_SUIT, VideoDecoder_RenderOutputBufferAtTime_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
 } // namespace
+
+int main(int argc, char **argv)
+{
+    testing::GTEST_FLAG(output) = "xml:./";
+    for (int i = 0; i < argc; ++i) {
+        cout << argv[i] << endl;
+        if (strcmp(argv[i], "--need_dump") == 0) {
+            VideoDecSample::needDump_ = true;
+            DecArgv(i, argc, argv);
+        }
+    }
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

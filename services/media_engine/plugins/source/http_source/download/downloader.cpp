@@ -659,12 +659,12 @@ char* StringTrim(char* str)
 }
 }
 
-size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {
         char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
+        FALSE_RETURN_V(token != nullptr, false);
         char* strRange = StringTrim(token);
         size_t start;
         size_t end;
@@ -678,15 +678,55 @@ size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, 
             info->fileContentLen = fileLen;
         }
     }
-    return size * nitems;
+    return true;
+}
+
+bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+{
+    if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, false);
+        char* type = StringTrim(token);
+        std::string tokenStr = (std::string)token;
+        MEDIA_LOG_I("Content-Type: " PUBLIC_LOG_S, tokenStr.c_str());
+        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
+    }
+    return true;
+}
+
+bool Downloader::HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+{
+    if (!strncmp(key, "Content-Encode", strlen("Content-Encode")) ||
+        !strncmp(key, "content-encode", strlen("content-encode"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, false);
+        std::string tokenStr = (std::string)token;
+        MEDIA_LOG_I("Content-Encode: " PUBLIC_LOG_S, tokenStr.c_str());
+    }
+    return true;
+}
+
+bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+{
+    if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
+        !strncmp(key, "content-length", strlen("content-length"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, false);
+        info->contentLen = atol(StringTrim(token));
+        if (info->contentLen <= 0) {
+            info->isChunked = true;
+        }
+    }
+    return true;
 }
 
 // Check if this server supports range download. (HTTP)
-void Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+bool Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Accept-Ranges", strlen("Accept-Ranges")) ||
         !strncmp(key, "accept-ranges", strlen("accept-ranges"))) {
         char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, false);
         if (!strncmp(StringTrim(token), "bytes", strlen("bytes"))) {
             info->isServerAcceptRange = true;
             MEDIA_LOG_I("Accept-Ranges: bytes");
@@ -695,12 +735,14 @@ void Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t siz
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {
         char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, false);
         std::string tokenStr = (std::string)token;
         if (tokenStr.find("bytes") != std::string::npos) {
             info->isServerAcceptRange = true;
             MEDIA_LOG_I("Content-Range: " PUBLIC_LOG_S, tokenStr.c_str());
         }
     }
+    return true;
 }
 
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
@@ -714,22 +756,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     char* next = nullptr;
     char* key = strtok_s(reinterpret_cast<char*>(buffer), ":", &next);
     FALSE_RETURN_V(key != nullptr, size * nitems);
-    if (!strncmp(key, "Content-Type", strlen("Content-Type"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* type = StringTrim(token);
-        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
-    }
-
-    if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
-        !strncmp(key, "content-length", strlen("content-length"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        info->contentLen = atol(StringTrim(token));
-        if (info->contentLen <= 0) {
-            info->isChunked = true;
-        }
-    }
 
     if (!strncmp(key, "Transfer-Encoding", strlen("Transfer-Encoding")) ||
         !strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
@@ -738,10 +764,15 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
             !mediaDownloader->currentRequest_->IsM3u8Request()) {
             info->isChunked = true;
-            info->contentLen = LIVE_CONTENT_LENGTH;
+            if (static_cast<int32_t>(mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos)) {
+                info->contentLen = LIVE_CONTENT_LENGTH;
+            } else {
+                info->contentLen = 0;
+            }
+            std::string tokenStr = (std::string)token;
+            MEDIA_LOG_I("Transfer-Encoding: " PUBLIC_LOG_S, tokenStr.c_str());
         }
     }
-
     if (!strncmp(key, "Location", strlen("Location")) ||
         !strncmp(key, "location", strlen("location"))) {
         FALSE_RETURN_V(next != nullptr, size * nitems);
@@ -749,8 +780,11 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         mediaDownloader->currentRequest_->location_ = location;
     }
 
-    StrncmpContentRange(info, key, next, size, nitems);
-    HandleRange(info, key, next, size, nitems);
+    if (!HandleContentRange(info, key, next, size, nitems) || !HandleContentType(info, key, next, size, nitems) ||
+        !HandleContentEncode(info, key, next, size, nitems) || !HandleContentLength(info, key, next, size, nitems) ||
+        !HandleRange(info, key, next, size, nitems)) {
+        return size * nitems;
+    }
 
     return size * nitems;
 }

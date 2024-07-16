@@ -109,6 +109,13 @@ static const std::map<AVCodecID, StreamType> g_streamParserMap = {
     { AV_CODEC_ID_HEVC, StreamType::HEVC },
 };
 
+static const std::vector<AVMediaType> g_streamMediaTypeVec = {
+    AVMEDIA_TYPE_AUDIO,
+    AVMEDIA_TYPE_VIDEO,
+    AVMEDIA_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_TIMEDMETA
+};
+
 static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_MJPEG,
     AV_CODEC_ID_PNG,
@@ -273,8 +280,8 @@ int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 bool IsSupportedTrack(const AVStream& avStream)
 {
     FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codec par is nullptr.");
-    if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
-        avStream.codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+    if (std::find(g_streamMediaTypeVec.cbegin(), g_streamMediaTypeVec.cend(),
+        avStream.codecpar->codec_type) == g_streamMediaTypeVec.cend()) {
         MEDIA_LOG_E("Unsupport track type: " PUBLIC_LOG_S ".",
             ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
         return false;
@@ -1737,7 +1744,7 @@ Status FFmpegDemuxerPlugin::GetFrameIndexByPresentationTimeUs(uint32_t trackInde
         "GetFrameIndexByPresentationTimeUs failed due to formatContext_ is nullptr.");
 
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
-        "GetFrameIndexByPresentationTimeUs failed due to trackIndex is out of range");
+        "GetFrameIndexByPresentationTimeUs failed due to trackIndex is out of range.");
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetFrameIndexByPresentationTimeUs failed due to fileType is not MP4.");
@@ -1746,12 +1753,21 @@ Status FFmpegDemuxerPlugin::GetFrameIndexByPresentationTimeUs(uint32_t trackInde
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "GetFrameIndexByPresentationTimeUs failed due to avStream is nullptr.");
 
+    int64_t pts = presentationTimeUs;
     presentationTimeUs = AvUs2Time(ConvertTimeToFFmpeg(presentationTimeUs, avStream->time_base));
 
     int index = av_index_search_timestamp(avStream, presentationTimeUs, AVSEEK_FLAG_ANY);
-    if (index < 0) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(index >= 0, Status::ERROR_INVALID_DATA,
+        "GetFrameIndexByPresentationTimeUs failed due to index is invalid data.");
+    
+    int64_t convertPts;
+    Status ret = GetPresentationTimeUsByFrameIndex(trackIndex, static_cast<uint32_t>(index), convertPts);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret,
+        "GetFrameIndexByPresentationTimeUs failed due to GetPresentationTimeUsByFrameIndex is failed.");
+    
+    FALSE_RETURN_V_MSG_E(convertPts == pts, Status::ERROR_INVALID_DATA,
+        "GetFrameIndexByPresentationTimeUs failed due to presentationTimeUs don't correspond to frameIndex.");
+
     frameIndex = static_cast<uint32_t>(index);
     return Status::OK;
 }
@@ -1763,7 +1779,7 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackInde
         "GetPresentationTimeUsByFrameIndex failed due to formatContext_ is nullptr.");
 
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
-        "GetPresentationTimeUsByFrameIndex failed due to trackIndex is out of range");
+        "GetPresentationTimeUsByFrameIndex failed due to trackIndex is out of range.");
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetPresentationTimeUsByFrameIndex failed due to fileType is not MP4.");
@@ -1771,6 +1787,9 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackInde
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "GetPresentationTimeUsByFrameIndex failed due to avStream is nullptr.");
+    if (avStream->start_time == AV_NOPTS_VALUE || ioContext_.dataSource->IsDash()) {
+        avStream->start_time = 0;
+    }
 
     const AVIndexEntry *entry = avformat_index_get_entry(avStream, frameIndex);
     FALSE_RETURN_V_MSG_E(entry != nullptr, Status::ERROR_NULL_POINTER, "Invalid frameIndex");

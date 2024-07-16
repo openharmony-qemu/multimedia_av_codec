@@ -57,8 +57,11 @@ public:
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
-    Status SetIsTransitent(bool isTransitent);
+    void SetThreadGroupId(const std::string& groupId);
+    Status SetIsTransitent(bool isTransitent, bool isSeekCompleted);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status WaitSeekCompleted();
+    Status SetPlayerId(std::string& playerId);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -72,7 +75,9 @@ private:
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
-    void ReportEosEventAndDrain();
+    void DrainAndReportEosEvent();
+    void HandleEosInner();
+    Status PauseSub();
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -96,6 +101,17 @@ private:
     bool isEos_ {false};
     std::mutex pluginMutex_;
     float volume_ {-1.0f};
+    std::unique_ptr<Task> eosTask_ {nullptr};
+    enum class EosInterruptState : int {
+        NONE,
+        INITIAL,
+        PAUSE,
+        RESUME,
+        STOP,
+    };
+    Mutex eosMutex_ {};
+    std::atomic<bool> eosDraining_ {false};
+    std::atomic<EosInterruptState> eosInterruptType_ {EosInterruptState::NONE};
     float speed_ {1.0f};
     int32_t effectMode_ {-1};
     bool isApe_ {false};
@@ -103,6 +119,11 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
+    std::string playerId_{""};
+    FairMutex seekCompletedLock_{};
+    std::atomic<bool> seekCompleted_{false};
+    ConditionVariable seekCondition_{};
+    std::unique_ptr<Task> seekTask_;
 };
 }
 }

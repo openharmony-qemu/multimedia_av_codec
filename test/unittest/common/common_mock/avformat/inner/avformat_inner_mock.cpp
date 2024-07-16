@@ -108,6 +108,14 @@ void AVFormatInnerMock::InitVideoTrackFormat(const std::string_view &mimeType, i
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
 }
 
+void AVFormatInnerMock::InitMetadataTrackFormat(
+    const std::string_view &mimeType, const std::string_view &key, int32_t srcTrackID)
+{
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType);
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_TIMED_METADATA_KEY, key);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_TIMED_METADATA_SRC_TRACK_ID, srcTrackID);
+}
+
 const char *AVFormatInnerMock::DumpInfo()
 {
     if (dumpInfo_ != nullptr) {

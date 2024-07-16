@@ -161,7 +161,6 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         if (cachedFrame_->pts == AV_NOPTS_VALUE) {
             cachedFrame_->pts = nextPts_;
         }
-
         status = ReceiveFrameSucc(outBuffer);
         dataCallback_->OnOutputBufferDone(outBuffer);
     } else if (ret == AVERROR_EOF) {
@@ -184,11 +183,6 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 
 Status FfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
-    if (convertedFrame_ == nullptr) {
-        AVCODEC_LOGE("av_frame_alloc failed");
-        return Status::ERROR_NO_MEMORY;
-    }
     if (resample_.ConvertFrame(convertedFrame_.get(), cachedFrame_.get()) != Status::OK) {
         AVCODEC_LOGE("convert frame failed");
         return Status::ERROR_UNKNOWN;
@@ -241,6 +235,9 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     ioInfoMem->Write(outFrame->data[0], outputSize, 0);
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
+    if (needResample_) {
+        av_frame_unref(convertedFrame_.get());
+    }
     return Status::ERROR_AGAIN;
 }
 
@@ -392,6 +389,11 @@ Status FfmpegBaseDecoder::InitResample()
         if (ret != Status::OK) {
             AVCODEC_LOGE("Resmaple init failed.");
             return Status::ERROR_UNKNOWN;
+        }
+        convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
+        if (convertedFrame_ == nullptr) {
+            AVCODEC_LOGE("av_frame_alloc failed");
+            return Status::ERROR_NO_MEMORY;
         }
         needResample_ = true;
     }

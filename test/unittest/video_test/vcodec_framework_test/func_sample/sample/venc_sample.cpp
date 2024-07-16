@@ -30,8 +30,8 @@
 
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
+using namespace OHOS::MediaAVCodec;
 namespace {
-constexpr bool NEED_DUMP = false;
 constexpr int32_t REQUEST_I_FRAME = 1;
 constexpr int32_t REQUEST_I_FRAME_NUM = 13;
 constexpr uint32_t BUFFER_COUNT = 59;
@@ -58,7 +58,7 @@ void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_
     if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
         SHA512_Update(&g_ctxTest, addr, size);
     }
-    if (NEED_DUMP) {
+    if (VideoEncSample::needDump_) {
         if (!outFile->is_open()) {
             cout << "output data fail" << endl;
         }
@@ -178,10 +178,33 @@ void VEncParamCallbackTest::OnInputParameterAvailable(uint32_t index, std::share
         return;
     }
     signal_->inIndexQueue_.push(index);
+    signal_->inAttrQueue_.push(nullptr);
     signal_->inFormatQueue_.push(parameter);
     signal_->inCond_.notify_all();
 }
 
+VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
+
+VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() {}
+
+void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t index,
+                                                                      std::shared_ptr<FormatMock> attribute,
+                                                                      std::shared_ptr<FormatMock> parameter)
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+    unique_lock<mutex> lock(signal_->inMutex_);
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
+        return;
+    }
+    signal_->inIndexQueue_.push(index);
+    signal_->inAttrQueue_.push(attribute);
+    signal_->inFormatQueue_.push(parameter);
+    signal_->inCond_.notify_all();
+}
+
+bool VideoEncSample::needDump_ = false;
 VideoEncSample::VideoEncSample(std::shared_ptr<VEncSignal> signal)
     : signal_(signal), inPath_("/data/test/media/1280_720_nv.yuv"), nativeWindow_(nullptr)
 {
@@ -244,6 +267,16 @@ int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 }
 
 int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb)
+{
+    if (videoEnc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    int32_t ret = videoEnc_->SetCallback(cb);
+    isSetParamCallback_ = ret == AV_ERR_OK;
+    return ret;
+}
+
+int32_t VideoEncSample::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
@@ -602,22 +635,27 @@ void VideoEncSample::InputParamLoopFunc()
 
         int32_t index = signal_->inIndexQueue_.front();
         auto format = signal_->inFormatQueue_.front();
-        UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
-
-        format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-        format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-        format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+        auto attr = signal_->inAttrQueue_.front();
+        if (attr != nullptr) {
+            int64_t pts = 0;
+            EXPECT_EQ(true, attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts));
+            UNITTEST_INFO_LOG("attribute: %s", attr->DumpInfo());
+        }
 
         if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
             format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
-            UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
         }
 
+        if (isDiscardFrame_ && (frameInputCount_ % 2) == 0) { // 2: encode half frames
+            format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
+        }
+        UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
         signal_->inIndexQueue_.pop();
         signal_->inFormatQueue_.pop();
+        signal_->inAttrQueue_.pop();
     }
 }
 
@@ -683,7 +721,7 @@ void VideoEncSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
-    if (NEED_DUMP) {
+    if (needDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -697,7 +735,6 @@ void VideoEncSample::OutputLoopFunc()
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
 
         int32_t ret = OutputLoopInner();
-        frameOutputCount_++;
         EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: OutputLoopInner fail, exit");
 
@@ -712,18 +749,18 @@ void VideoEncSample::OutputLoopFunc()
 
 int32_t VideoEncSample::OutputLoopInner()
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        frameOutputCount_--;
+    if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
+        frameOutputCount_++;
     }
 
-    if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
+    if (needDump_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                               "Fatal: GetOutputBuffer fail, exit");
@@ -736,13 +773,15 @@ int32_t VideoEncSample::OutputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
 
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
-        if (NEED_DUMP && outFile_ != nullptr && outFile_->is_open()) {
+        if (needDump_ && outFile_ != nullptr && outFile_->is_open()) {
             outFile_->close();
         }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
         cout << "Get EOS Frame, output func exit" << endl;
         unique_lock<mutex> lock(signal_->mutex_);
-        EXPECT_LE(frameOutputCount_, frameInputCount_);
+        if (!needSleep_) {
+            EXPECT_LE(frameOutputCount_, frameInputCount_);
+        }
         signal_->isRunning_.store(false);
         signal_->cond_.notify_all();
         return AV_ERR_OK;
@@ -754,7 +793,7 @@ void VideoEncSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
-    if (NEED_DUMP) {
+    if (needDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -767,7 +806,6 @@ void VideoEncSample::OutputLoopFuncExt()
             lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
         int32_t ret = OutputLoopInnerExt();
-        frameOutputCount_++;
         EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: OutputLoopInnerExt fail, exit");
 
@@ -795,7 +833,7 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
 
 int32_t VideoEncSample::OutputLoopInnerExt()
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
                                       "can not dump output file");
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
@@ -809,6 +847,9 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     int32_t size = attr.size;
     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetOutputBufferAddr fail, exit, index: %d", index);
+    if (attr.flags == 0 || (attr.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
+        frameOutputCount_++;
+    }
     UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
 
 #ifdef HMOS_TEST
@@ -818,7 +859,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }
-    if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
+    if (needDump_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
             outFile_->write(bufferAddr, size);
         } else {
@@ -939,6 +980,9 @@ void VideoEncSample::InputFuncSurface()
             (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
         if (inFile_->eof()) {
+            if (needSleep_) {
+                this_thread::sleep_for(std::chrono::milliseconds(46)); // 46 ms
+            }
             frameInputCount_++;
             err = videoEnc_->NotifyEos();
             UNITTEST_CHECK_AND_INFO_LOG(err == 0, "OH_VideoEncoder_NotifyEndOfStream failed");
@@ -969,6 +1013,10 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
         cout << "OH_NativeBuffer_Unmap failed" << endl;
         delete rect;
         return ret;
+    }
+
+    if (needSleep_) {
+        this_thread::sleep_for(std::chrono::milliseconds(30)); // 30 ms
     }
 
     ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, ohNativeWindowBuffer, -1, region);
@@ -1007,7 +1055,7 @@ void VideoEncSample::CheckSHA()
 
 void VideoEncSample::PerformEosFrameAndVerifiedSHA()
 {
-    if (NEED_DUMP && outFile_->is_open()) {
+    if (needDump_ && outFile_->is_open()) {
         outFile_->close();
     }
     if (needCheckSHA_) {

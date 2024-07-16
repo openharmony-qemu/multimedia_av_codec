@@ -206,6 +206,12 @@ int32_t VideoEncCapiMock::SetCallback(std::shared_ptr<MediaCodecParameterCallbac
     return OH_VideoEncoder_RegisterParameterCallback(codec_, callback, NULL);
 }
 
+int32_t VideoEncCapiMock::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
+{
+    (void)cb;
+    return AV_ERR_UNSUPPORT;
+}
+
 int32_t VideoEncCapiMock::Configure(std::shared_ptr<FormatMock> format)
 {
     auto formatMock = std::static_pointer_cast<AVFormatCapiMock>(format);

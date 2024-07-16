@@ -1,0 +1,105 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+vcodec_unittest_cflags = [
+  "-std=c++17",
+  "-fno-rtti",
+  "-fno-exceptions",
+  "-Wall",
+  "-fno-common",
+  "-fstack-protector-strong",
+  "-Wshadow",
+  "-FPIC",
+  "-FS",
+  "-O2",
+  "-D_FORTIFY_SOURCE=2",
+  "-fvisibility=hidden",
+  "-Wformat=2",
+  "-Wdate-time",
+  "-Werror",
+  "-Wextra",
+  "-Wimplicit-fallthrough",
+  "-Wsign-compare",
+  "-Wno-constant-conversion",
+  "-Wno-unused-function",
+  "-Wno-unused-parameter",
+  "-Dprivate=public",
+  "-Dprotected=public",
+]
+
+#################################################################################################################videodec
+config("video_sample_config") {
+  include_dirs = [
+    "./../common/include",
+    "./common/include",
+    "./enviroment/include",
+    "$av_codec_root_dir/frameworks/native/capi/common",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/interfaces/",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/../../graphic/graphic_2d/utils/sync_fence/export",
+    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
+    "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
+    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
+    "$media_foundation_root_dir/src/buffer/avbuffer/include",
+  ]
+  cflags = vcodec_unittest_cflags
+  cflags_cc = vcodec_unittest_cflags
+  defines = av_codec_defines
+}
+config("videodec_sample_config") {
+  include_dirs = [ "./sample/decoder/include" ]
+}
+config("videoenc_sample_config") {
+  include_dirs = [ "./sample/encoder/include" ]
+}
+ohos_source_set("video_sample") {
+  public_configs = [
+    ":video_sample_config",
+    ":videodec_sample_config",
+    ":videoenc_sample_config",
+  ]
+  sources = [
+    "./../common/unittest_utils.cpp",
+    "./enviroment/heap_memory_thread.cpp",
+    "./sample/decoder/vdec_sample.cpp",
+    "./sample/encoder/venc_sample.cpp",
+  ]
+  public_deps = [
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+    "//third_party/googletest:gmock_main",
+  ]
+  public_external_deps = [
+    "av_codec:av_codec_client",
+    "c_utils:utils",
+    "graphic_2d:librender_service_client",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
+    "window_manager:libwm",
+  ]
+  sanitize = av_codec_test_sanitize
+  testonly = true
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}

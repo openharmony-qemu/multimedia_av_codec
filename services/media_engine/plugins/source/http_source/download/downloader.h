@@ -177,8 +177,11 @@ private:
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
-    static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
-    static void HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);

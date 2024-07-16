@@ -26,6 +26,15 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+std::string ToString(const std::list<std::string> &lists, char tab = ',');
+std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar);
+std::string Trim(std::string str);
+bool IsRegexValid(const std::string &regex);
+std::string ReplaceCharacters(const std::string &input);
+bool IsMatch(const std::string &str, const std::string &patternStr);
+bool IsExcluded(const std::string &str, const std::string &exclusions, const std::string &split);
+
 class HttpCurlClient : public NetworkClient {
 public:
     HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam);
@@ -50,7 +59,6 @@ private:
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
-    void CheckHeaderKey(const std::string& setKey, const std::string& setValue);
     void CheckRequestRange(long startPos, int len);
 
 private:
@@ -60,8 +68,8 @@ private:
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
     std::string userAgent_ {"OpenHarmony OS UA"};
-    std::string referer_ {};
-    std::string cookie_ {};
+    bool isSetUA_ {false};
+    struct curl_slist* headerList_ {nullptr};
 };
 }
 }

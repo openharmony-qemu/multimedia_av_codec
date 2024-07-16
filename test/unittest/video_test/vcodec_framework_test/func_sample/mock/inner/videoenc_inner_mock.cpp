@@ -112,6 +112,25 @@ void VideoEncParamCallbackMock::OnInputParameterAvailable(uint32_t index, std::s
     }
 }
 
+VideoEncParamWithAttrCallbackMock::VideoEncParamWithAttrCallbackMock(
+    std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
+    : mockCb_(cb)
+{
+}
+
+void VideoEncParamWithAttrCallbackMock::OnInputParameterWithAttrAvailable(uint32_t index,
+                                                                          std::shared_ptr<Format> attribute,
+                                                                          std::shared_ptr<Format> parameter)
+{
+    if (mockCb_ != nullptr) {
+        auto parameterMock = std::make_shared<AVFormatInnerMock>();
+        parameterMock->format_ = std::move(*parameter);
+        const auto attributeMock = std::make_shared<AVFormatInnerMock>();
+        attributeMock->format_ = std::move(*attribute);
+        mockCb_->OnInputParameterWithAttrAvailable(index, attributeMock, parameterMock);
+    }
+}
+
 int32_t VideoEncInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (videoEnc_ != nullptr) {
@@ -138,6 +157,16 @@ int32_t VideoEncInnerMock::SetCallback(std::shared_ptr<MediaCodecParameterCallba
     if (videoEnc_ != nullptr) {
         std::shared_ptr<VideoEncParamCallbackMock> callback =
             cb == nullptr ? nullptr : std::make_shared<VideoEncParamCallbackMock>(cb);
+        return videoEnc_->SetCallback(callback);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoEncInnerMock::SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb)
+{
+    if (videoEnc_ != nullptr) {
+        std::shared_ptr<VideoEncParamWithAttrCallbackMock> callback =
+            cb == nullptr ? nullptr : std::make_shared<VideoEncParamWithAttrCallbackMock>(cb);
         return videoEnc_->SetCallback(callback);
     }
     return AV_ERR_UNKNOWN;

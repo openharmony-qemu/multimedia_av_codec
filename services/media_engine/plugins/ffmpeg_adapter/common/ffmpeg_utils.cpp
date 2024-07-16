@@ -51,6 +51,7 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
         {MimeType::IMAGE_JPG, AV_CODEC_ID_MJPEG},
         {MimeType::IMAGE_PNG, AV_CODEC_ID_PNG},
         {MimeType::IMAGE_BMP, AV_CODEC_ID_BMP},
+        {MimeType::TIMED_METADATA, AV_CODEC_ID_FFMETADATA},
     };
     auto it = table.find(mime);
     if (it != table.end()) {
@@ -134,6 +135,7 @@ std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
         {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
         {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
         {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
+        {AVMediaType::AVMEDIA_TYPE_TIMEDMETA, "timedmetadata"}
     };
     auto it = table.find(mediaType);
     if (it == table.end()) {

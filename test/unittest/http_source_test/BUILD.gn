@@ -47,11 +47,15 @@ config("hls_unittest_cfg") {
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   cflags_cc = [
     "-std=c++17",
     "-fno-rtti",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   include_dirs = [
@@ -84,6 +88,34 @@ ohos_unittest("http_media_downloader_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "http_media_downloader_unit_test.cpp" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "//third_party/curl:curl_shared",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "safwk:system_ability_fwk",
+  ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("downloader_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":hls_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = hls_test_sources + [ "downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
