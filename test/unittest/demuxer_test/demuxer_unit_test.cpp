@@ -67,6 +67,7 @@ string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
 string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
+string g_vttPath2 = TEST_FILE_PATH + string("subtitle_webvtt_en_GB_15.mp4");
 } // namespace
 
 void DemuxerUnitTest::SetUpTestCase(void)
@@ -1976,6 +1977,36 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
     }
     printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
     ASSERT_EQ(frames_[0], 4);
+    RemoveValue();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_3004
+ * @tc.desc: copy current sample to buffer(vtt)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3004, TestSize.Level1)
+{
+    InitResource(g_vttPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    int32_t vttIndex = 0;
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            auto vttStr = reinterpret_cast<char *>(sharedMem_->GetAttr());
+            CountFrames(idx);
+        }
+        vttIndex++;
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 3206);
     RemoveValue();
 }
 
