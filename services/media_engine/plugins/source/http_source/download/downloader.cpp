@@ -423,7 +423,7 @@ int64_t Downloader::HttpDownloadLoop()
         noTaskLoopTimes_ = 0;
         currentRequest_ = tempRequest;
         BeginDownload();
-        shouldStartNextRequest = false;
+        shouldStartNextRequest = currentRequest_->IsClosed();
     }
     if (currentRequest_ == nullptr) {
         MEDIA_LOG_I("currentRequest is null");
