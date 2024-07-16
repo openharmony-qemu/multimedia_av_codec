@@ -374,9 +374,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     int size = read(fd_, cacheBuffer, bufferSize);
     MEDIA_LOG_D("CacheDataLoop fd read done");
     if (size <= 0) {
-        if (cacheBuffer != nullptr) {
-            delete[] cacheBuffer;
-        }
+        DeleteCacheBuffer(cacheBuffer);
         HandleReadResult(bufferSize, size);
         return;
     }
@@ -385,9 +383,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I("CacheData ringbuffer is full wait 10ms");
         if (inSeek_ || isInterrupted_) {
-            if (cacheBuffer != nullptr) {
-                delete[] cacheBuffer;
-            }
+            DeleteCacheBuffer(cacheBuffer);
             return;
         }
         usleep(TEN_MILLISECOUNDS);
@@ -402,9 +398,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     MEDIA_LOG_D("CacheData success, cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64 ", size_ "
         PUBLIC_LOG_U64 ", downloadSize_ " PUBLIC_LOG_U64, cachePosition_, ringBufferSize_, size_, downloadSize_);
     
-    if (cacheBuffer != nullptr) {
-        delete[] cacheBuffer;
-    }
+    DeleteCacheBuffer(cacheBuffer);
 
     if (isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0)) {
         NotifyBufferingEnd();
@@ -706,6 +700,13 @@ float FileFdSourcePlugin::GetCacheTime(float num)
         return CACHE_LEVEL_1;
     }
     return CACHE_TIME_DEFAULT;
+}
+
+void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
+{
+    if (buffer != nullptr) {
+        delete[] buffer;
+    }
 }
 
 } // namespace FileFdSource

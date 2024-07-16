@@ -76,6 +76,7 @@ private:
     void GetCurrentSpeed(int64_t curTime);
     float GetCacheTime(float num);
     void UpdateWaterLineAbove();
+    void DeleteCacheBuffer(char* buffer);
 
     int32_t fd_ {-1};
     int64_t offset_ {0};
