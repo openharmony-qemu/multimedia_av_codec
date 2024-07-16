@@ -598,7 +598,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         videoDecoder_->ReleaseOutputBuffer(index, render);
     }
     if (!isInSeekContinous_) {
-        VideoSink->SetLastPts(outBuffer->pts_);
+        videoSink_->SetLastPts(outBuffer->pts_);
     }
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS) && !isInSeekContinous_) {
         ResetSeekInfo();
