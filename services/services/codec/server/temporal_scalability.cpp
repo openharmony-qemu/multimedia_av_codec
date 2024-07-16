@@ -44,7 +44,7 @@ TemporalScalability::~TemporalScalability()
     inputIndexQueue_->Clear();
 }
 
-bool TemporalScalability::SwitchSvcSolution()
+bool TemporalScalability::IsLTRSolution()
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         return true;
@@ -84,7 +84,7 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
         AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
     }
-    svcLTR_ = SwitchSvcSolution();
+    svcLTR_ = IsLTRSolution();
     if (svcLTR_) {
         int32_t ltrFrameNum = LTRFrameNumCalculate(temporalGopSize_);
         format.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY);
@@ -132,11 +132,55 @@ void TemporalScalability::MarkLTRDecision()
 int32_t TemporalScalability::LTRPocDecision(int32_t tPoc)
 {
     int32_t layer = 0;
-    int32_t num = tPoc;
-    for (; num % (MIN_TEMPORAL_GOPSIZE) == 0; layer++) {
-        num /= MIN_TEMPORAL_GOPSIZE;
+    for (; tPoc % (MIN_TEMPORAL_GOPSIZE) == 0; layer++) {
+        tPoc /= MIN_TEMPORAL_GOPSIZE;
     }
     return static_cast<int32_t>(pow(MIN_TEMPORAL_GOPSIZE, layer));
+}
+
+void TemporalScalability::AdjacentJumpLTRDecision()
+{
+    if (temporalPoc_ == 0) {
+        isMarkLTR_ = true;
+        if (poc_ == 0) {
+            isUseLTR_ = false;
+            ltrPoc_ = 0;
+        } else {
+            isUseLTR_ = true;
+            ltrPoc_ = poc_ - temporalGopSize_;
+        }
+    } else if (temporalPoc_ == 1 || tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
+        isMarkLTR_ = false;
+        isUseLTR_ = false;
+        ltrPoc_ = poc_ - 1;
+    } else {
+        isMarkLTR_ = false;
+        isUseLTR_ = true;
+        ltrPoc_ = poc_ - temporalPoc_;
+    }
+}
+
+void TemporalScalability::UniformlyScaledLTRDecision()
+{
+    if (temporalPoc_ == 0 && poc_ == 0) {
+        isMarkLTR_ = true;
+        isUseLTR_ = false;
+        ltrPoc_ = 0;
+    } else if (temporalPoc_ == 0 && poc_ != 0) {
+        isMarkLTR_ = true;
+        isUseLTR_ = true;
+        ltrPoc_ = poc_ - temporalGopSize_;
+    } else {
+        if (temporalPoc_ % MIN_TEMPORAL_GOPSIZE != 0) {
+            isMarkLTR_ = false;
+            isUseLTR_ = false;
+            ltrPoc_ = poc_ - 1;
+        } else {
+            isUseLTR_ = true;
+            MarkLTRDecision();
+            ltrPoc_ = poc_ - LTRPocDecision(temporalPoc_);
+        }
+    }
 }
 
 void TemporalScalability::LTRDecision()
@@ -144,45 +188,9 @@ void TemporalScalability::LTRDecision()
     poc_ = frameNum_ % gopSize_;
     temporalPoc_ = poc_ % temporalGopSize_;
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
-        if (temporalPoc_ == 0) {
-            isMarkLTR_ = true;
-            if (poc_ == 0) {
-                isUseLTR_ = false;
-                ltrPoc_ = 0;
-            } else {
-                isUseLTR_ = true;
-                ltrPoc_ = poc_ - temporalGopSize_;
-            }
-        } else if (temporalPoc_ == 1 ||
-                   tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
-            isMarkLTR_ = false;
-            isUseLTR_ = false;
-            ltrPoc_ = poc_ - 1;
-        } else {
-            isMarkLTR_ = false;
-            isUseLTR_ = true;
-            ltrPoc_ = poc_ - temporalPoc_;
-        }
+        AdjacentJumpLTRDecision();
     } else {
-        if (temporalPoc_ == 0 && poc_ == 0) {
-            isMarkLTR_ = true;
-            isUseLTR_ = false;
-            ltrPoc_ = 0;
-        } else if (temporalPoc_ == 0 && poc_ != 0) {
-            isMarkLTR_ = true;
-            isUseLTR_ = true;
-            ltrPoc_ = poc_ - temporalGopSize_;
-        } else {
-            if (temporalPoc_ % MIN_TEMPORAL_GOPSIZE != 0) {
-                isMarkLTR_ = false;
-                isUseLTR_ = false;
-                ltrPoc_ = poc_ - 1;
-            } else {
-                isUseLTR_ = true;
-                MarkLTRDecision();
-                ltrPoc_ = poc_ - LTRPocDecision(temporalPoc_);
-            }
-        }
+        UniformlyScaledLTRDecision();
     }
 }
 
@@ -201,7 +209,7 @@ uint32_t TemporalScalability::DisposableDecision()
         if (temporalPoc_ % MIN_TEMPORAL_GOPSIZE != 0) {
             return AVCODEC_BUFFER_FLAG_DISPOSABLE;
         }
-        if (temporalPoc_ != 0 && temporalPoc_ / MIN_TEMPORAL_GOPSIZE) {
+        if (temporalPoc_ != 0 && temporalPoc_ % MIN_TEMPORAL_GOPSIZE == 0) {
             return AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
         }
     }

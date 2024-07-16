@@ -61,12 +61,14 @@ private:
     std::unordered_map<uint32_t, uint32_t> frameFlagMap_;
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
     std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;
-    bool SwitchSvcSolution();
+    bool IsLTRSolution();
     int32_t LTRFrameNumCalculate(int32_t tGopSize);
     void MarkLTRDecision();
     int32_t LTRPocDecision(int32_t tPoc);
-    uint32_t DisposableDecision();
+    void AdjacentJumpLTRDecision();
+    void UniformlyScaledLTRDecision();
     void LTRDecision();
+    uint32_t DisposableDecision();
 };
 
 } // namespace MediaAVCodec
