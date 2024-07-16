@@ -457,7 +457,6 @@ Status FFmpegDemuxerPlugin::ParserRefInit(int64_t timeStampMs)
         MEDIA_LOG_E("not support oneline video");
         return Status::ERROR_INVALID_OPERATION;
     }
-    MEDIA_LOG_I("ParserRefInit fileSize: " PUBLIC_LOG_U64, parserRefIoContext_.fileSize);
     parserRefFormatContext_ = InitAVFormatContext(&parserRefIoContext_);
     FALSE_RETURN_V_MSG_E(parserRefFormatContext_ != nullptr, Status::ERROR_UNKNOWN,
                          "ParserRefHeader failed due to can not init formatContext for source.");
