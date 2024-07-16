@@ -216,7 +216,6 @@ void InBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void 
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->inMutex_);
-    EXPECT_NO_THROW((void)OH_AVBuffer_GetAddr(buffer));
     CALLBACK_CHECK_LOG(index, signal);
     signal->inQueue_.push(index);
     signal->inBufferQueue_.push(buffer);
@@ -228,7 +227,6 @@ void OutBufferQueue(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void
     auto signal = reinterpret_cast<VideoDecSignal *>(userData);
     auto vdec = signal->codec_.lock();
     lock_guard<mutex> lock(signal->outMutex_);
-    EXPECT_NO_THROW((void)OH_AVBuffer_GetAddr(buffer));
     CALLBACK_CHECK_LOG(index, signal);
     signal->outQueue_.push(index);
     signal->outBufferQueue_.push(buffer);

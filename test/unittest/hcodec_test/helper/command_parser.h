@@ -92,6 +92,7 @@ struct CommandOpt {
     std::optional<uint32_t> ltrListLen;
     std::optional<int32_t> repeatAfter;
     std::optional<int32_t> repeatMaxCnt;
+    std::optional<uint32_t> layerCnt;
 
     // decoder only
     bool render = false;

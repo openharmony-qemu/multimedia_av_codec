@@ -47,7 +47,7 @@ struct HeaderInfo {
     const static int sleepTime {10};
     long contentLen {0};
     bool isChunked {false};
-    bool isClosed {false};
+    std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
 
     void Update(const HeaderInfo* info)
@@ -193,7 +193,7 @@ private:
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
-    bool shouldStartNextRequest {false};
+    std::atomic<bool> shouldStartNextRequest {false};
     size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
 };

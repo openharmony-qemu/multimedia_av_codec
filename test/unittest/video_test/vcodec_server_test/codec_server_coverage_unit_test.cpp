@@ -23,7 +23,6 @@
 #include "codecbase.h"
 #include "codeclist_core.h"
 #include "meta/meta_key.h"
-#include "unittest_utils.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
 #include "wm/window.h"

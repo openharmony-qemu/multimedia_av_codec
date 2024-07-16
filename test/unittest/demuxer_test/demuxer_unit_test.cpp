@@ -152,6 +152,10 @@ void DemuxerUnitTest::SetInitValue()
     for (int i = 0; i < nbStreams_; i++) {
         string codecMime = "";
         int32_t trackType = -1;
+        if (format_ != nullptr) {
+        format_->Destroy();
+        format_ = nullptr;
+        }
         format_ = source_->GetTrackFormat(i);
         format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codecMime);
         format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, trackType);
