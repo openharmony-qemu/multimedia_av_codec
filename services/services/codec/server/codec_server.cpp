@@ -23,7 +23,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_sysevent.h"
-#include "avcodec_trace.h"
 #include "buffer/avbuffer.h"
 #include "codec_factory.h"
 #include "media_description.h"
@@ -466,11 +465,8 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         AVCODEC_LOGE("In invalid state, free out");
         return AVCS_ERR_INVALID_STATE;
     }
+
     int32_t ret = AVCS_ERR_OK;
-    if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
-        !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
-        AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
-    }
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         ret = QueueInputBufferIn(index, info, flag);
@@ -636,10 +632,10 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     auto statusIt = CODEC_STATE_MAP.find(status_);
     if (forwardCaller_.pid != -1 || !forwardCaller_.processName.empty()) {
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "Forward_Caller_Pid", std::to_string(caller_.pid));
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_UID, "Forward_Caller_Uid", std::to_string(caller_.uid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "Forward_Caller_Pid", std::to_string(forwardCaller_.pid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_UID, "Forward_Caller_Uid", std::to_string(forwardCaller_.uid));
         dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME,
-            "Forward_Caller_Process_Name", caller_.processName);
+            "Forward_Caller_Process_Name", forwardCaller_.processName);
     }
     dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "Caller_Pid", std::to_string(caller_.pid));
     dumpControler.AddInfo(DUMP_INDEX_CALLER_UID, "Caller_Uid", std::to_string(caller_.uid));
@@ -742,11 +738,6 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVShare
 void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
-        !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
-        AVCodecTrace::TraceEnd("CodecServer::Frame", info.presentationTimeUs);
-    }
-
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     if (codecCb_ == nullptr) {
         return;
@@ -794,11 +785,6 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 {
     AVCODEC_LOGD("on output buffer index: %{public}d", index);
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
-
-    if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
-        !((buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS))) {
-        AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
-    }
 
     if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
