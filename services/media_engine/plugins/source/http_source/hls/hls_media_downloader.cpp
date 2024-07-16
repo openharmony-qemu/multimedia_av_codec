@@ -543,7 +543,8 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint
     return realLen;
 }
 
-void HlsMediaDownloader::ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t writeDataPoint)
+void HlsMediaDownloader::ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen,
+                                            uint32_t realLen, uint8_t *writeDataPoint)
 {
     lastRealLen_ = 0;
     isLastDecryptWriteError_ = false;

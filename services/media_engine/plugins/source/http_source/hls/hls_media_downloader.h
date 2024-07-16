@@ -109,8 +109,8 @@ private:
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
-    uint32_t GetLastDecrptyRealLen(uint8_t *writeDataPoint, uint32_t waitLen, uint32_t writeLen);
-    void ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t writeDataPoint);
+    uint32_t GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
+    void ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t* writeDataPoint);
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
 

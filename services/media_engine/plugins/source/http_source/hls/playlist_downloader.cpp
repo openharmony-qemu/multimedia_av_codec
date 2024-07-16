@@ -260,7 +260,6 @@ void PlayListDownloader::Start()
 void PlayListDownloader::Cancel()
 {
     playList_.clear();
-    playList_.clear();
 }
 
 std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
