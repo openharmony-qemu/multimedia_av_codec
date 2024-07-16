@@ -252,6 +252,7 @@ Status MediaSyncManager::Reset()
     }
     frameAfterSeeked_ = false;
     lastReportMediaTime_ = HST_TIME_NONE;
+    firstMediaTimeAfterSeek_ = HST_TIME_NONE;
     return Status::OK;
 }
 
@@ -336,6 +337,7 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
         if (isSeeking_) {
             MEDIA_LOG_I("leaving seeking_");
             isSeeking_ = false;
+            firstMediaTimeAfterSeek_ = mediaTime;
             seekCond_.notify_all();
         }
     }
@@ -397,6 +399,10 @@ int64_t MediaSyncManager::GetMediaTimeNow()
     }
     if (currentMediaTime == HST_TIME_NONE) {
         return 0;
+    }
+    if (firstMediaTimeAfterSeek_ != HST_TIME_NONE && currentMediaTime < firstMediaTimeAfterSeek_) {
+        MEDIA_LOG_W("audio has not been rendered since seek);
+        currentMediaTime = firstMediaTimeAfterSeek_;
     }
     if (startPts_ != HST_TIME_NONE) {
         currentMediaTime -= startPts_;
