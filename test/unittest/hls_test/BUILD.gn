@@ -15,6 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 module_output_path = "av_codec/unittest"
+
 hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
@@ -26,6 +27,7 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
 ]
+
 config("hls_unittest_cfg") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
