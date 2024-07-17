@@ -87,7 +87,6 @@ public:
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
-    Status SetCurrentBitRate(int32_t bitRate);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
     void SetDemuxerState();
