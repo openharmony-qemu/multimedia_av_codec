@@ -212,7 +212,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
         if (InitResample() != Status::OK) {
             return Status::ERROR_UNKNOWN;
         }
-        uint32_t sampleRate = avCodecContext_->sample_rate;
+        int32_t sampleRate = avCodecContext_->sample_rate;
         durationTime_ = TIME_BASE_FFMPEG / sampleRate;
     }
     nextPts_ = cachedFrame_->pts + static_cast<int64_t>(cachedFrame_->nb_samples * durationTime_);
