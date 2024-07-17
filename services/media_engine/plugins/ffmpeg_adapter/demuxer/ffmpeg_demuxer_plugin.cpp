@@ -496,9 +496,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         av_packet_free(&pkt);
         MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                     AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.retry));
-        parserRefFormatContext_->pb->eof_reached = 0;
-        parserRefFormatContext_->pb->error = 0;
         if (parserRefIoContext_.retry) {
+            parserRefFormatContext_->pb->eof_reached = 0;
+            parserRefFormatContext_->pb->error = 0;
             parserRefIoContext_.retry = false;
             return Status::ERROR_AGAIN;
         }
@@ -915,9 +915,9 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             av_packet_free(&pkt);
             MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                 AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
-            formatContext_->pb->eof_reached = 0;
-            formatContext_->pb->error = 0;
             if (ioContext_.retry) {
+                formatContext_->pb->eof_reached = 0;
+                formatContext_->pb->error = 0;
                 ioContext_.retry = false;
                 return Status::ERROR_AGAIN;
             }
@@ -1545,16 +1545,15 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     MEDIA_LOG_I("Convert flag [" PUBLIC_LOG_D32 "]->[" PUBLIC_LOG_D32 "], by track " PUBLIC_LOG_D32 "",
         static_cast<int32_t>(mode), flag, avStream->index);
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
+    if (formatContext_->pb->error) {
+        formatContext_->pb->error = 0;
+    }
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".", AVStrError(ret).c_str());
 
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
-    }
-
-    if (formatContext_->pb->error) {
-        formatContext_->pb->error = 0;
     }
     return Status::OK;
 }
