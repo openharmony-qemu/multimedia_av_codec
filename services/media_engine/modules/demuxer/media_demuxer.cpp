@@ -1329,8 +1329,7 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
     return PauseForPrepareFrame();
 }
 
-void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
-    uint32_t& audioTrackId, std::string& videoMime)
+void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
@@ -1601,7 +1600,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             "UnselectTrack failed due to get demuxer plugin failed.");
     }
     int32_t size = 0;
-    Status ret = pluginTemp->GetNextSampleSize(innerTrackId, size);
+    Status ret = pluginTemp->GetNextSampleSize(innerTrackID, size);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
@@ -1913,7 +1912,7 @@ Status MediaDemuxer::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
     MEDIA_LOG_D("GetFrameIndexByPresentationTimeUs");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetFrameIndexByPresentationTimeUs failed due to demuxerPluginManager_ is nullptr.");
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetPluginByStreamID(demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_));
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER,
         "GetFrameIndexByPresentationTimeUs failed due to get demuxer plugin failed.");
 
@@ -1930,7 +1929,7 @@ Status MediaDemuxer::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
     MEDIA_LOG_D("GetPresentationTimeUsByFrameIndex");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetPresentationTimeUsByFrameIndex failed due to demuxerPluginManager_ is nullptr.");
-    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetCurVideoPlugin();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetPluginByStreamID(demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_));
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER,
         "GetPresentationTimeUsByFrameIndex failed due to get demuxer plugin failed.");
 

@@ -135,7 +135,7 @@ private:
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     Status InitDefaultPlay();
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo);
-    Status UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew);
+    static Status UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew);
     static Status AddGeneral(const Meta& format, Meta& formatNew);
 
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);
