@@ -530,6 +530,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
             int32_t streamId = demuxerPluginManager_->GetStreamID(videoTrackId_);
             streamDemuxer_->SetNewVideoStreamID(streamId);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+            int64_t bitRate = 0;
+            mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
+            source_->SetCurrentBitRate(bitRate);
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
