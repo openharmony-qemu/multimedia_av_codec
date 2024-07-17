@@ -134,8 +134,8 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
         MEDIA_LOG_I("set video_decoder_output_colorspace, pixel_format");
         configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
             static_cast<int8_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT));
-        configFormat_.PutIntValue(
-            MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int8_t>(MediaAVCodec::VideoPixelFormat::NV12));
+        configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+            static_cast<int8_t>(MediaAVCodec::VideoPixelFormat::NV12));
     }
     Status ret = mediaCodec_->Configure(configFormat_);
     if (ret != Status::OK) {
