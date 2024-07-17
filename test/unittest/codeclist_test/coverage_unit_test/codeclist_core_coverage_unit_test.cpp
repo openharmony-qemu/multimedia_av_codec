@@ -25,7 +25,6 @@
 #include "codeclist_core.h"
 #include "meta/meta_key.h"
 #include "codecbase.h"
-#include "unittest_utils.h"
 #define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
 using namespace OHOS;
