@@ -119,6 +119,10 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
 
+    if (sampleInfo.videoDecoderOutputColorspace >= 0) {
+        OH_AVFormat_SetIntValue(format, "video_decoder_output_colorspace", sampleInfo.videoDecoderOutputColorspace);
+    }
+
     if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 270);   // rotate 270°
     }

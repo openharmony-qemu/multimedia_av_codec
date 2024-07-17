@@ -132,6 +132,7 @@ struct SampleInfo {
     int32_t videoStrideWidth = 0;
     int32_t videoSliceHeight = 0;
     int32_t iFrameInterval = 2'000;
+    int32_t videoDecoderOutputColorspace = -1;
 };
 
 struct CodecBufferInfo {
