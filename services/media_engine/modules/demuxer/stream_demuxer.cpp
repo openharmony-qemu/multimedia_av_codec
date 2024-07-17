@@ -369,6 +369,7 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
             buffer->GetMemory()->GetSize() == 0) {
             MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                         " Read fail and try again");
+            FALSE_RETURN_V(!isIgnoreParse_.load(), Status::ERROR_WRONG_STATE);
             return Status::ERROR_AGAIN;
         }
         return ret;
@@ -381,7 +382,6 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
     size_t expectedLen)
 {
     FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE);
-    FALSE_RETURN_V(!isIgnoreParse_.load(), Status::ERROR_WRONG_STATE);
     switch (pluginStateMap_[streamID]) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;
