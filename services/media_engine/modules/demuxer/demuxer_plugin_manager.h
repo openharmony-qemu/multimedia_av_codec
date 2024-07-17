@@ -140,6 +140,7 @@ private:
 
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);
     Status UpdateMediaInfo(int32_t streamID);
+    bool IsSubtitleMime(const std::string& mime);
 private:
     std::map<int32_t, MediaStreamInfo> streamInfoMap_; // <streamId, MediaStreamInfo>
     std::map<int32_t, MediaTrackMap> trackInfoMap_;    // 保存所有的track信息，使用映射的trackID <trackId, MediaTrackMap>

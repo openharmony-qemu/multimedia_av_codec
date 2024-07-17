@@ -557,6 +557,14 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     return ret;
 }
 
+bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
+{
+    if (mime == "application/x-subrip" || mime == "text/vtt") {
+        return true;
+    }
+    return false;
+}
+
 Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSource)
 {
     MEDIA_LOG_I("SetSubtitleSource begin");
@@ -582,7 +590,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
         std::string trackType;
         trackMeta.Get<Tag::MIME_TYPE>(mimeType);
         int32_t curStreamID = demuxerPluginManager_->GetStreamIDByTrackID(index);
-        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("application/x-subrip") == 0 && curStreamID == subtitleStreamID) {
+        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && IsSubtitleMime(mimeType) && curStreamID == subtitleStreamID) {
             MEDIA_LOG_I("Found subtitle track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S,
                 index, mimeType.c_str());
             subtitleTrackId_ = index;   // dash inner subtitle can be replace by out subtitle
@@ -738,9 +746,9 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
         curTrackId = audioTrackId_;
     } else if (trackType == TrackType::TRACK_VIDEO) {
         curTrackId = videoTrackId_;
-    } /*else if (trackType == TrackType::TRACK_SUBTITLE) {
+    } else if (trackType == TrackType::TRACK_SUBTITLE) {
         curTrackId = subtitleTrackId_;
-    } */ else {   // invalid
+    } else {   // invalid
         MEDIA_LOG_E("HandleDashSelectTrack trackType invalid");
         return Status::ERROR_UNKNOWN;
     }
@@ -987,7 +995,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
         "SelectBitRate failed, source_ is nullptr.");
     MEDIA_LOG_I("SelectBitRate begin");
     if (demuxerPluginManager_->IsDash()) {
-        if (isSelectBitRate_.load() == true || isSelectTrack_.load() == true) {
+        if (isSelectBitRate_.load() == true || isSelectTrack_.load() == true || bitRate == demuxerPluginManager_->GetCurrentBitRate()) {
             MEDIA_LOG_W("SelectBitRate or SelectTrack is running, can not SelectBitRate");
             return Status::OK;
         }
@@ -998,10 +1006,6 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
     if (ret != Status::OK) {
         MEDIA_LOG_E("MediaDemuxer SelectBitRate failed");
         if (demuxerPluginManager_->IsDash()) {
-            isSelectBitRate_.store(false);
-        }
-    } else {
-        if (demuxerPluginManager_->IsDash() && bitRate == demuxerPluginManager_->GetCurrentBitRate()) {
             isSelectBitRate_.store(false);
         }
     }
@@ -1373,12 +1377,12 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_
             if (audioTrackId == TRACK_ID_DUMMY) {
                 audioTrackId = index;
             }
-        } else if (ret && mimeType.find("application") == 0 &&
+        } else if (ret && IsSubtitleMime(mimeType) &&
             !IsTrackDisabled(Plugins::MediaType::SUBTITLE)) {
             MEDIA_LOG_I("Found subtitle track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
-            /*if (subtitleTrackId == TRACK_ID_DUMMY) {
+            if (subtitleTrackId == TRACK_ID_DUMMY) {
                 subtitleTrackId = index;
-            }*/
+            }
         } else {}
     }
 }
