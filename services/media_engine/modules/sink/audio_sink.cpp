@@ -181,7 +181,7 @@ Status AudioSink::PauseSub()
     if (ret != Status::OK) {
         return ret;
     }
-    state_ = Pipeline::FilterState::PAUSED;    
+    state_ = Pipeline::FilterState::PAUSED;
     AutoLock lock(eosMutex_);
     if (eosInterruptType_ == EosInterruptState::INITIAL || eosInterruptType_ == EosInterruptState::RESUME) {
         eosInterruptType_ = EosInterruptState::PAUSE;
