@@ -128,9 +128,8 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     }
     configureParameter_ = parameter;
     configFormat_.SetMeta(configureParameter_);
-    bool isHdr = false;
-    configureParameter_->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdr);
-    if (isHdr) {
+    int8_t hdrVaule = 0;
+    if (configureParameter_->GetData(Tag::VIDEO_IS_HDR_VIVID, hdrVaule)) {
         MEDIA_LOG_I("set video_decoder_output_colorspace, pixel_format");
         configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
             static_cast<int8_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT));
