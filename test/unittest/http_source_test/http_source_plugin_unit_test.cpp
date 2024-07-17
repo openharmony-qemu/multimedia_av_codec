@@ -38,21 +38,21 @@ protected:
     std::shared_ptr<Meta> meta;
 };
 
-void DownloaderUnitTest::SetUpTestCase(void)
+void HttpSourcePluginUnitTest::SetUpTestCase(void)
 {
 }
 
-void DownloaderUnitTest::TearDownTestCase(void)
+void HttpSourcePluginUnitTest::TearDownTestCase(void)
 {
 }
 
-void DownloaderUnitTest::SetUp(void)
+void HttpSourcePluginUnitTest::SetUp(void)
 {
     meta = std::make_shared<Meta>();
     httpSourcePlugin = new HttpSourcePlugin("test");
 }
 
-void DownloaderUnitTest::TearDown(void)
+void HttpSourcePluginUnitTest::TearDown(void)
 {
     delete httpSourcePlugin;
 }
@@ -61,7 +61,7 @@ HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsTrue, TestSize.Level1)
 {
     httpSourcePlugin->delayReady = true;
     Status status = httpSourcePlugin->Prepare();
-    EXPECT_EQ(status, Status::ERROR_DELAY_REDAY);
+    EXPECT_EQ(status, Status::ERROR_DELAY_READY);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsFalse, TestSize.Level1)
@@ -86,7 +86,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_01, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_02, TestSize.Level1)
 {
-    httpSourcePlugin->downloader = nullptr;
+    httpSourcePlugin->downloader_ = nullptr;
     bool isReadBlockingAllowed = true;
     Status status = httpSourcePlugin->SetReadBlockingFlag(isReadBlockingAllowed);
     EXPECT_EQ(status, Status::OK);
