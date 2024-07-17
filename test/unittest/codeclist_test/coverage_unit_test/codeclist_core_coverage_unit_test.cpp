@@ -19,13 +19,15 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "avcodec_codec_name.h"
 #include "avcodec_errors.h"
 #include "avcodec_list.h"
 #include "codeclist_core.h"
 #include "meta/meta_key.h"
 #include "codecbase.h"
 #include "unittest_utils.h"
-
+#define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
+    EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -34,14 +36,18 @@ using namespace testing::ext;
 
 namespace {
 const std::string DEFAULT_VIDEO_MIME = std::string(CodecMimeType::VIDEO_AVC);
+const std::string DEFAULT_CODEC_NAME = "video.H.Decoder.Name.02";
 class CodecListUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
+    void CreateHCodecByName();
+
     Format format_;
     std::shared_ptr<CapabilityData> capabilityData_ = nullptr;
+    std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
 };
 
 class CodecParamCheckerTest : public testing::Test {
@@ -58,8 +64,15 @@ void CodecListUnitTest::TearDownTestCase(void) {}
 
 void CodecListUnitTest::SetUp(void)
 {
-    capabilityData_ = std::make_shared<CapabilityData>(HCODEC_CAPS[0]);
+    for (auto iter : HCODEC_CAPS) {
+        if (iter.codecName == DEFAULT_CODEC_NAME) {
+            capabilityData_ = std::make_shared<CapabilityData>(iter);
+        }
+    }
     EXPECT_NE(capabilityData_, nullptr);
+
+    codecBaseMock_ = std::make_shared<CodecBaseMock>();
+    CodecBase::RegisterMock(codecBaseMock_);
 
     format_.PutIntValue(Tag::VIDEO_WIDTH, 4096);  // 4096: valid parameter
     format_.PutIntValue(Tag::VIDEO_HEIGHT, 4096); // 4096: valid parameter
@@ -68,8 +81,14 @@ void CodecListUnitTest::SetUp(void)
 
 void CodecListUnitTest::TearDown(void)
 {
+    codecBaseMock_ = nullptr;
     capabilityData_ = nullptr;
     format_ = Format();
+}
+
+void CodecListUnitTest::CreateHCodecByName()
+{
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
 }
 
 /**
@@ -206,32 +225,6 @@ HWTEST_F(CodecListUnitTest, CheckVideoFrameRate_Valid_Test_002, TestSize.Level1)
     EXPECT_EQ(ret, true);
 }
 
-// /**
-//  * @tc.name: CheckVideoFrameRate_Valid_Test_003
-//  * @tc.desc: format key frame rate value is int32_t
-//  */
-// HWTEST_F(CodecListUnitTest, CheckVideoFrameRate_Valid_Test_003, TestSize.Level1)
-// {
-//     CodecListCore codecListCore;
-//     constexpr int32_t frameRate = 60;
-//     format_.PutIntValue(Tag::VIDEO_FRAME_RATE, frameRate);
-//     bool ret = codecListCore.CheckVideoFrameRate(format_, *capabilityData_);
-//     EXPECT_EQ(ret, true);
-// }
-
-// /**
-//  * @tc.name: CheckVideoFrameRate_Valid_Test_004
-//  * @tc.desc: format key frame rate value is int64_t
-//  */
-// HWTEST_F(CodecListUnitTest, CheckVideoFrameRate_Valid_Test_004, TestSize.Level1)
-// {
-//     CodecListCore codecListCore;
-//     constexpr int64_t frameRate = 60;
-//     format_.PutLongValue(Tag::VIDEO_FRAME_RATE, frameRate);
-//     bool ret = codecListCore.CheckVideoFrameRate(format_, *capabilityData_);
-//     EXPECT_EQ(ret, true);
-// }
-
 /**
  * @tc.name: CheckVideoFrameRate_Invalid_Test_001
  * @tc.desc: format key frame rate value is double and value invalid
@@ -244,19 +237,6 @@ HWTEST_F(CodecListUnitTest, CheckVideoFrameRate_Invalid_Test_001, TestSize.Level
     bool ret = codecListCore.CheckVideoFrameRate(format_, *capabilityData_);
     EXPECT_EQ(ret, false);
 }
-
-// /**
-//  * @tc.name: CheckVideoFrameRate_Invalid_Test_002
-//  * @tc.desc: format key frame rate value is int32_t and value invalid
-//  */
-// HWTEST_F(CodecListUnitTest, CheckVideoFrameRate_Invalid_Test_002, TestSize.Level1)
-// {
-//     CodecListCore codecListCore;
-//     constexpr int32_t frameRate = 1000;
-//     format_.PutIntValue(Tag::VIDEO_FRAME_RATE, frameRate);
-//     bool ret = codecListCore.CheckVideoFrameRate(format_, *capabilityData_);
-//     EXPECT_EQ(ret, false);
-// }
 
 /**
  * @tc.name: CheckAudioChannel_Valid_Test_001
@@ -390,11 +370,43 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_001, TestSize.Level1)
  */
 HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_002, TestSize.Level1)
 {
+    CreateHCodecByName();
     CodecListCore codecListCore;
     constexpr const char CODEC_VENDOR_FLAG[] = "codec_vendor_flag";
     constexpr bool isEncoder = true;
     constexpr int32_t vendorFlag = 1;
     format_.PutStringValue(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
+    format_.PutIntValue(CODEC_VENDOR_FLAG, vendorFlag);
+    std::string ret = codecListCore.FindCodec(format_, isEncoder);
+    EXPECT_EQ(ret, "");
+}
+
+/**
+ * @tc.name: FindCodec_Valid_Test_003
+ * @tc.desc: format key codec mime is audio and in mimeCapIdxMap
+ */
+HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_003, TestSize.Level1)
+{
+    CreateHCodecByName();
+    CodecListCore codecListCore;
+    constexpr bool isEncoder = false;
+    format_.PutStringValue(Tag::MIME_TYPE, CodecMimeType::AUDIO_MPEG);
+    std::string ret = codecListCore.FindCodec(format_, isEncoder);
+    EXPECT_EQ(ret, AVCodecCodecName::AUDIO_DECODER_MP3_NAME);
+}
+
+/**
+ * @tc.name: FindCodec_Valid_Test_004
+ * @tc.desc: format key codec mime is audio and not in mimeCapIdxMap
+ */
+HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_004, TestSize.Level1)
+{
+    CreateHCodecByName();
+    CodecListCore codecListCore;
+    constexpr const char CODEC_VENDOR_FLAG[] = "codec_vendor_flag";
+    constexpr bool isEncoder = false;
+    constexpr int32_t vendorFlag = 1;
+    format_.PutStringValue(Tag::MIME_TYPE, CodecMimeType::AUDIO_MPEG);
     format_.PutIntValue(CODEC_VENDOR_FLAG, vendorFlag);
     std::string ret = codecListCore.FindCodec(format_, isEncoder);
     EXPECT_EQ(ret, "");
