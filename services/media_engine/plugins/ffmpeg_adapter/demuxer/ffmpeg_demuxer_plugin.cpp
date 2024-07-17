@@ -1904,10 +1904,9 @@ Status RegisterPlugins(const std::shared_ptr<Register>& reg)
             continue;
         }
         MEDIA_LOG_D("Check ffmpeg demuxer " PUBLIC_LOG_S "[" PUBLIC_LOG_S "].", plugin->name, plugin->long_name);
-        if (plugin->long_name != nullptr) {
-            if (!strncmp(plugin->long_name, "pcm ", STR_MAX_LEN)) {
-                continue;
-            }
+        if (plugin->long_name != nullptr &&
+            !strncmp(plugin->long_name, "pcm ", STR_MAX_LEN)) {
+            continue;
         }
         if (!IsInputFormatSupported(plugin->name)) {
             continue;

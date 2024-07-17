@@ -153,8 +153,8 @@ void DemuxerUnitTest::SetInitValue()
         string codecMime = "";
         int32_t trackType = -1;
         if (format_ != nullptr) {
-        format_->Destroy();
-        format_ = nullptr;
+            format_->Destroy();
+            format_ = nullptr;
         }
         format_ = source_->GetTrackFormat(i);
         format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codecMime);

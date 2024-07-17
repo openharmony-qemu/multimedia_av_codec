@@ -93,6 +93,10 @@ bool BlockQueuePool::HasCache(uint32_t trackIndex)
 
 void BlockQueuePool::ResetQueue(uint32_t queueIndex)
 {
+    if (quePool_.count(queueIndex) == 0) {
+        MEDIA_LOG_D("error queueIndex makes reset queue failed");
+        return;
+    }
     auto blockQue = quePool_[queueIndex].blockQue;
     if (blockQue == nullptr) {
         return;
