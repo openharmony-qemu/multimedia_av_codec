@@ -25,8 +25,6 @@
 #include "codeclist_core.h"
 #include "meta/meta_key.h"
 #include "codecbase.h"
-#define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
-    EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(AtLeast(1)).WillRepeatedly
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -44,11 +42,9 @@ public:
     static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
-    void CreateHCodecByName();
 
     Format format_;
     std::shared_ptr<CapabilityData> capabilityData_ = nullptr;
-    std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
 };
 
 class CodecParamCheckerTest : public testing::Test {
@@ -72,9 +68,6 @@ void CodecListUnitTest::SetUp(void)
     }
     EXPECT_NE(capabilityData_, nullptr);
 
-    codecBaseMock_ = std::make_shared<CodecBaseMock>();
-    CodecBase::RegisterMock(codecBaseMock_);
-
     format_.PutIntValue(Tag::VIDEO_WIDTH, 4096);  // 4096: valid parameter
     format_.PutIntValue(Tag::VIDEO_HEIGHT, 4096); // 4096: valid parameter
     format_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, 1);
@@ -82,14 +75,8 @@ void CodecListUnitTest::SetUp(void)
 
 void CodecListUnitTest::TearDown(void)
 {
-    codecBaseMock_ = nullptr;
     capabilityData_ = nullptr;
     format_ = Format();
-}
-
-void CodecListUnitTest::CreateHCodecByName()
-{
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
 }
 
 /**
@@ -369,7 +356,6 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_001, TestSize.Level1)
  */
 HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_002, TestSize.Level1)
 {
-    CreateHCodecByName();
     CodecListCore codecListCore;
     constexpr bool isEncoder = true;
     constexpr int32_t vendorFlag = 1;
@@ -385,7 +371,6 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_002, TestSize.Level1)
  */
 HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_003, TestSize.Level1)
 {
-    CreateHCodecByName();
     CodecListCore codecListCore;
     constexpr bool isEncoder = false;
     format_.PutStringValue(Tag::MIME_TYPE, CodecMimeType::AUDIO_MPEG);
@@ -399,7 +384,6 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_003, TestSize.Level1)
  */
 HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_004, TestSize.Level1)
 {
-    CreateHCodecByName();
     CodecListCore codecListCore;
     constexpr bool isEncoder = false;
     constexpr int32_t vendorFlag = 1;
