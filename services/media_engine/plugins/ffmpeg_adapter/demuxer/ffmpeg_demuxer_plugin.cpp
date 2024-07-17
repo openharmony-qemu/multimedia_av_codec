@@ -501,12 +501,12 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     }
     if (ffmpegRet < 0 && ffmpegRet != AVERROR_EOF) {
         av_packet_free(&pkt);
-        MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", timeout: " PUBLIC_LOG_D32,
-                    AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.timeout));
-        if (ffmpegRet == AVERROR(EAGAIN) || parserRefIoContext_.timeout) {
+        MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+                    AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.retry));
+        if (parserRefIoContext_.retry) {
             parserRefFormatContext_->pb->eof_reached = 0;
             parserRefFormatContext_->pb->error = 0;
-            parserRefIoContext_.timeout = false;
+            parserRefIoContext_.retry = false;
             return Status::ERROR_AGAIN;
         }
         return Status::ERROR_UNKNOWN;
@@ -920,12 +920,12 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         }
         if (ffmpegRet < 0) { // fail
             av_packet_free(&pkt);
-            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", timeout: " PUBLIC_LOG_D32,
-                AVStrError(ffmpegRet).c_str(), int(ioContext_.timeout));
-            if (ffmpegRet == AVERROR(EAGAIN) || ioContext_.timeout) {
+            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+                AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+            if (ioContext_.retry) {
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
-                ioContext_.timeout = false;
+                ioContext_.retry = false;
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
@@ -1025,18 +1025,14 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
         case Status::ERROR_AGAIN:
             MEDIA_LOG_I("Read data not enough, read again.");
-            ioContext->timeout = true;
+            ioContext->retry = true;
             ioContext->offset += dataSize;
-            ret = dataSize == 0 ? AVERROR(EAGAIN) : dataSize;
+            ret = dataSize;
             break;
         case Status::END_OF_STREAM:
             MEDIA_LOG_I("Read at end of file.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
-            break;
-        case Status::ERROR_WRONG_STATE:
-            ioContext->timeout = true;
-            MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
             break;
         default:
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
@@ -1556,6 +1552,9 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     MEDIA_LOG_I("Convert flag [" PUBLIC_LOG_D32 "]->[" PUBLIC_LOG_D32 "], by track " PUBLIC_LOG_D32 "",
         static_cast<int32_t>(mode), flag, avStream->index);
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
+    if (formatContext_->pb->error) {
+        formatContext_->pb->error = 0;
+    }
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".", AVStrError(ret).c_str());
 

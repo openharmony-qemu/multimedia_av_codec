@@ -230,6 +230,7 @@ private:
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
     int64_t duration_ {0};
+    std::atomic<bool> isSeekError_ = false;
 };
 } // namespace Media
 } // namespace OHOS

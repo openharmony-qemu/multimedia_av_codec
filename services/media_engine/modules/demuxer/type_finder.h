@@ -34,8 +34,8 @@ public:
 
     ~TypeFinder() override;
 
-    void Init(std::string uri, uint64_t mediaDataSize, std::function<bool(int32_t, uint64_t, size_t)> checkRange,
-        std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId);
+    void Init(std::string uri, uint64_t mediaDataSize, std::function<Status(int32_t, uint64_t, size_t)> checkRange,
+        std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId);
 
     std::string FindMediaType();
 
@@ -67,8 +67,8 @@ private:
     std::vector<std::shared_ptr<Plugins::PluginInfo>> plugins_;
     std::atomic<bool> pluginRegistryChanged_;
     std::shared_ptr<Task> task_;
-    std::function<bool(int32_t, uint64_t, size_t)> checkRange_;
-    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
+    std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
     int32_t streamID_ = -1;
 };
