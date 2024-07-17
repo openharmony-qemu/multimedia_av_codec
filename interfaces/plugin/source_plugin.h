@@ -200,6 +200,11 @@ public:
     {
         return Status::OK;
     }
+
+    virtual Status SelectStream(int32_t streamID)
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.
