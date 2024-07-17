@@ -168,7 +168,9 @@ void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appNam
 void DemuxerFilter::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
 {
     MEDIA_LOG_I("RegisterVideoStreamReadyCallback step into");
-    demuxer_->RegisterVideoStreamReadyCallback(callback);
+    if (callback != nullptr) {
+        demuxer_->RegisterVideoStreamReadyCallback(callback);
+    }
 }
 
 void DemuxerFilter::DeregisterVideoStreamReadyCallback()

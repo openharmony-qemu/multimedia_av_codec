@@ -24,7 +24,6 @@
 #include "meta/meta.h"
 #include "meta/media_types.h"
 #include "osal/task/mutex.h"
-#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {

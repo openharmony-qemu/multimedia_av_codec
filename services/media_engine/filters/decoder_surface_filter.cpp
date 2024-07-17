@@ -250,7 +250,6 @@ Status DecoderSurfaceFilter::DoPrepare()
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
     }
     videoSink_->ResetRenderStarted();
-    isRenderStarted_.store(false);
     return Status::OK;
 }
 
@@ -543,10 +542,6 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, 
                                                    int64_t renderTime)
 {
     FALSE_RETURN_V(!dropFrame, Status::OK);
-    if (!isRenderStarted_.load()) {
-        isRenderStarted_.store(true);
-        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
-    }
     uint32_t index = idx;
     std::shared_ptr<AVBuffer> outputBuffer = nullptr;
     bool acquireRes = AcquireNextRenderBuffer(byIdx, index, outputBuffer);
@@ -860,7 +855,9 @@ void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<Video
 {
     Filter::Resume();
     isInSeekContinous_ = true;
-    videoFrameReadyCallback_ = callback;
+    if (callback != nullptr) {
+        videoFrameReadyCallback_ = callback;
+    }
 }
 
 void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
