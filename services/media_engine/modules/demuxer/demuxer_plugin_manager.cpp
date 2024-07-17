@@ -178,17 +178,17 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             }
             streamInfoMap_[streamIndex].type = VIDEO;
         } else if (iter.type == SUBTITLE) {
-            /*if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
+            if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
                 curSubTitleStreamID_ = streamIndex;
                 streamInfoMap_[streamIndex].activated = true;
                 MEDIA_LOG_I("InitDefaultPlay SUBTITLE");
-            } else {*/
+            } else {
                 Meta format;
                 format.Set<Tag::MIME_TYPE>("application/xxx");
                 streamInfoMap_[streamIndex].mediaInfo.tracks.push_back(format);
                 streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
                 streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
-            //}
+            }
             streamInfoMap_[streamIndex].type = SUBTITLE;
         } else {
             MEDIA_LOG_W("streaminfo invalid type");
@@ -713,6 +713,14 @@ StreamType DemuxerPluginManager::GetStreamTypeByTrackID(int32_t trackId)
     return streamInfoMap_[streamID].type;
 }
 
+bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
+{
+    if (mime == "application/x-subrip" || mime == "text/vtt") {
+        return true;
+    }
+    return false;
+}
+
 TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 {
     std::string mimeType = "";
@@ -721,7 +729,7 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
         return TRACK_AUDIO;
     } else if (ret && mimeType.find("video") == 0) {
         return TRACK_VIDEO;
-    } else if (ret && mimeType.find("application") == 0) {
+    } else if (ret && IsSubtitleMime("mimeType") == 0) {
         return TRACK_SUBTITLE;
     } else {
         return TRACK_INVALID;
