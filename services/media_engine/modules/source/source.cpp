@@ -179,6 +179,16 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
+Status Source::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SetCurrentBitRate(bitRate);
+}
+
 Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     int64_t timeNs;
