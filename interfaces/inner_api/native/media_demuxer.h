@@ -180,6 +180,7 @@ private:
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     void HandleStopPlugin(int32_t trackId);
     void HandleStartPlugin(int32_t trackId);
+    bool IsSubtitleMime(const std::string& mime);
 
     Mutex mapMutex_{};
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap_;
