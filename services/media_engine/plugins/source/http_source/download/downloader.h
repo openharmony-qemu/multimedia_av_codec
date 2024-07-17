@@ -180,6 +180,8 @@ private:
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems,
+                                    Downloader* mediaDownloader);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
