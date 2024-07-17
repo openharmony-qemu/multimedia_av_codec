@@ -41,7 +41,7 @@ namespace Media {
 namespace Plugins {
 namespace FileFdSource {
 namespace {
-
+constexpr int FDPOS                             = 2;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
 constexpr size_t WATER_LINE_BELOW_DEFAULT       = 5 * 1024;
@@ -167,7 +167,7 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
-    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= 2 && isNumber(fdUriMatch[1].str()),
+    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
