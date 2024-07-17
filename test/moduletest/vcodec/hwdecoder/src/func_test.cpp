@@ -863,4 +863,41 @@ HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_006, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
+
+/**
+ * @tc.number    : FLUSH_CHECK_001
+ * @tc.name      : Compare the flush frame with the normal process frame
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, FLUSH_CHECK_001, TestSize.Level0)
+{
+    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = false;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    cout << "--vDecSample--" << vDecSample->outCount << endl;
+    shared_ptr<VDecNdkSample> vDecSample1 = make_shared<VDecNdkSample>();
+    vDecSample1->INP_DIR = INP_DIR_1080_30;
+    vDecSample1->DEFAULT_WIDTH = 1920;
+    vDecSample1->DEFAULT_HEIGHT = 1080;
+    vDecSample1->DEFAULT_FRAME_RATE = 30;
+    vDecSample1->SF_OUTPUT = false;
+    vDecSample1->REPEAT_START_FLUSH_BEFORE_EOS = 1;
+    ASSERT_EQ(AV_ERR_OK, vDecSample1->CreateVideoDecoder(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample1->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample1->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample1->StartVideoDecoder());
+    vDecSample1->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample1->errCount);
+    cout << "--Flush--" << vDecSample1->outCount << endl;
+    ASSERT_EQ(vDecSample->outCount, vDecSample1->outCount);
+}
 } // namespace
