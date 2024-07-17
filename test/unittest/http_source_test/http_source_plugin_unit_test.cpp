@@ -55,6 +55,7 @@ void HttpSourcePluginUnitTest::SetUp(void)
 void HttpSourcePluginUnitTest::TearDown(void)
 {
     delete httpSourcePlugin;
+    httpSourcePlugin = nullptr;
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsTrue, TestSize.Level1)
