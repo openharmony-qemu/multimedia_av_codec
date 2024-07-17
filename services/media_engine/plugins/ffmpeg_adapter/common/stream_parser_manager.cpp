@@ -32,6 +32,7 @@ void *StreamParserManager::handler_ = nullptr;
 StreamParserManager::CreateFunc StreamParserManager::createFunc_ = nullptr;
 StreamParserManager::DestroyFunc StreamParserManager::destroyFunc_ = nullptr;
 std::mutex StreamParserManager::mtx_;
+std::map<StreamType, void *> StreamParserManager::handlerMap_ {};
 
 StreamParserManager::~StreamParserManager()
 {
@@ -44,7 +45,9 @@ StreamParserManager::~StreamParserManager()
 bool StreamParserManager::Init(StreamType streamType)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (!handler_) {
+    if (handlerMap_.count(streamType) > 0 && handlerMap_[streamType] != nullptr) {
+        handler_ = handlerMap_[streamType];
+    } else {
         std::string streamParserPath;
         if (streamType == StreamType::HEVC) {
             streamParserPath = HEVC_LIB_PATH;
@@ -54,10 +57,12 @@ bool StreamParserManager::Init(StreamType streamType)
             MEDIA_LOG_E("Unsupport stream parser type");
             return false;
         }
-        if (!CheckSymbol(LoadPluginFile(streamParserPath))) {
+        handler_ = LoadPluginFile(streamParserPath);
+        if (!CheckSymbol(handler_)) {
             MEDIA_LOG_E("Load stream parser so fail");
             return false;
         }
+        handlerMap_[streamType] = handler_;
     }
     return true;
 }
@@ -181,7 +186,6 @@ void *StreamParserManager::LoadPluginFile(const std::string &path)
     if (ptr == nullptr) {
         MEDIA_LOG_E("dlopen failed due to %{public}s", ::dlerror());
     }
-    handler_ = ptr;
     return ptr;
 }
 
