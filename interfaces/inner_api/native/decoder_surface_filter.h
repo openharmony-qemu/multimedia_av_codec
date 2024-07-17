@@ -32,6 +32,7 @@
 #include "media_sync_manager.h"
 #include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 #include "common/media_core.h"
+#include "common/seek_callback.h"
 
 namespace OHOS {
 namespace Media {

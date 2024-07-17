@@ -20,23 +20,20 @@
 #include "decoder_surface_filter.h"
 #include "common/log.h"
 #include "common/status.h"
+#include "common/seek_callback.h"
 #include "meta/format.h"
 
 namespace OHOS {
 namespace Media {
 
-// 模块主接口类
 class __attribute__((visibility("default"))) DraggingPlayer {
 public:
     virtual ~DraggingPlayer() = default;
-    virtual Status Init(std::shared_ptr<Pipeline::DemuxerFilter> &demuxer,
-                        std::shared_ptr<Pipeline::DecoderSurfaceFilter> &decoder) = 0;
-    // 数据轮转接口
+    virtual Status Init(const std::shared_ptr<Pipeline::DemuxerFilter> &demuxer,
+                        const std::shared_ptr<Pipeline::DecoderSurfaceFilter> &decoder) = 0;
     virtual void UpdateSeekPos(int64_t seekMs) = 0;
-    // 解码送帧控制
-    virtual bool IsVideoStreamDiscardable(std::shared_ptr<AVBuffer> avBuffer) = 0;
-    // 显示送帧控制
-    virtual void ConsumeVideoFrame(std::shared_ptr<AVBuffer> AVBuffer, uint32_t bufferIndex) = 0;
+    virtual bool IsVideoStreamDiscardable(const std::shared_ptr<AVBuffer> avBuffer) = 0;
+    virtual void ConsumeVideoFrame(const std::shared_ptr<AVBuffer> AVBuffer, uint32_t bufferIndex) = 0;
     virtual void Release() = 0;
 };
 
