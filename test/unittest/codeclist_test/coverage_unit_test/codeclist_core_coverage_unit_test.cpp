@@ -37,6 +37,8 @@ using namespace testing::ext;
 namespace {
 const std::string DEFAULT_VIDEO_MIME = std::string(CodecMimeType::VIDEO_AVC);
 const std::string DEFAULT_CODEC_NAME = "video.H.Decoder.Name.02";
+constexpr const char CODEC_VENDOR_FLAG[] = "codec_vendor_flag";
+constexpr const char SAMPLE_RATE[] = "samplerate";
 class CodecListUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -293,7 +295,6 @@ HWTEST_F(CodecListUnitTest, CheckAudioSampleRate_Valid_Test_001, TestSize.Level1
 HWTEST_F(CodecListUnitTest, CheckAudioSampleRate_Valid_Test_002, TestSize.Level1)
 {
     CodecListCore codecListCore;
-    constexpr const char SAMPLE_RATE[] = "samplerate";
     constexpr uint32_t samplerate = 1;
     format_.PutIntValue(SAMPLE_RATE, samplerate);
     bool ret = codecListCore.CheckAudioSampleRate(format_, *capabilityData_);
@@ -307,7 +308,6 @@ HWTEST_F(CodecListUnitTest, CheckAudioSampleRate_Valid_Test_002, TestSize.Level1
 HWTEST_F(CodecListUnitTest, CheckAudioSampleRate_Invalid_Test_001, TestSize.Level1)
 {
     CodecListCore codecListCore;
-    constexpr const char SAMPLE_RATE[] = "samplerate";
     constexpr uint32_t samplerate = 10;
     format_.PutIntValue(SAMPLE_RATE, samplerate);
     bool ret = codecListCore.CheckAudioSampleRate(format_, *capabilityData_);
@@ -372,7 +372,6 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_002, TestSize.Level1)
 {
     CreateHCodecByName();
     CodecListCore codecListCore;
-    constexpr const char CODEC_VENDOR_FLAG[] = "codec_vendor_flag";
     constexpr bool isEncoder = true;
     constexpr int32_t vendorFlag = 1;
     format_.PutStringValue(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
@@ -403,7 +402,6 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_004, TestSize.Level1)
 {
     CreateHCodecByName();
     CodecListCore codecListCore;
-    constexpr const char CODEC_VENDOR_FLAG[] = "codec_vendor_flag";
     constexpr bool isEncoder = false;
     constexpr int32_t vendorFlag = 1;
     format_.PutStringValue(Tag::MIME_TYPE, CodecMimeType::AUDIO_MPEG);
@@ -411,4 +409,4 @@ HWTEST_F(CodecListUnitTest, FindCodec_Valid_Test_004, TestSize.Level1)
     std::string ret = codecListCore.FindCodec(format_, isEncoder);
     EXPECT_EQ(ret, "");
 }
-}//namespace
+} // namespace
