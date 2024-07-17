@@ -703,8 +703,7 @@ bool Downloader::HandleContentEncode(HeaderInfo* info, char* key, char* next, si
     return true;
 }
 
-bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next,
-                                     size_t size, size_t nitems, Downloader* mediaDownloader)
+bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
 {
     FALSE_RETURN_V(key != nullptr, false);
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
@@ -794,7 +793,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
 
     if (!HandleContentRange(info, key, next, size, nitems) || !HandleContentType(info, key, next, size, nitems) ||
         !HandleContentEncode(info, key, next, size, nitems) ||
-        !HandleContentLength(info, key, next, size, nitems, mediaDownloader) ||
+        !HandleContentLength(info, key, next, mediaDownloader) ||
         !HandleRange(info, key, next, size, nitems)) {
         return size * nitems;
     }
