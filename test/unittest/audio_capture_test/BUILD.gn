@@ -91,7 +91,7 @@ ohos_unittest("audio_capture_module_unit_test") {
     "ability_runtime:data_ability_helper",
     "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken_shared",
-    "access_token:libtoken_setproc_shared",
+    "access_token:libtokensetproc_shared",
     "audio_framework:audio_capturer",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
