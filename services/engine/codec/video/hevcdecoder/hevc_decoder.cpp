@@ -823,15 +823,6 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         height_ = height;
         bitDepth_ = bitDepth;
         scale_ = nullptr;
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, width_-1);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, height_-1);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, 0);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, 0);
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
@@ -857,9 +848,16 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         int32_t stride = GetSurfaceBufferStride(buffers_[INDEX_OUTPUT][index]);
         CHECK_AND_RETURN_RET_LOG(stride > 0, AVCS_ERR_NO_MEMORY, "get GetSurfaceBufferStride failed");
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
-        if (formatChanged) {
-            callback_->OnOutputFormatChanged(format_);
-        }
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, width_-1);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, height_-1);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, 0);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, 0);
+        callback_->OnOutputFormatChanged(format_);
     }
     return AVCS_ERR_OK;
 }
