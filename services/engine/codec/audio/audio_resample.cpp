@@ -97,7 +97,7 @@ int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFr
         AVCODEC_LOGE("Frame null pointer");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
-    for (uint32_t i = 0;i < resamplePara_.channels; i++) {
+    for (uint32_t i = 0; i < resamplePara_.channels; i++) {
         if (inputFrame->extended_data[i] == nullptr) {
             AVCODEC_LOGE("channels:%{public}u, extended_data[%{public}u] is nullptr",
                 resamplePara_.channels, i);
