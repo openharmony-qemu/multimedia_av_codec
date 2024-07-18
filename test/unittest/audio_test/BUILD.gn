@@ -376,9 +376,7 @@ ohos_unittest("av_audio_media_codec_unit_test") {
 
   sources = [ "./audio_media_codec_unit_test.cpp" ]
 
-  deps = [
-    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
-  ]
+  deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
   external_deps = [
     "c_utils:utils",
