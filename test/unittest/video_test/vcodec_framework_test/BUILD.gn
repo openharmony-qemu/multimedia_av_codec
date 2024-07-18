@@ -76,6 +76,7 @@ ohos_unittest("videodec_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
     "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/",
+    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
@@ -132,6 +133,7 @@ ohos_unittest("videodec_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
     "$av_codec_root_dir/test/unittest/common/",
+    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
