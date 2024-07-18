@@ -184,37 +184,38 @@ void HevcDecoder::OpenDumpFile()
 {
     std::string dumpModeStr = OHOS::system::GetParameter("hevcdecoder.dump", "0");
     AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
-    if (dumpModeStr != "1") {
-        return;
-    }
 
     char fileName[PATH_MAX_LEN] = {0};
     int ret = 0;
-    ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
-    if (ret > 0) {
-        dumpInFile_ = std::make_shared<std::ofstream>();
-        dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
-        if (!dumpInFile_->is_open()) {
-            AVCODEC_LOGW("fail open file %{public}s", fileName);
-            dumpInFile_ = nullptr;
+    if (dumpModeStr == "10" || dumpModeStr == "11") {
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpInFile_ = std::make_shared<std::ofstream>();
+            dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpInFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpInFile_ = nullptr;
+            }
         }
     }
-    ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
-    if (ret > 0) {
-        dumpOutFile_ = std::make_shared<std::ofstream>();
-        dumpOutFile_->open(fileName, std::ios::out | std::ios::binary);
-        if (!dumpOutFile_->is_open()) {
-            AVCODEC_LOGW("fail open file %{public}s", fileName);
-            dumpOutFile_ = nullptr;
+    if (dumpModeStr == "1" || dumpModeStr == "01" || dumpModeStr == "11") {
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpOutFile_ = std::make_shared<std::ofstream>();
+            dumpOutFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpOutFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpOutFile_ = nullptr;
+            }
         }
-    }
-    ret = sprintf_s(fileName, sizeof(fileName), "%s/outConvert_%p.data", DUMP_PATH, this);
-    if (ret > 0) {
-        dumpConvertFile_ = std::make_shared<std::ofstream>();
-        dumpConvertFile_->open(fileName, std::ios::out | std::ios::binary);
-        if (!dumpConvertFile_->is_open()) {
-            AVCODEC_LOGW("fail open file %{public}s", fileName);
-            dumpConvertFile_ = nullptr;
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/outConvert_%p.data", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpConvertFile_ = std::make_shared<std::ofstream>();
+            dumpConvertFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpConvertFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpConvertFile_ = nullptr;
+            }
         }
     }
 }
@@ -948,7 +949,7 @@ void HevcDecoder::SendFrame()
         hevcDecoderInputArgs_.uiTimeStamp = inputAVBuffer->pts_;
     }
 
-    if (dumpInFile_ && dumpInFile_->is_open()) {
+    if (dumpInFile_ && dumpInFile_->is_open() && !isSendEos_) {
         dumpInFile_->write(reinterpret_cast<char*>(inputAVBuffer->memory_->GetAddr()),
                            static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
     }
