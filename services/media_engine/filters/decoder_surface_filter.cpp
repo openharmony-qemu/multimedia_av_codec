@@ -373,6 +373,7 @@ Status DecoderSurfaceFilter::DoFlush()
         std::lock_guard<std::mutex> lock(mutex_);
         MEDIA_LOG_I("Flush enter.");
         outputBuffers_.clear();
+        outputBufferMap_.clear();
     }
     videoSink_->ResetSyncInfo();
     return Status::OK;
@@ -537,27 +538,41 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
 
-// async filter should call this function
-Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
+Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx,
+                                                   int64_t renderTime)
 {
-    std::pair<int, std::shared_ptr<AVBuffer>> task;
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (outputBuffers_.empty()) {
-            return Status::OK;
-        }
-        task = std::move(outputBuffers_.front());
+    FALSE_RETURN_V(!dropFrame, Status::OK);
+    uint32_t index = idx;
+    std::shared_ptr<AVBuffer> outputBuffer = nullptr;
+    bool acquireRes = AcquireNextRenderBuffer(byIdx, index, outputBuffer);
+    FALSE_RETURN_V(acquireRes, Status::OK);
+    ReleaseOutputBuffer(index, recvArg, outputBuffer, renderTime);
+    return Status::OK;
+}
+
+bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!byIdx) {
+        FALSE_RETURN_V(!outputBuffers_.empty(), false);
+        std::pair<int, std::shared_ptr<AVBuffer>> task = std::move(outputBuffers_.front());
         outputBuffers_.pop_front();
         if (!outputBuffers_.empty()) {
             std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
+        index = static_cast<int32_t>(task.first);
+        outBuffer = task.second;
+        return true;
     }
-    ReleaseOutputBuffer(task.first, recvArg, task.second);
-    return Status::OK;
+    FALSE_RETURN_V(outputBufferMap_.find(index) != outputBufferMap_.end(), false);
+    outBuffer = outputBufferMap_[index];
+    outputBufferMap_.erase(index);
+    return true;
 }
 
-Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer)
+Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
+                                                 int64_t renderTime)
 {
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
         (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
@@ -572,14 +587,18 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         }
         return Status::OK;
     }
-    if (outBuffer->pts_ < 0) {
+    if (renderTime > 0L && render) {
+        videoDecoder_->RenderOutputBufferAtTime(index, renderTime);
+    } else if (outBuffer->pts_ < 0) {
         MEDIA_LOG_W("Avoid render video frame with pts=%{public}" PUBLIC_LOG_D64, outBuffer->pts_);
         videoDecoder_->ReleaseOutputBuffer(index, false);
     } else {
         videoDecoder_->ReleaseOutputBuffer(index, render);
     }
-    videoSink_->SetLastPts(outBuffer->pts_);
-    if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+    if (!isInSeekContinous_) {
+        videoSink_->SetLastPts(outBuffer->pts_);
+    }
+    if ((outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) && !isInSeekContinous_) {
         ResetSeekInfo();
         MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
@@ -632,11 +651,27 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
     Filter::ProcessOutputBuffer(waitTime >= 0, waitTime);
 }
 
+void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs)
+{
+    Filter::ProcessOutputBuffer(isRender, 0, true, index, renderTimeNs);
+}
+
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
+    if (isInSeekContinous_) {
+        // 解析输出buffer，计算是否送显、目标送显时间
+        if (videoFrameReadyCallback_ != nullptr) {
+            MEDIA_LOG_I("[drag_debug]DrainOutputBuffer2 enter. dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
+                        " bufferIdx: " PUBLIC_LOG_D32,
+                        outputBuffer->dts_, outputBuffer->pts_, index);
+            videoFrameReadyCallback_->ConsumeVideoFrame(outputBuffer, index);
+        }
+        outputBufferMap_.insert(std::make_pair(index, outputBuffer));
+        return;
+    }
     if (doPrepareFrame_.load()) {
         if (renderFirstFrame_) {
             videoDecoder_->ReleaseOutputBuffer(index, true);
@@ -682,7 +717,7 @@ void DecoderSurfaceFilter::RenderLoop()
         if (waitTime > 0) {
             OSAL::SleepFor(waitTime / 1000); // 1000 convert to ms
         }
-        ReleaseOutputBuffer(nextTask.first, waitTime >= 0, nextTask.second);
+        ReleaseOutputBuffer(nextTask.first, waitTime >= 0, nextTask.second, -1);
     }
 }
 
@@ -760,10 +795,15 @@ void DecoderSurfaceFilter::ParseDecodeRateLimit()
     std::shared_ptr<MediaAVCodec::VideoCaps> videoCap = std::make_shared<MediaAVCodec::VideoCaps>(capabilityData);
     FALSE_RETURN_MSG(videoCap != nullptr, "failed to get videoCap instance");
     const MediaAVCodec::Range &frameRange = videoCap->GetSupportedFrameRatesFor(width, height);
-    int32_t rateUpperLimit = frameRange.maxVal;
-    if (rateUpperLimit > 0) {
-        meta_->SetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, rateUpperLimit);
+    rateUpperLimit_ = frameRange.maxVal;
+    if (rateUpperLimit_ > 0) {
+        meta_->SetData(Tag::VIDEO_DECODER_RATE_UPPER_LIMIT, rateUpperLimit_);
     }
+}
+
+int32_t DecoderSurfaceFilter::GetDecRateUpperLimit()
+{
+    return rateUpperLimit_;
 }
 
 void DecoderSurfaceFilter::OnDumpInfo(int32_t fd)
@@ -809,6 +849,33 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
         PUBLIC_LOG_D32, surfaceWidth_, surfaceHeight_);
     std::pair<int32_t, int32_t> videoSize {surfaceWidth_, surfaceHeight_};
     eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_RESOLUTION_CHANGE, videoSize});
+}
+
+void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback)
+{
+    Filter::Resume();
+    isInSeekContinous_ = true;
+    if (callback != nullptr) {
+        videoFrameReadyCallback_ = callback;
+    }
+}
+
+void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
+{
+    isInSeekContinous_ = false;
+    videoFrameReadyCallback_ = nullptr;
+}
+
+Status DecoderSurfaceFilter::StartSeekContinous()
+{
+    isInSeekContinous_ = true;
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::StopSeekContinous()
+{
+    isInSeekContinous_ = false;
+    return Status::OK;
 }
 } // namespace Pipeline
 } // namespace MEDIA
