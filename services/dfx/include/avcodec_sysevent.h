@@ -17,6 +17,7 @@
 #define AVCODEC_SYSEVENT_H
 
 #include <string>
+#include <sys/types.h>
 #include "nocopyable.h"
 #include "hisysevent.h"
 
@@ -31,8 +32,8 @@ enum class FaultType : int32_t {
 };
 
 struct CodecDfxInfo {
-    int32_t clientPid;
-    int32_t clientUid;
+    pid_t clientPid;
+    uid_t clientUid;
     int32_t codecInstanceId;
     std::string codecName;
     std::string codecIsVendor;
@@ -93,7 +94,7 @@ __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType,
                                                             const std::string& module);
 __attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
 __attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
-__attribute__((visibility("default"))) void CodecStopEventWrite(int32_t clientPid, int32_t clientUid,
+__attribute__((visibility("default"))) void CodecStopEventWrite(pid_t clientPid, uid_t clientUid,
                                                                 int32_t codecInstanceId);
 __attribute__((visibility("default"))) void DemuxerInitEventWrite(uint32_t downloadSize, std::string sourceType);
 __attribute__((visibility("default"))) void FaultDemuxerEventWrite(DemuxerFaultInfo& demuxerFaultInfo);

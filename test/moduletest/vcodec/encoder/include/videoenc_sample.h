@@ -43,6 +43,7 @@ class VEncSignal {
 public:
     std::mutex inMutex_;
     std::mutex outMutex_;
+    std::mutex flushMutex_;
     std::condition_variable inCond_;
     std::condition_variable outCond_;
     std::queue<uint32_t> inIdxQueue_;
@@ -144,6 +145,7 @@ public:
     bool TEMPORAL_DEFAULT = false;
 
     std::atomic<bool> isRunning_ { false };
+    std::atomic<bool> isFlushing_ { false };
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

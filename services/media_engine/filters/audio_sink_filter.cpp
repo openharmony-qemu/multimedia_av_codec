@@ -80,6 +80,7 @@ Status AudioSinkFilter::DoInitAfterLink()
     audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
+    audioSink_->SetThreadGroupId(groupId_);
     return ret;
 }
 
@@ -184,6 +185,13 @@ Status AudioSinkFilter::DoStop()
 Status AudioSinkFilter::DoRelease()
 {
     return audioSink_->Release();
+}
+
+Status AudioSinkFilter::DoSetPlayRange(int64_t start, int64_t end)
+{
+    MEDIA_LOG_I("DoSetPlayRange enter.");
+    audioSink_->SetPlayRange(start, end);
+    return Status::OK;
 }
 
 Status AudioSinkFilter::DoProcessInputBuffer(int recvArg, bool dropFrame)

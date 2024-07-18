@@ -68,6 +68,7 @@ private:
     int32_t SetQpRange(const Format &format, bool isCfg);
     int32_t SetRepeat(const Format &format);
     int32_t SetConstantQualityMode(int32_t quality);
+    int32_t SetTemperalLayer(const Format &format);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -117,7 +118,8 @@ private:
 
 private:
     bool enableSurfaceModeInputCb_ = false;
-    bool enableLTR = false;
+    bool enableLTR_ = false;
+    bool enableTSVC_ = false;
     sptr<Surface> inputSurface_;
     uint32_t inBufferCnt_ = 0;
     static constexpr size_t MAX_LIST_SIZE = 256;

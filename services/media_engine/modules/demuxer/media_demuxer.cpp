@@ -533,6 +533,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
             streamDemuxer_->SetNewVideoStreamID(streamId);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+            int64_t bitRate = 0;
+            mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
+            source_->SetCurrentBitRate(bitRate);
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
@@ -960,6 +963,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     Status ret;
+    isSeekError_.store(false);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("SeekTo source SeekToTime start");
         SeekToTimePre();
@@ -984,6 +988,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     }
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
+    }
+    if (ret != Status::OK) {
+        isSeekError_.store(true);
     }
     MEDIA_LOG_I("SeekTo done");
     return ret;
@@ -1238,6 +1245,7 @@ Status MediaDemuxer::Reset()
     }
     videoStartTime_ = 0;
     streamDemuxer_->ResetAllCache();
+    isSeekError_.store(false);
     return demuxerPluginManager_->Reset();
 }
 
@@ -1665,8 +1673,8 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_) {
-        MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
+    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_) {
+        MEDIA_LOG_D("ReadLoop pausing or error, copy frame for track " PUBLIC_LOG_U32, trackId);
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);

@@ -242,6 +242,7 @@ private:
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
+    std::atomic<bool> isSeekError_ = false;
 };
 } // namespace Media
 } // namespace OHOS
