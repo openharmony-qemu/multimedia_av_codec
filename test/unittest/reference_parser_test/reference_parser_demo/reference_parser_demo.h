@@ -57,9 +57,9 @@ public:
     bool DoVariableSpeedPlay(int64_t playTimeMs);
 
 private:
-    bool CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts);
+    bool CheckFrameLayerResult(const FrameLayerInfo &info, int64_t dts);
     bool CheckGopLayerResult(GopLayerInfo &GopLayerInfo, uint32_t gopid);
-    int32_t GetMaxDiscardLayer(GopLayerInfo &GopLayerInfo);
+    int32_t GetMaxDiscardLayer(const GopLayerInfo &GopLayerInfo);
     int32_t IsFrameDiscard(FrameLayerInfo &frameInfo, bool &isDiscard);
     void LoadJson();
     int32_t InitDemuxer(int64_t size);

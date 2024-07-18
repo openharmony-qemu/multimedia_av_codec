@@ -59,12 +59,8 @@ ReferenceParserDemo::~ReferenceParserDemo()
 {
     close(fd_);
     fd_ = 0;
-    if (source_ != nullptr) {
-        source_ = nullptr;
-    }
-    if (demuxer_ != nullptr) {
-        demuxer_ = nullptr;
-    }
+    source_ = nullptr;
+    demuxer_ = nullptr;
 }
 
 int32_t ReferenceParserDemo::InitScene(MP4Scene scene)
@@ -138,7 +134,7 @@ void ReferenceParserDemo::SetDecIntervalMs(int64_t decIntervalMs)
     decIntervalUs_ = decIntervalMs * MILL_TO_MICRO;
 }
 
-bool ReferenceParserDemo::CheckFrameLayerResult(FrameLayerInfo &info, int64_t dts)
+bool ReferenceParserDemo::CheckFrameLayerResult(const FrameLayerInfo &info, int64_t dts)
 {
     JsonFrameLayerInfo frame = frameMap_[dts];
     if (!frame.discardable && info.isDiscardable) {
@@ -155,7 +151,7 @@ bool ReferenceParserDemo::CheckGopLayerResult(GopLayerInfo &GopLayerInfo, uint32
     return true;
 }
 
-int32_t ReferenceParserDemo::GetMaxDiscardLayer(GopLayerInfo &GopLayerInfo)
+int32_t ReferenceParserDemo::GetMaxDiscardLayer(const GopLayerInfo &GopLayerInfo)
 {
     return GopLayerInfo.layerCount - 1 - MIN_REMAIN_LAYERS;
 }

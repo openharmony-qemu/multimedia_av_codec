@@ -52,9 +52,7 @@ void ReferenceParserTest::SetUp()
 
 void ReferenceParserTest::TearDown()
 {
-    if (refParserDemo_ != nullptr) {
-        refParserDemo_ = nullptr;
-    }
+    refParserDemo_ = nullptr;
 }
 } // namespace
 
