@@ -507,6 +507,9 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
                 break;
         }
+    } else {
+        MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as dafault 0");
+        format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
 }
 
