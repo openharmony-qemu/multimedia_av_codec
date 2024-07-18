@@ -146,6 +146,7 @@ private:
     bool HasVideo();
     void DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> buffer);
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
+    void CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
 
     Status SeekToTimePre();

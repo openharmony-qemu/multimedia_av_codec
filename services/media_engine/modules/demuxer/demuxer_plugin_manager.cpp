@@ -319,12 +319,12 @@ void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t ne
 {
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
     if (newInnerTrackIndex == -1) {
-        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32 " innerTrackIndex = " PUBLIC_LOG_D32, 
-            oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
+        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32 
+            " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = trackInfoMap_[newTrackId].innerTrackIndex;
     } else {
-        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32 " innerTrackIndex = " PUBLIC_LOG_D32, 
-            oldTrackId, newTrackId, newInnerTrackIndex);
+        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
+            " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, newInnerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = newInnerTrackIndex;
     }
 }
@@ -729,7 +729,7 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
         return TRACK_AUDIO;
     } else if (ret && mimeType.find("video") == 0) {
         return TRACK_VIDEO;
-    } else if (ret && IsSubtitleMime("mimeType") == 0) {
+    } else if (ret && IsSubtitleMime(mimeType)) {
         return TRACK_SUBTITLE;
     } else {
         return TRACK_INVALID;

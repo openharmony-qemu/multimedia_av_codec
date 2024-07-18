@@ -132,7 +132,7 @@ Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
 Status BaseStreamDemuxer::SetNewSubtitleStreamID(int32_t streamID)
 {
     MEDIA_LOG_I("SetNewSubtitleStreamID id: " PUBLIC_LOG_D32, streamID);
-    newAudioStreamID_.store(streamID);
+    newSubtitleStreamID_.store(streamID);
     return Status::OK;
 }
 

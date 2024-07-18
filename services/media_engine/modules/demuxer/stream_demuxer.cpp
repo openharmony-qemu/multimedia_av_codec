@@ -337,17 +337,7 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
         ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
-        if (IsDash()) {
-            if (buffer != nullptr && buffer->streamID != streamID) {
-                if (GetNewVideoStreamID() == streamID) {
-                    SetNewVideoStreamID(buffer->streamID);
-                } else if (GetNewAudioStreamID() == streamID) {
-                    SetNewAudioStreamID(buffer->streamID);
-                } else if (GetNewSubtitleStreamID() == streamID) {
-                    SetNewSubtitleStreamID(buffer->streamID);
-                } else {}
-            }
-        }
+        CheckChangeStreamID(streamID, buffer);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return Status::OK;
     }
@@ -360,22 +350,27 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     return Status::ERROR_AGAIN;
 }
 
+void StreamDemuxer::CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer)
+{
+    if (IsDash()) {
+        if (buffer != nullptr && buffer->streamID != streamID) {
+            if (GetNewVideoStreamID() == streamID) {
+                SetNewVideoStreamID(buffer->streamID);
+            } else if (GetNewAudioStreamID() == streamID) {
+                SetNewAudioStreamID(buffer->streamID);
+            } else if (GetNewSubtitleStreamID() == streamID) {
+                SetNewSubtitleStreamID(buffer->streamID);
+            } else {}
+        }
+    }
+}
+
 Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     if (getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer)) {
-        if (IsDash()) {
-            if (buffer != nullptr && buffer->streamID != streamID) {
-                if (GetNewVideoStreamID() == streamID) {
-                    SetNewVideoStreamID(buffer->streamID);
-                } else if (GetNewAudioStreamID() == streamID) {
-                    SetNewAudioStreamID(buffer->streamID);
-                } else if (GetNewSubtitleStreamID() == streamID) {
-                    SetNewSubtitleStreamID(buffer->streamID);
-                } else {}
-            }
-        }
+        CheckChangeStreamID(streamID, buffer);
         DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
         if (buffer != nullptr && buffer->GetMemory() != nullptr &&
