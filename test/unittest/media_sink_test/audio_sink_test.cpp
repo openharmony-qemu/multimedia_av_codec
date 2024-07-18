@@ -18,9 +18,10 @@
 #include "audio_effect.h"
 #include "filter/filter.h"
 #include "common/log.h"
+#include "sink/media_synchronous_sink.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 using namespace testing::ext;
@@ -84,6 +85,31 @@ HWTEST(TestAudioSink, find_audio_sink_set_volume, TestSize.Level1)
     float volume = 0.5f;
     auto setVolumeStatus =  audioSink->SetVolume(volume);
     ASSERT_TRUE(setVolumeStatus == Status::OK);
+
+    // SetVolumeWithRamp
+    float targetVolume = 0;
+    int32_t duration = 0;
+    auto setVolumeWithRampStatus = audioSink->SetVolumeWithRamp(targetVolume, duration);
+    ASSERT_TRUE(setVolumeWithRampStatus == 0);
+}
+
+HWTEST(TestAudioSink, find_audio_sink_set_sync_center, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    float volume = 0.5f;
+    auto setVolumeStatus =  audioSink->SetVolume(volume);
+    ASSERT_TRUE(setVolumeStatus == Status::OK);
+
+    // SetVolumeWithRamp
+    float targetVolume = 0;
+    int32_t duration = 0;
+    auto setVolumeWithRampStatus = audioSink->SetVolumeWithRamp(targetVolume, duration);
+    ASSERT_TRUE(setVolumeWithRampStatus == 0);
+
+    // SetSyncCenter
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    audioSink->SetSyncCenter(syncCenter);
 }
 
 HWTEST(TestAudioSink, find_audio_sink_set_speed, TestSize.Level1)
@@ -123,6 +149,55 @@ HWTEST(TestAudioSink, find_audio_sink_audio_change_track, TestSize.Level1)
     std::shared_ptr<Pipeline::EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
     Status res = audioSink->ChangeTrack(meta, testEventReceiver);
     ASSERT_EQ(res, Status::OK);
+}
+
+HWTEST(TestAudioSink, audio_sink_set_get_parameter, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    // SetParameter before ChangeTrack
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    auto setParameterStatus = audioSink->SetParameter(meta);
+    ASSERT_EQ(setParameterStatus, Status::OK);
+
+    // SetParameter after ChangeTrack
+    meta->SetData(Tag::APP_UID, 9999);
+    std::shared_ptr<Pipeline::EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    auto changeTrackStatus = audioSink->ChangeTrack(meta, testEventReceiver);
+    ASSERT_EQ(changeTrackStatus, Status::OK);
+    auto setParamterStatus = audioSink->SetParameter(meta);
+    ASSERT_EQ(setParamterStatus, Status::OK);
+
+    // GetParameter
+    std::shared_ptr<Meta> newMeta = std::make_shared<Meta>();
+    audioSink->GetParameter(newMeta);
+    int32_t appUid = 0;
+    (void)newMeta->Get<Tag::APP_UID>(appUid);
+    ASSERT_FALSE(appUid == 9999);
+}
+
+HWTEST(TestAudioSink, audio_sink_write, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    // SetSyncCenter
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    audioSink->SetSyncCenter(syncCenter);
+
+    // DoSyncWrite
+    AVBufferConfig config;
+    config.size = 4;
+    config.memoryType = MemoryType::SHARED_MEMORY;
+    const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    buffer->flag_ = 0; // not eos
+    buffer->pts_ = -1;
+    auto doSyncWriteRes = audioSink->DoSyncWrite(buffer);
+    ASSERT_TRUE(doSyncWriteRes == 0);
+    buffer->pts_ = 1;
+    doSyncWriteRes = audioSink->DoSyncWrite(buffer);
+    ASSERT_TRUE(doSyncWriteRes == 0);
 }
 } // namespace Test
 } // namespace Media

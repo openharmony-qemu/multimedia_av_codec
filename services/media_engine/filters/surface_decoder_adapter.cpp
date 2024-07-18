@@ -196,10 +196,19 @@ Status SurfaceDecoderAdapter::Start()
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
     }
+    ret = codecServer_->Prepare();
+    if (ret == 0) {
+        MEDIA_LOG_I("Prepare success");
+    } else {
+        MEDIA_LOG_I("Prepare fail");
+        return Status::ERROR_UNKNOWN;
+    }
     ret = codecServer_->Start();
     if (ret == 0) {
+        MEDIA_LOG_I("Start success");
         return Status::OK;
     } else {
+        MEDIA_LOG_I("Start fail");
         return Status::ERROR_UNKNOWN;
     }
 }

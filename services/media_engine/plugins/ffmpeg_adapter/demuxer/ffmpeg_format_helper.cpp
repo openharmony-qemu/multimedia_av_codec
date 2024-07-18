@@ -59,6 +59,7 @@ static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
     {AVMEDIA_TYPE_SUBTITLE, MediaType::SUBTITLE},
+    {AVMEDIA_TYPE_TIMEDMETA, MediaType::TIMEDMETA}
 };
 
 static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
@@ -85,7 +86,8 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
-    {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP}
+    {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
+    {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
 };
 
 static std::map<std::string, FileType> g_convertFfmpegFileType = {
@@ -225,12 +227,13 @@ bool IsPCMStream(AVCodecID codecID)
 }
 } // namespace
 
-void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format)
+void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
 {
     format.Set<Tag::MEDIA_TRACK_COUNT>(static_cast<int32_t>(avFormatContext.nb_streams));
     bool hasVideo = false;
     bool hasAudio = false;
     bool hasSubtitle = false;
+    bool hasTimedMeta = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
         MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " type: " PUBLIC_LOG_S ".", i,
             ConvertFFmpegMediaTypeToString(avFormatContext.streams[i]->codecpar->codec_type).data());
@@ -247,11 +250,19 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             hasAudio = true;
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             hasSubtitle = true;
+        } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
+            hasTimedMeta = true;
         }
     }
     format.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
     format.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
     format.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+    format.Set<Tag::MEDIA_HAS_TIMEDMETA>(hasTimedMeta);
+}
+
+void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format)
+{
+    ParseTrackType(avFormatContext, format);
     format.Set<Tag::MEDIA_FILE_TYPE>(GetFileTypeByName(avFormatContext));
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
@@ -345,6 +356,9 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAVTrackInfo(avStream, format);
         ParseAudioTrackInfo(avStream, format);
+    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
+        ParseAVTrackInfo(avStream, format);
+        ParseTimedMetaTrackInfo(avStream, format);
     }
 }
 
@@ -550,6 +564,23 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(avStream.codecpar->bits_per_raw_sample);
 }
 
+void FFmpegFormatHelper::ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format)
+{
+    AVDictionaryEntry *valPtr = nullptr;
+    valPtr = av_dict_get(avStream.metadata, "timed_metadata_key", nullptr, AV_DICT_IGNORE_SUFFIX);
+    if (valPtr == nullptr) {
+        MEDIA_LOG_W("get timed metadata key failed.");
+    } else {
+        format.Set<Tag::TIMED_METADATA_KEY>(std::string(valPtr->value));
+    }
+    valPtr = av_dict_get(avStream.metadata, "src_track_id", nullptr, AV_DICT_MATCH_CASE);
+    if (valPtr == nullptr) {
+        MEDIA_LOG_W("get src track id failed.");
+    } else {
+        format.Set<Tag::TIMED_METADATA_SRC_TRACK>(std::stoi(valPtr->value));
+    }
+}
+
 void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format)
 {
     HEVCProfile profile = FFMpegConverter::ConvertFFMpegToOHHEVCProfile(avStream.codecpar->profile);
@@ -624,9 +655,9 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     } else {
         MEDIA_LOG_D("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
     }
-
-    if (GetFileTypeByName(avFormatContext) == FileType::MPEGTS ||
-        GetFileTypeByName(avFormatContext) == FileType::FLV) {
+    auto FileType = GetFileTypeByName(avFormatContext);
+    if (FileType == FileType::MPEGTS ||
+        FileType == FileType::FLV) {
         MEDIA_LOG_I("Updata info for mpegts from parser");
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));

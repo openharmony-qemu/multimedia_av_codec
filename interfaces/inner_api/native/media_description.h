@@ -268,6 +268,22 @@ public:
      * Key for hdr vivid video cuvv configuration box, value type is uint8_t*
      */
     static constexpr std::string_view MD_KEY_VIDEO_CUVV_CONFIG_BOX = "cuvv_config_box";
+
+    /**
+     * Key for timed metadata track data type, value type is string
+     */
+    static constexpr std::string_view MD_KEY_TIMED_METADATA_KEY = "timed_metadata_key";
+
+    /**
+     * Key for timed metadata source track id, value type is int32_t
+     */
+    static constexpr std::string_view MD_KEY_TIMED_METADATA_SRC_TRACK_ID = "timed_metadata_track_id";
+
+    /**
+     * Key for video color space of the video decoder output, value type is int32_t. See OH_NativeBuffer_ColorSpace for
+     * value, and only OH_COLORSPACE_BT709_LIMIT is valid.
+     */
+    static constexpr std::string_view MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_colorspace";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

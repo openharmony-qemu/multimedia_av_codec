@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include "avmuxer.h"
 #include "native_avbuffer.h"
+#include "native_audio_channel_layout.h"
 #ifdef AVMUXER_UNITTEST_CAPI
 #include "native_avmuxer.h"
 #include "native_avformat.h"
@@ -39,6 +40,8 @@ const std::string TEST_FILE_PATH = "/data/test/media/";
 const std::string INPUT_FILE_PATH = "/data/test/media/h264_720_480.dat";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr uint32_t AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST = 1 << 6;
+const std::string TIMED_METADATA_TRACK_MIMETYPE = "meta/timed-metadata";
+const std::string TIMED_METADATA_KEY = "com.openharmony.timed_metadata.test";
 } // namespace
 
 void AVMuxerUnitTest::SetUpTestCase() {}
@@ -107,6 +110,47 @@ int32_t AVMuxerUnitTest::WriteSample(int32_t trackId, std::shared_ptr<std::ifstr
     int32_t ret = avmuxer_->WriteSampleBuffer(trackId, buffer);
     OH_AVBuffer_Destroy(buffer);
     return ret;
+}
+
+int32_t AVMuxerUnitTest::WriteSample(sptr<AVBufferQueueProducer> bqProducer,
+    std::shared_ptr<std::ifstream> file, bool &eosFlag)
+{
+    if (file->eof()) {
+        eosFlag = true;
+        return 0;
+    }
+    int64_t pts = 0;
+    file->read(reinterpret_cast<char*>(&pts), sizeof(pts));
+    if (file->eof()) {
+        eosFlag = true;
+        return 0;
+    }
+    uint32_t flags = 0;
+    file->read(reinterpret_cast<char*>(&flags), sizeof(flags));
+    if (file->eof()) {
+        eosFlag = true;
+        return 0;
+    }
+    int32_t size = 0;
+    file->read(reinterpret_cast<char*>(&size), sizeof(size));
+    if (file->eof()) {
+        eosFlag = true;
+        return 0;
+    }
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.size = size;
+    avBufferConfig.memoryType = MemoryType::VIRTUAL_MEMORY;
+    bqProducer->RequestBuffer(buffer, avBufferConfig, -1);
+    buffer->pts_ = pts;
+    buffer->flag_ = flags;
+    file->read(reinterpret_cast<char*>(buffer->memory_->GetAddr()), size);
+    buffer->memory_->SetSize(size);
+    Status ret = bqProducer->PushBuffer(buffer, true);
+    if (ret == Status::OK) {
+        return 0;
+    }
+    return -1;
 }
 
 namespace {
@@ -343,15 +387,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
     const std::vector<std::string_view> testMp4MimeTypeList =
     {
         OH_AVCODEC_MIMETYPE_AUDIO_MPEG,
-        // OH_AVCODEC_MIMETYPE_AUDIO_FLAC,
-        // OH_AVCODEC_MIMETYPE_AUDIO_RAW,
         OH_AVCODEC_MIMETYPE_AUDIO_AAC,
-        // OH_AVCODEC_MIMETYPE_AUDIO_VORBIS,
-        // OH_AVCODEC_MIMETYPE_AUDIO_OPUS,
-        // OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB,
-        // OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB,
         OH_AVCODEC_MIMETYPE_VIDEO_AVC,
-        OH_AVCODEC_MIMETYPE_VIDEO_MPEG4,
         OH_AVCODEC_MIMETYPE_IMAGE_JPG,
         OH_AVCODEC_MIMETYPE_IMAGE_PNG,
         OH_AVCODEC_MIMETYPE_IMAGE_BMP,
@@ -360,8 +397,6 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
     const std::vector<std::string_view> testM4aMimeTypeList =
     {
         OH_AVCODEC_MIMETYPE_AUDIO_AAC,
-        // OH_AVCODEC_MIMETYPE_VIDEO_AVC,
-        // OH_AVCODEC_MIMETYPE_VIDEO_MPEG4,
         OH_AVCODEC_MIMETYPE_IMAGE_JPG,
         OH_AVCODEC_MIMETYPE_IMAGE_PNG,
         OH_AVCODEC_MIMETYPE_IMAGE_BMP,
@@ -376,7 +411,6 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
     avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
     avParam->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     avParam->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
-    avParam->PutIntValue(OH_MD_KEY_PROFILE, 0);
 
     for (uint32_t i = 0; i < testMp4MimeTypeList.size(); ++i) {
         bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
@@ -390,6 +424,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
     // need to change libohosffmpeg.z.so, muxer build config add ipod
     avmuxer_->Destroy();
     outputFormat = AV_OUTPUT_FORMAT_M4A;
+    avParam->PutIntValue(OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
     avParam->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     for (uint32_t i = 0; i < testM4aMimeTypeList.size(); ++i) {
         bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
@@ -983,6 +1018,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_001, TestSize.Level0)
 
     ret = avmuxer_->SetRotation(TEST_ROTATION);
     EXPECT_EQ(ret, 0);
+    EXPECT_EQ(avmuxer_->Start(), 0);
+    EXPECT_EQ(avmuxer_->Stop(), 0);
 }
 
 
@@ -993,6 +1030,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_001, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_002, TestSize.Level0)
 {
+    int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
@@ -1000,8 +1038,17 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_002, TestSize.Level0)
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
-    int32_t ret = avmuxer_->SetRotation(TEST_ROTATION);
+    int32_t ret = avmuxer_->SetRotation(180); // 180 rotation
     EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<FormatMock> vParam =
+    FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ret = avmuxer_->AddTrack(trackId, vParam);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    EXPECT_EQ(avmuxer_->Start(), 0);
+    EXPECT_EQ(avmuxer_->Stop(), 0);
 }
 
 /**
@@ -1113,6 +1160,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_006, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_007, TestSize.Level0)
 {
+    int32_t trackId = -1;
     constexpr int32_t testRotation180 = 180;
     constexpr int32_t testRotation270 = 270;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
@@ -1133,6 +1181,15 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_007, TestSize.Level0)
 
     ret = avmuxer_->SetRotation(testRotation270);
     EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<FormatMock> vParam =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+    ret = avmuxer_->AddTrack(trackId, vParam);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    EXPECT_EQ(avmuxer_->Start(), 0);
+    EXPECT_EQ(avmuxer_->Stop(), 0);
 }
 
 /**
@@ -1517,6 +1574,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_003, TestSize.Level0)
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
+    ASSERT_EQ(avmuxer_->SetRotation(180), 0); // 180 rotation
+
     std::shared_ptr<FormatMock> videoParams =
         FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
@@ -1542,8 +1601,165 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_003, TestSize.Level0)
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     }
     ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 
+/**
+ * @tc.name: Muxer_WAV_001
+ * @tc.desc: Muxer mux the wav by g711mu
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_WAV_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_G711MU_44100_2.wav");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600); // 705600 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 2048); // 2048 frame size
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/g711mu_44100_2.dat", std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+    ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_WAV_002
+ * @tc.desc: Muxer mux the wav by pcm
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_WAV_002, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_PCM_44100_2_S16LE.wav");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, "audio/raw");
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 1411200); // 1411200 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_STEREO);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>("/data/test/media/pcm_44100_2_s16le.dat", std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+    ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(trackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_WAV_003
+ * @tc.desc: Muxer mux the wav by pcm, test OH_MD_KEY_AUDIO_SAMPLE_FORMAT
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_WAV_003, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_PCM_44100_2_XXX.wav");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, "audio/raw");
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8P);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 705600); // 705600 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_STEREO);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S24P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_F32P);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+}
+
+/**
+ * @tc.name: Muxer_WAV_004
+ * @tc.desc: Muxer mux the wav by pcm, test OH_MD_KEY_CHANNEL_LAYOUT
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_WAV_004, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_PCM_44100_2_XXX.wav");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_WAV;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, "audio/raw");
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100); // 44100 sample rate
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2); // 2 channels
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    audioParams->PutLongValue(OH_MD_KEY_BITRATE, 1411200); // 1411200 bit rate
+    audioParams->PutIntValue("audio_samples_per_frame", 1024); // 1024 frame size
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_2POINT0POINT2);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_AMB_ORDER1_ACN_N3D);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+    audioParams->PutLongValue(OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_AMB_ORDER1_FUMA);
+    ASSERT_NE(avmuxer_->AddTrack(trackId, audioParams), 0);
+}
 #ifdef AVMUXER_UNITTEST_CAPI
 /**
  * @tc.name: Muxer_Destroy_001
@@ -1788,6 +2004,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
     param->Set<Tag::MEDIA_ALBUM_ARTIST>("ohos muxer");
     param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
     param->Set<Tag::MEDIA_GENRE>("{marketing-name:\"HW P60\"}");
+    param->SetData("fast_start", static_cast<int32_t>(1)); // 1 moov 前置
     ret = avmuxer->SetParameter(param);
     EXPECT_EQ(ret, 0);
 
@@ -1802,6 +2019,131 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
     ret = avmuxer->SetUserMeta(userMeta);
     EXPECT_EQ(ret, 0);
 
+    close(fd);
+}
+
+/**
+ * @tc.name: Muxer_SetFlag_004
+ * @tc.desc: Muxer Write Sample for timed metadata track
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_004, TestSize.Level0)
+{
+    int32_t vidTrackId = -1;
+    int32_t metaTrackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Timedmetadata_track.mp4");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+
+    ASSERT_EQ(avmuxer_->AddTrack(vidTrackId, videoParams), 0);
+    ASSERT_GE(vidTrackId, 0);
+
+    std::shared_ptr<FormatMock> metadataParams = FormatMockFactory::CreateTimedMetadataFormat(
+        TIMED_METADATA_TRACK_MIMETYPE.c_str(), TIMED_METADATA_KEY, vidTrackId);
+    ASSERT_NE(metadataParams, nullptr);
+
+    ASSERT_EQ(avmuxer_->AddTrack(metaTrackId, metadataParams), 0);
+    ASSERT_GE(metaTrackId, 1);
+
+    int32_t ret = avmuxer_->SetTimedMetadata();
+    EXPECT_EQ(ret, 0);
+
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+
+    bool eosFlag = false;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST;
+    ret = WriteSample(vidTrackId, inputFile_, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(vidTrackId, inputFile_, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    
+    auto inputFileMeta = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    extSize = 0;
+    inputFileMeta->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFileMeta->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+    eosFlag = false;
+    flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST;
+    ret = WriteSample(metaTrackId, inputFileMeta, eosFlag, flag);
+    while (!eosFlag && (ret == 0)) {
+        ret = WriteSample(metaTrackId, inputFileMeta, eosFlag, flag);
+    }
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: Muxer_MP4_001
+ * @tc.desc: Muxer mux mp4 by h264
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_MP4_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AVC.mp4");
+    Plugins::OutputFormat outputFormat = Plugins::OutputFormat::MPEG_4;
+    int32_t fd = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, outputFormat);
+    ASSERT_NE(avmuxer, nullptr);
+
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_AVC);
+    videoParams->Set<Tag::VIDEO_WIDTH>(TEST_WIDTH);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(TEST_HEIGHT);
+    videoParams->Set<Tag::VIDEO_FRAME_RATE>(60.0); // 60.0 fps
+    videoParams->Set<Tag::VIDEO_DELAY>(0);
+    ASSERT_EQ(avmuxer->AddTrack(trackId, videoParams), 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::VIDEO_ROTATION>(Plugins::VideoRotation::VIDEO_ROTATION_90);
+    param->Set<Tag::MEDIA_CREATION_TIME>("2023-12-19T03:16:00.000Z");
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f); // 22.67f test latitude
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f); // 114.06f test longitude
+    param->SetData("fast_start", static_cast<int32_t>(1)); // 1 moov 前置
+    EXPECT_EQ(avmuxer->SetParameter(param), 0);
+    OHOS::sptr<AVBufferQueueProducer> bqProducer= avmuxer->GetInputBufferQueue(trackId);
+    ASSERT_NE(bqProducer, nullptr);
+
+    ASSERT_EQ(avmuxer->Start(), 0);
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    userMeta->SetData("com.openharmony.version", 5); // 5 test version
+    userMeta->SetData("com.openharmony.model", "LNA-AL00");
+    userMeta->SetData("com.openharmony.capture.fps", 30.00f); // 30.00f test capture fps
+    EXPECT_EQ(avmuxer->SetUserMeta(userMeta), 0);
+
+    inputFile_ = std::make_shared<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    int32_t extSize = 0;
+    inputFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
+    if (extSize > 0) {
+        std::vector<uint8_t> buffer(extSize);
+        inputFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+    }
+    bool eosFlag = false;
+    int32_t ret = 0;
+    do {
+        ret = WriteSample(bqProducer, inputFile_, eosFlag);
+    } while (!eosFlag && (ret == 0));
+    ASSERT_EQ(ret, 0);
+    ASSERT_EQ(avmuxer->Stop(), 0);
     close(fd);
 }
 #endif

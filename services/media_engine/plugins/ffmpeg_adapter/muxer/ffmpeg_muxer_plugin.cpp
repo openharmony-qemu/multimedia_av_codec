@@ -23,6 +23,7 @@
 #include "securec.h"
 #include "common/log.h"
 #include "ffmpeg_utils.h"
+#include "ffmpeg_converter.h"
 #include "meta/mime_type.h"
 
 namespace {
@@ -34,12 +35,13 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr", "mp3", "wav"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr float LATITUDE_MIN = -90.0f;
 constexpr float LATITUDE_MAX = 90.0f;
 constexpr float LONGITUDE_MIN = -180.0f;
 constexpr float LONGITUDE_MAX = 180.0f;
+const std::string TIMED_METADATA_HANDLER_NAME = "timed_metadata";
 
 bool IsMuxerSupported(const char *name)
 {
@@ -70,6 +72,9 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_AMR_WB:
             cap.SetMime(MimeType::AUDIO_AMR_WB);
             return true;
+        case AV_CODEC_ID_PCM_S16LE:
+            cap.SetMime(MimeType::AUDIO_RAW);
+            return true;
         default:
             break;
     }
@@ -92,6 +97,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "mp3") {
         auto cap = Capability(MimeType::MEDIA_MP3);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "wav") {
+        auto cap = Capability(MimeType::MEDIA_WAV);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -158,6 +167,35 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
     return Status::OK;
 }
 
+void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
+{
+    (void)avcl;
+    char buf[500] = {0}; // 500
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    if (ret < 0) {
+        return;
+    }
+    switch (level) {
+        case AV_LOG_WARNING:
+            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_ERROR:
+            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_FATAL:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_INFO:
+            MEDIA_LOG_I("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_DEBUG:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
+            break;
+        default:
+            break;
+    }
+}
+
 PLUGIN_DEFINITION(FFmpegMuxer, LicenseType::LGPL, RegisterMuxerPlugins, [] {g_pluginOutputFmt.clear();})
 
 void ResetCodecParameter(AVCodecParameters *par)
@@ -191,6 +229,7 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 #endif
+    av_log_set_callback(FfmpegLogPrint);
     auto pkt = av_packet_alloc();
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
     outputFormat_ = g_pluginOutputFmt[pluginName_];
@@ -240,6 +279,10 @@ Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
     if (param->GetData("fast_start", dataInt) && dataInt == 1) {
         isFastStart_ = true;
         MEDIA_LOG_I("fast start for moov");
+    }
+    if (param->GetData("use_timed_meta_track", dataInt) && dataInt == 1) {
+        useTimedMetadata_ = true;
+        MEDIA_LOG_I("use timed metadata track");
     }
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
@@ -438,6 +481,34 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const std::sh
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::SetCodecParameterTimedMeta(AVStream* stream, const std::shared_ptr<Meta> &trackDesc)
+{
+    av_dict_set(&stream->metadata, "handler_name", TIMED_METADATA_HANDLER_NAME.c_str(), 0);
+    if (trackDesc->Find(Tag::TIMED_METADATA_SRC_TRACK) != trackDesc->end()) {
+        int32_t sourceTrackID {};
+        trackDesc->Get<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackID);
+        av_dict_set(&stream->metadata, "src_track_id", std::to_string(sourceTrackID).c_str(), 0);
+    } else {
+        MEDIA_LOG_W("cannot find timed_metadata_track_id in meta");
+    }
+    if (trackDesc->Find(Tag::TIMED_METADATA_KEY) != trackDesc->end()) {
+        std::string keyOfMetadata {};
+        trackDesc->Get<Tag::TIMED_METADATA_KEY>(keyOfMetadata);
+        av_dict_set(&stream->metadata, keyOfMetadata.c_str(), keyOfMetadata.c_str(), 0);
+    }
+    if (trackDesc->Find(Tag::TIMED_METADATA_LOCALE) != trackDesc->end()) {
+        std::string localeInfo {};
+        trackDesc->Get<Tag::TIMED_METADATA_LOCALE>(localeInfo);
+        av_dict_set(&stream->metadata, "locale_key", localeInfo.c_str(), 0);
+    }
+    if (trackDesc->Find(Tag::TIMED_METADATA_SETUP) != trackDesc->end()) {
+        std::string setuInfo {};
+        trackDesc->Get<Tag::TIMED_METADATA_SETUP>(setuInfo);
+        av_dict_set(&stream->metadata, "setu_key", setuInfo.c_str(), 0);
+    }
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
 {
     if (!isColorSet_) {
@@ -532,6 +603,15 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels); // channels
     FALSE_RETURN_V_MSG_E(ret && channels > 0, Status::ERROR_MISMATCHED_TYPE,
         "get audio channels failed! channels:%{public}d", channels);
+    if (codeID == AV_CODEC_ID_PCM_U8) {
+        AudioSampleFormat sampleFormat = INVALID_WIDTH;
+        ret = trackDesc->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat); // sampleFormat
+        FALSE_RETURN_V_MSG_E(ret, Status::ERROR_MISMATCHED_TYPE, "get audio sample format failed!");
+        ret = Raw2CodecId(sampleFormat, codeID);
+        FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_DATA,
+            "this mimeType do not support! mimeType:%{public}s, sampleFormat:%{public}d",
+            MimeType::AUDIO_RAW, sampleFormat);
+    }
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
@@ -540,12 +620,22 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
     st->codecpar->channels = channels;
-    int32_t frameSize = 0;
     if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
+        int32_t frameSize = 0;
         trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize); // frame size
         FALSE_RETURN_V_MSG_E(frameSize > 0, Status::ERROR_MISMATCHED_TYPE,
             "get audio sample per frame failed! audio sample per frame:%{public}d", frameSize);
         st->codecpar->frame_size = frameSize;
+    }
+    if (trackDesc->Find(Tag::AUDIO_CHANNEL_LAYOUT) != trackDesc->end()) {
+        AudioChannelLayout channelLayout = UNKNOWN;
+        trackDesc->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
+        auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
+        MEDIA_LOG_D("channelLayout:" PUBLIC_LOG_D64 ", ffChannelLayout:" PUBLIC_LOG_U64,
+            channelLayout, ffChannelLayout);
+        FALSE_RETURN_V_MSG_E(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_DATA,
+            "the value of channelLayout is not supported, " PUBLIC_LOG_D64, channelLayout);
+        st->codecpar->channel_layout = ffChannelLayout;
     }
     trackIndex = st->index;
     return SetCodecParameterOfTrack(st, trackDesc);
@@ -603,6 +693,29 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     return SetCodecParameterOfTrack(st, trackDesc);
 }
 
+Status FFmpegMuxerPlugin::AddTimedMetaTrack(
+    int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
+{
+    auto st = avformat_new_stream(formatContext_.get(), nullptr);
+    FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
+    ResetCodecParameter(st->codecpar);
+    st->codecpar->codec_type = AVMEDIA_TYPE_TIMEDMETA;
+    st->codecpar->codec_id = codeID;
+    st->codecpar->codec_tag = MKTAG('c', 'd', 's', 'c');
+
+    trackIndex = st->index;
+    double frameRate = 0;
+    if (trackDesc->Find(Tag::VIDEO_FRAME_RATE) != trackDesc->end()) {
+        trackDesc->Get<Tag::VIDEO_FRAME_RATE>(frameRate); // video frame rate
+        FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_MISMATCHED_TYPE,
+            "get video frame rate failed! video frame rate:%{public}lf", frameRate);
+        st->avg_frame_rate = {static_cast<int32_t>(frameRate), 1};
+    }
+
+    SetCodecParameterTimedMeta(st, trackDesc);
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc)
 {
     FALSE_RETURN_V_MSG_E(!isWriteHeader_, Status::ERROR_WRONG_STATE, "AddTrack failed! muxer has start!");
@@ -632,6 +745,9 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
     } else if (!mimeType.compare(0, mimeTypeLen, "image")) {
         ret = AddVideoTrack(trackIndex, trackDesc, codeID, true);
         FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddCoverTrack failed!");
+    } else if (!mimeType.compare(0, mimeTypeLen - 1, "meta")) {
+        ret = AddTimedMetaTrack(trackIndex, trackDesc, codeID);
+        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTimedMetaTrack failed!");
     } else {
         MEDIA_LOG_D("mimeType %{public}s is unsupported", mimeType.c_str());
         return Status::ERROR_UNSUPPORTED_FORMAT;
@@ -639,6 +755,25 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
     uint32_t flags = static_cast<uint32_t>(formatContext_->flags);
     formatContext_->flags = static_cast<int32_t>(flags | AVFMT_TS_NONSTRICT);
     return Status::NO_ERROR;
+}
+
+void FFmpegMuxerPlugin::HandleOptions(std::string& optionName)
+{
+    std::vector<std::string> options {};
+    if (canReadFile_ && isFastStart_) {
+        options.push_back("faststart");
+    }
+    if (useTimedMetadata_) {
+        options.push_back("use_timed_meta_track");
+    }
+    if (options.size() != 0) {
+        auto itemIter = options.cbegin();
+        optionName.append(*itemIter++);
+        for (; itemIter != options.cend(); itemIter++) {
+            optionName.append("+");
+            optionName.append(*itemIter);
+        }
+    }
 }
 
 Status FFmpegMuxerPlugin::Start()
@@ -659,8 +794,10 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    if (canReadFile_ && isFastStart_) {
-        av_dict_set(&options, "movflags", "faststart", 0);
+    std::string optionName {};
+    HandleOptions(optionName);
+    if (optionName.size() != 0) {
+        av_dict_set(&options, "movflags", optionName.c_str(), 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
@@ -725,7 +862,8 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
         cachePacket_->dts = AV_NOPTS_VALUE;
     }
     cachePacket_->flags = 0;
-    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) {
+    if ((sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) ||
+        st->codecpar->codec_type == AVMEDIA_TYPE_TIMEDMETA) {
         MEDIA_LOG_D("It is key frame");
         cachePacket_->flags |= AV_PKT_FLAG_KEY;
     }

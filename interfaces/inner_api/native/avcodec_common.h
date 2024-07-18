@@ -250,6 +250,7 @@ public:
     static constexpr std::string_view SOURCE_FILE_TYPE     = "file_type";        // string, type
     static constexpr std::string_view SOURCE_HAS_VIDEO     = "has_video";        // bool, contain video tracks
     static constexpr std::string_view SOURCE_HAS_AUDIO     = "has_audio";        // bool, contain audio tracks
+    static constexpr std::string_view SOURCE_HAS_TIMEDMETA = "has_timed_meta";   // bool, contain timed metadata tracks
     static constexpr std::string_view SOURCE_HAS_SUBTITLE  = "has_subtitle";     // bool, contain subtitle tracks
     static constexpr std::string_view SOURCE_AUTHOR        = "author";           // string, autbor
     static constexpr std::string_view SOURCE_COMPOSER      = "composer";         // string, composer

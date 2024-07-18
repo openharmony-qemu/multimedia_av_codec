@@ -23,7 +23,6 @@
 #include "codecbase.h"
 #include "codeclist_core.h"
 #include "meta/meta_key.h"
-#include "unittest_utils.h"
 #include "ui/rs_surface_node.h"
 #include "window_option.h"
 #include "wm/window.h"
@@ -972,7 +971,7 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Lev
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_001, TestSize.Level1)
 {
     CreateHCodecByMime();
-    server_->temporalScalability_ = std::make_shared<TemporalScalability>();
+    server_->temporalScalability_ = std::make_shared<TemporalScalability>("video.F.Decoder.Name.00");
     uint32_t index = 1;
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));

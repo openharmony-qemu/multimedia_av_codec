@@ -20,23 +20,29 @@
 #include <string>
 #include "plugin/source_plugin.h"
 #include "plugin/plugin_buffer.h"
+#include "osal/utils/ring_buffer.h"
 #include "osal/task/task.h"
 #include <mutex>
 #include <shared_mutex>
+#include "osal/utils/steady_clock.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace FileFdSource {
+struct HmdfsHasCache {
+    int64_t offset;
+    int64_t readSize;
+};
+
 class FileFdSourcePlugin : public SourcePlugin {
 public:
     explicit FileFdSourcePlugin(std::string name);
-    ~FileFdSourcePlugin() = default;
+    ~FileFdSourcePlugin();
     Status SetCallback(Callback* cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
     Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;
-    bool PrepareRead(std::shared_ptr<Buffer>& buffer, std::shared_ptr<Memory>& bufData, size_t expectedLen);
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
@@ -44,37 +50,63 @@ public:
     Status Stop() override;
     void SetDemuxerState() override;
     void SetBundleName(const std::string& bundleName) override;
-    void SubmitBufferingStart();
-    void SubmitReadFail();
+    Status SetCurrentBitRate(int32_t bitRate) override;
+    void SetInterruptState(bool isInterruptNeeded) override;
+    Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    void NotifyBufferingStart();
+    void NotifyBufferingPercent();
+    void NotifyBufferingEnd();
+    void NotifyReadFail();
 private:
     Status ParseUriInfo(const std::string& uri);
-    void PauseReadTimer();
-    int64_t ReadTimer();
+    Status ReadOfflineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
+    Status ReadOnlineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
+    Status SeekToOfflineFile(uint64_t offset);
+    Status SeekToOnlineFile(uint64_t offset);
+    void CacheDataLoop();
+    void HasCacheData(size_t bufferSize);
+    void HandleReadResult(size_t bufferSize, int size);
+    std::shared_ptr<Memory> GetBufferPtr(std::shared_ptr<Buffer>& buffer, size_t expectedLen);
+
     void CacheData();
-    void StartTimerTask();
-    void PauseTimerTask();
-    void HandleReadFail();
     bool HandleBuffering();
     void PauseDownloadTask(bool isAsync);
+    inline int64_t GetLastSize(uint64_t position);
+    void CheckFileType();
+    void GetCurrentSpeed(int64_t curTime);
+    float GetCacheTime(float num);
+    void UpdateWaterLineAbove();
+    void DeleteCacheBuffer(char* buffer);
 
     int32_t fd_ {-1};
     int64_t offset_ {0};
     uint64_t size_ {0};
-
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
     uint64_t position_ {0};
     Callback* callback_ {nullptr};
-    bool isTaskCallback_ {false};
     std::atomic<bool> isBuffering_ {false};
-    std::atomic<bool> isEnd_ {false};
-    uint64_t readTime_ {0};
-    std::shared_ptr<Task> timerTask_;
+    std::atomic<bool> isInterrupted_ {false};
+    std::atomic<bool> inSeek_ {false};
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
     bool isReadFrame_ {false};
-    std::string bundleName_ {};
-    bool isReadSuccess_ {false};
+    bool isSeekHit_ {false};
+    uint64_t cachePosition_ {0};
+    int64_t waterLineAbove_ {0};
+    bool isCloudFile_ {false};
+    std::shared_ptr<RingBuffer> ringBuffer_;
+
+    int64_t ringBufferSize_ {0};
+    uint64_t downloadSize_ {0};
+    SteadyClock steadyClock_;
+    SteadyClock steadyClock2_;
+    int64_t lastCheckTime_ {0};
+    int32_t currentBitRate_ {0};
+    float avgDownloadSpeed_ {0};
+    int64_t curReadTime_ {0};
+    int64_t retryTimes_ {0};
+    int64_t lastReadTime_ {0};
 };
 } // namespace FileSource
 } // namespace Plugins

@@ -79,10 +79,14 @@ int32_t HDecoder::SetupPort(const Format &format)
     PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                             codingType_, std::nullopt, frameRate.value()};
     int32_t maxInputSize = 0;
-    (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
-    if (maxInputSize > 0) {
-        inputPortInfo.inputBufSize = static_cast<uint32_t>(maxInputSize);
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize)) {
+        if (maxInputSize > 0) {
+            inputPortInfo.inputBufSize = static_cast<uint32_t>(maxInputSize);
+        } else {
+            HLOGW("user don't set valid input buffer size");
+        }
     }
+
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;

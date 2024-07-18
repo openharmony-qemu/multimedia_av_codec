@@ -71,8 +71,11 @@ static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *user
 
 static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
+    if (enc_sample->isFlushing_) {
+        return;
+    }
     if (enc_sample->inputCallbackFlush) {
-        OH_VideoEncoder_Flush(codec);
+        enc_sample->Flush();
         cout << "OH_VideoEncoder_Flush end" << endl;
         enc_sample->isRunning_.store(false);
         enc_sample->signal_->inCond_.notify_all();
@@ -97,8 +100,11 @@ static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *d
 static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                                 void *userData)
 {
+    if (enc_sample->isFlushing_) {
+        return;
+    }
     if (enc_sample->outputCallbackFlush) {
-        OH_VideoEncoder_Flush(codec);
+        enc_sample->Flush();
         cout << "OH_VideoEncoder_Flush end" << endl;
         enc_sample->isRunning_.store(false);
         enc_sample->signal_->inCond_.notify_all();
@@ -753,20 +759,24 @@ void VEncNdkSample::InputFunc()
             if (!isRunning_.load()) {
                 return true;
             }
-            return signal_->inIdxQueue_.size() > 0;
+            return signal_->inIdxQueue_.size() > 0 && !isFlushing_.load();
         });
         if (!isRunning_.load()) {
             break;
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-
         lock.unlock();
+        unique_lock<mutex> flushlock(signal_->flushMutex_);
+        if (isFlushing_) {
+            continue;
+        }
         if (fuzzMode == false) {
             InputDataNormal(runningFlag, index, buffer);
         } else {
             InputDataFuzz(runningFlag, index);
         }
+        flushlock.unlock();
         if (sleepOnFPS) {
             usleep(FRAME_INTERVAL);
         }
@@ -818,7 +828,7 @@ void VEncNdkSample::OutputFunc()
             if (!isRunning_.load()) {
                 return true;
             }
-            return signal_->outIdxQueue_.size() > 0;
+            return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
         if (!isRunning_.load()) {
             break;
@@ -834,7 +844,6 @@ void VEncNdkSample::OutputFunc()
             break;
         }
         int size = attr.size;
-
         if (outFile == nullptr) {
             cout << "dump data fail" << endl;
         } else {
@@ -857,6 +866,8 @@ void VEncNdkSample::OutputFunc()
 
 int32_t VEncNdkSample::Flush()
 {
+    isFlushing_.store(true);
+    unique_lock<mutex> flushLock(signal_->flushMutex_);
     unique_lock<mutex> inLock(signal_->inMutex_);
     clearIntqueue(signal_->inIdxQueue_);
     signal_->inCond_.notify_all();
@@ -866,7 +877,10 @@ int32_t VEncNdkSample::Flush()
     clearBufferqueue(signal_->attrQueue_);
     signal_->outCond_.notify_all();
     outLock.unlock();
-    return OH_VideoEncoder_Flush(venc_);
+    int32_t ret = OH_VideoEncoder_Flush(venc_);
+    isFlushing_.store(false);
+    flushLock.unlock();
+    return ret;
 }
 
 int32_t VEncNdkSample::Reset()

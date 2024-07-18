@@ -59,6 +59,10 @@ int32_t HEncoder::OnConfigure(const Format &format)
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
     CheckIfEnableCb(format);
+    ret = SetTemperalLayer(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     ret = SetLTRParam(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -130,8 +134,16 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
-    if (ltrFrameNum <= 0) {
+    if (!caps_.port.video.isSupportLTR) {
+        HLOGW("platform not support LTR");
+        return AVCS_ERR_OK;
+    }
+    if (ltrFrameNum <= 0 || ltrFrameNum > caps_.port.video.maxLTRFrameNum) {
         HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (enableTSVC_) {
+        HLOGW("user has enabled temporal scale, can not set LTR param");
         return AVCS_ERR_INVALID_VAL;
     }
     CodecLTRParam info;
@@ -141,7 +153,7 @@ int32_t HEncoder::SetLTRParam(const Format &format)
         HLOGE("configure LTR failed");
         return AVCS_ERR_INVALID_VAL;
     }
-    enableLTR = true;
+    enableLTR_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -163,6 +175,53 @@ int32_t HEncoder::SetQpRange(const Format &format, bool isCfg)
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("set qp range (%d~%d) succ", minQp, maxQp);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::SetTemperalLayer(const Format &format)
+{
+    int32_t enableTemporalScale = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enableTemporalScale) ||
+        (enableTemporalScale == 0)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportTSVC) {
+        HLOGW("platform not support temporal scale");
+        return AVCS_ERR_OK;
+    }
+    Media::Plugins::TemporalGopReferenceMode GopReferenceMode{};
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+        *reinterpret_cast<int *>(&GopReferenceMode)) ||
+        static_cast<int32_t>(GopReferenceMode) != 2) { // 2: gop mode
+        HLOGE("user enable temporal scalability but not set invalid temporal gop mode");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    int32_t temporalGopSize = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize)) {
+        HLOGE("user enable temporal scalability but not set invalid temporal gop size");
+        return AVCS_ERR_INVALID_VAL;
+    }
+
+    CodecTemperalLayerParam temperalLayerParam;
+    InitOMXParamExt(temperalLayerParam);
+    switch (temporalGopSize) {
+        case 2: // 2: picture size of the temporal group
+            temperalLayerParam.layerCnt = 2; // 2: layer of the temporal group
+            break;
+        case 4: // 4: picture size of the temporal group
+            temperalLayerParam.layerCnt = 3; // 3: layer of the temporal group
+            break;
+        default:
+            HLOGE("user set invalid temporal gop size %d", temporalGopSize);
+            return AVCS_ERR_INVALID_VAL;
+    }
+    
+    if (!SetParameter(OMX_IndexParamTemperalLayer, temperalLayerParam)) {
+        HLOGE("set temporal layer param failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set temporal layer param %d succ", temperalLayerParam.layerCnt);
+    enableTSVC_ = true;
     return AVCS_ERR_OK;
 }
 
@@ -341,53 +400,72 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     return nullopt;
 }
 
-int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
+std::optional<VideoEncodeBitrateMode> HEncoder::GetBitRateModeFromUser(const Format &format)
 {
     VideoEncodeBitrateMode mode;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, *reinterpret_cast<int *>(&mode))) {
-        return AVCS_ERR_OK;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, *reinterpret_cast<int *>(&mode))) {
+        return mode;
     }
-    switch (mode) {
-        case CBR:
-        case VBR: {
-            optional<uint32_t> bitRate = GetBitRateFromUser(format);
-            if (!bitRate.has_value()) {
-                HLOGW("user set CBR/VBR mode but not set valid bitrate");
-                return AVCS_ERR_INVALID_VAL;
-            }
-            OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
-            InitOMXParam(bitrateType);
-            bitrateType.nPortIndex = OMX_DirOutput;
-            bitrateType.eControlRate = (mode == CBR) ? OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
-            bitrateType.nTargetBitrate = bitRate.value();
-            if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
-                HLOGE("failed to set OMX_IndexParamVideoBitrate");
-                return AVCS_ERR_UNKNOWN;
-            }
-            HLOGI("set %s mode and target bitrate %u bps succ", (mode == CBR) ? "CBR" : "VBR",
-                bitrateType.nTargetBitrate);
-            return AVCS_ERR_OK;
-        }
-        case CQ: {
-            int32_t quality;
-            if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) || quality < 0) {
-                HLOGW("user set CQ mode but not set valid quality");
-                return AVCS_ERR_INVALID_VAL;
-            }
-            ControlRateConstantQuality bitrateType;
-            InitOMXParamExt(bitrateType);
-            bitrateType.portIndex = OMX_DirOutput;
-            bitrateType.qualityValue = static_cast<uint32_t>(quality);
-            if (!SetParameter(OMX_IndexParamControlRateConstantQuality, bitrateType)) {
-                HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
-                return AVCS_ERR_UNKNOWN;
-            }
-            HLOGI("set CQ mode and target quality %u succ", bitrateType.qualityValue);
-            return AVCS_ERR_OK;
-        }
-        default:
-            return AVCS_ERR_INVALID_VAL;
+    return nullopt;
+}
+
+int32_t HEncoder::SetConstantQualityMode(int32_t quality)
+{
+    ControlRateConstantQuality bitrateType;
+    InitOMXParamExt(bitrateType);
+    bitrateType.portIndex = OMX_DirOutput;
+    bitrateType.qualityValue = static_cast<uint32_t>(quality);
+    if (!SetParameter(OMX_IndexParamControlRateConstantQuality, bitrateType)) {
+        HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
+        return AVCS_ERR_UNKNOWN;
     }
+    HLOGI("set CQ mode and target quality %u succ", bitrateType.qualityValue);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
+{
+    OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
+    InitOMXParam(bitrateType);
+    bitrateType.nPortIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
+        HLOGE("get OMX_IndexParamVideoBitrate failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+
+    optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(format);
+    int32_t quality;
+    if (bitRateMode.has_value() && bitRateMode.value() == CQ &&
+        format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
+        return SetConstantQualityMode(quality);
+    }
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (bitRate.has_value()) {
+        bitrateType.nTargetBitrate = bitRate.value();
+    }
+    if (bitRateMode.has_value() && (bitRateMode.value() == VBR || bitRateMode.value() == CBR)) {
+        bitrateType.eControlRate = (bitRateMode.value() == CBR) ?
+            OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
+    }
+    if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
+        HLOGE("failed to set OMX_IndexParamVideoBitrate");
+        return AVCS_ERR_UNKNOWN;
+    }
+    outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
+        static_cast<int64_t>(bitrateType.nTargetBitrate));
+    if (bitrateType.eControlRate == OMX_Video_ControlRateConstant ||
+        bitrateType.eControlRate == OMX_Video_ControlRateVariable) {
+        bitRateMode = bitrateType.eControlRate == OMX_Video_ControlRateConstant ? CBR : VBR;
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
+            static_cast<int32_t>(bitRateMode.value()));
+        HLOGI("set %s mode and target bitrate %u bps succ", (bitRateMode.value() == CBR) ? "CBR" : "VBR",
+            bitrateType.nTargetBitrate);
+    } else {
+        HLOGI("set default bitratemode and target bitrate %u bps succ", bitrateType.nTargetBitrate);
+    }
+    return AVCS_ERR_OK;
 }
 
 void HEncoder::ConfigureProtocol(const Format &format, std::optional<double> frameRate)
@@ -741,7 +819,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuf
 void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
                                          const shared_ptr<Media::Meta> &meta)
 {
-    if (!enableLTR) {
+    if (!enableLTR_) {
         return;
     }
     AppendToVector(omxBuffer->alongParam, OMX_IndexParamLTR);

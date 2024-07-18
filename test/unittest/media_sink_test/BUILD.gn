@@ -19,26 +19,14 @@ module_output_path = "av_codec/unittest"
 av_codec_unittest_include_dirs =
     [ "$av_codec_root_dir/interfaces/inner_api/native" ]
 
-av_codec_unittest_cflags = [
-  "-std=c++17",
-  "-fno-rtti",
-  "-fno-exceptions",
-  "-Wall",
-  "-fno-common",
-  "-fstack-protector-strong",
-  "-Wshadow",
-  "-FPIC",
-  "-FS",
+av_audio_sink_unittest_cflags = [
   "-O2",
-  "-D_FORTIFY_SOURCE=2",
-  "-fvisibility=hidden",
-  "-Wformat=2",
-  "-Wdate-time",
-  "-Werror",
-  "-Wextra",
-  "-Wimplicit-fallthrough",
-  "-Wsign-compare",
-  "-Wunused-parameter",
+  "-fPIC",
+  "-Wall",
+  "-fexceptions",
+  "-fno-rtti",
+  "-Wno-unused-but-set-variable",
+  "-Wno-format",
 ]
 
 ##################################################################################################################
@@ -53,32 +41,52 @@ ohos_unittest("av_audio_sink_unit_test") {
     "$av_codec_root_dir/services/media_engine/plugins/sink",
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/sink",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
     "$media_foundation_root_dir/../../graphic/graphic_surface/interfaces/innerkits/surface",
     "$media_foundation_root_dir/../../graphic/graphic_surface/interface/inner_api/surface",
     "$media_foundation_root_dir/../../graphic/graphic_surface/surface/include",
   ]
 
-  cflags = av_codec_unittest_cflags
+  cflags = av_audio_sink_unittest_cflags
 
   cflags_cc = cflags
 
   public_configs = []
 
   if (av_codec_support_test) {
+    public_external_deps = [ "ffmpeg:libohosffmpeg" ]
+
     sources = [
+      "./audio_server_sink_plugin_test.cpp",
       "./audio_sink_test.cpp",
       "./subtitle_sink_test.cpp",
+      "./sync_manager_test.cpp",
       "./video_sink_test.cpp",
+    ]
+
+    sources += [
+      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_convert.cpp",
+      "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
+      "$av_codec_root_dir/services/media_engine/plugins/sink/audio_server_sink_plugin.cpp",
     ]
   }
 
-  deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
+  configs = [
+    "$av_codec_root_dir/services/media_engine/plugins/sink:audio_server_sink_plugin_config",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+  ]
 
   external_deps = [
     "audio_framework:audio_renderer",
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",

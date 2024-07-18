@@ -49,6 +49,22 @@ struct AudioTrackParam g_audioAmrWbPar = {
     .frameSize = 1024,
 };
 
+struct AudioTrackParam g_audioG711MUPar = {
+    .fileName = "g711mu_44100_2.dat",
+    .mimeType = "audio/g711mu",
+    .sampleRate = 44100,
+    .channels = 2,
+    .frameSize = 2048,
+};
+
+struct AudioTrackParam g_audioRawPar = {
+    .fileName = "pcm_44100_2_s16le.dat",
+    .mimeType = "audio/raw",
+    .sampleRate = 44100,
+    .channels = 2,
+    .frameSize = 1024,
+};
+
 struct VideoTrackParam g_videoH264Par = {
     .fileName = "h264_720_480.dat",
     .mimeType = "video/avc",

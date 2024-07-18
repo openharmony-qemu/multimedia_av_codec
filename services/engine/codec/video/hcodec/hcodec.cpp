@@ -404,6 +404,10 @@ int32_t HCodec::SetLowLatency(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
         return AVCS_ERR_OK;
     }
+    if (!caps_.port.video.isSupportLowLatency) {
+        HLOGW("platform not support LowLatency");
+        return AVCS_ERR_OK;
+    }
 
     OMX_CONFIG_BOOLEANTYPE param {};
     InitOMXParam(param);
@@ -1314,7 +1318,7 @@ int32_t HCodec::OnAllocateComponent()
         return AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
-    HLOGE("create omx node %s succ", caps_.compName.c_str());
+    HLOGI("create omx node %s succ", caps_.compName.c_str());
     PrintCaller();
     return AVCS_ERR_OK;
 }

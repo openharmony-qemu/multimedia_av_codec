@@ -69,6 +69,7 @@ protected:
         std::string composer = "";
         int32_t hasVideo = -1;
         int32_t hasAudio = -1;
+        int32_t hasTimedMeta = -1;
         int32_t hasSubtitle = -1;
         int32_t fileType = 0;
         // track format
@@ -92,6 +93,8 @@ protected:
         int32_t rangeFlag = 0;
         int32_t matrixCoefficients = 0;
         int32_t chromaLocation = 0;
+        std::string timedMetadataKey = "";
+        int32_t srcTrackID = -1;
         // hevc format
         int32_t profile = 0;
         int32_t level = 0;
