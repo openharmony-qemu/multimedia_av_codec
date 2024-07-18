@@ -50,8 +50,10 @@ int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Fill buffer failed");
     DumpInput(bufferInfo);
 
-    bufferInfo.attr.pts = frameCount_ *
-        ((sampleInfo_->frameInterval == 0) ? 1 : sampleInfo_->frameInterval) * 1000; // 1000: 1ms to us
+    if (bufferInfo.attr.pts == 0) {
+        bufferInfo.attr.pts = frameCount_ *
+            ((sampleInfo_->frameInterval <= 0) ? 1 : sampleInfo_->frameInterval) * 1000; // 1000: 1ms to us
+    }
     frameCount_++;
     PrintProgress(sampleInfo_->sampleRepeatTimes, frameCount_);
     return ret;

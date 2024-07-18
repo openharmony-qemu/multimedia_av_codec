@@ -28,11 +28,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecoderSample"};
-
-void ReleaseNativeWindowMock(NativeWindow *window)
-{
-    (void)window;
-}
 }
 
 namespace OHOS {
@@ -140,7 +135,7 @@ int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
         surfaceProducer = rosenWindow_->GetSurfaceNode()->GetSurface();
     }
     window = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(
-        CreateNativeWindowFromSurface(&surfaceProducer)), ReleaseNativeWindowMock);
+        CreateNativeWindowFromSurface(&surfaceProducer)), [](NativeWindow *window) -> void { (void)window; });
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
