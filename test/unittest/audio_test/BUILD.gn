@@ -354,3 +354,37 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
+
+##################################################################################################################
+ohos_unittest("av_audio_media_codec_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = av_codec_unittest_include_dirs
+  include_dirs += [
+    "./",
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/services/engine/common/include",
+    "$av_codec_root_dir/services/media_engine/modules/media_codec",
+  ]
+
+  cflags = av_codec_unittest_cflags
+
+  cflags_cc = cflags
+
+  public_configs = []
+
+  sources = [ "./audio_media_codec_unit_test.cpp" ]
+
+  deps = [
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "media_foundation:media_foundation",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
