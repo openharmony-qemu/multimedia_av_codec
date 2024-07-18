@@ -176,7 +176,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     MEDIA_LOG_D("DataStreamSourcePlugin Read, size: " PUBLIC_LOG_ZU ", realLen: " PUBLIC_LOG_D32
         ", retryTimes: " PUBLIC_LOG_U32, (buffer && buffer->GetMemory()) ?
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
-    FALSE_RETUEN_V(realLen != 0), Status::ERROR_AGAIN);
+    FALSE_RETUEN_V(realLen != 0, Status::ERROR_AGAIN);
     return Status::OK;
 }
 
