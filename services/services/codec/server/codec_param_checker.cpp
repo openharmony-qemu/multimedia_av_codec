@@ -93,6 +93,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario s
 int32_t QPChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t UniformlyScaledReferenceChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ColorPrimariesChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
@@ -127,6 +128,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     QPChecker,
     TemporalGopSizeChecker,
     TemporalGopReferenceModeChecker,
+    UniformlyScaledReferenceChecker,
     ColorPrimariesChecker,
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
@@ -407,11 +409,11 @@ int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, CodecSce
         "Unsuppoted gop size, should be greater than %{public}d!", MIN_TEMPORAL_GOPSIZE);
     format.PutIntValue("video_encoder_gop_size", gopSize);
 
-    bool gopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
-    if (!gopSizeExist) {
+    bool temporalGopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+    if (!temporalGopSizeExist) {
         return AVCS_ERR_OK;
     }
-    PrintParam(gopSizeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+    PrintParam(temporalGopSizeExist, Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
     CHECK_AND_RETURN_RET_LOG(temporalGopSize >= MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
         "Param invalid, %{public}s: %{public}d, expect greater or equal than %{public}d",
         Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, MIN_TEMPORAL_GOPSIZE);
@@ -435,9 +437,30 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
 
     using namespace OHOS::Media::Plugins;
     if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
-        mode > static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
+        mode >= static_cast<int32_t>(TemporalGopReferenceMode::UNKNOWN)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
         return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t UniformlyScaledReferenceChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)capData;
+    (void)scenario;
+    int32_t mode = -1;
+    format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
+    using namespace OHOS::Media::Plugins;
+    if (mode == static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
+        int32_t temporalGopSize;
+        bool temporalGopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+        if (!temporalGopSizeExist) {
+            return AVCS_ERR_OK;
+        }
+        CHECK_AND_RETURN_RET_LOG(temporalGopSize == MIN_TEMPORAL_GOPSIZE || temporalGopSize == DEFAULT_TEMPORAL_GOPSIZE,
+                                 AVCS_ERR_INVALID_VAL,
+                                 "Current temporal reference mode param invalid, %{public}s: %{public}d, expect 2 or 4",
+                                 Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
     }
     return AVCS_ERR_OK;
 }

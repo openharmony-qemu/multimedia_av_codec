@@ -51,6 +51,8 @@ struct ResamplePara {
 
 class Resample {
 public:
+    Resample() = default;
+    ~Resample();
     Status Init(const ResamplePara &resamplePara);
     Status InitSwrContext(const ResamplePara &resamplePara);
     Status Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8_t *&destBuffer, size_t &destLength);

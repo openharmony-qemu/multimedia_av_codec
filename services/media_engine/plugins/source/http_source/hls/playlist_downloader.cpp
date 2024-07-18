@@ -177,7 +177,6 @@ bool PlayListDownloader::SeekTo(uint64_t offset)
     return true;
 }
 
-
 bool PlayListDownloader::GetPlayListDownloadStatus()
 {
     return startedDownloadStatus_;
@@ -260,7 +259,6 @@ void PlayListDownloader::Start()
 
 void PlayListDownloader::Cancel()
 {
-    playList_.clear();
     playList_.clear();
 }
 

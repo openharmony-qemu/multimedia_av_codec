@@ -404,6 +404,10 @@ int32_t HCodec::SetLowLatency(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
         return AVCS_ERR_OK;
     }
+    if (!caps_.port.video.isSupportLowLatency) {
+        HLOGW("platform not support LowLatency");
+        return AVCS_ERR_OK;
+    }
 
     OMX_CONFIG_BOOLEANTYPE param {};
     InitOMXParam(param);

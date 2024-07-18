@@ -34,12 +34,18 @@ using namespace OHOS::MediaAVCodec::AudioAacEncDemo;
 using namespace std;
 namespace {
 constexpr uint32_t CHANNEL_COUNT_1 = 1;
-constexpr uint32_t SAMPLE_RATE_8000 = 8000;
-constexpr uint32_t BIT_RATE_64000 = 64000;
 constexpr uint32_t CHANNEL_COUNT = 2;
+constexpr uint32_t BIT_RATE_6000 = 6000;
+constexpr uint32_t BIT_RATE_6700 = 6700;
+constexpr uint32_t BIT_RATE_8850 = 8850;
+constexpr uint32_t BIT_RATE_64000 = 64000;
+constexpr uint32_t BIT_RATE_96000 = 96000;
+constexpr uint32_t SAMPLE_RATE_8000 = 8000;
+constexpr uint32_t SAMPLE_RATE_16000 = 16000;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t FRAME_DURATION_US = 33000;
-constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S32LE;
+constexpr int32_t SAMPLE_FORMAT_S16 = AudioSampleFormat::SAMPLE_S16LE;
+constexpr int32_t SAMPLE_FORMAT_S32 = AudioSampleFormat::SAMPLE_S32LE;
 constexpr int32_t BIT_PER_CODE_COUNT = 16;
 constexpr int32_t COMPLEXITY_COUNT = 10;
 constexpr int32_t CHANNEL_1 = 1;
@@ -132,6 +138,12 @@ bool AudioBufferAacEncDemo::InitFile(const std::string& inputFile)
         audioType_ = AudioBufferFormatType::TYPE_LBVC;
     } else if (inputFile.find("flac") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_FLAC;
+    } else if (inputFile.find("amrnb") != std::string::npos) {
+        audioType_ = AudioBufferFormatType::TYPE_AMRNB;
+    } else if (inputFile.find("amrwb") != std::string::npos) {
+        audioType_ = AudioBufferFormatType::TYPE_AMRWB;
+    } else if (inputFile.find("mp3") != std::string::npos) {
+        audioType_ = AudioBufferFormatType::TYPE_MP3;
     } else {
         audioType_ = AudioBufferFormatType::TYPE_AAC;
     }
@@ -162,52 +174,48 @@ bool AudioBufferAacEncDemo::RunCase(const uint8_t *data, size_t size)
 
 void AudioBufferAacEncDemo::Setformat(OH_AVFormat *format)
 {
-    int32_t channelCount;
-    int32_t sampleRate;
-    long bitrate;
+    int32_t channelCount = CHANNEL_COUNT_1;
+    int32_t sampleRate = SAMPLE_RATE;
+    long bitrate = BIT_RATE_64000;
+    uint64_t channelLayout;
+    int32_t sampleFormat = SAMPLE_FORMAT_S16;
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
+        channelCount = CHANNEL_COUNT;
+        sampleRate = SAMPLE_RATE;
+        bitrate = BIT_RATE_96000;
+        sampleFormat = SAMPLE_FORMAT_S32;
     } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT_1);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8000);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BIT_RATE_64000);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
+        sampleRate = SAMPLE_RATE_8000;
+        bitrate = BIT_RATE_64000;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BIT_PER_CODE_COUNT);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLEXITY_COUNT);
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
-        channelCount = CHANNEL_COUNT_1;
         sampleRate = SAMPLE_RATE_8000;
         bitrate = BIT_RATE_64000;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
-        channelCount = CHANNEL_COUNT_1;
-        sampleRate = 16000; //采样率16000
-        bitrate = 6000; // 码率 6000
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
+        sampleRate = SAMPLE_RATE_16000; //采样率16000
+        bitrate = BIT_RATE_6000; // 码率 6000
     } else if (audioType_ == AudioBufferFormatType::TYPE_FLAC) {
         channelCount = CHANNEL_COUNT_1;
         sampleRate = SAMPLE_RATE;
         bitrate = BIT_RATE_64000;
-        uint64_t channelLayout = GetChannelLayout(channelCount);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, channelLayout);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_S16LE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
+        sampleRate = SAMPLE_RATE_8000;
+        bitrate = BIT_RATE_6700;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
+        sampleRate = SAMPLE_RATE_16000;
+        bitrate = BIT_RATE_8850;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_MP3) {
+        sampleRate = SAMPLE_RATE;
+        bitrate = BIT_RATE_64000;
     }
+    channelLayout = GetChannelLayout(channelCount);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, channelLayout);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), sampleFormat);
     return;
 }
 
@@ -242,6 +250,15 @@ int32_t AudioBufferAacEncDemo::CreateEnc()
     } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
         audioEnc_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_ENCODER_LBVC_NAME).data());
         cout << "CreateEnc lbvc!" << endl;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
+        audioEnc_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME).data());
+        cout << "CreateEnc amrnb!" << endl;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
+        audioEnc_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_ENCODER_AMRWB_NAME).data());
+        cout << "CreateEnc amrwb!" << endl;
+    } else if (audioType_ == AudioBufferFormatType::TYPE_MP3) {
+        audioEnc_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_ENCODER_MP3_NAME).data());
+        cout << "CreateEnc mp3!" << endl;
     } else {
         return AVCS_ERR_INVALID_VAL;
     }
@@ -369,10 +386,10 @@ void AudioBufferAacEncDemo::InputFunc()
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
         size_t opussize = 960;
         frameBytes = opussize;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU || audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
         size_t gmusize = 320;
         frameBytes = gmusize;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC) {
+    } else if (audioType_ == AudioBufferFormatType::TYPE_LBVC || audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
         size_t lbvcsize = 640;
         frameBytes = lbvcsize;
     } else if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
