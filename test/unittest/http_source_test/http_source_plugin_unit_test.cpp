@@ -37,7 +37,6 @@ protected:
     std::shared_ptr<HttpSourcePlugin> httpSourcePlugin;
     std::shared_ptr<Meta> meta;
     std::shared_ptr<Buffer> buffer;
-
 };
 
 void HttpSourcePluginUnitTest::SetUpTestCase(void)
