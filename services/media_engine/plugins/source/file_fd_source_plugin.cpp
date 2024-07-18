@@ -676,7 +676,7 @@ void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
             duration, avgDownloadSpeed_);
         downloadSize_ = 0;
         lastCheckTime_ = curTime;
-        if (currentBitRate_ != 0) {
+        if (currentBitRate_ > 0) {
             UpdateWaterLineAbove();
         }
     }
@@ -685,7 +685,7 @@ void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
 void FileFdSourcePlugin::UpdateWaterLineAbove()
 {
     MEDIA_LOG_I("UpdateWaterLineAbove");
-    if (currentBitRate_ != 0) {
+    if (currentBitRate_ > 0) {
         float cacheTime = GetCacheTime(avgDownloadSpeed_ / currentBitRate_);
         MEDIA_LOG_I("cacheTime: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F
             "currentBitRate: " PUBLIC_LOG_D32, cacheTime, avgDownloadSpeed_, currentBitRate_);
