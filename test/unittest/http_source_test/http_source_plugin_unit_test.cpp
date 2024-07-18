@@ -34,7 +34,7 @@ public:
     void SetUp(void);
     void TearDown(void);
 protected:
-    HttpSourcePlugin *httpSourcePlugin;
+    std::shard_ptr<HttpSourcePlugin> httpSourcePlugin;
     std::shared_ptr<Meta> meta;
 };
 
@@ -49,13 +49,12 @@ void HttpSourcePluginUnitTest::TearDownTestCase(void)
 void HttpSourcePluginUnitTest::SetUp(void)
 {
     meta = std::make_shared<Meta>();
-    httpSourcePlugin = new HttpSourcePlugin("test");
+    httpSourcePlugin = std::make_shared<HttpSourcePlugin>("test");
 }
 
 void HttpSourcePluginUnitTest::TearDown(void)
 {
-    delete httpSourcePlugin;
-    httpSourcePlugin = nullptr;
+    httpSourcePlugin.reset();
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsTrue, TestSize.Level1)
