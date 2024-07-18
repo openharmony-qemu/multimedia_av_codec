@@ -34,7 +34,7 @@ public:
     void SetUp(void);
     void TearDown(void);
 protected:
-    std::shard_ptr<HttpSourcePlugin> httpSourcePlugin;
+    std::shared_ptr<HttpSourcePlugin> httpSourcePlugin;
     std::shared_ptr<Meta> meta;
 };
 
