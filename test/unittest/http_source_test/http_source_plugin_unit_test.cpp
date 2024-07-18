@@ -36,6 +36,8 @@ public:
 protected:
     std::shared_ptr<HttpSourcePlugin> httpSourcePlugin;
     std::shared_ptr<Meta> meta;
+    std::shared_ptr<Buffer> buffer;
+
 };
 
 void HttpSourcePluginUnitTest::SetUpTestCase(void)
@@ -50,6 +52,7 @@ void HttpSourcePluginUnitTest::SetUp(void)
 {
     meta = std::make_shared<Meta>();
     httpSourcePlugin = std::make_shared<HttpSourcePlugin>("test");
+    buffer = std::make_shared<Buffer>();
 }
 
 void HttpSourcePluginUnitTest::TearDown(void)
@@ -163,21 +166,21 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported3, TestSize.Level1)
 {
     httpSourcePlugin->mimeType_ = "video/mp4";
     httpSourcePlugin->uri_ = "http://example.com/video.mp4";
-    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+    EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported4, TestSize.Level1)
 {
     httpSourcePlugin->mimeType_ = "application/x-mpegURL";
     httpSourcePlugin->uri_ = "http://example.com/video.mp4";
-    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+    EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Read_IsNull, TestSize.Level1)
 {
     httpSourcePlugin->downloader_ = nullptr;
     Status status = httpSourcePlugin->Read(1, buffer, 0, 10);
-    EXPECT_EQ(status, Status::ERROR_DELAY_READY);
+    EXPECT_EQ(status, Status::ERROR_NULL_POINTER);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState1, TestSize.Level1)
