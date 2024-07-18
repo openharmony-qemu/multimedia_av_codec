@@ -72,6 +72,10 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
     wantReadLenth_ = PLAY_WATER_LINE;
+    aesKey_.rounds = 0;
+    for (int i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+        aesKey_.rd_key[i] = 0;
+    }
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
@@ -89,6 +93,10 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
 
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
+    aesKey_.rounds = 0;
+    for (int i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+        aesKey_.rd_key[i] = 0;
+    }
 }
 
 HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
@@ -106,6 +114,10 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
+    aesKey_.rounds = 0;
+    for (int i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+        aesKey_.rd_key[i] = 0;
+    }
 }
 
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)

@@ -182,34 +182,44 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
     return Read(0, buffer, offset, expectedLen);
 }
 
-Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+bool FileFdSourcePlugin::PrepareRead(std::shared_ptr<Buffer>& buffer, std::shared_ptr<Memory>& bufData, size_t expectedLen)
 {
     if (isBuffering_) {
         MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
             PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
         if (HandleBuffering()) {
             MEDIA_LOG_I("return error again.");
-            return Status::ERROR_AGAIN;
+            return false;
         }
     }
     if (!buffer) {
-        buffer = std::make_shared<Buffer>();
+        buffer = std::make_shared<Buffer>(); // 这里的修改会影响调用者传递的 buffer
     }
-    std::shared_ptr<Memory> bufData;
     if (buffer->IsEmpty()) {
         bufData = buffer->AllocMemory(nullptr, expectedLen);
     } else {
         bufData = buffer->GetMemory();
     }
+    if (bufData == nullptr) {
+        return false;
+    }
+    return true;
+}
+
+Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+{
+    std::shared_ptr<Memory> bufData;
+    if (!PrepareRead(buffer, bufData, expectedLen)) {
+        return Status::ERROR_AGAIN;
+    }
     expectedLen = std::min(static_cast<size_t>(size_ + offset_ - position_), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
-
     if (isReadFrame_) {
         StartTimerTask();
     }
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
-    isReadSuccess_ = size >= 0 ? : false;
+    isReadSuccess_ = size >= 0;
     if (isReadFrame_) {
         PauseTimerTask();
         MEDIA_LOG_D("size: " PUBLIC_LOG_D64  "isTaskCallback_: " PUBLIC_LOG_U64,
@@ -218,7 +228,6 @@ Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffe
             SubmitBufferingStart();
         }
     }
-
     if (size <= 0) {
         MEDIA_LOG_I("return EOS, buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
             PUBLIC_LOG_U64 ", offset " PUBLIC_LOG_D64, position_, expectedLen, fileSize_, offset_);
@@ -227,7 +236,6 @@ Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffe
         }
         return Status::END_OF_STREAM;
     }
-
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
     MEDIA_LOG_D("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU,
