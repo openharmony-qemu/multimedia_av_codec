@@ -697,7 +697,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
         }
     }
     if (ret != AVCS_ERR_OK) {
-        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INVALID_VAL);
+        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
         (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
     }
 }
