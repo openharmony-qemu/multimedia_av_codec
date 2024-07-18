@@ -182,6 +182,10 @@ Status AudioSink::PauseSub()
         return ret;
     }
     state_ = Pipeline::FilterState::PAUSED;
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ == EosInterruptState::INITIAL || eosInterruptType_ == EosInterruptState::RESUME) {
+        eosInterruptType_ = EosInterruptState::PAUSE;
+    }
     return ret;
 }
 
@@ -200,10 +204,6 @@ Status AudioSink::Pause()
         });
     } else {
         ret = PauseSub();
-    }
-    AutoLock lock(eosMutex_);
-    if (eosInterruptType_ == EosInterruptState::INITIAL || eosInterruptType_ == EosInterruptState::RESUME) {
-        eosInterruptType_ = EosInterruptState::PAUSE;
     }
     return ret;
 }
@@ -244,14 +244,18 @@ Status AudioSink::Flush()
                 seekCompleted_.store(true);
                 MEDIA_LOG_I("AudioSink Flush Job end, notify completed");
             }
+            {
+                AutoLock lock(eosMutex_);
+                eosInterruptType_ = EosInterruptState::NONE;
+            }
             seekCondition_.NotifyAll();
         });
     } else {
         ret = plugin_->Flush();
-    }
-    {
-        AutoLock lock(eosMutex_);
-        eosInterruptType_ = EosInterruptState::NONE;
+        {
+            AutoLock lock(eosMutex_);
+            eosInterruptType_ = EosInterruptState::NONE;
+        }
     }
     return ret;
 }

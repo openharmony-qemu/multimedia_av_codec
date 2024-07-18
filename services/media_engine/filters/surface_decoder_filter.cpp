@@ -19,6 +19,9 @@
 #include "surface_decoder_adapter.h"
 #include "meta/format.h"
 #include "common/media_core.h"
+#include "surface/native_buffer.h"
+#include "media_description.h"
+#include "av_common.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -125,6 +128,17 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     }
     configureParameter_ = parameter;
     configFormat_.SetMeta(configureParameter_);
+    bool isHdr = false;
+    configureParameter_->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdr);
+    if (isHdr) {
+        MEDIA_LOG_D("isHdr true,set video_decoder_output_colorspace, pixel_format");
+        configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+            static_cast<int8_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT));
+        configFormat_.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+            static_cast<int8_t>(MediaAVCodec::VideoPixelFormat::NV12));
+    } else {
+        MEDIA_LOG_D("isHdr false");
+    }
     Status ret = mediaCodec_->Configure(configFormat_);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");

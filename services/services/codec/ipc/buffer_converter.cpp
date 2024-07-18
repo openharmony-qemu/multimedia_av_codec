@@ -238,10 +238,8 @@ void BufferConverter::GetFormat(Format &format)
     if (!isEncoder_ && format.ContainKey(Tag::VIDEO_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_HEIGHT, usrRect_.hStride);
     }
-    if (format.ContainKey(Tag::VIDEO_STRIDE)) {
+    if (format.ContainKey(Tag::VIDEO_STRIDE) || format.ContainKey(Tag::VIDEO_SLICE_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_STRIDE, usrRect_.wStride);
-    }
-    if (format.ContainKey(Tag::VIDEO_SLICE_HEIGHT)) {
         format.PutIntValue(Tag::VIDEO_SLICE_HEIGHT, usrRect_.hStride);
     }
 }
@@ -277,14 +275,12 @@ void BufferConverter::SetFormat(const Format &format)
         hwRect_.hStride = hStride;
     }
     // check if the converter needs to reset the format.
-    bool isHeightStrideValid = (hStride != 0 && !isEncoder_) || isEncoder_;
-    needResetFormat_ = width == 0 || height == 0 || wStride == 0 || !isHeightStrideValid ||
+    needResetFormat_ = !SetRectValue(width, height, wStride, hStride) ||
                        pixelFormat == static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     if (needResetFormat_) {
         AVCODEC_LOGW("Invalid format:%{public}s", format.Stringify().c_str());
         return;
     }
-    SetFormatInner(width);
     AVCODEC_LOGI(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
         width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
@@ -384,50 +380,61 @@ bool BufferConverter::SetBufferFormat(std::shared_ptr<AVBuffer> &buffer)
     // pixelFormat
     VideoPixelFormat pixelFormat = TranslateSurfaceFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     SetPixFormat(pixelFormat);
-    // width
     int32_t width = surfaceBuffer->GetWidth();
-    SetWidth(width);
-    // hStride
     int32_t height = surfaceBuffer->GetHeight();
-    SetHeight(height);
-    // wStride
-    SetWidthStride(surfaceBuffer->GetStride());
-    // sliceHeight
-    if (isEncoder_) {
-        SetHeightStride(height);
-    } else {
-        void *planesInfoPtr = nullptr;
-        surfaceBuffer->GetPlanesInfo(&planesInfoPtr);
-        if (planesInfoPtr == nullptr) {
-            AVCODEC_LOGW("planes info is nullptr");
-            hwRect_.hStride = height;
-        } else {
-            auto planesInfo = static_cast<OH_NativeBuffer_Planes *>(planesInfoPtr);
-            CHECK_AND_RETURN_RET_LOG(planesInfo->planeCount > 1, false, "planes count is %{public}d",
-                                     planesInfo->planeCount);
-            SetHeightStride(planesInfo->planes[1].offset / planesInfo->planes[1].columnStride);
-        }
-    }
-    // pixelSize
-    CHECK_AND_RETURN_RET_LOG(width != 0, false, "width is 0");
-    SetFormatInner(width);
+    int32_t wStride = surfaceBuffer->GetStride();
+    int32_t hStride = GetSliceHeightFromSurfaceBuffer(surfaceBuffer);
+    bool ret = SetRectValue(width, height, wStride, hStride);
+    CHECK_AND_RETURN_RET_LOG(ret, false, "width is 0");
     AVCODEC_LOGI(
         "Actual:(%{public}d x %{public}d), Converter:(%{public}d x %{public}d), Hardware:(%{public}d x %{public}d).",
         width, rect_.hStride, usrRect_.wStride, usrRect_.hStride, hwRect_.wStride, hwRect_.hStride);
     return true;
 }
 
-void BufferConverter::SetFormatInner(const int32_t &width)
+bool BufferConverter::SetRectValue(const int32_t width, const int32_t height, const int32_t wStride,
+                                   const int32_t hStride)
 {
-    CHECK_AND_RETURN_LOG(width != 0, "width is 0");
-    const int32_t tempPixelSize = hwRect_.wStride / width;
-    pixelSize_ = tempPixelSize == 0 ? 1 : tempPixelSize;
+    CHECK_AND_RETURN_RET_LOG(wStride > 0, false, "stride <= 0");
+    CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0, false, "width/height <= 0");
+    int32_t tempPixelSize = wStride / width;
+    tempPixelSize = (tempPixelSize <= 0) ? 1 : tempPixelSize;
 
-    rect_.wStride = width * pixelSize_;
-    usrRect_.wStride *= pixelSize_;
+    // width or height <= calculated stride <= hardware stride
+    // rect            <= usrRect           <= hwRect
+    rect_.wStride = width * tempPixelSize;
+    rect_.hStride = height;
+    hwRect_.wStride = std::max(rect_.wStride, wStride);
+    hwRect_.hStride = std::max(rect_.hStride, hStride);
+    usrRect_.wStride = std::min(hwRect_.wStride, CalculateUserStride(width) * tempPixelSize);
+    usrRect_.hStride = std::min(hwRect_.hStride, CalculateUserStride(height));
+    return true;
+}
 
-    usrRect_.wStride = std::min(usrRect_.wStride, hwRect_.wStride);
-    usrRect_.hStride = std::min(usrRect_.hStride, hwRect_.hStride);
+inline int32_t BufferConverter::CalculateUserStride(const int32_t widthHeight)
+{
+    int32_t modVal = widthHeight & OFFSET_15;
+    return modVal ? (widthHeight + OFFSET_16 - modVal) : widthHeight;
+}
+
+int32_t BufferConverter::GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &surfaceBuffer)
+{
+    int32_t height = surfaceBuffer->GetHeight();
+    if (isEncoder_) {
+        return height;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError err = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void **>(&planes));
+    if (err != GSERROR_OK || planes == nullptr) {
+        AVCODEC_LOGW("get plane info failed, GSError=%{public}d", err);
+        return height;
+    }
+    int32_t count = planes->planeCount;
+    if (count <= 1) {
+        AVCODEC_LOGW("planes count is %{public}d", count);
+        return height;
+    }
+    return static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / surfaceBuffer->GetStride());
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

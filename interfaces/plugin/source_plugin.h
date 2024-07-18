@@ -189,7 +189,7 @@ public:
     }
 
     virtual void SetInterruptState(bool isInterruptNeeded) {}
-    
+
     virtual Status SetCurrentBitRate(int32_t bitRate)
     {
         return Status::OK;

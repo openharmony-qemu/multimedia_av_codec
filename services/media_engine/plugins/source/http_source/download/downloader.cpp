@@ -519,9 +519,6 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
-    if (info->contentLen <= 0) {
-        info->isChunked = true;
-    }
 }
 
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
@@ -706,6 +703,24 @@ bool Downloader::HandleContentEncode(HeaderInfo* info, char* key, char* next, si
     return true;
 }
 
+bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
+{
+    FALSE_RETURN_V(key != nullptr, false);
+    if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
+        !strncmp(key, "content-length", strlen("content-length"))) {
+        FALSE_RETURN_V(next != nullptr, false);
+        char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, false);
+        if (info != nullptr && mediaDownloader != nullptr) {
+            info->contentLen = atol(StringTrim(token));
+            if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
+                info->isChunked = true;
+            }
+        }
+    }
+    return true;
+}
+
 bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
@@ -781,7 +796,8 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     }
 
     if (!HandleContentRange(info, key, next, size, nitems) || !HandleContentType(info, key, next, size, nitems) ||
-        !HandleContentEncode(info, key, next, size, nitems) || !HandleContentLength(info, key, next, size, nitems) ||
+        !HandleContentEncode(info, key, next, size, nitems) ||
+        !HandleContentLength(info, key, next, mediaDownloader) ||
         !HandleRange(info, key, next, size, nitems)) {
         return size * nitems;
     }

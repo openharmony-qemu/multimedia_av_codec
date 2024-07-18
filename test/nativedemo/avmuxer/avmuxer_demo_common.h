@@ -53,6 +53,8 @@ extern struct AudioTrackParam g_audioMpegPar;
 extern struct AudioTrackParam g_audioAacPar;
 extern struct AudioTrackParam g_audioAmrNbPar;
 extern struct AudioTrackParam g_audioAmrWbPar;
+extern struct AudioTrackParam g_audioG711MUPar;
+extern struct AudioTrackParam g_audioRawPar;
 extern struct VideoTrackParam g_videoH264Par;
 extern struct VideoTrackParam g_videoMpeg4Par;
 extern struct VideoTrackParam g_videoH265Par;

@@ -46,6 +46,7 @@ av_codec_root_dir = "//foundation/multimedia/av_codec"
 media_foundation_root_dir = "//foundation/multimedia/media_foundation"
 audio_framework_root_dir = "//foundation/multimedia/audio_framework"
 graphic_2d_root_dir = "//foundation/graphic/graphic_2d"
+graphic_suface_root_dir = "//foundation/graphic/graphic_surface"
 c_utils_root_dir = "//commonlibrary/c_utils"
 drm_framework_root_dir = "//foundation/multimedia/drm_framework"
 video_processing_engine_root_dir =
