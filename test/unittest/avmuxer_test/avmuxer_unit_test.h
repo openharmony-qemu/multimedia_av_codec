@@ -19,6 +19,9 @@
 #include "gtest/gtest.h"
 #include <fstream>
 #include "avmuxer_sample.h"
+#include "buffer/avbuffer.h"
+#include "buffer/avbuffer_queue_producer.h"
+#include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -34,6 +37,9 @@ public:
     void TearDown(void);
 
     int32_t WriteSample(int32_t trackId, std::shared_ptr<std::ifstream> file, bool &eosFlag, uint32_t flag);
+
+    int32_t WriteSample(sptr<Media::AVBufferQueueProducer> bqProducer,
+        std::shared_ptr<std::ifstream> file, bool &eosFlag);
 
 protected:
     std::shared_ptr<AVMuxerSample> avmuxer_ {nullptr};

@@ -80,36 +80,36 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0100, TestSize.Level1)
     EXPECT_NE(Status::OK, fileFdSourcePlugin_->SetSource(mediaSource));
 }
 /**
- * @tc.name: FileFdSource_SubmitBufferingStart_0100
- * @tc.desc: FileFdSource_SubmitBufferingStart_0100
+ * @tc.name: FileFdSource_NotifyBufferingStart_0100
+ * @tc.desc: FileFdSource_NotifyBufferingStart_0100
  * @tc.type: FUNC
  */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitBufferingStart_0100, TestSize.Level1)
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
-    fileFdSourcePlugin_->SubmitBufferingStart();
+    fileFdSourcePlugin_->NotifyBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
-    fileFdSourcePlugin_->SubmitBufferingStart();
+    fileFdSourcePlugin_->NotifyBufferingStart();
 
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
-    fileFdSourcePlugin_->SubmitBufferingStart();
+    fileFdSourcePlugin_->NotifyBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
     delete sourceCallback;
     sourceCallback = nullptr;
 }
 /**
- * @tc.name: FileFdSource_SubmitReadFail_0100
- * @tc.desc: FileFdSource_SubmitReadFail_0100
+ * @tc.name: FileFdSource_NotifyReadFail_0100
+ * @tc.desc: FileFdSource_NotifyReadFail_0100
  * @tc.type: FUNC
  */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitReadFail_0100, TestSize.Level1)
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyReadFail_0100, TestSize.Level1)
 {
-    fileFdSourcePlugin_->SubmitReadFail();
+    fileFdSourcePlugin_->NotifyReadFail();
     Plugins::Callback* sourceCallback = new SourceCallback();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
-    fileFdSourcePlugin_->SubmitReadFail();
+    fileFdSourcePlugin_->NotifyReadFail();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
-    fileFdSourcePlugin_->SubmitReadFail();
+    fileFdSourcePlugin_->NotifyReadFail();
     delete sourceCallback;
     sourceCallback = nullptr;
 }
@@ -120,7 +120,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SubmitReadFail_0100, TestSize.Level1
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0100, TestSize.Level1)
 {
-    fileFdSourcePlugin_->SubmitBufferingStart();
+    fileFdSourcePlugin_->NotifyBufferingStart();
     std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
     EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
 }

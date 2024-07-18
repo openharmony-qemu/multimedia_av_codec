@@ -20,7 +20,6 @@
 #include "meta/meta.h"
 #include "avcodec_errors.h"
 #include "avcodec_codec_name.h"
-#include "unittest_utils.h"
 #include "unittest_log.h"
 #include "drm_decryptor_coverage_unit_test.h"
 

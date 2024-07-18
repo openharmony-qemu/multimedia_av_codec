@@ -55,6 +55,7 @@ static string g_codecName = "";
 static string g_codecNameHEVC = "";
 constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
+constexpr int32_t MAX_NALU_LEN = 12000;
 constexpr int32_t UHD_RESOLUTION[2] = {3840, 2160};
 constexpr int32_t HD_RESOLUTION[2] = {1104, 622};
 } // namespace
@@ -758,16 +759,15 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_007, TestSize.Level0)
 HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-    vDecSample->SF_OUTPUT = false;
-    vDecSample->maxInputSize = 1000;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
+    vDecSample->maxInputSize = -1;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
     vDecSample->WaitForEOS();
-    ASSERT_NE(AV_ERR_OK, vDecSample->errCount);
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
 /**
@@ -778,15 +778,89 @@ HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-    vDecSample->SF_OUTPUT = false;
-    vDecSample->maxInputSize = 1000;
+    vDecSample->maxInputSize = INT_MAX;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
     vDecSample->WaitForEOS();
-    ASSERT_NE(AV_ERR_OK, vDecSample->errCount);
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : MAX_INPUT_SIZE_CHECK_003
+ * @tc.name      : MaxInputSize value normal
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_003, TestSize.Level0)
+{
+    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = "/data/test/media/1104x622.h264";
+    vDecSample->DEFAULT_WIDTH = 1108;
+    vDecSample->DEFAULT_HEIGHT = 622;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+    vDecSample->maxInputSize = MAX_NALU_LEN;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+/**
+ * @tc.number    : MAX_INPUT_SIZE_CHECK_004
+ * @tc.name      : MaxInputSize value incorrect hevc
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_004, TestSize.Level0)
+{
+    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+    vDecSample->maxInputSize = -1;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : MAX_INPUT_SIZE_CHECK_005
+ * @tc.name      : MaxInputSize value incorrect
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_005, TestSize.Level0)
+{
+    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+    vDecSample->maxInputSize = INT_MAX;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : MAX_INPUT_SIZE_CHECK_006
+ * @tc.name      : MaxInputSize value normal
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_006, TestSize.Level0)
+{
+    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = "/data/test/media/1104x622.h265";
+    vDecSample->DEFAULT_WIDTH = 1108;
+    vDecSample->DEFAULT_HEIGHT = 622;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+    vDecSample->maxInputSize = MAX_NALU_LEN;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 } // namespace

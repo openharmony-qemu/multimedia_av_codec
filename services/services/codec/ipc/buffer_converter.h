@@ -53,9 +53,11 @@ private:
     void SetHeightStride(const int32_t hStride);
 
     bool SetBufferFormat(std::shared_ptr<AVBuffer> &buffer);
-    void SetFormatInner(const int32_t &width);
+    bool SetRectValue(const int32_t width, const int32_t height, const int32_t wStride,
+                                   const int32_t hStride);
+    int32_t CalculateUserStride(const int32_t widthHeight);
+    int32_t GetSliceHeightFromSurfaceBuffer(sptr<SurfaceBuffer> &surfaceBuffer);
     std::function<int32_t(uint8_t *, uint8_t *, AVCodecRect *, int32_t)> func_;
-    int32_t pixelSize_ = 1;
     AVCodecRect rect_;
     AVCodecRect hwRect_;
     AVCodecRect usrRect_;

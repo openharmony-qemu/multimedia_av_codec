@@ -56,6 +56,7 @@ enum ShortOption {
     OPT_LTR_FRAME_COUNT,
     OPT_REPEAT_AFTER,
     OPT_REPEAT_MAX_CNT,
+    OPT_LAYER_COUNT,
     // decoder only
     OPT_RENDER,
     OPT_DEC_THEN_ENC,
@@ -95,6 +96,7 @@ static struct option g_longOptions[] = {
     {"ltrFrameCount",   required_argument,  nullptr, OPT_LTR_FRAME_COUNT},
     {"repeatAfter",     required_argument,  nullptr, OPT_REPEAT_AFTER},
     {"repeatMaxCnt",    required_argument,  nullptr, OPT_REPEAT_MAX_CNT},
+    {"layerCnt",        required_argument,  nullptr, OPT_LAYER_COUNT},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
@@ -140,6 +142,7 @@ void ShowUsage()
     std::cout << " --ltrFrameCount      The number of long-term reference frames." << std::endl;
     std::cout << " --repeatAfter        repeat previous frame after target ms" << std::endl;
     std::cout << " --repeatMaxCnt       repeat previous frame up to target times" << std::endl;
+    std::cout << " --layerCnt           target encode layerCnt, H264:2, H265:2 and 3" << std::endl;
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
@@ -248,6 +251,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_REPEAT_MAX_CNT:
                 opt.repeatMaxCnt = stol(optarg);
+                break;
+            case OPT_LAYER_COUNT:
+                opt.layerCnt = stol(optarg);
                 break;
             // decoder only
             case OPT_RENDER:

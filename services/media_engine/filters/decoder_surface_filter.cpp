@@ -37,6 +37,8 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 static const uint32_t LOCK_WAIT_TIME = 1000; // Lock wait for 1000ms.
+static const int64_t PLAY_RANGE_DEFAULT_VALUE = -1;
+static const int64_t MICROSECONDS_CONVERT_UNIT = 1000; // ms change to us
 
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
@@ -344,6 +346,8 @@ Status DecoderSurfaceFilter::DoStop()
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
     isPaused_ = false;
+    playRangeStartTime_ = PLAY_RANGE_DEFAULT_VALUE;
+    playRangeEndTime_ = PLAY_RANGE_DEFAULT_VALUE;
 
     timeval tv;
     gettimeofday(&tv, 0);
@@ -378,6 +382,14 @@ Status DecoderSurfaceFilter::DoRelease()
 {
     MEDIA_LOG_I("Release enter.");
     videoDecoder_->Release();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::DoSetPlayRange(int64_t start, int64_t end)
+{
+    MEDIA_LOG_I("DoSetPlayRange enter.");
+    playRangeStartTime_ = start;
+    playRangeEndTime_ = end;
     return Status::OK;
 }
 
@@ -547,7 +559,25 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame)
 
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer)
 {
-    videoDecoder_->ReleaseOutputBuffer(index, render);
+    if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
+        (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
+        MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D32,
+                    playRangeStartTime_, playRangeEndTime_);
+        if (eventReceiver_ != nullptr) {
+            Event event {
+                .srcFilter = "VideoSink",
+                .type = EventType::EVENT_COMPLETE,
+            };
+            eventReceiver_->OnEvent(event);
+        }
+        return Status::OK;
+    }
+    if (outBuffer->pts_ < 0) {
+        MEDIA_LOG_W("Avoid render video frame with pts=%{public}" PUBLIC_LOG_D64, outBuffer->pts_);
+        videoDecoder_->ReleaseOutputBuffer(index, false);
+    } else {
+        videoDecoder_->ReleaseOutputBuffer(index, render);
+    }
     videoSink_->SetLastPts(outBuffer->pts_);
     if (outBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
         ResetSeekInfo();
