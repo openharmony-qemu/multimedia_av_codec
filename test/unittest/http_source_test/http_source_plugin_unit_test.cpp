@@ -145,6 +145,55 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource, TestSize.Level1)
     EXPECT_EQ(httpSourcePlugin->downloader_, nullptr);
 }
 
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported1, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    httpSourcePlugin->uri_ = "http://example.com/video.m3u8";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported2, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    httpSourcePlugin->uri_ = "http://example.com/video.mpd";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported3, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    httpSourcePlugin->uri_ = "http://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported4, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = "application/x-mpegURL";
+    httpSourcePlugin->uri_ = "http://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Read_IsNull, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->Read(1, buffer, 0, 10);
+    EXPECT_EQ(status, Status::ERROR_DELAY_READY);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState1, TestSize.Level1)
+{
+    bool isInterruptNeeded = true;
+    httpSourcePlugin->SetInterruptState(isInterruptNeeded);
+    EXPECT_EQ(httpSourcePlugin->isInterruptNeeded_, isInterruptNeeded);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState2, TestSize.Level1)
+{
+    bool isInterruptNeeded = false;
+    httpSourcePlugin->SetInterruptState(isInterruptNeeded);
+    EXPECT_EQ(httpSourcePlugin->isInterruptNeeded_, isInterruptNeeded);
+}
+
 }
 }
 }
