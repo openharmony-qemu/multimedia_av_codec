@@ -119,11 +119,6 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
-    std::string playerId_{""};
-    FairMutex seekCompletedLock_{};
-    std::atomic<bool> seekCompleted_{false};
-    ConditionVariable seekCondition_{};
-    std::unique_ptr<Task> seekTask_;
 };
 }
 }
