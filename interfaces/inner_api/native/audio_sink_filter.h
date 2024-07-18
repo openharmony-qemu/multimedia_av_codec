@@ -73,13 +73,9 @@ public:
 
     Status GetAudioEffectMode(int32_t &effectMode);
 
-    Status SetIsTransitent(bool isTransitent, bool isSeekCompleted = false);
+    Status SetIsTransitent(bool isTransitent);
 
     Status ChangeTrack(std::shared_ptr<Meta>& meta);
-
-    Status WaitSeekCompleted();
-
-    Status SetPlayerId(std::string& playerId);
 
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
