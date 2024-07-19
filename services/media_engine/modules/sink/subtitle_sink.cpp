@@ -51,11 +51,7 @@ SubtitleSink::~SubtitleSink()
 
 void SubtitleSink::NotifySeek()
 {
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        shouldUpdate_ = true;
-    }
-    updateCond_.notify_all();
+    Flush();
 }
 
 void SubtitleSink::GetTargetSubtitleIndex(int64_t currentTime)
@@ -162,6 +158,16 @@ Status SubtitleSink::Resume()
 
 Status SubtitleSink::Flush()
 {
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        shouldUpdate_ = true;
+        if (subtitleInfoVec_.size() > 0) {
+            inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
+            subtitleInfoVec_.clear();
+        }
+    }
+    isFlush_.store(true);
+    updateCond_.notify_all();
     return Status::OK;
 }
 
@@ -182,7 +188,7 @@ Status SubtitleSink::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
-    int inputBufferSize = 8;
+    int inputBufferSize = 1;
     MemoryType memoryType = MemoryType::SHARED_MEMORY;
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
@@ -208,9 +214,11 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer_->memory_->GetAddr()),
                              filledOutputBuffer_->memory_->GetSize());
+    MEDIA_LOG_D("SubtitleSink DrainOutputBuffer buffer. pts = " PUBLIC_LOG_D64 " duration: " PUBLIC_LOG_D64 " len: " PUBLIC_LOG_D64 " data = " PUBLIC_LOG_S,
+        filledOutputBuffer_->pts_, filledOutputBuffer_->duration_, subtitleText.length(), subtitleText.c_str());
     SubtitleInfo subtitleInfo{ subtitleText, filledOutputBuffer_->pts_, filledOutputBuffer_->duration_ };
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
-    if (subtitleInfoVec_.size() != 0) {
+    /*if (subtitleInfoVec_.size() != 0) {
         auto lastSubtitleInfo = subtitleInfoVec_.back();
         if (lastSubtitleInfo.pts_ > subtitleInfo.pts_) {
             inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
@@ -221,7 +229,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
             inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
             return;
         }
-    }
+    }*/
     {
         std::unique_lock<std::mutex> lock(mutex_);
         subtitleInfoVec_.push_back(subtitleInfo);
@@ -237,6 +245,11 @@ void SubtitleSink::RenderLoop()
             return isThreadExit_.load() ||
                    (subtitleInfoVec_.size() > currentInfoIndex_ && state_ == Pipeline::FilterState::RUNNING);
         });
+        if (isFlush_) {
+            MEDIA_LOG_I("SubtitleSink RenderLoop flush");
+            isFlush_.store(false);
+            continue;
+        }
         FALSE_RETURN(!isThreadExit_.load());
         // wait timeout, seek or stop
         SubtitleInfo tempSubtitleInfo = subtitleInfoVec_.at(currentInfoIndex_);
@@ -244,13 +257,25 @@ void SubtitleSink::RenderLoop()
         int64_t waitTime = CalcWaitTime(subtitleInfo);
         updateCond_.wait_for(lock, std::chrono::microseconds(waitTime),
                              [this] { return isThreadExit_.load() || shouldUpdate_; });
-        FALSE_RETURN(!isThreadExit_.load());
-        auto actionToDo = ActionToDo(subtitleInfo);
-        if (actionToDo == SubtitleBufferState::DROP || actionToDo == SubtitleBufferState::WAIT) {
+        MEDIA_LOG_I("SubtitleSink NotifyRender buffer. pts = " PUBLIC_LOG_D64 " waitTime: " PUBLIC_LOG_D64,
+            subtitleInfo.pts_, waitTime);
+        if (isFlush_) {
+            MEDIA_LOG_I("SubtitleSink RenderLoop flush");
+            isFlush_.store(false);
             continue;
         }
+        FALSE_RETURN(!isThreadExit_.load());
+        auto actionToDo = ActionToDo(subtitleInfo);
+        if (actionToDo == SubtitleBufferState::DROP) {
+            inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
+            subtitleInfoVec_.clear();
+            continue;
+        } else if (actionToDo == SubtitleBufferState::WAIT) {
+            continue;
+        } else {}
         NotifyRender(subtitleInfo);
-        ++currentInfoIndex_;
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
+        subtitleInfoVec_.clear();
     }
 }
 
@@ -280,7 +305,7 @@ uint32_t SubtitleSink::ActionToDo(SubtitleInfo &subtitleInfo)
 {
     auto curTime = GetMediaTime();
     if (shouldUpdate_ || subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
-        GetTargetSubtitleIndex(curTime);
+        //GetTargetSubtitleIndex(curTime);
         return SubtitleBufferState::DROP;
     }
     if (subtitleInfo.pts_ > curTime || state_ != Pipeline::FilterState::RUNNING) {

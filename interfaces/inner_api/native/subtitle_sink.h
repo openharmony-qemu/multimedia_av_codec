@@ -96,6 +96,7 @@ private:
     };
     std::vector<SubtitleInfo> subtitleInfoVec_;
     uint32_t currentInfoIndex_ = 0;
+    std::atomic<bool> isFlush_ = false;
 };
 }
 }
