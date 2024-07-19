@@ -227,7 +227,6 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         }
         MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
             PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position_);
-        // NotifyBufferingStart();
         return Status::OK;
     }
     bufData->UpdateDataSize(size);
@@ -592,15 +591,6 @@ void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
         int ret = ioctl(fd_, HMDFS_IOC_CANCEL_READ);
         MEDIA_LOG_I("ioctl break read, fd %{public}d, ret %{public}d, errno %{public}d", fd_, ret, errno);
     }
-}
-
-Status FileFdSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
-{
-    MEDIA_LOG_I("SetReadBlockingFlag in %{public}d",  isReadBlockingAllowed);
-    if (ringBuffer_ != nullptr) {
-        // ringBuffer_->SetReadBlocking(isReadBlockingAllowed);
-    }
-    return Status::OK;
 }
 
 Status FileFdSourcePlugin::GetSize(uint64_t& size)
