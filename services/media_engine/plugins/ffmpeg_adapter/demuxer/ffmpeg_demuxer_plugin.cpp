@@ -308,7 +308,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
       ioContext_(),
       selectedTrackIds_(),
       cacheQueue_("cacheQueue"),
-      streamParserInited_(false)
+      streamParserInited_(false),
+      parserRefIoContext_()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("Create FFmpeg Demuxer Plugin.");
@@ -407,7 +408,8 @@ Status FFmpegDemuxerPlugin::ParserBoxInfo()
     MEDIA_LOG_I("Success to parser fps: " PUBLIC_LOG_F, fps_);
     FFStream *sti = ffstream(videoStream);
     for (int32_t i = 0; i < sti->nb_index_entries; i++) {
-        if (sti->index_entries[i].flags & AVINDEX_KEYFRAME) {
+        uint32_t flags = static_cast<uint32_t>(sti->index_entries[i].flags);
+        if (flags & AVINDEX_KEYFRAME) {
             IFramePos_.emplace_back(i);
         }
     }
@@ -560,11 +562,13 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         pendingSeekMsTime_ = -1;
     }
 
+    int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     uint32_t gopSize = 0;
-    if (parserCurGopId_ + 1 < static_cast<int32_t>(IFramePos_.size())) {
+    uint32_t nbFrames = static_cast<uint32_t>(parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames);
+    if (parserCurGopId_ + 1 < iFramePosSize) {
         gopSize = IFramePos_[parserCurGopId_ + 1] - IFramePos_[parserCurGopId_];
     } else {
-        gopSize = parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames - IFramePos_[parserCurGopId_];
+        gopSize = nbFrames - IFramePos_[parserCurGopId_];
     }
 
     int64_t pts = ((IFramePos_[parserCurGopId_] + gopSize / 2) / fps_) /  // 2
