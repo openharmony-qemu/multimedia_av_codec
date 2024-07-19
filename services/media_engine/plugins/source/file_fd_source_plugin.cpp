@@ -203,21 +203,13 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         }
     }
 
-    // ringbuffer 0 after seek in 5ms, don't notify buffering
+    // ringbuffer 0 after seek in 50ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
     if (isReadFrame_ && ringBufferSize_ < WATER_LINE_BELOW_DEFAULT &&
         (GetLastSize(position_) > WATER_LINE_BELOW_DEFAULT)) {
         MEDIA_LOG_I("ringBufferSize_ " PUBLIC_LOG_U64 " curReadTime_ " PUBLIC_LOG_U64
             " lastReadTime_ " PUBLIC_LOG_U64, ringBufferSize_, curReadTime_, lastReadTime_);
-        if (lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
-            curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER) {
-            NotifyBufferingStart();
-            lastReadTime_ = 0;
-        } else {
-            if (lastReadTime_ == 0) {
-                lastReadTime_ = curReadTime_;
-            }
-        }
+        CheckReadTime();
         return Status::ERROR_AGAIN;
     }
 
@@ -233,8 +225,10 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
             MEDIA_LOG_I("ReadCloud END_OF_STREAM");
             return Status::END_OF_STREAM;
         }
-        NotifyBufferingStart();
-        return Status::ERROR_AGAIN;
+        MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
+            PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position_);
+        // NotifyBufferingStart();
+        return Status::OK;
     }
     bufData->UpdateDataSize(size);
     MEDIA_LOG_I("position_ " PUBLIC_LOG_U64, position_);
@@ -318,7 +312,7 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         MEDIA_LOG_E("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_I("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
@@ -389,7 +383,7 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     // fd read success
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
-        MEDIA_LOG_I("CacheData ringbuffer is full wait 10ms");
+        MEDIA_LOG_I("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
             DeleteCacheBuffer(cacheBuffer);
             return;
@@ -507,6 +501,9 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 
 void FileFdSourcePlugin::NotifyBufferingStart()
 {
+    // if (isBuffering_) {
+    //     return;
+    // }
     MEDIA_LOG_I("NotifyBufferingStart in.");
     isBuffering_ = true;
     if (callback_ != nullptr && !isInterrupted_) {
@@ -519,7 +516,7 @@ void FileFdSourcePlugin::NotifyBufferingStart()
 
 void FileFdSourcePlugin::NotifyBufferingPercent()
 {
-    MEDIA_LOG_I("NotifyBufferingUpdate in.");
+    MEDIA_LOG_I("NotifyBufferingPercent in.");
     if (waterLineAbove_ != 0) {
         auto bp = ringBufferSize_ / waterLineAbove_ * PERCENT_100;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
@@ -599,9 +596,9 @@ void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 
 Status FileFdSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    MEDIA_LOG_I("SetReadBlockingFlag in");
+    MEDIA_LOG_I("SetReadBlockingFlag in %{public}d",  isReadBlockingAllowed);
     if (ringBuffer_ != nullptr) {
-        ringBuffer_->SetReadBlocking(isReadBlockingAllowed);
+        // ringBuffer_->SetReadBlocking(isReadBlockingAllowed);
     }
     return Status::OK;
 }
@@ -719,6 +716,18 @@ void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
     }
 }
 
+void FileFdSourcePlugin::CheckReadTime()
+{
+    if (lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
+        curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER) {
+        NotifyBufferingStart();
+        lastReadTime_ = 0;
+    } else {
+        if (lastReadTime_ == 0) {
+            lastReadTime_ = curReadTime_;
+        }
+    }
+}
 } // namespace FileFdSource
 } // namespace Plugin
 } // namespace Media
