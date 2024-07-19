@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 #include "m3u8_unit_test.h"
+#include "http_server_demo.h"
+
 #include <new>
 #define LOCAL true
 

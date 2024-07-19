@@ -18,6 +18,7 @@
 #include <sstream>
 #include <stack>
 #include <utility>
+#include "http_server_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;

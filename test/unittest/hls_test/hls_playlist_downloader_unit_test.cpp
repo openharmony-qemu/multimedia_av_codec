@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "hls_playlist_downloader_unit_test.h"
+#include "http_server_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
