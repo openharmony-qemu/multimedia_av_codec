@@ -140,6 +140,14 @@ int32_t VideoDecInnerMock::Configure(std::shared_ptr<FormatMock> format)
     return AV_ERR_UNKNOWN;
 }
 
+int32_t VideoDecInnerMock::Prepare()
+{
+    if (videoDec_ != nullptr) {
+        return videoDec_->Prepare();
+    }
+    return AV_ERR_UNKNOWN;
+}
+
 int32_t VideoDecInnerMock::Start()
 {
     if (videoDec_ != nullptr) {
