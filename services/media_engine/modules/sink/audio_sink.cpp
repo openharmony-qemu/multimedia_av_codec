@@ -316,6 +316,7 @@ void AudioSink::HandleEosInner(bool drain)
         return;
     }
     if (drain) {
+        MEDIA_LOG_I("Drain audiosink and report EOS");
         DrainAndReportEosEvent();
         return;
     }
