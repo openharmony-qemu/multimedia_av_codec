@@ -160,7 +160,7 @@ private:
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
-    bool HandleSelectTrackChangeStream(StreamType streamType, TrackType type, int32_t currentTrackId, int32_t currentStreamID, int32_t newStreamID);
+    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID);
     Status PauseForPrepareFrame();
 
     Plugins::Seekable seekable_;

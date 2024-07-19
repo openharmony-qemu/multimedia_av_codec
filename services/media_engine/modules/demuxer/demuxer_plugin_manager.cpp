@@ -131,58 +131,58 @@ size_t DemuxerPluginManager::GetStreamCount() const
     return streamInfoMap_.size();
 }
 
-void DemuxerPluginManager::InitAudioTrack(int32_t streamID)
+void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
 {
     if (curAudioStreamID_ == -1) {    // 获取第一个音频流
-        curAudioStreamID_ = streamIndex;
-        streamInfoMap_[streamID].activated = true;
+        curAudioStreamID_ = info.streamId;
+        streamInfoMap_[info.streamId].activated = true;
         MEDIA_LOG_I("InitAudioTrack AUDIO");
         isDash_ = true;
     } else {
         Meta format;
-        format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(iter.bitRate));
+        format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(info.bitRate));
         format.Set<Tag::MIME_TYPE>("audio/xxx");
-        streamInfoMap_[streamID].mediaInfo.tracks.push_back(format);
-        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
-        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+        streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
+        streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
+        streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
     }
-    streamInfoMap_[streamID].type = AUDIO;
+    streamInfoMap_[info.streamId].type = AUDIO;
 }
 
-void DemuxerPluginManager::InitVideoTrack(int32_t streamID)
+void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
 {
     if (curVideoStreamID_ == -1) {
-        curVideoStreamID_ = streamID; // 获取第一个视频流
-        streamInfoMap_[streamID].activated = true;
+        curVideoStreamID_ = info.streamId; // 获取第一个视频流
+        streamInfoMap_[info.streamId].activated = true;
         MEDIA_LOG_I("InitVideoTrack VIDEO");
         isDash_ = true;
     } else {
         Meta format;
-        format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(iter.bitRate));
-        format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(iter.video_width));
-        format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(iter.video_height));
+        format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(info.bitRate));
+        format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(info.video_width));
+        format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(info.video_height));
         format.Set<Tag::MIME_TYPE>("video/xxx");
-        streamInfoMap_[streamID].mediaInfo.tracks.push_back(format);
-        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
-        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+        streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
+        streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
+        streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
     }
-    streamInfoMap_[streamID].type = VIDEO;
+    streamInfoMap_[info.streamId].type = VIDEO;
 }
 
-void DemuxerPluginManager::InitSubtitleTrack(int32_t streamID)
+void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
 {
     if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
-        curSubTitleStreamID_ = streamID;
-        streamInfoMap_[streamID].activated = true;
+        curSubTitleStreamID_ = info.streamId;
+        streamInfoMap_[info.streamId].activated = true;
         MEDIA_LOG_I("InitSubtitleTrack SUBTITLE");
     } else {
         Meta format;
         format.Set<Tag::MIME_TYPE>("text/vtt");
-        streamInfoMap_[streamID].mediaInfo.tracks.push_back(format);
-        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
-        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+        streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
+        streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+        streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
     }
-    streamInfoMap_[streamID].type = SUBTITLE;
+    streamInfoMap_[info.streamId].type = SUBTITLE;
 }
 
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
@@ -200,11 +200,11 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             MEDIA_LOG_I("InitDefaultPlay MIX");
             break;
         } else if (iter.type == AUDIO) {
-            InitAudioTrack(streamIndex);
+            InitAudioTrack(iter);
         } else if (iter.type == VIDEO) {
-            InitVideoTrack(streamIndex);
+            InitVideoTrack(iter);
         } else if (iter.type == SUBTITLE) {
-            InitSubtitleTrack(streamIndex);
+            InitSubtitleTrack(iter);
         } else {
             MEDIA_LOG_W("streaminfo invalid type");
         }
