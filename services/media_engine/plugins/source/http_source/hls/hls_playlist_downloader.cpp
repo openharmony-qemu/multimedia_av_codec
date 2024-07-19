@@ -103,6 +103,12 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 
 void HlsPlayListDownloader::NotifyListChange()
 {
+    if (currentVariant_ == nullptr || callback_ == nullptr) {
+        return;
+    }
+    if (currentVariant_->m3u8_ == nullptr) {
+        return;
+    }
     auto files = currentVariant_->m3u8_->files_;
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
@@ -113,7 +119,11 @@ void HlsPlayListDownloader::NotifyListChange()
             currentVariant_->m3u8_->iv_);
     } else {
         MEDIA_LOG_E("Decrypkey is not needed.");
-        callback_->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
+        if (master_ != nullptr) {
+            callback_->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
+        } else {
+            callback_->OnSourceKeyChange(nullptr, 0, nullptr);
+        }
     }
     playList.reserve(files.size());
     for (const auto &file: files) {
