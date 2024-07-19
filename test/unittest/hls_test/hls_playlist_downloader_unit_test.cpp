@@ -30,9 +30,17 @@ void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
 
-void HlsPlayListDownloaderUnitTest::SetUp(void) {}
+void HlsPlayListDownloaderUnitTest::SetUp(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+}
 
-void HlsPlayListDownloaderUnitTest::TearDown(void) {}
+void HlsPlayListDownloaderUnitTest::TearDown(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {

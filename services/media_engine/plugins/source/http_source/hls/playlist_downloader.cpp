@@ -184,6 +184,10 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 
 bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 {
+    if (data == nullptr || len == 0){
+        return false;
+    }
+    playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
     int32_t contentlen = downloadRequest_->GetFileContentLength();

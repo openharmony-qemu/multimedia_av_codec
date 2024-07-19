@@ -30,9 +30,17 @@ void AttributeUnitTest::SetUpTestCase(void) {}
 
 void AttributeUnitTest::TearDownTestCase(void) {}
 
-void AttributeUnitTest::SetUp(void) {}
+void AttributeUnitTest::SetUp(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+}
 
-void AttributeUnitTest::TearDown(void) {}
+void AttributeUnitTest::TearDown(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_Decimal_0001, TestSize.Level1)
 {
