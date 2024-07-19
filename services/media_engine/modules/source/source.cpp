@@ -191,6 +191,9 @@ Status Source::SetCurrentBitRate(int32_t bitRate)
 
 Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
+    if (seekable_ != Seekable::SEEKABLE) {
+        GetSeekable();
+    }
     int64_t timeNs;
     if (Plugins::Ms2HstTime(seekTime, timeNs)) {
         return plugin_->SeekToTime(timeNs, mode);

@@ -50,8 +50,6 @@ constexpr int FIRST_CACHE_WATER_LINE = 50 * 1024;
 constexpr int SECOND_CACHE_WATER_LINE = 100 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int SEEK_STATUS_RETRY_TIMES = 100;
-constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -216,18 +214,18 @@ void HlsMediaDownloader::Resume()
 
 bool HlsMediaDownloader::CheckReadStatus()
 {
-    // eos: buffer is empty, palylist is empty, request is finished, hls is vod, do not select bitrate
-    bool isEos = buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+    // eos:palylist is empty, request is finished, hls is vod, do not select bitrate
+    bool isEos = playList_->Empty() && (downloadRequest_ != nullptr) &&
                  downloadRequest_->IsEos() && playListDownloader_ != nullptr &&
                  (playListDownloader_->GetDuration() > 0) &&
                  playListDownloader_->IsParseAndNotifyFinished();
     if (isEos) {
-        MEDIA_LOG_I("HLS read Eos.");
+        MEDIA_LOG_I("HLS download done.");
         return true;
     }
     if (playListDownloader_->GetDuration() > 0 && playListDownloader_->IsParseAndNotifyFinished() &&
         static_cast<int64_t>(seekTime_) >= playListDownloader_->GetDuration()) {
-        MEDIA_LOG_I("HLS read Eos.");
+        MEDIA_LOG_I("HLS seek to tail.");
         return true;
     }
     return false;
@@ -261,10 +259,7 @@ bool HlsMediaDownloader::CheckBreakCondition()
         MEDIA_LOG_I("downloadErrorState break");
         return true;
     }
-    if (playList_->Empty() && (downloadRequest_ != nullptr) &&
-        downloadRequest_->IsEos() && playListDownloader_ != nullptr &&
-        (playListDownloader_->GetDuration() > 0) &&
-        playListDownloader_->IsParseAndNotifyFinished()) {
+    if (CheckReadStatus()) {
         MEDIA_LOG_I("download complete break");
         return true;
     }
@@ -336,8 +331,7 @@ bool HlsMediaDownloader::HandleCache()
 
 Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    bool isFinishedPlay = (playList_->Empty() && (downloadRequest_ != nullptr) &&
-                           downloadRequest_->IsEos()) || isStopped;
+    bool isFinishedPlay = CheckReadStatus() || isStopped;
     if (downloadRequest_ != nullptr) {
         readDataInfo.isEos_ = downloadRequest_->IsEos();
     }
@@ -347,6 +341,7 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
     }
     if (isFinishedPlay && buffer_->GetSize() == 0 && GetSeekable() == Seekable::SEEKABLE) {
         readDataInfo.realReadLength_ = 0;
+        MEDIA_LOG_I("HlsMediaDownloader: CheckPlaylist, eos.");
         return Status::END_OF_STREAM;
     }
     return Status::ERROR_UNKNOWN;
@@ -357,8 +352,9 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
     readDataInfo.isEos_ = CheckReadStatus();
-    if (readDataInfo.isEos_) {
+    if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
         readDataInfo.realReadLength_ = 0;
+        MEDIA_LOG_I("HlsMediaDownloader: buffer is empty, eos.");
         return Status::END_OF_STREAM;
     }
 
@@ -381,6 +377,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         }
         if (CheckReadTimeOut()) {
             readDataInfo.realReadLength_ = 0;
+            MEDIA_LOG_I("HlsMediaDownloader: read time out, eos");
             return Status::END_OF_STREAM;
         }
         OSAL::SleepFor(READ_SLEEP_INTERVAL);  // 5
@@ -389,6 +386,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     }
     if (isInterruptNeeded_.load()) {
         readDataInfo.realReadLength_ = 0;
+        MEDIA_LOG_I("HlsMediaDownloader: InterruptNeeded, eos");
         return Status::END_OF_STREAM;
     }
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
@@ -404,15 +402,6 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     isSeekingFlag = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
-    int32_t retry {0};
-    do {
-        retry++;
-        if (retry >= SEEK_STATUS_RETRY_TIMES) { // 100 means retry times
-            MEDIA_LOG_I("Seek may be failed");
-            break;
-        }
-        OSAL::SleepFor(SEEK_STATUS_SLEEP_TIME); // 50 means sleep time pre retry
-    } while (!playListDownloader_->IsParseAndNotifyFinished());
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     memset_s(decryptCache_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
     memset_s(decryptBuffer_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
