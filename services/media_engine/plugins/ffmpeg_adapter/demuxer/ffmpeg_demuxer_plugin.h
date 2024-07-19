@@ -93,7 +93,7 @@ private:
         std::atomic<bool> retry {false};
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
-        DumpMode dumpMode;
+        DumpMode dumpMode {DUMP_NONE};
     };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);

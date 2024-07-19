@@ -903,13 +903,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = flag;
     Status ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
-    if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
-        av_packet_free(&tempPkt);
-        av_free(tempPkt);
-        tempPkt = nullptr;
-    }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
-
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
@@ -919,6 +912,12 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         tempPkt->stream_index, -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
     Dump(dumpParam);
 
+    if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
+        av_packet_free(&tempPkt);
+        av_free(tempPkt);
+        tempPkt = nullptr;
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
@@ -1048,6 +1047,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     auto ioContext = static_cast<IOContext*>(opaque);
     auto buffer = std::make_shared<Buffer>();
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
+    FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "AVReadPacket buf is nullptr");
 
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
@@ -1874,7 +1874,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
-    FALSE_RETURN_V_MSG_E(bufData != nullptr, 0, "Sniff failed due to alloc buffer failed.");
+    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr,, 0, "Sniff failed due to alloc buffer failed.");
     MEDIA_LOG_I("Prepare buffer for probe, input param bufferSize=" PUBLIC_LOG_ZU
         ", real buffer size=" PUBLIC_LOG_ZU ".", bufferSize + AVPROBE_PADDING_SIZE, bufferSize);
 
