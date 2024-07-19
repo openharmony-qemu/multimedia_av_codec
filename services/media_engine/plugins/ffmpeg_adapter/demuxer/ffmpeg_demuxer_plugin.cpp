@@ -1874,7 +1874,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr,, 0, "Sniff failed due to alloc buffer failed.");
+    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, 0, "Sniff failed due to alloc buffer failed.");
     MEDIA_LOG_I("Prepare buffer for probe, input param bufferSize=" PUBLIC_LOG_ZU
         ", real buffer size=" PUBLIC_LOG_ZU ".", bufferSize + AVPROBE_PADDING_SIZE, bufferSize);
 
