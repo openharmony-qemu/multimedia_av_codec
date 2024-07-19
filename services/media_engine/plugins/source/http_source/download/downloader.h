@@ -31,6 +31,11 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+namespace {
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
+}
+
 enum struct DownloadStatus {
     PARTTAL_DOWNLOAD,
 };
@@ -43,7 +48,8 @@ struct HeaderInfo {
     const static int sleepTime {10};
     long contentLen {0};
     bool isChunked {false};
-    bool isClosed {false};
+    std::atomic<bool> isClosed {false};
+    bool isServerAcceptRange {false};
 
     void Update(const HeaderInfo* info)
     {
@@ -114,6 +120,7 @@ public:
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
     bool IsM3u8Request() const;
+    bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
 private:
     void WaitHeaderUpdated() const;
@@ -171,8 +178,12 @@ private:
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
-    static void FLVProcess(bool &isTrunck, long &contentLen, const std::string &url);
-    static size_t StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
+    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
@@ -184,7 +195,7 @@ private:
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
-    bool shouldStartNextRequest {false};
+    std::atomic<bool> shouldStartNextRequest {false};
     size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
 };

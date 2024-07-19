@@ -30,6 +30,7 @@ using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "HiStreamer" };
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t ADTS_HEADER_SIZE = 7;
@@ -43,6 +44,11 @@ constexpr int32_t AAC_MAX_BIT_RATE = 500000;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 constexpr int32_t NS_PER_US = 1000;
+constexpr int32_t AAC_FRAME_SIZE = 1024;
+constexpr int32_t CORRECTION_SAMPLE_RATE = 8000;
+constexpr int32_t CORRECTION_BIT_RATE = 70000;
+constexpr int32_t CORRECTION_CHANNEL_COUNT = 2;
+constexpr float Q_SCALE = 1.2f;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -448,6 +454,9 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
     tmpContext->bit_rate = avCodecContext_->bit_rate;
     tmpContext->channel_layout = avCodecContext_->channel_layout;
     tmpContext->sample_fmt = avCodecContext_->sample_fmt;
+    tmpContext->flags = avCodecContext_->flags;
+    tmpContext->global_quality = avCodecContext_->global_quality;
+    MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", tmpContext->flags, tmpContext->global_quality);
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
     if (res != 0) {
@@ -491,6 +500,17 @@ Status FFmpegAACEncoderPlugin::InitContext()
     avCodecContext_->bit_rate = bitRate_;
     avCodecContext_->channel_layout = srcLayout_;
     avCodecContext_->sample_fmt = srcFmt_;
+    // 8khz 2声道编码码率校正
+    if (sampleRate_ == CORRECTION_SAMPLE_RATE && channels_ == CORRECTION_CHANNEL_COUNT &&
+        bitRate_ < CORRECTION_BIT_RATE) {
+        // 设置 AV_CODEC_FLAG_QSCALE 标志
+        avCodecContext_->flags |= AV_CODEC_FLAG_QSCALE;
+        // Q_SCALE质量参数，对应FFmpeg 命令行工具的-q:a参数,范围通常是0.1~2。
+        // 此处Q_SCALE:1.2 global_quality:141比较合适
+        avCodecContext_->global_quality = static_cast<int32_t>(FF_QP2LAMBDA * Q_SCALE);
+        MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", avCodecContext_->flags,
+            avCodecContext_->global_quality);
+    }
 
     if (needResample_) {
         avCodecContext_->sample_fmt = avCodec_->sample_fmts[0];
@@ -614,6 +634,7 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *meta;
+    audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_FRAME_SIZE);
     return ret;
 }
 

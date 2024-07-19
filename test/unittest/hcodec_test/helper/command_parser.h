@@ -58,6 +58,7 @@ struct PerFrameParams {
     std::optional<bool> requestIdr;
     std::optional<QPRange> qpRange;
     std::optional<LTRParam> ltrParam;
+    std::optional<bool> discard;
 };
 
 struct CommandOpt {
@@ -89,6 +90,9 @@ struct CommandOpt {
     std::optional<uint32_t> quality;
     std::optional<QPRange> qpRange;
     std::optional<uint32_t> ltrListLen;
+    std::optional<int32_t> repeatAfter;
+    std::optional<int32_t> repeatMaxCnt;
+    std::optional<uint32_t> layerCnt;
 
     // decoder only
     bool render = false;

@@ -57,7 +57,6 @@ namespace AudioEncDemoAuto {
         (void)codec;
         (void)errorCode;
         (void)userData;
-        cout << "Error received, errorCode:" << errorCode << endl;
     }
 
     void OnOutputFormatChanged(OH_AVCodec* codec, OH_AVFormat* format, void* userData)
@@ -89,7 +88,7 @@ namespace AudioEncDemoAuto {
         if (attr) {
             signal->attrQueue_.push(*attr);
         } else {
-            cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
+            cout << "OnOutputBufferAvailable, attr is nullptr!" << endl;
         }
         signal->outCond_.notify_all();
     }
@@ -580,7 +579,7 @@ void AEncDemoAuto::InputFunc()
         }
         int32_t ret = HandleNormalInput(index, pts, frameBytes);
         if (ret != AVCS_ERR_OK) {
-            cout << "Fatal error, exit:" <<ret << endl;
+            cout << "Fatal, exit:" <<ret << endl;
             isRunning_.store(false);
             break;
         }

@@ -17,6 +17,35 @@ import("//foundation/multimedia/av_codec/config.gni")
 module_output_path = "av_codec/unittest"
 hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_media_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_segment_downloader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_com_attrs_elements.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_content_comp_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_descriptor_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_manager_util.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_prefer_audio_util.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_util.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mult_seg_base_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_base_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_list_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_template_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_tmline_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_url_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_url_type_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/utils/time_utils.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
@@ -26,7 +55,10 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
 ]
 config("hls_unittest_cfg") {
   defines = [
@@ -47,11 +79,15 @@ config("hls_unittest_cfg") {
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   cflags_cc = [
     "-std=c++17",
     "-fno-rtti",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   include_dirs = [
@@ -95,6 +131,63 @@ ohos_unittest("http_media_downloader_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "safwk:system_ability_fwk",
+  ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("downloader_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":hls_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = hls_test_sources + [ "downloader_unit_test.cpp" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "//third_party/curl:curl_shared",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "safwk:system_ability_fwk",
+  ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("http_source_plugin_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":hls_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = hls_test_sources + [ "http_source_plugin_unit_test.cpp" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "//third_party/curl:curl_shared",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "libxml2:libxml2",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",

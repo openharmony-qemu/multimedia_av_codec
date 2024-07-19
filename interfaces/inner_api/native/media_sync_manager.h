@@ -91,6 +91,8 @@ public:
      */
     void ReportPrerolled(IMediaSynchronizer* supplier) override;
 
+    void ReportEos(IMediaSynchronizer* supplier) override;
+
     void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
 
     void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId, IMediaSynchronizer* supplier) override;
@@ -119,6 +121,7 @@ private:
     void SimpleUpdatePlayRate(float playRate);
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
+    int64_t BoundMediaProgress(int64_t newMediaProgressTime);
 
     int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};
@@ -134,6 +137,7 @@ private:
     int64_t pausedAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedExactAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
+    int64_t firstMediaTimeAfterSeek_ {HST_TIME_NONE};
     int64_t startingTimeMediaUs_ {HST_TIME_NONE};
 
     float playRate_ {1.0f};
@@ -152,6 +156,8 @@ private:
     std::vector<IMediaSynchronizer*> prerolledSyncers_;
     int64_t delayTime_ {HST_TIME_NONE};
     int64_t startPts_ {HST_TIME_NONE};
+    std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
+    std::atomic<bool> frameAfterSeeked_ {false};
 };
 } // namespace Pipeline
 } // namespace Media

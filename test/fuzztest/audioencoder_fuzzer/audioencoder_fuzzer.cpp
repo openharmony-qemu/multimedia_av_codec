@@ -33,7 +33,7 @@ bool AudioEncoderFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     // FUZZ OH_AudioCodec_CreateByMime
-    std::string codecdata((const char*) data, size);
+    std::string codecdata(reinterpret_cast<const char*>(data), size);
     OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata.c_str(), true);
     if (source) {
         OH_AudioCodec_Destroy(source);
@@ -110,6 +110,45 @@ bool AudioEncoderFLACFuzzTest(const uint8_t *data, size_t size)
     return ret;
 }
 
+bool AudioEncoderAMRNBFuzzTest(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
+    // FUZZ amrnb
+    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
+    aDecBufferDemo->InitFile("amrnb");
+    bool ret = aDecBufferDemo->RunCase(data, size);
+    delete aDecBufferDemo;
+    return ret;
+}
+
+bool AudioEncoderAMRWBFuzzTest(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
+    // FUZZ amrwb
+    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
+    aDecBufferDemo->InitFile("amrwb");
+    bool ret = aDecBufferDemo->RunCase(data, size);
+    delete aDecBufferDemo;
+    return ret;
+}
+
+bool AudioEncoderMP3FuzzTest(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
+    // FUZZ mp3
+    AudioBufferAacEncDemo* aDecBufferDemo = new AudioBufferAacEncDemo();
+    aDecBufferDemo->InitFile("mp3");
+    bool ret = aDecBufferDemo->RunCase(data, size);
+    delete aDecBufferDemo;
+    return ret;
+}
+
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -122,5 +161,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AudioEncoderOPUSFuzzTest(data, size);
     OHOS::AudioEncoderLBVCFuzzTest(data, size);
     OHOS::AudioEncoderFLACFuzzTest(data, size);
+    OHOS::AudioEncoderAMRNBFuzzTest(data, size);
+    OHOS::AudioEncoderAMRWBFuzzTest(data, size);
+    OHOS::AudioEncoderMP3FuzzTest(data, size);
     return 0;
 }

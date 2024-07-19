@@ -175,6 +175,19 @@ bool AudioDecoderLBVCFuzzTest(const uint8_t *data, size_t size)
     delete aDecBufferDemo;
     return res;
 }
+
+bool AudioDecoderMP3FuzzTest(const uint8_t *data, size_t size)
+{
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
+    // FUZZ lbvc
+    ADecBufferDemo* aDecBufferDemo = new ADecBufferDemo();
+    aDecBufferDemo->InitFile("mp3");
+    auto res = aDecBufferDemo->RunCase(data, size);
+    delete aDecBufferDemo;
+    return res;
+}
 }
 
 /* Fuzzer entry point */
@@ -191,5 +204,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AudioDecoderVividFuzzTest(data, size);
     OHOS::AudioDecoderAMRNBFuzzTest(data, size);
     OHOS::AudioDecoderAMRWBFuzzTest(data, size);
+    OHOS::AudioDecoderMP3FuzzTest(data, size);
     return 0;
 }

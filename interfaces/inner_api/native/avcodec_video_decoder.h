@@ -21,7 +21,7 @@
 #include "buffer/avsharedmemory.h"
 #include "meta/format.h"
 #include "surface.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

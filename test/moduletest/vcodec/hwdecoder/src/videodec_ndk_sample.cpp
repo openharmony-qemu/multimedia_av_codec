@@ -43,7 +43,7 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-
+constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
 SHA512_CTX c;
 unsigned char md[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
@@ -127,8 +127,12 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
+    if (dec_sample->isFlushing_) {
+        return;
+    }
+    
     if (dec_sample->inputCallbackFlush && dec_sample->outCount > 1) {
-        OH_VideoDecoder_Flush(codec);
+        dec_sample->Flush();
         cout << "OH_VideoDecoder_Flush end" << endl;
         dec_sample->isRunning_.store(false);
         dec_sample->signal_->inCond_.notify_all();
@@ -153,8 +157,11 @@ void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, vo
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData)
 {
+    if (dec_sample->isFlushing_) {
+        return;
+    }
     if (dec_sample->outputCallbackFlush && dec_sample->outCount > 1) {
-        OH_VideoDecoder_Flush(codec);
+        dec_sample->Flush();
         cout << "OH_VideoDecoder_Flush end" << endl;
         dec_sample->isRunning_.store(false);
         dec_sample->signal_->inCond_.notify_all();
@@ -221,7 +228,7 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
         cout << "Fatal: Failed to create format" << endl;
         return AV_ERR_UNKNOWN;
     }
-    if (maxInputSize > 0) {
+    if (maxInputSize != 0) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
     originalWidth = DEFAULT_WIDTH;
@@ -485,7 +492,7 @@ void VDecNdkSample::InputFuncTest()
             if (!isRunning_.load()) {
                 return true;
             }
-            return signal_->inIdxQueue_.size() > 0;
+            return signal_->inIdxQueue_.size() > 0 && !isFlushing_.load();
         });
         if (!isRunning_.load()) {
             break;
@@ -495,13 +502,13 @@ void VDecNdkSample::InputFuncTest()
 
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
-        lock.unlock();
         if (!inFile_->eof()) {
             int ret = PushData(index, buffer);
             if (ret == 1) {
                 break;
             }
         }
+        lock.unlock();
         if (sleepOnFPS) {
             usleep(MICRO_IN_SECOND / (int32_t)DEFAULT_FRAME_RATE);
         }
@@ -547,7 +554,9 @@ int32_t VDecNdkSample::PushData(uint32_t index, OH_AVMemory *buffer)
 int32_t VDecNdkSample::CheckAndReturnBufferSize(OH_AVMemory *buffer)
 {
     int32_t size = OH_AVMemory_GetSize(buffer);
-    if (maxInputSize > 0 && (size > maxInputSize)) {
+    if ((maxInputSize < 0) && (size < 0)) {
+        errCount++;
+    } else if ((maxInputSize > 0) && (size > SYS_MAX_INPUT_SIZE)) {
         errCount++;
     }
     return size;
@@ -673,7 +682,7 @@ void VDecNdkSample::OutputFuncTest()
             if (!isRunning_.load()) {
                 return true;
             }
-            return signal_->outIdxQueue_.size() > 0;
+            return signal_->outIdxQueue_.size() > 0 && !isFlushing_.load();
         });
         if (!isRunning_.load()) {
             break;
@@ -684,7 +693,6 @@ void VDecNdkSample::OutputFuncTest()
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         signal_->attrQueue_.pop();
-        lock.unlock();
         if (needCheckOutputDesc) {
             CheckOutputDescription();
             needCheckOutputDesc = false;
@@ -697,6 +705,7 @@ void VDecNdkSample::OutputFuncTest()
             break;
         }
         ProcessOutputData(buffer, index);
+        lock.unlock();
         if (errCount > 0) {
             break;
         }
@@ -764,6 +773,7 @@ void VDecNdkSample::SetEOS(uint32_t index)
 
 int32_t VDecNdkSample::Flush()
 {
+    isFlushing_.store(true);
     unique_lock<mutex> inLock(signal_->inMutex_);
     clearIntqueue(signal_->inIdxQueue_);
     signal_->inCond_.notify_all();
@@ -774,7 +784,9 @@ int32_t VDecNdkSample::Flush()
     signal_->outCond_.notify_all();
     outLock.unlock();
     isRunning_.store(false);
-    return OH_VideoDecoder_Flush(vdec_);
+    int32_t ret = OH_VideoDecoder_Flush(vdec_);
+    isFlushing_.store(false);
+    return ret;
 }
 
 int32_t VDecNdkSample::Reset()
@@ -848,9 +860,9 @@ int32_t VDecNdkSample::RepeatCallSetSurface()
     for (int i = 0; i < REPEAT_CALL_TIME; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
-        if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT && ret != AV_ERR_INVALID_STATE) {
+        if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT) {
             return AV_ERR_OPERATE_NOT_PERMIT;
         }
     }
-    return AV_ERR_OK;
+    return ret;
 }

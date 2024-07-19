@@ -16,12 +16,21 @@
 #include "audio_sink.h"
 #include "syspara/parameters.h"
 #include "plugin/plugin_manager_v2.h"
+#include "common/log.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
+constexpr int64_t EOS_DRAIN_INTERVAL_US = 200000; // try drain each 200ms
+}
 
 namespace OHOS {
 namespace Media {
 
 const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
 const int32_t APE_BUFFER_QUEUE_SIZE = 32;
+const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
+const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
 
 int64_t GetAudioLatencyFixDelay()
 {
@@ -123,6 +132,10 @@ Status AudioSink::Prepare()
         return ret;
     }
     state_ = Pipeline::FilterState::READY;
+    {
+        AutoLock lock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::NONE;
+    }
     return ret;
 }
 
@@ -140,11 +153,17 @@ Status AudioSink::Start()
 
 Status AudioSink::Stop()
 {
+    playRangeStartTime_ = DEFAULT_PLAY_RANGE_VALUE;
+    playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     Status ret = plugin_->Stop();
     if (ret != Status::OK) {
         return ret;
     }
     state_ = Pipeline::FilterState::INITIALIZED;
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ != EosInterruptState::NONE) {
+        eosInterruptType_ = EosInterruptState::STOP;
+    }
     return ret;
 }
 
@@ -160,6 +179,10 @@ Status AudioSink::Pause()
         return ret;
     }
     state_ = Pipeline::FilterState::PAUSED;
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ == EosInterruptState::INITIAL || eosInterruptType_ == EosInterruptState::RESUME) {
+        eosInterruptType_ = EosInterruptState::PAUSE;
+    }
     return ret;
 }
 
@@ -171,17 +194,40 @@ Status AudioSink::Resume()
         return ret;
     }
     state_ = Pipeline::FilterState::RUNNING;
+    AutoLock lock(eosMutex_);
+    if (eosInterruptType_ == EosInterruptState::PAUSE) {
+        eosInterruptType_ = EosInterruptState::RESUME;
+        if (!eosDraining_ && eosTask_ != nullptr) {
+            eosTask_->SubmitJobOnce([this] {
+                HandleEosInner();
+            });
+        }
+    }
     return ret;
 }
 
 Status AudioSink::Flush()
 {
-    return plugin_->Flush();
+    Status ret = Status::OK;
+    ret = plugin_->Flush();
+    {
+        AutoLock lock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::NONE;
+    }
+    return ret;
 }
 
 Status AudioSink::Release()
 {
     return plugin_->Deinit();
+}
+
+Status AudioSink::SetPlayRange(int64_t start, int64_t end)
+{
+    MEDIA_LOG_I("SetPlayRange enter.");
+    playRangeStartTime_ = start;
+    playRangeEndTime_ = end;
+    return Status::OK;
 }
 
 Status AudioSink::SetVolume(float volume)
@@ -241,6 +287,9 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
     if (latestBufferDuration_ <= 0) {
         return;
     }
+    if (latestBufferDuration_ > MAX_BUFFER_DURATION_US) {
+        latestBufferDuration_ = MAX_BUFFER_DURATION_US; // wait at most MAX_DURATION
+    }
     int64_t timeNow = Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
     if (!lastBufferWriteSuccess_) {
         int64_t writeSleepTime = latestBufferDuration_ - (timeNow - lastBufferWriteTime_);
@@ -253,17 +302,59 @@ void AudioSink::UpdateAudioWriteTimeMayWait()
     lastBufferWriteTime_ = timeNow;
 }
 
-void AudioSink::ReportEosEventAndDrain()
+void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
+    eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
+}
+
+void AudioSink::HandleEosInner()
+{
+    AutoLock lock(eosMutex_);
+    eosDraining_ = true;
+    if (eosInterruptType_ != EosInterruptState::INITIAL && eosInterruptType_ != EosInterruptState::RESUME) {
+        MEDIA_LOG_W("drain audiosink interrupted");
+        eosDraining_ = false;
+        return;
+    }
+    uint64_t latency = 0;
+    if (plugin_->GetLatency(latency) != Status::OK) {
+        MEDIA_LOG_W("failed to get latency, drain directly");
+        DrainAndReportEosEvent();
+        return;
+    }
+    if (latency < EOS_DRAIN_INTERVAL_US) {
+        MEDIA_LOG_I("Drain audiosink and report EOS");
+        DrainAndReportEosEvent();
+        return;
+    }
+    if (eosTask_ == nullptr) {
+        MEDIA_LOG_W("Drain audiosink, eosTask_ is nullptr");
+        DrainAndReportEosEvent();
+        return;
+    }
+    MEDIA_LOG_D("Drain audiosink wait next INTERVAL, latency = " PUBLIC_LOG_U64, latency);
+    eosTask_->SubmitJobOnce([this] {
+            HandleEosInner();
+        }, EOS_DRAIN_INTERVAL_US, false);
+}
+ 
+void AudioSink::DrainAndReportEosEvent()
+{
+    plugin_->Drain();
+    plugin_->PauseTransitent();
+    eosInterruptType_ = EosInterruptState::NONE;
+    eosDraining_ = false;
     isEos_ = true;
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        syncCenter->ReportEos(this);
+    }
     Event event {
         .srcFilter = "AudioSink",
         .type = EventType::EVENT_COMPLETE,
     };
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
-    plugin_->Drain();
-    plugin_->PauseTransitent();
 }
 
 void AudioSink::DrainOutputBuffer()
@@ -282,9 +373,19 @@ void AudioSink::DrainOutputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }
-    if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
-        ReportEosEventAndDrain();
+    if ((filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) ||
+        ((playRangeEndTime_ != DEFAULT_PLAY_RANGE_VALUE) &&
+        (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS))) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        AutoLock eosLock(eosMutex_);
+        eosInterruptType_ = EosInterruptState::INITIAL;
+        if (eosTask_ == nullptr) {
+            DrainAndReportEosEvent();
+            return;
+        }
+        eosTask_->SubmitJobOnce([this] {
+            HandleEosInner();
+        });
         return;
     }
     UpdateAudioWriteTimeMayWait();
@@ -339,7 +440,11 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         forceUpdateTimeAnchorNextTime_ = true;
     }
     latestBufferPts_ = buffer->pts_ - firstPts_;
-    latestBufferDuration_ = playingBufferDurationUs_ / speed_;
+    if (playingBufferDurationUs_ > 0) {
+        latestBufferDuration_ = playingBufferDurationUs_ / speed_;
+    } else {
+        latestBufferDuration_ = buffer->duration_ / speed_;
+    }
     return render ? 0 : -1;
 }
 

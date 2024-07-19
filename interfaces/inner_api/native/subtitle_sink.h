@@ -23,7 +23,6 @@
 #include "buffer/avbuffer_queue.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "filter/filter.h"
-#include "common/log.h"
 
 namespace OHOS {
 namespace Media {

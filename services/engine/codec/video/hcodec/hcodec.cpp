@@ -25,6 +25,7 @@
 #include "hcodec_list.h"
 #include "hencoder.h"
 #include "hdecoder.h"
+#include "hitrace_meter.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
@@ -319,7 +320,12 @@ int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo 
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);
     msg->SetValue("data2", info.data2);
-    codec_->SendAsyncMsg(MsgWhat::CODEC_EVENT, msg);
+    std::shared_ptr<HCodec> codec = codec_.lock();
+    if (codec == nullptr) {
+        LOGI("HCodec is gone");
+        return HDF_SUCCESS;
+    }
+    codec->SendAsyncMsg(MsgWhat::CODEC_EVENT, msg);
     return HDF_SUCCESS;
 }
 
@@ -327,7 +333,12 @@ int32_t HCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuff
 {
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue(BUFFER_ID, buffer.bufferId);
-    codec_->SendAsyncMsg(MsgWhat::OMX_EMPTY_BUFFER_DONE, msg);
+    std::shared_ptr<HCodec> codec = codec_.lock();
+    if (codec == nullptr) {
+        LOGI("HCodec is gone");
+        return HDF_SUCCESS;
+    }
+    codec->SendAsyncMsg(MsgWhat::OMX_EMPTY_BUFFER_DONE, msg);
     return HDF_SUCCESS;
 }
 
@@ -335,7 +346,12 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
 {
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("omxBuffer", buffer);
-    codec_->SendAsyncMsg(MsgWhat::OMX_FILL_BUFFER_DONE, msg);
+    std::shared_ptr<HCodec> codec = codec_.lock();
+    if (codec == nullptr) {
+        LOGI("HCodec is gone");
+        return HDF_SUCCESS;
+    }
+    codec->SendAsyncMsg(MsgWhat::OMX_FILL_BUFFER_DONE, msg);
     return HDF_SUCCESS;
 }
 
@@ -386,6 +402,10 @@ int32_t HCodec::SetLowLatency(const Format &format)
 {
     int32_t enableLowLatency;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
+        return AVCS_ERR_OK;
+    }
+    if (!caps_.port.video.isSupportLowLatency) {
+        HLOGW("platform not support LowLatency");
         return AVCS_ERR_OK;
     }
 
@@ -1279,6 +1299,28 @@ void HCodec::CleanUpOmxNode()
             FreeOmxBuffer(OMX_DirOutput, info);
         }
     }
+}
+
+int32_t HCodec::OnAllocateComponent()
+{
+    HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + caps_.compName);
+    compMgr_ = GetManager(false, caps_.port.video.isSupportPassthrough);
+    if (compMgr_ == nullptr) {
+        HLOGE("GetCodecComponentManager failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    compCb_ = new HdiCallback(weak_from_this());
+    int32_t ret = compMgr_->CreateComponent(compNode_, componentId_, caps_.compName, 0, compCb_);
+    if (ret != HDF_SUCCESS || compNode_ == nullptr) {
+        compCb_ = nullptr;
+        compMgr_ = nullptr;
+        HLOGE("CreateComponent failed, ret=%d", ret);
+        return AVCS_ERR_UNKNOWN;
+    }
+    compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
+    HLOGI("create omx node %s succ", caps_.compName.c_str());
+    PrintCaller();
+    return AVCS_ERR_OK;
 }
 
 void HCodec::ReleaseComponent()

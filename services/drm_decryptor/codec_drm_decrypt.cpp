@@ -702,7 +702,7 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
     CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySession nullptr");
     keySessionServiceProxy_ = keySession;
     CHECK_AND_RETURN_LOG((keySessionServiceProxy_ != nullptr), "SetDecryptConfig keySessionServiceProxy nullptr");
-    keySessionServiceProxy_->CreateMediaDecryptModule(decryptModuleProxy_);
+    keySessionServiceProxy_->GetMediaDecryptModule(decryptModuleProxy_);
     CHECK_AND_RETURN_LOG((decryptModuleProxy_ != nullptr), "SetDecryptConfig decryptModuleProxy_ nullptr");
 }
 

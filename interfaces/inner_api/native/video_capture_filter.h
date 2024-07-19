@@ -26,7 +26,6 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
-#include "common/log.h"
 
 #define TIME_NONE ((int64_t) -1)
 

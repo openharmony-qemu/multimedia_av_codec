@@ -80,10 +80,8 @@ private:
     bool isFirst;
     bool hasExtra_;
     int32_t maxInputSize_;
-    int32_t bufferNum_;
-    int32_t bufferIndex_;
-    int64_t preBufferGroupPts_;
-    int64_t curBufferGroupPts_;
+    int64_t nextPts_;
+    float durationTime_;
     std::string name_;
 
     std::shared_ptr<AVCodec> avCodec_;

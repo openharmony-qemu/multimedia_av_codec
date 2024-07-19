@@ -21,6 +21,10 @@
 #include "meta/format.h"
 #include "media_description.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 
@@ -192,10 +196,19 @@ Status SurfaceDecoderAdapter::Start()
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
     }
+    ret = codecServer_->Prepare();
+    if (ret == 0) {
+        MEDIA_LOG_I("Prepare success");
+    } else {
+        MEDIA_LOG_I("Prepare fail");
+        return Status::ERROR_UNKNOWN;
+    }
     ret = codecServer_->Start();
     if (ret == 0) {
+        MEDIA_LOG_I("Start success");
         return Status::OK;
     } else {
+        MEDIA_LOG_I("Start fail");
         return Status::ERROR_UNKNOWN;
     }
 }

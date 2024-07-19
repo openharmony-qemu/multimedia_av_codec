@@ -245,6 +245,14 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_APE;
 
 /**
+ * @brief Enumerates the MIME type of versatile video coding.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
+
+/**
  * @brief Enumerates the MIME type of subtitle.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -293,7 +301,7 @@ extern const char *OH_MD_KEY_WIDTH;
 extern const char *OH_MD_KEY_HEIGHT;
 /* Key for video pixel format, value type is int32_t, see @OH_AVPixelFormat */
 extern const char *OH_MD_KEY_PIXEL_FORMAT;
-/* key for audio raw format, value type is int32_t , see @AudioSampleFormat */
+/* key for audio raw format, value type is int32_t , see @OH_BitsPerSample */
 extern const char *OH_MD_KEY_AUDIO_SAMPLE_FORMAT;
 /* Key for video frame rate, value type is double. */
 extern const char *OH_MD_KEY_FRAME_RATE;
@@ -688,6 +696,11 @@ typedef enum OH_AVOutputFormat {
      * @since 12
      */
     AV_OUTPUT_FORMAT_MP3 = 9,
+    /**
+     * The muxer output wav file format.
+     * @since 12
+     */
+    AV_OUTPUT_FORMAT_WAV = 10,
 } OH_AVOutputFormat;
 
 /**
@@ -861,6 +874,9 @@ typedef enum OH_TemporalGopReferenceMode {
     ADJACENT_REFERENCE = 0,
     /** Refer to latest long-term reference frame. */
     JUMP_REFERENCE = 1,
+    /** Uniformly scaled reference structure, which has even distribution of video frames after drop the highest
+     *  enhance layer. The temporal group of pictures must be power of 2. */
+    UNIFORMLY_SCALED_REFERENCE = 2,
 } OH_TemporalGopReferenceMode;
 
 #ifdef __cplusplus

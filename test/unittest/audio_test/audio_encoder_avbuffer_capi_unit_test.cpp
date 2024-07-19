@@ -51,6 +51,7 @@ constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t OPUS_SAMPLE_RATE = 48000;
 constexpr uint32_t CHANNEL_1CHAN_COUNT = 1;
 constexpr uint32_t SAMPLE_RATE_8K = 8000;
+constexpr uint32_t SAMPLE_RATE_48K = 48000;
 constexpr uint32_t ABNORMAL_SAMPLE_RATE = 9999999;
 constexpr uint32_t BITS_RATE = 261000;
 constexpr int32_t MP3_BIT_RATE = 128000;
@@ -591,7 +592,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, mp3CheckChannelCount, TestSize.Level1)
     CreateCodecFunc(AudioBufferFormatType::TYPE_MP3);
     format = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_48K);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_S16LE);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
@@ -614,7 +615,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, mp3CheckSampleFormat, TestSize.Level1)
     format = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_48K);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), MP3_BIT_RATE);
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format)); // missing sample format
 

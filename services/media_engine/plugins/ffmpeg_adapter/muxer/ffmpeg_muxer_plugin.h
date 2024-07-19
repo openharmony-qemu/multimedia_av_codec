@@ -61,14 +61,17 @@ private:
     Status SetCodecParameterCuva(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterCuvaByParser(AVStream *stream);
     Status SetDisplayMatrix(AVStream* stream);
+    Status SetCodecParameterTimedMeta(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
+    Status AddTimedMetaTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     Status WriteVideoSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     std::vector<uint8_t> TransAnnexbToMp4(const uint8_t *sample, int32_t size);
     uint8_t *FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
     bool IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen);
     Status SetNalSizeLen(AVStream *stream, const std::vector<uint8_t> &codecConfig);
+    void HandleOptions(std::string& optionName);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
@@ -100,6 +103,7 @@ private:
     bool isColorSet_ = {false};
     bool isFastStart_ = {false};
     bool canReadFile_ = {false};
+    bool useTimedMetadata_ = {false};
     std::shared_ptr<StreamParserManager> hevcParser_ {nullptr};
     std::unordered_map<int32_t, VideoSampleInfo> videoTracksInfo_;
     std::mutex mutex_;

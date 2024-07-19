@@ -23,7 +23,6 @@ using namespace OHOS::MediaAVCodec::Sample;
 
 int main(int argc, char *argv[])
 {
-    HideCmdCursor();
     auto info = ParseDemoArg(argc, argv);
     if (!SampleInfoChecker(info)) {
         std::cout << "Demo arg check failed, exit" << std::endl;
@@ -38,6 +37,5 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-    ShowCmdCursor();
     return 0;
 }

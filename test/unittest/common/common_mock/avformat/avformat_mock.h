@@ -42,6 +42,8 @@ public:
     virtual void InitTrackFormat() = 0;
     virtual void InitAudioTrackFormat(const std::string_view &mimeType, int32_t sampleRate, int32_t channelCount) = 0;
     virtual void InitVideoTrackFormat(const std::string_view &mimeType, int32_t width, int32_t height) = 0;
+    virtual void InitMetadataTrackFormat(
+        const std::string_view &mimeType, const std::string_view &key, int32_t srcTrackID) = 0;
     virtual const char *DumpInfo() = 0;
     virtual void Destroy() = 0;
 };
@@ -53,6 +55,8 @@ public:
                                                          int32_t channelCount);
     static std::shared_ptr<FormatMock> CreateVideoFormat(const std::string_view &mimeType, int32_t width,
                                                          int32_t height);
+    static std::shared_ptr<FormatMock> CreateTimedMetadataFormat(
+        const std::string_view &mimeType, const std::string_view &metadataKey, int32_t srcTrackID);
 
 private:
     FormatMockFactory() = delete;

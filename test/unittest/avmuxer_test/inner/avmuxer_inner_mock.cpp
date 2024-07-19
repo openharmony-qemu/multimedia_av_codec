@@ -76,6 +76,16 @@ int32_t AVMuxerInnerMock::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuff
     return AV_ERR_UNKNOWN;
 }
 
+int32_t AVMuxerInnerMock::SetTimedMetadata()
+{
+    if (muxer_ != nullptr) {
+        std::shared_ptr<Meta> param = std::make_shared<Meta>();
+        param->SetData("use_timed_meta_track", 1);
+        return muxer_->SetParameter(param);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
 int32_t AVMuxerInnerMock::SetRotation(int32_t rotation)
 {
     if (muxer_ != nullptr) {

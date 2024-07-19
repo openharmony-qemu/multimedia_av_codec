@@ -24,6 +24,10 @@
 #include "plugin/plugin_manager_v2.h"
 #include "source.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 using namespace Plugins;
@@ -59,14 +63,8 @@ Source::~Source()
 void Source::SetCallback(Callback* callback)
 {
     MEDIA_LOG_I("SetCallback entered.");
-    if (callback == nullptr) {
-        MEDIA_LOG_E("callback is nullptr");
-        return;
-    }
-    if (mediaDemuxerCallback_ == nullptr) {
-        MEDIA_LOG_E("mediaDemuxerCallback is nullptr");
-        return;
-    }
+    FALSE_RETURN_MSG(callback != nullptr, "callback is nullptr");
+    FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
     mediaDemuxerCallback_->SetCallbackWrap(callback);
 }
 
@@ -181,6 +179,16 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
+Status Source::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SetCurrentBitRate(bitRate);
+}
+
 Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     int64_t timeNs;
@@ -266,11 +274,6 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
-    } else if (event.type == PluginEventType::SOURCE_INFO) {
-        MEDIA_LOG_I("source info start from source.");
-        if (mediaDemuxerCallback_ != nullptr) {
-            mediaDemuxerCallback_->OnEvent(event);
-        }
     } else {
         MEDIA_LOG_E("on event error.");
     }
@@ -297,7 +300,19 @@ void Source::SetInterruptState(bool isInterruptNeeded)
 Plugins::Seekable Source::GetSeekable()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Plugins::Seekable::INVALID, "GetSeekable, Source plugin is nullptr");
-    return plugin_->GetSeekable();
+    int32_t retry {0};
+    seekable_ = Seekable::INVALID;
+    do {
+        seekable_ = plugin_->GetSeekable();
+        retry++;
+        if (seekable_ == Seekable::INVALID) {
+            if (retry >= 20) { // 20 means retry times
+                break;
+            }
+            OSAL::SleepFor(10); // 10 means sleep time pre retry
+        }
+    } while (seekable_ == Seekable::INVALID);
+    return seekable_;
 }
 
 std::string Source::GetUriSuffix(const std::string& uri)

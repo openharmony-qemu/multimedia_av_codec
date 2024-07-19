@@ -81,6 +81,14 @@ int32_t AVMuxerSample::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer 
     return muxer_->WriteSampleBuffer(trackIndex, sample);
 }
 
+int32_t AVMuxerSample::SetTimedMetadata()
+{
+    if (muxer_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return muxer_->SetTimedMetadata();
+}
+
 int32_t AVMuxerSample::SetRotation(int32_t rotation)
 {
     if (muxer_ == nullptr) {

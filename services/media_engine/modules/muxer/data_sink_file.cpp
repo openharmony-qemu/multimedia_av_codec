@@ -19,13 +19,17 @@
 #include <fcntl.h>
 #include "common/log.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 DataSinkFile::DataSinkFile(FILE *file) : file_(file), pos_(0), end_(-1), isCanRead_(true)
 {
     end_ = fseek(file_, 0L, SEEK_END);
     if (fseek(file_, 0L, SEEK_SET) < 0) {
-        MEDIA_LOG_E("failed to construct, file is  %{public}p, error is %{public}s", file_, strerror(errno));
+        MEDIA_LOG_E("failed to construct, error is %{public}s", strerror(errno));
     }
 }
 
@@ -37,7 +41,7 @@ DataSinkFile::~DataSinkFile()
 
 int32_t DataSinkFile::Read(uint8_t *buf, int32_t bufSize)
 {
-    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is  %{public}p", file_);
+    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is nullptr");
     if (pos_ >= end_) {
         return 0;
     }
@@ -52,7 +56,7 @@ int32_t DataSinkFile::Read(uint8_t *buf, int32_t bufSize)
 
 int32_t DataSinkFile::Write(const uint8_t *buf, int32_t bufSize)
 {
-    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is  %{public}p", file_);
+    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is nullptr");
 
     FALSE_RETURN_V_MSG_E(fseek(file_, pos_, SEEK_SET) >= 0, -1, "failed to seek, %{public}s", strerror(errno));
     int32_t size = static_cast<int32_t>(fwrite(buf, 1, bufSize, file_));

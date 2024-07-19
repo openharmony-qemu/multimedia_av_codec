@@ -250,6 +250,10 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
         bufData = buffer->GetMemory();
     }
 
+    if (bufData == nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = streamId;
     readDataInfo.nextStreamId_ = streamId;
@@ -331,7 +335,7 @@ void HttpSourcePlugin::CloseUri()
     std::shared_ptr<MediaDownloader> downloader = downloader_;
     if (downloader != nullptr) {
         MEDIA_LOG_D("Close uri");
-        downloader->Close(false);
+        downloader->Close(true);
     }
     AutoLock lock(mutex_);
     downloader_ = nullptr;

@@ -25,7 +25,7 @@
 #include "native_object.h"
 #include "native_drm_common.h"
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "NativeAVDemuxer"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "NativeAVDemuxer"};
 }
 
 using namespace OHOS::MediaAVCodec;

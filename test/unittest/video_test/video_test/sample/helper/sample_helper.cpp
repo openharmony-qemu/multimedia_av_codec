@@ -31,13 +31,14 @@ const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> COD
     {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Hardware Decoder"},
     {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_SW_DECODER, "Software Decoder"},
     {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_ENCODER, "Hardware Encoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_SW_ENCODER, "Software Encoder"},
 };
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_API10,          "Surface API10"},
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_API10,    "Buffer API10"},
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_API11,         "Buffer API11"},
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_API11,        "Surface API11"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::API10_SURFACE, "Surface API10"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::API10_BUFFER,  "Buffer API10"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::API11_BUFFER,  "Buffer API11"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::API11_SURFACE, "Surface API11"},
 };
 
 const std::unordered_map<bool, std::string> BOOL_TO_STRING = {
@@ -119,19 +120,9 @@ void PrintSampleInfo(const SampleInfo &info)
     AVCODEC_LOGI("====== Video sample config ======");
 }
 
-void ShowCmdCursor()
-{
-    std::cout << "\033[?25h" << std::flush;
-}
-
-void HideCmdCursor()
-{
-    std::cout << "\033[?25l" << std::flush;
-}
-
 void PrintProgress(int32_t times, int32_t frames)
 {
-    std::cout << "\r\033[K" << "Repeat times left: " << times << ", frames: " << frames << std::flush;
+    std::cout << "\r\033[K" << "Repeat times left: " << times << ", frames: " << frames  << " " << std::flush;
 }
 } // Sample
 } // MediaAVCodec

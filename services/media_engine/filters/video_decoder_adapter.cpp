@@ -31,6 +31,10 @@
 #include "avcodec_sysevent.h"
 #include "media_core.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 using namespace MediaAVCodec;
@@ -360,6 +364,14 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
         }
         currentTime_ = currentTime;
     }
+    return 0;
+}
+
+int32_t VideoDecoderAdapter::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    AVCodecTrace trace("VideoDecoderAdapter::RenderOutputBufferAtTime");
+    MEDIA_LOG_D("VideoDecoderAdapter::RenderOutputBufferAtTime");
+    mediaCodec_->RenderOutputBufferAtTime(index, renderTimestampNs);
     return 0;
 }
 
