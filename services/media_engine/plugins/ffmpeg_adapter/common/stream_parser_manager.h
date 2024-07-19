@@ -17,6 +17,7 @@
 #define STREAM_PARSER_MANAGER_H
 
 #include <string>
+#include <map>
 #include <memory>
 #include <mutex>
 #include "stream_parser.h"
@@ -26,6 +27,7 @@ namespace Media {
 namespace Plugins {
 enum StreamType {
     HEVC = 0,
+    VVC  = 1,
 };
 
 class StreamParserManager {
@@ -66,6 +68,7 @@ private:
     static CreateFunc createFunc_;
     static DestroyFunc destroyFunc_;
     static std::mutex mtx_;
+    static std::map<StreamType, void *> handlerMap_;
 };
 } // namespace Plugins
 } // namespace Media

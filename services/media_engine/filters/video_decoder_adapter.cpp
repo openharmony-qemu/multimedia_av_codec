@@ -367,6 +367,14 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
     return 0;
 }
 
+int32_t VideoDecoderAdapter::RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+{
+    AVCodecTrace trace("VideoDecoderAdapter::RenderOutputBufferAtTime");
+    MEDIA_LOG_D("VideoDecoderAdapter::RenderOutputBufferAtTime");
+    mediaCodec_->RenderOutputBufferAtTime(index, renderTimestampNs);
+    return 0;
+}
+
 Status VideoDecoderAdapter::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
 {
     lagTimes = lagTimes_;

@@ -234,7 +234,7 @@ int32_t AudioOpusEncoderPlugin::Release()
     if (ret != 0) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    free(PluginCodecPtr);
+    delete PluginCodecPtr;
     PluginCodecPtr = nullptr;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

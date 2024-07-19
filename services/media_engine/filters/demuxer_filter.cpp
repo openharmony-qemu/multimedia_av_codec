@@ -165,6 +165,20 @@ void DemuxerFilter::SetCallerInfo(uint64_t instanceId, const std::string& appNam
     bundleName_ = appName;
 }
 
+void DemuxerFilter::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
+{
+    MEDIA_LOG_I("RegisterVideoStreamReadyCallback step into");
+    if (callback != nullptr) {
+        demuxer_->RegisterVideoStreamReadyCallback(callback);
+    }
+}
+
+void DemuxerFilter::DeregisterVideoStreamReadyCallback()
+{
+    MEDIA_LOG_I("DeregisterVideoStreamReadyCallback step into");
+    demuxer_->DeregisterVideoStreamReadyCallback();
+}
+
 Status DemuxerFilter::DoPrepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
@@ -379,11 +393,11 @@ Status DemuxerFilter::Reset()
     return demuxer_->Reset();
 }
 
-Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs)
+Status DemuxerFilter::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::StartReferenceParser");
     MEDIA_LOG_D("StartReferenceParser entered");
-    return demuxer_->StartReferenceParser(startTimeMs);
+    return demuxer_->StartReferenceParser(startTimeMs, isForward);
 }
 
 Status DemuxerFilter::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
@@ -393,11 +407,32 @@ Status DemuxerFilter::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, F
     return demuxer_->GetFrameLayerInfo(videoSample, frameLayerInfo);
 }
 
+Status DemuxerFilter::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetFrameLayerInfo");
+    MEDIA_LOG_D("GetFrameLayerInfo entered");
+    return demuxer_->GetFrameLayerInfo(frameId, frameLayerInfo);
+}
+
 Status DemuxerFilter::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetGopLayerInfo");
     MEDIA_LOG_D("GetGopLayerInfo entered");
     return demuxer_->GetGopLayerInfo(gopId, gopLayerInfo);
+}
+
+Status DemuxerFilter::GetIFramePos(std::vector<uint32_t> &IFramePos)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::GetIFramePos");
+    MEDIA_LOG_D("GetIFramePos entered");
+    return demuxer_->GetIFramePos(IFramePos);
+}
+
+Status DemuxerFilter::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Dts2FrameId");
+    MEDIA_LOG_D("Dts2FrameId entered");
+    return demuxer_->Dts2FrameId(dts, frameId, offset);
 }
 
 void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)

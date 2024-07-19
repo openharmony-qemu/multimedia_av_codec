@@ -81,6 +81,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MPEG2TS, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_MPEG2VIDEO, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
+    {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
@@ -94,6 +95,8 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"mpegts", FileType::MPEGTS},
     {"matroska,webm", FileType::MKV},
     {"amr", FileType::AMR},
+    {"amrnb", FileType::AMR},
+    {"amrwb", FileType::AMR},
     {"aac", FileType::AAC},
     {"mp3", FileType::MP3},
     {"flac", FileType::FLAC},
@@ -505,6 +508,9 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
                 break;
         }
+    } else {
+        MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as dafault 0");
+        format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
 }
 

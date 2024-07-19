@@ -21,6 +21,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class AudioBaseCodecExt {
 public:
+    virtual ~AudioBaseCodecExt() = default;
     virtual int32_t Init() = 0;
     virtual int32_t ProcessSendData(void *inputBuffer, int32_t *len) = 0;
     virtual int32_t ProcessRecieveData(unsigned char **outBuffer, int32_t len) = 0;

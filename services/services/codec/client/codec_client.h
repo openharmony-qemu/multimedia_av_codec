@@ -80,6 +80,7 @@ public:
 private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
+    void UpdateFormat(Format &format);
     void SetNeedListen(const bool needListen);
     void InitLabel(AVCodecType type);
     typedef enum : uint32_t {
@@ -98,6 +99,7 @@ private:
     bool hasOnceConfigured_ = false;
     uint32_t callbackMode_ = INVALID_CALLBACK;
     uint32_t codecMode_ = CODEC_BUFFER_MODE;
+    AVCodecType type_ = AVCODEC_TYPE_NONE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;

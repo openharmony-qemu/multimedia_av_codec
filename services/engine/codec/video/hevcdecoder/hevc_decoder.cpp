@@ -47,7 +47,7 @@ constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1024;
+constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 5120;
 constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 1920;
@@ -184,37 +184,38 @@ void HevcDecoder::OpenDumpFile()
 {
     std::string dumpModeStr = OHOS::system::GetParameter("hevcdecoder.dump", "0");
     AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
-    if (dumpModeStr != "1") {
-        return;
-    }
 
     char fileName[PATH_MAX_LEN] = {0};
     int ret = 0;
-    ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
-    if (ret > 0) {
-        dumpInFile_ = std::make_shared<std::ofstream>();
-        dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
-        if (!dumpInFile_->is_open()) {
-            AVCODEC_LOGW("fail open file %{public}s", fileName);
-            dumpInFile_ = nullptr;
+    if (dumpModeStr == "10" || dumpModeStr == "11") {
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpInFile_ = std::make_shared<std::ofstream>();
+            dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpInFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpInFile_ = nullptr;
+            }
         }
     }
-    ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
-    if (ret > 0) {
-        dumpOutFile_ = std::make_shared<std::ofstream>();
-        dumpOutFile_->open(fileName, std::ios::out | std::ios::binary);
-        if (!dumpOutFile_->is_open()) {
-            AVCODEC_LOGW("fail open file %{public}s", fileName);
-            dumpOutFile_ = nullptr;
+    if (dumpModeStr == "1" || dumpModeStr == "01" || dumpModeStr == "11") {
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpOutFile_ = std::make_shared<std::ofstream>();
+            dumpOutFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpOutFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpOutFile_ = nullptr;
+            }
         }
-    }
-    ret = sprintf_s(fileName, sizeof(fileName), "%s/outConvert_%p.data", DUMP_PATH, this);
-    if (ret > 0) {
-        dumpConvertFile_ = std::make_shared<std::ofstream>();
-        dumpConvertFile_->open(fileName, std::ios::out | std::ios::binary);
-        if (!dumpConvertFile_->is_open()) {
-            AVCODEC_LOGW("fail open file %{public}s", fileName);
-            dumpConvertFile_ = nullptr;
+        ret = sprintf_s(fileName, sizeof(fileName), "%s/outConvert_%p.data", DUMP_PATH, this);
+        if (ret > 0) {
+            dumpConvertFile_ = std::make_shared<std::ofstream>();
+            dumpConvertFile_->open(fileName, std::ios::out | std::ios::binary);
+            if (!dumpConvertFile_->is_open()) {
+                AVCODEC_LOGW("fail open file %{public}s", fileName);
+                dumpConvertFile_ = nullptr;
+            }
         }
     }
 }
@@ -822,15 +823,6 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         height_ = height;
         bitDepth_ = bitDepth;
         scale_ = nullptr;
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, width_-1);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, height_-1);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, 0);
-        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, 0);
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sInfo_.requestConfig.width = width_;
         sInfo_.requestConfig.height = height_;
@@ -856,9 +848,16 @@ int32_t HevcDecoder::CheckFormatChange(uint32_t index, int width, int height, in
         int32_t stride = GetSurfaceBufferStride(buffers_[INDEX_OUTPUT][index]);
         CHECK_AND_RETURN_RET_LOG(stride > 0, AVCS_ERR_NO_MEMORY, "get GetSurfaceBufferStride failed");
         format_.PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
-        if (formatChanged) {
-            callback_->OnOutputFormatChanged(format_);
-        }
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, width_-1);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, height_-1);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, 0);
+        format_.PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, 0);
+        callback_->OnOutputFormatChanged(format_);
     }
     return AVCS_ERR_OK;
 }
@@ -948,20 +947,16 @@ void HevcDecoder::SendFrame()
         hevcDecoderInputArgs_.uiTimeStamp = inputAVBuffer->pts_;
     }
 
-    if (dumpInFile_ && dumpInFile_->is_open()) {
+    if (dumpInFile_ && dumpInFile_->is_open() && !isSendEos_) {
         dumpInFile_->write(reinterpret_cast<char*>(inputAVBuffer->memory_->GetAddr()),
                            static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
     }
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
-    while (ret == 0) {
+    do {
         ret = DecodeFrameOnce();
-        if (!isSendEos_ && ret == 0) {
-            hevcDecoderInputArgs_.uiStreamLen -= hevcDecoderOutpusArgs_.uiDecStreamLen;
-            hevcDecoderInputArgs_.pStream += hevcDecoderOutpusArgs_.uiDecStreamLen;
-        }
-    }
+    } while (ret == 0 && isSendEos_);
     runLock.unlock();
 
     if (isSendEos_) {

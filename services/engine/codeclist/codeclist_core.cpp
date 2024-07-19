@@ -39,12 +39,12 @@ CodecListCore::~CodecListCore()
 
 bool CodecListCore::CheckBitrate(const Format &format, const CapabilityData &data)
 {
-    int32_t targetBitrate;
+    int64_t targetBitrate;
     if (!format.ContainKey("bitrate")) {
         AVCODEC_LOGD("The bitrate of the format are not specified");
         return true;
     }
-    (void)format.GetIntValue("bitrate", targetBitrate);
+    (void)format.GetLongValue("bitrate", targetBitrate);
     if (data.bitrate.minVal > targetBitrate || data.bitrate.maxVal < targetBitrate) {
         return false;
     }

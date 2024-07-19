@@ -501,8 +501,8 @@ Status FFmpegAACEncoderPlugin::InitContext()
     avCodecContext_->channel_layout = srcLayout_;
     avCodecContext_->sample_fmt = srcFmt_;
     // 8khz 2声道编码码率校正
-    if (sampleRate_ == CORRECTION_SAMPLE_RATE && channels_ == CORRECTION_CHANNEL_COUNT
-        && bitRate_ < CORRECTION_BIT_RATE) {
+    if (sampleRate_ == CORRECTION_SAMPLE_RATE && channels_ == CORRECTION_CHANNEL_COUNT &&
+        bitRate_ < CORRECTION_BIT_RATE) {
         // 设置 AV_CODEC_FLAG_QSCALE 标志
         avCodecContext_->flags |= AV_CODEC_FLAG_QSCALE;
         // Q_SCALE质量参数，对应FFmpeg 命令行工具的-q:a参数,范围通常是0.1~2。

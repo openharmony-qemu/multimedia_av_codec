@@ -228,7 +228,10 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
 {
     auto item = std::static_pointer_cast<ValuesListTag>(tag);
-    duration =  item ->GetAttributeByName("DURATION")->FloatingPoint();
+    if (item == nullptr) {
+        return;
+    }
+    duration = item ->GetAttributeByName("DURATION")->FloatingPoint();
 }
 
 double M3U8::GetDuration() const
