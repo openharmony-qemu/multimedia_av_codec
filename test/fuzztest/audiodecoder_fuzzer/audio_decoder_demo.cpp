@@ -49,7 +49,6 @@ static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
     (void)codec;
     (void)errorCode;
     (void)userData;
-    cout << "Error received, errorCode:" << errorCode << endl;
 }
 
 static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
