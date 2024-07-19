@@ -133,7 +133,9 @@ private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
-    Status InitDefaultPlay();
+    void InitAudioTrack(int32_t streamID);
+    void InitVideoTrack(int32_t streamID);
+    void InitSubtitleTrack(int32_t streamID);
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo);
     static Status UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew);
     static Status AddGeneral(const Meta& format, Meta& formatNew);

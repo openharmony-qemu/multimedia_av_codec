@@ -131,6 +131,60 @@ size_t DemuxerPluginManager::GetStreamCount() const
     return streamInfoMap_.size();
 }
 
+void DemuxerPluginManager::InitAudioTrack(int32_t streamID)
+{
+    if (curAudioStreamID_ == -1) {    // 获取第一个音频流
+        curAudioStreamID_ = streamIndex;
+        streamInfoMap_[streamID].activated = true;
+        MEDIA_LOG_I("InitAudioTrack AUDIO");
+        isDash_ = true;
+    } else {
+        Meta format;
+        format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(iter.bitRate));
+        format.Set<Tag::MIME_TYPE>("audio/xxx");
+        streamInfoMap_[streamID].mediaInfo.tracks.push_back(format);
+        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
+        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+    }
+    streamInfoMap_[streamID].type = AUDIO;
+}
+
+void DemuxerPluginManager::InitVideoTrack(int32_t streamID)
+{
+    if (curVideoStreamID_ == -1) {
+        curVideoStreamID_ = streamID; // 获取第一个视频流
+        streamInfoMap_[streamID].activated = true;
+        MEDIA_LOG_I("InitVideoTrack VIDEO");
+        isDash_ = true;
+    } else {
+        Meta format;
+        format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(iter.bitRate));
+        format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(iter.video_width));
+        format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(iter.video_height));
+        format.Set<Tag::MIME_TYPE>("video/xxx");
+        streamInfoMap_[streamID].mediaInfo.tracks.push_back(format);
+        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
+        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+    }
+    streamInfoMap_[streamID].type = VIDEO;
+}
+
+void DemuxerPluginManager::InitSubtitleTrack(int32_t streamID)
+{
+    if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
+        curSubTitleStreamID_ = streamID;
+        streamInfoMap_[streamID].activated = true;
+        MEDIA_LOG_I("InitSubtitleTrack SUBTITLE");
+    } else {
+        Meta format;
+        format.Set<Tag::MIME_TYPE>("text/vtt");
+        streamInfoMap_[streamID].mediaInfo.tracks.push_back(format);
+        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+        streamInfoMap_[streamID].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+    }
+    streamInfoMap_[streamID].type = SUBTITLE;
+}
+
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
     MEDIA_LOG_I("InitDefaultPlay begin");
@@ -146,50 +200,11 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             MEDIA_LOG_I("InitDefaultPlay MIX");
             break;
         } else if (iter.type == AUDIO) {
-            if (curAudioStreamID_ == -1) {    // 获取第一个音频流
-                curAudioStreamID_ = streamIndex;
-                streamInfoMap_[streamIndex].activated = true;
-                MEDIA_LOG_I("InitDefaultPlay AUDIO");
-                isDash_ = true;
-            } else {
-                Meta format;
-                format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(iter.bitRate));
-                format.Set<Tag::MIME_TYPE>("audio/xxx");
-                streamInfoMap_[streamIndex].mediaInfo.tracks.push_back(format);
-                streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
-                streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
-            }
-            streamInfoMap_[streamIndex].type = AUDIO;
+            InitAudioTrack(streamIndex);
         } else if (iter.type == VIDEO) {
-            if (curVideoStreamID_ == -1) {
-                curVideoStreamID_ = streamIndex; // 获取第一个视频流
-                streamInfoMap_[streamIndex].activated = true;
-                MEDIA_LOG_I("InitDefaultPlay VIDEO");
-                isDash_ = true;
-            } else {
-                Meta format;
-                format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(iter.bitRate));
-                format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(iter.video_width));
-                format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(iter.video_height));
-                format.Set<Tag::MIME_TYPE>("video/xxx");
-                streamInfoMap_[streamIndex].mediaInfo.tracks.push_back(format);
-                streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
-                streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
-            }
-            streamInfoMap_[streamIndex].type = VIDEO;
+            InitVideoTrack(streamIndex);
         } else if (iter.type == SUBTITLE) {
-            if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
-                curSubTitleStreamID_ = streamIndex;
-                streamInfoMap_[streamIndex].activated = true;
-                MEDIA_LOG_I("InitDefaultPlay SUBTITLE");
-            } else {
-                Meta format;
-                format.Set<Tag::MIME_TYPE>("text/vtt");
-                streamInfoMap_[streamIndex].mediaInfo.tracks.push_back(format);
-                streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
-                streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
-            }
-            streamInfoMap_[streamIndex].type = SUBTITLE;
+            InitSubtitleTrack(streamIndex);
         } else {
             MEDIA_LOG_W("streaminfo invalid type");
         }

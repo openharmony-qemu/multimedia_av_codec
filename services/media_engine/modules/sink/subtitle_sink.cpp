@@ -214,22 +214,8 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer_->memory_->GetAddr()),
                              filledOutputBuffer_->memory_->GetSize());
-    MEDIA_LOG_D("SubtitleSink DrainOutputBuffer buffer. pts = " PUBLIC_LOG_D64 " duration: " PUBLIC_LOG_D64 " len: " PUBLIC_LOG_D64 " data = " PUBLIC_LOG_S,
-        filledOutputBuffer_->pts_, filledOutputBuffer_->duration_, subtitleText.length(), subtitleText.c_str());
     SubtitleInfo subtitleInfo{ subtitleText, filledOutputBuffer_->pts_, filledOutputBuffer_->duration_ };
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
-    /*if (subtitleInfoVec_.size() != 0) {
-        auto lastSubtitleInfo = subtitleInfoVec_.back();
-        if (lastSubtitleInfo.pts_ > subtitleInfo.pts_) {
-            inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
-            return;
-        }
-        if (lastSubtitleInfo.pts_ == subtitleInfo.pts_) {
-            lastSubtitleInfo.text_ += subtitleInfo.text_;
-            inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
-            return;
-        }
-    }*/
     {
         std::unique_lock<std::mutex> lock(mutex_);
         subtitleInfoVec_.push_back(subtitleInfo);
@@ -305,7 +291,6 @@ uint32_t SubtitleSink::ActionToDo(SubtitleInfo &subtitleInfo)
 {
     auto curTime = GetMediaTime();
     if (shouldUpdate_ || subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
-        //GetTargetSubtitleIndex(curTime);
         return SubtitleBufferState::DROP;
     }
     if (subtitleInfo.pts_ > curTime || state_ != Pipeline::FilterState::RUNNING) {

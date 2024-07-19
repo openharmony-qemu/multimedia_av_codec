@@ -129,6 +129,7 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
+    Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     void InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId,
         uint32_t& audioTrackId, uint32_t& subtitleTrackId, std::string& videoMime);
@@ -159,6 +160,7 @@ private:
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
+    bool HandleSelectTrackChangeStream(StreamType streamType, TrackType type, int32_t currentTrackId, int32_t currentStreamID, int32_t newStreamID);
     Status PauseForPrepareFrame();
 
     Plugins::Seekable seekable_;
