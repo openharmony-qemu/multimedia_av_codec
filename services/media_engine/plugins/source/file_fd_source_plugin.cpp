@@ -500,9 +500,6 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 
 void FileFdSourcePlugin::NotifyBufferingStart()
 {
-    // if (isBuffering_) {
-    //     return;
-    // }
     MEDIA_LOG_I("NotifyBufferingStart in.");
     isBuffering_ = true;
     if (callback_ != nullptr && !isInterrupted_) {
