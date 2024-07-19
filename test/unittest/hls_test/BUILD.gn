@@ -71,6 +71,7 @@ config("hls_unittest_cfg") {
     "$media_foundation_root_dir/src",
     "//third_party/curl/include",
     "//third_party/openssl/include",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 }
 
