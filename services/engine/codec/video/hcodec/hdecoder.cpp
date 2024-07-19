@@ -70,11 +70,12 @@ int32_t HDecoder::SetupPort(const Format &format)
     }
 
     optional<double> frameRate = GetFrameRateFromUser(format);
-    if (!frameRate.has_value()) {
-        HLOGI("user don't set valid frame rate, use default 30.0");
-        frameRate = 30.0;  // default frame rate 30.0
+    if (frameRate.has_value()) {
+        codecRate_ = frameRate.value();
+    } else {
+        HLOGI("user don't set valid frame rate, use default 60.0");
+        frameRate = 60.0;  // default frame rate 60.0
     }
-    codecRate_ = frameRate.value();
 
     PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
                             codingType_, std::nullopt, frameRate.value()};
@@ -781,7 +782,7 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         extraData->ExtraSet("VIDEO_RATE", codecRate_);
         info.surfaceBuffer->SetExtraData(extraData);
         lastFlushRate_ = codecRate_;
-        HLOGD("flush video rate(%d)", static_cast<int32_t>(codecRate_));
+        HLOGI("flush video rate(%d)", static_cast<int32_t>(codecRate_));
     }
     GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, flushCfg_);
     if (ret != GSERROR_OK) {
