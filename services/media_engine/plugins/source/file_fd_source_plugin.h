@@ -52,7 +52,6 @@ public:
     void SetBundleName(const std::string& bundleName) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
     void SetInterruptState(bool isInterruptNeeded) override;
-    Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void NotifyBufferingStart();
     void NotifyBufferingPercent();
     void NotifyBufferingEnd();
