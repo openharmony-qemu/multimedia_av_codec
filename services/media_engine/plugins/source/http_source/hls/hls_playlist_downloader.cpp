@@ -125,9 +125,6 @@ void HlsPlayListDownloader::NotifyListChange()
             callback_->OnSourceKeyChange(nullptr, 0, nullptr);
         }
     }
-    if (files == nullptr) {
-        return;
-    }
     playList.reserve(files.size());
     for (const auto &file: files) {
         PlayInfo palyInfo;
