@@ -258,7 +258,6 @@ HWTEST(TestAudioSink, audio_sink_GetBufferQueueConsumer, TestSize.Level1) {
 
     auto consumer = audioSink->GetBufferQueueConsumer();
     ASSERT_TRUE(consumer != nullptr) << "GetBufferQueueConsumer should return a valid consumer";
-
 }
 
 HWTEST(TestAudioSink, audio_sink_TestSetParameter, TestSize.Level1) {

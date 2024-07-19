@@ -66,11 +66,13 @@ public:
 
     static const int64_t kMaxAllowedAudioSinkDelayUs = 1500 * HST_MSECOND;
 
-    bool HasPlugin() const {
+    bool HasPlugin() const
+    {
         return plugin_ != nullptr;
     }
 
-    bool IsInitialized() const {
+    bool IsInitialized() const
+    {
         return state_ == Pipeline::FilterState::INITIALIZED;
     }
 
