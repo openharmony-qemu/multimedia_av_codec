@@ -239,7 +239,10 @@ Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLa
                          "GetFrameLayerInfo failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to demuxerPluginManager is nullptr");
-    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    int32_t tempTrackId = (videoTrackId_ != TRACK_ID_DUMMY ? videoTrackId_ : -1);
+    tempTrackId = (tempTrackId == -1 ? audioTrackId_ : tempTrackId);
+    int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetPluginByStreamID(streamID);
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
@@ -280,7 +283,10 @@ Status MediaDemuxer::GetIFramePos(std::vector<uint32_t> &IFramePos)
                          "GetIFramePos failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
                          "GetIFramePos failed due to demuxerPluginManager is nullptr");
-    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    int32_t tempTrackId = (videoTrackId_ != TRACK_ID_DUMMY ? videoTrackId_ : -1);
+    tempTrackId = (tempTrackId == -1 ? audioTrackId_ : tempTrackId);
+    int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetPluginByStreamID(streamID);
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetIFramePos failed due to video plugin is nullptr");
     TryRecvParserTask();
@@ -292,7 +298,10 @@ Status MediaDemuxer::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "Dts2FrameId failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
                          "Dts2FrameId failed due to demuxerPluginManager is nullptr");
-    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    int32_t tempTrackId = (videoTrackId_ != TRACK_ID_DUMMY ? videoTrackId_ : -1);
+    tempTrackId = (tempTrackId == -1 ? audioTrackId_ : tempTrackId);
+    int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetPluginByStreamID(streamID);
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "Dts2FrameId failed due to video plugin is nullptr");
     TryRecvParserTask();
@@ -935,7 +944,8 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
     int32_t innerTrackID = trackId;
     if (demuxerPluginManager_->IsDash() || demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_) != -1) {
-        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId));
+        int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
+        pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
             "UnselectTrack failed due to get demuxer plugin failed.");
         innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);

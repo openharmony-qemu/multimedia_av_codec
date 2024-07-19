@@ -334,7 +334,7 @@ void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t ne
 {
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
     if (newInnerTrackIndex == -1) {
-        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32 
+        MEDIA_LOG_I("UpdateTempTrackMapInfo oldTrackId =  "  PUBLIC_LOG_D32 " newTrackId = " PUBLIC_LOG_D32
             " innerTrackIndex = " PUBLIC_LOG_D32, oldTrackId, newTrackId, trackInfoMap_[newTrackId].innerTrackIndex);
         temp2TrackInfoMap_[oldTrackId].innerTrackIndex = trackInfoMap_[newTrackId].innerTrackIndex;
     } else {
@@ -662,7 +662,8 @@ Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[i];
         size_t j = 0;
         for (j = 0; j < tempTrackInfoMap.size(); j++) {
-            if (tempTrackInfoMap[j].streamID == streamID && tempTrackInfoMap[j].innerTrackIndex == static_cast<int32_t>(i)) {
+            if (tempTrackInfoMap[j].streamID == streamID
+                && tempTrackInfoMap[j].innerTrackIndex == static_cast<int32_t>(i)) {
                 mediaInfo.tracks[j] = trackMeta;     // cover
                 break;
             }
@@ -673,7 +674,8 @@ Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
         }
     }
 
-    UpdateGeneralValue(trackInfoMap_.size() - tempTrackInfoMap.size(), streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
+    UpdateGeneralValue(trackInfoMap_.size() - tempTrackInfoMap.size(),
+        streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
 
     curMediaInfo_ = mediaInfo;
     return Status::OK;
