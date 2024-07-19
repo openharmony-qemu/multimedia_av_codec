@@ -21,7 +21,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
-constexpr int64_t EOS_DRAIN_INTERVAL_US = 200000; // try drain each 200ms
 }
 
 namespace OHOS {
@@ -199,7 +198,7 @@ Status AudioSink::Resume()
         eosInterruptType_ = EosInterruptState::RESUME;
         if (!eosDraining_ && eosTask_ != nullptr) {
             eosTask_->SubmitJobOnce([this] {
-                HandleEosInner();
+                HandleEosInner(false);
             });
         }
     }
@@ -307,7 +306,7 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
 }
 
-void AudioSink::HandleEosInner()
+void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
     eosDraining_ = true;
@@ -316,14 +315,13 @@ void AudioSink::HandleEosInner()
         eosDraining_ = false;
         return;
     }
-    uint64_t latency = 0;
-    if (plugin_->GetLatency(latency) != Status::OK) {
-        MEDIA_LOG_W("failed to get latency, drain directly");
+    if (drain) {
         DrainAndReportEosEvent();
         return;
     }
-    if (latency < EOS_DRAIN_INTERVAL_US) {
-        MEDIA_LOG_I("Drain audiosink and report EOS");
+    uint64_t latency = 0;
+    if (plugin_->GetLatency(latency) != Status::OK) {
+        MEDIA_LOG_W("failed to get latency, drain directly");
         DrainAndReportEosEvent();
         return;
     }
@@ -332,10 +330,10 @@ void AudioSink::HandleEosInner()
         DrainAndReportEosEvent();
         return;
     }
-    MEDIA_LOG_D("Drain audiosink wait next INTERVAL, latency = " PUBLIC_LOG_U64, latency);
+    MEDIA_LOG_I("Drain audiosink wait latency = " PUBLIC_LOG_U64, latency);
     eosTask_->SubmitJobOnce([this] {
-            HandleEosInner();
-        }, EOS_DRAIN_INTERVAL_US, false);
+            HandleEosInner(true);
+        }, latency, false);
 }
  
 void AudioSink::DrainAndReportEosEvent()
@@ -384,7 +382,7 @@ void AudioSink::DrainOutputBuffer()
             return;
         }
         eosTask_->SubmitJobOnce([this] {
-            HandleEosInner();
+            HandleEosInner(false);
         });
         return;
     }
