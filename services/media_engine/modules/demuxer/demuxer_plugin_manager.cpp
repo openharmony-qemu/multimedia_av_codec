@@ -184,7 +184,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
                 MEDIA_LOG_I("InitDefaultPlay SUBTITLE");
             } else {
                 Meta format;
-                format.Set<Tag::MIME_TYPE>("application/xxx");
+                format.Set<Tag::MIME_TYPE>("text/vtt");
                 streamInfoMap_[streamIndex].mediaInfo.tracks.push_back(format);
                 streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
                 streamInfoMap_[streamIndex].mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(1);

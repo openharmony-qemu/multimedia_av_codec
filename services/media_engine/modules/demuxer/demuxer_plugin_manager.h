@@ -152,7 +152,6 @@ private:
     Plugins::MediaInfo curMediaInfo_;
     bool isDash_ = false;
     bool needResetEosStatus_ = false;
-    std::string dashMediaType_ = "";
 };
 } // namespace Media
 } // namespace OHOS
