@@ -119,7 +119,7 @@ void HlsPlayListDownloader::NotifyListChange()
             currentVariant_->m3u8_->iv_);
     } else {
         MEDIA_LOG_E("Decrypkey is not needed.");
-        if(master_ != nullptr) {
+        if (master_ != nullptr) {
             callback_->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
         } else {
             callback_->OnSourceKeyChange(nullptr, 0, nullptr);

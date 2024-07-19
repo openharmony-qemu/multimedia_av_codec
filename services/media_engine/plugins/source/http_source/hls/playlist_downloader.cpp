@@ -184,7 +184,7 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 
 bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 {
-    if (data == nullptr || len == 0){
+    if (data == nullptr || len == 0) {
         return false;
     }
     playList_.reserve(playList_.size() + len);
