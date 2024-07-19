@@ -107,13 +107,13 @@ int32_t AVSourceImpl::InitWithFD(int32_t fd, int64_t offset, int64_t size)
         "Create source failed due to has been used by demuxer.");
     CHECK_AND_RETURN_RET_LOG(fd >= 0, AVCS_ERR_INVALID_VAL,
         "Create source with uri failed because input fd is negative");
+    if (fd <= STDERR_FILENO) {
+        AVCODEC_LOGW("Using special fd: %{public}d, isatty: %{public}d", fd, isatty(fd));
+    }
     CHECK_AND_RETURN_RET_LOG(offset >= 0, AVCS_ERR_INVALID_VAL,
         "Create source with fd failed because input offset is negative");
     CHECK_AND_RETURN_RET_LOG(size > 0, AVCS_ERR_INVALID_VAL,
         "Create source with fd failed because input size must be greater than zero");
-    if (fd <= 2) {
-        AVCODEC_LOGW("Using special fd: %{public}d, isatty: %{public}d", fd, isatty(fd));
-    }
     int32_t flag = fcntl(fd, F_GETFL, 0);
     CHECK_AND_RETURN_RET_LOG(flag >= 0, AVCS_ERR_INVALID_VAL, "Get fd status failed");
     CHECK_AND_RETURN_RET_LOG(
