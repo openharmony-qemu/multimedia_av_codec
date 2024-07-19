@@ -199,6 +199,81 @@ HWTEST(TestAudioSink, audio_sink_write, TestSize.Level1)
     doSyncWriteRes = audioSink->DoSyncWrite(buffer);
     ASSERT_TRUE(doSyncWriteRes == 0);
 }
+
+HWTEST(TestAudioSink, audio_sink_init, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 1024);
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_GetBufferQueueProducer, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 1024);
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Prepare AudioSink
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should succeed";
+
+    // Get Buffer Queue Producer
+    auto producer = audioSink->GetBufferQueueProducer();
+    ASSERT_TRUE(producer != nullptr) << "GetBufferQueueProducer should return a valid producer";
+}
+
+HWTEST(TestAudioSink, audio_sink_GetBufferQueueConsumer, TestSize.Level1) {
+    
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should succeed";
+
+    auto consumer = audioSink->GetBufferQueueConsumer();
+    ASSERT_TRUE(consumer != nullptr) << "GetBufferQueueConsumer should return a valid consumer";
+
+}
+
+HWTEST(TestAudioSink, audio_sink_TestSetParameter, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+
+    auto setParameterStatus = audioSink->SetParameter(meta);
+    ASSERT_EQ(setParameterStatus, Status::OK) << "SetParameter should succeed";
+}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS
