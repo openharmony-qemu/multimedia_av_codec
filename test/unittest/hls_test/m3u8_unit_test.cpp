@@ -24,7 +24,7 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
 constexpr uint32_t MAX_LOOP = 16;
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void M3u8UnitTest::SetUpTestCase(void) {}
 
 void M3u8UnitTest::TearDownTestCase(void) {}

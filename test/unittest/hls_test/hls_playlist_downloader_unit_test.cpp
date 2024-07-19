@@ -26,7 +26,7 @@ const static std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "userAgent"},
     {"Referer", "DEF"},
 };
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}

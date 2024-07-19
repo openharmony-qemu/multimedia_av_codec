@@ -26,7 +26,7 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 
 using namespace testing::ext;
 using namespace std;
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void AttributeUnitTest::SetUpTestCase(void) {}
 
 void AttributeUnitTest::TearDownTestCase(void) {}
