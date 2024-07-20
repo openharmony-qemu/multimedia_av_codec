@@ -68,7 +68,6 @@ string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
 string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
-string g_vttPath2 = TEST_FILE_PATH + string("subtitle_webvtt_en_GB_15.mp4");
 string g_ptsConversionPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 } // namespace
@@ -2001,7 +2000,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
                     ASSERT_EQ(info_.presentationTimeUs, 2003000);
                     ASSERT_EQ(info_.size, 7);
                     break;
-                case 0:
+                case 3:
                     ASSERT_EQ(strcmp(vttStr, "testDDDD"), 0);
                     ASSERT_EQ(info_.presentationTimeUs, 2100000);
                     ASSERT_EQ(info_.size, 8);

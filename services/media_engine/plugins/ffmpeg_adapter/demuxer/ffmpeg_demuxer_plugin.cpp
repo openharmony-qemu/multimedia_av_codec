@@ -1005,8 +1005,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         AVStream *avStream = formatContext_->streams[pkt->stream_index];
         if (avStream->codecpar->codec_id == AV_CODEC_ID_WEBVTT &&
             FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4) {
-            bool isContinue = WebvttPktProcess(&vttPkt, pkt, continueRead);
-            if (isContinue) {
+            if (WebvttPktProcess(&vttPkt, pkt, continueRead)) {
                 continue;
             }
         } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) &&
