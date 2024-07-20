@@ -311,7 +311,7 @@ void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
     eosDraining_ = true; // start draining task
-    switch(eosInterruptType_) {
+    switch (eosInterruptType_) {
         case EosInterruptState::INITIAL: // No user operation during EOS drain, complete drain normally
             break;
         case EosInterruptState::RESUME: // EOS drain is resumed after pause, do necessary changes
