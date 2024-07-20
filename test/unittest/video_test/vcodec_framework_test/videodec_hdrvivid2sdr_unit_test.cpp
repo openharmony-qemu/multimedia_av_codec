@@ -908,7 +908,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_007, TestSize.Level1)
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Prepare());
     } else {
         ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format));
     }
@@ -933,7 +933,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_008, TestSize.Level1)
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Prepare());
     } else {
         ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
