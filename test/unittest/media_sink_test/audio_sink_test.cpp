@@ -273,6 +273,83 @@ HWTEST(TestAudioSink, audio_sink_TestSetParameter, TestSize.Level1) {
     auto setParameterStatus = audioSink->SetParameter(meta);
     ASSERT_EQ(setParameterStatus, Status::OK) << "SetParameter should succeed";
 }
+
+HWTEST(TestAudioSink, audio_sink_TestPrepare, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto status = audioSink->Prepare();
+    ASSERT_EQ(status, Status::OK) << "Prepare should return OK";
+}
+
+HWTEST(TestAudioSink, audio_sink_TestStart, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should return OK";
+
+    auto startStatus = audioSink->Start();
+    ASSERT_EQ(startStatus, Status::OK) << "Start should return OK";
+}
+
+HWTEST(TestAudioSink, audio_sink_TestStop, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should return OK";
+    auto startStatus = audioSink->Start();
+    ASSERT_EQ(startStatus, Status::OK) << "Start should return OK";
+
+    auto stopStatus = audioSink->Stop();
+    ASSERT_EQ(stopStatus, Status::OK) << "Stop should return OK";
+}
+
+HWTEST(TestAudioSink, audio_sink_TestPause, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should return OK";
+    auto startStatus = audioSink->Start();
+    ASSERT_EQ(startStatus, Status::OK) << "Start should return OK";
+
+    auto pauseStatus = audioSink->Pause();
+    ASSERT_EQ(pauseStatus, Status::OK) << "Pause should return OK";
+}
+
+HWTEST(TestAudioSink, audio_sink_TestResume, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should return OK";
+    auto startStatus = audioSink->Start();
+    ASSERT_EQ(startStatus, Status::OK) << "Start should return OK";
+    auto pauseStatus = audioSink->Pause();
+    ASSERT_EQ(pauseStatus, Status::OK) << "Pause should return OK";
+
+    auto resumeStatus = audioSink->Resume();
+    ASSERT_EQ(resumeStatus, Status::OK) << "Resume should return OK";
+}
+
+HWTEST(TestAudioSink, audio_sink_TestFlush, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto prepareStatus = audioSink->Prepare();
+    ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should return OK";
+    auto startStatus = audioSink->Start();
+    ASSERT_EQ(startStatus, Status::OK) << "Start should return OK";
+
+    auto flushStatus = audioSink->Flush();
+    ASSERT_EQ(flushStatus, Status::OK) << "Flush should return OK";
+}
 } // namespace Test
 } // namespace Media
 } // namespace OHOS
