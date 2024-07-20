@@ -123,7 +123,7 @@ struct SampleInfo {
     uint32_t maxFrames = UINT32_MAX;
     uint32_t bitrateMode = CBR;
     DataProducerInfo dataProducerInfo = DataProducerInfo();
-    int32_t videoProfile = AVC_PROFILE_BASELINE;
+    int32_t profile = AVC_PROFILE_BASELINE;
     int64_t videoDuration = 0;
     std::string outputFilePath;
     CodecConsumerType codecConsumerType = CODEC_COMSUMER_TYPE_DEFAULT;

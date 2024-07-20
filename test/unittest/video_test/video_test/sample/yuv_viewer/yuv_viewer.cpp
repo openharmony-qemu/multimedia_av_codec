@@ -91,7 +91,7 @@ int32_t YuvViewer::CreateWindow()
         NATIVEBUFFER_USAGE_CPU_READ | NATIVEBUFFER_USAGE_CPU_WRITE |
         NATIVEBUFFER_USAGE_MEM_DMA | NATIVEBUFFER_USAGE_HW_RENDER);
     (void)OH_NativeWindow_NativeWindowHandleOpt(window_.get(), SET_FORMAT,
-        ToGraphicPixelFormat(sampleInfo_->pixelFormat, sampleInfo_->videoProfile));
+        ToGraphicPixelFormat(sampleInfo_->pixelFormat, sampleInfo_->profile));
 
     return AVCODEC_SAMPLE_ERR_OK;
 }

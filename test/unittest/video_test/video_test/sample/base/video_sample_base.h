@@ -29,7 +29,7 @@ namespace MediaAVCodec {
 namespace Sample {
 class VideoSampleBase : public SampleBase {
 public:
-    virtual ~VideoSampleBase() override;
+    ~VideoSampleBase() override;
 
     int32_t Create(SampleInfo sampleInfo) override;
     int32_t Start() override;

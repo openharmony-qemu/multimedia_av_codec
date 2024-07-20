@@ -121,7 +121,6 @@ int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
         surfaceConsumer_->RegisterConsumerListener(listener);
         auto producer = surfaceConsumer_->GetProducer();
         surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
-        CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
     } else if (context_->sampleInfo->codecConsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
@@ -136,6 +135,7 @@ int32_t VideoDecoderSample::CreateWindow(std::shared_ptr<NativeWindow> &window)
     }
     window = std::shared_ptr<NativeWindow>(reinterpret_cast<NativeWindow *>(
         CreateNativeWindowFromSurface(&surfaceProducer)), [](NativeWindow *window) -> void { (void)window; });
+    CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
 
     return AVCODEC_SAMPLE_ERR_OK;
 }

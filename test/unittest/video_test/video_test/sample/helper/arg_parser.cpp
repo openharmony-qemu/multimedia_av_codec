@@ -232,7 +232,7 @@ inline void SetBitrateMode(SampleInfo &info, const char * const value)
 
 inline void SetVideoProfile(SampleInfo &info, const char * const value)
 {
-    info.videoProfile = std::stol(value);
+    info.profile = std::stol(value);
 }
 
 inline void SetCodecRunMode(SampleInfo &info, const char * const value)

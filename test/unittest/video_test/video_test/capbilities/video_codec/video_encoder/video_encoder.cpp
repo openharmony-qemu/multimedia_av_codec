@@ -130,7 +130,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, sampleInfo.bitrate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, sampleInfo.videoProfile);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, sampleInfo.profile);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
     
     int ret = OH_VideoEncoder_Configure(codec_.get(), format);
@@ -154,7 +154,7 @@ int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
         sampleInfo.videoWidth, sampleInfo.videoHeight);
     (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE, 16425);      // 16425: Window usage
     (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
-        ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.videoProfile));
+        ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.profile));
 
     if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
         window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);

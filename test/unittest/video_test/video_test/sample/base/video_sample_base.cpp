@@ -172,7 +172,7 @@ void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint3
     auto &info = *context_->sampleInfo;
     constexpr int8_t yuvSampleRatio = 2;
     int32_t videoWidth = info.videoWidth *
-        ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.videoProfile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
+        ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.profile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
     int32_t &videoStrideWidth = info.videoStrideWidth;
 
     // copy Y

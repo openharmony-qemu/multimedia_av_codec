@@ -40,8 +40,7 @@ std::shared_ptr<SampleBase> SampleFactory::CreateSample(const SampleInfo &info)
 {
     std::shared_ptr<SampleBase> sampleBase;
 
-    switch (info.sampleType)
-    {
+    switch (info.sampleType) {
         case SampleType::VIDEO_SAMPLE:
             sampleBase = (info.codecType & 0b10) ? // 0b10: Video encoder mask
                 std::static_pointer_cast<SampleBase>(std::make_shared<VideoEncoderSample>()) :

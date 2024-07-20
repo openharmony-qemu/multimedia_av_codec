@@ -81,7 +81,7 @@ int64_t Demuxer::GetFileSize(int32_t fd)
     struct stat fileStatus {};
     int32_t ret = fstat(fd, &fileStatus);
     CHECK_AND_RETURN_RET_LOG(ret == 0, 0, "stat file error: %{public}d", errno);
-    return static_cast<int64_t>(fileStatus.st_size);;
+    return static_cast<int64_t>(fileStatus.st_size);
 }
 
 int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
@@ -105,7 +105,7 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
             char *codecMime;
             OH_AVFormat_GetStringValue(trackFormat.get(), OH_MD_KEY_CODEC_MIME, const_cast<char const **>(&codecMime));
             sampleInfo_->codecMime = codecMime;
-            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &sampleInfo_->videoProfile);
+            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &sampleInfo_->profile);
         }
     }
     OH_AVFormat_GetLongValue(sourceFormat.get(), OH_MD_KEY_DURATION, &sampleInfo_->videoDuration);
