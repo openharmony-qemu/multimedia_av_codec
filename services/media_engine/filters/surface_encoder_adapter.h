@@ -18,6 +18,8 @@
 
 #include <cstring>
 #include <shared_mutex>
+#include <deque>
+#include <utility>
 #include "surface.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
@@ -26,7 +28,6 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
-#include "common/log.h"
 #include "osal/task/task.h"
 #include "avcodec_common.h"
 #include "osal/task/condition_variable.h"
@@ -38,6 +39,10 @@ class ICodecService;
 }
 
 namespace Media {
+enum class StateCode {
+    PAUSE,
+    RESUME,
+};
 class EncoderAdapterCallback {
 public:
     virtual ~EncoderAdapterCallback() = default;
@@ -71,7 +76,7 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
-    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<const Format> attribute,
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
         std::shared_ptr<Format> parameter);
 
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
@@ -81,6 +86,8 @@ private:
     void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
+    bool CheckFrames(uint32_t index, int64_t currentPts, std::shared_ptr<Format> parameter);
+    void GetCurrentTime(int64_t &currentTime);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
@@ -89,10 +96,12 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
-    std::deque<pair<int64_t, int64_t>> pauseResumeQueue_;
+    std::deque<std::pair<int64_t, StateCode>> pauseResumeQueue_;
+    std::deque<std::pair<int64_t, int64_t>> mappingTimeQueue_;
     std::atomic<bool> isThreadExit_ = true;
     bool isTransCoderMode = false;
 
+    std::mutex mappingPtsMutex_;
     std::mutex checkFramesMutex_;
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
@@ -101,9 +110,8 @@ private:
     int64_t totalPauseTime_{0};
 
     int64_t startBufferTime_{-1};
-    int64_t lastBufferTime_{-1};
+    int64_t lastBuffertime_{-1};
     bool isStart_ = false;
-    bool isResume_ = false;
     std::string codecMimeType_;
     std::string bundleName_;
     uint64_t instanceId_{0};
