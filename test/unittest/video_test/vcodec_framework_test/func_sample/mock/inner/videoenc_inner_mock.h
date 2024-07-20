@@ -29,6 +29,7 @@ public:
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb) override;
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
