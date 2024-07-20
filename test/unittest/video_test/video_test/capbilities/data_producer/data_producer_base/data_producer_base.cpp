@@ -120,10 +120,10 @@ void DataProducerBase::DumpInput(const CodecBufferInfo &bufferInfo)
     inputDumpFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }
 
-std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const DataProducerInfo &info)
+std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const DataProducerType &type)
 {
     std::shared_ptr<DataProducerBase> dataProducer;
-    switch (info.dataProducerType) {
+    switch (type) {
         case DATA_PRODUCER_TYPE_DEMUXER:
             dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<Demuxer>());
             break;
@@ -134,7 +134,7 @@ std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const 
             dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<RawdataReader>());
             break;
         default:
-            AVCODEC_LOGE("Not supported data producer, type: %{public}d", info.dataProducerType);
+            AVCODEC_LOGE("Not supported data producer, type: %{public}d", type);
             dataProducer = nullptr;
     }
 

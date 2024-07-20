@@ -35,6 +35,11 @@ constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
 
 constexpr double SAMPLE_DEFAULT_FRAMERATE = 999;
 
+enum class SampleType {
+    VIDEO_SAMPLE = 0,
+    YUV_VIEWER,
+};
+
 /*   CodecType description
  *   +-----+-----------+------------+
  *   | Bit |     1     |     0      |
@@ -129,6 +134,7 @@ struct SampleInfo {
     int32_t videoSliceHeight = 0;
     int32_t iFrameInterval = 2'000;
     int32_t videoDecoderOutputColorspace = -1;
+    SampleType sampleType = SampleType::VIDEO_SAMPLE;
 };
 
 struct CodecBufferInfo {

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <unistd.h>
-#include "video_sample_base.h"
+#include "sample_base.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "syspara/parameters.h"
@@ -84,7 +84,7 @@ std::string ToString(OH_AVPixelFormat pixelFormat)
 
 int32_t RunSample(const SampleInfo &info)
 {
-    std::shared_ptr<VideoSampleBase> sample = VideoSampleFactory::CreateVideoSample(info.codecType);
+    std::shared_ptr<SampleBase> sample = SampleFactory::CreateSample(info);
 
     Pause(info.pauseBeforeRunSample);
 

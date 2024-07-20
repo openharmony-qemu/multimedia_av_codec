@@ -46,7 +46,7 @@ protected:
 
 class DataProducerFactory {
 public:
-    static std::shared_ptr<DataProducerBase> CreateDataProducer(const DataProducerInfo &info);
+    static std::shared_ptr<DataProducerBase> CreateDataProducer(const DataProducerType &type);
 };
 } // Sample
 } // MediaAVCodec

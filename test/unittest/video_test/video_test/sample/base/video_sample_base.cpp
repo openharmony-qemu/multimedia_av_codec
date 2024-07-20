@@ -19,8 +19,6 @@
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "sample_helper.h"
-#include "video_decoder_sample.h"
-#include "video_encoder_sample.h"
 
 namespace {
 using namespace std::string_literals;
@@ -31,13 +29,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Video
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-std::shared_ptr<VideoSampleBase> VideoSampleFactory::CreateVideoSample(CodecType type)
-{
-    return (type & 0b10) ? // 0b10: Video encoder mask
-        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoEncoderSample>()) :
-        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoDecoderSample>());
-}
-
 VideoSampleBase::~VideoSampleBase()
 {
     StartRelease();
@@ -56,7 +47,7 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     auto &info = *context_->sampleInfo;
     auto &videoCodec = context_->videoCodec_;
 
-    dataProducer_ = DataProducerFactory::CreateDataProducer(info.dataProducerInfo);
+    dataProducer_ = DataProducerFactory::CreateDataProducer(info.dataProducerInfo.dataProducerType);
     CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
     int32_t ret = dataProducer_->Init(context_->sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
@@ -93,15 +84,6 @@ int32_t VideoSampleBase::Start()
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Codec thread start failed");
 
     AVCODEC_LOGI("Succeed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoSampleBase::WaitForDone()
-{
-    AVCODEC_LOGI("In");
-    std::unique_lock<std::mutex> lock(mutex_);
-    doneCond_.wait(lock);
-    AVCODEC_LOGI("Done");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

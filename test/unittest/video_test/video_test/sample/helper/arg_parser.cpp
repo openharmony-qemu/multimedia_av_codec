@@ -23,6 +23,7 @@ using namespace OHOS::MediaAVCodec::Sample;
 enum DemoArgumentType : int {
     DEMO_ARG_UNKNOW = 0,
     DEMO_ARG_HELP,
+    DEMO_ARG_SAMPLE_TYPE,
     DEMO_ARG_CODEC_TYPE,
     DEMO_ARG_INPUT_FILE,
     DEMO_ARG_OUTPUT_FILE,
@@ -54,6 +55,7 @@ enum DemoArgumentType : int {
 };
 
 const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_STRING = {
+    {DEMO_ARG_SAMPLE_TYPE,                      "sample_type"},
     {DEMO_ARG_CODEC_TYPE,                       "codec_type"},
     {DEMO_ARG_INPUT_FILE,                       "input_file"},
     {DEMO_ARG_OUTPUT_FILE,                      "output_file"},
@@ -85,6 +87,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"help",                             no_argument,        nullptr, DEMO_ARG_HELP},
+    {"sample_type",                      required_argument,  nullptr, DEMO_ARG_SAMPLE_TYPE},
     {"codec_type",                       required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
     {"input",                            required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
     {"output",                           required_argument,  nullptr, DEMO_ARG_OUTPUT_FILE},
@@ -117,6 +120,8 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
 Video codec demo help:
     --help                              print this help info
+
+    --sample_type                       sample type (0: VideoCodec; 1: YuvViewer)
 
     --codec_type                        codec type (0: decoder; 2: encoder)
     --input                             input file path
@@ -165,6 +170,11 @@ inline void ShowHelp(SampleInfo &info, const char * const value)
     (void)value;
     std::cout << HELP_TEXT << std::endl;
     exit(0);
+}
+
+inline void SetSampleType(SampleInfo &info, const char * const value)
+{
+    info.sampleType = static_cast<SampleType>(std::stol(value));
 }
 
 inline void SetCodecType(SampleInfo &info, const char * const value)
@@ -310,6 +320,7 @@ inline void SetVideoDecoderOutputColorspace(SampleInfo &info, const char * const
 
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,                             ShowHelp},
+    {DEMO_ARG_SAMPLE_TYPE,                      SetSampleType},
     {DEMO_ARG_CODEC_TYPE,                       SetCodecType},
     {DEMO_ARG_INPUT_FILE,                       SetInputFilePath},
     {DEMO_ARG_OUTPUT_FILE,                      SetOutputFilePath},
