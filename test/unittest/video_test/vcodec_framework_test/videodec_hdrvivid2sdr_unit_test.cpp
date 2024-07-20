@@ -379,6 +379,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_006, TestSize.Level1)
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
     } else {
         ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
@@ -549,9 +550,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_010, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_011
  * @tc.desc: 1. key pixel format is NV12;
- *           2. decoder mode is surface;
- *           3. prepare function is not called;
- *           4. key color space is BT2020_HLG_LIMIT
+ *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_011, TestSize.Level1)
@@ -568,9 +567,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_011, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_012
  * @tc.desc: 1. key pixel format unset;
- *           2. decoder mode is buffer;
- *           3. prepare function is called before start function;
- *           4. key color space is BT2020_HLG_LIMIT
+ *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_012, TestSize.Level1)
@@ -712,9 +709,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_016, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_017
  * @tc.desc: 1. key pixel format is NV21;
- *           2. decoder mode is buffer;
- *           3. prepare function is not called;
- *           4. key color space is BT2020_HLG_LIMIT
+ *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_017, TestSize.Level1)
@@ -734,7 +729,8 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_017, TestSize.Level1)
 #else
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Capi_018
- * @tc.desc: key pixel format is RGBA;
+ * @tc.desc: 1. key pixel format is RGBA;
+ *           2. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_018, TestSize.Level1)
@@ -882,6 +878,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_006, TestSize.Level1)
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
     } else {
         ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
@@ -1052,9 +1049,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_010, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Inner_011
  * @tc.desc: 1. key pixel format is NV12;
- *           2. decoder mode is surface;
- *           3. prepare function is not called;
- *           4. key color space is BT2020_HLG_LIMIT
+ *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_011, TestSize.Level1)
@@ -1071,9 +1066,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_011, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Inner_012
  * @tc.desc: 1. key pixel format unset;
- *           2. decoder mode is buffer;
- *           3. prepare function is called before start function;
- *           4. key color space is BT2020_HLG_LIMIT
+ *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_012, TestSize.Level1)
@@ -1215,9 +1208,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_016, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Inner_017
  * @tc.desc: 1. key pixel format is NV21;
- *           2. decoder mode is buffer;
- *           3. prepare function is not called;
- *           4. key color space is BT2020_HLG_LIMIT
+ *           2. key color space is BT2020_HLG_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_017, TestSize.Level1)
@@ -1238,6 +1229,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_017, TestSize.Level1)
 /**
  * @tc.name: VideoDecoder_HRDVivid2SDR_Inner_018
  * @tc.desc: key pixel format is RGBA;
+ *           2. key color space is BT709_LIMIT
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_018, TestSize.Level1)
