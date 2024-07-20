@@ -213,6 +213,7 @@ Status AudioSink::Flush()
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
+        eosDraining_ = false;
     }
     return ret;
 }
