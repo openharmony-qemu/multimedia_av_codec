@@ -35,12 +35,12 @@ int32_t Demuxer::Init(const std::shared_ptr<SampleInfo> &info)
 
     file_ = std::shared_ptr<FILE>(fopen(sampleInfo_->inputFilePath.data(), "r"), fclose);
     CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
-    fileFd_ = fileno(file_.get());
+    int32_t fileFd = fileno(file_.get());
     
-    fileSize_ = GetFileSize(sampleInfo_->inputFilePath.data());
-    source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd_, 0, fileSize_), OH_AVSource_Destroy);
+    int64_t fileSize = GetFileSize(fileFd);
+    source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd, 0, fileSize), OH_AVSource_Destroy);
     CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
-        "Create source failed, fd: %{public}d, file size: %{public}" PRId64, fileFd_, fileSize_);
+        "Create source failed, fd: %{public}d, file size: %{public}" PRId64, fileFd, fileSize);
     demuxer_ = std::shared_ptr<OH_AVDemuxer>(OH_AVDemuxer_CreateWithSource(source_.get()), OH_AVDemuxer_Destroy);
     CHECK_AND_RETURN_RET_LOG(demuxer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create demuxer failed");
     auto sourceFormat = std::shared_ptr<OH_AVFormat>(OH_AVSource_GetSourceFormat(source_.get()), OH_AVFormat_Destroy);
@@ -74,15 +74,14 @@ int32_t Demuxer::Seek(int64_t position)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int64_t Demuxer::GetFileSize(char * const filePath)
+int64_t Demuxer::GetFileSize(int32_t fd)
 {
-    CHECK_AND_RETURN_RET_LOG(filePath != nullptr, 0, "File path is nullptr");
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, 0, "File path is nullptr");
 
     struct stat fileStatus {};
-    int32_t ret = stat(filePath, &fileStatus);
+    int32_t ret = fstat(fd, &fileStatus);
     CHECK_AND_RETURN_RET_LOG(ret == 0, 0, "stat file error: %{public}d", errno);
-    fileSize_ = static_cast<int64_t>(fileStatus.st_size);
-    return fileSize_;
+    return static_cast<int64_t>(fileStatus.st_size);;
 }
 
 int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
@@ -96,22 +95,17 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
             std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_.get(), index), OH_AVFormat_Destroy);
         OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_TRACK_TYPE, &trackType);
         if (trackType == MEDIA_TYPE_VID) {
+            videoTrackId_ = index;
             OH_AVDemuxer_SelectTrackByID(demuxer_.get(), index);
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_WIDTH, &sampleInfo_->videoWidth);
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_HEIGHT, &sampleInfo_->videoHeight);
             if (sampleInfo_->frameRate == SAMPLE_DEFAULT_FRAMERATE) {
                 OH_AVFormat_GetDoubleValue(trackFormat.get(), OH_MD_KEY_FRAME_RATE, &sampleInfo_->frameRate);
             }
-            int32_t isHDRVivid = 0;
-            OH_AVFormat_GetIntValue(trackFormat.get(), "video_is_hdr_vivid", &isHDRVivid);
-            if (isHDRVivid == 1) {
-                sampleInfo_->isHDRVivid = true;
-            }
             char *codecMime;
             OH_AVFormat_GetStringValue(trackFormat.get(), OH_MD_KEY_CODEC_MIME, const_cast<char const **>(&codecMime));
             sampleInfo_->codecMime = codecMime;
-            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &sampleInfo_->hevcProfile);
-            videoTrackId_ = index;
+            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &sampleInfo_->videoProfile);
         }
     }
     OH_AVFormat_GetLongValue(sourceFormat.get(), OH_MD_KEY_DURATION, &sampleInfo_->videoDuration);
@@ -121,6 +115,7 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
 
 bool Demuxer::IsEOS()
 {
+    CHECK_AND_RETURN_RET_LOG(file_ != nullptr, true, "File is not open");
     return feof(file_.get());
 }
 } // Sample

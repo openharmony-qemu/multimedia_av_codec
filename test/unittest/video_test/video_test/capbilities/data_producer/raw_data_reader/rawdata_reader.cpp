@@ -50,7 +50,7 @@ inline int32_t RawdataReader::GetBufferSize()
     int32_t size = sampleInfo_->pixelFormat == AV_PIXEL_FORMAT_RGBA ?
         sampleInfo_->videoWidth * sampleInfo_->videoHeight * 3 :          // RGBA buffer size
         sampleInfo_->videoWidth * sampleInfo_->videoHeight * 3 / 2;       // YUV420 buffer size
-    return sampleInfo_->isHDRVivid ? size * 2 : size;
+    return sampleInfo_->videoProfile == HEVC_PROFILE_MAIN_10 ? size * 2 : size;
 }
 
 bool RawdataReader::IsEOS()

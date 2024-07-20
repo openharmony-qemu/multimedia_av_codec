@@ -115,8 +115,8 @@ void PrintSampleInfo(const SampleInfo &info)
         info.codecMime.c_str(), info.videoWidth, info.videoHeight, info.frameRate,
         static_cast<double>(info.bitrate) / 1024 / 1024, // 1024: precision
         OHOS::MediaAVCodec::Sample::ToString(static_cast<OH_AVPixelFormat>(info.pixelFormat)).c_str());
-    AVCODEC_LOGI("interval: %{public}dms, HDR vivid: %{public}s, dump output: %{public}s",
-        info.frameInterval, BOOL_TO_STRING.at(info.isHDRVivid).c_str(), BOOL_TO_STRING.at(info.needDumpOutput).c_str());
+    AVCODEC_LOGI("interval: %{public}dms, dump output: %{public}s",
+        info.frameInterval, BOOL_TO_STRING.at(info.needDumpOutput).c_str());
     AVCODEC_LOGI("====== Video sample config ======");
 }
 

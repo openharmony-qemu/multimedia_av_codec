@@ -189,18 +189,21 @@ void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint3
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     auto &info = *context_->sampleInfo;
     constexpr int8_t yuvSampleRatio = 2;
+    int32_t videoWidth = info.videoWidth *
+        ((info.codecMime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC && info.videoProfile == HEVC_PROFILE_MAIN_10) ? 2 : 1);
+    int32_t &videoStrideWidth = info.videoStrideWidth;
 
     // copy Y
     for (int32_t row = 0; row < info.videoHeight; row++) {
-        outputFile_->write(reinterpret_cast<char *>(bufferAddr), info.videoWidth);
-        bufferAddr += info.videoStrideWidth;
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
+        bufferAddr += videoStrideWidth;
     }
-    bufferAddr += (info.videoSliceHeight - info.videoHeight) * info.videoStrideWidth;
+    bufferAddr += (info.videoSliceHeight - info.videoHeight) * videoStrideWidth;
 
     // copy UV
     for (int32_t row = 0; row < (info.videoHeight / yuvSampleRatio); row++) {
-        outputFile_->write(reinterpret_cast<char *>(bufferAddr), info.videoWidth);
-        bufferAddr += info.videoStrideWidth;
+        outputFile_->write(reinterpret_cast<char *>(bufferAddr), videoWidth);
+        bufferAddr += videoStrideWidth;
     }
 }
 

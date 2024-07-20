@@ -31,15 +31,13 @@ public:
 
 private:
     int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
-    int64_t GetFileSize(char * const filePath);
+    int64_t GetFileSize(int32_t fd);
     int32_t GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat);
     bool IsEOS() override;
 
     std::shared_ptr<FILE> file_ = nullptr;
     std::shared_ptr<OH_AVSource> source_ = nullptr;
     std::shared_ptr<OH_AVDemuxer> demuxer_ = nullptr;
-    int32_t fileFd_ = -1;
-    int64_t fileSize_ = -1;
     int32_t videoTrackId_ = -1;
 };
 } // Sample
