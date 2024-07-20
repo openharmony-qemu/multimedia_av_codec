@@ -28,6 +28,7 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
+#include "common/log.h"
 #include "osal/task/task.h"
 #include "avcodec_common.h"
 #include "osal/task/condition_variable.h"
@@ -110,7 +111,7 @@ private:
     int64_t totalPauseTime_{0};
 
     int64_t startBufferTime_{-1};
-    int64_t lastBuffertime_{-1};
+    int64_t lastBufferTime_{-1};
     bool isStart_ = false;
     std::string codecMimeType_;
     std::string bundleName_;
