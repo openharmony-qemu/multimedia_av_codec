@@ -51,11 +51,6 @@ public:
     static std::optional<VideoPixelFormat> DisplayFmtToInnerFmt(GraphicPixelFormat format);
     // rotate
     static std::optional<GraphicTransformType> InnerRotateToDisplayRotate(VideoRotation rotate);
-    // color aspects
-    static RangeType RangeFlagToOmxRangeType(bool isFullRange) { return isFullRange ? RANGE_FULL : RANGE_LIMITED; }
-    static Primaries InnerPrimaryToOmxPrimary(ColorPrimary primary);
-    static Transfer InnerTransferToOmxTransfer(TransferCharacteristic transfer);
-    static MatrixCoeffs InnerMatrixToOmxMatrix(MatrixCoefficient matrix);
     // profile
     static std::optional<AVCProfile> OmxAvcProfileToInnerProfile(OMX_VIDEO_AVCPROFILETYPE profile);
     static std::optional<AVCLevel> OmxAvcLevelToInnerLevel(OMX_VIDEO_AVCLEVELTYPE level);

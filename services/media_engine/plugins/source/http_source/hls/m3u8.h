@@ -69,7 +69,7 @@ struct M3U8 {
     M3U8(std::string uri, std::string name);
     ~M3U8();
     void InitTagUpdatersMap();
-    bool Update(const std::string& playList);
+    bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
     double GetDuration() const;
@@ -143,6 +143,7 @@ struct M3U8MasterPlaylist {
     M3U8MasterPlaylist(const std::string& playList, const std::string& uri);
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
+    void DownloadSessionKey(std::shared_ptr<Tag>& tag);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
     std::shared_ptr<M3U8VariantStream> minimumVariant_;
@@ -151,6 +152,11 @@ struct M3U8MasterPlaylist {
     double duration_ {0};
     std::atomic<bool> isSimple_ {false};
     std::atomic<bool> bLive_ {false};
+    bool isDecryptAble_ { false };
+    bool isDecryptKeyReady_ { false };
+    uint8_t iv_[16] { 0 };
+    uint8_t key_[16] { 0 };
+    size_t keyLen_ { 0 };
 };
 }
 }

@@ -25,6 +25,10 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager_v2.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 using namespace Plugins;
@@ -97,8 +101,8 @@ bool TypeFinder::IsSniffNeeded(std::string uri)
 }
 
 void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
-    std::function<bool(int32_t, uint64_t, size_t)> checkRange,
-    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId)
+    std::function<Status(int32_t, uint64_t, size_t)> checkRange,
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange, int32_t streamId)
 {
     streamID_ = streamId;
     mediaDataSize_ = mediaDataSize;
@@ -137,7 +141,7 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
 
     const int maxTryTimes = 3;
     int i = 0;
-    while (!checkRange_(streamID_, offset, expectedLen) && (i < maxTryTimes)) {
+    while ((checkRange_(streamID_, offset, expectedLen) != Status::OK) && (i < maxTryTimes)) {
         i++;
         OSAL::SleepFor(5); // 5 ms
     }
@@ -145,7 +149,8 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
         MEDIA_LOG_E("ReadAt exceed maximum allowed try times and failed.");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer), "peekRange failed.");
+    FALSE_LOG_MSG(peekRange_(streamID_, static_cast<uint64_t>(offset), expectedLen, buffer) == Status::OK,
+        "peekRange failed.");
     return Status::OK;
 }
 

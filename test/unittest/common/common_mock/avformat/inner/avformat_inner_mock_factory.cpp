@@ -37,5 +37,13 @@ std::shared_ptr<FormatMock> FormatMockFactory::CreateVideoFormat(
     format->InitVideoTrackFormat(mimeType, width, height);
     return format;
 }
+
+std::shared_ptr<FormatMock> FormatMockFactory::CreateTimedMetadataFormat(
+    const std::string_view &mimeType, const std::string_view &metadataKey, int32_t srcTrackID)
+{
+    std::shared_ptr<FormatMock> format = std::make_shared<AVFormatInnerMock>();
+    format->InitMetadataTrackFormat(mimeType, metadataKey, srcTrackID);
+    return format;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

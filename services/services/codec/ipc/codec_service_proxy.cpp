@@ -15,14 +15,9 @@
 
 #include "codec_service_proxy.h"
 #include "avcodec_errors.h"
-#include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "buffer_client_producer.h"
-
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceProxy"};
-}
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -57,6 +52,14 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
 void CodecServiceProxy::SetListener(const sptr<CodecListenerStub> &listener)
 {
     listener_ = listener;
+}
+
+void CodecServiceProxy::InitLabel(const uint64_t uid)
+{
+    tag_ = "ServiceProxy[";
+    tag_ += std::to_string(uid) + "]";
+    auto &label = const_cast<OHOS::HiviewDFX::HiLogLabel &>(LABEL);
+    label.tag = tag_.c_str();
 }
 
 int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo)
@@ -122,6 +125,7 @@ int32_t CodecServiceProxy::Stop()
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::STOP), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
+    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->ClearListenerCache();
     return reply.ReadInt32();
 }
 
@@ -136,7 +140,6 @@ int32_t CodecServiceProxy::Flush()
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::FLUSH), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
-
     return reply.ReadInt32();
 }
 
@@ -332,6 +335,7 @@ int32_t CodecServiceProxy::ReleaseOutputBuffer(uint32_t index, bool render)
 
     data.WriteUint32(index);
     data.WriteBool(render);
+    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteOutputBufferToParcel(index, data);
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");

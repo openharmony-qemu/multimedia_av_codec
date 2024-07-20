@@ -14,6 +14,7 @@
  */
 
 #include "temporal_scalability.h"
+#include <cmath>
 #include "meta/video_types.h"
 #include "avcodec_log.h"
 #include "avcodec_common.h"
@@ -24,7 +25,6 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalScalability"};
 } // namespace
 
-constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_LTR_FRAME_NUM = 2;
 constexpr int32_t ENABLE_PARAMETER_CALLBACK = 1;
 
@@ -32,15 +32,38 @@ namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 using namespace Plugins;
+using namespace std;
 
-TemporalScalability::TemporalScalability()
+TemporalScalability::TemporalScalability(string name) : name_(name)
 {
-    inputIndexQueue_ = std::make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
+    inputIndexQueue_ = make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
 }
 
 TemporalScalability::~TemporalScalability()
 {
     inputIndexQueue_->Clear();
+}
+
+bool TemporalScalability::IsLTRSolution()
+{
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
+        return true;
+    }
+    if (temporalGopSize_ > DEFAULT_TEMPORAL_GOPSIZE) {
+        return true;
+    }
+    if (name_.find("avc") != string::npos && temporalGopSize_ > MIN_TEMPORAL_GOPSIZE) {
+        return true;
+    }
+    return false;
+}
+
+int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize)
+{
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
+        return DEFAULT_VIDEO_LTR_FRAME_NUM;
+    }
+    return (tGopSize / DEFAULT_TEMPORAL_GOPSIZE) + 1;
 }
 
 void TemporalScalability::ValidateTemporalGopParam(Format &format)
@@ -61,16 +84,20 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
         AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
     }
-
-    format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_VIDEO_LTR_FRAME_NUM);
-    format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
+    svcLTR_ = IsLTRSolution();
+    if (svcLTR_) {
+        int32_t ltrFrameNum = LTRFrameNumCalculate(temporalGopSize_);
+        format.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY);
+        format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum);
+        format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
+    }
     AVCODEC_LOGI("Set temporal gop parameter successfully.");
 }
 
-void TemporalScalability::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+void TemporalScalability::StoreAVBuffer(uint32_t index, shared_ptr<AVBuffer> buffer)
 {
     inputIndexQueue_->Push(index);
-    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
+    lock_guard<shared_mutex> inputBufLock(inputBufMutex_);
     inputBufferMap_.emplace(index, buffer);
 }
 
@@ -84,22 +111,37 @@ void TemporalScalability::SetBlockQueueActive()
     inputIndexQueue_->SetActive(false, false);
 }
 
-void TemporalScalability::SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer)
+void TemporalScalability::SetDisposableFlag(shared_ptr<Media::AVBuffer> buffer)
 {
-    std::lock_guard<std::shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
+    lock_guard<shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
     uint32_t flag = frameFlagMap_[outputFrameCounter_];
     buffer->flag_ |= flag;
     frameFlagMap_.erase(outputFrameCounter_);
     outputFrameCounter_++;
 }
 
-void TemporalScalability::LTRDecision()
+void TemporalScalability::MarkLTRDecision()
 {
-    poc_ = frameNum_ % gopSize_;
-    temporalPoc_ = poc_ % temporalGopSize_;
+    if (temporalPoc_ % DEFAULT_TEMPORAL_GOPSIZE == 0) {
+        isMarkLTR_ = true;
+    } else {
+        isMarkLTR_ = false;
+    }
+}
 
+int32_t TemporalScalability::LTRPocDecision(int32_t tPoc)
+{
+    int32_t layer = 0;
+    for (; tPoc % (MIN_TEMPORAL_GOPSIZE) == 0; layer++) {
+        tPoc /= MIN_TEMPORAL_GOPSIZE;
+    }
+    return static_cast<int32_t>(pow(MIN_TEMPORAL_GOPSIZE, layer));
+}
+
+void TemporalScalability::AdjacentJumpLTRDecision()
+{
     if (temporalPoc_ == 0) {
-        isMarkLTR_ = 1;
+        isMarkLTR_ = true;
         if (poc_ == 0) {
             isUseLTR_ = false;
             ltrPoc_ = 0;
@@ -107,43 +149,78 @@ void TemporalScalability::LTRDecision()
             isUseLTR_ = true;
             ltrPoc_ = poc_ - temporalGopSize_;
         }
-    } else if (temporalPoc_ == 1) {
-        isMarkLTR_ = 0;
+    } else if (temporalPoc_ == 1 || tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
+        isMarkLTR_ = false;
         isUseLTR_ = false;
         ltrPoc_ = poc_ - 1;
     } else {
-        isMarkLTR_ = 0;
-        if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
+        isMarkLTR_ = false;
+        isUseLTR_ = true;
+        ltrPoc_ = poc_ - temporalPoc_;
+    }
+}
+
+void TemporalScalability::UniformlyScaledLTRDecision()
+{
+    if (temporalPoc_ == 0 && poc_ == 0) {
+        isMarkLTR_ = true;
+        isUseLTR_ = false;
+        ltrPoc_ = 0;
+    } else if (temporalPoc_ == 0 && poc_ != 0) {
+        isMarkLTR_ = true;
+        isUseLTR_ = true;
+        ltrPoc_ = poc_ - temporalGopSize_;
+    } else {
+        if (temporalPoc_ % MIN_TEMPORAL_GOPSIZE != 0) {
+            isMarkLTR_ = false;
             isUseLTR_ = false;
             ltrPoc_ = poc_ - 1;
         } else {
             isUseLTR_ = true;
-            ltrPoc_ = poc_ - temporalPoc_;
+            MarkLTRDecision();
+            ltrPoc_ = poc_ - LTRPocDecision(temporalPoc_);
         }
     }
 }
 
-void TemporalScalability::DisposableDecision()
+void TemporalScalability::LTRDecision()
 {
-    uint32_t flag = AVCODEC_BUFFER_FLAG_NONE;
-    if (isMarkLTR_ == 0) {
-        if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
-            temporalPoc_ != temporalGopSize_ - 1 && poc_ != gopSize_ - 1) {
-            flag = AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
-        } else {
-            flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
+    poc_ = frameNum_ % gopSize_;
+    temporalPoc_ = poc_ % temporalGopSize_;
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
+        AdjacentJumpLTRDecision();
+    } else {
+        UniformlyScaledLTRDecision();
+    }
+}
+
+uint32_t TemporalScalability::DisposableDecision()
+{
+    if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
+        if (!isMarkLTR_) {
+            if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
+                temporalPoc_ != temporalGopSize_ - 1 && poc_ != gopSize_ - 1) {
+                return AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
+            } else {
+                return AVCODEC_BUFFER_FLAG_DISPOSABLE;
+            }
+        }
+    } else {
+        if (temporalPoc_ % MIN_TEMPORAL_GOPSIZE != 0) {
+            return AVCODEC_BUFFER_FLAG_DISPOSABLE;
+        }
+        if (temporalPoc_ != 0 && temporalPoc_ % MIN_TEMPORAL_GOPSIZE == 0) {
+            return AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
         }
     }
-    std::lock_guard<std::shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
-    frameFlagMap_.emplace(inputFrameCounter_, flag);
-    inputFrameCounter_++;
+    return AVCODEC_BUFFER_FLAG_NONE;
 }
 
 void TemporalScalability::ConfigureLTR(uint32_t index)
 {
     bool isFinded = false;
     {
-        std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
+        lock_guard<shared_mutex> inputBufLock(inputBufMutex_);
         if (inputBufferMap_.find(index) != inputBufferMap_.end()) {
             isFinded = true;
             bool syncIDR;
@@ -169,7 +246,10 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
         }
     }
     if (isFinded) {
-        DisposableDecision();
+        uint32_t flag = DisposableDecision();
+        lock_guard<shared_mutex> frameFlagMapLock(frameFlagMapMutex_);
+        frameFlagMap_.emplace(inputFrameCounter_, flag);
+        inputFrameCounter_++;
     }
 }
 } // namespace MediaAVCodec

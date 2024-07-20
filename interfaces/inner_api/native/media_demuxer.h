@@ -25,7 +25,7 @@
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
-#include "demuxer/data_packer.h"
+#include "common/seek_callback.h"
 #include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
@@ -105,10 +105,15 @@ public:
     void SetSelectBitRateFlag(bool flag) override;
     bool CanDoSelectBitRate() override;
 
-    Status StartReferenceParser(int64_t startTimeMs);
+    Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
-    
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos);
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
+    void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
+    void DeregisterVideoStreamReadyCallback();
+
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
 
@@ -124,7 +129,6 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    void ReportIsLiveStreamEvent();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32_t& videoTrackId, uint32_t& audioTrackId,
         std::string& videoMime);
     void InitSubtitleMediaMetaData(const Plugins::MediaInfo& mediaInfo);
@@ -231,6 +235,9 @@ private:
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;
     bool isParserTaskEnd_ = false;
+    int64_t duration_ {0};
+    std::atomic<bool> isSeekError_ = false;
+    std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

@@ -25,7 +25,14 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
+constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
+static bool isNumber(const std::string& str)
+{
+    return str.find_first_not_of("0123456789") == std::string::npos;
+}
+
 void PlayListDownloader::PlayListDownloaderInit()
 {
     dataSave_ = [this] (uint8_t*&& data, uint32_t&& len) {
@@ -98,9 +105,8 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
     if (ret < 0) {
         MEDIA_LOG_E("Failed to read, errno " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
         return;
-    } else {
-        MEDIA_LOG_I("Read success.");
     }
+    MEDIA_LOG_I("Read success.");
     playList_ = m3u8;
     ParseManifest(playList_);
 }
@@ -113,8 +119,10 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
     }
     MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
     std::smatch fdUriMatch;
-    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)?offset=(.*)&size=(.*)")) ||
+    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
+        false, "Invalid fd uri format: %{private}s", uri.c_str());
+    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         false, "Invalid fd uri format: %{private}s", uri.c_str());
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
@@ -169,7 +177,6 @@ bool PlayListDownloader::SeekTo(uint64_t offset)
     return true;
 }
 
-
 bool PlayListDownloader::GetPlayListDownloadStatus()
 {
     return startedDownloadStatus_;
@@ -177,8 +184,18 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 
 bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 {
+    if (data == nullptr || len == 0) {
+        return false;
+    }
+    playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
+    int32_t contentlen = downloadRequest_->GetFileContentLength();
+    std::string location;
+    downloadRequest_->GetLocation(location);
+    if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
+        PreParseManifest(location);
+    }
     return true;
 }
 
@@ -203,7 +220,7 @@ void PlayListDownloader::SetStatusCallback(StatusCallbackFunc cb)
     statusCallback_ = cb;
 }
 
-void PlayListDownloader::ParseManifest(const std::string& location)
+void PlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     MEDIA_LOG_E("Should not call this ParseManifest");
 }
@@ -230,7 +247,7 @@ void PlayListDownloader::Close()
 {
     if (IsLive()) {
         MEDIA_LOG_I("updateTask_ Close.");
-        updateTask_->Stop();
+        updateTask_->StopAsync();
     }
 }
 
@@ -246,7 +263,6 @@ void PlayListDownloader::Start()
 
 void PlayListDownloader::Cancel()
 {
-    playList_.clear();
     playList_.clear();
 }
 

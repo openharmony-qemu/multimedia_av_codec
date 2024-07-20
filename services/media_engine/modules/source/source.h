@@ -87,6 +87,7 @@ public:
     Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    Status SetCurrentBitRate(int32_t bitRate);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
     void SetDemuxerState();
@@ -96,7 +97,6 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
 private:
-    void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);
     bool GetProtocolByUri();

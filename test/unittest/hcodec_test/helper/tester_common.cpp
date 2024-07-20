@@ -303,6 +303,9 @@ void TesterCommon::EncoderInputLoop()
             SetEncoderPerFrameParam(buf, opt_.perFrameParamsMap.begin()->second);
             opt_.perFrameParamsMap.erase(opt_.perFrameParamsMap.begin());
         }
+        if (!opt_.isBufferMode && opt_.repeatAfter.has_value()) {
+            this_thread::sleep_for(std::chrono::milliseconds(rand() % 1000)); // 1000 ms
+        }
         BeforeQueueInput(buf.attr);
         ret = opt_.isBufferMode ? ReturnInput(buf) : ReturnInputSurfaceBuffer(buf);
         if (!ret) {

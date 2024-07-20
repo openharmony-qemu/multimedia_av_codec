@@ -24,7 +24,7 @@
 #include "avbuffer.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "NativeAVSource"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "NativeAVSource"};
 }
 
 using namespace OHOS::MediaAVCodec;
@@ -81,8 +81,8 @@ struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
 
 struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t size)
 {
-    CHECK_AND_RETURN_RET_LOG(fd > STDERR_FILENO, nullptr,
-        "Create source with fd failed because input fd is illegal, fd must be greater than 2!");
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr,
+        "Create source with fd failed because input fd is negative");
     CHECK_AND_RETURN_RET_LOG(offset >= 0, nullptr,
         "Create source with fd failed because input offset is negative");
     CHECK_AND_RETURN_RET_LOG(size > 0, nullptr,

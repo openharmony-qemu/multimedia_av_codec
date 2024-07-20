@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "hls_playlist_downloader_unit_test.h"
+#include "http_server_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -25,14 +26,22 @@ const static std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "userAgent"},
     {"Referer", "DEF"},
 };
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
 
-void HlsPlayListDownloaderUnitTest::SetUp(void) {}
+void HlsPlayListDownloaderUnitTest::SetUp(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+}
 
-void HlsPlayListDownloaderUnitTest::TearDown(void) {}
+void HlsPlayListDownloaderUnitTest::TearDown(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {
@@ -58,14 +67,14 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_DURATION, TestSize.Level1)
 HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_EMPTY, TestSize.Level1)
 {
     HlsPlayListDownloader downloader;
-    downloader.ParseManifest("");
+    downloader.ParseManifest("", false);
     EXPECT_GE(downloader.GetUrl(), "");
 }
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_001, TestSize.Level1)
 {
     HlsPlayListDownloader downloader;
-    downloader.ParseManifest("http://new.url");
+    downloader.ParseManifest("http://new.url", false);
     EXPECT_GE(downloader.GetUrl(), "http://new.url");
 }
 
@@ -74,7 +83,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_002, TestSize.Level1)
     HlsPlayListDownloader downloader;
     std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
     downloader.Open(testUrl, httpHeader);
-    downloader.ParseManifest(testUrl);
+    downloader.ParseManifest(testUrl, false);
     EXPECT_FALSE(downloader.GetMaster()->isSimple_);
 }
 
@@ -83,7 +92,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_003, TestSize.Level1)
     HlsPlayListDownloader downloader;
     std::string testUrl = TEST_URI_PATH + M3U8_PATH_1;
     downloader.Open(testUrl, httpHeader);
-    downloader.ParseManifest(testUrl);
+    downloader.ParseManifest(testUrl, false);
     EXPECT_FALSE(downloader.GetMaster()->isSimple_);
 }
 
@@ -93,7 +102,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_004, TestSize.Level1)
 
     std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
     downloader.Open(testUrl, httpHeader);
-    downloader.ParseManifest(testUrl);
+    downloader.ParseManifest(testUrl, false);
     EXPECT_FALSE(downloader.GetMaster()->isSimple_);
 }
 
@@ -101,7 +110,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, PARSE_MANIFEST_005, TestSize.Level1)
 {
     HlsPlayListDownloader downloader;
     std::string testUrl = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
-    downloader.ParseManifest(testUrl);
+    downloader.ParseManifest(testUrl, false);
     EXPECT_NE(downloader.GetMaster()->uri_, "");
     EXPECT_EQ(downloader.GetMaster()->uri_, testUrl);
 }
@@ -112,7 +121,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_001, TestSize.Level1)
     std::string testUrl = TEST_URI_PATH + M3U8_PATH_1;
     std::string testUrl1 = TEST_URI_PATH + "test_cbr/test_cbr.m3u8";
     downloader.Open(testUrl1, httpHeader);
-    downloader.ParseManifest(testUrl1);
+    downloader.ParseManifest(testUrl1, false);
     EXPECT_EQ(0, downloader.GetCurBitrate());
     EXPECT_EQ(0, downloader.GetCurrentBitRate());
 }

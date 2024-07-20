@@ -35,14 +35,13 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_buffer.h"
 #include "source/source.h"
-#include "live_datasource_stream_demuxer.h"
-#include "vod_stream_demuxer.h"
-#include "live_http_stream_demuxer.h"
+#include "stream_demuxer.h"
 #include "media_core.h"
 #include "osal/utils/dump_buffer.h"
 #include "demuxer_plugin_manager.h"
 
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
@@ -150,7 +149,7 @@ MediaDemuxer::~MediaDemuxer()
     }
 }
 
-Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
+Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
                          "StartReferenceParser failed due to source is nullptr");
@@ -163,7 +162,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
                          "StartReferenceParser failed due to video plugin is nullptr");
     if (isFirstParser_) {
         isFirstParser_ = false;
-        if (seekable_ != Plugins::Seekable::SEEKABLE) {
+        if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
             MEDIA_LOG_E("Do not support online video");
             return Status::ERROR_INVALID_OPERATION;
         }
@@ -180,7 +179,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs)
         parserRefInfoTask_->Start();
     }
     TryRecvParserTask();
-    return videoPlugin->ParserRefUpdatePos(startTimeMs);
+    return videoPlugin->ParserRefUpdatePos(startTimeMs, isForward);
 }
 
 void MediaDemuxer::TryRecvParserTask()
@@ -225,6 +224,19 @@ Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, Fr
     return videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
 }
 
+Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetFrameLayerInfo failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetFrameLayerInfo failed due to demuxerPluginManager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetFrameLayerInfo failed due to video plugin is nullptr");
+    TryRecvParserTask();
+    return videoPlugin->GetFrameLayerInfo(frameId, frameLayerInfo);
+}
+
 Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -236,6 +248,43 @@ Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
                          "GetGopLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
     return videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
+}
+
+void MediaDemuxer::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
+{
+    MEDIA_LOG_I("RegisterVideoStreamReadyCallback step into");
+    VideoStreamReadyCallback_ = callback;
+}
+
+void MediaDemuxer::DeregisterVideoStreamReadyCallback()
+{
+    MEDIA_LOG_I("DeregisterVideoStreamReadyCallback step into");
+    VideoStreamReadyCallback_ = nullptr;
+}
+
+Status MediaDemuxer::GetIFramePos(std::vector<uint32_t> &IFramePos)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetIFramePos failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetIFramePos failed due to demuxerPluginManager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
+                         "GetIFramePos failed due to video plugin is nullptr");
+    TryRecvParserTask();
+    return videoPlugin->GetIFramePos(IFramePos);
+}
+
+Status MediaDemuxer::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER, "Dts2FrameId failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "Dts2FrameId failed due to demuxerPluginManager is nullptr");
+    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
+                         "Dts2FrameId failed due to video plugin is nullptr");
+    TryRecvParserTask();
+    return videoPlugin->Dts2FrameId(dts, frameId, offset);
 }
 
 void MediaDemuxer::OnBufferAvailable(uint32_t trackId)
@@ -261,7 +310,7 @@ void MediaDemuxer::AccelerateTrackTask(uint32_t trackId)
         return;
     }
     MEDIA_LOG_I("AccelerateTrackTask trackId:" PUBLIC_LOG_U32, trackId);
-    task->second->UpdataDelayTime();
+    task->second->UpdateDelayTime();
 }
 
 void MediaDemuxer::SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded)
@@ -333,6 +382,34 @@ void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
 {
     AutoLock lock(mapMutex_);
+    if (source_ == nullptr) {
+        durationMs = -1;
+        return false;
+    }
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::GetDuration");
+    MEDIA_LOG_I("GetDuration enter");
+    seekable_ = source_->GetSeekable();
+
+    FALSE_LOG(seekable_ != Seekable::INVALID);
+    MEDIA_LOG_I("GetDuration exit");
+    if (source_->IsSeekToTimeSupported()) {
+        duration_ = source_->GetDuration();
+        if (duration_ != Plugins::HST_TIME_NONE) {
+            MEDIA_LOG_I("InitMediaMetaData for hls, duration: " PUBLIC_LOG_D64, duration_);
+            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+        }
+        return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
+    }
+    
+    // not hls and seekable
+    if (seekable_ == Plugins::Seekable::SEEKABLE) {
+        duration_ = source_->GetDuration();
+        if (duration_ != Plugins::HST_TIME_NONE) {
+            MEDIA_LOG_I("InitMediaMetaData for not hls, duration: " PUBLIC_LOG_D64, duration_);
+            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
+        }
+        return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
+    }
     return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
 }
 
@@ -413,30 +490,13 @@ Status MediaDemuxer::ProcessDrmInfos()
 Status MediaDemuxer::ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
     MEDIA_LOG_D("ProcessVideoStartTime,  trackId: %{public}u", trackId);
-    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported()
-        && seekable_ == Plugins::Seekable::SEEKABLE && !(demuxerPluginManager_->IsDash())) {
+    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported() &&
+        demuxerPluginManager_ != nullptr && !(demuxerPluginManager_->IsDash())) {
         MEDIA_LOG_D("add start time, videoStartTime_: %{public}" PRId64 ", sample->pts_: %{public}" PRId64,
          videoStartTime_, sample->pts_);
         sample->pts_ += Plugins::HstTime2Us(videoStartTime_);
     }
     return Status::OK;
-}
-
-void MediaDemuxer::ReportIsLiveStreamEvent()
-{
-    if (eventReceiver_ == nullptr) {
-        MEDIA_LOG_W("eventReceiver_ is nullptr!");
-        return;
-    }
-    if (seekable_ == Plugins::Seekable::INVALID) {
-        MEDIA_LOG_W("Seekable is invalid, do not report is_live_stream.");
-        return;
-    }
-    if (seekable_ == Plugins::Seekable::UNSEEKABLE) {
-        MEDIA_LOG_I("Report EventType::EVENT_IS_LIVE_STREAM.");
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_IS_LIVE_STREAM, true});
-        return;
-    }
 }
 
 Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
@@ -501,23 +561,12 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "plugin set source failed.");
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
-    seekable_ = source_->GetSeekable();
-    FALSE_RETURN_V_MSG_E(seekable_ != Plugins::Seekable::INVALID, Status::ERROR_NULL_POINTER,
-        "Set data source failed due to get seekable failed.");
 
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams);
     demuxerPluginManager_->InitDefaultPlay(streams);
 
-    ReportIsLiveStreamEvent();
-    if (seekable_ == Plugins::Seekable::SEEKABLE) {
-        Flush();
-        streamDemuxer_ = std::make_shared<VodStreamDemuxer>();
-    } else if (source_->IsNeedPreDownload() && source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
-        streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
-    } else {
-        streamDemuxer_ = std::make_shared<LiveHttpStreamDemuxer>();
-    }
+    streamDemuxer_ = std::make_shared<StreamDemuxer>();
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
@@ -531,6 +580,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
             int32_t streamId = demuxerPluginManager_->GetStreamID(videoTrackId_);
             streamDemuxer_->SetNewVideoStreamID(streamId);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+            int64_t bitRate = 0;
+            mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
+            source_->SetCurrentBitRate(bitRate);
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
@@ -560,7 +612,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
     subtitleStreams[0].type = StreamType::SUBTITLE;
     subtitleStreams[0].streamId = demuxerPluginManager_->GetStreamCount();
     demuxerPluginManager_->InitDefaultPlay(subtitleStreams);
-    subStreamDemuxer_ = std::make_shared<VodStreamDemuxer>();
+    subStreamDemuxer_ = std::make_shared<StreamDemuxer>();
     subStreamDemuxer_->SetSource(subtitleSource_);
     subStreamDemuxer_->Init(subSource->GetSourceUri());
 
@@ -802,6 +854,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     Status ret;
+    isSeekError_.store(false);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         bool jumperRestartPlugin = (isSelectBitRate_.load() == true) ? true : false;
         MEDIA_LOG_I("SeekTo source SeekToTime start, jumperRestartPlugin = " PUBLIC_LOG_D32, jumperRestartPlugin);
@@ -827,6 +880,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     }
     for (auto item : requestBufferErrorCountMap_) {
         requestBufferErrorCountMap_[item.first] = 0;
+    }
+    if (ret != Status::OK) {
+        isSeekError_.store(true);
     }
     MEDIA_LOG_I("SeekTo done");
     return ret;
@@ -1085,6 +1141,7 @@ Status MediaDemuxer::Reset()
     }
     videoStartTime_ = 0;
     streamDemuxer_->ResetAllCache();
+    isSeekError_.store(false);
     return demuxerPluginManager_->Reset();
 }
 
@@ -1185,13 +1242,6 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo, uint32
 {
     AutoLock lock(mapMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
-    if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
-        int64_t duration = source_->GetDuration();
-        if (duration != Plugins::HST_TIME_NONE) {
-            MEDIA_LOG_I("InitMediaMetaData for hls, duration: " PUBLIC_LOG_D64, duration);
-            mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration));
-        }
-    }
     mediaMetaData_.trackMetas.clear();
     mediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
@@ -1328,6 +1378,13 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
+    if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
+        MEDIA_LOG_D("step into HandleRead");
+        bool isDiscardable = VideoStreamReadyCallback_->IsVideoStreamDiscardable(bufferMap_[trackId]);
+        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDiscardable);
+        return Status::OK;
+    }
+
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
             !IsContainIdrFrame(bufferMap_[trackId]->memory_->GetAddr(), bufferMap_[trackId]->memory_->GetSize())) {
@@ -1428,8 +1485,8 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_) {
-        MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
+    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_) {
+        MEDIA_LOG_D("ReadLoop pausing or error, copy frame for track " PUBLIC_LOG_U32, trackId);
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
     } else {
         Status ret = CopyFrameToUserQueue(trackId);

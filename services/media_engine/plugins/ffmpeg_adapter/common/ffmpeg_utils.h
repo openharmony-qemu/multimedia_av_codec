@@ -18,6 +18,7 @@
 
 #include <string>
 #include "meta/media_types.h"
+#include "meta/audio_types.h"
 #include "meta/video_types.h"
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +35,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 bool Mime2CodecId(const std::string &mime, AVCodecID &codecId);
+bool Raw2CodecId(AudioSampleFormat sampleFormat, AVCodecID &codecId);
 std::string AVStrError(int errnum);
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
 int64_t ConvertPts(int64_t pts, int64_t startTime);

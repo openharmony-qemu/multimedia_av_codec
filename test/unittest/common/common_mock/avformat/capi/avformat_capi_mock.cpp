@@ -92,6 +92,15 @@ void AVFormatCapiMock::InitVideoTrackFormat(const std::string_view &mimeType, in
     format_ = OH_AVFormat_CreateVideoFormat(mimeType.data(), width, height);
 }
 
+void AVFormatCapiMock::InitMetadataTrackFormat(
+    const std::string_view &mimeType, const std::string_view &key, int32_t srcTrackID)
+{
+    static_cast<void>(mimeType);
+    static_cast<void>(key);
+    static_cast<void>(srcTrackID);
+    return;
+}
+
 bool AVFormatCapiMock::AVFormat_Copy(struct OH_AVFormat *to, struct OH_AVFormat *from)
 {
     return OH_AVFormat_Copy(to, from);

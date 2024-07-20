@@ -36,6 +36,7 @@ struct ReadDataInfo {
 
 class MediaDownloader {
 public:
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
     virtual ~MediaDownloader() = default;
     virtual bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void Close(bool isAsync) = 0;

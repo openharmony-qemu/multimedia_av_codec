@@ -24,6 +24,10 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
+}
+
 namespace OHOS {
 namespace Media {
 

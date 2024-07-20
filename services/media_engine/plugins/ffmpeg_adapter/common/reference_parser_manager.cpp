@@ -15,12 +15,14 @@
 
 #define HST_LOG_TAG "ReferenceParserManager"
 
-#include "reference_parser_manager.h"
+#include <unistd.h>
 #include <dlfcn.h>
 #include "common/log.h"
+#include "reference_parser_manager.h"
 
 namespace {
 const std::string REFERENCE_LIB_PATH = "libav_codec_reference_parser.z.so";
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer"};
 }
 
 namespace OHOS {
@@ -52,7 +54,7 @@ bool ReferenceParserManager::Init()
 }
 
 std::shared_ptr<ReferenceParserManager> ReferenceParserManager::Create(CodecType codecType,
-                                                                       std::vector<uint32_t> IFramePos)
+                                                                       std::vector<uint32_t> &IFramePos)
 {
     std::shared_ptr<ReferenceParserManager> loader = std::make_shared<ReferenceParserManager>();
     if (!loader->Init()) {
@@ -104,6 +106,7 @@ Status ReferenceParserManager::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gop
 
 void *ReferenceParserManager::LoadPluginFile(const std::string &path)
 {
+    FALSE_RETURN_V_MSG_E(path.length() > 0, nullptr, "path is invalid.");
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (ptr == nullptr) {
         MEDIA_LOG_E("dlopen failed due to %{public}s", ::dlerror());

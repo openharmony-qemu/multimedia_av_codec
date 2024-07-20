@@ -24,7 +24,6 @@
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
-#include "demuxer/data_packer.h"
 #include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
@@ -116,12 +115,11 @@ public:
     int32_t GetNewVideoStreamID();
 protected:
     std::shared_ptr<Source> source_;
-    std::function<bool(int32_t, uint64_t, size_t)> checkRange_;
-    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
-    std::function<bool(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
+    std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
     std::map<int32_t, DemuxerState> pluginStateMap_;
     std::atomic<bool> isIgnoreParse_{false};
-    std::atomic<bool> isIgnoreRead_{false};
     std::atomic<bool> isInterruptNeeded_{false};
     std::string bundleName_ {};
     std::string uri_ {};

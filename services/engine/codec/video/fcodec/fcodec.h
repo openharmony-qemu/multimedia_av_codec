@@ -20,6 +20,8 @@
 #include <list>
 #include <map>
 #include <shared_mutex>
+#include <functional>
+#include <fstream>
 #include <tuple>
 #include <vector>
 #include <optional>
@@ -95,6 +97,8 @@ private:
         EOS,
         ERROR,
     };
+    void OpenDumpFile();
+    void DumpOutputBuffer();
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
     void CalculateBufferSize();
@@ -146,7 +150,7 @@ private:
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
     // Running
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
-    std::shared_ptr<AVBuffer> outAVBuffer4Surface_ = nullptr;
+    std::vector<std::shared_ptr<AVBuffer>> outAVBuffer4Surface_;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
@@ -167,6 +171,9 @@ private:
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    uint32_t decNum_ = 0;
+    std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
+    std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
 };
 } // namespace Codec
 } // namespace MediaAVCodec

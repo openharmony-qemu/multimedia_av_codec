@@ -31,11 +31,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-#ifdef TESTING
-#define PRIVATE public
-#else
-#define PRIVATE private
-#endif
+
 enum BufferingTimes : int32_t {
     FIRST_TIMES = 1,
     SECOND_TIMES = 2,
@@ -72,7 +68,6 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
-    void OnFirstTsReady(const std::string& url, const double& duration) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
@@ -90,7 +85,7 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
 
-PRIVATE:
+private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
@@ -114,7 +109,12 @@ PRIVATE:
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
-PRIVATE:
+    uint32_t GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
+    void ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t* writeDataPoint);
+    void ResetPlaylistCapacity(size_t size);
+    void PlaylistBackup(const PlayInfo& fragment);
+
+private:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
     std::atomic<bool> usingExtraRingBuffer_ {false};
@@ -212,7 +212,6 @@ PRIVATE:
     std::shared_ptr<RecordData> recordData_ {nullptr};
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
-    Mutex firstTsMutex_ {};
     std::string mimeType_;
     unsigned int wantReadLenth_ {0};
     bool isInterrupt_ {false};
@@ -220,6 +219,10 @@ PRIVATE:
     bool isFirstFrameArrived_ {false};
     unsigned int bufferingTimes_ {0};
     bool isBufferEnough_ {true};
+    std::atomic<bool> isSeekingFlag {false};
+    Mutex switchMutex_ {};
+    bool isLastDecryptWriteError_ {false};
+    uint32_t lastRealLen_ {0};
 };
 }
 }

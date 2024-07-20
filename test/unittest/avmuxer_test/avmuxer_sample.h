@@ -33,6 +33,7 @@ public:
     int32_t WriteSample(uint32_t trackIndex, const uint8_t *sample, const OH_AVCodecBufferAttr &info);
     int32_t WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample);
     int32_t SetRotation(int32_t rotation);
+    int32_t SetTimedMetadata();
 private:
     std::shared_ptr<AVMuxerMock> muxer_;
 };

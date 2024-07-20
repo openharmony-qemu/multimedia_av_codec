@@ -16,6 +16,10 @@
 #include "common/log.h"
 #include "securec.h"
 
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "FfmpegConvert" };
+}
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -51,6 +55,7 @@ Status Resample::Init(const ResamplePara &resamplePara)
         swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
             if (ptr) {
                 swr_free(&ptr);
+                ptr = nullptr;
             }
         });
     }
@@ -80,6 +85,7 @@ Status Resample::InitSwrContext(const ResamplePara &resamplePara)
     swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
         if (ptr) {
             swr_free(&ptr);
+            ptr = nullptr;
         }
     });
     return Status::OK;
@@ -149,7 +155,13 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
         MEDIA_LOG_E("Frame null pointer");
         return Status::ERROR_NO_MEMORY;
     }
-
+    for (uint32_t i = 0; i < resamplePara_.channels; i++) {
+        if (inputFrame->extended_data[i] == nullptr) {
+            MEDIA_LOG_E("channels:%{public}u, extended_data[%{public}u] is nullptr",
+                resamplePara_.channels, i);
+            return Status::ERROR_NO_MEMORY;
+        }
+    }
     outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = static_cast<int>(resamplePara_.sampleRate);
@@ -201,6 +213,14 @@ Status Scale::Convert(uint8_t **srcData, const int32_t *srcLineSize, uint8_t **d
     return Status::OK;
 }
 #endif
+Resample::~Resample()
+{
+#if defined(_WIN32) || !defined(OHOS_LITE)
+    if (swrCtx_) {
+        swrCtx_ = nullptr;
+    }
+#endif
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

@@ -701,6 +701,7 @@ uint32_t AudioBufferAacEncDemo::GetInputIndex()
         sleep(1);
         sleep_time++;
     }
+    lock_guard<mutex> lock(signal_->inMutex_);
     if (sleep_time >= timeout) {
         return 0;
     } else {

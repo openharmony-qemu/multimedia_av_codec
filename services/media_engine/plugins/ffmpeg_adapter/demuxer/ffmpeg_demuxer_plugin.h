@@ -66,24 +66,34 @@ public:
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
     Status ParserRefInit(int64_t timeStampMs) override;
-    Status ParserRefUpdatePos(int64_t timeStampMs) override;
+    Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
+    Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override;
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
+    Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
+    Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override;
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
         int64_t presentationTimeUs, uint32_t &frameIndex) override;
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         uint32_t frameIndex, int64_t &presentationTimeUs) override;
 
 private:
+    enum DumpMode : unsigned long {
+        DUMP_NONE = 0,
+        DUMP_READAT_INPUT = 0b001,
+        DUMP_AVPACKET_OUTPUT = 0b010,
+        DUMP_AVBUFFER_OUTPUT = 0b100,
+    };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
         int64_t offset {0};
         uint64_t fileSize {0};
         bool eos {false};
-        std::atomic<bool> timeout {false};
+        std::atomic<bool> retry {false};
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
+        DumpMode dumpMode {DUMP_NONE};
     };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
@@ -94,7 +104,7 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
     std::shared_ptr<AVFormatContext> InitAVFormatContext(IOContext *ioContext);
-    static int CheckContextIsValid(void* opaque);
+    static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);
@@ -105,18 +115,19 @@ private:
     Status ReadPacketToCacheQueue(const uint32_t readId);
     void AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
-    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData,
-        int32_t writeSize);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
     int FindNaluSpliter(int size, const uint8_t *data);
@@ -158,6 +169,31 @@ private:
     int64_t firstDts_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
+    bool updatePosIsForward_ = true;
+
+    // dfx
+    struct TrackDfxInfo {
+        int frameIndex = 0; // for each track
+        int64_t lastPts;
+        int64_t lastPos;
+        int64_t lastDurantion;
+    };
+    struct DumpParam {
+        DumpMode mode;
+        uint8_t* buf;
+        int trackId;
+        int64_t offset;
+        int size;
+        int index;
+        int64_t pts;
+        int64_t pos;
+    };
+    std::unordered_map<int, TrackDfxInfo> trackDfxInfoMap_;
+    DumpMode dumpMode_ {DUMP_NONE};
+    static std::atomic<int> readatIndex_;
+    int avpacketIndex_ {0};
+
+    static void Dump(const DumpParam &dumpParam);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

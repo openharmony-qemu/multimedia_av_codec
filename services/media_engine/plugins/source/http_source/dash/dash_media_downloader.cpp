@@ -97,15 +97,14 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
 
-    DashReadRet ret = segmentDownloader->Read(readDataInfo.streamId_, buff, readDataInfo.wantReadLength_,
-                                              readDataInfo.realReadLength_, readDataInfo.nextStreamId_);
+    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_);
     if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_)) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_TIMEOUT) {
         if (callback_ != nullptr) {
-            MEDIA_LOG_I("Read time out, OnEvent");
+            MEDIA_LOG_E("Read time out, OnEvent");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
         return Status::END_OF_STREAM;
@@ -298,6 +297,7 @@ void DashMediaDownloader::SetPlayStrategy(PlayStrategy* playStrategy)
 
 Status DashMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams)
 {
+    GetSeekable();
     return mpdDownloader_->GetStreamInfo(streams);
 }
 

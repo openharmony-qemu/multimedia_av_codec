@@ -24,7 +24,6 @@
 #include "buffer/avbuffer_queue_define.h"
 #include "plugin/audio_sink_plugin.h"
 #include "filter/filter.h"
-#include "common/log.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {
@@ -47,6 +46,7 @@ public:
     Status Resume();
     Status Flush();
     Status Release();
+    Status SetPlayRange(int64_t start, int64_t end);
     Status SetVolume(float volume);
     void DrainOutputBuffer();
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
@@ -58,6 +58,7 @@ public:
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
+    void SetThreadGroupId(const std::string& groupId);
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
 
@@ -73,7 +74,8 @@ private:
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
-    void ReportEosEventAndDrain();
+    void DrainAndReportEosEvent();
+    void HandleEosInner(bool drain);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -97,9 +99,22 @@ private:
     bool isEos_ {false};
     std::mutex pluginMutex_;
     float volume_ {-1.0f};
+    std::unique_ptr<Task> eosTask_ {nullptr};
+    enum class EosInterruptState : int {
+        NONE,
+        INITIAL,
+        PAUSE,
+        RESUME,
+        STOP,
+    };
+    Mutex eosMutex_ {};
+    std::atomic<bool> eosDraining_ {false};
+    std::atomic<EosInterruptState> eosInterruptType_ {EosInterruptState::NONE};
     float speed_ {1.0f};
     int32_t effectMode_ {-1};
     bool isApe_ {false};
+    int64_t playRangeStartTime_ = -1;
+    int64_t playRangeEndTime_ = -1;
     // vars for audio progress optimization
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};

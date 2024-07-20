@@ -88,6 +88,26 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase_repeat, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0000");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .repeatAfter = 30,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase_perframe, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dump", "1100");
@@ -102,10 +122,10 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase_perframe, TestSize
         .frameRate = 30,
         .timeout = 100,
         .isBufferMode = false,
-        .perFrameParamsMap = {{2, PerFrameParams{
-            .requestIdr = true,
-            .qpRange = QPRange{13, 42},
-        }}},
+        .perFrameParamsMap = {
+            {1, PerFrameParams{ .discard = true, }},
+            {2, PerFrameParams{ .requestIdr = true, .qpRange = QPRange{13, 42}, }},
+        },
     };
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);

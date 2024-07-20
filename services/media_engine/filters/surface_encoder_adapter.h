@@ -28,7 +28,6 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
-#include "common/log.h"
 #include "osal/task/task.h"
 #include "avcodec_common.h"
 #include "osal/task/condition_variable.h"
