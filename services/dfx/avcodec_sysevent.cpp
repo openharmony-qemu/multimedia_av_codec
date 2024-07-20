@@ -73,7 +73,7 @@ void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
                     "AUDIO_SAMPLE_RATE",    codecDfxInfo.audioSampleRate);
 }
 
-void CodecStopEventWrite(int32_t clientPid, int32_t clientUid, int32_t codecInstanceId)
+void CodecStopEventWrite(pid_t clientPid, uid_t clientUid, int32_t codecInstanceId)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,

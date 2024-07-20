@@ -181,6 +181,9 @@ Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     } else {
         bufData = buffer->GetMemory();
     }
+    if (bufData == nullptr) {
+        return Status::ERROR_AGAIN;
+    }
     expectedLen = std::min(static_cast<size_t>(fileSize_ - position_), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
 

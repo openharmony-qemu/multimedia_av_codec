@@ -28,6 +28,7 @@
 #include "native_avmemory.h"
 #include "native_avbuffer.h"
 #include "avmuxer_demo_common.h"
+#include "native_audio_channel_layout.h"
 
 
 #define NORMAL 0
@@ -37,6 +38,8 @@
 #define MODE_TWO 2
 #define MODE_THREE 3
 #define MODE_FOUR 4
+#define MODE_FIVE 5
+#define MODE_SIX 6
 #define TYPE_BUFFER_SIZE 20
 #define CONFIG_BUFFER_SIZE 0x1FFF
 
@@ -91,6 +94,12 @@ int AddTrackAudio(OH_AVMuxer *muxer, const AudioTrackParam *param, int fdInput)
     OH_AVFormat_SetIntValue(formatAudio, "audio_samples_per_frame", param->frameSize);
     if (param == &g_audioAacPar) {
         OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_PROFILE, AAC_PROFILE_LC);
+    } else if (param == &g_audioG711MUPar) {
+        OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_U8);
+        OH_AVFormat_SetLongValue(formatAudio, OH_MD_KEY_BITRATE, 705600); // 705600 g711mu bit rate
+    } else if (param == &g_audioRawPar) {
+        OH_AVFormat_SetIntValue(formatAudio, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+        OH_AVFormat_SetLongValue(formatAudio, OH_MD_KEY_CHANNEL_LAYOUT, CH_LAYOUT_STEREO);
     }
     int extraSize = 0;
     unsigned char buffer[CONFIG_BUFFER_SIZE] = {0};
@@ -339,7 +348,7 @@ int GetInputNum(int defaultNum)
 
 void NativeSelectMuxerType(void)
 {
-    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr 3.mp3\n");
+    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr 3.mp3 4.wav\n");
     int num = GetInputNum(0);
     switch (num) {
         case MODE_ZERO:
@@ -357,6 +366,10 @@ void NativeSelectMuxerType(void)
         case MODE_THREE:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MP3;
             (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "mp3");
+            break;
+        case MODE_FOUR:
+            g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_WAV;
+            (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "wav");
             break;
         default:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
@@ -391,7 +404,7 @@ void NativeSelectRunMode(void)
 
 void NativeSelectAudio(void)
 {
-    printf("\nplese select audio mode: 0.noAudio 1.aac 2.mpeg 3.amr-nb 4.amr-wb\n");
+    printf("\nplese select audio mode: 0.noAudio 1.aac 2.mpeg 3.amr-nb 4.amr-wb 5.g711mu 6.raw\n");
     int num = GetInputNum(1);
     switch (num) {
         case MODE_ONE:
@@ -409,6 +422,14 @@ void NativeSelectAudio(void)
         case MODE_FOUR:
             g_muxerParam.audioParams = &g_audioAmrWbPar;
             (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "amr");
+            break;
+        case MODE_FIVE:
+            g_muxerParam.audioParams = &g_audioG711MUPar;
+            (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "g711mu");
+            break;
+        case MODE_SIX:
+            g_muxerParam.audioParams = &g_audioRawPar;
+            (void)snprintf_s(g_muxerParam.audioType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "raw");
             break;
         default:
             g_muxerParam.audioParams = NULL;

@@ -29,6 +29,8 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr uint32_t DRM_INFO_BASE64_DATA_MULTIPLE = 4;
 constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
+constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
+constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3*1024*1024;
 
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
@@ -169,16 +171,18 @@ void M3U8::InitTagUpdatersMap()
     };
 
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        isDecryptAble_ = true;
-        isDecryptKeyReady_ = false;
-        ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-        if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
-            (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
-            ProcessDrmInfos();
-        } else {
-            DownloadKey();
+        if (!isDecryptAble_ && !isDecryptKeyReady_) {
+            isDecryptAble_ = true;
+            isDecryptKeyReady_ = false;
+            ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+            if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
+                (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
+                ProcessDrmInfos();
+            } else {
+                DownloadKey();
+            }
+            // wait for key downloaded
         }
-        // wait for key downloaded
     };
 
     tagUpdatersMap_[HlsTag::EXTXMAP] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
@@ -224,7 +228,10 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
 {
     auto item = std::static_pointer_cast<ValuesListTag>(tag);
-    duration =  item ->GetAttributeByName("DURATION")->FloatingPoint();
+    if (item == nullptr) {
+        return;
+    }
+    duration = item ->GetAttributeByName("DURATION")->FloatingPoint();
 }
 
 double M3U8::GetDuration() const
@@ -463,11 +470,36 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
     variants_.emplace_back(stream);
     defaultVariant_ = stream;
+    if (isDecryptAble_) {
+        m3u8->isDecryptAble_ = isDecryptAble_;
+        std::copy(std::begin(key_), std::end(key_), std::begin(m3u8->key_));
+        m3u8->isDecryptKeyReady_ = isDecryptKeyReady_;
+        std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
+        m3u8->keyLen_ = keyLen_;
+    }
     m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;
     MEDIA_LOG_D("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
+}
+
+void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
+{
+    auto m3u8 = std::make_shared<M3U8>(uri_, "");
+    m3u8->isDecryptAble_ = true;
+    m3u8->isDecryptKeyReady_ = false;
+    m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+    m3u8->DownloadKey();
+    uint32_t downloadTime = 0;
+    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME) {
+        Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
+        downloadTime ++;
+    }
+    std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(key_));
+    isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
+    std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(iv_));
+    keyLen_ = m3u8->keyLen_;
 }
 
 void M3U8MasterPlaylist::UpdateMasterPlaylist()
@@ -476,6 +508,9 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
     auto tags = ParseEntries(playList_);
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
+            case HlsTag::EXTXSESSIONKEY:
+                DownloadSessionKey(tag);
+                break;
             case HlsTag::EXTXSTREAMINF:
             case HlsTag::EXTXIFRAMESTREAMINF: {
                 auto item = std::static_pointer_cast<AttributesTag>(tag);

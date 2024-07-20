@@ -29,6 +29,8 @@ namespace Media {
 
 const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
 const int32_t APE_BUFFER_QUEUE_SIZE = 32;
+const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
+const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
 
 int64_t GetAudioLatencyFixDelay()
 {
@@ -151,9 +153,8 @@ Status AudioSink::Start()
 
 Status AudioSink::Stop()
 {
-    if (seekTask_ != nullptr) {
-        seekTask_->Stop();
-    }
+    playRangeStartTime_ = DEFAULT_PLAY_RANGE_VALUE;
+    playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     Status ret = plugin_->Stop();
     if (ret != Status::OK) {
         return ret;
@@ -166,7 +167,7 @@ Status AudioSink::Stop()
     return ret;
 }
 
-Status AudioSink::PauseSub()
+Status AudioSink::Pause()
 {
     Status ret = Status::OK;
     if (isTransitent_ || isEos_) {
@@ -178,25 +179,6 @@ Status AudioSink::PauseSub()
         return ret;
     }
     state_ = Pipeline::FilterState::PAUSED;
-    return ret;
-}
-
-Status AudioSink::Pause()
-{
-    Status ret = Status::OK;
-    if (isTransitent_) {
-        if (seekTask_ == nullptr) {
-            seekTask_ = std::make_unique<Task>("AudioSinkSeek", playerId_, TaskType::AUDIO,
-                TaskPriority::NORMAL, false);
-        }
-        seekTask_->SubmitJobOnce([this] {
-            MEDIA_LOG_I("AudioSink Pause Job start");
-            PauseSub();
-            MEDIA_LOG_I("AudioSink Pause Job end");
-        });
-    } else {
-        ret = PauseSub();
-    }
     AutoLock lock(eosMutex_);
     if (eosInterruptType_ == EosInterruptState::INITIAL || eosInterruptType_ == EosInterruptState::RESUME) {
         eosInterruptType_ = EosInterruptState::PAUSE;
@@ -227,24 +209,7 @@ Status AudioSink::Resume()
 Status AudioSink::Flush()
 {
     Status ret = Status::OK;
-    if (isTransitent_) {
-        if (seekTask_ == nullptr) {
-            seekTask_ = std::make_unique<Task>("AudioSinkSeek", playerId_, TaskType::AUDIO,
-                TaskPriority::NORMAL, false);
-        }
-        seekTask_->SubmitJobOnce([this] {
-            MEDIA_LOG_I("AudioSink Flush Job");
-            plugin_->Flush();
-            {
-                AutoLock lock(seekCompletedLock_);
-                seekCompleted_.store(true);
-                MEDIA_LOG_I("AudioSink Flush Job end, notify completed");
-            }
-            seekCondition_.NotifyAll();
-        });
-    } else {
-        ret = plugin_->Flush();
-    }
+    ret = plugin_->Flush();
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
@@ -255,6 +220,14 @@ Status AudioSink::Flush()
 Status AudioSink::Release()
 {
     return plugin_->Deinit();
+}
+
+Status AudioSink::SetPlayRange(int64_t start, int64_t end)
+{
+    MEDIA_LOG_I("SetPlayRange enter.");
+    playRangeStartTime_ = start;
+    playRangeEndTime_ = end;
+    return Status::OK;
 }
 
 Status AudioSink::SetVolume(float volume)
@@ -275,11 +248,10 @@ int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
-Status AudioSink::SetIsTransitent(bool isTransitent, bool isSeekCompleted)
+Status AudioSink::SetIsTransitent(bool isTransitent)
 {
     MEDIA_LOG_I("AudioSink::SetIsTransitent entered. ");
     isTransitent_ = isTransitent;
-    seekCompleted_.store(isSeekCompleted);
     return Status::OK;
 }
 
@@ -401,7 +373,9 @@ void AudioSink::DrainOutputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }
-    if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
+    if ((filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) ||
+        ((playRangeEndTime_ != DEFAULT_PLAY_RANGE_VALUE) &&
+        (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS))) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         AutoLock eosLock(eosMutex_);
         eosInterruptType_ = EosInterruptState::INITIAL;
@@ -602,23 +576,6 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     }
 
     return res;
-}
-
-Status AudioSink::WaitSeekCompleted()
-{
-    AutoLock lock(seekCompletedLock_);
-    MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor");
-    seekCondition_.WaitFor(lock, 5000, [this]() { //5000ms
-        return seekCompleted_.load();
-    });
-    MEDIA_LOG_I("AudioSink WaitSeekCompleted waitfor end");
-    return Status::OK;
-}
-
-Status AudioSink::SetPlayerId(std::string& playerId)
-{
-    playerId_ = playerId;
-    return Status::OK;
 }
 
 } // namespace MEDIA
