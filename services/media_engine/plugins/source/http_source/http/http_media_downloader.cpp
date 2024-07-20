@@ -166,7 +166,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
         }
         MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
             static_cast<int32_t>(avgDownloadSpeed_));
-        MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+        MEDIA_LOG_I("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
             totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MICROSECOND));
     };
     MediaSouce mediaSouce;
@@ -356,11 +356,12 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
             }
             OnClientErrorEvent();
             readDataInfo.realReadLength_ = 0;
+            MEDIA_LOG_I("HttpMediaDownloader: read time out, eos");
             return Status::END_OF_STREAM;
         }
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && buffer_->GetSize() == 0) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
+            MEDIA_LOG_I("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             readDataInfo.realReadLength_ = 0;
             return Status::END_OF_STREAM;
         }
@@ -466,14 +467,14 @@ Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLengt
     }
     OnClientErrorEvent();
     realReadLength = 0;
-    MEDIA_LOG_D("DownloadErrorState, return eos");
+    MEDIA_LOG_I("DownloadErrorState, return eos");
     return Status::END_OF_STREAM;
 }
 
 Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     if (buffer_->GetSize() == 0) {
-        MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+        MEDIA_LOG_I("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return readDataInfo.realReadLength_ == 0 ? Status::END_OF_STREAM : Status::OK;
     } else {
         readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2); // 2
@@ -484,7 +485,7 @@ Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataIn
 Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     if (cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
-        MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
+        MEDIA_LOG_I("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return readDataInfo.realReadLength_ == 0 ? Status::END_OF_STREAM : Status::OK;
     } else {
         canWrite_ = true;

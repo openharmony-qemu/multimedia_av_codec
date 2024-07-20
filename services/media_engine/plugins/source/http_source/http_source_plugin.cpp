@@ -266,7 +266,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     PUBLIC_LOG_ZU
     ", nextStreamId = "
     PUBLIC_LOG_D32
-    ", isEos "
+    ", isDownloadDone "
     PUBLIC_LOG_D32, bufData->GetSize(), readDataInfo.nextStreamId_, readDataInfo.isEos_);
     return result;
 }
