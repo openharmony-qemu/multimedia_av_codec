@@ -2729,6 +2729,61 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_01, TestSize
     Release();
 }
 
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ONE_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), -1); // use -1 as error input
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), -1); // use -1 as error input
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ONE_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                AudioSampleFormat::SAMPLE_U8P);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+    Release();
+}
+
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_05, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ONE_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 16000);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                AudioSampleFormat::SAMPLE_S32LE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_06, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ONE_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 0);
+    OH_AudioCodec_Configure(audioDec_, format_);
+    Release();
+}
+
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
@@ -2769,6 +2824,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_04, TestS
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
     Release();
 }
+
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Stop_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
