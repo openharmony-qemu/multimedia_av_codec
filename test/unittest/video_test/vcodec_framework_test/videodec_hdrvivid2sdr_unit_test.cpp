@@ -298,7 +298,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_003, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
     } else {
@@ -323,7 +323,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_004, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
     } else {
@@ -350,7 +350,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_005, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
@@ -376,7 +376,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_006, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     } else {
@@ -403,7 +403,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_007, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Prepare());
     } else {
@@ -428,7 +428,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_008, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_INVALID_VAL, videoDec_->Prepare());
     } else {
@@ -455,7 +455,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_009, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -483,7 +483,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_010, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
@@ -546,7 +546,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_012, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_013, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -569,7 +569,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_013, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_014, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -593,7 +593,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_014, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_015, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -616,7 +616,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_015, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_016, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -642,7 +642,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_016, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_017, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -662,7 +662,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_017, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_018, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode != VCodecTestCode::HW_HDR) {
+    if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         CreateByNameWithParam(testCode);
         SetAVCFormat();
         PrepareSource(testCode);
