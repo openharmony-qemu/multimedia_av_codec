@@ -136,13 +136,12 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
     std::shared_ptr<MediaAVCodec::MediaCodecParameterWithAttrCallback> droppedFramesCallback =
         std::make_shared<DroppedFramesCallback>(shared_from_this());
     ret = codecServer_->SetCallback(droppedFramesCallback);
-    if (ret == 0) {
-        return Status::OK;
-    } else {
+    if (ret != 0) {
         MEDIA_LOG_I("Set dropped Frames Callback failed");
         SetFaultEvent("DroppedFramesCallback::DroppedFramesCallback error", ret);
         return Status::ERROR_UNKNOWN;
     }
+    return Status::OK;
 }
 
 void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
@@ -460,27 +459,18 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-    if (status != Status::OK) {
-        MEDIA_LOG_I("RequestBuffer fail.");
-        return;
-    }
+    FALSE_RETURN_MSG(status == Status::OK, "RequestBuffer fail.");
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
-    if (emptyOutputBuffer->memory_ == nullptr) {
-        MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr");
-        return;
-    }
+    FALSE_RETURN_MSG(emptyOutputBuffer->memory_ != nullptr, "emptyOutputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
     {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
-        if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
-            MEDIA_LOG_D("buffer->pts fail");
-            emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_;
-        } else {
-            auto resumeTime = mappingTimeQueue_.front();
-            mappingTimeQueue_.pop_front();
-            emptyOutputBuffer->pts_ = resumeTime.second - startBufferTime_;
-        }
+        FALSE_RETURN_MSG(!(mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_),
+            "buffer->pts fail");
+        auto resumeTime = mappingTimeQueue_.front();
+        mappingTimeQueue_.pop_front();
+        emptyOutputBuffer->pts_ = resumeTime.second - startBufferTime_;
     }
     if (!isTransCoderMode) {
         emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
