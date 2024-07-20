@@ -134,6 +134,7 @@ Status AudioSink::Prepare()
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
+        eosDraining_ = false;
     }
     return ret;
 }
@@ -309,11 +310,21 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
-    eosDraining_ = true;
-    if (eosInterruptType_ != EosInterruptState::INITIAL && eosInterruptType_ != EosInterruptState::RESUME) {
-        MEDIA_LOG_W("drain audiosink interrupted");
-        eosDraining_ = false;
-        return;
+    eosDraining_ = true; // start draining task
+    switch(eosInterruptType_) {
+        case EosInterruptState::INITIAL: // No user operation during EOS drain, complete drain normally
+            break;
+        case EosInterruptState::RESUME: // EOS drain is resumed after pause, do necessary changes
+            if (drain) {
+                // pause and resume happened before this task, audiosink latency should be updated
+                drain = false;
+            }
+            eosInterruptType_ = EosInterruptState::INITIAL; // Reset EOS draining state
+            break;
+        default: // EOS drain is interrupted by pause or stop, and not resumed
+            MEDIA_LOG_W("Drain audiosink interrupted");
+            eosDraining_ = false; // abort draining task
+            return;
     }
     if (drain) {
         MEDIA_LOG_I("Drain audiosink and report EOS");
@@ -322,7 +333,7 @@ void AudioSink::HandleEosInner(bool drain)
     }
     uint64_t latency = 0;
     if (plugin_->GetLatency(latency) != Status::OK) {
-        MEDIA_LOG_W("failed to get latency, drain directly");
+        MEDIA_LOG_W("Failed to get latency, drain audiosink directly");
         DrainAndReportEosEvent();
         return;
     }
@@ -342,7 +353,7 @@ void AudioSink::DrainAndReportEosEvent()
     plugin_->Drain();
     plugin_->PauseTransitent();
     eosInterruptType_ = EosInterruptState::NONE;
-    eosDraining_ = false;
+    eosDraining_ = false; // finish draining task
     isEos_ = true;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
@@ -377,6 +388,10 @@ void AudioSink::DrainOutputBuffer()
         (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS))) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         AutoLock eosLock(eosMutex_);
+        if (eosDraining_) {
+            // avoid submit handle eos task multiple times
+            return;
+        }
         eosInterruptType_ = EosInterruptState::INITIAL;
         if (eosTask_ == nullptr) {
             DrainAndReportEosEvent();
