@@ -42,6 +42,7 @@ constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
 constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
+constexpr string_view INPUT_VORBIS_FILE_PATH = "/data/test/media/vorbis_2c_44100hz_320k.dat";
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -139,6 +140,26 @@ bool ADecBufferDemo::RunCase(const uint8_t *data, size_t size)
     return true;
 }
 
+bool ADecBufferDemo::ConfigVorbisExtraData(OH_AVFormat *format)
+{
+    std::ifstream inputFile_(INPUT_VORBIS_FILE_PATH, std::ios::binary);
+    int64_t extradataSize;
+    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: file is not open");
+    inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
+    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == sizeof(int64_t), false,
+                                  "Fatal: read extradataSize bytes error");
+    if (extradataSize < 0) {
+        return false;
+    }
+    char buffer[extradataSize];
+    inputFile_.read(buffer, extradataSize);
+    DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == extradataSize, false, "Fatal: read extradata bytes error");
+    OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), reinterpret_cast<uint8_t *>(buffer),
+                          extradataSize);
+    inputFile_.close();
+    return true;
+}
+
 bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
 {
     int32_t channelCount = CHANNEL_COUNT;
@@ -172,6 +193,9 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
     if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
             OH_BitsPerSample::SAMPLE_S16LE);
+        if (ConfigVorbisExtraData(format)) {
+            DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
+        }
     } else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
             OH_BitsPerSample::SAMPLE_S16LE);
