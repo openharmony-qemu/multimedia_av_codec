@@ -34,6 +34,7 @@ namespace Media {
 constexpr size_t CACHE_FRAGMENT_MAX_NUM = 4;
 constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 30.0;
 constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
+constexpr double DEFAULT_RELEASE_DELAY_FACTOR = 10;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, int64_t start, int64_t end)
 {
@@ -83,7 +84,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     }
 
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
-    int64_t chunkNum = static_cast<int64_t>((totalBuffSize + chunkSize - 1) / chunkSize);
+    int64_t chunkNum = static_cast<int64_t>((totalBuffSize + chunkSize - 1) / chunkSize) + 1; // 1
     if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
         return false;
     }
@@ -114,7 +115,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
         freeChunks_.push_back(chunkInfo);
         temp += sizePerChunk;
     }
-    chunkMaxNum_ = static_cast<uint32_t>(chunkNum);
+    chunkMaxNum_ = static_cast<uint32_t>(chunkNum) - 1; // 1
     totalBuffSize_ = totalBuffSize;
     chunkSize_ = chunkSize;
     initReadSizeFactor_ = newFragmentInitChunkNum / (chunkMaxNum_ - newFragmentInitChunkNum);
@@ -513,7 +514,9 @@ void CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(const Fragment
 void CacheMediaChunkBufferImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum)
 {
     auto& fragmentCacheChunks = *fragmentIter;
-    while (fragmentCacheChunks.chunks.size() >= allowChunkNum) {
+    while (fragmentCacheChunks.chunks.size() >= allowChunkNum &&
+        fragmentCacheChunks.accessLength > static_cast<int64_t>(static_cast<double>(fragmentCacheChunks.dataLength) *
+        DEFAULT_RELEASE_DELAY_FACTOR)) {
         if (fragmentCacheChunks.accessPos != fragmentCacheChunks.chunks.begin()) {
             auto tmp = UpdateFragmentCacheForDelHead(fragmentCacheChunks);
             freeChunks_.push_back(tmp);
@@ -585,6 +588,15 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
 
 ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
 {
+    int64_t chunkNum = static_cast<int64_t>(chunkMaxNum_ + 1) - static_cast<int64_t>(freeChunks_.size());
+    if (totalReadSize_ > MAX_TOTAL_READ_SIZE && chunkNum > 0) {
+        auto preChunkSize = (MAX_TOTAL_READ_SIZE - 1) / chunkNum;
+        for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
+            iter->totalReadSize = preChunkSize * iter->chunks.size();
+        }
+        totalReadSize_ = preChunkSize * chunkNum;
+    }
+
     auto fragmentInsertPos = std::upper_bound(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(), offset,
         [](auto mediaOffset, const FragmentCacheBuffer& fragment) {
             if (mediaOffset <= fragment.offsetBegin + fragment.dataLength) {
