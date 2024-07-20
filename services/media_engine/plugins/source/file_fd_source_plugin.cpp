@@ -41,14 +41,14 @@ namespace Media {
 namespace Plugins {
 namespace FileFdSource {
 namespace {
-constexpr int FDPOS                             = 2;
+constexpr int32_t FDPOS                         = 2;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
 constexpr size_t WATER_LINE_BELOW_DEFAULT       = 5 * 1024;
 constexpr int32_t TEN_MILLISECOUNDS             = 10 * 1000;
 constexpr int32_t ONE_SECONDS                   = 1 * 1000 * 1000;
 constexpr int32_t CACHE_TIME_DEFAULT            = 5;
-constexpr int32_t SEEK_TIME_LOWER               = 5;
+constexpr int32_t SEEK_TIME_LOWER               = 20;
 constexpr int32_t SEEK_TIME_UPPER               = 1000;
 constexpr int32_t RECORD_TIME_INTERVAL          = 1 * 1000;
 constexpr int32_t MILLISECOUND_TO_SECOND        = 1 * 1000;
@@ -156,46 +156,6 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     return Status::OK;
 }
 
-Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
-{
-    if (uri.empty()) {
-        MEDIA_LOG_E("uri is empty");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
-    std::smatch fdUriMatch;
-    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
-        std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
-    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
-    fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
-    FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
-    fileSize_ = GetFileSize(fd_);
-    if (fdUriMatch.size() == 4) { // 4：4 sub match
-        offset_ = std::stoll(fdUriMatch[2].str()); // 2: sub match offset subscript
-        if (static_cast<uint64_t>(offset_) > fileSize_) {
-            offset_ = fileSize_;
-        }
-        size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
-        uint64_t remainingSize = fileSize_ - offset_;
-        if (size_ > remainingSize) {
-            size_ = remainingSize;
-        }
-    } else {
-        size_ = fileSize_;
-        offset_ = 0;
-    }
-    position_ = offset_;
-    seekable_ = FileSystem::IsSeekable(fd_) ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
-    if (seekable_ == Seekable::SEEKABLE) {
-        NOK_LOG(SeekTo(0));
-    }
-    MEDIA_LOG_D("Fd: " PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64 ", size: " PUBLIC_LOG_U64, fd_, offset_, size_);
-    return Status::OK;
-}
-
 Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     return Read(0, buffer, offset, expectedLen);
@@ -243,20 +203,13 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         }
     }
 
-    // ringbuffer 0 after seek in 5ms, don't notify buffering
+    // ringbuffer 0 after seek in 50ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
     if (isReadFrame_ && ringBufferSize_ < WATER_LINE_BELOW_DEFAULT &&
         (GetLastSize(position_) > WATER_LINE_BELOW_DEFAULT)) {
-        MEDIA_LOG_I("ringBufferSize_ " PUBLIC_LOG_U64, ringBufferSize_);
-        if (lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
-            curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER) {
-            NotifyBufferingStart();
-            lastReadTime_ = 0;
-        } else {
-            if (lastReadTime_ != 0) {
-                lastReadTime_ = curReadTime_;
-            }
-        }
+        MEDIA_LOG_I("ringBufferSize_ " PUBLIC_LOG_U64 " curReadTime_ " PUBLIC_LOG_U64
+            " lastReadTime_ " PUBLIC_LOG_U64, ringBufferSize_, curReadTime_, lastReadTime_);
+        CheckReadTime();
         return Status::ERROR_AGAIN;
     }
 
@@ -272,8 +225,9 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
             MEDIA_LOG_I("ReadCloud END_OF_STREAM");
             return Status::END_OF_STREAM;
         }
-        NotifyBufferingStart();
-        return Status::ERROR_AGAIN;
+        MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
+            PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position_);
+        return Status::OK;
     }
     bufData->UpdateDataSize(size);
     MEDIA_LOG_I("position_ " PUBLIC_LOG_U64, position_);
@@ -351,6 +305,46 @@ Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
     return Status::OK;
 }
 
+Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
+{
+    if (uri.empty()) {
+        MEDIA_LOG_E("uri is empty");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    MEDIA_LOG_I("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
+    std::smatch fdUriMatch;
+    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
+        std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
+    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
+    fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
+    FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
+    fileSize_ = GetFileSize(fd_);
+    if (fdUriMatch.size() == 4) { // 4：4 sub match
+        offset_ = std::stoll(fdUriMatch[2].str()); // 2: sub match offset subscript
+        if (static_cast<uint64_t>(offset_) > fileSize_) {
+            offset_ = fileSize_;
+        }
+        size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
+        uint64_t remainingSize = fileSize_ - offset_;
+        if (size_ > remainingSize) {
+            size_ = remainingSize;
+        }
+    } else {
+        size_ = fileSize_;
+        offset_ = 0;
+    }
+    position_ = offset_;
+    seekable_ = FileSystem::IsSeekable(fd_) ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
+    if (seekable_ == Seekable::SEEKABLE) {
+        NOK_LOG(SeekTo(0));
+    }
+    MEDIA_LOG_I("Fd: " PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64 ", size: " PUBLIC_LOG_U64, fd_, offset_, size_);
+    return Status::OK;
+}
+
 void FileFdSourcePlugin::CacheDataLoop()
 {
     if (isInterrupted_) {
@@ -366,7 +360,7 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     //Same with Http
     size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_)));
-    if (bufferSize == 0 || bufferSize > PER_CACHE_SIZE) {
+    if (bufferSize < 0) {
         MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
         usleep(TEN_MILLISECOUNDS);
         return;
@@ -388,7 +382,7 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     // fd read success
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
-        MEDIA_LOG_I("CacheData ringbuffer is full wait 10ms");
+        MEDIA_LOG_I("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
             DeleteCacheBuffer(cacheBuffer);
             return;
@@ -518,7 +512,7 @@ void FileFdSourcePlugin::NotifyBufferingStart()
 
 void FileFdSourcePlugin::NotifyBufferingPercent()
 {
-    MEDIA_LOG_I("NotifyBufferingUpdate in.");
+    MEDIA_LOG_I("NotifyBufferingPercent in.");
     if (waterLineAbove_ != 0) {
         auto bp = ringBufferSize_ / waterLineAbove_ * PERCENT_100;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
@@ -596,15 +590,6 @@ void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-Status FileFdSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
-{
-    MEDIA_LOG_I("SetReadBlockingFlag in");
-    if (ringBuffer_ != nullptr) {
-        ringBuffer_->SetReadBlocking(isReadBlockingAllowed);
-    }
-    return Status::OK;
-}
-
 Status FileFdSourcePlugin::GetSize(uint64_t& size)
 {
     size = size_;
@@ -676,7 +661,7 @@ void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
             duration, avgDownloadSpeed_);
         downloadSize_ = 0;
         lastCheckTime_ = curTime;
-        if (currentBitRate_ != 0) {
+        if (currentBitRate_ > 0) {
             UpdateWaterLineAbove();
         }
     }
@@ -685,7 +670,7 @@ void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
 void FileFdSourcePlugin::UpdateWaterLineAbove()
 {
     MEDIA_LOG_I("UpdateWaterLineAbove");
-    if (currentBitRate_ != 0) {
+    if (currentBitRate_ > 0) {
         float cacheTime = GetCacheTime(avgDownloadSpeed_ / currentBitRate_);
         MEDIA_LOG_I("cacheTime: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F
             "currentBitRate: " PUBLIC_LOG_D32, cacheTime, avgDownloadSpeed_, currentBitRate_);
@@ -718,6 +703,18 @@ void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
     }
 }
 
+void FileFdSourcePlugin::CheckReadTime()
+{
+    if (lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
+        curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER) {
+        NotifyBufferingStart();
+        lastReadTime_ = 0;
+    } else {
+        if (lastReadTime_ == 0) {
+            lastReadTime_ = curReadTime_;
+        }
+    }
+}
 } // namespace FileFdSource
 } // namespace Plugin
 } // namespace Media

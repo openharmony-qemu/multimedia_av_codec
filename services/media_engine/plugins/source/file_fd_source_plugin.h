@@ -52,7 +52,6 @@ public:
     void SetBundleName(const std::string& bundleName) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
     void SetInterruptState(bool isInterruptNeeded) override;
-    Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void NotifyBufferingStart();
     void NotifyBufferingPercent();
     void NotifyBufferingEnd();
@@ -77,7 +76,8 @@ private:
     float GetCacheTime(float num);
     void UpdateWaterLineAbove();
     void DeleteCacheBuffer(char* buffer);
-
+    void CheckReadTime();
+    
     int32_t fd_ {-1};
     int64_t offset_ {0};
     uint64_t size_ {0};
