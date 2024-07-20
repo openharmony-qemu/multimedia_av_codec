@@ -764,7 +764,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_001, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
 }
 
 /**
@@ -779,7 +779,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_002, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
 }
 
 /**
@@ -803,9 +803,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_003, TestSize.Level1)
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
-        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Start());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format));
     }
 }
 
@@ -828,9 +828,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_004, TestSize.Level1)
 
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Start());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
 }
 
@@ -856,9 +856,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_005, TestSize.Level1)
     if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Start());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format));
     }
 }
 
@@ -883,7 +883,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_006, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
 }
 
@@ -910,7 +910,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_007, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format));
     }
 }
 
@@ -935,7 +935,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_008, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
 }
 
@@ -991,7 +991,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_009, TestSize.Level1)
 
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format));
     }
 }
 
@@ -1045,7 +1045,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_010, TestSize.Level1)
 
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     } else {
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
 }
 
@@ -1065,7 +1065,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_011, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
 
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
 }
 
 /**
@@ -1086,7 +1086,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_012, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
 
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format));
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format));
 }
 
 #ifdef HMOS_TEST
@@ -1109,7 +1109,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_013, TestSize.Level1)
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Start());
     }
 }
 
@@ -1133,7 +1133,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_014, TestSize.Level1)
 
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AV_ERR_INVALID_STATE, videoDec_->Start());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Start());
     }
 }
 
@@ -1156,7 +1156,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_015, TestSize.Level1)
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Prepare());
     }
 }
 
@@ -1230,7 +1230,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_017, TestSize.Level1)
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
 
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
 }
 
@@ -1250,7 +1250,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_018, TestSize.Level1)
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
             OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-        ASSERT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoDec_->Configure(format_));
     }
 }
 #endif // HMOS_TEST
