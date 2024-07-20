@@ -44,6 +44,18 @@ Status CodecCapabilityAdapter::GetAvailableEncoder(std::vector<MediaAVCodec::Cap
     return Status::OK;
 }
 
+Status CodecCapabilityAdapter::IsWatermarkSupported(bool &isWatermarkSupported)
+{
+    MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(
+        Tag::FEATURE_VIDEO_WATERMARK, true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
+    if (!capabilityData) {
+        isWatermarkSupported = true; // TODO:: need check,now mock
+    } else {
+        MEDIA_LOG_E("get watermark support capability failed");
+    }
+    return Status::OK;
+}
+
 Status CodecCapabilityAdapter::GetAudioEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo)
 {
     MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(

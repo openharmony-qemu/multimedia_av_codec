@@ -169,6 +169,31 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
     return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
 }
 
+Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta,
+    const std::shared_ptr<AVBuffer> &waterMarkBuffer)
+{
+    MEDIA_LOG_I("Configure");
+    MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Configure");
+    MediaAVCodec::Format format = MediaAVCodec::Format();
+    ConfigureGeneralFormat(format, meta);
+    ConfigureAboutRGBA(format, meta);
+    ConfigureAboutEnableTemporalScale(format, meta);
+    if (meta->Find(Tag::VIDEO_ENABLE_WATERMARK) != meta->end()) {
+        bool isWatermarkSupported = false;
+        meta->Get<Tag::VIDEO_ENABLE_WATERMARK>(isWatermarkSupported);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::VIDEO_ENABLE_WATERMARK, isWatermarkSupported);
+    }
+    if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::Configure, CodecServer is null");
+        return Status::ERROR_UNKNOWN;
+    }
+    int32_t ret = codecServer_->Configure(format, waterMarkBuffer);
+    if (ret != 0) {
+        SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
+    }
+    return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
+}
+
 Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
 {
     MEDIA_LOG_I("SetOutputBufferQueue");

@@ -52,6 +52,7 @@ public:
 public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Configure(const std::shared_ptr<Meta> &meta);
+    Status Configure(const std::shared_ptr<Meta> &meta, std::shared_ptr<AVBuffer> &waterMarkBuffer);
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
     Status SetInputSurface(sptr<Surface> surface);
