@@ -60,6 +60,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/ipc",
     "$av_codec_root_dir/services/services/codec/server",
+    "$av_codec_root_dir/services/services/codec/server/post_processing",
     "$av_codec_root_dir/services/services/codeclist/ipc",
     "$av_codec_root_dir/services/services/codeclist/server",
     "$av_codec_root_dir/services/services/common",
@@ -134,6 +135,9 @@ ohos_shared_library("av_codec_service") {
       "codec/server/codec_param_checker.cpp",
       "codec/server/codec_server.cpp",
       "codec/server/temporal_scalability.cpp",
+      "codec/server/post_processing/dynamic_controller.cpp",
+      "codec/server/post_processing/state_machine.cpp",
+      "codec/server/post_processing/dynamic_interface.cpp",
     ]
   }
   if (av_codec_support_codeclist) {
