@@ -17,11 +17,11 @@
 #define HISTREAMER_HTTP_CURL_CLIENT_H
 
 #include <string>
+#include <list>
 #include "network_client.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
 #include "syspara/parameter.h"
-#include <list>
 
 namespace OHOS {
 namespace Media {
