@@ -35,6 +35,7 @@ constexpr size_t CACHE_FRAGMENT_MAX_NUM = 4;
 constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 30.0;
 constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
 constexpr double DEFAULT_RELEASE_DELAY_FACTOR = 10;
+constexpr double TO_PERCENT = 100;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, int64_t start, int64_t end)
 {
@@ -516,7 +517,7 @@ void CacheMediaChunkBufferImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterato
     auto& fragmentCacheChunks = *fragmentIter;
     while (fragmentCacheChunks.chunks.size() >= allowChunkNum &&
         fragmentCacheChunks.accessLength > static_cast<int64_t>(static_cast<double>(fragmentCacheChunks.dataLength) *
-        DEFAULT_RELEASE_DELAY_FACTOR)) {
+        DEFAULT_RELEASE_DELAY_FACTOR / TO_PERCENT)) {
         if (fragmentCacheChunks.accessPos != fragmentCacheChunks.chunks.begin()) {
             auto tmp = UpdateFragmentCacheForDelHead(fragmentCacheChunks);
             freeChunks_.push_back(tmp);
