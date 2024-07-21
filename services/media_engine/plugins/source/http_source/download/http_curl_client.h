@@ -20,7 +20,7 @@
 #include "network_client.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
-#include "parameter.h"
+#include "syspara/parameter.h"
 #include <list>
 
 namespace OHOS {
