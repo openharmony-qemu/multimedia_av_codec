@@ -1250,8 +1250,8 @@ int32_t CodecServer::ReleaseOutputBufferOfPostProcessing(uint32_t index, bool re
 
 int32_t CodecServer::GetPostProcessingOutputFormat(Format& format)
 {
-    auto ret = postProcessing_->GetOutputFormat(format);
-    return ret;
+    postProcessing_->GetOutputFormat(format);
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuffer> buffer)
