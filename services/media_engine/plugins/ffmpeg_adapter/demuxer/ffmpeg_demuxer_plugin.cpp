@@ -950,7 +950,7 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, boo
             *(pkt->data + pkt->size) = '\0';
             (*vttPkt)->data = pkt->data;
         }
-        pkt == nullptr;
+        pkt = nullptr;
         return true;
     } else {
         pkt->duration = pkt->pts - (*vttPkt)->pts;

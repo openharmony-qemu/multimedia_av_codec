@@ -137,7 +137,7 @@ private:
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status ParserBoxInfo();
     Status ParserFirstDts();
-    bool WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead)
+    bool WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead);
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;

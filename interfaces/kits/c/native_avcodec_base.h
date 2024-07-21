@@ -261,7 +261,7 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
 extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 
 /**
- * @brief Enumerates the MIME type of subtitle webvtt.
+ * @brief Enumerates the mime type of subtitle webvtt.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
@@ -638,7 +638,9 @@ typedef enum OH_MediaType {
     MEDIA_TYPE_AUD = 0,
     /* track is video. */
     MEDIA_TYPE_VID = 1,
-    /* track is subtitle. */
+    /** track is subtitle.
+     * @since 12
+     */
     MEDIA_TYPE_SUBTITLE = 2,
 } OH_MediaType;
 
