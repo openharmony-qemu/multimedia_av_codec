@@ -134,10 +134,10 @@ ohos_shared_library("av_codec_service") {
       "codec/server/codec_factory.cpp",
       "codec/server/codec_param_checker.cpp",
       "codec/server/codec_server.cpp",
-      "codec/server/temporal_scalability.cpp",
       "codec/server/post_processing/dynamic_controller.cpp",
-      "codec/server/post_processing/state_machine.cpp",
       "codec/server/post_processing/dynamic_interface.cpp",
+      "codec/server/post_processing/state_machine.cpp",
+      "codec/server/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_codeclist) {
