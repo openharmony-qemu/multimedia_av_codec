@@ -56,7 +56,7 @@ void VideoEncoderSample::BufferInputThread()
     auto &info = *context_->sampleInfo;
     while (true) {
         auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
-        CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
+        CHECK_AND_CONTINUE_LOG(bufferInfoOpt != std::nullopt, "Buffer queue is empty, try dequeue again");
         auto &bufferInfo = bufferInfoOpt.value();
 
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
@@ -122,7 +122,7 @@ void VideoEncoderSample::OutputThread()
     auto &info = *context_->sampleInfo;
     while (true) {
         auto bufferInfoOpt = context_->outputBufferQueue.DequeueBuffer();
-        CHECK_AND_CONTINUE(bufferInfoOpt != std::nullopt);
+        CHECK_AND_CONTINUE_LOG(bufferInfoOpt != std::nullopt, "Buffer queue is empty, try dequeue again");
         auto &bufferInfo = bufferInfoOpt.value();
         AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->outputBufferQueue.GetFrameCount(),
