@@ -1461,5 +1461,28 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, opusGetOutputDescription_01, TestSize.L
     EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioEnc_));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
 }
+
+HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_normalcase_g711mu, TestSize.Level1)
+{
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    InitFile(AudioBufferFormatType::TYPE_G711MU);
+    CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU);
+    format = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format));
+    OH_AVFormat_Destroy(format);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
+}
 }
 }

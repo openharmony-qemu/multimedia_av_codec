@@ -29,11 +29,11 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "DataP
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t DataProducerBase::Init(SampleInfo &info)
+int32_t DataProducerBase::Init(const std::shared_ptr<SampleInfo> &info)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     sampleInfo_ = info;
-    inputFile_ = std::make_unique<std::ifstream>(sampleInfo_.inputFilePath.data(), std::ios::binary | std::ios::in);
+    inputFile_ = std::make_unique<std::ifstream>(sampleInfo_->inputFilePath.data(), std::ios::binary | std::ios::in);
     CHECK_AND_RETURN_RET_LOG(inputFile_->is_open(), AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
 
     return AVCODEC_SAMPLE_ERR_OK;
@@ -41,7 +41,7 @@ int32_t DataProducerBase::Init(SampleInfo &info)
 
 int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
 {
-    if ((frameCount_ >= sampleInfo_.maxFrames || IsEOS()) && !Repeat()) {
+    if ((frameCount_ >= sampleInfo_->maxFrames || IsEOS()) && !Repeat()) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
@@ -50,10 +50,12 @@ int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Fill buffer failed");
     DumpInput(bufferInfo);
 
-    bufferInfo.attr.pts = frameCount_ *
-        ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
+    if (bufferInfo.attr.pts == 0) {
+        bufferInfo.attr.pts = frameCount_ *
+            ((sampleInfo_->frameInterval <= 0) ? 1 : sampleInfo_->frameInterval) * 1000; // 1000: 1ms to us
+    }
     frameCount_++;
-    PrintProgress(sampleInfo_.sampleRepeatTimes, frameCount_);
+    PrintProgress(sampleInfo_->sampleRepeatTimes, frameCount_);
     return ret;
 }
 
@@ -68,7 +70,7 @@ inline int32_t DataProducerBase::Seek(int64_t position)
 
 bool DataProducerBase::Repeat()
 {
-    if (--sampleInfo_.sampleRepeatTimes < 0) {
+    if (--sampleInfo_->sampleRepeatTimes < 0) {
         return false;
     }
 
@@ -76,22 +78,22 @@ bool DataProducerBase::Repeat()
 
     int32_t ret = Seek(0);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, false, "Seek failed");
-    AVCODEC_LOGI("Seek input file to head, repeat times left: %{public}u", sampleInfo_.sampleRepeatTimes);
+    AVCODEC_LOGI("Seek input file to head, repeat times left: %{public}u", sampleInfo_->sampleRepeatTimes);
     return true;
 }
 
 void DataProducerBase::DumpInput(const CodecBufferInfo &bufferInfo)
 {
-    CHECK_AND_RETURN(sampleInfo_.needDumpInput);
+    CHECK_AND_RETURN(sampleInfo_->needDumpInput);
 
     if (inputDumpFile_ == nullptr) {
         using namespace std::string_literals;
 
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         std::string inputFileName;
-        if (sampleInfo_.codecType & 0b10) {  // 0b10: Video encoder mask
-            inputFileName = "VideoEncoderIn_"s + ToString(sampleInfo_.pixelFormat) + "_" +
-                std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
+        if (sampleInfo_->codecType & 0b10) {  // 0b10: Video encoder mask
+            inputFileName = "VideoEncoderIn_"s + ToString(sampleInfo_->pixelFormat) + "_" +
+                std::to_string(sampleInfo_->videoWidth) + "_" + std::to_string(sampleInfo_->videoHeight) + "_" +
                 std::to_string(time) + ".yuv";
         } else {
             inputFileName = "VideoDecoderIn_"s + std::to_string(time) + ".bin";
@@ -109,7 +111,7 @@ void DataProducerBase::DumpInput(const CodecBufferInfo &bufferInfo)
     if (bufferInfo.bufferAddr != nullptr) {
         bufferAddr = bufferInfo.bufferAddr;
     } else {
-        bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
+        bufferAddr = static_cast<uint8_t>(sampleInfo_->codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
                         OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
                         OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
     }
@@ -118,10 +120,10 @@ void DataProducerBase::DumpInput(const CodecBufferInfo &bufferInfo)
     inputDumpFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }
 
-std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const DataProducerInfo &info)
+std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const DataProducerType &type)
 {
     std::shared_ptr<DataProducerBase> dataProducer;
-    switch (info.dataProducerType) {
+    switch (type) {
         case DATA_PRODUCER_TYPE_DEMUXER:
             dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<Demuxer>());
             break;
@@ -132,7 +134,7 @@ std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(const 
             dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<RawdataReader>());
             break;
         default:
-            AVCODEC_LOGE("Not supported data producer, type: %{public}d", info.dataProducerType);
+            AVCODEC_LOGE("Not supported data producer, type: %{public}d", type);
             dataProducer = nullptr;
     }
 

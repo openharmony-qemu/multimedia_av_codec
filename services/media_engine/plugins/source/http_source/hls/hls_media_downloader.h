@@ -84,7 +84,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
-
+    Status SetCurrentBitRate(int32_t bitRate) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
@@ -113,6 +113,9 @@ private:
     void ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t* writeDataPoint);
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
+    void HandleCachedDuration();
+    int32_t GetWaterLineAbove();
+    void CaculateBitRate(size_t fragmentSize, double duration);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -213,16 +216,19 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
-    unsigned int wantReadLenth_ {0};
+    unsigned int waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
-    unsigned int bufferingTimes_ {0};
     bool isBufferEnough_ {true};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
     bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
+
+    int32_t currentBitRate_ {0};
+    int32_t fragmentBitRate_ {0};
+    uint64_t lastDurationReacord_ {0};
 };
 }
 }

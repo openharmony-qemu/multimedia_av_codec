@@ -267,12 +267,17 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
-        MEDIA_LOG_I("Gallery read freeze.");
+        MEDIA_LOG_I("Buffering start or end.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
         MEDIA_LOG_I("source bitrate start from source.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::CACHED_DURATION) {
+        MEDIA_LOG_I("Onevent cached duration.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
