@@ -52,6 +52,7 @@ constexpr int32_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int SECOND_TO_MILLIONSECOND = 1000;
+constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -290,6 +291,7 @@ bool HlsMediaDownloader::HandleBuffering()
     isBufferEnough_ = false;
     bool isDownloadComplete = false;
     while (!isInterrupt_) {
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
         if (buffer_->GetSize() >= waterLineAbove_) {
             isBufferEnough_ = true;
             isBuffering_ = false;
@@ -318,6 +320,7 @@ bool HlsMediaDownloader::HandleBuffering()
         MEDIA_LOG_I("Playing start");
     } else {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
     MEDIA_LOG_I("HandleBuffering end.");
@@ -330,6 +333,7 @@ bool HlsMediaDownloader::HandleCache()
     if (!isBuffering_) {
         MEDIA_LOG_I("DownloadTask start.");
         isBuffering_ = true;
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
         callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
         return true;
     }
@@ -1144,6 +1148,37 @@ void HlsMediaDownloader::HandleCachedDuration()
         MEDIA_LOG_I("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
+    }
+}
+
+void HlsMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
+{
+    if (waterLineAbove_ == 0 || callback_ == nullptr) {
+        MEDIA_LOG_E("UpdateCachedPercent: ERROR");
+        return;
+    }
+    if (infoType == BufferingInfoType::BUFFERING_START) {
+        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {0}, "buffer percent"}); // 0
+        lastCachedSize_ = 0;
+        return;
+    }
+    if (infoType == BufferingInfoType::BUFFERING_END) {
+        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {100}, "buffer percent"}); // 100
+        lastCachedSize_ = 0;
+        return;
+    }
+    if (infoType != BufferingInfoType::BUFFERING_PERCENT) {
+        return;
+    }
+    int32_t bufferSize = static_cast<int32_t>(buffer_->GetSize());
+    if (bufferSize < lastCachedSize_) {
+        return;
+    }
+    int32_t deltaSize = bufferSize - lastCachedSize_;
+    if (deltaSize >= UPDATE_CACHE_STEP) {
+        int percent = (bufferSize >= waterLineAbove_) ? 100 : bufferSize * 100 / waterLineAbove_; // 100
+        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
+        lastCachedSize_ = bufferSize;
     }
 }
 }

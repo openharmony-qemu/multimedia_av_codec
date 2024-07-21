@@ -26,6 +26,7 @@
 #include "osal/task/task.h"
 #include "common/media_source.h"
 #include <unistd.h>
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -116,6 +117,7 @@ private:
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
+    void UpdateCachedPercent(BufferingInfoType infoType);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -229,6 +231,7 @@ private:
     int32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
+    int32_t lastCachedSize_ {0};
 };
 }
 }

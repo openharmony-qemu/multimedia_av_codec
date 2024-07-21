@@ -52,6 +52,7 @@ constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int32_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
+constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -916,6 +917,36 @@ void HttpMediaDownloader::HandleCachedDuration()
         MEDIA_LOG_I("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
+    }
+}
+void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
+{
+    if (waterLineAbove_ == 0 || callback_ == nullptr) {
+        MEDIA_LOG_E("UpdateCachedPercent: ERROR");
+        return;
+    }
+    if (infoType == BufferingInfoType::BUFFERING_START) {
+        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {0}, "buffer percent"}); // 0
+        lastCachedSize_ = 0;
+        return;
+    }
+    if (infoType == BufferingInfoType::BUFFERING_END) {
+        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {100}, "buffer percent"}); // 100
+        lastCachedSize_ = 0;
+        return;
+    }
+    if (infoType != BufferingInfoType::BUFFERING_PERCENT) {
+        return;
+    }
+    int32_t bufferSize = static_cast<int32_t>(GetCurrentBufferSize());
+    if (bufferSize < lastCachedSize_) {
+        return;
+    }
+    int32_t deltaSize = bufferSize - lastCachedSize_;
+    if (deltaSize >= UPDATE_CACHE_STEP) {
+        int percent = (bufferSize >= waterLineAbove_) ? 100 : bufferSize * 100 / waterLineAbove_; // 100
+        callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
+        lastCachedSize_ = bufferSize;
     }
 }
 }
