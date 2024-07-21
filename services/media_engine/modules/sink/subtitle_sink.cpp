@@ -248,7 +248,6 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer_->memory_->GetAddr()),
                              filledOutputBuffer_->memory_->GetSize());
     SubtitleInfo subtitleInfo{ subtitleText, filledOutputBuffer_->pts_, filledOutputBuffer_->duration_ };
-    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer_);
     {
         std::unique_lock<std::mutex> lock(mutex_);
         subtitleInfoVec_.push_back(subtitleInfo);
@@ -262,7 +261,7 @@ void SubtitleSink::RenderLoop()
         std::unique_lock<std::mutex> lock(mutex_);
         updateCond_.wait(lock, [this] {
             return isThreadExit_.load() ||
-                   (subtitleInfoVec_.size() > currentInfoIndex_ && state_ == Pipeline::FilterState::RUNNING);
+                   (subtitleInfoVec_.size() > 0 && state_ == Pipeline::FilterState::RUNNING);
         });
         if (isFlush_) {
             MEDIA_LOG_I("SubtitleSink RenderLoop flush");
