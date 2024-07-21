@@ -63,7 +63,7 @@ private:
     Status ReadRetry(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     Status HandleReadHeader(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
     Status HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
-    void CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer);
+    Status CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer);
 private:
     std::map<int32_t, CacheData> cacheDataMap_;
     uint64_t position_;

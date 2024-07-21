@@ -331,7 +331,8 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     }
     Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
     if (ret == Status::OK) {
-        CheckChangeStreamID(streamID, buffer);
+        Status result = CheckChangeStreamID(streamID, buffer);
+        FALSE_RETURN_V(result == Status::OK, result);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return ret;
     }
@@ -342,7 +343,7 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     return ret;
 }
 
-void StreamDemuxer::CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer)
+Status StreamDemuxer::CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer)
 {
     if (IsDash()) {
         if (buffer != nullptr && buffer->streamID != streamID) {
@@ -353,8 +354,12 @@ void StreamDemuxer::CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer
             } else if (GetNewSubtitleStreamID() == streamID) {
                 SetNewSubtitleStreamID(buffer->streamID);
             } else {}
+            MEDIA_LOG_I("Demuxer parse dash change, oldStreamID = " PUBLIC_LOG_D32
+                ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
+            return Status::END_OF_STREAM;
         }
     }
+    return Status::OK;
 }
 
 Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
@@ -363,7 +368,8 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
     if (ret == Status::OK) {
-        CheckChangeStreamID(streamID, buffer);
+        Status result = CheckChangeStreamID(streamID, buffer);
+        FALSE_RETURN_V(result == Status::OK, result);
         DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
         if (buffer != nullptr && buffer->GetMemory() != nullptr &&

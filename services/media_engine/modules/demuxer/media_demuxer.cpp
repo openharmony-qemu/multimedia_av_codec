@@ -854,16 +854,18 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
     // same streamID
     Status ret = DoSelectTrack(trackId, curTrackId);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "DoSelectTrack track error.");
-    if (trackType == TrackType::TRACK_AUDIO) {
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
-        audioTrackId_ = trackId;
-    } else if (trackType == TrackType::TRACK_VIDEO) {
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, trackId});
-        videoTrackId_ = trackId;
-    } else if (trackType == TrackType::TRACK_SUBTITLE) {
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, trackId});
-        subtitleTrackId_ = trackId;
-    } else {}
+    if (eventReceiver_ != nullptr) {
+        if (trackType == TrackType::TRACK_AUDIO) {
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
+            audioTrackId_ = trackId;
+        } else if (trackType == TrackType::TRACK_VIDEO) {
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, trackId});
+            videoTrackId_ = trackId;
+        } else if (trackType == TrackType::TRACK_SUBTITLE) {
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, trackId});
+            subtitleTrackId_ = trackId;
+        } else {}
+    }
     return Status::OK;
 }
 
@@ -906,13 +908,15 @@ Status MediaDemuxer::HandleSelectTrack(int32_t trackId)
 
     Status ret = DoSelectTrack(trackId, curTrackId);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "DoSelectTrack track error.");
-    if (trackType == TrackType::TRACK_AUDIO) {
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
-        audioTrackId_ = trackId;
-    } else if (trackType == TrackType::TRACK_VIDEO) {
-        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, trackId});
-        videoTrackId_ = trackId;
-    } else {}
+    if (eventReceiver_ != nullptr) {
+        if (trackType == TrackType::TRACK_AUDIO) {
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
+            audioTrackId_ = trackId;
+        } else if (trackType == TrackType::TRACK_VIDEO) {
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, trackId});
+            videoTrackId_ = trackId;
+        } else {}
+    }
     
     return ret;
 }
