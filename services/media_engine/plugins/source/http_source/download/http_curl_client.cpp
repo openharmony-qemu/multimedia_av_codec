@@ -52,7 +52,7 @@ std::string ToString(const std::list<std::string> &lists, char tab)
 std::string GetSystemParam(const std::string &key)
 {
     char value[MAX_LEN] = {0};
-    int32_t ret = GetParamer(key.c_str(), "", value, MAX_LEN);
+    int32_t ret = GetParameter(key.c_str(), "", value, MAX_LEN);
     if (ret < 0) {
         return "";
     }
