@@ -212,7 +212,7 @@ Status VideoDecoderAdapter::Release()
     MEDIA_LOG_I_SHORT("Release enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Release();
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE; 
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
 void VideoDecoderAdapter::ResetRenderTime()
