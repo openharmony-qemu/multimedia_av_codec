@@ -26,7 +26,6 @@
 #include "codecbase.h"
 #include "meta/format.h"
 #include "media_description.h"
-#include "configuration.h"
 #include "controller.h"
 #include "dynamic_controller.h"
 #include "state_machine.h"
@@ -350,6 +349,21 @@ private:
         format.PutIntValue(keyPixelFormat, config_.outputPixelFormat);
         return controller_->Configure(format);
     }
+
+    struct Configuration {
+        int32_t width;
+        int32_t height;
+        int32_t inputColorSpaceType;
+        int32_t inputMetadataType;
+        int32_t inputPixelFormat;
+        sptr<Surface> inputSurface;
+        int32_t outputColorSpaceType;
+        int32_t outputMetadataType;
+        int32_t outputPixelFormat;
+        sptr<Surface> outputSurface;
+        int32_t rotation;
+        int32_t scalingMode;
+    };
 
     StateMachine state_;
     Configuration config_;
