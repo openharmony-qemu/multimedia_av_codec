@@ -1250,7 +1250,7 @@ int32_t CodecServer::ReleaseOutputBufferOfPostProcessing(uint32_t index, bool re
 
 int32_t CodecServer::GetPostProcessingOutputFormat(Format& format)
 {
-    ret = postProcessing_->GetOutputFormat(format);
+    auto ret = postProcessing_->GetOutputFormat(format);
     return ret;
 }
 
