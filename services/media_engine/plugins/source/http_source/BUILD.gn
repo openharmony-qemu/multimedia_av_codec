@@ -47,6 +47,7 @@ config("http_source_plugin_config") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
+    "//base/startup/init/interfaces/innerkits/include",
     "//third_party/curl/include",
     "//third_party/openssl/include",
   ]
