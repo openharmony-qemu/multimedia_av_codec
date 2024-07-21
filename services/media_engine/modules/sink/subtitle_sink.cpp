@@ -47,6 +47,14 @@ SubtitleSink::~SubtitleSink()
         readThread_->join();
         readThread_ = nullptr;
     }
+
+    if (inputBufferQueueProducer_ != nullptr) {
+        for (auto &buffer : inputBufferVector_) {
+            inputBufferQueueProducer_->DetachBuffer(buffer);
+        }
+        inputBufferVector_.clear();
+        inputBufferQueueProducer_->SetQueueSize(0);
+    }
 }
 
 void SubtitleSink::NotifySeek()
@@ -188,15 +196,40 @@ Status SubtitleSink::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
-    int inputBufferSize = 1;
+    int32_t inputBufferNum = 1;
+    int32_t capacity = 1024;
     MemoryType memoryType = MemoryType::SHARED_MEMORY;
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
 #endif
     MEDIA_LOG_I("PrepareInputBufferQueue");
-    inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    if (inputBufferQueue_ == nullptr) {
+        inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    }
+    FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN, "inputBufferQueue_ is nullptr");
+
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
+
+    for (int i = 0; i < inputBufferNum; i++) {
+        std::shared_ptr<AVAllocator> avAllocator;
+#ifndef MEDIA_OHOS
+        MEDIA_LOG_D("CreateVirtualAllocator,i=%{public}d capacity=%{public}d", i, capacity);
+        avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+#else
+        MEDIA_LOG_D("CreateSharedAllocator,i=%{public}d capacity=%{public}d", i, capacity);
+        avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+#endif
+        std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+        FALSE_RETURN_V_MSG_E(inputBuffer != nullptr, Status::ERROR_UNKNOWN,
+                             "inputBuffer is nullptr");
+        FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_UNKNOWN,
+                             "inputBufferQueueProducer_ is nullptr");
+        inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
+        MEDIA_LOG_I("Attach intput buffer. index: %{public}d, bufferId: %{public}" PRIu64,
+            i, inputBuffer->GetUniqueId());
+        inputBufferVector_.push_back(inputBuffer);
+    }
     return Status::OK;
 }
 
@@ -238,7 +271,7 @@ void SubtitleSink::RenderLoop()
         }
         FALSE_RETURN(!isThreadExit_.load());
         // wait timeout, seek or stop
-        SubtitleInfo tempSubtitleInfo = subtitleInfoVec_.at(currentInfoIndex_);
+        SubtitleInfo tempSubtitleInfo = subtitleInfoVec_.back();
         SubtitleInfo subtitleInfo{ tempSubtitleInfo.text_, tempSubtitleInfo.pts_, tempSubtitleInfo.duration_ };
         int64_t waitTime = CalcWaitTime(subtitleInfo);
         updateCond_.wait_for(lock, std::chrono::microseconds(waitTime),
