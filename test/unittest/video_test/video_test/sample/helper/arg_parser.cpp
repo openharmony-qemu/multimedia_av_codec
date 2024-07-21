@@ -23,6 +23,7 @@ using namespace OHOS::MediaAVCodec::Sample;
 enum DemoArgumentType : int {
     DEMO_ARG_UNKNOW = 0,
     DEMO_ARG_HELP,
+    DEMO_ARG_SAMPLE_TYPE,
     DEMO_ARG_CODEC_TYPE,
     DEMO_ARG_INPUT_FILE,
     DEMO_ARG_OUTPUT_FILE,
@@ -33,11 +34,12 @@ enum DemoArgumentType : int {
     DEMO_ARG_PIXEL_FORMAT,
     DEMO_ARG_BITRATE,
     DEMO_ARG_BITRATE_MODE,
+    DEMO_ARG_VIDEO_PROFILE,
     DEMO_ARG_CODEC_RUN_MODE,
     DEMO_ARG_FRAME_INTERVAL,
+    DEMO_ARG_I_FRAME_INTERVAL,
     DEMO_ARG_SAMPLE_REPEAT_TIMES,
     DEMO_ARG_DEMO_REPEAT_TIMES,
-    DEMO_ARG_HDR_VIVID_VIDEO,
     DEMO_ARG_NEED_DUMP_INPUT,
     DEMO_ARG_NEED_DUMP_OUTPUT,
     DEMO_ARG_MAX_FRAMES,
@@ -48,10 +50,12 @@ enum DemoArgumentType : int {
     DEMO_ARG_THREAD_SLEEP_MODE,
     DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER,
     DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,
+    DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,
     DEMO_ARG_END,
 };
 
 const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_STRING = {
+    {DEMO_ARG_SAMPLE_TYPE,                      "sample_type"},
     {DEMO_ARG_CODEC_TYPE,                       "codec_type"},
     {DEMO_ARG_INPUT_FILE,                       "input_file"},
     {DEMO_ARG_OUTPUT_FILE,                      "output_file"},
@@ -62,11 +66,12 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_PIXEL_FORMAT,                     "pixel_format"},
     {DEMO_ARG_BITRATE,                          "bitrate"},
     {DEMO_ARG_BITRATE_MODE,                     "bitrate_mode"},
+    {DEMO_ARG_VIDEO_PROFILE,                    "video_profile"},
     {DEMO_ARG_CODEC_RUN_MODE,                   "codec_run_mode"},
     {DEMO_ARG_FRAME_INTERVAL,                   "frame_interval"},
+    {DEMO_ARG_I_FRAME_INTERVAL,                 "i_frame_interval"},
     {DEMO_ARG_SAMPLE_REPEAT_TIMES,              "sample_repeat_times"},
     {DEMO_ARG_DEMO_REPEAT_TIMES,                "demo_repeat_times"},
-    {DEMO_ARG_HDR_VIVID_VIDEO,                  "hdr_vivid_video"},
     {DEMO_ARG_NEED_DUMP_INPUT,                  "need_dump_input"},
     {DEMO_ARG_NEED_DUMP_OUTPUT,                 "need_dump_output"},
     {DEMO_ARG_MAX_FRAMES,                       "max_frames"},
@@ -77,10 +82,12 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
     {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, "encoder_surface_max_input_buffer"},
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          "pause_before_run_sample"},
+    {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  "video_decoder_output_colorspace"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"help",                             no_argument,        nullptr, DEMO_ARG_HELP},
+    {"sample_type",                      required_argument,  nullptr, DEMO_ARG_SAMPLE_TYPE},
     {"codec_type",                       required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
     {"input",                            required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
     {"output",                           required_argument,  nullptr, DEMO_ARG_OUTPUT_FILE},
@@ -91,11 +98,12 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"pixel_format",                     required_argument,  nullptr, DEMO_ARG_PIXEL_FORMAT},
     {"bitrate",                          required_argument,  nullptr, DEMO_ARG_BITRATE},
     {"bitrate_mode",                     required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
+    {"video_profile",                    required_argument,  nullptr, DEMO_ARG_VIDEO_PROFILE},
     {"codec_run_mode",                   required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
     {"frame_interval",                   required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
+    {"i_frame_interval",                 required_argument,  nullptr, DEMO_ARG_I_FRAME_INTERVAL},
     {"sample_repeat_times",              required_argument,  nullptr, DEMO_ARG_SAMPLE_REPEAT_TIMES},
     {"demo_repeat_times",                required_argument,  nullptr, DEMO_ARG_DEMO_REPEAT_TIMES},
-    {"hdr_vivid_video",                  required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
     {"need_dump_input",                  required_argument,  nullptr, DEMO_ARG_NEED_DUMP_INPUT},
     {"need_dump_output",                 required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
     {"max_frames",                       required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
@@ -106,11 +114,14 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
     {"encoder_surface_max_input_buffer", required_argument,  nullptr, DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER},
     {"pause_before_run_sample",          required_argument,  nullptr, DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE},
+    {"video_decoder_output_colorspace",  required_argument,  nullptr, DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
 Video codec demo help:
     --help                              print this help info
+
+    --sample_type                       sample type (0: VideoCodec; 1: YuvViewer)
 
     --codec_type                        codec type (0: decoder; 2: encoder)
     --input                             input file path
@@ -123,6 +134,8 @@ Video codec demo help:
                                         4: SURFACE_FORMAT   5: RGBA
     --bitrate                           encoder bitrate (bps)
     --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ)
+    --video_profile                     AVC profile (0: baseline; 4: high; 8: main)
+                                        HEVC profile (0: main; 1: main10)
     --codec_run_mode                    0: Surface origin      1: Buffer SharedMemory
                                         2: Surface AVBuffer    3: Buffer AVBuffer
     --data_producer                     0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
@@ -130,9 +143,9 @@ Video codec demo help:
     --codec_consumer                    0: Default;  1: Decoder render output
 
     --frame_interval                    frame push interval (ms)
+    --i_frame_interval                  i frame interval (ms)
     --sample_repeat_times               sample repeat times, data producer will seek to head while eos
     --demo_repeat_times                 demo repeat times, sample will destroy while eos
-    --hdr_vivid_video                   input file is hdr vivid video? (0: false; 1: true)
     --need_dump_input                   need to dump input stream? (0: false; 1: true)
     --need_dump_output                  need to dump output stream? (0: false; 1: true)
     --max_frames                        number of frames to be processed
@@ -144,6 +157,7 @@ Video codec demo help:
     --encoder_surface_max_input_buffer  set for encoder surface max input buffer count
     --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
                                         greater than 0 then sleep seconds of value
+    --video_decoder_output_colorspace   enable video processing and specified colorspace type
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -156,6 +170,11 @@ inline void ShowHelp(SampleInfo &info, const char * const value)
     (void)value;
     std::cout << HELP_TEXT << std::endl;
     exit(0);
+}
+
+inline void SetSampleType(SampleInfo &info, const char * const value)
+{
+    info.sampleType = static_cast<SampleType>(std::stol(value));
 }
 
 inline void SetCodecType(SampleInfo &info, const char * const value)
@@ -211,6 +230,11 @@ inline void SetBitrateMode(SampleInfo &info, const char * const value)
     info.bitrateMode = std::stol(value);
 }
 
+inline void SetVideoProfile(SampleInfo &info, const char * const value)
+{
+    info.profile = std::stol(value);
+}
+
 inline void SetCodecRunMode(SampleInfo &info, const char * const value)
 {
     info.codecRunMode = static_cast<CodecRunMode>(std::stol(value));
@@ -219,6 +243,14 @@ inline void SetCodecRunMode(SampleInfo &info, const char * const value)
 inline void SetFrameInterval(SampleInfo &info, const char * const value)
 {
     info.frameInterval = std::stol(value);
+    if (info.frameInterval < 0) {
+        info.frameInterval = 1000 / info.frameRate;   // 1000ms
+    }
+}
+
+inline void SetIFrameInterval(SampleInfo &info, const char * const value)
+{
+    info.iFrameInterval = std::stol(value);
 }
 
 inline void SetSampleRepeatTimes(SampleInfo &info, const char * const value)
@@ -229,14 +261,6 @@ inline void SetSampleRepeatTimes(SampleInfo &info, const char * const value)
 inline void SetDemoRepeatTimes(SampleInfo &info, const char * const value)
 {
     info.demoRepeatTimes = std::stoul(value);
-}
-
-inline void SetHdrVividVideo(SampleInfo &info, const char * const value)
-{
-    info.isHDRVivid = std::stol(value);
-    if (info.isHDRVivid) {
-        info.hevcProfile = HEVC_PROFILE_MAIN_10;
-    }
 }
 
 inline void SetNeedDumpInput(SampleInfo &info, const char * const value)
@@ -289,8 +313,14 @@ inline void SetPauseBeforeRunSample(SampleInfo &info, const char * const value)
     info.pauseBeforeRunSample = std::stol(value);
 }
 
+inline void SetVideoDecoderOutputColorspace(SampleInfo &info, const char * const value)
+{
+    info.videoDecoderOutputColorspace = std::stol(value);
+}
+
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,                             ShowHelp},
+    {DEMO_ARG_SAMPLE_TYPE,                      SetSampleType},
     {DEMO_ARG_CODEC_TYPE,                       SetCodecType},
     {DEMO_ARG_INPUT_FILE,                       SetInputFilePath},
     {DEMO_ARG_OUTPUT_FILE,                      SetOutputFilePath},
@@ -301,11 +331,12 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_PIXEL_FORMAT,                     SetPixelFormat},
     {DEMO_ARG_BITRATE,                          SetBitrate},
     {DEMO_ARG_BITRATE_MODE,                     SetBitrateMode},
+    {DEMO_ARG_VIDEO_PROFILE,                    SetVideoProfile},
     {DEMO_ARG_CODEC_RUN_MODE,                   SetCodecRunMode},
     {DEMO_ARG_FRAME_INTERVAL,                   SetFrameInterval},
+    {DEMO_ARG_I_FRAME_INTERVAL,                 SetIFrameInterval},
     {DEMO_ARG_SAMPLE_REPEAT_TIMES,              SetSampleRepeatTimes},
     {DEMO_ARG_DEMO_REPEAT_TIMES,                SetDemoRepeatTimes},
-    {DEMO_ARG_HDR_VIVID_VIDEO,                  SetHdrVividVideo},
     {DEMO_ARG_NEED_DUMP_INPUT,                  SetNeedDumpInput},
     {DEMO_ARG_NEED_DUMP_OUTPUT,                 SetNeedDumpOutput},
     {DEMO_ARG_MAX_FRAMES,                       SetMaxFrames},
@@ -316,6 +347,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},
     {DEMO_ARG_ENCODER_SURFACE_MAX_INPUT_BUFFER, SetEncoderSurfaceMaxInputBufferCount},
     {DEMO_ARG_PAUSE_BEFORE_RUN_SAMPLE,          SetPauseBeforeRunSample},
+    {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  SetVideoDecoderOutputColorspace},
 };
 } // namespace
 

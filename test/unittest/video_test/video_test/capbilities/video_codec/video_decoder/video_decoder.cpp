@@ -50,7 +50,7 @@ int32_t VideoDecoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleCon
 
     // SetSurface from video decoder
     if (sampleInfo.window != nullptr) {
-        ret = OH_VideoDecoder_SetSurface(codec_.get(), sampleInfo.window);
+        ret = OH_VideoDecoder_SetSurface(codec_.get(), sampleInfo.window.get());
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Set surface failed, ret: %{public}d", ret);
     }
@@ -118,6 +118,10 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+
+    if (sampleInfo.videoDecoderOutputColorspace >= 0) {
+        OH_AVFormat_SetIntValue(format, "video_decoder_output_colorspace", sampleInfo.videoDecoderOutputColorspace);
+    }
 
     if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 270);   // rotate 270°
