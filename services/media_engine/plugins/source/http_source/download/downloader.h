@@ -32,10 +32,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
-}
-
 enum struct DownloadStatus {
     PARTTAL_DOWNLOAD,
 };
