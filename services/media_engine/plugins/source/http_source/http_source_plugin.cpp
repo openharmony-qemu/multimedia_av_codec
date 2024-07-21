@@ -382,6 +382,16 @@ void HttpSourcePlugin::SetDemuxerState()
 void HttpSourcePlugin::SetDownloadErrorState()
 {
 }
+
+Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return downloader_->SetCurrentBitRate(bitRate);
+}
 }
 }
 }

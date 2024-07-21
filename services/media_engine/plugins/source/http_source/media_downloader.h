@@ -89,6 +89,11 @@ public:
     {
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
     }
+    virtual Status SetCurrentBitRate(int32_t bitRate)
+    {
+        MEDIA_LOG_W("SetCurrentBitRate is unimplemented.");
+        return Status::OK;
+    }
     virtual void SetPlayStrategy(PlayStrategy* playStrategy)
     {
         MEDIA_LOG_W("SetPlayStrategy is unimplemented.");
