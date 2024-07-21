@@ -22,6 +22,7 @@
 #include "osal/task/autolock.h"
 #include "securec.h"
 #include "net_conn_client.h"
+#include "parameter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -33,6 +34,8 @@ namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 4096;
 const std::string USER_AGENT = "User-Agent";
+const int32_t MAX_LEN = 128;
+const std::string DISPLAYVERSION = "const.product.software.version";
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -44,6 +47,16 @@ std::string ToString(const std::list<std::string> &lists, char tab)
         str.append(*it);
     }
     return str;
+}
+
+std::string GetSystemParam(const std::string &key)
+{
+    char value[MAX_LEN] = {0};
+    int32_t ret = GetParamer(key.c_str(), "", value, MAX_LEN);
+    if (ret < 0) {
+        return "";
+    }
+    return std::string(value);
 }
 
 std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
@@ -224,9 +237,6 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     std::map<std::string, std::string> header = httpHeader;
     HttpHeaderParse(header);
-    if (!isSetUA_) {
-        headerList_ = curl_slist_append(headerList_, "User-Agent: OpenHarmony OS UA");
-    }
     InitCurlEnvironment(url, timeoutMs);
     return Status::OK;
 }
@@ -340,6 +350,11 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
     headerList_ = curl_slist_append(headerList_, "Accept: */*");
     headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
     headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
+    if (!isSetUA_) {
+        std::string displayVersion = GetSystemParam(DISPLAYVERSION);
+        userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
+        headerList_ = curl_slist_append(headerList_, userAgent_.c_str());
+    }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
     AutoLock lock(mutex_);

@@ -67,7 +67,7 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    std::string userAgent_ {"OpenHarmony OS UA"};
+    std::string userAgent_;
     bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
 };
