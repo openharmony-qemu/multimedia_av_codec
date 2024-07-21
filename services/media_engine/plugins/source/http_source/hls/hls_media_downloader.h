@@ -87,6 +87,7 @@ public:
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void OnWriteRingBuffer(uint32_t len);
@@ -223,6 +224,10 @@ private:
     Mutex switchMutex_ {};
     bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
+
+    uint64_t lastReadRecordTime_ = 0;
+    uint64_t readTotalBits_ = 0;
+    uint64_t readRecordDuringTime_ = 0;
 };
 }
 }

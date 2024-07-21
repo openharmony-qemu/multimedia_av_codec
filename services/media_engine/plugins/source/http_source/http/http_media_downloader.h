@@ -62,6 +62,7 @@ public:
     void DownloadReportLoop();
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -128,6 +129,10 @@ private:
     bool isBufferEnough_ {false};
     bool isErrorBreak_ {false};
     unsigned int bufferingTimes_ {0};
+
+    uint64_t lastReadRecordTime_ = 0;
+    uint64_t readTotalBits_ = 0;
+    uint64_t readRecordDuringTime_ = 0;
 };
 }
 }

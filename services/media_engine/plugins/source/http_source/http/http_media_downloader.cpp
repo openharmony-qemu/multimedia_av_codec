@@ -34,7 +34,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 3000;
+constexpr int RECORD_TIME_INTERVAL = 1000;                  //速率统计时间间隔1s
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -52,6 +52,7 @@ constexpr int SECOND_TO_MICROSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MICROSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
+constexpr int IS_DOWNLOAD_MIN_BIT = 1000;                   // 判断下载是否在进行的阈值 bit
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -423,7 +424,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
     return Status::OK;
 }
 
-Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     if (isFlv_) {
         FALSE_RETURN_V_MSG(buffer_ != nullptr, Status::END_OF_STREAM, "buffer_ = nullptr");
@@ -455,6 +456,27 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         isErrorBreak_ = false;
         return ReadCacheBuffer(buff, readDataInfo);
     }
+}
+
+Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    auto ret = ReadDelegate(buffer, readDataInfo);
+
+    readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
+    readTotalBits_ += readDataInfo.realReadLength_;
+    double readDuration = static_cast<double>(readRecordDuringTime_) / 1000;
+    if (readDuration > RECORD_TIME_INTERVAL) {
+        double readSpeed = readTotalBits / readDuration;
+        size_t curBufferSize = GetCurrentBufferSize();
+        MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 "Bit/s, Current buffer size: " PUBLIC_LOG_U64 "Bit",
+        static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
+
+        lastReadRecordTime_ = now;
+        readTotalBits_ = 0;
+    }
+    
+    return ret;
 }
 
 Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLength)
@@ -713,6 +735,7 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         MEDIA_LOG_D("isInterruptNeeded true, return false.");
         return false;
     }
+    OnWriteRingBuffer(len);
     return true;
 }
 
@@ -734,7 +757,6 @@ void HttpMediaDownloader::OnWriteRingBuffer(uint32_t len)
     DownloadReportLoop();
 }
 
-constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
 void HttpMediaDownloader::DownloadReportLoop()
 {
     int64_t now = steadyClock_.ElapsedMilliseconds();

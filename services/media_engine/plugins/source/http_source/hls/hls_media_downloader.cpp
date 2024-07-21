@@ -37,7 +37,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr int RECORD_TIME_INTERVAL = 3000;
+constexpr int RECORD_TIME_INTERVAL = 1000;                  //速率统计时间间隔1s
 constexpr uint32_t SAMPLE_INTERVAL = 6000;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
@@ -50,6 +50,7 @@ constexpr int FIRST_CACHE_WATER_LINE = 50 * 1024;
 constexpr int SECOND_CACHE_WATER_LINE = 100 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
+constexpr int IS_DOWNLOAD_MIN_BIT = 1000;                   // 判断下载是否在进行的阈值 bit
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -359,7 +360,7 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
     return Status::ERROR_UNKNOWN;
 }
 
-Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
@@ -405,6 +406,27 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
     return Status::OK;
+}
+
+Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    auto ret = ReadDelegate(buffer, readDataInfo);
+
+    readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
+    readTotalBits_ += readDataInfo.realReadLength_;
+    double readDuration = static_cast<double>(readRecordDuringTime_) / 1000;
+    if (readDuration > RECORD_TIME_INTERVAL) {
+        double readSpeed = readTotalBits / readDuration;
+        size_t curBufferSize = buffer_->GetSize();
+        MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 "Bit/s, Current buffer size: " PUBLIC_LOG_U64 "Bit",
+        static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
+
+        lastReadRecordTime_ = now;
+        readTotalBits_ = 0;
+    }
+    
+    return ret;
 }
 
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
@@ -661,7 +683,6 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
     DownloadReportLoop();
 }
 
-constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
 void HlsMediaDownloader::DownloadReportLoop()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
