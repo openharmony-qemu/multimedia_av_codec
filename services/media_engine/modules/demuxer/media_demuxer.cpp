@@ -1613,6 +1613,11 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
             break;
         }
+        case PluginEventType::EVENT_BUFFER_PROGRESS: {
+            MEDIA_LOG_D("OnEvent percent update");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_BUFFER_PROGRESS, event.param});
+            break;
+        }
         default:
             break;
     }

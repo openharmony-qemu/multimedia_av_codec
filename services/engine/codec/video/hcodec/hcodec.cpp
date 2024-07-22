@@ -287,6 +287,9 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         case CODEC_OMX_VIDEO_CodingHEVC:
             shortName_ = isEncoderStr + "hevc";
             break;
+        case CODEC_OMX_VIDEO_CodingVVC:
+            shortName_ = isEncoderStr + "vvc";
+            break;
         default:
             shortName_ = isEncoderStr;
             break;

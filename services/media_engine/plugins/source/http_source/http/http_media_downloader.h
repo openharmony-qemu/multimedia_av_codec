@@ -26,6 +26,7 @@
 #include "timer.h"
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -61,6 +62,7 @@ public:
     void OnWriteBuffer(uint32_t len);
     void DownloadReportLoop();
     Status SetCurrentBitRate(int32_t bitRate) override;
+    void UpdateCachedPercent(BufferingInfoType infoType);
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -141,6 +143,7 @@ private:
     uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
+    int32_t lastCachedSize_ {0};
 };
 }
 }

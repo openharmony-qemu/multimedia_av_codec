@@ -19,7 +19,7 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 }
 
@@ -49,7 +49,7 @@ AudioSink::AudioSink()
 
 AudioSink::~AudioSink()
 {
-    MEDIA_LOG_I("AudioSink dtor");
+    MEDIA_LOG_D("AudioSink dtor");
 }
 
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
@@ -83,7 +83,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {
         isApe_ = true;
-        MEDIA_LOG_I("AudioSink::Init is ape");
+        MEDIA_LOG_I("Init is ape");
     }
 
     return Status::OK;
@@ -245,13 +245,13 @@ Status AudioSink::SetVolume(float volume)
 
 int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 {
-    MEDIA_LOG_I("AudioSink::SetVolumeWithRamp entered. ");
+    MEDIA_LOG_I("SetVolumeWithRamp");
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
-    MEDIA_LOG_I("AudioSink::SetIsTransitent entered. ");
+    MEDIA_LOG_I("SetIsTransitent");
     isTransitent_ = isTransitent;
     return Status::OK;
 }
@@ -480,7 +480,7 @@ Status AudioSink::SetSpeed(float speed)
 
 Status AudioSink::SetAudioEffectMode(int32_t effectMode)
 {
-    MEDIA_LOG_I("AudioSink::SetAudioEffectMode entered. ");
+    MEDIA_LOG_I("SetAudioEffectMode");
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
@@ -490,7 +490,7 @@ Status AudioSink::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioSink::GetAudioEffectMode(int32_t &effectMode)
 {
-    MEDIA_LOG_I("AudioSink::GetAudioEffectMode entered. ");
+    MEDIA_LOG_I("GetAudioEffectMode");
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
@@ -556,7 +556,7 @@ void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 
 Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
-    MEDIA_LOG_I("AudioSink::GetAudioEffectMode ChangeTrack. ");
+    MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
     std::lock_guard<std::mutex> lock(pluginMutex_);
     Status res = Status::OK;
 

@@ -25,7 +25,7 @@
 #include "source.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -103,7 +103,6 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
-        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         plugin_->SetBundleName(bundleName);
     }
 }
@@ -279,6 +278,11 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::CACHED_DURATION) {
         MEDIA_LOG_I("Onevent cached duration.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
+        MEDIA_LOG_I("buffer percent update.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
