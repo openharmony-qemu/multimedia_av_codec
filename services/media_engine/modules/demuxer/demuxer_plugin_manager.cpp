@@ -39,7 +39,7 @@
 #include "media_demuxer.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerPluginManager" };
 }
 
 namespace OHOS {
@@ -133,7 +133,7 @@ size_t DemuxerPluginManager::GetStreamCount() const
 
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
-    MEDIA_LOG_I("InitDefaultPlay begin");
+    MEDIA_LOG_D("InitDefaultPlay begin");
     for (const auto& iter : streams) {
         int32_t streamIndex = iter.streamId;
         streamInfoMap_[streamIndex].streamID = streamIndex;
@@ -173,7 +173,7 @@ Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& stre
             MEDIA_LOG_W("streaminfo invalid type");
         }
     }
-    MEDIA_LOG_I("InitDefaultPlay end");
+    MEDIA_LOG_D("InitDefaultPlay end");
     return Status::OK;
 }
 
