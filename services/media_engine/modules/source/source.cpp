@@ -281,6 +281,11 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
+    } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
+        MEDIA_LOG_I("buffer percent update.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     } else {
         MEDIA_LOG_E("on event error.");
     }
