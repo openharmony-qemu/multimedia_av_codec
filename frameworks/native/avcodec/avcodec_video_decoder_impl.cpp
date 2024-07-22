@@ -111,7 +111,10 @@ int32_t AVCodecVideoDecoderImpl::Configure(const Format &format)
 
 int32_t AVCodecVideoDecoderImpl::Prepare()
 {
-    return AVCS_ERR_OK;
+    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    AVCODEC_SYNC_TRACE;
+
+    return codecClient_->Prepare();
 }
 
 int32_t AVCodecVideoDecoderImpl::Start()

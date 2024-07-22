@@ -16,6 +16,7 @@
 #ifndef CODEC_SERVER_H
 #define CODEC_SERVER_H
 
+#include <atomic>
 #include <shared_mutex>
 #include <unordered_map>
 #include "avcodec_sysevent.h"
@@ -26,6 +27,8 @@
 #include "temporal_scalability.h"
 #include "task_thread.h"
 #include "codec_param_checker.h"
+#include "lock_free_queue.h"
+#include "post_processing.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -100,6 +103,10 @@ public:
     void ProcessInputBuffer() override;
     bool CheckRunning() override;
 
+    // post processing callback
+    void PostProcessingOnError(int32_t errorCode);
+    void PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_unused]] int32_t flag);
+
 #ifdef SUPPORT_DRM
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;
@@ -118,6 +125,7 @@ private:
     int32_t DrmVideoCencDecrypt(uint32_t index);
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+    int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -146,6 +154,39 @@ private:
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
     CodecScenario scenario_ = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
+
+    // post processing, video decoder and surface mode only
+    int32_t SetCallbackForPostProcessing();
+    void ClearCallbackForPostProcessing();
+    int32_t CreatePostProcessing(const Format& format);
+    int32_t SetOutputSurfaceForPostProcessing(sptr<Surface> surface);
+    int32_t PreparePostProcessing();
+    int32_t StartPostProcessing();
+    int32_t StopPostProcessing();
+    int32_t FlushPostProcessing();
+    int32_t ResetPostProcessing();
+    int32_t ReleasePostProcessing();
+    int32_t GetPostProcessingOutputFormat(Format& format);
+    int32_t ReleaseOutputBufferOfPostProcessing(uint32_t index, bool render);
+    int32_t PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void StartPostProcessingTask();
+    void PostProcessingTask();
+    void DeactivatePostProcessingQueue();
+    void CleanPostProcessingResource();
+    using PostProcessingType = PostProcessing::DynamicPostProcessing;
+    std::unique_ptr<PostProcessingType> postProcessing_{nullptr};
+    void* postProcessingUserData_{nullptr};
+    PostProcessing::Callback postProcessingCallback_;
+    static constexpr size_t decodedBufferInfoQueueSize_{8};
+    struct DecodedBufferInfo {
+        uint32_t index;
+        std::shared_ptr<AVBuffer> buffer;
+    };
+    using DecodedBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, decodedBufferInfoQueueSize_>;
+    std::shared_ptr<DecodedBufferInfoQueue> decodedBufferInfoQueue_;
+    std::shared_ptr<DecodedBufferInfoQueue> postProcessingInputBufferInfoQueue_;
+    std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_;
+    std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

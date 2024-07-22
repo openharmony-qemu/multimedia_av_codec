@@ -30,6 +30,7 @@ enum class CodecServiceInterfaceCode {
     SET_LISTENER_OBJ = 0,
     INIT,
     CONFIGURE,
+    PREPARE,
     START,
     STOP,
     FLUSH,

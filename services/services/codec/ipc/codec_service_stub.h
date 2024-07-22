@@ -36,6 +36,7 @@ public:
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Meta &callerInfo) override;
     int32_t Configure(const Format &format) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
@@ -66,6 +67,7 @@ private:
     int32_t SetListenerObject(MessageParcel &data, MessageParcel &reply);
     int32_t Init(MessageParcel &data, MessageParcel &reply);
     int32_t Configure(MessageParcel &data, MessageParcel &reply);
+    int32_t Prepare(MessageParcel &data, MessageParcel &reply);
     int32_t Start(MessageParcel &data, MessageParcel &reply);
     int32_t Stop(MessageParcel &data, MessageParcel &reply);
     int32_t Flush(MessageParcel &data, MessageParcel &reply);
