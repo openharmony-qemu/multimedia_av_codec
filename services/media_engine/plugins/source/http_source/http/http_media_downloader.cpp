@@ -34,7 +34,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 500; //速率统计时间间隔1s
+constexpr int RECORD_TIME_INTERVAL = 500; //速率统计时间间隔
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -772,20 +772,9 @@ void HttpMediaDownloader::DownloadReportLoop()
         // 下载总数据量
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
-        if (isFlv_) {
-            if (buffer_ != nullptr) {
-                uint64_t remainingBuffer = buffer_->GetSize() * 8;
-                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
-            }
-        } else {
-            if (cacheMediaBuffer_ != nullptr) {
-                uint64_t remainingBuffer = cacheMediaBuffer_->GetBufferSize(readOffset_) * 8;
-                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
-            }
-        }
     }
 
-     if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
+    if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
         if (downloadDuringTime_ > 0) {
             double tmpNumerator = static_cast<double>(downloadBits_);
             double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
@@ -793,13 +782,20 @@ void HttpMediaDownloader::DownloadReportLoop()
             if (tmpDenominator > ZERO_THRESHOLD) {
                 double downloadRate = tmpNumerator / tmpDenominator;
                 avgDownloadSpeed_ = downloadRate;
-                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
+                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Bit/s", static_cast<int32_t>(downloadRate));
             }
         }
-        // 缓冲区剩余时长
-        if (buffer_ != nullptr) {
-            uint64_t remainingBuffer = buffer_->GetSize() * 8;
-            MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
+        // 缓冲区剩余bufferSzie
+        if (isFlv_) {
+            if (buffer_ != nullptr) {
+                uint64_t remainingBuffer = buffer_->GetSize();
+                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Bit", remainingBuffer);
+            }
+        } else {
+            if (cacheMediaBuffer_ != nullptr) {
+                uint64_t remainingBuffer = cacheMediaBuffer_->GetBufferSize(readOffset_);
+                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Bit", remainingBuffer);
+            }
         }
         downloadDuringTime_ = 0;
         downloadBits_ = 0;

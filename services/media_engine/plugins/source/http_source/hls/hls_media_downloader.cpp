@@ -37,7 +37,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr int RECORD_TIME_INTERVAL = 500;                  //速率统计时间间隔1s
+constexpr int RECORD_TIME_INTERVAL = 500;                  //速率统计时间间隔
 constexpr uint32_t SAMPLE_INTERVAL = 2000;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
@@ -709,17 +709,17 @@ void HlsMediaDownloader::DownloadReportLoop()
                 double downloadRate = tmpNumerator / tmpDenominator;
                 recordBuff->downloadRate = downloadRate;
                 avgDownloadSpeed_ = downloadRate;
-                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
+                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Bit/s", static_cast<int32_t>(downloadRate));
             }
         } else {
             recordBuff->downloadRate = 0;
         }
+        if (buffer_ != nullptr) {
+            uint64_t remainingBuffer = buffer_->GetSize();
+            MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Bit", remainingBuffer);
+        }
         // 缓冲区剩余时长
         uint64_t bufferDuration = bufferedDuration_ / currentBitrate_;
-        if (buffer_ != nullptr) {
-            uint64_t remainingBuffer = buffer_->GetSize() * 8;
-            MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
-        }
         recordBuff->bufferDuring = bufferDuration;
         recordBuff->next = recordData_;
         recordData_ = recordBuff;
