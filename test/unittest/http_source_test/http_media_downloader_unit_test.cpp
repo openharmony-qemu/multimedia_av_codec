@@ -28,7 +28,7 @@ std::string flvUrl = "www.baidu.flv";
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
-std::unique_prt<MediaAVCodec::HttpServerDemo> g_server;
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
 std::shared_ptr<HttpMediaDownloader> MP4httpMediaDownloader;
 std::shared_ptr<HttpMediaDownloader> FLVhttpMediaDownloader;
 bool g_flvResult = false;
