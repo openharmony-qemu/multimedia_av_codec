@@ -261,6 +261,14 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
 extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT;
 
 /**
+ * @brief Enumerates the mime type of subtitle webvtt.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -281,7 +289,7 @@ extern const char *OH_ED_KEY_EOS;
 extern const char *OH_MD_KEY_TRACK_TYPE;
 /* Key for codec mime type, value type is string. */
 extern const char *OH_MD_KEY_CODEC_MIME;
-/* Key for duration, value type is int64_t. */
+/* Key for file duration, value type is int64_t. */
 extern const char *OH_MD_KEY_DURATION;
 /* Key for bitrate, value type is int64_t. */
 extern const char *OH_MD_KEY_BITRATE;
@@ -630,6 +638,10 @@ typedef enum OH_MediaType {
     MEDIA_TYPE_AUD = 0,
     /* track is video. */
     MEDIA_TYPE_VID = 1,
+    /** track is subtitle.
+     * @since 12
+     */
+    MEDIA_TYPE_SUBTITLE = 2,
 } OH_MediaType;
 
 /**

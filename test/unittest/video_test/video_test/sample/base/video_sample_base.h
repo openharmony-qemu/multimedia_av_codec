@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <thread>
+#include "sample_base.h"
 #include "sample_info.h"
 #include "video_codec_base.h"
 #include "data_producer_base.h"
@@ -26,13 +27,12 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoSampleBase {
+class VideoSampleBase : public SampleBase {
 public:
-    virtual ~VideoSampleBase();
+    ~VideoSampleBase() override;
 
-    virtual int32_t Create(SampleInfo sampleInfo);
-    virtual int32_t Start();
-    virtual int32_t WaitForDone();
+    int32_t Create(SampleInfo sampleInfo) override;
+    int32_t Start() override;
 
 protected:
     virtual int32_t Init();
@@ -43,22 +43,13 @@ protected:
     void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size);
     void PushEosFrame();
 
-    std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
 
-    std::mutex mutex_;
-    SampleInfo sampleInfo_;
     std::shared_ptr<SampleContext> context_ = nullptr;
-    std::condition_variable doneCond_;
-};
-
-class VideoSampleFactory {
-public:
-    static std::shared_ptr<VideoSampleBase> CreateVideoSample(CodecType type);
 };
 } // Sample
 } // MediaAVCodec

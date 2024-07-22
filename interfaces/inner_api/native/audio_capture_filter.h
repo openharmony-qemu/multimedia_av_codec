@@ -67,7 +67,7 @@ private:
     std::shared_ptr<Task> taskPtr_{nullptr};
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
-    AudioStandard::SourceType sourceType_;
+    AudioStandard::SourceType sourceType_ = AudioStandard::SourceType::SOURCE_TYPE_INVALID;
     std::shared_ptr<Meta> audioCaptureConfig_;
 
     std::shared_ptr<EventReceiver> receiver_;

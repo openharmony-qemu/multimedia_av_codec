@@ -29,14 +29,16 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-constexpr std::string_view MIME_VIDEO_AVC = "video/avc";
-constexpr std::string_view MIME_VIDEO_HEVC = "video/hevc";
-
 constexpr int32_t BITRATE_10M = 10 * 1024 * 1024; // 10Mbps
 constexpr int32_t BITRATE_20M = 20 * 1024 * 1024; // 20Mbps
 constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
 
 constexpr double SAMPLE_DEFAULT_FRAMERATE = 999;
+
+enum class SampleType {
+    VIDEO_SAMPLE = 0,
+    YUV_VIEWER,
+};
 
 /*   CodecType description
  *   +-----+-----------+------------+
@@ -104,7 +106,7 @@ enum ThreadSleepMode {
 struct SampleInfo {
     CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
-    std::string codecMime = MIME_VIDEO_AVC.data();
+    std::string codecMime = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     int32_t videoWidth = 1280;
     int32_t videoHeight = 720;
     double frameRate = SAMPLE_DEFAULT_FRAMERATE;
@@ -112,17 +114,16 @@ struct SampleInfo {
 
     CodecRunMode codecRunMode = API11_SURFACE;
     int32_t frameInterval = -1;
-    NativeWindow* window = nullptr;
+    std::shared_ptr<NativeWindow> window = nullptr;
     int32_t sampleRepeatTimes = 0;
     int32_t demoRepeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
-    bool isHDRVivid = false;
     bool needDumpInput = false;
     bool needDumpOutput = false;
     uint32_t maxFrames = UINT32_MAX;
     uint32_t bitrateMode = CBR;
     DataProducerInfo dataProducerInfo = DataProducerInfo();
-    int32_t hevcProfile = HEVC_PROFILE_MAIN;
+    int32_t profile = AVC_PROFILE_BASELINE;
     int64_t videoDuration = 0;
     std::string outputFilePath;
     CodecConsumerType codecConsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
@@ -131,6 +132,9 @@ struct SampleInfo {
     int32_t pauseBeforeRunSample = 0;
     int32_t videoStrideWidth = 0;
     int32_t videoSliceHeight = 0;
+    int32_t iFrameInterval = 2'000;
+    int32_t videoDecoderOutputColorspace = -1;
+    SampleType sampleType = SampleType::VIDEO_SAMPLE;
 };
 
 struct CodecBufferInfo {

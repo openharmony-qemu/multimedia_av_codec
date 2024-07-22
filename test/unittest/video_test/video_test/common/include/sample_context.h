@@ -17,12 +17,14 @@
 #define AVCODEC_SAMPLE_SAMPLE_CONTEXT_H
 
 #include "sample_buffer_queue.h"
+#include "video_codec_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 struct SampleContext {
-    SampleInfo *sampleInfo = nullptr;
+    std::shared_ptr<SampleInfo> sampleInfo = nullptr;
+    std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;
     SampleBufferQueue inputBufferQueue;
     SampleBufferQueue outputBufferQueue;
 };

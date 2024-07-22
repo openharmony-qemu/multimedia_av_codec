@@ -187,7 +187,7 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
         return Status::END_OF_STREAM;
     }
     bufData->UpdateDataSize(size);
-    position_ += size;
+    position_ += static_cast<uint64_t>(size);
     MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
         position_, buffer->GetMemory()->GetSize());
     return Status::OK;
@@ -205,8 +205,8 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
 
     // ringbuffer 0 after seek in 50ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
-    if (isReadFrame_ && ringBufferSize_ < WATER_LINE_BELOW_DEFAULT &&
-        (GetLastSize(position_) > WATER_LINE_BELOW_DEFAULT)) {
+    if (isReadFrame_ && ringBufferSize_ < static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT) &&
+        (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
         MEDIA_LOG_I("ringBufferSize_ " PUBLIC_LOG_U64 " curReadTime_ " PUBLIC_LOG_U64
             " lastReadTime_ " PUBLIC_LOG_U64, ringBufferSize_, curReadTime_, lastReadTime_);
         CheckReadTime();
@@ -390,7 +390,7 @@ void FileFdSourcePlugin::CacheDataLoop()
         usleep(TEN_MILLISECOUNDS);
     }
     cachePosition_ += size;
-    downloadSize_ += size;
+    downloadSize_ += static_cast<uint64_t>(size);
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
         ringBufferSize_ += size;
@@ -409,8 +409,8 @@ void FileFdSourcePlugin::CacheDataLoop()
 void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
 {
     HmdfsHasCache ioctlData;
-    ioctlData.offset = cachePosition_;
-    ioctlData.readSize = bufferSize;
+    ioctlData.offset = static_cast<int64_t>(cachePosition_);
+    ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
     if (ioResult == 0) {
         // ioctl has cache
@@ -642,7 +642,7 @@ std::shared_ptr<Memory> FileFdSourcePlugin::GetBufferPtr(std::shared_ptr<Buffer>
 
 int64_t FileFdSourcePlugin::GetLastSize(uint64_t position)
 {
-    int64_t ret = size_ + offset_ - position;
+    int64_t ret = static_cast<int64_t>(size_) + offset_ - static_cast<int64_t>(position);
     if (ret < 0) {
         MEDIA_LOG_E("GetLastSize error, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
             PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position);

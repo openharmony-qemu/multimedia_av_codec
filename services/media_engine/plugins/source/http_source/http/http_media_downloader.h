@@ -60,6 +60,7 @@ public:
     StatusCallbackFunc GetStatusCallbackFunc();
     void OnWriteBuffer(uint32_t len);
     void DownloadReportLoop();
+    Status SetCurrentBitRate(int32_t bitRate) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -81,6 +82,8 @@ private:
     size_t GetCurrentBufferSize();
     bool HandleBreak(int32_t& sleepTime);
     void ChangeDownloadPos();
+    int32_t GetWaterLineAbove();
+    void HandleCachedDuration();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -122,7 +125,7 @@ private:
     std::atomic<bool> isNeedDropData_ {false};
     std::atomic<bool> isServerAcceptRange_ {false};
 
-    size_t wantReadLength_ {0};
+    size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
@@ -136,6 +139,8 @@ private:
     uint64_t lastRecordTime_ {0};
     uint64_t downloadDuringTime_ {0}; // 累计有效下载时长 ms
     uint64_t totalDownloadDuringTime_ {0};
+    int32_t currentBitRate_ {0};
+    uint64_t lastDurationReacord_ {0};
 };
 }
 }

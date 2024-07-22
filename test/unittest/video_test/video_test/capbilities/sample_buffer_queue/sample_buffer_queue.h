@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_BUFFER_MANAGER_H
-#define AVCODEC_SAMPLE_BUFFER_MANAGER_H
+#ifndef AVCODEC_SAMPLE_SAMPLE_BUFFER_QUEUE_H
+#define AVCODEC_SAMPLE_SAMPLE_BUFFER_QUEUE_H
 
 #include <optional>
 #include <condition_variable>
@@ -41,4 +41,4 @@ protected:
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_BUFFER_MANAGER_H
+#endif // AVCODEC_SAMPLE_SAMPLE_BUFFER_QUEUE_H

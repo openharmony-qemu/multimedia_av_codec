@@ -1603,6 +1603,11 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             break;
         }
+        case PluginEventType::CACHED_DURATION: {
+            MEDIA_LOG_D("OnEvent cached duration.");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_CACHED_DURATION, event.param});
+            break;
+        }
         case PluginEventType::SOURCE_BITRATE_START: {
             MEDIA_LOG_D("OnEvent source bitrate start");
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_SOURCE_BITRATE_START, event.param});
