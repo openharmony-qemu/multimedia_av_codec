@@ -178,7 +178,8 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
-    MEDIA_LOG_D_SHORT("ReadLocal buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
+    MEDIA_LOG_D_SHORT("ReadLocal buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_,
+        expectedLen);
 
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
