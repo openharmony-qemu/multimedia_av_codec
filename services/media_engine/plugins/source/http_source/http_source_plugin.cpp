@@ -176,8 +176,6 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     if (source != nullptr) {
         uri_ = source->GetSourceUri();
         httpHeader_ = source->GetSourceHeader();
-        MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
-                    httpHeader_["Referer"].c_str());
         playStrategy = source->GetPlayStrategy();
         mimeType_ = source->GetMimeType();
     }
@@ -381,6 +379,16 @@ void HttpSourcePlugin::SetDemuxerState()
 
 void HttpSourcePlugin::SetDownloadErrorState()
 {
+}
+
+Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return downloader_->SetCurrentBitRate(bitRate);
 }
 }
 }

@@ -15,41 +15,20 @@
 
 #include "video_encoder.h"
 #include <unordered_map>
-#include "surface_type.h"
 #include "external_window.h"
 #include "av_codec_sample_error.h"
 #include "av_codec_sample_log.h"
 #include "codec_callback.h"
 #include "native_window.h"
+#include "sample_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoder"};
-
-const std::unordered_map<int32_t, int32_t> AV_PIXEL_FORMAT_TO_GRAPHIC_PIXEL_FMT = {
-    {},
-};
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
-{
-    if (isHDRVivid) {
-        return GRAPHIC_PIXEL_FMT_YCBCR_P010;
-    }
-    switch (avPixelFormat) {
-        case AV_PIXEL_FORMAT_RGBA:
-            return GRAPHIC_PIXEL_FMT_RGBA_8888;
-        case AV_PIXEL_FORMAT_YUVI420:
-            return GRAPHIC_PIXEL_FMT_YCBCR_420_P;
-        case AV_PIXEL_FORMAT_NV21:
-            return GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        default:    // NV12 and others
-            return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-    }
-}
-
 int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
 {
     auto codecName = GetCodecName(codecMime, true, isSoftware);
@@ -127,7 +106,7 @@ int32_t VideoEncoder::Reset()
 OH_AVFormat *VideoEncoder::GetFormat()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, nullptr, "Decoder is null");
-    return OH_VideoEncoder_GetOutputDescription(codec_.get());
+    return OH_VideoEncoder_GetInputDescription(codec_.get());
 }
 
 int32_t VideoEncoder::NotifyEndOfStream()
@@ -151,7 +130,8 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, sampleInfo.bitrate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, sampleInfo.hevcProfile);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, sampleInfo.profile);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
     
     int ret = OH_VideoEncoder_Configure(codec_.get(), format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
@@ -163,20 +143,23 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 
 int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
 {
-    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
-        int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &sampleInfo.window);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
-            "Get surface failed, ret: %{public}d", ret);
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
-            sampleInfo.videoWidth, sampleInfo.videoHeight);
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_USAGE, 16425);      // 16425: Window usage
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT,
-            ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
+    // 0b01: buffer mode mask
+    CHECK_AND_RETURN_RET(!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01), AVCODEC_SAMPLE_ERR_OK);
 
-        if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
-            sampleInfo.window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
-        }
+    NativeWindow *window = nullptr;
+    int32_t ret = OH_VideoEncoder_GetSurface(codec_.get(), &window);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && window, AVCODEC_SAMPLE_ERR_ERROR,
+        "Get surface failed, ret: %{public}d", ret);
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
+        sampleInfo.videoWidth, sampleInfo.videoHeight);
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE, 16425);      // 16425: Window usage
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
+        ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.profile));
+
+    if (sampleInfo.encoderSurfaceMaxInputBuffer >= 0) {
+        window->surface->SetQueueSize(sampleInfo.encoderSurfaceMaxInputBuffer);
     }
+    sampleInfo.window = std::shared_ptr<NativeWindow>(window, OH_NativeWindow_DestroyNativeWindow);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

@@ -102,6 +102,7 @@ private:
     void OutputFunc();
     void HandleInputEOS(const uint32_t index);
     bool InitFormat(OH_AVFormat *format);
+    bool ConfigVorbisExtraData(OH_AVFormat *format);
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;

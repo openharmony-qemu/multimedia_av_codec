@@ -22,6 +22,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 void ThreadSleep(bool isValid, int32_t interval);
+int32_t ToGraphicPixelFormat(int32_t avPixelFormat, int32_t profile);
 } // Sample
 } // MediaAVCodec
 } // OHOS

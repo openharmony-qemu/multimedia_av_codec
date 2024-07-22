@@ -17,10 +17,11 @@
 #define HISTREAMER_HTTP_CURL_CLIENT_H
 
 #include <string>
+#include <list>
 #include "network_client.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
-#include <list>
+#include "syspara/parameter.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,7 +68,7 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    std::string userAgent_ {"OpenHarmony OS UA"};
+    std::string userAgent_;
     bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
 };
