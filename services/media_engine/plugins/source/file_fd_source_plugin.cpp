@@ -389,7 +389,7 @@ void FileFdSourcePlugin::CacheDataLoop()
         }
         usleep(TEN_MILLISECOUNDS);
     }
-    cachePosition_ += size;
+    cachePosition_ += static_cast<uint64_t>(size);
     downloadSize_ += static_cast<uint64_t>(size);
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
