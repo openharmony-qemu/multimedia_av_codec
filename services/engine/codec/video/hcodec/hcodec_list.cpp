@@ -126,7 +126,8 @@ int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)
 
 bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 {
-    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC) {
+    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
+        hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
         return true;
     }
     return false;

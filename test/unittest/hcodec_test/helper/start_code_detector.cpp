@@ -26,6 +26,8 @@ std::shared_ptr<StartCodeDetector> StartCodeDetector::Create(CodeType type)
             return make_shared<StartCodeDetectorH264>();
         case H265:
             return make_shared<StartCodeDetectorH265>();
+        case H266:
+            return make_shared<StartCodeDetectorH266>();
         default:
             return nullptr;
     }
@@ -228,4 +230,32 @@ bool StartCodeDetectorH265::IsIDR(uint8_t nalType)
 bool StartCodeDetectorH265::IsPrefixSEI(uint8_t nalType)
 {
     return nalType == H265NalType::HEVC_PREFIX_SEI_NUT;
+}
+
+uint8_t StartCodeDetectorH266::GetNalType(uint8_t, uint8_t secondByte)
+{
+    return (secondByte & 0b1111'1000) >> 3; // 3: The higher 5 bits of this byte indicate the NalType.
+}
+
+bool StartCodeDetectorH266::IsPPS(uint8_t nalType)
+{
+    return nalType == H266NalType::VVC_PPS_NUT;
+}
+
+bool StartCodeDetectorH266::IsVCL(uint8_t nalType)
+{
+    return nalType >= H266NalType::VVC_TRAIL_NUT && nalType <= H266NalType::VVC_RSV_IRAP_11;
+}
+
+bool StartCodeDetectorH266::IsIDR(uint8_t nalType)
+{
+    return nalType == H266NalType::VVC_IDR_W_RADL ||
+           nalType == H266NalType::VVC_IDR_N_LP ||
+           nalType == H266NalType::VVC_CRA_NUT;
+;
+}
+
+bool StartCodeDetectorH266::IsPrefixSEI(uint8_t nalType)
+{
+    return nalType == H266NalType::VVC_PREFIX_SEI_NUT;
 }
