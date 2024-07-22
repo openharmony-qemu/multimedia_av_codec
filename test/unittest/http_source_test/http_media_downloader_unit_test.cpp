@@ -31,8 +31,8 @@ const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 std::unique_prt<MediaAVCodec::HttpServerDemo> g_server;
 std::shared_ptr<HttpMediaDownloader> MP4httpMediaDownloader;
 std::shared_ptr<HttpMediaDownloader> FLVhttpMediaDownloader;
-bool g_FLVResult = false;
-bool g_MP4Result = false;
+bool g_flvResult = false;
+bool g_mp4Result = false;
 
 void HttpMediaDownloaderUnitTest::SetUpTestCase(void)
 {
@@ -42,11 +42,11 @@ void HttpMediaDownloaderUnitTest::SetUpTestCase(void)
     FLVhttpMediaDownloader = std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
-    MP4httpMediaDownloader->SetCallback(statusCallback);
-    FLVhttpMediaDownloader->SetCallback(statusCallback);
+    MP4httpMediaDownloader->SetStatusCallback(statusCallback);
+    FLVhttpMediaDownloader->SetStatusCallback(statusCallback);
     std::map<std::string, std::string> httpHeader;
-    g_FLVResult = FLVhttpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    g_MP4Result = MP4httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
+    g_flvResult = FLVhttpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
+    g_mp4Result = MP4httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
 }
 
 void HttpMediaDownloaderUnitTest::TearDownTestCase(void)
@@ -69,22 +69,22 @@ void HttpMediaDownloaderUnitTest::TearDown()
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetContentLength, TestSize.Level1)
 {
-    EXPECT_EQ(MP4httpMediaDownloader.GetContentLength(), 67817172);
-    EXPECT_EQ(FLVhttpMediaDownloader.GetContentLength(), 4560656);
+    EXPECT_EQ(MP4httpMediaDownloader->GetContentLength(), 67817172);
+    EXPECT_EQ(FLVhttpMediaDownloader->GetContentLength(), 4560656);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetStartedStatus, TestSize.Level1)
 {
     MP4httpMediaDownloader->startedPlayStatus_ = false;
     FLVhttpMediaDownloader->startedPlayStatus_ = false;
-    EXPECT_FALSE(MP4httpMediaDownloader.GetStartedStatus());
-    EXPECT_FALSE(FLVhttpMediaDownloader.GetStartedStatus());
+    EXPECT_FALSE(MP4httpMediaDownloader->GetStartedStatus());
+    EXPECT_FALSE(FLVhttpMediaDownloader->GetStartedStatus());
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {
-    EXPECT_TRUE(g_FLVResult);
-    EXPECT_TRUE(g_MP4Result);
+    EXPECT_TRUE(g_flvResult);
+    EXPECT_TRUE(g_mp4Result);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_PAUSE_RESUME, TestSize.Level1)
@@ -93,10 +93,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_PAUSE_RESUME, TestSize.Level1)
     FLVhttpMediaDownloader->Pause();
     EXPECT_TRUE(MP4httpMediaDownloader->isInterrupt_);
     EXPECT_TRUE(FLVhttpMediaDownloader->isInterrupt_);
-    MP4httpMediaDownloader->Pause();
-    FLVhttpMediaDownloader->Pause();
-    EXPECT_TRUE(MP4httpMediaDownloader->isInterrupt_);
-    EXPECT_TRUE(FLVhttpMediaDownloader->isInterrupt_);
+    MP4httpMediaDownloader->Resume();
+    FLVhttpMediaDownloader->Resume();
+    EXPECT_FALSE(MP4httpMediaDownloader->isInterrupt_);
+    EXPECT_FALSE(FLVhttpMediaDownloader->isInterrupt_);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering1, TestSize.Level1)
