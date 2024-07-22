@@ -130,9 +130,11 @@ private:
     bool isErrorBreak_ {false};
     unsigned int bufferingTimes_ {0};
 
-    uint64_t lastReadRecordTime_ = 0;
-    uint64_t readTotalBits_ = 0;
-    uint64_t readRecordDuringTime_ = 0;
+    uint64_t lastReadRecordTime_ {0};
+    uint64_t readTotalBits_ {0};
+    uint64_t readRecordDuringTime_ {0};
+    uint64_t lastRecordTime_ {0};
+    uint64_t downloadDuringTime_ {0}; // 累计有效下载时长 ms
 };
 }
 }

@@ -37,8 +37,8 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr int RECORD_TIME_INTERVAL = 1000;                  //速率统计时间间隔1s
-constexpr uint32_t SAMPLE_INTERVAL = 6000;
+constexpr int RECORD_TIME_INTERVAL = 500;                  //速率统计时间间隔1s
+constexpr uint32_t SAMPLE_INTERVAL = 1000;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -693,13 +693,6 @@ void HlsMediaDownloader::DownloadReportLoop()
             downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
             // 有效下载数据量
             downloadBits_ += curDownloadBits;
-            double downloadDuration = static_cast<double>(now - lastCheckTime_) / 1000;
-            if (downloadDuration > ZERO_THRESHOLD) {
-                double downloadSpeed = downloadBits_ / downloadDuration;
-                avgSpeedSum_ += downloadSpeed / AVG_SPEED_SUM_SCALE;
-                recordSpeedCount_ ++;
-                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadSpeed));
-            }
         }
         // 下载总数据量
         lastBits_ = totalBits_;
@@ -711,10 +704,11 @@ void HlsMediaDownloader::DownloadReportLoop()
         if (downloadDuringTime_ > 0) {
             double tmpNumerator = static_cast<double>(downloadBits_);
             double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
-            double downloadRate = tmpNumerator / tmpDenominator;
-            recordBuff->downloadRate = downloadRate;
-            if (downloadRate > ZERO_THRESHOLD) {
+            if (tmpDenominator > ZERO_THRESHOLD) {
+                double downloadRate = tmpNumerator / tmpDenominator;
+                recordBuff->downloadRate = downloadRate;
                 avgDownloadSpeed_ = downloadRate;
+                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
             }
         } else {
             recordBuff->downloadRate = 0;

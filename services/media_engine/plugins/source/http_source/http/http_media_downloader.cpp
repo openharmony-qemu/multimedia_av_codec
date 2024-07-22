@@ -34,7 +34,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 1000;                  //速率统计时间间隔1s
+constexpr int RECORD_TIME_INTERVAL = 1000; //速率统计时间间隔1s
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -52,7 +52,8 @@ constexpr int SECOND_TO_MICROSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MICROSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BIT = 1000;                   // 判断下载是否在进行的阈值 bit
+constexpr int IS_DOWNLOAD_MIN_BIT = 1000; // 判断下载是否在进行的阈值 bit
+constexpr uint32_t SAMPLE_INTERVAL = 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -763,16 +764,10 @@ void HttpMediaDownloader::DownloadReportLoop()
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+            // 周期下载量达阈值，统计有效下载时长
+            downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
             // 有效下载数据量
             downloadBits_ += curDownloadBits;
-            double downloadDuration = static_cast<double>(now - lastCheckTime_) / SECOND_TO_MICROSECOND;
-            double downloadSpeed = 0;
-            if (downloadDuration > ZERO_THRESHOLD) {
-                downloadSpeed = downloadBits_ / downloadDuration;
-            }
-            avgSpeedSum_ += downloadSpeed / AVG_SPEED_SUM_SCALE;
-            recordSpeedCount_ ++;
-            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadSpeed));
         }
         // 下载总数据量
         lastBits_ = totalBits_;
@@ -788,6 +783,31 @@ void HttpMediaDownloader::DownloadReportLoop()
                 MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
             }
         }
+    }
+
+     if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
+        if (downloadDuringTime_ > 0) {
+            double tmpNumerator = static_cast<double>(downloadBits_);
+            double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+            if (tmpDenominator > ZERO_THRESHOLD) {
+                double downloadRate = tmpNumerator / tmpDenominator;
+                recordBuff->downloadRate = downloadRate;
+                avgDownloadSpeed_ = downloadRate;
+                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
+            }
+        } else {
+            recordBuff->downloadRate = 0;
+        }
+        // 缓冲区剩余时长
+        uint64_t bufferDuration = bufferedDuration_ / currentBitrate_;
+        if (buffer_ != nullptr) {
+            uint64_t remainingBuffer = buffer_->GetSize() * 8;
+            MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
+        }
+        recordCount_++;
+        downloadDuringTime_ = 0;
+        downloadBits_ = 0;
+        lastRecordTime_ = now;
     }
 
     if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
