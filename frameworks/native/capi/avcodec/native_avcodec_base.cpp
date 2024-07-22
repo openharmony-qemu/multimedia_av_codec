@@ -125,6 +125,7 @@ const char *OH_MD_KEY_DECODING_TIMESTAMP = "decoding_timestamp";
 const char *OH_MD_KEY_BUFFER_DURATION = "buffer_duration";
 const char *OH_MD_KEY_VIDEO_SAR = "video_sar";
 const char *OH_MD_KEY_START_TIME = "start_time";
+const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE = "video_decoder_output_colorspace";
 
 #ifdef __cplusplus
 }

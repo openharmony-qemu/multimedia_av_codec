@@ -626,6 +626,22 @@ extern const char *OH_MD_KEY_VIDEO_SAR;
  * @since 12
  */
 extern const char *OH_MD_KEY_START_TIME;
+/**
+ * @brief Key for setting the output color space of video decoder. The value type is int32_t.
+ * The supported value is {@link OH_COLORSPACE_BT709_LIMIT}, see {@link OH_NativeBuffer_ColorSpace}. It is used in
+ * {@link OH_VideoDecoder_Configure}. If the color space conversion capability is supported and this key is configured,
+ * the video decoder will automatically transcode an HDR Vivid video to an SDR video with color space BT709.
+ * If the value of this key is not configured as {@link OH_COLORSPACE_BT709_LIMIT}, {@link OH_VideoDecoder_Configure}
+ * returns @{link AV_ERR_INVALID_VAL}.
+ * If color space conversion capability is not supported, {@link OH_VideoDecoder_Configure} returns
+ * {@link AV_ERR_INVALID_VAL}.
+ * If the input video is not an HDR vivid video, an error {@link AV_ERR_UNSUPPORT} will be reported by callback
+ * function {@link OH_AVCodecOnError}.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE;
 
 /**
  * @brief Media type.
