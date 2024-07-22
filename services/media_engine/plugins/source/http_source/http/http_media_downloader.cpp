@@ -791,12 +791,9 @@ void HttpMediaDownloader::DownloadReportLoop()
             double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
             if (tmpDenominator > ZERO_THRESHOLD) {
                 double downloadRate = tmpNumerator / tmpDenominator;
-                recordBuff->downloadRate = downloadRate;
                 avgDownloadSpeed_ = downloadRate;
                 MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
             }
-        } else {
-            recordBuff->downloadRate = 0;
         }
         // 缓冲区剩余时长
         uint64_t bufferDuration = bufferedDuration_ / currentBitrate_;
