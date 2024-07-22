@@ -569,15 +569,15 @@ void SurfaceEncoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid,
     instanceId_ = instanceId;
 }
 
-void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
-    std::shared_ptr<Format> parameter)
+void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> &attribute,
+    std::shared_ptr<Format> &parameter)
 {
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable");
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
     int64_t currentPts = 0;
     attribute->GetLongValue(Tag::MEDIA_TIME_STAMP, currentPts);
     MEDIA_LOG_D("OnInputParameterWithAttrAvailable currentPts " PUBLIC_LOG_D64, currentPts);
-    bool isDroppedFrames = CheckFrames(index, currentPts, parameter);
+    bool isDroppedFrames = CheckFrames(currentPts);
     {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
         if (isDroppedFrames) {
@@ -591,7 +591,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     codecServer_->QueueInputParameter(index);
 }
 
-bool SurfaceEncoderAdapter::CheckFrames(uint32_t index, int64_t currentPts, std::shared_ptr<Format> parameter)
+bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts)
 {
     if (pauseResumeQueue_.empty()) {
         return false;
@@ -608,7 +608,7 @@ bool SurfaceEncoderAdapter::CheckFrames(uint32_t index, int64_t currentPts, std:
         return true;
     }
     pauseResumeQueue_.pop_front();
-    return CheckFrames(index, currentPts, parameter);
+    return CheckFrames(currentPts);
 }
 
 void SurfaceEncoderAdapter::GetCurrentTime(int64_t &currentTime)

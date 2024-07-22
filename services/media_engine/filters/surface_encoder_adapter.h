@@ -76,8 +76,8 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
-    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
-        std::shared_ptr<Format> parameter);
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> &attribute,
+        std::shared_ptr<Format> &parameter);
 
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
 
@@ -86,7 +86,7 @@ private:
     void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
-    bool CheckFrames(uint32_t index, int64_t currentPts, std::shared_ptr<Format> parameter);
+    bool CheckFrames(int64_t currentPts);
     void GetCurrentTime(int64_t &currentTime);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
