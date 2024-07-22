@@ -350,8 +350,8 @@ protected:
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
     static constexpr char BUFFER_ID[] = "buffer-id";
-    static constexpr uint32_t WAIT_FENCE_MS = 100;
-    static constexpr uint32_t WARN_FENCE_MS = 15;
+    static constexpr uint32_t WAIT_FENCE_MS = 1000;
+    static constexpr uint32_t WARN_FENCE_MS = 30;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
