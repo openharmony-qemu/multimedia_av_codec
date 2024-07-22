@@ -219,8 +219,8 @@ Status MediaSyncManager::Pause()
     pausedExactMediaTime_ = ClipMediaTime(pausedExactMediaTime_);
     pausedAbsMediaTime_ = ClipMediaTime(pausedAbsMediaTime_);
     pausedExactAbsMediaTime_ = ClipMediaTime(pausedExactAbsMediaTime_);
-    MEDIA_LOG_I_SHORT("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64 ", exactMediaTime " PUBLIC_LOG_D64,
-            pausedClockTime_, pausedAbsMediaTime_, pausedExactAbsMediaTime_);
+    MEDIA_LOG_I_SHORT("pause with clockTime " PUBLIC_LOG_D64 ", mediaTime " PUBLIC_LOG_D64 ", exactMediaTime "
+        PUBLIC_LOG_D64, pausedClockTime_, pausedAbsMediaTime_, pausedExactAbsMediaTime_);
     clockState_ = State::PAUSED;
     return Status::OK;
 }
