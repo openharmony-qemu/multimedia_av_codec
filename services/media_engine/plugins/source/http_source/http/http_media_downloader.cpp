@@ -44,13 +44,13 @@ constexpr size_t DEFAULT_WATER_LINE_ABOVE = 48 * 10 * 1024;
 constexpr int BUFFERING_TIME_OUT = 1000;
 constexpr int BUFFERING_SLEEP_TIME = 10;
 constexpr int REQUEST_SLEEP_TIME = 5;
-constexpr int SECOND_TO_MILLIONSECOND = 1000;
+constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
-constexpr int32_t BYTES_TO_BIT = 8;
+constexpr int64_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
 }
 
@@ -904,11 +904,11 @@ int32_t HttpMediaDownloader::GetWaterLineAbove()
 
 void HttpMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ == 0) {
+    if (currentBitRate_ <= 0) {
         return;
     }
-    uint64_t cachedDuration = static_cast<uint64_t>((GetCurrentBufferSize() * BYTES_TO_BIT * SECOND_TO_MILLIONSECOND)
-        / currentBitRate_);
+    uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
+        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
