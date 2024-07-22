@@ -337,6 +337,23 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
     }
 }
 
+void HttpCurlClient::HandlerUserAgent()
+{
+    if (!isSetUA_) {
+        std::string displayVersion = GetSystemParam(DISPLAYVERSION);
+        userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
+        char *userAgent = new char[userAgent_.size() + 1];
+        int ret = memcpy_s(userAgent, userAgent_.size(), userAgent_.c_str(), userAgent_.size());
+        userAgent[userAgent_.size()] = '\0';
+        if (ret != EOK) {
+            MEDIA_LOG_E("faild to memcpy userAgent_");
+            return;
+        }
+        headerList_ = curl_slist_append(headerList_, userAgent);
+        delete[] userAgent;
+    }
+}
+
 // RequestData run in HttpDownload thread,
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
@@ -349,11 +366,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
     headerList_ = curl_slist_append(headerList_, "Accept: */*");
     headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
     headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-    if (!isSetUA_) {
-        std::string displayVersion = GetSystemParam(DISPLAYVERSION);
-        userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
-        headerList_ = curl_slist_append(headerList_, userAgent_.c_str());
-    }
+    HandlerUserAgent();
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
     AutoLock lock(mutex_);
