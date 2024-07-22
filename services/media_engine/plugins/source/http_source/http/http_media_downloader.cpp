@@ -462,13 +462,13 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
 Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    auto ret = ReadDelegate(buffer, readDataInfo);
+    auto ret = ReadDelegate(buff, readDataInfo);
 
     readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
     readTotalBits_ += readDataInfo.realReadLength_;
     double readDuration = static_cast<double>(readRecordDuringTime_) / 1000;
     if (readDuration > RECORD_TIME_INTERVAL) {
-        double readSpeed = readTotalBits / readDuration;
+        double readSpeed = readTotalBits_ / readDuration;
         size_t curBufferSize = GetCurrentBufferSize();
         MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 "Bit/s, Current buffer size: " PUBLIC_LOG_U64 "Bit",
         static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
