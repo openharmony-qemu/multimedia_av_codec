@@ -34,7 +34,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 1000; //速率统计时间间隔1s
+constexpr int RECORD_TIME_INTERVAL = 500; //速率统计时间间隔1s
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -53,7 +53,7 @@ constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MICROSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BIT = 1000; // 判断下载是否在进行的阈值 bit
-constexpr uint32_t SAMPLE_INTERVAL = 1000;
+constexpr uint32_t SAMPLE_INTERVAL = 2000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -674,7 +674,7 @@ void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 bool HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 {
     FALSE_RETURN_V(buffer_->WriteBuffer(data, len), false);
-    OnWriteRingBuffer(len);
+    OnWriteBuffer(len);
     cvReadWrite_.NotifyOne();
     size_t bufferSize = buffer_->GetSize();
     double ratio = (static_cast<double>(bufferSize)) / RING_BUFFER_SIZE;
@@ -736,11 +736,11 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         MEDIA_LOG_D("isInterruptNeeded true, return false.");
         return false;
     }
-    OnWriteRingBuffer(len);
+    OnWriteBuffer(len);
     return true;
 }
 
-void HttpMediaDownloader::OnWriteRingBuffer(uint32_t len)
+void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
 {
     if (startDownloadTime_ == 0) {
         int64_t nowTime = steadyClock_.ElapsedMilliseconds();
@@ -789,6 +789,7 @@ void HttpMediaDownloader::DownloadReportLoop()
         if (downloadDuringTime_ > 0) {
             double tmpNumerator = static_cast<double>(downloadBits_);
             double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+            totalDownloadDuringTime_ += downloadDuringTime_;
             if (tmpDenominator > ZERO_THRESHOLD) {
                 double downloadRate = tmpNumerator / tmpDenominator;
                 avgDownloadSpeed_ = downloadRate;

@@ -38,7 +38,7 @@ constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int RECORD_TIME_INTERVAL = 500;                  //速率统计时间间隔1s
-constexpr uint32_t SAMPLE_INTERVAL = 1000;
+constexpr uint32_t SAMPLE_INTERVAL = 2000;
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -704,6 +704,7 @@ void HlsMediaDownloader::DownloadReportLoop()
         if (downloadDuringTime_ > 0) {
             double tmpNumerator = static_cast<double>(downloadBits_);
             double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+            totalDownloadDuringTime_ += downloadDuringTime_;
             if (tmpDenominator > ZERO_THRESHOLD) {
                 double downloadRate = tmpNumerator / tmpDenominator;
                 recordBuff->downloadRate = downloadRate;

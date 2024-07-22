@@ -228,6 +228,7 @@ private:
     uint64_t lastReadRecordTime_ = 0;
     uint64_t readTotalBits_ = 0;
     uint64_t readRecordDuringTime_ = 0;
+    uint64_t totalDownloadDuringTime_ {0};
 };
 }
 }

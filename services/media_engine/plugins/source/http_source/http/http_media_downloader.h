@@ -58,7 +58,7 @@ public:
     bool GetReadFrame();
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
-    void OnWriteRingBuffer(uint32_t len);
+    void OnWriteBuffer(uint32_t len);
     void DownloadReportLoop();
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -135,6 +135,7 @@ private:
     uint64_t readRecordDuringTime_ {0};
     uint64_t lastRecordTime_ {0};
     uint64_t downloadDuringTime_ {0}; // 累计有效下载时长 ms
+    uint64_t totalDownloadDuringTime_ {0};
 };
 }
 }
