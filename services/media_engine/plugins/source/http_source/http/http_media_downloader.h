@@ -84,6 +84,7 @@ private:
     void ChangeDownloadPos();
     int32_t GetWaterLineAbove();
     void HandleCachedDuration();
+    double CalculateCurrentDownloadSpeed();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;

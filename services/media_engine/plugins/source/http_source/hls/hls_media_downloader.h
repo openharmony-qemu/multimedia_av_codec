@@ -117,6 +117,7 @@ private:
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
+    double CalculateCurrentDownloadSpeed();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;

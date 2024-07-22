@@ -751,6 +751,25 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
     DownloadReportLoop();
 }
 
+double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
+{
+    if (downloadDuringTime_ > 0) {
+        double tmpNumerator = static_cast<double>(downloadBits_);
+        double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+        totalDownloadDuringTime_ += downloadDuringTime_;
+        if (tmpDenominator > ZERO_THRESHOLD) {
+            double downloadRate = tmpNumerator / tmpDenominator;
+            avgDownloadSpeed_ = downloadRate;
+            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Bit/s", static_cast<int32_t>(downloadRate));
+            downloadDuringTime_ = 0;
+            downloadBits_ = 0;
+            return downloadRate;
+        }
+    } else {
+        return 0;
+    }
+}
+
 void HttpMediaDownloader::DownloadReportLoop()
 {
     int64_t now = steadyClock_.ElapsedMilliseconds();
@@ -761,17 +780,6 @@ void HttpMediaDownloader::DownloadReportLoop()
             downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
             // 有效下载数据量
             downloadBits_ += curDownloadBits;
-<<<<<<< HEAD
-=======
-            double downloadDuration = static_cast<double>(now - lastCheckTime_) / SECOND_TO_MILLIONSECOND;
-            double downloadSpeed = 0;
-            if (downloadDuration > ZERO_THRESHOLD) {
-                downloadSpeed = downloadBits_ / downloadDuration;
-            }
-            avgSpeedSum_ += downloadSpeed / AVG_SPEED_SUM_SCALE;
-            recordSpeedCount_ ++;
-            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadSpeed));
->>>>>>> e4eeaa6d0c9f672ad1e1d61ee12c08da530ba21e
         }
         // 下载总数据量
         lastBits_ = totalBits_;
@@ -779,16 +787,7 @@ void HttpMediaDownloader::DownloadReportLoop()
     }
 
     if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
-        if (downloadDuringTime_ > 0) {
-            double tmpNumerator = static_cast<double>(downloadBits_);
-            double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
-            totalDownloadDuringTime_ += downloadDuringTime_;
-            if (tmpDenominator > ZERO_THRESHOLD) {
-                double downloadRate = tmpNumerator / tmpDenominator;
-                avgDownloadSpeed_ = downloadRate;
-                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Bit/s", static_cast<int32_t>(downloadRate));
-            }
-        }
+        CalculateCurrentDownloadSpeed();
         // 缓冲区剩余bufferSzie
         if (isFlv_) {
             if (buffer_ != nullptr) {
@@ -801,8 +800,6 @@ void HttpMediaDownloader::DownloadReportLoop()
                 MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Bit", remainingBuffer);
             }
         }
-        downloadDuringTime_ = 0;
-        downloadBits_ = 0;
         lastRecordTime_ = now;
     }
 
