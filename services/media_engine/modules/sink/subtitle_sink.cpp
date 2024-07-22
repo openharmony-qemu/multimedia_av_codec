@@ -54,7 +54,7 @@ void SubtitleSink::NotifySeek()
     {
         std::unique_lock<std::mutex> lock(mutex_);
         shouldUpdate_ = true;
-        curTime = GetMediaTime();
+        auto curTime = GetMediaTime();
         GetTargetSubtitleIndex(curTime);
     }
     updateCond_.notify_all();
