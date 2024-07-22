@@ -966,10 +966,8 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
                          "Receive empty buffer."); // return ok
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
         + std::to_string(inputBuffer->memory_->GetSize()));
-    int32_t ret = 0;
     if (mime_type_ == MimeType::AUDIO_AVS3DA) {
-        ret = WriteAudioVivid(inputBuffer);
-        return ret >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
+        return WriteAudioVivid(inputBuffer) >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
     }
     auto mem = inputBuffer->memory_;
     auto srcBuffer = mem->GetAddr();
