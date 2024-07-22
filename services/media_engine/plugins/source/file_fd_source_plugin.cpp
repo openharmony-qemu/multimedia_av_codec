@@ -218,7 +218,8 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
-    MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
+    MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_,
+        expectedLen);
 
     size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, 1);
     if (size == 0) {
@@ -272,7 +273,8 @@ Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
 {
     FALSE_RETURN_V_MSG_E(ringBuffer_ != nullptr, Status::ERROR_WRONG_STATE, "SeekCloud ringBuffer_ is nullptr");
-    MEDIA_LOG_D_SHORT("SeekCloud, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
+    MEDIA_LOG_D_SHORT("SeekCloud, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(),
+        offset);
     if (ringBuffer_->Seek(offset)) {
         MEDIA_LOG_I_SHORT("SeekCloud ringBuffer_ seek hit, offset " PUBLIC_LOG_U64, offset);
         return Status::OK;
