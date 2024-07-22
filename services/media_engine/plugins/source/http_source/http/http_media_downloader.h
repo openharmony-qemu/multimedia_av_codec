@@ -132,7 +132,6 @@ private:
     bool isFirstFrameArrived_ {false};
     bool isBufferEnough_ {false};
     bool isErrorBreak_ {false};
-    unsigned int bufferingTimes_ {0};
 
     uint64_t lastReadRecordTime_ {0};
     uint64_t readTotalBits_ {0};
