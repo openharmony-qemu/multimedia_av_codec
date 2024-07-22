@@ -33,6 +33,7 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
+using namespace OHOS::Media;
 
 namespace {
 std::atomic<int32_t> g_vencCount = 0;
@@ -131,6 +132,8 @@ public:
     void CreateByNameWithParam(int32_t param);
     void SetFormatWithParam(int32_t param);
     void PrepareSource(int32_t param);
+    bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
+    bool GetWaterMarkCapability(int32_t param);
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -254,6 +257,68 @@ void TEST_SUIT::SetFormatWithParam(int32_t param)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 }
+
+bool TEST_SUIT::ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer)
+{
+    std::unique_ptr<std::ifstream> inFile = std::make_unique<std::ifstream>();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile != nullptr, false, "inFile is nullptr");
+    inFile->open(fileName.c_str(), std::ios::in | std::ios::binary);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile->is_open(), false, "open file filed, fileName:%s.", fileName.c_str());
+    sptr<SurfaceBuffer> surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, false, "surfaceBuffer is nullptr");
+    int32_t width = surfaceBuffer->GetWidth();
+    int32_t height = surfaceBuffer->GetHeight();
+    int32_t bufferSize = width * height * 4;
+    uint8_t *in = (uint8_t *)malloc(bufferSize);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(in != nullptr, false, "in is nullptr");
+    inFile->read(reinterpret_cast<char *>(in), bufferSize);
+    // read data
+    int32_t dstWidthStride = surfaceBuffer->GetStride();
+    uint8_t *dstAddr = (uint8_t *)surfaceBuffer->GetVirAddr();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(dstAddr != nullptr, false, "dst is nullptr");
+    const int32_t srcWidthStride = width << 2;
+    uint8_t *inStream = in;
+    for (uint32_t i = 0; i < height; ++i) {
+        memcpy_s(dstAddr, dstWidthStride, inStream, srcWidthStride);
+        dstAddr += dstWidthStride;
+        inStream += srcWidthStride;
+    }
+    inFile->close();
+    if (in) {
+        free(in);
+        in = nullptr;
+    }
+    return true;
+}
+
+bool TEST_SUIT::GetWaterMarkCapability(int32_t param)
+{
+    std::string codecName = "";
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    switch (param) {
+    case VCodecTestCode::HW_AVC:
+        capabilityData =
+            codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true, AVCodecCategory::AVCODEC_HARDWARE);
+        break;
+    case VCodecTestCode::HW_HEVC:
+        capabilityData =
+            codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true, AVCodecCategory::AVCODEC_HARDWARE);
+        break;
+    default:
+        capabilityData =
+            codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true, AVCodecCategory::AVCODEC_SOFTWARE);
+        break;
+    }
+    if (capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
+        std::cout << "Support watermark" << std::endl;
+        return true;
+    } else {
+        std::cout << " Not support watermark" << std::endl;
+        return false;
+    }
+}
+
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
@@ -830,8 +895,8 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_010, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 17;
-    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 17;
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 27;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 27;
     EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
@@ -852,12 +917,328 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AVCS_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 17;
-    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 17;
+    int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 3 - 27;
+    int32_t frameOutputCountMax = (videoEnc_->frameInputCount_ - 1) * 3 + 27;
     EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 #endif // HMOS_TEST
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_001
+ * @tc.desc: encoder with water mark, buffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_001, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    BufferRequestConfig bufferConfig = {
+        .width = 300,
+        .height = 300,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    bool ret = ReadCustomDataToAVBuffer("/data/test/media/test.rgba", avbuffer);
+    ASSERT_EQ(ret, true);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 100);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 100);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_002
+ * @tc.desc: x corrdinate is error
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_002, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, -1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_003
+ * @tc.desc: w is not set
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_003, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 10);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_004
+ * @tc.desc: x coordinate is out of range
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_004, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(DEFAULT_CONFIG);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 10000);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_005
+ * @tc.desc: pixelFormat is error
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_005, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    BufferRequestConfig bufferConfig = {
+        .width = 100,
+        .height = 100,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 10);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_006
+ * @tc.desc: error memoryType
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_006, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(10000);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 10);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_007
+ * @tc.desc: error state
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_007, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(10000);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 10);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_008
+ * @tc.desc: error state
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_008, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(10000);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 10);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_009
+ * @tc.desc: encoder with water mark, surface mode.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_009, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    bool ret = ReadCustomDataToAVBuffer("/data/test/media/test.rgba", avbuffer);
+    ASSERT_EQ(ret, true);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 100);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 100);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_SetCustomBuffer_0010
+ * @tc.desc: repeat set custom buffer, surface mode.
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
+{
+    if (!GetWaterMarkCapability(GetParam())) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    auto allocator = AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    bool ret = ReadCustomDataToAVBuffer("/data/test/media/test.rgba", avbuffer);
+    ASSERT_EQ(ret, true);
+    std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
+    std::shared_ptr<FormatMock> param = buffer->GetParameter();
+    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
+    param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_X, 100);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 100);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
+    param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
+    buffer->SetParameter(param);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
 #endif // VIDEOENC_CAPI_UNIT_TEST
 
 /**

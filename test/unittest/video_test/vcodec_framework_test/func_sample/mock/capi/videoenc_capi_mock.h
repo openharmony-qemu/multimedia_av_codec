@@ -48,6 +48,7 @@ public:
     int32_t FreeOutputBuffer(uint32_t index) override;
     std::shared_ptr<SurfaceMock> CreateInputSurface() override;
     bool IsValid() override;
+    int32_t SetCustomBuffer( std::shared_ptr<AVBufferMock> buffer) override;
 
 private:
     static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData);

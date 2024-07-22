@@ -130,6 +130,7 @@ public:
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
     bool IsValid();
+    int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
     void SetOutPath(const std::string &path);
     void SetIsHdrVivid(bool isHdrVivid);

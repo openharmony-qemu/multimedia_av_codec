@@ -109,6 +109,14 @@ int32_t AVCodecVideoEncoderImpl::Configure(const Format &format)
     return codecClient_->Configure(format);
 }
 
+int32_t AVCodecVideoEncoderImpl::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecClient_->SetCustomBuffer(buffer);
+}
+
 int32_t AVCodecVideoEncoderImpl::Prepare()
 {
     CHECK_AND_RETURN_RET_LOG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");

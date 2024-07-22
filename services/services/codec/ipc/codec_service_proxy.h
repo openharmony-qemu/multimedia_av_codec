@@ -57,6 +57,7 @@ public:
 #endif
     void SetListener(const sptr<CodecListenerStub> &listener);
     void InitLabel(const uint64_t uid);
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
 
 private:
     static inline BrokerDelegator<CodecServiceProxy> delegator_;

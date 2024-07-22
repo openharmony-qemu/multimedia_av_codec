@@ -194,6 +194,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
             ret = SetDecryptConfig(data, reply);
 #endif
             break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_CUSTOM_BUFFER):
+            ret = SetCustomBuffer(data, reply);
+            break;
         default:
             AVCODEC_LOGW("No member func supporting, applying default process, code:%{public}u", code);
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -241,6 +244,13 @@ int32_t CodecServiceStub::Prepare()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->Prepare();
+}
+
+int32_t CodecServiceStub::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->SetCustomBuffer(buffer);
 }
 
 int32_t CodecServiceStub::Start()
@@ -423,7 +433,6 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
     AVCODEC_SYNC_TRACE;
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
-
     bool ret = reply.WriteInt32(Configure(format));
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
@@ -633,6 +642,17 @@ int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &r
     return AVCS_ERR_OK;
 }
 #endif
+
+int32_t CodecServiceStub::SetCustomBuffer(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    bool ret = buffer->ReadFromMessageParcel(data);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Read From MessageParcel failed");
+    ret = reply.WriteInt32(SetCustomBuffer(buffer));
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
 
 int32_t CodecServiceStub::InnerRelease()
 {

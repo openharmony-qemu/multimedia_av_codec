@@ -53,6 +53,7 @@ public:
     virtual int32_t RenderOutputBuffer(uint32_t index);
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format& format);
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer);
 
     virtual std::string GetHidumperInfo()
     {
