@@ -451,7 +451,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
     }
 }
 
-Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
@@ -751,23 +751,22 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
     DownloadReportLoop();
 }
 
-double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
+double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 {
+    double downloadRate = 0;
     if (downloadDuringTime_ > 0) {
         double tmpNumerator = static_cast<double>(downloadBits_);
         double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
         totalDownloadDuringTime_ += downloadDuringTime_;
         if (tmpDenominator > ZERO_THRESHOLD) {
-            double downloadRate = tmpNumerator / tmpDenominator;
+            downloadRate = tmpNumerator / tmpDenominator;
             avgDownloadSpeed_ = downloadRate;
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Bit/s", static_cast<int32_t>(downloadRate));
             downloadDuringTime_ = 0;
             downloadBits_ = 0;
-            return downloadRate;
         }
-    } else {
-        return 0;
     }
+    return downloadRate;
 }
 
 void HttpMediaDownloader::DownloadReportLoop()
