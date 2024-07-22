@@ -797,12 +797,10 @@ void HttpMediaDownloader::DownloadReportLoop()
             }
         }
         // 缓冲区剩余时长
-        uint64_t bufferDuration = bufferedDuration_ / currentBitrate_;
         if (buffer_ != nullptr) {
             uint64_t remainingBuffer = buffer_->GetSize() * 8;
             MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
         }
-        recordCount_++;
         downloadDuringTime_ = 0;
         downloadBits_ = 0;
         lastRecordTime_ = now;
