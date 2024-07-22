@@ -334,6 +334,7 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
     "./func_sample/mock",
     "./func_sample/mock/capi",
     "./func_sample/sample",
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/test/unittest/common/",
@@ -360,6 +361,8 @@ ohos_unittest("videodec_hdrvivid2sdr_capi_unit_test") {
   if (av_codec_support_drm) {
     sources += [ "$av_codec_root_dir/test/unittest/common/common_mock/drm_mock/capi/media_key_system_mock.cpp" ]
   }
+
+  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
 
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
@@ -394,6 +397,7 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "./func_sample/mock",
     "./func_sample/mock/inner",
     "./func_sample/sample",
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/test/unittest/codeclist_test/",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
     "$av_codec_root_dir/test/unittest/common/",
@@ -416,6 +420,8 @@ ohos_unittest("videodec_hdrvivid2sdr_inner_unit_test") {
     "./func_sample/sample/vdec_sample.cpp",
     "./videodec_hdrvivid2sdr_unit_test.cpp",
   ]
+
+  deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
 
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
