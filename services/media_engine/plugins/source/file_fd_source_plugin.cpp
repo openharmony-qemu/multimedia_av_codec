@@ -398,9 +398,8 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I_SHORT("CacheDataLoop fd: " PUBLIC_LOG_D32 "cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ "
-        PUBLIC_LOG_U64 ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_,
-        size_, ct);
+        MEDIA_LOG_I_SHORT("CacheDataLoop fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64
+        ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_, size_, ct);
     }
     
     DeleteCacheBuffer(cacheBuffer);
