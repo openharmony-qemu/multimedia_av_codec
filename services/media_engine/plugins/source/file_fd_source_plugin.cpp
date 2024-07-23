@@ -381,7 +381,6 @@ void FileFdSourcePlugin::CacheDataLoop()
         return;
     }
 
-    // fd read success
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I_SHORT("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
