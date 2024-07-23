@@ -232,6 +232,12 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             OnConfigure(info);
             return;
         }
+        case MsgWhat::CONFIGURE_BUFFER: {
+            std::shared_ptr<AVBuffer> buffer;
+            (void)info.param->GetValue("buffer", buffer);
+            ReplyErrorCode(info.id, codec_->OnConfigureBuffer(buffer));
+            return;
+        }
         case MsgWhat::CREATE_INPUT_SURFACE: {
             sptr<Surface> surface = codec_->OnCreateInputSurface();
             ParamSP reply = make_shared<ParamBundle>();

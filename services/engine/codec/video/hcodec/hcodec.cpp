@@ -108,6 +108,14 @@ int32_t HCodec::Configure(const Format &format)
     return DoSyncCall(MsgWhat::CONFIGURE, proc);
 }
 
+int32_t HCodec::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
+        msg->SetValue("buffer", buffer);
+    };
+    return DoSyncCall(MsgWhat::CONFIGURE_BUFFER, proc);
+}
+
 int32_t HCodec::SetOutputSurface(sptr<Surface> surface)
 {
     HLOGI(">>");
