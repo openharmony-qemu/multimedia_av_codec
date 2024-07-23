@@ -337,16 +337,16 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
     }
 }
 
-void HttpCurlClient::HandlerUserAgent()
+void HttpCurlClient::HandleUserAgent()
 {
     if (!isSetUA_) {
         std::string displayVersion = GetSystemParam(DISPLAYVERSION);
-        userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
+        std::string userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
         char *userAgent = new char[userAgent_.size() + 1];
         int ret = memcpy_s(userAgent, userAgent_.size(), userAgent_.c_str(), userAgent_.size());
         userAgent[userAgent_.size()] = '\0';
         if (ret != EOK) {
-            MEDIA_LOG_E("faild to memcpy userAgent_");
+            MEDIA_LOG_E("failed to memcpy userAgent_");
             return;
         }
         headerList_ = curl_slist_append(headerList_, userAgent);
@@ -363,19 +363,18 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
-    headerList_ = curl_slist_append(headerList_, "Accept: */*");
-    headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
-    headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-    HandlerUserAgent();
+    if (isFirstRequest_) {
+        headerList_ = curl_slist_append(headerList_, "Accept: */*");
+        headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
+        headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
+        HandlerUserAgent();
+        isFirstRequest_ = false;
+    }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
     AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CURLcode returnCode = curl_easy_perform(easyHandle_);
-    if (headerList_ != nullptr) {
-        curl_slist_free_all(headerList_);
-        headerList_ = nullptr;
-    }
     std::set <CURLcode> notRetrySet = {
         CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
         CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
