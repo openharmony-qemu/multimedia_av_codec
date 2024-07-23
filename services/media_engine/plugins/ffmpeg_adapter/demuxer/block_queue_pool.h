@@ -57,6 +57,7 @@ public:
     Status AddTrackQueue(uint32_t trackIndex);
     Status RemoveTrackQueue(uint32_t trackIndex);
     bool HasCache(uint32_t trackIndex);
+    size_t GetCacheSize(uint32_t trackIndex);
     void FreeQueue(uint32_t queueIndex);
     bool Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block);
     std::shared_ptr<SamplePacket> Pop(uint32_t trackIndex);
