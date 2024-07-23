@@ -454,8 +454,10 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     int64_t mappingTime = 0;
     {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
-        FALSE_RETURN_MSG(!(mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_),
-            "buffer->pts fail");
+        if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
+            MEDIA_LOG_D("buffer->pts fail");
+            return;
+        }
         mappingTime = mappingTimeQueue_.front().second;
         mappingTimeQueue_.pop_front();
         MEDIA_LOG_D("OnOutputBufferAvailable mappingTime" PUBLIC_LOG_D64, mappingTime);
