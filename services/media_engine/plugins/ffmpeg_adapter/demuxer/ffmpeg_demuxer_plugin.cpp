@@ -1679,8 +1679,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to input sample is nullptr");
     Status ret;
-    if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1 &&
-        cacheQueue_.Back(static_cast<uint32_t>(trackId)->pkts.Size() == 1) {
+    if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);
     }
     while (!cacheQueue_.HasCache(trackId)) {
@@ -1728,8 +1727,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
-    if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1 &&
-        cacheQueue_.Back(static_cast<uint32_t>(trackId)->pkts.Size() == 1) {
+    if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
         ret = ReadPacketToCacheQueue(trackId);
     }
     while (!cacheQueue_.HasCache(trackId)) {
