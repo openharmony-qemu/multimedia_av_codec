@@ -32,7 +32,6 @@
 #include "osal/utils/steady_clock.h"
 #include "plugin/plugin_time.h"
 #include "param_wrapper.h"
-#include "osal/utils/util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -747,23 +746,18 @@ Status AudioServerSinkPlugin::GetVolume(float &volume)
 
 Status AudioServerSinkPlugin::SetVolume(float volume)
 {
-    MEDIA_LOG_I("SetVolume entered.");
-    FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_WRONG_STATE);
-    int32_t ret = audioRenderer_->SetVolume(volume);
-    if (ret != OHOS::AudioStandard::SUCCESS) {
-        MEDIA_LOG_E_SHORT("set volume failed with code " PUBLIC_LOG_D32, ret);
-        return Status::ERROR_UNKNOWN;
+    MEDIA_LOG_I_T("SetVolume entered.");
+    if (audioRenderer_ != nullptr) {
+        int32_t ret = audioRenderer_->SetVolume(volume);
+        if (ret != OHOS::AudioStandard::SUCCESS) {
+            MEDIA_LOG_E_T("set volume failed with code " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_UNKNOWN;
+        }
+        MEDIA_LOG_I("SetVolume succ");
+        audioRendererVolume_ = volume;
+        return Status::OK;
     }
-    MEDIA_LOG_I("SetVolume succ");
-    if (!OSAL::IsFloatEqualZero(audioRendererVolume_) && OSAL::IsFloatEqualZero(volume)) {
-        MEDIA_LOG_I_SHORT("set volume from %{public}f to %{public}f", audioRendererVolume_, volume);
-        audioRenderer_->SetSilentModeAndMixWithOthers(true);
-    } else if (OSAL::IsFloatEqualZero(audioRendererVolume_) && !OSAL::IsFloatEqualZero(volume)) {
-        MEDIA_LOG_I_SHORT("set volume from %{public}f to %{public}f", audioRendererVolume_, volume);
-        audioRenderer_->SetSilentModeAndMixWithOthers(false);
-    }
-    audioRendererVolume_ = volume;
-    return Status::OK;
+    return Status::ERROR_WRONG_STATE;
 }
 
 Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
