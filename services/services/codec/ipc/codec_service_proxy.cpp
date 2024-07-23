@@ -98,6 +98,21 @@ int32_t CodecServiceProxy::Configure(const Format &format)
     return reply.ReadInt32();
 }
 
+int32_t CodecServiceProxy::Prepare()
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::PREPARE), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+
+    return reply.ReadInt32();
+}
+
 int32_t CodecServiceProxy::Start()
 {
     MessageParcel data;

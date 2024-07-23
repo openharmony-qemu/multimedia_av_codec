@@ -65,6 +65,17 @@ public:
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
     static const int64_t kMaxAllowedAudioSinkDelayUs = 1500 * HST_MSECOND;
+
+    bool HasPlugin() const
+    {
+        return plugin_ != nullptr;
+    }
+
+    bool IsInitialized() const
+    {
+        return state_ == Pipeline::FilterState::INITIALIZED;
+    }
+
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
 private:
@@ -75,7 +86,7 @@ private:
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
     void DrainAndReportEosEvent();
-    void HandleEosInner();
+    void HandleEosInner(bool drain);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};

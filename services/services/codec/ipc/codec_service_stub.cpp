@@ -36,6 +36,7 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
      "CodecServiceStub SetListenerObject"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::INIT), "CodecServiceStub Init"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::CONFIGURE), "CodecServiceStub Configure"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::PREPARE), "CodecServiceStub Prepare"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::START), "CodecServiceStub Start"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::STOP), "CodecServiceStub Stop"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::FLUSH), "CodecServiceStub Flush"},
@@ -146,6 +147,9 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
         case static_cast<uint32_t>(CodecServiceInterfaceCode::CONFIGURE):
             ret = Configure(data, reply);
             break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::PREPARE):
+            ret = Prepare(data, reply);
+            break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::START):
             ret = Start(data, reply);
             break;
@@ -230,6 +234,13 @@ int32_t CodecServiceStub::Configure(const Format &format)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->Configure(format);
+}
+
+int32_t CodecServiceStub::Prepare()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->Prepare();
 }
 
 int32_t CodecServiceStub::Start()
@@ -414,6 +425,16 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
     (void)AVCodecParcel::Unmarshalling(data, format);
 
     bool ret = reply.WriteInt32(Configure(format));
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::Prepare(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+    (void)data;
+
+    bool ret = reply.WriteInt32(Prepare());
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }

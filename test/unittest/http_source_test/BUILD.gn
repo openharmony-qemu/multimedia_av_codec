@@ -59,6 +59,7 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
+  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
 ]
 config("hls_unittest_cfg") {
   defines = [
@@ -100,6 +101,7 @@ config("hls_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$media_foundation_root_dir/src",
+    "$av_codec_root_dir/test/unittest/common",
     "//third_party/curl/include",
     "//third_party/openssl/include",
     "$av_codec_root_dir/services/drm_decryptor",
@@ -130,6 +132,7 @@ ohos_unittest("http_media_downloader_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
@@ -158,6 +161,7 @@ ohos_unittest("downloader_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
@@ -186,6 +190,7 @@ ohos_unittest("http_source_plugin_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
     "media_foundation:media_foundation",

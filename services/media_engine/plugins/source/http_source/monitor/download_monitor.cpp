@@ -26,6 +26,7 @@ namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
     constexpr int RETRY_THRESHOLD = 1;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
+    constexpr int32_t READ_LOG_FEQUENCE = 50;
 }
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
@@ -88,6 +89,11 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
+    haveReadData_ += readDataInfo.realReadLength_;
+    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U32, haveReadData_);
+    if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
+        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U32, haveReadData_);
+    }
     return ret;
 }
 
@@ -248,6 +254,16 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
         MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
         downloader_->GetDownloadInfo(downloadInfo);
     }
+}
+
+Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return downloader_->SetCurrentBitRate(bitRate);
 }
 }
 }

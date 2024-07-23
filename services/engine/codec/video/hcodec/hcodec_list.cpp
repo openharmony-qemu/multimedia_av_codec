@@ -30,7 +30,8 @@ using namespace CodecHDI;
 using namespace OHOS::HDI::ServiceManager::V1_0;
 
 static mutex g_mtx;
-static sptr<ICodecComponentManager> g_compMgr;
+static sptr<ICodecComponentManager> g_compMgrIpc;
+static sptr<ICodecComponentManager> g_compMgrPassthru;
 
 class Listener : public ServStatListenerStub {
 public:
@@ -39,39 +40,54 @@ public:
         if (status.serviceName == "codec_component_manager_service" && status.status == SERVIE_STATUS_STOP) {
             LOGW("codec_component_manager_service died");
             lock_guard<mutex> lk(g_mtx);
-            g_compMgr = nullptr;
+            g_compMgrIpc = nullptr;
         }
     }
 };
 
-bool IsPassthrough()
+static std::optional<bool> IsPassthroughFromParam()
 {
-    static bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", false);
-    LOGI("%s mode", usePassthrough ? "passthrough" : "ipc");
-    return usePassthrough;
+#ifdef BUILD_ENG_VERSION
+    string para = OHOS::system::GetParameter("hcodec.usePassthrough", "-1");
+    if (para == "1") {
+        return true;
+    }
+    if (para == "0") {
+        return false;
+    }
+#endif
+    return std::nullopt;
 }
 
-sptr<ICodecComponentManager> GetManager()
+sptr<ICodecComponentManager> GetManager(bool getCap, bool supportPassthrough)
 {
     lock_guard<mutex> lk(g_mtx);
-    if (g_compMgr) {
-        return g_compMgr;
+    bool isPassthrough = false;
+    if (getCap) {
+        isPassthrough = true;
+    } else {
+        optional<bool> para = IsPassthroughFromParam();
+        isPassthrough = para.has_value() ? para.value() : supportPassthrough;
+        LOGI("%s mode", isPassthrough ? "passthrough" : "ipc");
+    }
+    sptr<ICodecComponentManager>& mng = (isPassthrough ? g_compMgrPassthru : g_compMgrIpc);
+    if (mng) {
+        return mng;
     }
     LOGI("need to get ICodecComponentManager");
-    bool isPassthrough = IsPassthrough();
     if (!isPassthrough) {
         sptr<IServiceManager> serviceMng = IServiceManager::Get();
         if (serviceMng) {
             serviceMng->RegisterServiceStatusListener(new Listener(), DEVICE_CLASS_DEFAULT);
         }
     }
-    g_compMgr = ICodecComponentManager::Get(isPassthrough);
-    return g_compMgr;
+    mng = ICodecComponentManager::Get(isPassthrough);
+    return mng;
 }
 
 vector<CodecCompCapability> GetCapList()
 {
-    sptr<ICodecComponentManager> mnger = GetManager();
+    sptr<ICodecComponentManager> mnger = GetManager(true);
     if (mnger == nullptr) {
         LOGE("failed to create codec component manager");
         return {};
@@ -110,7 +126,8 @@ int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)
 
 bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 {
-    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC) {
+    if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
+        hdiCap.role == MEDIA_ROLETYPE_VIDEO_VVC) {
         return true;
     }
     return false;
@@ -153,6 +170,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
+    LOGI("isSupportPassthrough: %d", hdiVideoCap.isSupportPassthrough);
     LOGI("isSupportWaterMark: %d, isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
         hdiVideoCap.isSupportWaterMark, hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
         hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);

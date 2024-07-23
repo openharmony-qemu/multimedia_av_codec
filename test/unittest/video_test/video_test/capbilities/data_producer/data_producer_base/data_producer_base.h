@@ -27,7 +27,7 @@ namespace Sample {
 class DataProducerBase {
 public:
     virtual ~DataProducerBase() {};
-    virtual int32_t Init(SampleInfo &info);
+    virtual int32_t Init(const std::shared_ptr<SampleInfo> &info);
     int32_t ReadSample(CodecBufferInfo &bufferInfo);
     virtual int32_t Seek(int64_t position);
     virtual bool Repeat();
@@ -40,13 +40,13 @@ protected:
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
     std::unique_ptr<std::ofstream> inputDumpFile_ = nullptr;
     std::mutex mutex_;
-    SampleInfo sampleInfo_;
+    std::shared_ptr<SampleInfo> sampleInfo_;
     uint32_t frameCount_ = 0;
 };
 
 class DataProducerFactory {
 public:
-    static std::shared_ptr<DataProducerBase> CreateDataProducer(const DataProducerInfo &info);
+    static std::shared_ptr<DataProducerBase> CreateDataProducer(const DataProducerType &type);
 };
 } // Sample
 } // MediaAVCodec

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <unistd.h>
-#include "video_sample_base.h"
+#include "sample_base.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "syspara/parameters.h"
@@ -84,7 +84,7 @@ std::string ToString(OH_AVPixelFormat pixelFormat)
 
 int32_t RunSample(const SampleInfo &info)
 {
-    std::shared_ptr<VideoSampleBase> sample = VideoSampleFactory::CreateVideoSample(info.codecType);
+    std::shared_ptr<SampleBase> sample = SampleFactory::CreateSample(info);
 
     Pause(info.pauseBeforeRunSample);
 
@@ -115,8 +115,8 @@ void PrintSampleInfo(const SampleInfo &info)
         info.codecMime.c_str(), info.videoWidth, info.videoHeight, info.frameRate,
         static_cast<double>(info.bitrate) / 1024 / 1024, // 1024: precision
         OHOS::MediaAVCodec::Sample::ToString(static_cast<OH_AVPixelFormat>(info.pixelFormat)).c_str());
-    AVCODEC_LOGI("interval: %{public}dms, HDR vivid: %{public}s, dump output: %{public}s",
-        info.frameInterval, BOOL_TO_STRING.at(info.isHDRVivid).c_str(), BOOL_TO_STRING.at(info.needDumpOutput).c_str());
+    AVCODEC_LOGI("interval: %{public}dms, dump output: %{public}s",
+        info.frameInterval, BOOL_TO_STRING.at(info.needDumpOutput).c_str());
     AVCODEC_LOGI("====== Video sample config ======");
 }
 

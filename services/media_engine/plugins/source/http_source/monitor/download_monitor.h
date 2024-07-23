@@ -64,6 +64,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    Status SetCurrentBitRate(int32_t bitRate) override;
 
 private:
     int64_t HttpMonitorLoop();
@@ -77,6 +78,7 @@ private:
     time_t lastReadTime_ {0};
     Callback* callback_ {nullptr};
     Mutex taskMutex_ {};
+    uint32_t haveReadData_ {0};
 };
 }
 }

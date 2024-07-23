@@ -33,6 +33,14 @@ void RunNormalEncoder()
     vEncSample->ConfigureVideoEncoder();
     vEncSample->StartVideoEncoder();
     vEncSample->WaitForEOS();
+
+    auto vEncSampleSurf = make_unique<VEncAPI11FuzzSample>();
+    vEncSample->surfInput = true;
+    vEncSampleSurf->CreateVideoEncoder();
+    vEncSampleSurf->SetVideoEncoderCallback();
+    vEncSampleSurf->ConfigureVideoEncoder();
+    vEncSampleSurf->StartVideoEncoder();
+    vEncSampleSurf->WaitForEOS();
 }
 
 bool g_needRunNormalEncoder = true;

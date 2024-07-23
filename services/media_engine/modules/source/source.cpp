@@ -25,7 +25,7 @@
 #include "source.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -103,7 +103,6 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
-        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         plugin_->SetBundleName(bundleName);
     }
 }
@@ -191,6 +190,9 @@ Status Source::SetCurrentBitRate(int32_t bitRate)
 
 Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
+    if (seekable_ != Seekable::SEEKABLE) {
+        GetSeekable();
+    }
     int64_t timeNs;
     if (Plugins::Ms2HstTime(seekTime, timeNs)) {
         return plugin_->SeekToTime(timeNs, mode);
@@ -265,12 +267,22 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
-        MEDIA_LOG_I("Gallery read freeze.");
+        MEDIA_LOG_I("Buffering start or end.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else if (event.type == PluginEventType::SOURCE_BITRATE_START) {
         MEDIA_LOG_I("source bitrate start from source.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::CACHED_DURATION) {
+        MEDIA_LOG_I("Onevent cached duration.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
+        MEDIA_LOG_I("buffer percent update.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }

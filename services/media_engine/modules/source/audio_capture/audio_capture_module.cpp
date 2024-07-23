@@ -78,7 +78,7 @@ Status AudioCaptureModule::Init()
     AutoLock lock(captureMutex_);
     if (audioCapturer_ == nullptr) {
         AudioStandard::AppInfo appInfo;
-        appInfo.appTokenId = appTokenId_;
+        appInfo.appTokenId = static_cast<uint32_t>(appTokenId_);
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
         appInfo.appFullTokenId = static_cast<uint64_t>(appFullTokenId_);

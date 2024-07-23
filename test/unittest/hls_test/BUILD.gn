@@ -26,6 +26,7 @@ hls_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
+  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
 ]
 
 config("hls_unittest_cfg") {
@@ -70,6 +71,7 @@ config("hls_unittest_cfg") {
     "$media_foundation_root_dir/src",
     "//third_party/curl/include",
     "//third_party/openssl/include",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 }
 
@@ -93,6 +95,7 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
@@ -122,6 +125,7 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
@@ -151,6 +155,7 @@ ohos_unittest("hls_tags_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
@@ -180,6 +185,7 @@ ohos_unittest("m3u8_unit_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",

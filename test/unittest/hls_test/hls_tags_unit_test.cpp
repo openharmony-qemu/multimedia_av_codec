@@ -18,6 +18,7 @@
 #include <sstream>
 #include <stack>
 #include <utility>
+#include "http_server_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -25,14 +26,22 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 
 using namespace testing::ext;
 using namespace std;
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void AttributeUnitTest::SetUpTestCase(void) {}
 
 void AttributeUnitTest::TearDownTestCase(void) {}
 
-void AttributeUnitTest::SetUp(void) {}
+void AttributeUnitTest::SetUp(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+}
 
-void AttributeUnitTest::TearDown(void) {}
+void AttributeUnitTest::TearDown(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_Decimal_0001, TestSize.Level1)
 {

@@ -26,6 +26,7 @@
 #include "timer.h"
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -60,6 +61,8 @@ public:
     StatusCallbackFunc GetStatusCallbackFunc();
     void OnWriteRingBuffer(uint32_t len);
     void DownloadReportLoop();
+    Status SetCurrentBitRate(int32_t bitRate) override;
+    void UpdateCachedPercent(BufferingInfoType infoType);
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveRingBufferData(uint8_t* data, uint32_t len);
@@ -80,6 +83,8 @@ private:
     size_t GetCurrentBufferSize();
     bool HandleBreak(int32_t& sleepTime);
     void ChangeDownloadPos();
+    int32_t GetWaterLineAbove();
+    void HandleCachedDuration();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -121,13 +126,15 @@ private:
     std::atomic<bool> isNeedDropData_ {false};
     std::atomic<bool> isServerAcceptRange_ {false};
 
-    size_t wantReadLength_ {0};
+    size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
     bool isBufferEnough_ {false};
     bool isErrorBreak_ {false};
-    unsigned int bufferingTimes_ {0};
+    int32_t currentBitRate_ {0};
+    uint64_t lastDurationReacord_ {0};
+    int32_t lastCachedSize_ {0};
 };
 }
 }

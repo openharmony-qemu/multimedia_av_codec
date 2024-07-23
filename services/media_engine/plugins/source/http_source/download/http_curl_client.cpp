@@ -33,6 +33,8 @@ namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 4096;
 const std::string USER_AGENT = "User-Agent";
+const int32_t MAX_LEN = 128;
+const std::string DISPLAYVERSION = "const.product.software.version";
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -44,6 +46,16 @@ std::string ToString(const std::list<std::string> &lists, char tab)
         str.append(*it);
     }
     return str;
+}
+
+std::string GetSystemParam(const std::string &key)
+{
+    char value[MAX_LEN] = {0};
+    int32_t ret = GetParameter(key.c_str(), "", value, MAX_LEN);
+    if (ret < 0) {
+        return "";
+    }
+    return std::string(value);
 }
 
 std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
@@ -224,9 +236,6 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     std::map<std::string, std::string> header = httpHeader;
     HttpHeaderParse(header);
-    if (!isSetUA_) {
-        headerList_ = curl_slist_append(headerList_, "User-Agent: OpenHarmony OS UA");
-    }
     InitCurlEnvironment(url, timeoutMs);
     return Status::OK;
 }
@@ -328,6 +337,23 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
     }
 }
 
+void HttpCurlClient::HandlerUserAgent()
+{
+    if (!isSetUA_) {
+        std::string displayVersion = GetSystemParam(DISPLAYVERSION);
+        userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
+        char *userAgent = new char[userAgent_.size() + 1];
+        int ret = memcpy_s(userAgent, userAgent_.size(), userAgent_.c_str(), userAgent_.size());
+        userAgent[userAgent_.size()] = '\0';
+        if (ret != EOK) {
+            MEDIA_LOG_E("faild to memcpy userAgent_");
+            return;
+        }
+        headerList_ = curl_slist_append(headerList_, userAgent);
+        delete[] userAgent;
+    }
+}
+
 // RequestData run in HttpDownload thread,
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
@@ -340,6 +366,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
     headerList_ = curl_slist_append(headerList_, "Accept: */*");
     headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
     headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
+    HandlerUserAgent();
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
     AutoLock lock(mutex_);

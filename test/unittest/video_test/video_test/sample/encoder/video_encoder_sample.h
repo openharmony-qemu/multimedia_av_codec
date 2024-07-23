@@ -24,7 +24,6 @@ namespace Sample {
 class VideoEncoderSample : public VideoSampleBase {
 public:
     VideoEncoderSample() {};
-    ~VideoEncoderSample() override;
 
 private:
     int32_t Init() override;

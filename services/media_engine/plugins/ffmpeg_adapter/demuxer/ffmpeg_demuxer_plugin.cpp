@@ -308,7 +308,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
       ioContext_(),
       selectedTrackIds_(),
       cacheQueue_("cacheQueue"),
-      streamParserInited_(false)
+      streamParserInited_(false),
+      parserRefIoContext_()
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("Create FFmpeg Demuxer Plugin.");
@@ -407,7 +408,8 @@ Status FFmpegDemuxerPlugin::ParserBoxInfo()
     MEDIA_LOG_I("Success to parser fps: " PUBLIC_LOG_F, fps_);
     FFStream *sti = ffstream(videoStream);
     for (int32_t i = 0; i < sti->nb_index_entries; i++) {
-        if (sti->index_entries[i].flags & AVINDEX_KEYFRAME) {
+        uint32_t flags = static_cast<uint32_t>(sti->index_entries[i].flags);
+        if (flags & AVINDEX_KEYFRAME) {
             IFramePos_.emplace_back(i);
         }
     }
@@ -560,11 +562,13 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
         pendingSeekMsTime_ = -1;
     }
 
+    int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     uint32_t gopSize = 0;
-    if (parserCurGopId_ + 1 < static_cast<int32_t>(IFramePos_.size())) {
+    uint32_t nbFrames = static_cast<uint32_t>(parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames);
+    if (parserCurGopId_ + 1 < iFramePosSize) {
         gopSize = IFramePos_[parserCurGopId_ + 1] - IFramePos_[parserCurGopId_];
     } else {
-        gopSize = parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames - IFramePos_[parserCurGopId_];
+        gopSize = nbFrames - IFramePos_[parserCurGopId_];
     }
 
     int64_t pts = ((IFramePos_[parserCurGopId_] + gopSize / 2) / fps_) /  // 2
@@ -903,13 +907,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = flag;
     Status ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
-    if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
-        av_packet_free(&tempPkt);
-        av_free(tempPkt);
-        tempPkt = nullptr;
-    }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
-
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
@@ -919,6 +916,12 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         tempPkt->stream_index, -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
     Dump(dumpParam);
 
+    if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
+        av_packet_free(&tempPkt);
+        av_free(tempPkt);
+        tempPkt = nullptr;
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
@@ -939,10 +942,38 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
     }
 }
 
+bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead)
+{
+    if (*vttPkt == nullptr) {
+        if (pkt->size > 0) {
+            *vttPkt = av_packet_alloc();
+            (*vttPkt)->pts = pkt->pts;
+            (*vttPkt)->dts = pkt->dts;
+            (*vttPkt)->size = pkt->size;
+            *(pkt->data + pkt->size) = '\0';
+            (*vttPkt)->data = pkt->data;
+        }
+        pkt = nullptr;
+        return true;
+    } else {
+        pkt->duration = pkt->pts - (*vttPkt)->pts;
+        pkt->pts = (*vttPkt)->pts;
+        pkt->dts = (*vttPkt)->dts;
+        pkt->size = (*vttPkt)->size;
+        *((*vttPkt)->data + (*vttPkt)->size) = '\0';
+        pkt->data = (*vttPkt)->data;
+
+        *vttPkt = nullptr;
+        continueRead = false;
+    }
+    return false;
+}
+
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     AVPacket *pkt = nullptr;
+    AVPacket *vttPkt = nullptr;
     bool continueRead = true;
     while (continueRead) {
         if (pkt == nullptr) {
@@ -974,7 +1005,14 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             av_packet_unref(pkt);
             continue;
         }
-        if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) && GetNextFrame(pkt->data, pkt->size))) {
+        AVStream *avStream = formatContext_->streams[pkt->stream_index];
+        if (avStream->codecpar->codec_id == AV_CODEC_ID_WEBVTT &&
+            FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4) {
+            if (WebvttPktProcess(&vttPkt, pkt, continueRead)) {
+                continue;
+            }
+        } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) &&
+            GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;
         }
         AddPacketToCacheQueue(pkt);
@@ -1048,6 +1086,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     auto ioContext = static_cast<IOContext*>(opaque);
     auto buffer = std::make_shared<Buffer>();
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
+    FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "AVReadPacket buf is nullptr");
 
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
@@ -1874,7 +1913,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
-    FALSE_RETURN_V_MSG_E(bufData != nullptr, 0, "Sniff failed due to alloc buffer failed.");
+    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, 0, "Sniff failed due to alloc buffer failed.");
     MEDIA_LOG_I("Prepare buffer for probe, input param bufferSize=" PUBLIC_LOG_ZU
         ", real buffer size=" PUBLIC_LOG_ZU ".", bufferSize + AVPROBE_PADDING_SIZE, bufferSize);
 

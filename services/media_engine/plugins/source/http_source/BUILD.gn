@@ -118,6 +118,7 @@ ohos_shared_library("media_plugin_HttpSource") {
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
     "media_foundation:media_foundation",

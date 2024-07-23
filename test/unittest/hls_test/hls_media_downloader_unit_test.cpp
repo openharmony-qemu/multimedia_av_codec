@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "hls_media_downloader_unit_test.h"
+#include "http_server_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -28,6 +29,7 @@ const std::map<std::string, std::string> httpHeader = {
 };
 static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
@@ -40,12 +42,16 @@ void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 void HlsMediaDownloaderUnitTest ::SetUp(void)
 {
     hlsMediaDownloader = new HlsMediaDownloader();
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
 }
 
 void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
     delete hlsMediaDownloader;
     hlsMediaDownloader = nullptr;
+    g_server->StopServer();
+    g_server = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)

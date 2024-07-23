@@ -287,6 +287,9 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
         case CODEC_OMX_VIDEO_CodingHEVC:
             shortName_ = isEncoderStr + "hevc";
             break;
+        case CODEC_OMX_VIDEO_CodingVVC:
+            shortName_ = isEncoderStr + "vvc";
+            break;
         default:
             shortName_ = isEncoderStr;
             break;
@@ -1304,7 +1307,7 @@ void HCodec::CleanUpOmxNode()
 int32_t HCodec::OnAllocateComponent()
 {
     HitraceScoped trace(HITRACE_TAG_ZMEDIA, "hcodec_AllocateComponent_" + caps_.compName);
-    compMgr_ = GetManager();
+    compMgr_ = GetManager(false, caps_.port.video.isSupportPassthrough);
     if (compMgr_ == nullptr) {
         HLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;

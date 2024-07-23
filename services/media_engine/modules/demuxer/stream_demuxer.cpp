@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#define HST_LOG_TAG "VodStreamDemuxer"
+#define HST_LOG_TAG "StreamDemuxer"
 
 #include "stream_demuxer.h"
 
@@ -37,7 +37,7 @@
 #include "source/source.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -53,11 +53,12 @@ StreamDemuxer::StreamDemuxer() : position_(0)
 
 StreamDemuxer::~StreamDemuxer()
 {
-    MEDIA_LOG_I("~VodStreamDemuxer called");
+    MEDIA_LOG_D("~VodStreamDemuxer called");
     ResetAllCache();
 }
 
-Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     if (IsDash()) {
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
@@ -73,7 +74,8 @@ Status StreamDemuxer::ReadFrameData(int32_t streamID, uint64_t offset, size_t si
     return PullData(streamID, offset, size, bufferPtr);
 }
 
-Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& bufferPtr)
 {
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end() && cacheDataMap_[streamID].CheckCacheExist(offset)) {
         MEDIA_LOG_D("GetPeekRange read cache, offset: " PUBLIC_LOG_U64, offset);
@@ -139,7 +141,7 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
             tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_W("PullDataWithCache, not cache begin.");
-            return Status::OK;
+            return ret;
         }
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());

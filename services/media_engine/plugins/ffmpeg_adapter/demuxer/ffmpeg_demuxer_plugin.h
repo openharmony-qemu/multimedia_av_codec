@@ -93,7 +93,7 @@ private:
         std::atomic<bool> retry {false};
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
-        DumpMode dumpMode;
+        DumpMode dumpMode {DUMP_NONE};
     };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
@@ -137,6 +137,7 @@ private:
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status ParserBoxInfo();
     Status ParserFirstDts();
+    bool WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead);
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
