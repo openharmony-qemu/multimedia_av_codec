@@ -538,9 +538,9 @@ int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
     if (useHDRSource) {
         uint32_t zero = 0;
-        uint32_t one = 0;
-        uint32_t two = 0;
-        uint32_t three = 0;
+        uint32_t one = 1;
+        uint32_t two = 2;
+        uint32_t three = 3;
         bufferSize = (uint32_t)(((ch[zero] & 0xFF)) | ((ch[one] & 0xFF) << EIGHT) | ((ch[two] & 0xFF) << SIXTEEN) |
                                      ((ch[three] & 0xFF) << TWENTY_FOUR));
     }
