@@ -537,9 +537,12 @@ int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
     uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
     if (useHDRSource) {
-        uint32_t num = 0;
-        bufferSize = (uint32_t)(((ch[num] & 0xFF)) | ((ch[num+1] & 0xFF) << EIGHT) | ((ch[num+2] & 0xFF) << SIXTEEN) |
-                                     ((ch[num+3] & 0xFF) << TWENTY_FOUR));
+        uint32_t zero = 0;
+        uint32_t one = 0;
+        uint32_t two = 0;
+        uint32_t three = 0;
+        bufferSize = (uint32_t)(((ch[zero] & 0xFF)) | ((ch[one] & 0xFF) << EIGHT) | ((ch[two] & 0xFF) << SIXTEEN) |
+                                     ((ch[three] & 0xFF) << TWENTY_FOUR));
     }
     if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
@@ -759,7 +762,7 @@ void VDecAPI11Sample::RenderOutAtTime(uint32_t index)
         if (renderTimestampNs == 0) {
             renderTimestampNs = GetSystemTimeUs() / usTimeNum;
         }
-        renderTimestampNs = renderTimestampNs + (1000 / DEFAULT_FRAME_RATE * msTimeNum);
+        renderTimestampNs = renderTimestampNs + (usTimeNum / DEFAULT_FRAME_RATE * msTimeNum);
         OH_AVErrCode code = OH_VideoDecoder_RenderOutputBufferAtTime(vdec_, index, renderTimestampNs);
         if (code != AV_ERR_OK) {
             cout << "Fatal: RenderOutputBufferAtTime fail" << endl;

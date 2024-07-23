@@ -33,7 +33,6 @@ public:
     InnerDemuxerSample();
     ~InnerDemuxerSample();
     size_t GetFileSize(const std::string& filePath);
-
     std::shared_ptr<AVDemuxer> demuxer_ = nullptr;
     std::shared_ptr<OHOS::Media::AVBuffer> avBuffer;
 private:
@@ -44,12 +43,8 @@ private:
     int32_t CheckHasTimedMeta();
     int32_t CheckTimedMetaFormat(int32_t trackIndex, int32_t srcTrackIndex);
     int32_t CheckTimedMeta(int32_t metaTrack);
-
-
-
     std::map<uint32_t, int64_t> videoIndexPtsMap;
     std::map<uint32_t, int64_t> audioIndexPtsMap;
-
     std::shared_ptr<AVSource> avsource_ = nullptr;
     Format source_format_;
     Format track_format_;

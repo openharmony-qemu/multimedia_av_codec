@@ -120,7 +120,7 @@ namespace {
         const char *uri = "http://192.168.3.11:8080/share/Timedmetadata1Track2.mp4";
         ASSERT_EQ(demuxerSample->InitWithFile(uri, false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
-        ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(2, 0), 0); 
+        ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(2, 0), 0);
         ASSERT_EQ(demuxerSample->CheckTimedMeta(2), 0);
     }
 

@@ -142,8 +142,9 @@ int32_t InnerDemuxerSample::CheckPtsFromIndex()
     int32_t ret;
     int64_t presentationTimeUs = 0;
     uint32_t index = 0;
+    int32_t num = 999;
     for (int32_t i = 0; i < trackCount; i++) {
-        if (ret == 999) {
+        if (ret == num) {
             break;
         }
         index = 0;
@@ -156,14 +157,14 @@ int32_t InnerDemuxerSample::CheckPtsFromIndex()
                     break;
                 }
                 if (presentationTimeUs != pair.second) {
-                    ret = 999;
-                    cout << "video presentationTimeUs != pair.second  presentationTimeUs:" << presentationTimeUs << " pair.second:"<< pair.second << endl;
+                    ret = num;
+                    cout << "video pts != pair.second  pts:" << presentationTimeUs << " pair.second:"<< pair.second << endl;
                     break;
                 }
                 index ++;
             }
         } else {
-             for (const auto &pair : audioIndexPtsMap) {
+            for (const auto &pair : audioIndexPtsMap) {
                 ret = demuxer_->GetPresentationTimeUsByFrameIndex(i, index, presentationTimeUs);
                 cout << "audio GetPresentationTimeUsByFrameIndex ret:" << ret << endl;
                 if (ret != 0) {
@@ -172,7 +173,7 @@ int32_t InnerDemuxerSample::CheckPtsFromIndex()
                 }
                 if (presentationTimeUs != pair.second) {
                     ret = 999;
-                    cout << "audio presentationTimeUs != pair.second  presentationTimeUs:" << presentationTimeUs << " pair.second:"<< pair.second << endl;
+                    cout << "audio pts != pair.second  pts:" << presentationTimeUs << " pair.second:"<< pair.second << endl;
                     break;
                 }
                 index ++;
@@ -187,8 +188,9 @@ int32_t InnerDemuxerSample::CheckIndexFromPts()
 {
     int32_t ret;
     uint32_t index = 0;
+    int32_t num = 999;
     for (int32_t i = 0; i < trackCount; i++) {
-        if (ret == 999) {
+        if (ret == num) {
             break;
         }
         if (i == videoTrackIdx) {
@@ -199,21 +201,21 @@ int32_t InnerDemuxerSample::CheckIndexFromPts()
                     break;
                 }
                 if (index != pair.first) {
-                    ret = 999;
-                    cout << "video presentationTimeUs != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
+                    ret = num;
+                    cout << "video pts != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
                     break;
                 }
             }
         } else {
-             for (const auto &pair : audioIndexPtsMap) {
+            for (const auto &pair : audioIndexPtsMap) {
                 ret = demuxer_->GetFrameIndexByPresentationTimeUs(i, pair.second, index);
                 if (ret != 0) {
                     cout << "audio GetFrameIndexByPresentationTimeUs fail ret:" << ret << endl;
                     break;
                 }
                 if (index != pair.first) {
-                    ret = 999;
-                    cout << "audio presentationTimeUs != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
+                    ret = num;
+                    cout << "audio pts != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
                     break;
                 }
             }
@@ -277,12 +279,11 @@ int32_t InnerDemuxerSample::CheckTimedMeta(int32_t metaTrack)
     int32_t ret = 0;
     int32_t compaseSize = 0;
     int32_t metaSize = 0;
-    cout << "videoTrackIdx:" << videoTrackIdx << "  trackCount:" << trackCount << endl;
+    uint32_t twoHundredAndTen = 210;
     while (!isVideoEosFlag && !isMetaEosFlag && ret == 0) {
         for (int32_t i = 0; i < trackCount; i++) {
             ret = this->demuxer_->ReadSampleBuffer(i, avBuffer);
             if (ret != 0) {
-                cout << "ReadSampleBuffer fail ret:" << ret << endl;
                 isVideoEosFlag = true;
                 isMetaEosFlag = true;
                 break;
@@ -297,31 +298,23 @@ int32_t InnerDemuxerSample::CheckTimedMeta(int32_t metaTrack)
             }
             if (i == videoTrackIdx) {
                 compaseSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
-                cout << "compaseSize:" << compaseSize << endl;
-                if (metaTrack == 0) {
-                    if (metaSize != compaseSize) {
+                if (metaTrack == 0 && metaSize != compaseSize) {
                         ret = -1;
                         break;
-                    }  
                 }
-                
                 videoIndex ++;
             } else if (i == metaTrack) {
                 metaSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
-                cout << "metaSize:" << metaSize << endl;
-                if (metaTrack != 0) {
-                    if (metaSize != compaseSize) {
-                        ret = -1;
-                        break;
-                }
+                if (metaTrack != 0 && metaSize != compaseSize) {
+                    ret = -1;
+                    break;
                 }
                 metaIndex ++;
             }
         }
     }
-    if (videoIndex != 210 || metaIndex != 210) {
+    if (videoIndex != twoHundredAndTen || metaIndex != twoHundredAndTen) {
         ret = -1;
-        cout << "video or metadata length error video:" << videoIndex << "  meta:" << metaIndex << endl;
     }
     return ret;
 }

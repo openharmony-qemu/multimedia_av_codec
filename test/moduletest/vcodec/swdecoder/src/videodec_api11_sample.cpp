@@ -44,8 +44,8 @@ constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
 
-SHA512_CTX c;
-unsigned char md[SHA512_DIGEST_LENGTH];
+SHA512_CTX g_c;
+unsigned char g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
@@ -69,7 +69,7 @@ public:
     {
         sptr<SurfaceBuffer> buffer;
         int32_t flushFence;
-        cs->AcquireBuffer(buffer, flushFence, timestamp, damage); 
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
         cs->ReleaseBuffer(buffer, -1);
     }
 
@@ -98,12 +98,12 @@ void VdecAPI11Error(OH_AVCodec *codec, int32_t errorCode, void *userData)
 
 void VdecAPI11FormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    int32_t current_width = 0;
-    int32_t current_height = 0;
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
-    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
-    dec_sample->DEFAULT_WIDTH = current_width;
-    dec_sample->DEFAULT_HEIGHT = current_height;
+    int32_t currentWidth = 0;
+    int32_t currentHeight = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
+    dec_sample->DEFAULT_WIDTH = currentWidth;
+    dec_sample->DEFAULT_HEIGHT = currentHeight;
     if (dec_sample->isResChangeStream) {
         static int32_t resCount = 0;
         int32_t cropBottom = 0;
@@ -227,8 +227,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    if (useHDRSource)
-    {
+    if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     }
     int ret = OH_VideoDecoder_Configure(vdec_, format);
@@ -463,7 +462,8 @@ void VDecAPI11Sample::WaitForEOS()
 
 void VDecAPI11Sample::InputFuncTest()
 {
-    while (true) {
+    bool flag = true;
+    while (flag) {
         if (!isRunning_.load()) {
             break;
         }
@@ -537,8 +537,12 @@ int32_t VDecAPI11Sample::PushData(uint32_t index, OH_AVBuffer *buffer)
     uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
                                      ((ch[0] & 0xFF) << TWENTY_FOUR));
     if (useHDRSource) {
-        bufferSize = (uint32_t)(((ch[0] & 0xFF)) | ((ch[1] & 0xFF) << EIGHT) | ((ch[2] & 0xFF) << SIXTEEN) |
-                                     ((ch[3] & 0xFF) << TWENTY_FOUR));
+        uint32_t zero = 0;
+        uint32_t one = 0;
+        uint32_t two = 0;
+        uint32_t three = 0;
+        bufferSize = (uint32_t)(((ch[zero] & 0xFF)) | ((ch[one] & 0xFF) << EIGHT) | ((ch[two] & 0xFF) << SIXTEEN) |
+                                     ((ch[three] & 0xFF) << TWENTY_FOUR));
     }
     if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
         cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
@@ -581,7 +585,6 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
     }
     uint8_t *avBuffer = OH_AVBuffer_GetAddr(buffer);
     if (avBuffer == nullptr) {
-        cout << "avBuffer == nullptr" << endl;
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
         delete[] fileBuffer;
@@ -665,8 +668,9 @@ void VDecAPI11Sample::AutoSwitchSurface()
 
 void VDecAPI11Sample::OutputFuncTest()
 {
-    SHA512_Init(&c);
-    while (true) {
+    SHA512_Init(&g_c);
+    bool flag = true;
+    while (flag) {
         if (!isRunning_.load()) {
             break;
         }
@@ -697,9 +701,9 @@ void VDecAPI11Sample::OutputFuncTest()
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
             AutoSwitchSurface();
-            SHA512_Final(md, &c);
-            OPENSSL_cleanse(&c, sizeof(c));
-            MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+            SHA512_Final(g_md, &g_c);
+            OPENSSL_cleanse(&g_c, sizeof(g_c));
+            MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
             break;
         }
         ProcessOutputData(buffer, index, attr.size);
@@ -724,7 +728,7 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int
                          OH_AVBuffer_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
-            SHA512_Update(&c, cropBuffer, size);
+            SHA512_Update(&g_c, cropBuffer, size);
             delete[] cropBuffer;
         }
         if (OH_VideoDecoder_FreeOutputBuffer(vdec_, index) != AV_ERR_OK) {
@@ -733,11 +737,12 @@ void VDecAPI11Sample::ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int
         }
     } else {
         if (rsAtTime) {
+            int32_t usTimeNum = 1000;
+            int32_t msTimeNum = 1000000;
             if (renderTimestampNs == 0) {
-                renderTimestampNs = GetSystemTimeUs() / 1000;
+                renderTimestampNs = GetSystemTimeUs() / usTimeNum;
             }
-
-            renderTimestampNs = renderTimestampNs + (1000 / DEFAULT_FRAME_RATE * 1000000);
+            renderTimestampNs = renderTimestampNs + (usTimeNum / DEFAULT_FRAME_RATE * msTimeNum);
             if (OH_VideoDecoder_RenderOutputBufferAtTime(vdec_, index, renderTimestampNs) != AV_ERR_OK) {
                 cout << "Fatal: RenderOutputBufferAtTime fail" << endl;
                 errCount = errCount + 1;
