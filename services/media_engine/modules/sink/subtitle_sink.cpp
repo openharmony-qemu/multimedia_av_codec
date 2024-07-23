@@ -54,6 +54,8 @@ void SubtitleSink::NotifySeek()
     {
         std::unique_lock<std::mutex> lock(mutex_);
         shouldUpdate_ = true;
+        auto curTime = GetMediaTime();
+        GetTargetSubtitleIndex(curTime);
     }
     updateCond_.notify_all();
 }
@@ -279,7 +281,7 @@ uint64_t SubtitleSink::CalcWaitTime(SubtitleInfo &subtitleInfo)
 uint32_t SubtitleSink::ActionToDo(SubtitleInfo &subtitleInfo)
 {
     auto curTime = GetMediaTime();
-    if (shouldUpdate_ || subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
+    if (subtitleInfo.pts_ + subtitleInfo.duration_ < curTime) {
         GetTargetSubtitleIndex(curTime);
         return SubtitleBufferState::DROP;
     }
