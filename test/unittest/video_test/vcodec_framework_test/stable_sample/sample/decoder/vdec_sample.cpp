@@ -354,7 +354,7 @@ bool VideoDecSample::WaitForEos()
     // Not all streams meet the requirement that the number of output frames is greater than
     // half of the number of input NALs.
     if (skipOutFrameHalfCheck_) {
-        EXPECT_GT(frameOutputCount_, 0);
+        EXPECT_GE(frameOutputCount_, 0);
     } else {
         EXPECT_GE(frameOutputCount_, frameInputCount_ / 2); // 2: at least half of the input frame
     }

@@ -479,16 +479,7 @@ int32_t HevcDecoder::Flush()
         renderTask_->Pause();
     }
 
-    std::unique_lock<std::mutex> runLock(decRunMutex_);
-    if (hevcDecoderFlushFrameFunc_ != nullptr && hevcSDecoder_ != nullptr) {
-        int32_t ret = 0;
-        while (ret == 0) {
-            ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
-        }
-    }
-    runLock.unlock();
-
-    ReleaseBuffers();
+    ResetBuffers();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("Flush codec successful, state: Flushed");
     return AVCS_ERR_OK;
