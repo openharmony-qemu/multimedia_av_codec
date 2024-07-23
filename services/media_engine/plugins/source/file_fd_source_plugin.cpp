@@ -42,6 +42,7 @@ namespace Plugins {
 namespace FileFdSource {
 namespace {
 constexpr int32_t FDPOS                         = 2;
+constexpr int32_t READ_TIME                     = 3;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
 constexpr size_t WATER_LINE_BELOW_DEFAULT       = 5 * 1024;
@@ -230,8 +231,12 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         return Status::OK;
     }
     bufData->UpdateDataSize(size);
-    MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
-        " costTime: " PUBLIC_LOG_U64, position_, expectedLen, steadyClock2_.ElapsedMilliseconds() - curReadTime_);
+    int64_t ct = steadyClock2_.ElapsedMilliseconds() - curReadTime_;
+
+    if (ct > READ_TIME) {
+        MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
+        " costTime: " PUBLIC_LOG_U64, position_, expectedLen, ct);
+    }
 
     position_ += size;
     {
@@ -395,9 +400,13 @@ void FileFdSourcePlugin::CacheDataLoop()
         std::unique_lock<std::shared_mutex> lock(mutex_);
         ringBufferSize_ += size;
     }
-    MEDIA_LOG_I_SHORT("CacheDataLoop fd: " PUBLIC_LOG_D32 "cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ "
+
+    int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
+    if (ct > READ_TIME) {
+        MEDIA_LOG_I_SHORT("CacheDataLoop fd: " PUBLIC_LOG_D32 "cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ "
         PUBLIC_LOG_U64 ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_,
-        size_, steadyClock2_.ElapsedMilliseconds() - curTime);
+        size_, ct);
+    }
     
     DeleteCacheBuffer(cacheBuffer);
 
