@@ -193,6 +193,7 @@ private:
     std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};
+    FairMutex taskMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     std::atomic<bool> shouldStartNextRequest {false};
     size_t downloadRequestSize_ {0};

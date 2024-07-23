@@ -237,6 +237,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
 
 Downloader::~Downloader()
 {
+    AutoLock lock(taskMutex_);
     Stop(false);
     if (client_ != nullptr) {
         client_->Deinit();
@@ -463,7 +464,10 @@ void Downloader::HandleRetOK()
     }
     if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
         currentRequest_->isEos_ = true;
-        task_->PauseAsync();
+        AutoLock lock(taskMutex_);
+        if(task_!=nullptr) {
+            task_->PauseAsync();
+        }
         return;
     }
     
@@ -479,7 +483,10 @@ void Downloader::HandleRetOK()
             currentRequest_->startPos_, currentRequest_->url_.c_str());
         currentRequest_->isEos_ = true;
         if (requestQue_->Empty()) {
-            task_->PauseAsync();
+            AutoLock lock(taskMutex_);
+            if(task_!=nullptr) {
+                task_->PauseAsync();
+            }
         }
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
