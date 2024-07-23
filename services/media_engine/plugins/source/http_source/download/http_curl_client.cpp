@@ -367,7 +367,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         headerList_ = curl_slist_append(headerList_, "Accept: */*");
         headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
         headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-        HandlerUserAgent();
+        HandleUserAgent();
         isFirstRequest_ = false;
     }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
