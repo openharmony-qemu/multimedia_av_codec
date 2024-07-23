@@ -893,12 +893,8 @@ Status MediaDemuxer::HandleSelectTrack(int32_t trackId)
     if (trackType == TrackType::TRACK_AUDIO) {
         MEDIA_LOG_I("SelectTrack audio now: " PUBLIC_LOG_D32 ", to: " PUBLIC_LOG_D32, audioTrackId_, trackId);
         curTrackId = audioTrackId_;
-    } else if (trackType == TrackType::TRACK_VIDEO) {
-        MEDIA_LOG_I("SelectTrack video now: " PUBLIC_LOG_D32 ", to: " PUBLIC_LOG_D32, videoTrackId_, trackId);
-        curTrackId = videoTrackId_;
-    } else {    // inner subtitle not support
-        MEDIA_LOG_W("SelectTrack subtilte : " PUBLIC_LOG_D32 ", to: " PUBLIC_LOG_D32 " failed, not support",
-            videoTrackId_, trackId);
+    } else {    // inner subtitle and video not support
+        MEDIA_LOG_W("SelectTrack : " PUBLIC_LOG_D32 " failed, not support", trackId);
         return Status::ERROR_INVALID_PARAMETER;
     }
 
