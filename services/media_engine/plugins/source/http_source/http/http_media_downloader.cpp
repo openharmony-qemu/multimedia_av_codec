@@ -34,7 +34,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 500; //速率统计时间间隔
+constexpr int RECORD_TIME_INTERVAL = 100; //统计时间间隔
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -49,7 +49,7 @@ constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BIT = 1000; // 判断下载是否在进行的阈值 bit
-constexpr uint32_t SAMPLE_INTERVAL = 2000;
+constexpr uint32_t SAMPLE_INTERVAL = 1000;//计算时间间隔
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t BYTES_TO_BIT = 8;
@@ -456,18 +456,23 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
-
-    readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
-    readTotalBits_ += readDataInfo.realReadLength_;
-    double readDuration = static_cast<double>(readRecordDuringTime_) / 1000;
-    if (readDuration > RECORD_TIME_INTERVAL) {
-        double readSpeed = readTotalBits_ / readDuration;
-        size_t curBufferSize = GetCurrentBufferSize();
-        MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Bit/s, Current buffer size: " PUBLIC_LOG_U64 " Bit",
-        static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
-
-        lastReadRecordTime_ = now;
-        readTotalBits_ = 0;
+    if ((now - lastReadCheckTime_) > RECORD_TIME_INTERVAL) {
+        if (readDataInfo.realReadLength_ >= IS_DOWNLOAD_MIN_BIT) {
+            readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
+            readTotalBits_ += readDataInfo.realReadLength_;
+        }
+        lastReadCheckTime_ = now;
+    }
+    if ((now - lastReadRecordTime_) > SAMPLE_INTERVAL) {
+        double readDuration = static_cast<double>(readRecordDuringTime_) / 1000;
+        if (readDuration > ZERO_THRESHOLD) {
+            double readSpeed = readTotalBits_ * 8 / readDuration;
+            size_t curBufferSize = buffer_->GetSize();
+            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " bit/s, Current buffer size: " PUBLIC_LOG_U64 " Byte",
+            static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
+            lastReadRecordTime_ = now;
+            readTotalBits_ = 0;
+        }
     }
     
     return ret;
@@ -749,28 +754,26 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
         playDelayTime_ = startPlayTime - openTime_;
         MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
     }
-    DownloadReportLoop();
+    DownloadReport();
 }
 
 double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 {
     double downloadRate = 0;
-    if (downloadDuringTime_ > 0) {
-        double tmpNumerator = static_cast<double>(downloadBits_);
-        double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
-        totalDownloadDuringTime_ += downloadDuringTime_;
-        if (tmpDenominator > ZERO_THRESHOLD) {
-            downloadRate = tmpNumerator / tmpDenominator;
-            avgDownloadSpeed_ = downloadRate;
-            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Bit/s", static_cast<int32_t>(downloadRate));
-            downloadDuringTime_ = 0;
-            downloadBits_ = 0;
-        }
+    double tmpNumerator = static_cast<double>(downloadBits_) * 8;
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+    totalDownloadDuringTime_ += downloadDuringTime_;
+    if (tmpDenominator > ZERO_THRESHOLD) {
+        downloadRate = tmpNumerator / tmpDenominator;
+        avgDownloadSpeed_ = downloadRate;
+        MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
+        downloadDuringTime_ = 0;
+        downloadBits_ = 0;
     }
     return downloadRate;
 }
 
-void HttpMediaDownloader::DownloadReportLoop()
+void HttpMediaDownloader::DownloadReport()
 {
     int64_t now = steadyClock_.ElapsedMilliseconds();
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
@@ -792,12 +795,12 @@ void HttpMediaDownloader::DownloadReportLoop()
         if (isFlv_) {
             if (buffer_ != nullptr) {
                 uint64_t remainingBuffer = buffer_->GetSize();
-                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Bit", remainingBuffer);
+                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Byte", remainingBuffer);
             }
         } else {
             if (cacheMediaBuffer_ != nullptr) {
                 uint64_t remainingBuffer = cacheMediaBuffer_->GetBufferSize(readOffset_);
-                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Bit", remainingBuffer);
+                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Byte", remainingBuffer);
             }
         }
         lastRecordTime_ = now;

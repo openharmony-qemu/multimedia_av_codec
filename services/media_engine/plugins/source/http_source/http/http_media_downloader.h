@@ -60,7 +60,7 @@ public:
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
     void OnWriteBuffer(uint32_t len);
-    void DownloadReportLoop();
+    void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
 private:
@@ -136,6 +136,7 @@ private:
     bool isErrorBreak_ {false};
 
     uint64_t lastReadRecordTime_ {0};
+    uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBits_ {0};
     uint64_t readRecordDuringTime_ {0};
     uint64_t lastRecordTime_ {0};

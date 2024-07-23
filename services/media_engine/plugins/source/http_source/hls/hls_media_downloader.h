@@ -95,7 +95,7 @@ private:
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
     uint64_t GetMinBuffer();
-    void DownloadReportLoop();
+    void DownloadReport();
     void ReportDownloadSpeed();
     bool CheckRiseBufferSize();
     bool CheckPulldownBufferSize();
@@ -231,6 +231,7 @@ private:
     uint32_t lastRealLen_ {0};
 
     uint64_t lastReadRecordTime_ = 0;
+    uint64_t lastReadCheckTime_ = 0;
     uint64_t readTotalBits_ = 0;
     uint64_t readRecordDuringTime_ = 0;
     uint64_t totalDownloadDuringTime_ {0};
