@@ -225,12 +225,12 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
             MEDIA_LOG_I_SHORT("ReadCloud END_OF_STREAM");
             return Status::END_OF_STREAM;
         }
-        MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
+        MEDIA_LOG_I_SHORT("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
             PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position_);
         return Status::OK;
     }
     bufData->UpdateDataSize(size);
-    MEDIA_LOG_I("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
+    MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
         " costTime: " PUBLIC_LOG_U64, position_, expectedLen, steadyClock2_.ElapsedMilliseconds() - curReadTime_);
 
     position_ += size;
@@ -313,7 +313,7 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         MEDIA_LOG_E_SHORT("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_I("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_I_SHORT("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
@@ -389,13 +389,13 @@ void FileFdSourcePlugin::CacheDataLoop()
         }
         usleep(TEN_MILLISECOUNDS);
     }
-    cachePosition_ += size;
+    cachePosition_ += static_cast<uint64_t>(size);
     downloadSize_ += static_cast<uint64_t>(size);
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
         ringBufferSize_ += size;
     }
-    MEDIA_LOG_I("CacheDataLoop fd: " PUBLIC_LOG_D32 "cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ "
+    MEDIA_LOG_I_SHORT("CacheDataLoop fd: " PUBLIC_LOG_D32 "cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ "
         PUBLIC_LOG_U64 ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_,
         size_, steadyClock2_.ElapsedMilliseconds() - curTime);
     
