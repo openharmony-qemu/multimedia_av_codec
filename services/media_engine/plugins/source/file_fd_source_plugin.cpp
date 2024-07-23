@@ -232,12 +232,10 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     }
     bufData->UpdateDataSize(size);
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curReadTime_;
-
     if (ct > READ_TIME) {
         MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
         " costTime: " PUBLIC_LOG_U64, position_, expectedLen, ct);
     }
-
     position_ += size;
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -363,7 +361,6 @@ void FileFdSourcePlugin::CacheDataLoop()
     int64_t curTime = steadyClock_.ElapsedMilliseconds();
     GetCurrentSpeed(curTime);
 
-    //Same with Http
     size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_)));
     if (bufferSize < 0) {
         MEDIA_LOG_E_SHORT("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
@@ -378,7 +375,6 @@ void FileFdSourcePlugin::CacheDataLoop()
         return;
     }
     int size = read(fd_, cacheBuffer, bufferSize);
-    MEDIA_LOG_D_SHORT("CacheDataLoop fd read done");
     if (size <= 0) {
         DeleteCacheBuffer(cacheBuffer);
         HandleReadResult(bufferSize, size);
