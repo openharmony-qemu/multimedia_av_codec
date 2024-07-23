@@ -261,13 +261,10 @@ int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
         HLOGE("invalid coordinate, x %d, y %d, w %d, h %d", x, y, w, h);
         return AVCS_ERR_INVALID_VAL;
     }
-    CodecHDI::CodecParamOverlay param;
-    param.size = sizeof(param);
-    param.enable = enableWaterMark;
-    param.dstX = static_cast<uint32_t>(x);
-    param.dstY = static_cast<uint32_t>(y);
-    param.dstW = static_cast<uint32_t>(w);
-    param.dstH = static_cast<uint32_t>(h);
+    CodecHDI::CodecParamOverlay param {
+        .size = sizeof(param), .enable = enableWaterMark, .dstX = static_cast<uint32_t>(x),
+        .dstY = static_cast<uint32_t>(y), .dstW = static_cast<uint32_t>(w), .dstH = static_cast<uint32_t>(h),
+    };
     int8_t* p = reinterpret_cast<int8_t*>(&param);
     std::vector<int8_t> inVec(p, p + sizeof(param));
     CodecHDI::OmxCodecBuffer omxbuffer {};
