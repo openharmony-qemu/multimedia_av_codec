@@ -25,10 +25,10 @@ using namespace std;
 std::shared_ptr<FrameDetector> FrameDetector::GetFrameDetector(CodeType type)
 {
     switch (type) {
-        case H264:
+        case CodeType::H264:
             static std::shared_ptr<FrameDetectorH264> frameDetectorH264 = make_shared<FrameDetectorH264>();
             return frameDetectorH264;
-        case H265:
+        case CodeType::H265:
             static std::shared_ptr<FrameDetectorH265> frameDetectorH265 = make_shared<FrameDetectorH265>();
             return frameDetectorH265;
         default:

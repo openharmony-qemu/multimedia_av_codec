@@ -273,7 +273,7 @@ Status AudioServerSinkPlugin::Init()
     rendererOptions_.rendererInfo.rendererFlags = audioRenderInfo_.rendererFlags;
     rendererOptions_.streamInfo.samplingRate = rendererParams_.sampleRate;
     rendererOptions_.streamInfo.encoding =
-        mime_type_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
+        mimeType_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
     rendererOptions_.streamInfo.format = rendererParams_.sampleFormat;
     rendererOptions_.streamInfo.channels = rendererParams_.channelCount;
     MEDIA_LOG_I_SHORT("Create audio renderer for samplingRate " PUBLIC_LOG_D32 " encoding " PUBLIC_LOG_D32
@@ -570,8 +570,8 @@ void AudioServerSinkPlugin::SetUpMimeTypeSetter()
     paramsSetterMap_[Tag::MIME_TYPE] = [this](const ValueType &para) {
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<std::string>(para), Status::ERROR_MISMATCHED_TYPE,
                              "mimeType type should be string");
-        mime_type_ = AnyCast<std::string>(para);
-        MEDIA_LOG_I_SHORT("Set mimeType: " PUBLIC_LOG_S, mime_type_.c_str());
+        mimeType_ = AnyCast<std::string>(para);
+        MEDIA_LOG_I_SHORT("Set mimeType: " PUBLIC_LOG_S, mimeType_.c_str());
         return Status::OK;
     };
 }
@@ -950,10 +950,10 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
         if (static_cast<size_t>(ret) > destLength) {
             MEDIA_LOG_W("audioRenderer_ return ret " PUBLIC_LOG_D32 "> destLength " PUBLIC_LOG_U64,
                 ret, destLength);
-            ret = destLength;
+            ret = static_cast<int32_t>(destLength);
         }
         destBuffer += ret;
-        destLength -= ret;
+        destLength -= static_cast<size_t>(ret);
         MEDIA_LOG_D("Written data size " PUBLIC_LOG_D32 ", bufferSize " PUBLIC_LOG_U64, ret, bufferSize);
     }
     return destLength;
@@ -966,7 +966,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
                          "Receive empty buffer."); // return ok
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
         + std::to_string(inputBuffer->memory_->GetSize()));
-    if (mime_type_ == MimeType::AUDIO_AVS3DA) {
+    if (mimeType_ == MimeType::AUDIO_AVS3DA) {
         return WriteAudioVivid(inputBuffer) >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
     }
     auto mem = inputBuffer->memory_;

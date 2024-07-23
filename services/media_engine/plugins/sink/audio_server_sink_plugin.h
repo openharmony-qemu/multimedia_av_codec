@@ -194,7 +194,7 @@ private:
     AVSampleFormat reSrcFfFmt_{AV_SAMPLE_FMT_NONE};
     const AudioStandard::AudioSampleFormat reStdDestFmt_{AudioStandard::AudioSampleFormat::SAMPLE_S16LE};
     AudioChannelLayout channelLayout_{};
-    std::string mime_type_;
+    std::string mimeType_;
     uint32_t channels_{};
     uint32_t samplesPerFrame_{};
     uint32_t bitsPerSample_{0};
