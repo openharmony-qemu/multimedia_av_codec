@@ -1712,8 +1712,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     ret = ConvertAVPacketToSample(sample, samplePacket);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         return Status::OK;
-    }
-    if (ret == Status::OK) {
+    } else if (ret == Status::OK) {
         MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
