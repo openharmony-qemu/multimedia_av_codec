@@ -34,8 +34,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 200; // 统计时间间隔ms
-constexpr uint32_t SAMPLE_INTERVAL = 1000; // 计算时间间隔ms
+constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sample time interval, ms
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -49,7 +48,7 @@ constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BYTE = 1000; // 判断下载是否在进行的阈值 bit
+constexpr int IS_DOWNLOAD_MIN_BYTE = 10; // Threshold for determining whether the download is in progress, Byte
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t BYTES_TO_BIT = 8;
@@ -456,7 +455,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
-    if ((now - lastReadCheckTime_) > RECORD_TIME_INTERVAL) {
+    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
         if (readDataInfo.realReadLength_ >= IS_DOWNLOAD_MIN_BYTE) {
             readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
             readTotalBits_ += readDataInfo.realReadLength_;
@@ -776,22 +775,22 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 void HttpMediaDownloader::DownloadReport()
 {
     int64_t now = steadyClock_.ElapsedMilliseconds();
-    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BYTE) {
-            // 周期下载量达阈值，统计有效下载时长
+            // The download volume of the cycle reaches the threshold, and the effective download duration is counted
             downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
-            // 有效下载数据量
+            // Effective download data volume
             downloadBits_ += curDownloadBits;
         }
-        // 下载总数据量
+        // Total amount of downloaded data
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
     }
 
     if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
         CalculateCurrentDownloadSpeed();
-        // 缓冲区剩余bufferSzie
+        // remaining buffer size
         if (isFlv_) {
             if (buffer_ != nullptr) {
                 uint64_t remainingBuffer = buffer_->GetSize();

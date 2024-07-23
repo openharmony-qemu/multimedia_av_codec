@@ -37,8 +37,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr int RECORD_TIME_INTERVAL = 200;                  //统计时间间隔
-constexpr uint32_t SAMPLE_INTERVAL = 1000;                 //计算时间间隔
+constexpr uint32_t SAMPLE_INTERVAL = 1000;                 //Sampling time interval: ms
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -47,7 +46,7 @@ constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BYTE = 1000;                   // 判断下载是否在进行的阈值 bit
+constexpr int IS_DOWNLOAD_MIN_BYTE = 10;                   // Threshold for determining whether the download is in progress: Byte
 constexpr int32_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr float DEFAULT_CACHE_TIME = 0.3;
@@ -411,7 +410,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
-    if ((now - lastReadCheckTime_) > RECORD_TIME_INTERVAL) {
+    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
         if (readDataInfo.realReadLength_ >= IS_DOWNLOAD_MIN_BYTE) {
             readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
             readTotalBits_ += readDataInfo.realReadLength_;
@@ -654,7 +653,7 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
     }
 
-    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= RECORD_TIME_INTERVAL) {
+    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
         MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
         " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
         BufferDownRecord* record = new BufferDownRecord();
@@ -711,15 +710,15 @@ double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
 void HlsMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BYTE) {
-            // 周期下载量达阈值，统计有效下载时长
+            // The download volume of the cycle reaches the threshold, and the effective download duration is counted
             downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
-            // 有效下载数据量
+            // Effective download data volume
             downloadBits_ += curDownloadBits;
         }
-        // 下载总数据量
+        // Total amount of downloaded data
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
     }
@@ -732,7 +731,7 @@ void HlsMediaDownloader::DownloadReport()
             uint64_t remainingBuffer = buffer_->GetSize();
             MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Byte", remainingBuffer);
         }
-        // 缓冲区剩余时长, s
+        // Remaining playable time: s
         uint64_t bufferDuration = bufferedDuration_ * 8 / 1024 / 1024 / currentBitrate_;
         recordBuff->bufferDuring = bufferDuration;
         recordBuff->next = recordData_;
@@ -1030,7 +1029,7 @@ void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
     if (minDuration == 0 || bufferedDuration_ < minDuration) {
         minDuration = bufferedDuration_;
     }
-    if ((nowTime - lastReadTime_) >= RECORD_TIME_INTERVAL || bufferedDuration_ == 0) {
+    if ((nowTime - lastReadTime_) >= SAMPLE_INTERVAL || bufferedDuration_ == 0) {
         BufferLeastRecord* record = new BufferLeastRecord();
         record->minDuration = minDuration;
         record->next = bufferLeastRecord_;
