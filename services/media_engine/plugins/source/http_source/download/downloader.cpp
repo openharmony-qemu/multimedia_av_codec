@@ -465,7 +465,7 @@ void Downloader::HandleRetOK()
     if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
         currentRequest_->isEos_ = true;
         AutoLock lock(taskMutex_);
-        if(task_!=nullptr) {
+        if(task_) {
             task_->PauseAsync();
         }
         return;
@@ -484,7 +484,7 @@ void Downloader::HandleRetOK()
         currentRequest_->isEos_ = true;
         if (requestQue_->Empty()) {
             AutoLock lock(taskMutex_);
-            if(task_!=nullptr) {
+            if(task_) {
                 task_->PauseAsync();
             }
         }
@@ -499,7 +499,10 @@ void Downloader::HandleRetOK()
         currentRequest_->isEos_ = true;
         currentRequest_->Close();
         if (requestQue_->Empty()) {
-            task_->PauseAsync();
+            AutoLock lock(taskMutex_);
+            if(task_) {
+                task_->PauseAsync();
+            }
         }
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
