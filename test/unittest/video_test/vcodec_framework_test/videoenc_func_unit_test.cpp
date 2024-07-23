@@ -297,19 +297,19 @@ bool TEST_SUIT::GetWaterMarkCapability(int32_t param)
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
     switch (param) {
-    case VCodecTestCode::HW_AVC:
-        capabilityData =
-            codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true, AVCodecCategory::AVCODEC_HARDWARE);
-        break;
-    case VCodecTestCode::HW_HEVC:
-        capabilityData =
-            codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true, AVCodecCategory::AVCODEC_HARDWARE);
-        break;
-    default:
-        capabilityData =
-            codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true, AVCodecCategory::AVCODEC_SOFTWARE);
-        break;
-    }
+        case VCodecTestCode::HW_AVC:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        case VCodecTestCode::HW_HEVC:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        default:
+            capabilityData = codecCapability->GetCapability(CodecMimeType::VIDEO_AVC.data(), true,
+                                                            AVCodecCategory::AVCODEC_SOFTWARE);
+            break;
+        }
     if (capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
         std::cout << "Support watermark" << std::endl;
         return true;
@@ -318,7 +318,6 @@ bool TEST_SUIT::GetWaterMarkCapability(int32_t param)
         return false;
     }
 }
-
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 

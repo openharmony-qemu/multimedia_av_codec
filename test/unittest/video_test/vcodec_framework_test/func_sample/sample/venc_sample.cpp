@@ -294,7 +294,7 @@ int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
     return videoEnc_->Configure(format);
 }
 
-int32_t VideoEncSample::SetCustomBuffer( std::shared_ptr<AVBufferMock> buffer)
+int32_t VideoEncSample::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
 {
     if (videoEnc_ == nullptr) {
         return AV_ERR_UNKNOWN;
