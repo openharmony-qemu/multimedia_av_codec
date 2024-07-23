@@ -585,7 +585,6 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
     }
     uint8_t *avBuffer = OH_AVBuffer_GetAddr(buffer);
     if (avBuffer == nullptr) {
-        cout << "avBuffer == nullptr" << endl;
         inFile_->clear();
         inFile_->seekg(0, ios::beg);
         delete[] fileBuffer;

@@ -310,7 +310,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0040, TestSize.L
  * @tc.desc      : func test
  */
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0050, TestSize.Level1)
-{    
+{
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/TimedmetadataAudio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
@@ -366,7 +366,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0090, TestSize.L
     auto demuxerSample = make_unique<InnerDemuxerSample>();
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/Timedmetadata1Track2.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
-    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(2, 0), 0); 
+    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(2, 0), 0);
     ASSERT_EQ(demuxerSample->CheckTimedMeta(2), 0);
 }
 

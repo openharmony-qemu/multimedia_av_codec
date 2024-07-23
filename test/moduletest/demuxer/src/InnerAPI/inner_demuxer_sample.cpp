@@ -158,7 +158,7 @@ int32_t InnerDemuxerSample::CheckPtsFromIndex()
                 }
                 if (presentationTimeUs != pair.second) {
                     ret = num;
-                    cout << "video pts != pair.second  pts:" << presentationTimeUs << " pair.second:"<< pair.second << endl;
+                    cout << "video != pair.second  pts:" << presentationTimeUs << "pair.second:"<< pair.second << endl;
                     break;
                 }
                 index ++;
@@ -172,8 +172,8 @@ int32_t InnerDemuxerSample::CheckPtsFromIndex()
                     break;
                 }
                 if (presentationTimeUs != pair.second) {
-                    ret = 999;
-                    cout << "audio pts != pair.second  pts:" << presentationTimeUs << " pair.second:"<< pair.second << endl;
+                    ret = num;
+                    cout << "audio != pair.second pts:" << presentationTimeUs << "pair.second:"<< pair.second << endl;
                     break;
                 }
                 index ++;
@@ -269,54 +269,54 @@ int32_t InnerDemuxerSample::CheckTimedMetaFormat(int32_t trackIndex, int32_t src
 
 int32_t InnerDemuxerSample::CheckTimedMeta(int32_t metaTrack)
 {
-    bool isVideoEosFlag = false;
-    bool isMetaEosFlag = false;
-    uint32_t videoIndex = 0;
-    uint32_t metaIndex = 0;
     uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
-    int32_t ret = 0;
+    uint32_t twoHundredAndTen = 210;
+    while (!isVideoEosFlagForMeta && !isMetaEosFlagForMeta && retForMeta == 0) {
+        CheckLoop(metaTrack);
+    }
+    if (videoIndexForMeta != twoHundredAndTen || metaIndexForMeta != twoHundredAndTen) {
+        retForMeta = -1;
+    }
+    return retForMeta;
+}
+
+void InnerDemuxerSample::CheckLoop(int32_t metaTrack)
+{
     int32_t compaseSize = 0;
     int32_t metaSize = 0;
-    uint32_t twoHundredAndTen = 210;
-    while (!isVideoEosFlag && !isMetaEosFlag && ret == 0) {
-        for (int32_t i = 0; i < trackCount; i++) {
-            ret = this->demuxer_->ReadSampleBuffer(i, avBuffer);
-            if (ret != 0) {
-                isVideoEosFlag = true;
-                isMetaEosFlag = true;
+    for (int32_t i = 0; i < trackCount; i++) {
+        retForMeta = this->demuxer_->ReadSampleBuffer(i, avBuffer);
+        if (retForMeta != 0) {
+            isVideoEosFlagForMeta = true;
+            isMetaEosFlagForMeta = true;
+            break;
+        }
+        if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+            if (i == videoTrackIdx) {
+                isVideoEosFlagForMeta = true;
+            } else if (i == metaTrack) {
+                isMetaEosFlagForMeta = true;
+            }
+            continue;
+        }
+        if (i == videoTrackIdx) {
+            compaseSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
+            if (metaTrack == 0 && metaSize != compaseSize) {
+                    retForMeta = -1;
+                    break;
+            }
+            videoIndexForMeta ++;
+        } else if (i == metaTrack) {
+            metaSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
+            if (metaTrack != 0 && metaSize != compaseSize) {
+                retForMeta = -1;
                 break;
             }
-            if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlag = true;
-                } else if (i == metaTrack) {
-                    isMetaEosFlag = true;
-                }
-                continue;
-            }
-            if (i == videoTrackIdx) {
-                compaseSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
-                if (metaTrack == 0 && metaSize != compaseSize) {
-                        ret = -1;
-                        break;
-                }
-                videoIndex ++;
-            } else if (i == metaTrack) {
-                metaSize = static_cast<int32_t>(avBuffer->memory_->GetSize());
-                if (metaTrack != 0 && metaSize != compaseSize) {
-                    ret = -1;
-                    break;
-                }
-                metaIndex ++;
-            }
+            metaIndexForMeta ++;
         }
     }
-    if (videoIndex != twoHundredAndTen || metaIndex != twoHundredAndTen) {
-        ret = -1;
-    }
-    return ret;
 }
 
 size_t InnerDemuxerSample::GetFileSize(const std::string& filePath)
