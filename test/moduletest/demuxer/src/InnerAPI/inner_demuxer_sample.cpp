@@ -100,131 +100,140 @@ int32_t InnerDemuxerSample::InitWithFile(const std::string &path, bool local)
 
 int32_t InnerDemuxerSample::ReadSampleAndSave()
 {
-    bool isVideoEosFlag = false;
-    bool isAudioEosFlag = false;
-    uint32_t videoIndex = 0;
-    uint32_t audioIndex = 0;
     uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
-    int32_t ret = 0;
-    while (!isVideoEosFlag && !isAudioEosFlag) {
-        for (int32_t i = 0; i < trackCount; i++) {
-            ret = this->demuxer_->ReadSampleBuffer(i, avBuffer);
-            if (ret != 0) {
-                cout << "ReadSampleBuffer fail ret:" << ret << endl;
-                isVideoEosFlag = true;
-                isAudioEosFlag = true;
-                break;
-            }
-            if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-                if (i == videoTrackIdx) {
-                    isVideoEosFlag = true;
-                } else {
-                    isAudioEosFlag = true;
-                }
-                continue;
-            }
+    while (!isAudioEosFlagForSave && !isAudioEosFlagForSave) {
+        CheckLoopForSave();
+    }
+    return retForSave;
+}
+
+void InnerDemuxerSample::CheckLoopForSave()
+{
+    uint32_t videoIndex = 0;
+    uint32_t audioIndex = 0;
+    for (int32_t i = 0; i < trackCount; i++) {
+        retForSave = this->demuxer_->ReadSampleBuffer(i, avBuffer);
+        if (retForSave != 0) {
+            cout << "ReadSampleBuffer fail ret:" << retForSave << endl;
+            isVideoEosFlagForSave = true;
+            isAudioEosFlagForSave = true;
+            break;
+        }
+        if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             if (i == videoTrackIdx) {
-                videoIndexPtsMap.emplace(videoIndex, avBuffer->pts_);
-                videoIndex ++;
+                isAudioEosFlagForSave = true;
             } else {
-                audioIndexPtsMap.emplace(audioIndex, avBuffer->pts_);
-                audioIndex ++;
+                isAudioEosFlagForSave = true;
             }
+            continue;
+        }
+        if (i == videoTrackIdx) {
+            videoIndexPtsMap.emplace(videoIndex, avBuffer->pts_);
+            videoIndex ++;
+        } else {
+            audioIndexPtsMap.emplace(audioIndex, avBuffer->pts_);
+            audioIndex ++;
         }
     }
-    return ret;
 }
 
 int32_t InnerDemuxerSample::CheckPtsFromIndex()
 {
-    int32_t ret;
-    int64_t presentationTimeUs = 0;
-    uint32_t index = 0;
     int32_t num = 999;
     for (int32_t i = 0; i < trackCount; i++) {
-        if (ret == num) {
+        if (retForPts == num) {
             break;
         }
-        index = 0;
-        if (i == videoTrackIdx) {
-            for (const auto &pair : videoIndexPtsMap) {
-                ret = demuxer_->GetPresentationTimeUsByFrameIndex(i, index, presentationTimeUs);
-                cout << "video GetPresentationTimeUsByFrameIndex ret:" << ret << endl;
-                if (ret != 0) {
-                    cout << "GetPresentationTimeUsByFrameIndex fail ret:" << ret << endl;
-                    break;
-                }
-                if (presentationTimeUs != pair.second) {
-                    ret = num;
-                    cout << "video != pair.second  pts:" << presentationTimeUs << "pair.second:"<< pair.second << endl;
-                    break;
-                }
-                index ++;
-            }
-        } else {
-            for (const auto &pair : audioIndexPtsMap) {
-                ret = demuxer_->GetPresentationTimeUsByFrameIndex(i, index, presentationTimeUs);
-                cout << "audio GetPresentationTimeUsByFrameIndex ret:" << ret << endl;
-                if (ret != 0) {
-                    cout << "GetPresentationTimeUsByFrameIndex fail ret:" << ret << endl;
-                    break;
-                }
-                if (presentationTimeUs != pair.second) {
-                    ret = num;
-                    cout << "audio != pair.second pts:" << presentationTimeUs << "pair.second:"<< pair.second << endl;
-                    break;
-                }
-                index ++;
-            }
-        }
+        CheckLoopForPts(i);
     }
-    cout << "CheckPtsFromIndex ret:" << ret << endl;
-    return ret;
+    cout << "CheckPtsFromIndex ret:" << retForPts << endl;
+    return retForPts;
 }
 
 int32_t InnerDemuxerSample::CheckIndexFromPts()
 {
-    int32_t ret;
-    uint32_t index = 0;
     int32_t num = 999;
     for (int32_t i = 0; i < trackCount; i++) {
-        if (ret == num) {
+        if (retForIndex == num) {
             break;
         }
-        if (i == videoTrackIdx) {
-            for (const auto &pair : videoIndexPtsMap) {
-                ret = demuxer_->GetFrameIndexByPresentationTimeUs(i, pair.second, index);
-                if (ret != 0) {
-                    cout << "video GetFrameIndexByPresentationTimeUs fail ret:" << ret << endl;
-                    break;
-                }
-                if (index != pair.first) {
-                    ret = num;
-                    cout << "video pts != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
-                    break;
-                }
+        CheckLoopForIndex(i);
+    }
+    cout << "CheckIndexFromPts ret:" << retForIndex << endl;
+    return retForIndex;
+}
+
+void InnerDemuxerSample::CheckLoopForPts(int32_t i)
+{
+    int64_t presentationTimeUs = 0;
+    int32_t num = 999;
+    indexForPts = 0;
+    if (i == videoTrackIdx) {
+        for (const auto &pair : videoIndexPtsMap) {
+            retForPts = demuxer_->GetPresentationTimeUsByFrameIndex(i, indexForPts, presentationTimeUs);
+            cout << "video GetPresentationTimeUsByFrameIndex ret:" << retForPts << endl;
+            if (retForPts != 0) {
+                cout << "GetPresentationTimeUsByFrameIndex fail ret:" << retForPts << endl;
+                break;
             }
-        } else {
-            for (const auto &pair : audioIndexPtsMap) {
-                ret = demuxer_->GetFrameIndexByPresentationTimeUs(i, pair.second, index);
-                if (ret != 0) {
-                    cout << "audio GetFrameIndexByPresentationTimeUs fail ret:" << ret << endl;
-                    break;
-                }
-                if (index != pair.first) {
-                    ret = num;
-                    cout << "audio pts != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
-                    break;
-                }
+            if (presentationTimeUs != pair.second) {
+                retForPts = num;
+                cout << "video != pair.second  pts:" << presentationTimeUs << "pair.second:"<< pair.second << endl;
+                break;
+            }
+            indexForPts ++;
+        }
+    } else {
+        for (const auto &pair : audioIndexPtsMap) {
+            retForPts = demuxer_->GetPresentationTimeUsByFrameIndex(i, indexForPts, presentationTimeUs);
+            cout << "audio GetPresentationTimeUsByFrameIndex ret:" << retForPts << endl;
+            if (retForPts != 0) {
+                cout << "GetPresentationTimeUsByFrameIndex fail ret:" << retForPts << endl;
+                break;
+            }
+            if (presentationTimeUs != pair.second) {
+                retForPts = num;
+                cout << "audio != pair.second pts:" << presentationTimeUs << "pair.second:"<< pair.second << endl;
+                break;
+            }
+            indexForPts ++;
+        }
+    }
+}
+void InnerDemuxerSample::CheckLoopForIndex(int32_t i)
+{
+    uint32_t index = 0;
+    int32_t num = 999;
+    if (i == videoTrackIdx) {
+        for (const auto &pair : videoIndexPtsMap) {
+            retForIndex = demuxer_->GetFrameIndexByPresentationTimeUs(i, pair.second, index);
+            if (retForIndex != 0) {
+                cout << "video GetFrameIndexByPresentationTimeUs fail ret:" << retForIndex << endl;
+                break;
+            }
+            if (index != pair.first) {
+                retForIndex = num;
+                cout << "video pts != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
+                break;
+            }
+        }
+    } else {
+        for (const auto &pair : audioIndexPtsMap) {
+            retForIndex = demuxer_->GetFrameIndexByPresentationTimeUs(i, pair.second, index);
+            if (retForIndex != 0) {
+                cout << "audio GetFrameIndexByPresentationTimeUs fail ret:" << retForIndex << endl;
+                break;
+            }
+            if (index != pair.first) {
+                retForIndex = num;
+                cout << "audio pts != pair.second  index:" << index << " pair.first:"<< pair.first << endl;
+                break;
             }
         }
     }
-    cout << "CheckIndexFromPts ret:" << ret << endl;
-    return ret;
 }
-
 int32_t InnerDemuxerSample::CheckHasTimedMeta()
 {
     int32_t hasMeta = 0;

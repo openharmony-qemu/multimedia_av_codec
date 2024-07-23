@@ -44,6 +44,9 @@ private:
     void CheckLoop(int32_t metaTrack);
     int32_t CheckTimedMetaFormat(int32_t trackIndex, int32_t srcTrackIndex);
     int32_t CheckTimedMeta(int32_t metaTrack);
+    void CheckLoopForSave();
+    void CheckLoopForIndex(int32_t i);
+    void CheckLoopForPts(int32_t i);
     std::map<uint32_t, int64_t> videoIndexPtsMap;
     std::map<uint32_t, int64_t> audioIndexPtsMap;
     std::shared_ptr<AVSource> avsource_ = nullptr;
@@ -59,6 +62,12 @@ private:
     uint32_t videoIndexForMeta = 0;
     uint32_t metaIndexForMeta = 0;
     int32_t retForMeta = 0;
+    bool isVideoEosFlagForSave = false;
+    bool isAudioEosFlagForSave = false;
+    int32_t retForSave = 0;
+    int32_t retForIndex;
+    int32_t retForPts;
+    uint32_t indexForPts = 0;
 };
 }
 }
