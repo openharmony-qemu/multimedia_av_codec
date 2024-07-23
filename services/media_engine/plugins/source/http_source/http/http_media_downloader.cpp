@@ -34,7 +34,8 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 100; //统计时间间隔
+constexpr int RECORD_TIME_INTERVAL = 200; //统计时间间隔
+constexpr uint32_t SAMPLE_INTERVAL = 1000;//计算时间间隔
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
@@ -49,7 +50,6 @@ constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BYTE = 1000; // 判断下载是否在进行的阈值 bit
-constexpr uint32_t SAMPLE_INTERVAL = 1000;//计算时间间隔
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t BYTES_TO_BIT = 8;
