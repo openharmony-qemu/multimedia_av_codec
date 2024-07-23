@@ -34,8 +34,8 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int RECORD_TIME_INTERVAL = 200; //统计时间间隔
-constexpr uint32_t SAMPLE_INTERVAL = 1000;//计算时间间隔
+constexpr int RECORD_TIME_INTERVAL = 200; // 统计时间间隔ms
+constexpr uint32_t SAMPLE_INTERVAL = 1000; // 计算时间间隔ms
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
