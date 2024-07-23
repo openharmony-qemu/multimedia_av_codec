@@ -242,6 +242,15 @@ bool TesterCodecBase::ConfigureEncoder()
         return false;
     }
     CostRecorder::Instance().Update(begin, "Configure");
+
+    if (opt_.waterMark.isSet) {
+        shared_ptr<AVBuffer> buffer = CreateWaterMarkBuffer();
+        err = codec_->SetCustomBuffer(buffer);
+        if (err != AVCS_ERR_OK) {
+            TLOGE("SetCustomBuffer failed");
+            return false;
+        }
+    }
     return true;
 }
 
