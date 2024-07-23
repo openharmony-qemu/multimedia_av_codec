@@ -41,6 +41,7 @@ private:
     int32_t CheckPtsFromIndex();
     int32_t CheckIndexFromPts();
     int32_t CheckHasTimedMeta();
+    void CheckLoop(int32_t metaTrack);
     int32_t CheckTimedMetaFormat(int32_t trackIndex, int32_t srcTrackIndex);
     int32_t CheckTimedMeta(int32_t metaTrack);
     std::map<uint32_t, int64_t> videoIndexPtsMap;
@@ -53,6 +54,11 @@ private:
     int64_t duration;
     int32_t videoTrackIdx;
     int64_t usleepTime = 100000;
+    bool isVideoEosFlagForMeta = false;
+    bool isMetaEosFlagForMeta = false;
+    uint32_t videoIndexForMeta = 0;
+    uint32_t metaIndexForMeta = 0;
+    int32_t retForMeta = 0;
 };
 }
 }
