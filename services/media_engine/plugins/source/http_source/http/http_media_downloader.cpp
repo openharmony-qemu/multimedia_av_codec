@@ -48,7 +48,7 @@ constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BIT = 1000; // 判断下载是否在进行的阈值 bit
+constexpr int IS_DOWNLOAD_MIN_BYTE = 1000; // 判断下载是否在进行的阈值 bit
 constexpr uint32_t SAMPLE_INTERVAL = 1000;//计算时间间隔
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
@@ -457,16 +457,16 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
     if ((now - lastReadCheckTime_) > RECORD_TIME_INTERVAL) {
-        if (readDataInfo.realReadLength_ >= IS_DOWNLOAD_MIN_BIT) {
+        if (readDataInfo.realReadLength_ >= IS_DOWNLOAD_MIN_BYTE) {
             readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
             readTotalBits_ += readDataInfo.realReadLength_;
         }
         lastReadCheckTime_ = now;
     }
     if ((now - lastReadRecordTime_) > SAMPLE_INTERVAL) {
-        double readDuration = static_cast<double>(readRecordDuringTime_) / 1000;
+        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
         if (readDuration > ZERO_THRESHOLD) {
-            double readSpeed = readTotalBits_ * 8 / readDuration;
+            double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
             size_t curBufferSize = buffer_->GetSize();
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " bit/s, Current buffer size: " PUBLIC_LOG_U64 " Byte",
             static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
@@ -760,8 +760,8 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
 double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 {
     double downloadRate = 0;
-    double tmpNumerator = static_cast<double>(downloadBits_) * 8;
-    double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+    double tmpNumerator = static_cast<double>(downloadBits_) * BYTES_TO_BIT;
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
     totalDownloadDuringTime_ += downloadDuringTime_;
     if (tmpDenominator > ZERO_THRESHOLD) {
         downloadRate = tmpNumerator / tmpDenominator;
@@ -778,7 +778,7 @@ void HttpMediaDownloader::DownloadReport()
     int64_t now = steadyClock_.ElapsedMilliseconds();
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
-        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+        if (curDownloadBits >= IS_DOWNLOAD_MIN_BYTE) {
             // 周期下载量达阈值，统计有效下载时长
             downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
             // 有效下载数据量
