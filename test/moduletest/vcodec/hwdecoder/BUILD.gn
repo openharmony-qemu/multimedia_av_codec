@@ -70,6 +70,7 @@ ohos_unittest("hwdecoder_native_module_test") {
 
       #"./src/compatibility_test.cpp",
       "./src/videodec_ndk_sample.cpp",
+      "./src/videodec_api11_sample.cpp",
     ]
   }
 

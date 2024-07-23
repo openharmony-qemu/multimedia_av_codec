@@ -64,6 +64,7 @@ ohos_unittest("swdecoder_native_module_test") {
       "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
       "./src/api_test.cpp",
       "./src/func_test.cpp",
+      #"./src/reli_test.cpp",
 
       #"./src/NativeAPI/perf_test.cpp",
       #"./src/NativeAPI/reli_test.cpp",
@@ -71,6 +72,7 @@ ohos_unittest("swdecoder_native_module_test") {
 
       #"./src/compatibility_test.cpp",
       "./src/videodec_ndk_sample.cpp",
+      "./src/videodec_api11_sample.cpp",
     ]
   }
 

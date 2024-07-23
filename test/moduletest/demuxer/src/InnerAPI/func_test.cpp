@@ -23,6 +23,7 @@
 #include "buffer/avsharedmemory.h"
 #include "buffer/avsharedmemorybase.h"
 #include "securec.h"
+#include "inner_demuxer_sample.h"
 
 #include <iostream>
 #include <cstdio>
@@ -255,4 +256,132 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ILLEGAL_FUNC_0500, TestSize.Level2)
     ":{camera-position-tag:2},param-use-tag:TypeNormalVideo}");
 }
 
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0010
+ * @tc.name      : get has_timed_meta without meta video track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0010, TestSize.Level0)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 0);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0020
+ * @tc.name      : get has_timed_meta without meta audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0020, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/NoTimedmetadataAudio.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 0);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0030
+ * @tc.name      : get has_timed_meta without meta video+audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0030, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 0);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0040
+ * @tc.name      : get has_timed_meta with meta video track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0040, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/TimedmetadataVideo.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0050
+ * @tc.name      : get has_timed_meta with meta audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0050, TestSize.Level1)
+{    
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/TimedmetadataAudio.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0060
+ * @tc.name      : get has_timed_meta with meta video+audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0060, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/Timedmetadata1Track0.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0070
+ * @tc.name      : demuxer timed metadata with 1 meta track and video track file-meta track at 0
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0070, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/Timedmetadata1Track0.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(0, 1), 0);
+    ASSERT_EQ(demuxerSample->CheckTimedMeta(0), 0);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0080
+ * @tc.name      : demuxer timed metadata with 1 meta track and video track file-meta track at 1
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0080, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/Timedmetadata1Track1.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(1, 0), 0);
+    ASSERT_EQ(demuxerSample->CheckTimedMeta(1), 0);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0090
+ * @tc.name      : demuxer timed metadata with 1 meta track and video track file-meta track at 2
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0090, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/Timedmetadata1Track2.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(2, 0), 0); 
+    ASSERT_EQ(demuxerSample->CheckTimedMeta(2), 0);
+}
+
+/**
+ * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0100
+ * @tc.name      : demuxer timed metadata with 2 meta track and video track file
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0100, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/Timedmetadata2Track2.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckHasTimedMeta(), 1);
+    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(2, 0), 0);
+    ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(3, 0), 0);
+    ASSERT_EQ(demuxerSample->CheckTimedMeta(3), 0);
+}
 } // namespace
