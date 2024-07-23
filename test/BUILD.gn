@@ -88,7 +88,6 @@ group("av_codec_unit_test") {
       }
     }
   }
-  
 }
 
 group("av_codec_module_test") {
