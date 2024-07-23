@@ -592,6 +592,15 @@ int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionSe
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_LOGI("CodecServer::SetDecryptConfig");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    // Check the consistency of svp and codecname.
+    if (svpFlag == true) {
+        std::string tmpName = codecName_;
+        transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+        if (tmpName.find(".secure") == std::string::npos) {
+            AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is true but not create secure decoder!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+    }
     if (drmDecryptor_ == nullptr) {
         drmDecryptor_ = std::make_shared<CodecDrmDecrypt>();
     }
