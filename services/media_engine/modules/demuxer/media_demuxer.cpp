@@ -413,37 +413,34 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
     return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
 }
 
-bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
+bool MediaDemuxer::GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
+    std::multimap<std::string, std::vector<uint8_t>> &result)
 {
-    MEDIA_LOG_D("IsDrmInfosUpdate");
-    bool isUpdated = false;
+    MEDIA_LOG_D("GetDrmInfosUpdated");
     std::unique_lock<std::shared_mutex> lock(drmMutex);
-    for (auto &newItem : info) {
-        if (newItem.second.size() == 0) {
+    for (auto &newItem : newInfos) {
+        if (localDrmInfos_.find(newItem.first) == localDrmInfos_.end()) {
+            MEDIA_LOG_D("this uuid doesn't exist, update.");
+            result.insert(newItem);
+            localDrmInfos_.insert(newItem);
             continue;
         }
         auto pos = localDrmInfos_.equal_range(newItem.first);
-        if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
-            MEDIA_LOG_D("this uuid doesn't exist, and update");
-            localDrmInfos_.insert(newItem);
-            isUpdated = true;
-            continue;
-        }
         bool isSame = false;
         for (; pos.first != pos.second; ++pos.first) {
             if (newItem.second == pos.first->second) {
-                MEDIA_LOG_D("this uuid exists and same pssh, not update");
+                MEDIA_LOG_D("this uuid exists and the pssh is same, not update.");
                 isSame = true;
                 break;
             }
         }
         if (!isSame) {
-            MEDIA_LOG_D("this uuid exists but pssh not same, update");
+            MEDIA_LOG_D("this uuid exists but pssh not same, update.");
+            result.insert(newItem);
             localDrmInfos_.insert(newItem);
-            isUpdated = true;
         }
     }
-    return isUpdated;
+    return !result.empty();
 }
 
 bool MediaDemuxer::IsLocalDrmInfosExisted()
@@ -473,9 +470,10 @@ Status MediaDemuxer::ProcessDrmInfos()
     Status ret = pluginTemp->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
         MEDIA_LOG_D("MediaDemuxer get drminfo success");
-        bool isUpdated = IsDrmInfosUpdate(drmInfo);
+        std::multimap<std::string, std::vector<uint8_t>> infosUpdated;
+        bool isUpdated = GetDrmInfosUpdated(drmInfo, infosUpdated);
         if (isUpdated) {
-            return ReportDrmInfos(drmInfo);
+            return ReportDrmInfos(infosUpdated);
         } else {
             MEDIA_LOG_D("MediaDemuxer received drminfo but not update");
         }
@@ -1567,9 +1565,10 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
 void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info)
 {
     MEDIA_LOG_I("HandleSourceDrmInfoEvent");
-    bool isUpdated = IsDrmInfosUpdate(info);
+    std::multimap<std::string, std::vector<uint8_t>> infoUpdated;
+    bool isUpdated = GetDrmInfosUpdated(info, infoUpdated);
     if (isUpdated) {
-        ReportDrmInfos(info);
+        ReportDrmInfos(infoUpdated);
     }
     MEDIA_LOG_D("demuxer filter received source drminfos but not update");
 }
