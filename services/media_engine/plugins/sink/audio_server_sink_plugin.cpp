@@ -746,14 +746,14 @@ Status AudioServerSinkPlugin::GetVolume(float &volume)
 
 Status AudioServerSinkPlugin::SetVolume(float volume)
 {
-    MEDIA_LOG_I_T("SetVolume entered.");
+    MEDIA_LOG_D("SetVolume entered.");
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetVolume(volume);
         if (ret != OHOS::AudioStandard::SUCCESS) {
             MEDIA_LOG_E_T("set volume failed with code " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
         }
-        MEDIA_LOG_I("SetVolume succ");
+        MEDIA_LOG_D("SetVolume succ");
         audioRendererVolume_ = volume;
         return Status::OK;
     }
