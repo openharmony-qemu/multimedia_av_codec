@@ -248,6 +248,11 @@ Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
     return downloader_->GetStreamInfo(streams);
 }
 
+Status DownloadMonitor::SelectStream(int32_t streamId)
+{
+    return downloader_->SelectStream(streamId);
+}
+
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {

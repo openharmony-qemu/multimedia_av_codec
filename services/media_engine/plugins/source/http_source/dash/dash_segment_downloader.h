@@ -139,6 +139,7 @@ public:
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
+    bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool isEnd);
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment);
     void UpdateStreamId(int streamId);
@@ -159,6 +160,7 @@ private:
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
     void ClearSegmentAll();
     void ClearReadSegmentList();
+    void UpdateInitSegmentState(int32_t currentStreamId);
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
                           int32_t currentStreamId);
     std::shared_ptr<DashBufferSegment> GetCurrentSegment();
