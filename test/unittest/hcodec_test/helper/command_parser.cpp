@@ -102,7 +102,7 @@ static struct option g_longOptions[] = {
     {"repeatMaxCnt",    required_argument,  nullptr, OPT_REPEAT_MAX_CNT},
     {"layerCnt",        required_argument,  nullptr, OPT_LAYER_COUNT},
     {"waterMark",       required_argument,  nullptr, OPT_WATERMARK},
-	{"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
+    {"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
@@ -131,7 +131,7 @@ void ShowUsage()
     std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
     std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0"
               << std::endl;
-	std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
+    std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
     std::cout << " [encoder only]" << std::endl;
     std::cout << " --mockFrameCnt       when read up to maxReadFrameCnt, just send old frames" << std::endl;
     std::cout << " --colorRange         color range. 1 is full range, 0 is limited range." << std::endl;
