@@ -77,6 +77,7 @@ private:
     int32_t AllocInBufsForDynamicSurfaceBuf();
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
+    void ClearDirtyList();
     bool ReadyToStart() override;
 
     // input buffer circulation

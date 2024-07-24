@@ -770,6 +770,22 @@ void HEncoder::UpdateFormatFromSurfaceBuffer()
     inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
 }
 
+void HEncoder::ClearDirtyList()
+{
+    sptr<SurfaceBuffer> buffer;
+    sptr<SyncFence> fence;
+    int64_t pts = -1;
+    OHOS::Rect damage;
+    while (true) {
+        GSError ret = inputSurface_->AcquireBuffer(buffer, fence, pts, damage);
+        if (ret != GSERROR_OK || buffer == nullptr) {
+            return;
+        }
+        HLOGI("return stale buffer to surface, seq = %u, pts = %" PRId64 "", buffer->GetSeqNum(), pts);
+        inputSurface_->ReleaseBuffer(buffer, -1);
+    }
+}
+
 int32_t HEncoder::SubmitAllBuffersOwnedByUs()
 {
     HLOGI(">>");
@@ -782,6 +798,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
         return ret;
     }
     if (inputSurface_) {
+        ClearDirtyList();
         sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
         inputSurface_->RegisterConsumerListener(listener);
         SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
@@ -1224,7 +1241,7 @@ void HEncoder::OnEnterUninitializedState()
 HEncoder::BufferItem::~BufferItem()
 {
     if (surface && buffer) {
-        LOGI("release seq = %u", buffer->GetSeqNum());
+        LOGD("release seq = %u", buffer->GetSeqNum());
         surface->ReleaseBuffer(buffer, -1);
     }
 }
