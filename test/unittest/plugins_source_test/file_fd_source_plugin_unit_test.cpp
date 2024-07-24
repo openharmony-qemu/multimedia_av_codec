@@ -135,6 +135,46 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0200, TestSize.Level1)
     EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
 }
 /**
+ * @tc.name: FileFdSource_read_0300
+ * @tc.desc: FileFdSource_read_0300
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0300, TestSize.Level1)
+{
+    fileFdSourcePlugin_->NotifyBufferingStart();
+    std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->ReadOnlineFile(buffer, 0, 1024));
+}
+/**
+ * @tc.name: FileFdSource_seek_0100
+ * @tc.desc: FileFdSource_seek_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_seek_0100, TestSize.Level1)
+{
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->SeekToOfflineFile(0));
+}
+/**
+ * @tc.name: FileFdSource_seek_0200
+ * @tc.desc: FileFdSource_seek_0200
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_seek_0200, TestSize.Level1)
+{
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->ReadOnlineFile(0));
+}
+/**
+ * @tc.name: FileFdSource_getCacheTime_0100
+ * @tc.desc: FileFdSource_getCacheTime_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->GetCacheTime(0.0);
+    fileFdSourcePlugin_->GetCacheTime(1.0);
+    fileFdSourcePlugin_->GetCacheTime(2.0);
+}
+/**
  * @tc.name: FileFdSource_ParseUriInfo_0100
  * @tc.desc: FileFdSource_ParseUriInfo_0100
  * @tc.type: FUNC
