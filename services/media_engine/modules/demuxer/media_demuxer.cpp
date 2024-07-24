@@ -616,10 +616,6 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_I("SetDataSource enter");
-    if (subtitleTrackId_ != TRACK_ID_DUMMY) {
-        MEDIA_LOG_W("SetSubtitleSource found subtitle track, not support add ext subtitle");
-        return Status::OK;
-    }
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetCallback(this);
     auto res = source_->SetSource(source);
@@ -653,6 +649,10 @@ bool MediaDemuxer::IsSubtitleMime(const std::string& mime)
 Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSource)
 {
     MEDIA_LOG_I("SetSubtitleSource begin");
+    if (subtitleTrackId_ != TRACK_ID_DUMMY) {
+        MEDIA_LOG_W("SetSubtitleSource found subtitle track, not support add ext subtitle");
+        return Status::OK;
+    }
     subtitleSource_->SetCallback(this);
     subtitleSource_->SetSource(subSource);
     Status ret = subtitleSource_->GetSize(subMediaDataSize_);
