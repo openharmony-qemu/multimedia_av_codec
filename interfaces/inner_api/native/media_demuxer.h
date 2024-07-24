@@ -71,6 +71,7 @@ public:
     Status Stop();
     Status Pause();
     Status Resume();
+    Status  ();
     Status Flush();
 
     Status StartAudioTask();

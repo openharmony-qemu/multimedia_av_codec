@@ -1106,6 +1106,23 @@ Status MediaDemuxer::Resume()
     return Status::OK;
 }
 
+Status MediaDemuxer::ResumeDragging()
+{
+    MEDIA_LOG_I("Resume");
+    if (streamDemuxer_) {
+        streamDemuxer_->Resume();
+    }
+    if (source_) {
+        source_->Resume();
+    }
+    if (taskMap_[videoTrackId_] != nullptr) {
+        streamDemuxer_->SetIsIgnoreParse(false);
+        taskMap_[videoTrackId_]->Start();
+    }
+    isPaused_ = false;
+    return Status::OK;
+}
+
 void MediaDemuxer::ResetInner()
 {
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap;
