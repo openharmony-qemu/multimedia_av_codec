@@ -72,6 +72,7 @@ private:
     bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
     bool isFirstRequest_ {true};
+    bool isFirstOpen_ {true};
 };
 }
 }
