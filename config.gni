@@ -30,6 +30,7 @@ declare_args() {
       defined(global_parts_info.multimedia_video_processing_engine)) {
     av_codec_support_video_processing_engine = true
   }
+  av_codec_support_libcurl = true
 }
 av_codec_sanitize = {
   boundary_sanitize = true
