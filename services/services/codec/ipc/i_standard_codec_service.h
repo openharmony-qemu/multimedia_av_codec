@@ -60,6 +60,7 @@ public:
         (void)svpFlag;
         return 0;
     }
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
 
     virtual int32_t DestroyStub() = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecService");

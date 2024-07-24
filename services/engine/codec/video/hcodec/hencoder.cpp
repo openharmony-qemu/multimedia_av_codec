@@ -23,10 +23,10 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
+#include "v3_0/codec_ext_types.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace CodecHDI;
 
 HEncoder::~HEncoder()
 {
@@ -222,6 +222,59 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
     }
     HLOGI("set temporal layer param %d succ", temperalLayerParam.layerCnt);
     enableTSVC_ = true;
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    if (!caps_.port.video.isSupportWaterMark) {
+        HLOGW("this device dont support water mark, ignore");
+        return AVCS_ERR_OK;
+    }
+    if (buffer == nullptr || buffer->memory_ == nullptr || buffer->meta_ == nullptr) {
+        HLOGE("invalid buffer");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    sptr<SurfaceBuffer> waterMarkBuffer = buffer->memory_->GetSurfaceBuffer();
+    if (waterMarkBuffer == nullptr) {
+        HLOGE("null surfacebuffer");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (waterMarkBuffer->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_8888) {
+        HLOGE("pixel fmt should be RGBA8888");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    bool enableWaterMark = false;
+    int32_t x = 0;
+    int32_t y = 0;
+    int32_t w = 0;
+    int32_t h = 0;
+    if (!buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_WATERMARK, enableWaterMark) ||
+        !buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_COORDINATE_X, x) ||
+        !buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_COORDINATE_Y, y) ||
+        !buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_COORDINATE_W, w) ||
+        !buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_COORDINATE_H, h)) {
+        HLOGE("invalid value");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (x < 0 || y < 0 || w <= 0 || h <= 0) {
+        HLOGE("invalid coordinate, x %d, y %d, w %d, h %d", x, y, w, h);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    CodecHDI::CodecParamOverlay param {
+        .size = sizeof(param), .enable = enableWaterMark, .dstX = static_cast<uint32_t>(x),
+        .dstY = static_cast<uint32_t>(y), .dstW = static_cast<uint32_t>(w), .dstH = static_cast<uint32_t>(h),
+    };
+    int8_t* p = reinterpret_cast<int8_t*>(&param);
+    std::vector<int8_t> inVec(p, p + sizeof(param));
+    CodecHDI::OmxCodecBuffer omxbuffer {};
+    omxbuffer.bufferhandle = new HDI::Base::NativeBuffer(waterMarkBuffer->GetBufferHandle());
+    int32_t ret = compNode_->SetParameterWithBuffer(CodecHDI::Codec_IndexParamOverlayBuffer, inVec, omxbuffer);
+    if (ret != HDF_SUCCESS) {
+        HLOGE("SetParameterWithBuffer failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("SetParameterWithBuffer succ");
     return AVCS_ERR_OK;
 }
 
@@ -806,7 +859,7 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
     return AVCS_ERR_OK;
 }
 
-void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                               const shared_ptr<Media::Meta> &meta)
 {
     omxBuffer->alongParam.clear();
@@ -816,7 +869,7 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuf
     meta->Clear();
 }
 
-void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
+void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                          const shared_ptr<Media::Meta> &meta)
 {
     if (!enableLTR_) {
@@ -869,7 +922,7 @@ void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer
 }
 
 void HEncoder::ExtractPerFrameParamFromOmxBuffer(
-    const shared_ptr<OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
+    const shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
 {
     meta->Clear();
     BinaryReader reader(static_cast<uint8_t*>(omxBuffer->alongParam.data()), omxBuffer->alongParam.size());
@@ -917,8 +970,8 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
 {
     inputBufferPool_.clear();
     for (uint32_t i = 0; i < inBufferCnt_; ++i) {
-        shared_ptr<OmxCodecBuffer> omxBuffer = DynamicSurfaceBufferToOmxBuffer();
-        shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
+        shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer = DynamicSurfaceBufferToOmxBuffer();
+        shared_ptr<CodecHDI::OmxCodecBuffer> outBuffer = make_shared<CodecHDI::OmxCodecBuffer>();
         int32_t ret = compNode_->UseBuffer(OMX_DirInput, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {
             HLOGE("Failed to UseBuffer on input port");

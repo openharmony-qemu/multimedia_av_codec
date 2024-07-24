@@ -96,5 +96,12 @@ int32_t CodecBase::GetInputFormat(Format& format)
     AVCODEC_LOGW("GetInputFormat is not supported");
     return 0;
 }
+
+int32_t CodecBase::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    (void)buffer;
+    AVCODEC_LOGW("Set custom buffer is not supported");
+    return 0;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

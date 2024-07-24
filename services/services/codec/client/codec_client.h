@@ -64,6 +64,7 @@ public:
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag) override;
 #endif
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
 
     void AVCodecServerDied();
 

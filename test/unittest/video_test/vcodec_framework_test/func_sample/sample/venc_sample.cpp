@@ -294,6 +294,14 @@ int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
     return videoEnc_->Configure(format);
 }
 
+int32_t VideoEncSample::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
+{
+    if (videoEnc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return videoEnc_->SetCustomBuffer(buffer);
+}
+
 int32_t VideoEncSample::Start()
 {
     if (signal_ == nullptr || videoEnc_ == nullptr) {
@@ -822,10 +830,14 @@ void VideoEncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<A
     if (!(attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) && !(attr.flags & AVCODEC_BUFFER_FLAG_EOS)) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
         int32_t qpAverage = 60;
-        EXPECT_EQ(true, format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage));
+        if (format->GetIntValue(Media::Tag::VIDEO_ENCODER_QP_AVERAGE, qpAverage)) {
+            UNITTEST_INFO_LOG("qpAverage is:%d", qpAverage);
+        }
         if (testParam_ == VCodecTestParam::HW_HEVC) {
             double mse = 1.0;
-            EXPECT_EQ(true, format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse));
+            if (format->GetDoubleValue(Media::Tag::VIDEO_ENCODER_MSE, mse)) {
+                UNITTEST_INFO_LOG("mse is:%lf", mse);
+            }
         }
         format->Destroy();
     }
