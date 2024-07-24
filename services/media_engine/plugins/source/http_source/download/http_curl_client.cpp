@@ -347,6 +347,7 @@ void HttpCurlClient::HandleUserAgent()
         userAgent[userAgent_.size()] = '\0';
         if (ret != EOK) {
             MEDIA_LOG_E("failed to memcpy userAgent_");
+            delete[] userAgent;
             return;
         }
         headerList_ = curl_slist_append(headerList_, userAgent);
