@@ -235,7 +235,10 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     }
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     std::map<std::string, std::string> header = httpHeader;
-    HttpHeaderParse(header);
+    if (isFirstOpen_) {
+        HttpHeaderParse(header);
+        isFirstOpen_ = false;
+    }
     InitCurlEnvironment(url, timeoutMs);
     return Status::OK;
 }
