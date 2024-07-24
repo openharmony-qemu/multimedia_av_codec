@@ -52,7 +52,7 @@ public:
 public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Configure(const std::shared_ptr<Meta> &meta);
-    Status Configure(const std::shared_ptr<Meta> &meta, std::shared_ptr<AVBuffer> &waterMarkBuffer);
+    Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
     Status SetInputSurface(sptr<Surface> surface);
@@ -79,6 +79,7 @@ private:
     void ReleaseBuffer();
     void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
+    void ConfigureEnableFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
