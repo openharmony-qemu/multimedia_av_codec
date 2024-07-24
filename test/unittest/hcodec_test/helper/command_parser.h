@@ -72,7 +72,7 @@ struct PerFrameParams {
     std::optional<QPRange> qpRange;
     std::optional<LTRParam> ltrParam;
     std::optional<bool> discard;
-	std::optional<EBRParam> ebrParam;
+    std::optional<EBRParam> ebrParam;
 };
 
 struct ResourceParams {
@@ -124,7 +124,7 @@ struct CommandOpt {
     std::optional<int32_t> repeatMaxCnt;
     std::optional<uint32_t> layerCnt;
     WaterMarkParam waterMark;
-	bool paramsFeedback;
+    bool paramsFeedback;
 
     // decoder only
     bool render = false;
