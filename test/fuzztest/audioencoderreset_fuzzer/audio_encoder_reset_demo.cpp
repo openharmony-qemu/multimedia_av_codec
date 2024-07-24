@@ -382,7 +382,7 @@ void AudioBufferAacEncDemo::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-        strncpy_s((char *)OH_AVBuffer_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
+        strncpy_s(reinterpret_cast<char*>(OH_AVBuffer_GetAddr(buffer)), currentSize, inputdata.c_str(), currentSize);
         buffer->buffer_->memory_->SetSize(currentSize);
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
