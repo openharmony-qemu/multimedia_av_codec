@@ -879,7 +879,7 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     if (!gotFirstInput_) {
-        LOGI("got first input");
+        HLOGI("got first input");
         gotFirstInput_ = true;
     }
     bufferInfo->omxBuffer->filledLen = static_cast<uint32_t>
@@ -1025,7 +1025,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
     if (!gotFirstOutput_) {
-        LOGI("got first output");
+        HLOGI("got first output");
         OHOS::QOS::ResetThreadQos();
         gotFirstOutput_ = true;
     }

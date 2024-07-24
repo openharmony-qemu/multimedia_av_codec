@@ -704,6 +704,7 @@ bool HDecoder::RequestAndFindBelongTo(
     SCOPED_TRACE();
     GSError err = currSurface_.surface_->RequestBuffer(buffer, fence, requestCfg_);
     if (err != GSERROR_OK || buffer == nullptr || buffer->GetBufferHandle() == nullptr) {
+        HLOGW("GSError=%d", err);
         return false;
     }
     BufferHandle* handle = buffer->GetBufferHandle();
