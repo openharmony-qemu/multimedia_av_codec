@@ -59,6 +59,7 @@ enum ShortOption {
     OPT_REPEAT_MAX_CNT,
     OPT_LAYER_COUNT,
     OPT_WATERMARK,
+	OPT_ENABLE_PARAMS_FEEDBACK,
     // decoder only
     OPT_RENDER,
     OPT_DEC_THEN_ENC,
@@ -101,6 +102,7 @@ static struct option g_longOptions[] = {
     {"repeatMaxCnt",    required_argument,  nullptr, OPT_REPEAT_MAX_CNT},
     {"layerCnt",        required_argument,  nullptr, OPT_LAYER_COUNT},
     {"waterMark",       required_argument,  nullptr, OPT_WATERMARK},
+	{"paramsFeedback",  required_argument,  nullptr, OPT_ENABLE_PARAMS_FEEDBACK},
     // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
@@ -127,8 +129,9 @@ void ShowUsage()
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
     std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
     std::cout << " --setParameter       eg. 11:frameRate,60 or 24:requestIdr,1" << std::endl;
-    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1" << std::endl;
-    std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
+    std::cout << " --setPerFrame        eg. 11:ltr,1,0,30 or 24:qp,3,40 or 25:discard,1 or 30:ebr,16,30,25,0"
+              << std::endl;
+	std::cout << " --setResource        eg. 11:/data/test/a.yuv,1280,720,2" << std::endl;
     std::cout << " [encoder only]" << std::endl;
     std::cout << " --mockFrameCnt       when read up to maxReadFrameCnt, just send old frames" << std::endl;
     std::cout << " --colorRange         color range. 1 is full range, 0 is limited range." << std::endl;
@@ -152,6 +155,7 @@ void ShowUsage()
     std::cout << " [decoder only]" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
+    std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
 }
@@ -266,6 +270,8 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_WATERMARK:
                 opt.ParseWaterMark(optarg);
+            case OPT_ENABLE_PARAMS_FEEDBACK:
+                opt.paramsFeedback = stol(optarg);				
                 break;
             // decoder only
             case OPT_RENDER:
@@ -376,6 +382,11 @@ void CommandOpt::ParsePerFrameParam(uint32_t frameNo, const string &s)
         bool discard;
         value >> discard;
         perFrameParamsMap[frameNo].discard = discard;
+    }
+    if (key == "ebr") {
+        EBRParam ebrParam;
+        value >> ebrParam.minQp >> c >> ebrParam.maxQp >> c >> ebrParam.startQp >> c >> ebrParam.isSkip;
+        perFrameParamsMap[frameNo].ebrParam = ebrParam;
     }
 }
 

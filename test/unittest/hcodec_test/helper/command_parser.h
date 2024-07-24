@@ -45,6 +45,13 @@ struct LTRParam {
     uint32_t useLTRPoc;
 };
 
+struct EBRParam {
+    int32_t minQp;
+    int32_t maxQp;
+    int32_t startQp;
+    int32_t isSkip;
+};
+
 enum ParamType {
     SET_PARAM,
     PER_FRAME_PARAM,
@@ -65,6 +72,7 @@ struct PerFrameParams {
     std::optional<QPRange> qpRange;
     std::optional<LTRParam> ltrParam;
     std::optional<bool> discard;
+	std::optional<EBRParam> ebrParam;
 };
 
 struct ResourceParams {
@@ -116,6 +124,7 @@ struct CommandOpt {
     std::optional<int32_t> repeatMaxCnt;
     std::optional<uint32_t> layerCnt;
     WaterMarkParam waterMark;
+	bool paramsFeedback;
 
     // decoder only
     bool render = false;

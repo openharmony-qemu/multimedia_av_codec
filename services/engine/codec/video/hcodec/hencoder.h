@@ -66,6 +66,7 @@ private:
     int32_t RequestIDRFrame() override;
     void CheckIfEnableCb(const Format &format);
     int32_t SetLTRParam(const Format &format);
+    int32_t EnableEncoderParamsFeedback(const Format &format);
     int32_t SetQpRange(const Format &format, bool isCfg);
     int32_t SetRepeat(const Format &format);
     int32_t SetConstantQualityMode(int32_t quality);
@@ -101,8 +102,13 @@ private:
                                              const std::shared_ptr<Media::Meta> &meta);
     void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                        const std::shared_ptr<Media::Meta> &meta);
+    void WrapStartQPIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                  const std::shared_ptr<Media::Meta> &meta);
+    void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                      const std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                            std::shared_ptr<Media::Meta> &meta) override;
+    void ExtractPerFrameLTRParam(const CodecEncOutLTRParam* ltrParam, std::shared_ptr<Media::Meta> &meta);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
