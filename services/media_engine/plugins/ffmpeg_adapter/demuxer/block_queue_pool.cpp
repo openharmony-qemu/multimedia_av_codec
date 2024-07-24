@@ -72,6 +72,26 @@ Status BlockQueuePool::RemoveTrackQueue(uint32_t trackIndex)
     return Status::OK;
 }
 
+size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
+        name_.c_str(), trackIndex);
+    size_t size = 0;
+    for (auto queIndex : queMap_[trackIndex]) {
+        if (quePool_[queIndex].blockQue == nullptr) {
+            MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            continue;
+        }
+        if (quePool_[queIndex].blockQue->Size() > 0) {
+            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasCache finish, result: have cache", name_.c_str());
+            size += quePool_[queIndex].blockQue->Size();
+        }
+    }
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheSize = " PUBLIC_LOG_D32, name_.c_str(), size);
+    return size;
+}
+
 bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
