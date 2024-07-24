@@ -360,6 +360,12 @@ Status DemuxerFilter::DoResume()
     return demuxer_->Resume();
 }
 
+Status DemuxerFilter::DoResumeDragging()
+{
+    MEDIA_LOG_I("DoResumeDragging in");
+    return demuxer_->ResumeDragging();
+}
+
 Status DemuxerFilter::ResumeForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");

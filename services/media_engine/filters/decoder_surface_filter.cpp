@@ -338,6 +338,18 @@ Status DecoderSurfaceFilter::DoResume()
     return Status::OK;
 }
 
+Status DecoderSurfaceFilter::DoResumeDragging()
+{
+    MEDIA_LOG_I("DoResumeDragging enter.");
+    refreshTotalPauseTime_ = true;
+    isPaused_ = false;
+    if (!IS_FILTER_ASYNC) {
+        condBufferAvailable_.notify_all();
+    }
+    videoDecoder_->Start();
+    return Status::OK;
+}
+
 Status DecoderSurfaceFilter::DoStop()
 {
     MEDIA_LOG_I("Stop");
@@ -541,6 +553,7 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 Status DecoderSurfaceFilter::DoProcessOutputBuffer(int recvArg, bool dropFrame, bool byIdx, uint32_t idx,
                                                    int64_t renderTime)
 {
+    MEDIA_LOG_D("DoProcessOutputBuffer idx " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64, idx, renderTime);
     FALSE_RETURN_V(!dropFrame, Status::OK);
     uint32_t index = idx;
     std::shared_ptr<AVBuffer> outputBuffer = nullptr;
@@ -645,6 +658,9 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 // async filter should call this function
 void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    if (isInSeekContinous_) {
+        Filter::ProcessOutputBuffer(false, 0);
+    }
     int64_t waitTime = CalculateNextRender(index, outputBuffer);
     MEDIA_LOG_D("RenderNextOutput pts: " PUBLIC_LOG_D64"  waitTime: " PUBLIC_LOG_D64,
         outputBuffer->pts_, waitTime);
@@ -653,6 +669,7 @@ void DecoderSurfaceFilter::RenderNextOutput(uint32_t index, std::shared_ptr<AVBu
 
 void DecoderSurfaceFilter::ConsumeVideoFrame(uint32_t index, bool isRender, int64_t renderTimeNs)
 {
+    MEDIA_LOG_D("ConsumeVideoFrame idx " PUBLIC_LOG_U32 " renderTimeNs " PUBLIC_LOG_D64, index, renderTimeNs);
     Filter::ProcessOutputBuffer(isRender, 0, true, index, renderTimeNs);
 }
 
@@ -662,9 +679,8 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     MEDIA_LOG_D("DrainOutputBuffer pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
     if (isInSeekContinous_) {
-        // 解析输出buffer，计算是否送显、目标送显时间
         if (videoFrameReadyCallback_ != nullptr) {
-            MEDIA_LOG_I("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
+            MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);
             videoFrameReadyCallback_->ConsumeVideoFrame(outputBuffer, index);
@@ -854,7 +870,6 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
 
 void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback)
 {
-    Filter::Resume();
     isInSeekContinous_ = true;
     if (callback != nullptr) {
         videoFrameReadyCallback_ = callback;
