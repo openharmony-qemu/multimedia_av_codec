@@ -164,7 +164,10 @@ int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, enableParamsFeedback)) {
         return AVCS_ERR_OK;
     }
-    if (!SetParameter(OMX_IndexParamEncParamsFeedback, static_cast<OMX_BOOL>(enableParamsFeedback))) {
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableParamsFeedback ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamEncParamsFeedback, param)) {
         HLOGE("configure encoder params feedback[%d] failed", enableParamsFeedback);
         return AVCS_ERR_INVALID_VAL;
     }
