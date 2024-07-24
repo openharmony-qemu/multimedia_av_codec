@@ -927,9 +927,9 @@ Status MediaDemuxer::SelectTrack(int32_t trackId)
         return InnerSelectTrack(trackId);
     }
     if (demuxerPluginManager_->IsDash()) {
-        if (isSelectBitRate_.load() == true || isSelectTrack_.load() == true) {
+        if (streamDemuxer_->CanDoChangeStream() == false) {
             MEDIA_LOG_W("SelectBitRate or SelectTrack is running, can not SelectTrack");
-            return Status::OK;
+            return Status::ERROR_WRONG_STATE;
         }
         return HandleDashSelectTrack(trackId);
     }
@@ -1094,9 +1094,12 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
         "SelectBitRate failed, source_ is nullptr.");
     MEDIA_LOG_I("SelectBitRate begin");
     if (demuxerPluginManager_->IsDash()) {
-        if (isSelectBitRate_.load() == true || isSelectTrack_.load() == true
-            || bitRate == demuxerPluginManager_->GetCurrentBitRate()) {
+        if (streamDemuxer_->CanDoChangeStream() == false) {
             MEDIA_LOG_W("SelectBitRate or SelectTrack is running, can not SelectBitRate");
+            return Status::OK;
+        }
+        if (bitRate == demuxerPluginManager_->GetCurrentBitRate()) {
+            MEDIA_LOG_W("same bitrate, can not SelectBitRate");
             return Status::OK;
         }
         isSelectBitRate_.store(true);
@@ -1109,6 +1112,7 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
             isSelectBitRate_.store(false);
         }
     }
+    MEDIA_LOG_I("SelectBitRate success");
     return ret;
 }
 
@@ -1729,11 +1733,13 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         if (isSelectBitRate_ && (trackId == videoTrackId_)) {
             auto result = SelectBitRateChangeStream(trackId);
             if (result) {
+                streamDemuxer_->SetChangeFlag(true);
                 return Status::OK;
             }
         } else if (isSelectTrack_) {
             auto result = SelectTrackChangeStream(trackId);
             if (result) {
+                streamDemuxer_->SetChangeFlag(true);
                 return Status::OK;
             }
         }
@@ -2046,7 +2052,7 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag)
 bool MediaDemuxer::CanDoSelectBitRate()
 {
     // calculating auto selectbitrate time
-    return !(isSelectBitRate_.load() || isSelectTrack_.load());
+    return streamDemuxer_->CanDoChangeStream();
 }
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()

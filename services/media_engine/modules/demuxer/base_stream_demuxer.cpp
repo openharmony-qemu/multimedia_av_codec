@@ -118,6 +118,7 @@ void BaseStreamDemuxer::SetIsDash(bool flag)
 Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 {
     MEDIA_LOG_I_SHORT("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
+    SetChangeFlag(false);
     newVideoStreamID_.store(streamID);
     return Status::OK;
 }
@@ -125,6 +126,7 @@ Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
 {
     MEDIA_LOG_I("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
+    SetChangeFlag(false);
     newAudioStreamID_.store(streamID);
     return Status::OK;
 }
@@ -132,6 +134,7 @@ Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
 Status BaseStreamDemuxer::SetNewSubtitleStreamID(int32_t streamID)
 {
     MEDIA_LOG_I("SetNewSubtitleStreamID id: " PUBLIC_LOG_D32, streamID);
+    SetChangeFlag(false);
     newSubtitleStreamID_.store(streamID);
     return Status::OK;
 }
@@ -151,5 +154,14 @@ int32_t BaseStreamDemuxer::GetNewSubtitleStreamID()
     return newSubtitleStreamID_.load();
 }
 
+bool BaseStreamDemuxer::CanDoChangeStream()
+{
+    return changeStreamFlag_.load();
+}
+
+void BaseStreamDemuxer::SetChangeFlag(bool flag)
+{
+    return changeStreamFlag_.store(flag);
+}
 } // namespace Media
 } // namespace OHOS

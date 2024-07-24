@@ -118,6 +118,8 @@ public:
     int32_t GetNewVideoStreamID();
     int32_t GetNewAudioStreamID();
     int32_t GetNewSubtitleStreamID();
+    bool CanDoChangeStream();
+    void SetChangeFlag(bool flag);
 protected:
     std::shared_ptr<Source> source_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
@@ -136,6 +138,7 @@ private:
     std::atomic<int32_t> newVideoStreamID_ = -1;
     std::atomic<int32_t> newAudioStreamID_ = -1;
     std::atomic<int32_t> newSubtitleStreamID_ = -1;
+    std::atomic<bool> changeStreamFlag_ = true;
 };
 } // namespace Media
 } // namespace OHOS
