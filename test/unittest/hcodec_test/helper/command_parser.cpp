@@ -271,7 +271,7 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_WATERMARK:
                 opt.ParseWaterMark(optarg);
             case OPT_ENABLE_PARAMS_FEEDBACK:
-                opt.paramsFeedback = stol(optarg);				
+                opt.paramsFeedback = stol(optarg);
                 break;
             // decoder only
             case OPT_RENDER:
