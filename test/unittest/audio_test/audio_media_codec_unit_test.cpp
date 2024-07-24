@@ -371,7 +371,7 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_08, TestSize.Level1)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
-    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(100); // input buffer size
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(100); // 100: input buffer size
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
     EXPECT_EQ(Status::OK, plugin->Prepare());
     EXPECT_EQ(Status::OK, plugin->Start());
@@ -405,8 +405,8 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_01, TestSize.Level1)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
-    meta->Set<Tag::MEDIA_BITRATE>(320000);  // valid param
-    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(100); // input buffer size
+    meta->Set<Tag::MEDIA_BITRATE>(320000);  // 320000: valid param
+    meta->Set<Tag::AUDIO_MAX_INPUT_SIZE>(100); // 100: input buffer size
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
 }
 
@@ -468,11 +468,11 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_05, TestSize.Level1)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_MONO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
-    meta->Set<Tag::MEDIA_BITRATE>(64000);  // valid param
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_DEFAULT);
-    inputBuffer->memory_->SetSize(3000);  // invalid param
+    inputBuffer->memory_->SetSize(3000);  // 3000: invalid param
     inputBuffer->flag_ = 0;
     EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
 }
@@ -488,11 +488,11 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_06, TestSize.Level1)
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
-    meta->Set<Tag::MEDIA_BITRATE>(64000);  // valid param
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_DEFAULT);
-    inputBuffer->memory_->SetSize(5000);  // invalid param
+    inputBuffer->memory_->SetSize(5000);  // 5000: invalid param
     inputBuffer->flag_ = 0;
     EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
 }
@@ -507,7 +507,7 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_07, TestSize.Level1)
     auto meta = std::make_shared<Meta>();
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_MONO);
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(16000); // sample rate
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(16000); // 16000: sample rate
     meta->Set<Tag::MEDIA_BITRATE>(BIT_RATE_16k);
     EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
     EXPECT_EQ(Status::OK, plugin->Prepare());
