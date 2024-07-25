@@ -17,7 +17,7 @@
 #include <chrono>
 #include <thread>
 #include "av_codec_sample_log.h"
-#include "surface_type.h"
+#include "native_buffer.h"
 #include "native_avcodec_base.h"
 
 namespace {
@@ -43,17 +43,17 @@ void ThreadSleep(bool isValid, int32_t interval)
 int32_t ToGraphicPixelFormat(int32_t avPixelFormat, int32_t profile)
 {
     if (profile == HEVC_PROFILE_MAIN_10) {
-        return GRAPHIC_PIXEL_FMT_YCBCR_P010;
+        return NATIVEBUFFER_PIXEL_FMT_YCBCR_P010;
     }
     switch (avPixelFormat) {
         case AV_PIXEL_FORMAT_RGBA:
-            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+            return NATIVEBUFFER_PIXEL_FMT_RGBA_8888;
         case AV_PIXEL_FORMAT_YUVI420:
-            return GRAPHIC_PIXEL_FMT_YCBCR_420_P;
+            return NATIVEBUFFER_PIXEL_FMT_YCBCR_420_P;
         case AV_PIXEL_FORMAT_NV21:
-            return GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+            return NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP;
         default:    // NV12 and others
-            return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+            return NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP;
     }
 }
 } // Sample
