@@ -2276,6 +2276,23 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_05, TestSize.Leve
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
+
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_06, TestSize.Level1)
+{
+    if (!GetTemporalScalabilityCapability(GetParam())) {
+        return;
+    };
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 } // namespace
 
 int main(int argc, char **argv)
