@@ -33,26 +33,68 @@ std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
 }
 
 void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
+    g_server->StopServer();
+    g_server = nullptr;
 }
 
 void HlsMediaDownloaderUnitTest ::SetUp(void)
 {
     hlsMediaDownloader = new HlsMediaDownloader();
-    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer();
 }
 
 void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
     delete hlsMediaDownloader;
     hlsMediaDownloader = nullptr;
-    g_server->StopServer();
-    g_server = nullptr;
 }
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo1, TestSize.Level1)
+{
+    hlsMediaDownloader->recordSpeedCount_ = 0;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo2, TestSize.Level1)
+{
+    hlsMediaDownloader->recordSpeedCount_ = 5;
+    hlsMediaDownloader->avgSpeedSum_ = 25;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 5);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo3, TestSize.Level1)
+{
+    hlsMediaDownloader->recordSpeedCount_ = 10;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 10);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo4, TestSize.Level1)
+{
+    hlsMediaDownloader->totalBits_ = 50;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.totalDownLoadBits, 50);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo5, TestSize.Level1)
+{
+    hlsMediaDownloader->isTimeOut_ = true;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.totalDownLoadBits, true);
+}
+
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
