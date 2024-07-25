@@ -159,8 +159,8 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
     } else {
         Meta format;
         format.Set<Tag::MEDIA_BITRATE>(static_cast<uint32_t>(info.bitRate));
-        format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(info.video_width));
-        format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(info.video_height));
+        format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(info.videoWidth));
+        format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(info.videoHeight));
         format.Set<Tag::MIME_TYPE>("video/xxx");
         streamInfoMap_[info.streamId].mediaInfo.tracks.push_back(format);
         streamInfoMap_[info.streamId].mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
