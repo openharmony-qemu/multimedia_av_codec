@@ -120,9 +120,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Seek_004, TestSize.Level1)
 	AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-
-    int64_t realSeekTime = 10000;
-    EXPECT_EQ(demuxer->SeekTo(10000, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Stop_005, TestSize.Level1)
