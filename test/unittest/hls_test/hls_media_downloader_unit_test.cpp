@@ -32,6 +32,8 @@ static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
+constexpr int MAX_RECORD_COUNT = 10;
+
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
@@ -134,12 +136,68 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate3, TestSize.Level1)
     EXPECT_EQ(expectedBitRate, actualBitRate);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate4, TestSize.Level1)
 {
     int width = THIRD_WITDH + 1;
     uint64_t expectedBitRate = RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
     uint64_t actualBitRate = hlsMediaDownloader->TransferSizeToBitRate(width);
     EXPECT_EQ(expectedBitRate, actualBitRate);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, InActiveAutoBufferSize, TestSize.Level1)
+{
+    hlsMediaDownloader->InActiveAutoBufferSize();
+    EXPECT_FALSE(hlsMediaDownloader->autoBufferSize_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ActiveAutoBufferSize1, TestSize.Level1)
+{
+    hlsMediaDownloader->ActiveAutoBufferSize();
+    EXPECT_TRUE(hlsMediaDownloader->autoBufferSize_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ActiveAutoBufferSize2, TestSize.Level1)
+{
+    hlsMediaDownloader->userDefinedBufferDuration_ = true;
+    bool oldAutoBufferSize = hlsMediaDownloader->autoBufferSize_;
+    hlsMediaDownloader->ActiveAutoBufferSize();
+    EXPECT_EQ(oldAutoBufferSize, hlsMediaDownloader->autoBufferSize_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+{
+    uint32_t len = 100;
+    hlsMediaDownloader->bufferedDuration_ = 50;
+    hlsMediaDownloader->OnReadRingBuffer(len);
+    EXPECT_EQ(hlsMediaDownloader->bufferedDuration_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+{
+    uint32_t len = 50;
+    hlsMediaDownloader->bufferedDuration_ = 100;
+    hlsMediaDownloader->OnReadRingBuffer(len);
+    EXPECT_EQ(hlsMediaDownloader->bufferedDuration_, 100);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+{
+    uint32_t len = 50;
+    hlsMediaDownloader->bufferedDuration_ = 0;
+    hlsMediaDownloader->lastReadTime_ = 0;
+    hlsMediaDownloader->OnReadRingBuffer(len);
+    EXPECT_NE(hlsMediaDownloader->bufferedDuration_, nullptr);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+{
+    uint32_t len = 50;
+    hlsMediaDownloader->bufferedDuration_ = 0;
+    hlsMediaDownloader->lastReadTime_ = 0;
+    for (int i = 0; i < MAX_RECORD_COUNT; i++) {
+        hlsMediaDownloader->OnReadRingBuffer(len);
+    }
+    EXPECT_NE(hlsMediaDownloader->bufferedDuration_->next, nullptr);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
