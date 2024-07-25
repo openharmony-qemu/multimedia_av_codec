@@ -492,7 +492,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     return false;
 }
 
-void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool isEnd)
+void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd)
 {
     // residue segment duration
     uint32_t remainDuration = 0;
@@ -545,7 +545,7 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
     }
 }
 
-bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool isEnd)
+bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     remainLastNumberSeq = -1;
