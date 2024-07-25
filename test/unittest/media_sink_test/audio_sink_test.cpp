@@ -78,11 +78,60 @@ HWTEST(TestAudioSink, find_audio_sink_process, TestSize.Level1)
     ASSERT_TRUE(freeStatus == Status::OK);
 }
 
-HWTEST(TestAudioSink, find_audio_sink_set_volume, TestSize.Level1)
+HWTEST(TestAudioSink, find_audio_sink_set_volume001, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
     float volume = 0.5f;
+    auto setVolumeStatus =  audioSink->SetVolume(volume);
+    ASSERT_TRUE(setVolumeStatus == Status::OK);
+
+    // SetVolumeWithRamp
+    float targetVolume = 0;
+    int32_t duration = 0;
+    auto setVolumeWithRampStatus = audioSink->SetVolumeWithRamp(targetVolume, duration);
+    ASSERT_TRUE(setVolumeWithRampStatus == 0);
+}
+
+HWTEST(TestAudioSink, find_audio_sink_set_volume002, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
+    float volume = -0.5f;
+    auto setVolumeStatus =  audioSink->SetVolume(volume);
+    ASSERT_TRUE(setVolumeStatus == Status::OK);
+
+    // SetVolumeWithRamp
+    float targetVolume = 0;
+    int32_t duration = 0;
+    auto setVolumeWithRampStatus = audioSink->SetVolumeWithRamp(targetVolume, duration);
+    ASSERT_TRUE(setVolumeWithRampStatus == 0);
+}
+
+HWTEST(TestAudioSink, find_audio_sink_set_volume003, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = audioSink->CreatePlugin();
+    float volume = 0.5f;
+    auto setVolumeStatus =  audioSink->SetVolume(volume);
+    ASSERT_TRUE(setVolumeStatus == Status::OK);
+
+    // SetVolumeWithRamp
+    float targetVolume = 0;
+    int32_t duration = 0;
+    auto setVolumeWithRampStatus = audioSink->SetVolumeWithRamp(targetVolume, duration);
+    ASSERT_TRUE(setVolumeWithRampStatus == 0);
+}
+
+HWTEST(TestAudioSink, find_audio_sink_set_volume004, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = audioSink->CreatePlugin();
+    float volume = -0.5f;
     auto setVolumeStatus =  audioSink->SetVolume(volume);
     ASSERT_TRUE(setVolumeStatus == Status::OK);
 
@@ -220,6 +269,83 @@ HWTEST(TestAudioSink, audio_sink_init, TestSize.Level1) {
     // Verify the internal state of AudioSink
     ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
     ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_init002, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 0);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 1024);
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_init003, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 0);
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_init004, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 0);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 0);
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_init005, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    std::shared_ptr<Meta> meta = nullptr;
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
 }
 
 HWTEST(TestAudioSink, audio_sink_GetBufferQueueProducer, TestSize.Level1) {
