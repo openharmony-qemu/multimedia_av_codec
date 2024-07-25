@@ -2013,10 +2013,10 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         StreamInfo info;
         info.streamId = streamDescriptions_[index]->streamId_;
         info.bitRate = streamDescriptions_[index]->bandwidth_;
-        info.video_width = streamDescriptions_[index]->width_;
-        info.video_height = streamDescriptions_[index]->height_;
+        info.videoWidth = streamDescriptions_[index]->width_;
+        info.videoHeight = streamDescriptions_[index]->height_;
         info.lang = streamDescriptions_[index]->lang_;
-        info.video_type = GetVideoType(streamDescriptions_[index]->videoType_);
+        info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
             info.type = SUBTITLE;
         } else if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
