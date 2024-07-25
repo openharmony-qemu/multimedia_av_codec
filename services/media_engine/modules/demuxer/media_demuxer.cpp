@@ -587,6 +587,7 @@ Status MediaDemuxer::InnerPrepare()
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, videoTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
             streamDemuxer_->SetNewVideoStreamID(streamId);
+            streamDemuxer_->SetChangeFlag(true);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
             int64_t bitRate = 0;
             mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
@@ -597,6 +598,7 @@ Status MediaDemuxer::InnerPrepare()
             demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, audioTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(audioTrackId_);
             streamDemuxer_->SetNewAudioStreamID(streamId);
+            streamDemuxer_->SetChangeFlag(true);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
         }
         if (subtitleTrackId_ != TRACK_ID_DUMMY) {
@@ -604,6 +606,7 @@ Status MediaDemuxer::InnerPrepare()
             demuxerPluginManager_->UpdateTempTrackMapInfo(subtitleTrackId_, subtitleTrackId_, -1);
             int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_);
             streamDemuxer_->SetNewSubtitleStreamID(streamId);
+            streamDemuxer_->SetChangeFlag(true);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
         }
     } else {
