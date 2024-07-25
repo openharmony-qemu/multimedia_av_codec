@@ -164,7 +164,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, ActiveAutoBufferSize2, TestSize.Level1)
     EXPECT_EQ(oldAutoBufferSize, hlsMediaDownloader->autoBufferSize_);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer1, TestSize.Level1)
 {
     uint32_t len = 100;
     hlsMediaDownloader->bufferedDuration_ = 50;
@@ -172,32 +172,32 @@ HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
     EXPECT_EQ(hlsMediaDownloader->bufferedDuration_, 0);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer2, TestSize.Level1)
 {
     uint32_t len = 50;
     hlsMediaDownloader->bufferedDuration_ = 100;
     hlsMediaDownloader->OnReadRingBuffer(len);
-    EXPECT_EQ(hlsMediaDownloader->bufferedDuration_, 100);
+    EXPECT_LT(hlsMediaDownloader->bufferedDuration_, 100);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer3, TestSize.Level1)
 {
     uint32_t len = 50;
     hlsMediaDownloader->bufferedDuration_ = 0;
     hlsMediaDownloader->lastReadTime_ = 0;
     hlsMediaDownloader->OnReadRingBuffer(len);
-    EXPECT_NE(hlsMediaDownloader->bufferedDuration_, nullptr);
+    EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_, nullptr);
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer4, TestSize.Level1)
 {
     uint32_t len = 50;
     hlsMediaDownloader->bufferedDuration_ = 0;
     hlsMediaDownloader->lastReadTime_ = 0;
-    for (int i = 0; i < MAX_RECORD_COUNT; i++) {
+    for (int i = 0; i < MAX_RECORD_COUNT + 1; i++) {
         hlsMediaDownloader->OnReadRingBuffer(len);
     }
-    EXPECT_NE(hlsMediaDownloader->bufferedDuration_->next, nullptr);
+    EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_->next, nullptr);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
