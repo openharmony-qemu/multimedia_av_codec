@@ -468,7 +468,7 @@ void DashMpdDownloader::SetCurrentNumberSeqByStreamId(int streamId, int64_t numb
     }
 }
 
-void DashMpdDownloader::UpdateCurrentNumberSeqByTime(std::shared_ptr<DashStreamDescription> streamDesc,
+void DashMpdDownloader::UpdateCurrentNumberSeqByTime(std::shared_ptr<DashStreamDescription> &streamDesc,
     unsigned int nextSegTime)
 {
     if (streamDesc == nullptr) {
@@ -1200,8 +1200,8 @@ unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned 
     }
 }
 
-bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> choosedStream,
-    const std::shared_ptr<DashStreamDescription> currentStream)
+bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
+    const std::shared_ptr<DashStreamDescription> &currentStream)
 {
     if (choosedStream == nullptr || currentStream == nullptr || initResolution_ == 0) {
         return false;

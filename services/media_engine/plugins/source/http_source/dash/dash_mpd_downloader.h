@@ -135,7 +135,7 @@ public:
     std::shared_ptr<DashStreamDescription> GetUsingStreamByType(MediaAVCodec::MediaType type);
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
-    void UpdateCurrentNumberSeqByTime(std::shared_ptr<DashStreamDescription> streamDesc, unsigned int nextSegTime);
+    void UpdateCurrentNumberSeqByTime(std::shared_ptr<DashStreamDescription> &streamDesc, unsigned int nextSegTime);
     void SetHdrStart(bool isHdrStart);
     void SetInitResolution(unsigned int width, unsigned int height);
     void SetInterruptState(bool isInterruptNeeded);
@@ -156,8 +156,8 @@ private:
     void GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, const std::string &periodBaseUrl,
                                  DashStreamDescription &streamDesc);
     unsigned int GetResolutionDelta(unsigned int width, unsigned int height);
-    bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> choosedStream,
-        const std::shared_ptr<DashStreamDescription> currentStream);
+    bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
+        const std::shared_ptr<DashStreamDescription> &currentStream);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
     unsigned int GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
