@@ -37,7 +37,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr uint32_t SAMPLE_INTERVAL = 1000;                 //Sampling time interval: ms
+constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -46,7 +46,7 @@ constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BIT = 100;                   // Threshold for determining whether the download is in progress: bit
+constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr int32_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr float DEFAULT_CACHE_TIME = 0.3;
@@ -417,14 +417,15 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
             size_t curBufferSize = 0;
-            if (buffer_ != nullptr){
+            if (buffer_ != nullptr) {
                 curBufferSize = buffer_->GetSize();
             }
-            MEDIA_LOG_I("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64 " KByte",
-            static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
+            MEDIA_LOG_I("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
+            " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
             readTotalBits_ = 0;
         }
         lastReadCheckTime_ = now;
+        readRecordDuringTime_ = 0;
     }
     
     return ret;
@@ -718,7 +719,7 @@ void HlsMediaDownloader::DownloadReport()
             recordBuff->downloadRate = downloadRate;
             size_t remainingBuffer = 0;
             if (buffer_ != nullptr) {
-                uint64_t remainingBuffer = buffer_->GetSize();
+                remainingBuffer = buffer_->GetSize();
             }
             MEDIA_LOG_I("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
                 " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
