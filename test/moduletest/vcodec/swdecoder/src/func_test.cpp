@@ -17,6 +17,7 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
 #include "videodec_sample.h"
+#include "videodec_api11_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 
@@ -368,6 +369,25 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1800, TestSize.Level2)
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->DEFAULT_PIXEL_FORMAT = AV_PIXEL_FORMAT_RGBA;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec("OH.Media.Codec.Decoder.Video.AVC"));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(0, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_ATTIME_0010
+ * @tc.name      : test h264 asyn decode surface,use at time
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_ATTIME_0010, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_720_30;
+    vDecSample->DEFAULT_WIDTH = 1280;
+    vDecSample->DEFAULT_HEIGHT = 720;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SURFACE_OUTPUT = true;
+    vDecSample->rsAtTime = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.AVC"));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
 }

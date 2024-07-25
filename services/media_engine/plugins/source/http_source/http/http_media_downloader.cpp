@@ -53,6 +53,7 @@ constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
+constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 10;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -693,8 +694,8 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         }
         MEDIA_LOG_W("CacheMediaBuffer write fail.");
         canWrite_ = false;
-        while (!isNeedClean_ && !canWrite_ && !isInterruptNeeded_.load()) {
-            MEDIA_LOG_D("CacheMediaBuffer can not write, drop data.");
+        while (!isInterrupt_ && !isNeedClean_ && !canWrite_ && !isInterruptNeeded_.load()) {
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer can not write, drop data.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;

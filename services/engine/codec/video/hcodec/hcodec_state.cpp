@@ -232,6 +232,12 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             OnConfigure(info);
             return;
         }
+        case MsgWhat::CONFIGURE_BUFFER: {
+            std::shared_ptr<AVBuffer> buffer;
+            (void)info.param->GetValue("buffer", buffer);
+            ReplyErrorCode(info.id, codec_->OnConfigureBuffer(buffer));
+            return;
+        }
         case MsgWhat::CREATE_INPUT_SURFACE: {
             sptr<Surface> surface = codec_->OnCreateInputSurface();
             ParamSP reply = make_shared<ParamBundle>();
@@ -528,7 +534,7 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
     codec_->notifyCallerAfterShutdownComplete_ = true;
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);
     codec_->isBufferCirculating_ = false;
-
+    codec_->PrintAllBufferInfo();
     SLOGI("receive %s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {

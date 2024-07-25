@@ -225,7 +225,7 @@ Status MediaSyncManager::Pause()
     return Status::OK;
 }
 
-Status MediaSyncManager::Seek(int64_t mediaTime)
+Status MediaSyncManager::Seek(int64_t mediaTime, bool isClosest)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || maxRangeEndOfMediaTime_ == HST_TIME_NONE) {
@@ -238,7 +238,11 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
     ResetTimeAnchorNoLock(); // reset the time anchor
     frameAfterSeeked_ = true;
-    firstMediaTimeAfterSeek_ = HST_TIME_NONE;
+    if (isClosest) {
+        firstMediaTimeAfterSeek_ = mediaTime;
+    } else {
+        firstMediaTimeAfterSeek_ = HST_TIME_NONE;
+    }
     return Status::OK;
 }
 
@@ -319,6 +323,17 @@ bool MediaSyncManager::IsSupplierValid(IMediaSynchronizer* supplier)
     return std::find(syncers_.begin(), syncers_.end(), supplier) != syncers_.end();
 }
 
+void MediaSyncManager::UpdateFirstPtsAfterSeek(int64_t mediaTime)
+{
+    if (firstMediaTimeAfterSeek_ == HST_TIME_NONE) {
+        firstMediaTimeAfterSeek_ = mediaTime;
+        return;
+    }
+    if (mediaTime > firstMediaTimeAfterSeek_) {
+        firstMediaTimeAfterSeek_ = mediaTime;
+    }
+}
+
 bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime,
     int64_t mediaAbsTime, int64_t maxMediaTime, IMediaSynchronizer* supplier)
 {
@@ -338,7 +353,7 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
         if (isSeeking_) {
             MEDIA_LOG_I_SHORT("leaving seeking_");
             isSeeking_ = false;
-            firstMediaTimeAfterSeek_ = mediaTime;
+            UpdateFirstPtsAfterSeek(mediaTime);
             seekCond_.notify_all();
         }
     }

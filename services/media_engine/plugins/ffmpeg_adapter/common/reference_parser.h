@@ -58,8 +58,9 @@ struct PicRefInfo {
 
 class RefParser {
 public:
-    explicit RefParser(std::vector<uint32_t> IFramePos);
+    explicit RefParser(std::vector<uint32_t> &IFramePos);
     virtual ~RefParser();
+    virtual Status RefParserInit();
     virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts);
     virtual Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize);
     virtual Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize);

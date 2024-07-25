@@ -170,10 +170,10 @@ private:
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
 
+    std::atomic<CodecState> state_;
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
     std::vector<std::shared_ptr<AVBuffer>> outputBufferVector_;
-    std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };
 } // namespace Media

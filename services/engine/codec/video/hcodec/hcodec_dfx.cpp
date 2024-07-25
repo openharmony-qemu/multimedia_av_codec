@@ -53,6 +53,8 @@ void HCodec::PrintAllBufferInfo()
 
 void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now)
 {
+    bool eos = isInput ? inputPortEos_ : outputPortEos_;
+    uint64_t cnt = isInput ? inTotalCnt_ : outRecord_.totalCnt;
     std::array<uint32_t, OWNER_CNT> arr;
     arr.fill(0);
     std::stringstream s;
@@ -62,7 +64,7 @@ void HCodec::PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chron
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << info.bufferId << ":" << ToString(info.owner) << "(" << holdMs << "), ";
     }
-    HLOGI("%s: %u/%u/%u/%u, %s", (isInput ? " in" : "out"),
+    HLOGI("%s: eos=%d, cnt=%" PRIu64 ", %u/%u/%u/%u, %s", (isInput ? " in" : "out"), eos, cnt,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
           s.str().c_str());
 }
