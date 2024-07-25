@@ -29,29 +29,175 @@ const std::map<std::string, std::string> httpHeader = {
 };
 static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
+constexpr int MIN_WITDH = 480;
+constexpr int SECOND_WITDH = 720;
+constexpr int THIRD_WITDH = 1080;
+constexpr int MAX_RECORD_COUNT = 10;
+
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
 }
 
 void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
+    g_server->StopServer();
+    g_server = nullptr;
 }
 
 void HlsMediaDownloaderUnitTest ::SetUp(void)
 {
     hlsMediaDownloader = new HlsMediaDownloader();
-    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer();
 }
 
 void HlsMediaDownloaderUnitTest ::TearDown(void)
 {
     delete hlsMediaDownloader;
     hlsMediaDownloader = nullptr;
-    g_server->StopServer();
-    g_server = nullptr;
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo1, TestSize.Level1)
+{
+    hlsMediaDownloader->recordSpeedCount_ = 0;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo2, TestSize.Level1)
+{
+    hlsMediaDownloader->recordSpeedCount_ = 5;
+    hlsMediaDownloader->avgSpeedSum_ = 25;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadRate, 5);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo3, TestSize.Level1)
+{
+    hlsMediaDownloader->avgDownloadSpeed_ = 10;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.avgDownloadSpeed, 10);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo4, TestSize.Level1)
+{
+    hlsMediaDownloader->totalBits_ = 50;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.totalDownLoadBits, 50);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetDownloadInfo5, TestSize.Level1)
+{
+    hlsMediaDownloader->isTimeOut_ = true;
+    DownloadInfo downloadInfo;
+    hlsMediaDownloader->GetDownloadInfo(downloadInfo);
+    EXPECT_EQ(downloadInfo.isTimeOut, true);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetRingBufferSize, TestSize.Level1)
+{
+    size_t actualSize = hlsMediaDownloader->GetRingBufferSize();
+    EXPECT_EQ(actualSize, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, GetTotalBufferSize, TestSize.Level1)
+{
+    hlsMediaDownloader->totalRingBufferSize_ = 1024;
+    EXPECT_EQ(hlsMediaDownloader->GetTotalBufferSize(), 1024);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate1, TestSize.Level1)
+{
+    int width = MIN_WITDH;
+    uint64_t expectedBitRate = RING_BUFFER_SIZE;
+    uint64_t actualBitRate = hlsMediaDownloader->TransferSizeToBitRate(width);
+    EXPECT_EQ(expectedBitRate, actualBitRate);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate2, TestSize.Level1)
+{
+    int width = SECOND_WITDH - 1;
+    uint64_t expectedBitRate = RING_BUFFER_SIZE + RING_BUFFER_SIZE;
+    uint64_t actualBitRate = hlsMediaDownloader->TransferSizeToBitRate(width);
+    EXPECT_EQ(expectedBitRate, actualBitRate);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate3, TestSize.Level1)
+{
+    int width = THIRD_WITDH - 1;
+    uint64_t expectedBitRate = RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
+    uint64_t actualBitRate = hlsMediaDownloader->TransferSizeToBitRate(width);
+    EXPECT_EQ(expectedBitRate, actualBitRate);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, TransferSizeToBitRate4, TestSize.Level1)
+{
+    int width = THIRD_WITDH + 1;
+    uint64_t expectedBitRate = RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
+    uint64_t actualBitRate = hlsMediaDownloader->TransferSizeToBitRate(width);
+    EXPECT_EQ(expectedBitRate, actualBitRate);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, InActiveAutoBufferSize, TestSize.Level1)
+{
+    hlsMediaDownloader->InActiveAutoBufferSize();
+    EXPECT_FALSE(hlsMediaDownloader->autoBufferSize_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ActiveAutoBufferSize1, TestSize.Level1)
+{
+    hlsMediaDownloader->ActiveAutoBufferSize();
+    EXPECT_TRUE(hlsMediaDownloader->autoBufferSize_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, ActiveAutoBufferSize2, TestSize.Level1)
+{
+    hlsMediaDownloader->userDefinedBufferDuration_ = true;
+    bool oldAutoBufferSize = hlsMediaDownloader->autoBufferSize_;
+    hlsMediaDownloader->ActiveAutoBufferSize();
+    EXPECT_EQ(oldAutoBufferSize, hlsMediaDownloader->autoBufferSize_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer1, TestSize.Level1)
+{
+    uint32_t len = 100;
+    hlsMediaDownloader->bufferedDuration_ = 50;
+    hlsMediaDownloader->OnReadRingBuffer(len);
+    EXPECT_EQ(hlsMediaDownloader->bufferedDuration_, 0);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer2, TestSize.Level1)
+{
+    uint32_t len = 50;
+    hlsMediaDownloader->bufferedDuration_ = 100;
+    hlsMediaDownloader->OnReadRingBuffer(len);
+    EXPECT_LT(hlsMediaDownloader->bufferedDuration_, 100);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer3, TestSize.Level1)
+{
+    uint32_t len = 50;
+    hlsMediaDownloader->bufferedDuration_ = 0;
+    hlsMediaDownloader->lastReadTime_ = 0;
+    hlsMediaDownloader->OnReadRingBuffer(len);
+    EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_, nullptr);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer4, TestSize.Level1)
+{
+    uint32_t len = 50;
+    hlsMediaDownloader->bufferedDuration_ = 0;
+    hlsMediaDownloader->lastReadTime_ = 0;
+    for (int i = 0; i < MAX_RECORD_COUNT + 1; i++) {
+        hlsMediaDownloader->OnReadRingBuffer(len);
+    }
+    EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_->next, nullptr);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
