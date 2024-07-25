@@ -462,11 +462,12 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
             size_t curBufferSize = GetCurrentBufferSize();
-            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64 " KByte",
-            static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
+            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
+            " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
             readTotalBits_ = 0;
         }
         lastReadCheckTime_ = now;
+        readRecordDuringTime_ = 0;
     }
     
     return ret;
