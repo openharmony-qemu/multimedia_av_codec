@@ -468,8 +468,8 @@ void DashMpdDownloader::SetCurrentNumberSeqByStreamId(int streamId, int64_t numb
     }
 }
 
-void DashMpdDownloader::UpdateCurrentNumberSeqByTime(std::shared_ptr<DashStreamDescription> &streamDesc,
-    unsigned int nextSegTime)
+void DashMpdDownloader::UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc,
+    uint32_t nextSegTime)
 {
     if (streamDesc == nullptr) {
         return;

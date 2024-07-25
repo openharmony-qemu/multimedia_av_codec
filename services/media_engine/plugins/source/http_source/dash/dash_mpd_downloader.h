@@ -135,7 +135,7 @@ public:
     std::shared_ptr<DashStreamDescription> GetUsingStreamByType(MediaAVCodec::MediaType type);
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
-    void UpdateCurrentNumberSeqByTime(std::shared_ptr<DashStreamDescription> &streamDesc, unsigned int nextSegTime);
+    void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint32_t nextSegTime);
     void SetHdrStart(bool isHdrStart);
     void SetInitResolution(unsigned int width, unsigned int height);
     void SetInterruptState(bool isInterruptNeeded);
