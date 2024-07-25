@@ -720,8 +720,8 @@ void HlsMediaDownloader::DownloadReport()
             if (buffer_ != nullptr) {
                 uint64_t remainingBuffer = buffer_->GetSize();
             }
-            MEDIA_LOG_I("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64 " KByte",
-                static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            MEDIA_LOG_I("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
+                " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
             // Remaining playable time: s
             uint64_t bufferDuration = bufferedDuration_ / 1024 / 1024 / currentBitrate_;
             recordBuff->bufferDuring = bufferDuration;
