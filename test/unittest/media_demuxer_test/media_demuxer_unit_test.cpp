@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include "media_demuxer_unit_test.h"
 #include "http_server_demo.h"
+#include "plugin/plugin_event.h"
+#include "demuxer/stream_demuxer.h"
 
 #define LOCAL true
 namespace OHOS::Media {
@@ -45,6 +47,35 @@ void MediaDemuxerUnitTest::SetUp()
 void MediaDemuxerUnitTest::TearDown()
 {
 }
+
+
+class MediaDemuxerTestCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
+public:
+    explicit MediaDemuxerTestCallback()
+    {
+    }
+
+    ~MediaDemuxerTestCallback()
+    {
+    }
+
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
+    {
+    }
+};
+
+class TestEventReceiver : public Pipeline::EventReceiver {
+public:
+    explicit TestEventReceiver()
+    {
+        std::cout << "event receiver constructor" << std::endl;
+    }
+
+    void OnEvent(const Event &event)
+    {
+        std::cout << event.srcFilter << std::endl;
+    }
+};
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetSubtitleSource_001, TestSize.Level1)
 {
@@ -239,4 +270,628 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDecoderFramerateUpperLimit_009, T
     EXPECT_EQ(demuxer->IsRenderNextVideoFrameSupported(), false);
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnBufferAvailable_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    int32_t invalidTrackId = 100;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->SetTrackNotifyFlag(invalidTrackId, true);
+    demuxer->SetTrackNotifyFlag(trackId, true);
+    demuxer->OnBufferAvailable(trackId);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDrmCallback_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    std::shared_ptr<MediaDemuxerTestCallback> callback = std::make_shared<MediaDemuxerTestCallback>();
+    demuxer->SetDrmCallback(callback);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetDuration_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int64_t duration = 0;
+    demuxer->mediaMetaData_.globalMeta = std::make_shared<Meta>();
+    EXPECT_EQ(false, demuxer->GetDuration(duration));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(Status::ERROR_INVALID_PARAMETER, demuxer->HandleRead(trackId));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddDemuxerCopyTask_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(Status::ERROR_UNKNOWN, demuxer->AddDemuxerCopyTask(trackId, TaskType::GLOBAL));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetInterruptState_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::string bundleName = "test";
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->SetBundleName(bundleName);
+    demuxer->SetInterruptState(true);
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    demuxer->streamDemuxer_ = nullptr;
+    demuxer->SetInterruptState(true);
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    demuxer->SetInterruptState(true);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetOutputBufferQueue_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    int32_t invalidTrackId = 100;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(Status::OK, demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer));
+    demuxer->bufferQueueMap_.erase(trackId);
+    EXPECT_EQ(Status::OK, demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer));
+    EXPECT_EQ(Status::ERROR_UNKNOWN, demuxer->AddDemuxerCopyTask(invalidTrackId, TaskType::GLOBAL));
+    demuxer->bufferQueueMap_.insert(
+        std::pair<uint32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
+    EXPECT_EQ(Status::OK, demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnDumpInfo_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->OnDumpInfo(-1);
+    demuxer->OnDumpInfo(fd);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartAudioTask_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 1;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(Status::OK, demuxer->StartAudioTask());
+    sleep(1);
+    demuxer->audioTrackId_ = 100;
+    EXPECT_EQ(Status::OK, demuxer->StartAudioTask());
+    sleep(1);
+    demuxer->audioTrackId_ = 1;
+    EXPECT_EQ(Status::OK, demuxer->StartAudioTask());
+    sleep(1);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UnselectTrack_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/webvtt_test.vtt";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->useBufferQueue_ = true;
+    demuxer->SelectTrack(trackId);
+    demuxer->UnselectTrack(trackId);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimePre_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->SeekToTimePre(true);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimeAfter_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->audioTrackId_ = TRACK_ID_DUMMY;
+    demuxer->videoTrackId_ = TRACK_ID_DUMMY;
+    EXPECT_EQ(Status::OK, demuxer->SeekToTimeAfter(true));
+    EXPECT_EQ(Status::OK, demuxer->SeekToTimeAfter(false));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekTo_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    int64_t realSeekTime = 0;
+    EXPECT_EQ(Status::OK, demuxer->SeekTo(0, SeekMode::SEEK_CLOSEST_INNER, realSeekTime));
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(Status::OK, demuxer->SeekTo(0, SeekMode::SEEK_CLOSEST_INNER, realSeekTime));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->isSelectBitRate_.store(true);
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_EQ(Status::ERROR_INVALID_OPERATION, demuxer->SelectBitRate(0));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_002, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    demuxer->isSelectBitRate_.store(true);
+    EXPECT_EQ(Status::OK, demuxer->SelectBitRate(0));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Flush_002, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    int32_t invalidTrackId = 100;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(Status::OK, demuxer->Flush());
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->bufferQueueMap_.insert(
+        std::pair<uint32_t, sptr<AVBufferQueueProducer>>(invalidTrackId, inputBufferQueueProducer));
+    EXPECT_EQ(Status::OK, demuxer->Flush());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StopAllTask_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t invalidTrackId = 100;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->taskMap_[invalidTrackId] = nullptr;
+    EXPECT_EQ(Status::OK, demuxer->PauseAllTask());
+    demuxer->source_ = nullptr;
+    EXPECT_EQ(Status::OK, demuxer->StopAllTask());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PauseForPrepareFrame_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(Status::OK, demuxer->PauseForPrepareFrame());
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(Status::OK, demuxer->PauseForPrepareFrame());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_EQ(Status::OK, demuxer->Resume());
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
+    demuxer->SetEventReceiver(receiver);
+    EXPECT_EQ(Status::OK, demuxer->PrepareFrame(true));
+    demuxer->taskMap_[trackId] = nullptr;
+    demuxer->doPrepareFrame_ = true;
+    EXPECT_EQ(Status::OK, demuxer->Resume());
+    std::unique_ptr<Task> task = std::make_unique<Task>("test", demuxer->playerId_, TaskType::VIDEO);
+    demuxer->taskMap_[trackId] = std::move(task);
+    EXPECT_EQ(Status::OK, demuxer->Resume());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Start_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    int32_t invalidTrackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->taskMap_[invalidTrackId] = nullptr;
+    EXPECT_EQ(Status::OK, demuxer->Start());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Start_002, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
+    demuxer->SetEventReceiver(receiver);
+    EXPECT_EQ(Status::OK, demuxer->PrepareFrame(true));
+    EXPECT_EQ(Status::OK, demuxer->Start());
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ChangeStream_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 1;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(false, demuxer->ChangeStream(trackId));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DumpBufferToFile_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/drm/sm4c.ts";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t aTrackId = 0;
+    int32_t vTrackId = 1;
+    int32_t invalidTrackId = 1;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(aTrackId, inputBufferQueueProducer), Status::OK);
+    demuxer->SetDumpInfo(true, 0);
+    demuxer->DumpBufferToFile(aTrackId, demuxer->bufferMap_[aTrackId]);
+    demuxer->DumpBufferToFile(invalidTrackId, demuxer->bufferMap_[aTrackId]);
+    demuxer->DumpBufferToFile(vTrackId, demuxer->bufferMap_[vTrackId]);
+    demuxer->DumpBufferToFile(invalidTrackId, demuxer->bufferMap_[vTrackId]);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    demuxer->isStopped_ = true;
+    demuxer->isPaused_ = true;
+    demuxer->isSeekError_ = true;
+    int32_t time = 6000;
+    EXPECT_EQ(time, demuxer->ReadLoop(trackId));
+    demuxer->isStopped_ = false;
+    EXPECT_EQ(time, demuxer->ReadLoop(trackId));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsContainIdrFrame_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    EXPECT_EQ(false, demuxer->IsContainIdrFrame(nullptr, 0));
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnEvent_001, TestSize.Level1)
+{
+    string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+    int32_t trackId = 0;
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
+    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
+    demuxer->SetEventReceiver(receiver);
+    demuxer->OnEvent({Plugins::PluginEventType::CLIENT_ERROR, "", "CLIENT_ERROR"});
+    demuxer->OnEvent({Plugins::PluginEventType::BUFFERING_END, "", "BUFFERING_END"});
+    demuxer->OnEvent({Plugins::PluginEventType::BUFFERING_START, "", "BUFFERING_START"});
+    demuxer->OnEvent({Plugins::PluginEventType::CACHED_DURATION, "", "CACHED_DURATION"});
+    demuxer->OnEvent({Plugins::PluginEventType::SOURCE_BITRATE_START, "", "SOURCE_BITRATE_START"});
+    demuxer->OnEvent({Plugins::PluginEventType::EVENT_BUFFER_PROGRESS, "", "EVENT_BUFFER_PROGRESS"});
+    demuxer->OnEvent({Plugins::PluginEventType::EVENT_CHANNEL_CLOSED, "", "EVENT_CHANNEL_CLOSED"});
+}
 }

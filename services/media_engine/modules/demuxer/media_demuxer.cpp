@@ -162,10 +162,8 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
                          "StartReferenceParser failed due to video plugin is nullptr");
     if (isFirstParser_) {
         isFirstParser_ = false;
-        if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
-            MEDIA_LOG_E("Do not support online video");
-            return Status::ERROR_INVALID_OPERATION;
-        }
+        FALSE_RETURN_V_MSG(source_->GetSeekable() == Plugins::Seekable::SEEKABLE,
+            Status::ERROR_INVALID_OPERATION, "Do not support online video");
 
         Status ret = videoPlugin->ParserRefInit(startTimeMs);
         if (ret == Status::END_OF_STREAM) {
@@ -193,15 +191,10 @@ void MediaDemuxer::TryRecvParserTask()
 
 int64_t MediaDemuxer::ParserRefInfo()
 {
-    if (demuxerPluginManager_ == nullptr) {
-        MEDIA_LOG_D("ParserRefInfo failed due to demuxerPluginManager is nullptr");
-        return 0;
-    }
+    FALSE_RETURN_V_MSG_D(demuxerPluginManager_ != nullptr, 0,
+        "ParserRefInfo failed due to demuxerPluginManager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
-    if (videoPlugin == nullptr) {
-        MEDIA_LOG_D("ParserRefInfo failed due to video plugin is nullptr");
-        return 0;
-    }
+    FALSE_RETURN_V_MSG_D(plugin != nullptr, 0, "ParserRefInfo failed due to plugin is nullptr");
     Status ret = videoPlugin->ParserRefInfo();
     if ((ret == Status::OK || ret == Status::ERROR_UNKNOWN) && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
@@ -324,10 +317,8 @@ void MediaDemuxer::SetTrackNotifyFlag(uint32_t trackId, bool isNotifyNeeded)
 
 Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
 {
-    if (source_ == nullptr) {
-        MEDIA_LOG_E("GetBitRates failed, source_ is nullptr");
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_MSG(source_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "GetBitRates failed, source_ is nullptr");
     return source_->GetBitRates(bitRates);
 }
 
@@ -341,10 +332,8 @@ Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vecto
 
 Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
-    if (source_ == nullptr) {
-        MEDIA_LOG_E("GetDownloadInfo failed, source_ is null");
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_MSG(source_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "GetDownloadInfo failed, source_ is null");
     return source_->GetDownloadInfo(downloadInfo);
 }
 
@@ -371,10 +360,7 @@ void MediaDemuxer::SetPlayerId(std::string playerId)
 
 void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    if (isDump && instanceId == 0) {
-        MEDIA_LOG_W("Cannot dump with instanceId 0.");
-        return;
-    }
+    FALSE_RETURN_MSG(!isDump || instanceId != 0, "Cannot dump with instanceId 0.");
     dumpPrefix_ = std::to_string(instanceId);
     isDump_ = isDump;
 }
@@ -522,30 +508,24 @@ Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
     }
 
     std::unique_ptr<Task> task = std::make_unique<Task>(taskName, playerId_, type);
-    if (task == nullptr) {
-        MEDIA_LOG_W("AddDemuxerCopyTask create task failed, trackId:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
-            trackId, type);
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG_W(task != nullptr, Status::OK,
+        "AddDemuxerCopyTask create task failed, trackId:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
+        trackId, type);
     taskMap_[trackId] = std::move(task);
     taskMap_[trackId]->RegisterJob([this, trackId] { return ReadLoop(trackId); });
 
     // To wake up DEMUXER TRACK WORKING TASK immediately on input buffer available.
     std::unique_ptr<Task> notifyTask =
         std::make_unique<Task>(taskName + "N", playerId_, type, TaskPriority::NORMAL, false);
-    if (!notifyTask) {
-        MEDIA_LOG_W("Add track notify task, make task failed, trackId:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
-            trackId, static_cast<uint32_t>(type));
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG_W(notifyTask != nullptr, Status::OK,
+        "Add track notify task, make task failed, trackId:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
+        trackId, static_cast<uint32_t>(type));
 
     sptr<IProducerListener> listener =
         OHOS::sptr<AVBufferQueueProducerListener>::MakeSptr(trackId, shared_from_this(), notifyTask);
-    if (listener == nullptr) {
-        MEDIA_LOG_W("Add track notify task, make listener failed, trackId:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
-            trackId, static_cast<uint32_t>(type));
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG_W(listener != nullptr, Status::OK,
+        "Add track notify task, make listener failed, trackId:" PUBLIC_LOG_U32 ", type:" PUBLIC_LOG_D32,
+        trackId, static_cast<uint32_t>(type));
 
     trackMap_.emplace(trackId, std::make_shared<TrackWrapper>(trackId, listener, shared_from_this()));
     return Status::OK;
