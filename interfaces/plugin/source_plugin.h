@@ -50,11 +50,11 @@ public:
     StreamType type;
     uint32_t bitRate;
 
-    int32_t video_height = 0;
-    int32_t video_width = 0;
+    int32_t videoHeight = 0;
+    int32_t videoWidth = 0;
     std::string lang = "";
-    VideoType video_type = VideoType::VIDEO_TYPE_SDR;
-    std::string track_name = "";
+    VideoType videoType = VideoType::VIDEO_TYPE_SDR;
+    std::string trackName = "";
 };
 
 /**
