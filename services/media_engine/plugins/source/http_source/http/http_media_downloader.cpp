@@ -48,7 +48,7 @@ constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Threshold for determining whether the download is in progress: bit
+constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t BYTES_TO_BIT = 8;
@@ -895,13 +895,11 @@ size_t HttpMediaDownloader::GetCurrentBufferSize()
 {
     size_t bufferSize = 0;
     if (isFlv_) {
-        if (buffer_ != nullptr)
-        {
+        if (buffer_ != nullptr) {
             bufferSize = buffer_->GetSize();
         }
     } else {
-        if (cacheMediaBuffer_ != nullptr)
-        {
+        if (cacheMediaBuffer_ != nullptr) {
             bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
         }
     }
