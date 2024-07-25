@@ -1010,7 +1010,7 @@ Status MediaDemuxer::SeekToTimePre()
 
 Status MediaDemuxer::SeekToTimeAfter()
 {
-    if (demuxerPluginManager_->IsDash()) {
+    if (demuxerPluginManager_->IsDash() == false) {
         return Status::OK;
     }
 
@@ -2064,7 +2064,10 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag)
 bool MediaDemuxer::CanDoSelectBitRate()
 {
     // calculating auto selectbitrate time
-    return streamDemuxer_->CanDoChangeStream();
+    if (streamDemuxer_) {
+        return streamDemuxer_->CanDoChangeStream();
+    }
+    return false;
 }
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
