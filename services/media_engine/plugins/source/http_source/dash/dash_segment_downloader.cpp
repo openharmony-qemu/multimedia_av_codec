@@ -417,9 +417,8 @@ bool DashSegmentDownloader::IsSegmentFinish() const
     return false;
 }
 
-bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
+bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
 {
-    std::lock_guard<std::mutex> lock(segmentMutex_);
     if (isCleanAll) {
         for (const auto &it: segmentList_) {
             if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
@@ -435,6 +434,16 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         }
         
         ClearSegmentAll();
+        return true;
+    }
+
+    return false;
+}
+
+bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
+{
+    std::lock_guard<std::mutex> lock(segmentMutex_);
+    if (CleanAllSegmentBuffer(isCleanAll, remainLastNumberSeq)) {
         return true;
     }
 
@@ -483,14 +492,12 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     return false;
 }
 
-bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool isEnd)
+void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail)
 {
-    std::lock_guard<std::mutex> lock(segmentMutex_);
-    remainLastNumberSeq = -1;
-    size_t clearTail = 0;
     // residue segment duration
     uint32_t remainDuration = 0;
     uint32_t segmentKeepDuration = 1000; // ms
+    uint32_t segmentKeepDelta = 100; // ms
     for (const auto &it: segmentList_) {
         if (it == nullptr ||
             buffer_->GetHead() > it->bufferPosTail_ ||
@@ -502,7 +509,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         isEnd = it->isEos_;
         if (it->contentLength_ == 0 ||
             it->duration_ == 0) {
-            MEDIA_LOG_I("CleanBufferByTime: contentLength is:" PUBLIC_LOG_ZU ", duration is:"
+            MEDIA_LOG_I("CleanByTimeInternal: contentLength is:" PUBLIC_LOG_ZU ", duration is:"
                 PUBLIC_LOG_U32, it->contentLength_, it->duration_);
             // can not caculate segment content length, just keep one segment
             clearTail = it->bufferPosTail_;
@@ -510,8 +517,8 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         }
 
         remainDuration = (it->bufferPosTail_ - buffer_->GetHead()) * it->duration_ / it->contentLength_;
-        if (remainDuration < segmentKeepDuration + 100 &&
-            remainDuration >= segmentKeepDuration - 100) {
+        if (remainDuration < segmentKeepDuration + segmentKeepDelta &&
+            remainDuration + segmentKeepDelta >= segmentKeepDuration) {
             // find clear buffer position with segment tail position
             clearTail = it->bufferPosTail_;
         } else if (remainDuration < segmentKeepDuration) {
@@ -536,6 +543,14 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
 
         break;
     }
+}
+
+void DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool isEnd)
+{
+    std::lock_guard<std::mutex> lock(segmentMutex_);
+    remainLastNumberSeq = -1;
+    size_t clearTail = 0;
+    CleanByTimeInternal(remainLastNumberSeq, clearTail);
 
     if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
         remainLastNumberSeq = mediaSegment_->numberSeq_;
@@ -610,39 +625,40 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
 
     size_t bufferTail = buffer_->GetTail();
     bool writeRet = buffer_->WriteBuffer(data, len);
-    if (writeRet) {
-        std::lock_guard<std::mutex> lock(segmentMutex_);
-        for (const auto &mediaSegment: segmentList_) {
-            if (mediaSegment == nullptr || mediaSegment->isEos_) {
-                continue;
-            }
-
-            if (mediaSegment->bufferPosTail_ == 0) {
-                mediaSegment->bufferPosHead_ = bufferTail;
-            }
-            mediaSegment->bufferPosTail_ = buffer_->GetTail();
-
-            if (mediaSegment->contentLength_ == 0) {
-                mediaSegment->contentLength_ = downloadRequest_->GetFileContentLength();
-            }
-
-            // last packet len is 0 of chunk
-            if (len == 0 || (mediaSegment->contentLength_ > 0 &&
-                             (mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_) >=
-                             mediaSegment->contentLength_)) {
-                mediaSegment->isEos_ = true;
-                if (mediaSegment->contentLength_ == 0) {
-                    mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
-                }
-                MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
-                    PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
-                    streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
-                    mediaSegment->bufferPosTail_);
-            }
-            break;
-        }
-    } else {
+    if (!writeRet) {
         MEDIA_LOG_E("SaveData:error streamId:" PUBLIC_LOG_D32 ", len:" PUBLIC_LOG_D32, streamId_, len);
+        return writeRet;
+    }
+
+    std::lock_guard<std::mutex> lock(segmentMutex_);
+    for (const auto &mediaSegment: segmentList_) {
+        if (mediaSegment == nullptr || mediaSegment->isEos_) {
+            continue;
+        }
+
+        if (mediaSegment->bufferPosTail_ == 0) {
+            mediaSegment->bufferPosHead_ = bufferTail;
+        }
+        mediaSegment->bufferPosTail_ = buffer_->GetTail();
+
+        if (mediaSegment->contentLength_ == 0) {
+            mediaSegment->contentLength_ = downloadRequest_->GetFileContentLength();
+        }
+
+        // last packet len is 0 of chunk
+        if (len == 0 || (mediaSegment->contentLength_ > 0 &&
+                        (mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_) >=
+                        mediaSegment->contentLength_)) {
+            mediaSegment->isEos_ = true;
+            if (mediaSegment->contentLength_ == 0) {
+                mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
+            }
+            MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
+                PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
+                streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
+                mediaSegment->bufferPosTail_);
+        }
+        break;
     }
     return writeRet;
 }

@@ -1184,7 +1184,8 @@ void DashMpdDownloader::GetStreamDescriptions(const std::string &periodBaseUrl, 
             DashParseRange((*it)->representationSegBase_->indexRange_, desc->indexSegment_->indexRangeBegin_,
                            desc->indexSegment_->indexRangeEnd_);
         }
-        MEDIA_LOG_I("add stream band:" PUBLIC_LOG_U32 ", hdr: " PUBLIC_LOG_D32, streamDesc.bandwidth_, streamDesc.videoType_);
+        MEDIA_LOG_I("add stream band:" PUBLIC_LOG_U32 ", hdr: " PUBLIC_LOG_D32,
+            streamDesc.bandwidth_, streamDesc.videoType_);
         streamDescriptions_.push_back(desc);
     }
 }
@@ -1266,7 +1267,8 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
     return false;
 }
 
-unsigned int DashMpdDownloader::GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq)
+unsigned int DashMpdDownloader::GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments,
+                                                int64_t segSeq)
 {
     if (segments.size() == 0) {
         return 0;

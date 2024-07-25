@@ -158,6 +158,8 @@ private:
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
+    bool CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
+    void CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail);
     void ClearSegmentAll();
     void ClearReadSegmentList();
     void UpdateInitSegmentState(int32_t currentStreamId);

@@ -734,8 +734,7 @@ Status DashMediaDownloader::SelectAudio(const std::shared_ptr<DashStreamDescript
         preparedAction_.preparedAudioParam_.streamId_ = streamDesc->streamId_;
         return Status::OK;
     }
-
-    return SelectAudioInternal(streamDesc);    
+    return SelectAudioInternal(streamDesc);
 }
 
 Status DashMediaDownloader::SelectAudioInternal(const std::shared_ptr<DashStreamDescription> &streamDesc)
@@ -788,8 +787,7 @@ Status DashMediaDownloader::SelectSubtitle(const std::shared_ptr<DashStreamDescr
         preparedAction_.preparedSubtitleParam_.streamId_ = streamDesc->streamId_;
         return Status::OK;
     }
-
-    return SelectSubtitleInternal(streamDesc);    
+    return SelectSubtitleInternal(streamDesc);
 }
 
 Status DashMediaDownloader::SelectSubtitleInternal(const std::shared_ptr<DashStreamDescription> &streamDesc)
@@ -955,7 +953,6 @@ bool DashMediaDownloader::DoPreparedAction(int &streamId)
             streamId = trackParam_.streamId_;
             ResetTrackParam();
         }
-        
     }
     
     return false;
