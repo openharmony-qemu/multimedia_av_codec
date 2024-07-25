@@ -62,7 +62,7 @@ public:
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
 
-    Status StartAudioTask();
+    Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
@@ -140,7 +140,6 @@ private:
     std::string videoMime_;
     std::string audioMime_;
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
-    std::atomic<bool> hasSubtitle_ = false;
 };
 } // namespace Pipeline
 } // namespace Media
