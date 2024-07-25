@@ -164,6 +164,7 @@ private:
     bool SelectTrackChangeStream(uint32_t trackId);
     bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID);
     Status PauseForPrepareFrame();
+    std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
