@@ -135,12 +135,10 @@ private:
     bool isBufferEnough_ {false};
     bool isErrorBreak_ {false};
 
-    uint64_t lastReadRecordTime_ {0};
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBits_ {0};
     uint64_t readRecordDuringTime_ {0};
-    uint64_t lastRecordTime_ {0};
-    uint64_t downloadDuringTime_ {0}; // 累计有效下载时长 ms
+    uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
     uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};

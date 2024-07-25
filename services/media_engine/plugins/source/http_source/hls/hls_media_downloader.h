@@ -230,7 +230,6 @@ private:
     bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
 
-    uint64_t lastReadRecordTime_ = 0;
     uint64_t lastReadCheckTime_ = 0;
     uint64_t readTotalBits_ = 0;
     uint64_t readRecordDuringTime_ = 0;

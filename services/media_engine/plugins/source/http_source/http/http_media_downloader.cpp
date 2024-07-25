@@ -48,7 +48,7 @@ constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int FIVE_MICROSECOND = 5;
 constexpr int ONE_HUNDRED_MILLIONSECOND = 100;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
-constexpr int IS_DOWNLOAD_MIN_BYTE = 10; // Threshold for determining whether the download is in progress, Byte
+constexpr int IS_DOWNLOAD_MIN_BIT = 1000; // Threshold for determining whether the download is in progress: bit
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int64_t BYTES_TO_BIT = 8;
@@ -455,23 +455,19 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
+    readTotalBits_ += readDataInfo.realReadLength_;
     if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
-        if (readDataInfo.realReadLength_ >= IS_DOWNLOAD_MIN_BYTE) {
-            readRecordDuringTime_ += (now - lastReadRecordTime_) < 0 ? 0 : now - lastReadRecordTime_;
-            readTotalBits_ += readDataInfo.realReadLength_;
-        }
-        lastReadCheckTime_ = now;
-    }
-    if ((now - lastReadRecordTime_) > SAMPLE_INTERVAL) {
+        readRecordDuringTime_ = now - lastReadRecordTime_;
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
             size_t curBufferSize = buffer_->GetSize();
-            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " bit/s, Current buffer size: " PUBLIC_LOG_U64 " Byte",
-            static_cast<int32_t>(readSpeed), static_cast<uint64_t>(curBufferSize));
+            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64 " KByte",
+            static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
             lastReadRecordTime_ = now;
             readTotalBits_ = 0;
         }
+        lastReadCheckTime_ = now;
     }
     
     return ret;
@@ -765,7 +761,6 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
     if (tmpDenominator > ZERO_THRESHOLD) {
         downloadRate = tmpNumerator / tmpDenominator;
         avgDownloadSpeed_ = downloadRate;
-        MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadRate));
         downloadDuringTime_ = 0;
         downloadBits_ = 0;
     }
@@ -774,35 +769,20 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 
 void HttpMediaDownloader::DownloadReport()
 {
-    int64_t now = steadyClock_.ElapsedMilliseconds();
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
-        if (curDownloadBits >= IS_DOWNLOAD_MIN_BYTE) {
-            // The download volume of the cycle reaches the threshold, and the effective download duration is counted
-            downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
-            // Effective download data volume
-            downloadBits_ += curDownloadBits;
+        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+            downloadDuringTime_ = now - lastCheckTime_;
+            downloadBits_ = curDownloadBits;
+            double downloadRate = CalculateCurrentDownloadSpeed();
+            // remaining buffer size
+            size_t remainingBuffer = GetCurrentBufferSize();
+            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64 " Byte",
+                static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
         }
-        // Total amount of downloaded data
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
-    }
-
-    if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
-        CalculateCurrentDownloadSpeed();
-        // remaining buffer size
-        if (isFlv_) {
-            if (buffer_ != nullptr) {
-                uint64_t remainingBuffer = buffer_->GetSize();
-                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Byte", remainingBuffer);
-            }
-        } else {
-            if (cacheMediaBuffer_ != nullptr) {
-                uint64_t remainingBuffer = cacheMediaBuffer_->GetBufferSize(readOffset_);
-                MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64 " Byte", remainingBuffer);
-            }
-        }
-        lastRecordTime_ = now;
     }
 
     if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
@@ -916,9 +896,15 @@ size_t HttpMediaDownloader::GetCurrentBufferSize()
 {
     size_t bufferSize = 0;
     if (isFlv_) {
-        bufferSize = buffer_->GetSize();
+        if (buffer_ != nullptr)
+        {
+            bufferSize = buffer_->GetSize();
+        }
     } else {
-        bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
+        if (cacheMediaBuffer_ != nullptr)
+        {
+            bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
+        }
     }
     return bufferSize;
 }
