@@ -117,7 +117,8 @@ public:
 
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
-
+    Status ResumeDemuxerReadLoop();
+    Status PauseDemuxerReadLoop();
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -240,6 +241,7 @@ private:
     int64_t duration_ {0};
     std::atomic<bool> isSeekError_ = false;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
+    std::atomic<bool> isDemuxerLoopExecuting_ {false};
 };
 } // namespace Media
 } // namespace OHOS
