@@ -286,44 +286,17 @@ bool HlsMediaDownloader::HandleBuffering()
     if (!isBuffering_) {
         return false;
     }
-    MEDIA_LOG_I("HandleBuffering begin.");
-    int32_t sleepTime = 0;
-    isBufferEnough_ = false;
-    bool isDownloadComplete = false;
-    while (!isInterrupt_) {
-        UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
-        if (buffer_->GetSize() >= waterLineAbove_) {
-            isBufferEnough_ = true;
-            isBuffering_ = false;
-            break;
-        }
-        if (CheckBreakCondition()) {
-            isBuffering_ = false;
-            isDownloadComplete = true;
-            break;
-        }
-        OSAL::SleepFor(SLEEP_TIME::BUFFERING_SLEEP_TIME);
-        sleepTime += SLEEP_TIME::BUFFERING_SLEEP_TIME;
-        if (sleepTime > SLEEP_TIME::BUFFERING_TIME_OUT) {
-            break;
-        }
+    
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
+    if (buffer_->GetSize() >= waterLineAbove_ || CheckBreakCondition()) {
+        isBuffering_ = false;
     }
-    if (!isBufferEnough_) {
-        if (isDownloadComplete) {
-            MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
-            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
-        return isBuffering_;
-    }
-    if (!isReadFrame_) {
-        isReadFrame_ = true;
-        MEDIA_LOG_I("Playing start");
-    } else {
+
+    if (!isBuffering_ && isFirstFrameArrived_) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
-    MEDIA_LOG_I("HandleBuffering end.");
     return isBuffering_;
 }
 
@@ -369,7 +342,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         return Status::END_OF_STREAM;
     }
 
-    if (HandleBuffering()) {
+    if (isBuffering_) {
         MEDIA_LOG_I("Read return error again.");
         return Status::ERROR_AGAIN;
     }
@@ -513,15 +486,17 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         OnWriteRingBuffer(len);
     }
     startedPlayStatus_ = true;
+    bool ret = false;
     if (keyLen_ == 0) {
-        bool res = buffer_->WriteBuffer(data, len);
-        HandleCachedDuration();
-        return res;
+        ret = buffer_->WriteBuffer(data, len);
     } else {
-        bool res = SaveEncryptData(data, len);
-        HandleCachedDuration();
-        return res;
+        ret = SaveEncryptData(data, len);
     }
+    MEDIA_LOG_D("SaveData ret: " PUBLIC_LOG_D32 ", bufferSize: " PUBLIC_LOG_ZU ", len: " PUBLIC_LOG_U32,
+        ret, buffer_->GetSize(), len);
+    HandleCachedDuration();
+    HandleBuffering();
+    return ret;
 }
 
 uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen)
@@ -854,6 +829,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
         auto downloadTime = (nowTime - startDownloadTime_) / 1000;
         MEDIA_LOG_D("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
             totalBits_, downloadTime * 1000);
+        HandleBuffering();
     }
 
     // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
@@ -886,6 +862,10 @@ void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
+    if (callback_ != nullptr) {
+        MEDIA_LOG_I("Read time out, OnEvent");
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
 }
 
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
