@@ -34,10 +34,10 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS = "audio/opus";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
-const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_APE = "audio/x-ape";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC = "video/vvc";
 const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT = "application/x-subrip";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
 const char *OH_AVCODEC_MIMETYPE_SUBTITLE_VTT = "text/vtt";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
