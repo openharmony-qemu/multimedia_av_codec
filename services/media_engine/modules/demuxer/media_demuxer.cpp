@@ -151,6 +151,8 @@ MediaDemuxer::~MediaDemuxer()
 
 Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
+    FALSE_RETURN_V_MSG_E(startTimeMs >= 0, Status::ERROR_UNKNOWN,
+                         "StartReferenceParser failed, startTimeMs: " PUBLIC_LOG_D64, startTimeMs);
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
                          "StartReferenceParser failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(videoTrackId_ != TRACK_ID_DUMMY, Status::ERROR_UNKNOWN,
@@ -160,26 +162,20 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "StartReferenceParser failed due to video plugin is nullptr");
+    Status ret = videoPlugin->ParserRefUpdatePos(startTimeMs, isForward);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParserRefUpdatePos fail.");
     if (isFirstParser_) {
         isFirstParser_ = false;
         if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
             MEDIA_LOG_E("Do not support online video");
             return Status::ERROR_INVALID_OPERATION;
         }
-
-        Status ret = videoPlugin->ParserRefInit(startTimeMs);
-        if (ret == Status::END_OF_STREAM) {
-            return Status::OK;
-        }
-        if (ret != Status::OK) {
-            return ret;
-        }
         parserRefInfoTask_ = std::make_unique<Task>("ParserRefInfo", playerId_);
         parserRefInfoTask_->RegisterJob([this] { return ParserRefInfo(); });
         parserRefInfoTask_->Start();
     }
     TryRecvParserTask();
-    return videoPlugin->ParserRefUpdatePos(startTimeMs, isForward);
+    return ret;
 }
 
 void MediaDemuxer::TryRecvParserTask()
@@ -213,6 +209,7 @@ int64_t MediaDemuxer::ParserRefInfo()
 
 Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
+    FALSE_RETURN_V_MSG_E(videoSample != nullptr, Status::ERROR_NULL_POINTER, "videoSample is nullptr");
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -221,7 +218,11 @@ Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, Fr
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
+    Status ret = videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
+    if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
@@ -234,7 +235,11 @@ Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLa
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->GetFrameLayerInfo(frameId, frameLayerInfo);
+    Status ret = videoPlugin->GetFrameLayerInfo(frameId, frameLayerInfo);
+    if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
@@ -247,7 +252,11 @@ Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetGopLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
+    Status ret = videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
+    if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 void MediaDemuxer::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
