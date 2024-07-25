@@ -197,9 +197,9 @@ int64_t MediaDemuxer::ParserRefInfo()
 {
     FALSE_RETURN_V_MSG_D(demuxerPluginManager_ != nullptr, 0,
         "ParserRefInfo failed due to demuxerPluginManager is nullptr");
-    std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetCurVideoPlugin();
+    std::shared_ptr<Plugins::DemuxerPlugin> plugin = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_D(plugin != nullptr, 0, "ParserRefInfo failed due to plugin is nullptr");
-    Status ret = videoPlugin->ParserRefInfo();
+    Status ret = plugin->ParserRefInfo();
     if ((ret == Status::OK || ret == Status::ERROR_UNKNOWN) && parserRefInfoTask_ != nullptr) {
         parserRefInfoTask_->Stop();
         isParserTaskEnd_ = true;
