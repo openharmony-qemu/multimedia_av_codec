@@ -104,6 +104,11 @@ public:
         MEDIA_LOG_W("GetStreamInfo is unimplemented.");
         return Status::OK;
     }
+    virtual Status SelectStream(int32_t streamId)
+    {
+        MEDIA_LOG_W("SelectStream is unimplemented.");
+        return Status::OK;
+    }
 };
 }
 }

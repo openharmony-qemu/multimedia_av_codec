@@ -139,6 +139,7 @@ public:
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
+    bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd);
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment);
     void UpdateStreamId(int streamId);
@@ -157,10 +158,13 @@ private:
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
+    bool CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
+    void CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd);
     void ClearSegmentAll();
     void ClearReadSegmentList();
+    void UpdateInitSegmentState(int32_t currentStreamId);
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
-                          int32_t currentStreamId);
+                         int32_t currentStreamId);
     std::shared_ptr<DashBufferSegment> GetCurrentSegment();
     bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret, const std::atomic<bool> &isInterruptNeeded);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,

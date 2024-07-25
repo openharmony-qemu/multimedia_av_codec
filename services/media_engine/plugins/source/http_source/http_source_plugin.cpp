@@ -113,6 +113,14 @@ Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::SelectStream(int32_t streamID)
+{
+    MEDIA_LOG_D("SelectStream entered");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->SelectStream(streamID);
+    return Status::OK;
+}
+
 Status HttpSourcePlugin::Start()
 {
     MEDIA_LOG_D("Start enter.");

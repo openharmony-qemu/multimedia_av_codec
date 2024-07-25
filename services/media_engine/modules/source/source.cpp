@@ -449,5 +449,11 @@ Status Source::GetSize(uint64_t &fileSize)
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "GetSize Source plugin is nullptr!");
     return plugin_->GetSize(fileSize);
 }
+
+Status Source::SelectStream(int32_t streamID)
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SelectStream Source plugin is nullptr!");
+    return plugin_->SelectStream(streamID);
+}
 } // namespace Media
 } // namespace OHOS
