@@ -147,11 +147,6 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
     return ReceiveBuffer(outBuffer);
 }
 
-void FfmpegBaseDecoder::DisableNeedResample()
-{
-    needResample_ = 0;
-}
-
 Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());

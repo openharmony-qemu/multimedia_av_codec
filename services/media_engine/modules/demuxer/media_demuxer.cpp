@@ -151,6 +151,8 @@ MediaDemuxer::~MediaDemuxer()
 
 Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
+    FALSE_RETURN_V_MSG_E(startTimeMs >= 0, Status::ERROR_UNKNOWN,
+                         "StartReferenceParser failed, startTimeMs: " PUBLIC_LOG_D64, startTimeMs);
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
                          "StartReferenceParser failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(videoTrackId_ != TRACK_ID_DUMMY, Status::ERROR_UNKNOWN,
@@ -163,26 +165,20 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
     std::shared_ptr<Plugins::DemuxerPlugin> videoPlugin = demuxerPluginManager_->GetPluginByStreamID(streamID);
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "StartReferenceParser failed due to video plugin is nullptr");
+    Status ret = videoPlugin->ParserRefUpdatePos(startTimeMs, isForward);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParserRefUpdatePos fail.");
     if (isFirstParser_) {
         isFirstParser_ = false;
         if (source_->GetSeekable() != Plugins::Seekable::SEEKABLE) {
             MEDIA_LOG_E("Do not support online video");
             return Status::ERROR_INVALID_OPERATION;
         }
-
-        Status ret = videoPlugin->ParserRefInit(startTimeMs);
-        if (ret == Status::END_OF_STREAM) {
-            return Status::OK;
-        }
-        if (ret != Status::OK) {
-            return ret;
-        }
         parserRefInfoTask_ = std::make_unique<Task>("ParserRefInfo", playerId_);
         parserRefInfoTask_->RegisterJob([this] { return ParserRefInfo(); });
         parserRefInfoTask_->Start();
     }
     TryRecvParserTask();
-    return videoPlugin->ParserRefUpdatePos(startTimeMs, isForward);
+    return ret;
 }
 
 void MediaDemuxer::TryRecvParserTask()
@@ -219,6 +215,7 @@ int64_t MediaDemuxer::ParserRefInfo()
 
 Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
+    FALSE_RETURN_V_MSG_E(videoSample != nullptr, Status::ERROR_NULL_POINTER, "videoSample is nullptr");
     FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to source is nullptr");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -230,7 +227,11 @@ Status MediaDemuxer::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, Fr
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
+    Status ret = videoPlugin->GetFrameLayerInfo(videoSample, frameLayerInfo);
+    if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
@@ -246,7 +247,11 @@ Status MediaDemuxer::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLa
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetFrameLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->GetFrameLayerInfo(frameId, frameLayerInfo);
+    Status ret = videoPlugin->GetFrameLayerInfo(frameId, frameLayerInfo);
+    if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
@@ -262,7 +267,11 @@ Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
     FALSE_RETURN_V_MSG_E(videoPlugin != nullptr, Status::ERROR_NULL_POINTER,
                          "GetGopLayerInfo failed due to video plugin is nullptr");
     TryRecvParserTask();
-    return videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
+    Status ret = videoPlugin->GetGopLayerInfo(gopId, gopLayerInfo);
+    if (ret == Status::ERROR_NULL_POINTER && parserRefInfoTask_ != nullptr) {
+        return Status::ERROR_AGAIN;
+    }
+    return ret;
 }
 
 void MediaDemuxer::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
@@ -434,37 +443,34 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
     return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
 }
 
-bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
+bool MediaDemuxer::GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
+    std::multimap<std::string, std::vector<uint8_t>> &result)
 {
-    MEDIA_LOG_D("IsDrmInfosUpdate");
-    bool isUpdated = false;
+    MEDIA_LOG_D("GetDrmInfosUpdated");
     std::unique_lock<std::shared_mutex> lock(drmMutex);
-    for (auto &newItem : info) {
-        if (newItem.second.size() == 0) {
+    for (auto &newItem : newInfos) {
+        if (localDrmInfos_.find(newItem.first) == localDrmInfos_.end()) {
+            MEDIA_LOG_D("this uuid doesn't exist, update.");
+            result.insert(newItem);
+            localDrmInfos_.insert(newItem);
             continue;
         }
         auto pos = localDrmInfos_.equal_range(newItem.first);
-        if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
-            MEDIA_LOG_D("this uuid doesn't exist, and update");
-            localDrmInfos_.insert(newItem);
-            isUpdated = true;
-            continue;
-        }
         bool isSame = false;
         for (; pos.first != pos.second; ++pos.first) {
             if (newItem.second == pos.first->second) {
-                MEDIA_LOG_D("this uuid exists and same pssh, not update");
+                MEDIA_LOG_D("this uuid exists and the pssh is same, not update.");
                 isSame = true;
                 break;
             }
         }
         if (!isSame) {
-            MEDIA_LOG_D("this uuid exists but pssh not same, update");
+            MEDIA_LOG_D("this uuid exists but pssh not same, update.");
+            result.insert(newItem);
             localDrmInfos_.insert(newItem);
-            isUpdated = true;
         }
     }
-    return isUpdated;
+    return !result.empty();
 }
 
 bool MediaDemuxer::IsLocalDrmInfosExisted()
@@ -497,9 +503,10 @@ Status MediaDemuxer::ProcessDrmInfos()
     Status ret = pluginTemp->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
         MEDIA_LOG_D("MediaDemuxer get drminfo success");
-        bool isUpdated = IsDrmInfosUpdate(drmInfo);
+        std::multimap<std::string, std::vector<uint8_t>> infosUpdated;
+        bool isUpdated = GetDrmInfosUpdated(drmInfo, infosUpdated);
         if (isUpdated) {
-            return ReportDrmInfos(drmInfo);
+            return ReportDrmInfos(infosUpdated);
         } else {
             MEDIA_LOG_D("MediaDemuxer received drminfo but not update");
         }
@@ -1310,6 +1317,23 @@ Status MediaDemuxer::Resume()
     return Status::OK;
 }
 
+Status MediaDemuxer::ResumeDragging()
+{
+    MEDIA_LOG_I("Resume");
+    if (streamDemuxer_) {
+        streamDemuxer_->Resume();
+    }
+    if (source_) {
+        source_->Resume();
+    }
+    if (taskMap_[videoTrackId_] != nullptr) {
+        streamDemuxer_->SetIsIgnoreParse(false);
+        taskMap_[videoTrackId_]->Start();
+    }
+    isPaused_ = false;
+    return Status::OK;
+}
+
 void MediaDemuxer::ResetInner()
 {
     std::map<uint32_t, std::shared_ptr<TrackWrapper>> trackMap;
@@ -1874,9 +1898,10 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
 void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info)
 {
     MEDIA_LOG_I("HandleSourceDrmInfoEvent");
-    bool isUpdated = IsDrmInfosUpdate(info);
+    std::multimap<std::string, std::vector<uint8_t>> infoUpdated;
+    bool isUpdated = GetDrmInfosUpdated(info, infoUpdated);
     if (isUpdated) {
-        ReportDrmInfos(info);
+        ReportDrmInfos(infoUpdated);
     }
     MEDIA_LOG_D("demuxer filter received source drminfos but not update");
 }

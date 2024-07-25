@@ -61,7 +61,7 @@ private:
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
-    void HandlerUserAgent();
+    void HandleUserAgent();
 
 private:
     RxHeader rxHeader_;
@@ -69,9 +69,10 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    std::string userAgent_;
     bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
+    bool isFirstRequest_ {true};
+    bool isFirstOpen_ {true};
 };
 }
 }

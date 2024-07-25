@@ -27,6 +27,7 @@ public:
     ~AVCodecVideoEncoderImpl();
 
     int32_t Configure(const Format &format) override;
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;

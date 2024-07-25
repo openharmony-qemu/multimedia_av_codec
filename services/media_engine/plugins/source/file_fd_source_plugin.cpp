@@ -42,6 +42,7 @@ namespace Plugins {
 namespace FileFdSource {
 namespace {
 constexpr int32_t FDPOS                         = 2;
+constexpr int32_t READ_TIME                     = 3;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
 constexpr size_t WATER_LINE_BELOW_DEFAULT       = 5 * 1024;
@@ -218,8 +219,6 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
-    MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_,
-        expectedLen);
 
     size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, 1);
     if (size == 0) {
@@ -232,8 +231,11 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         return Status::OK;
     }
     bufData->UpdateDataSize(size);
-    MEDIA_LOG_I_SHORT("position_ " PUBLIC_LOG_U64, position_);
-
+    int64_t ct = steadyClock2_.ElapsedMilliseconds() - curReadTime_;
+    if (ct > READ_TIME) {
+        MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
+        " costTime: " PUBLIC_LOG_U64, position_, expectedLen, ct);
+    }
     position_ += size;
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -357,11 +359,8 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
 
     int64_t curTime = steadyClock_.ElapsedMilliseconds();
-    MEDIA_LOG_I_SHORT("CacheDataLoop fd: " PUBLIC_LOG_D32 "curTime " PUBLIC_LOG_U64 "isInterrupted_ " PUBLIC_LOG_D32,
-        fd_, curTime, isInterrupted_.load());
     GetCurrentSpeed(curTime);
 
-    //Same with Http
     size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_)));
     if (bufferSize < 0) {
         MEDIA_LOG_E_SHORT("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
@@ -376,14 +375,12 @@ void FileFdSourcePlugin::CacheDataLoop()
         return;
     }
     int size = read(fd_, cacheBuffer, bufferSize);
-    MEDIA_LOG_D_SHORT("CacheDataLoop fd read done");
     if (size <= 0) {
         DeleteCacheBuffer(cacheBuffer);
         HandleReadResult(bufferSize, size);
         return;
     }
 
-    // fd read success
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I_SHORT("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
@@ -398,9 +395,12 @@ void FileFdSourcePlugin::CacheDataLoop()
         std::unique_lock<std::shared_mutex> lock(mutex_);
         ringBufferSize_ += size;
     }
-    
-    MEDIA_LOG_D_SHORT("CacheData success, cachePosition_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64 ", size_ "
-        PUBLIC_LOG_U64 ", downloadSize_ " PUBLIC_LOG_U64, cachePosition_, ringBufferSize_, size_, downloadSize_);
+
+    int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
+    if (ct > READ_TIME) {
+        MEDIA_LOG_I_SHORT("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64
+        ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_, size_, ct);
+    }
     
     DeleteCacheBuffer(cacheBuffer);
 

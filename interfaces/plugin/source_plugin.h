@@ -38,17 +38,23 @@ enum StreamType {
     SUBTITLE
 };
 
+enum VideoType {
+    VIDEO_TYPE_SDR = 0,
+    VIDEO_TYPE_HDR_VIVID = 1,
+    VIDEO_TYPE_HDR_10
+};
+
 class StreamInfo {
 public:
     int32_t streamId;
     StreamType type;
     uint32_t bitRate;
 
-    int32_t video_height = 0;
-    int32_t video_width = 0;
+    int32_t videoHeight = 0;
+    int32_t videoWidth = 0;
     std::string lang = "";
-    std::string video_type = "";
-    std::string track_name = "";
+    VideoType videoType = VideoType::VIDEO_TYPE_SDR;
+    std::string trackName = "";
 };
 
 /**

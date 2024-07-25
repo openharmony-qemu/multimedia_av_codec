@@ -255,10 +255,7 @@ Status AudioServerSinkPlugin::Init()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Init");
     MEDIA_LOG_I_SHORT("Init entered.");
-    if (audioRenderer_ != nullptr) {
-        MEDIA_LOG_I_SHORT("audio renderer already create ");
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG(audioRenderer_ == nullptr, Status::OK, "audio renderer already create ");
     AudioStandard::AppInfo appInfo;
     appInfo.appPid = appPid_;
     appInfo.appUid = appUid_;
@@ -298,10 +295,7 @@ void AudioServerSinkPlugin::ReleaseRender()
 {
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_SHORT("AudioRenderer::Release start");
-        if (!audioRenderer_->Release()) {
-            MEDIA_LOG_E_SHORT("AudioRenderer::Release failed");
-            return;
-        }
+        FALSE_RETURN_MSG(audioRenderer_->Release(), "AudioRenderer::Release failed");
         MEDIA_LOG_I_SHORT("AudioRenderer::Release end");
     }
     audioRenderer_.reset();
@@ -331,12 +325,10 @@ Status AudioServerSinkPlugin::Prepare()
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Prepare");
     MEDIA_LOG_D_SHORT("Prepare >>");
     auto types = AudioStandard::AudioRenderer::GetSupportedEncodingTypes();
-    if (!CppExt::AnyOf(types.begin(), types.end(), [](AudioStandard::AudioEncodingType tmp) -> bool {
-            return tmp == AudioStandard::ENCODING_PCM;
-        })) {
-        MEDIA_LOG_E_SHORT("audio renderer do not support pcm encoding");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    bool ret = CppExt::AnyOf(types.begin(), types.end(), [](AudioStandard::AudioEncodingType tmp) -> bool {
+        return tmp == AudioStandard::ENCODING_PCM;
+    });
+    FALSE_RETURN_V_MSG(ret, Status::ERROR_INVALID_PARAMETER, "audio renderer do not support pcm encoding");
     {
         FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
         if (audioRendererCallback_ == nullptr) {
@@ -360,10 +352,8 @@ Status AudioServerSinkPlugin::Prepare()
 bool AudioServerSinkPlugin::StopRender()
 {
     if (audioRenderer_) {
-        if (audioRenderer_->GetStatus() == AudioStandard::RendererState::RENDERER_STOPPED) {
-            MEDIA_LOG_I_SHORT("AudioRenderer is already in stopped state.");
-            return true;
-        }
+        FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_STOPPED,
+            true, "AudioRenderer is already in stopped state.");
         sliceCount_++;
         return audioRenderer_->Stop();
     }
@@ -374,10 +364,7 @@ Status AudioServerSinkPlugin::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Reset");
     MEDIA_LOG_I_SHORT("Reset entered.");
-    if (!StopRender()) {
-        MEDIA_LOG_E_SHORT("stop render error");
-        return Status::ERROR_UNKNOWN;
-    }
+    FALSE_RETURN_V_MSG(StopRender(), Status::ERROR_UNKNOWN, "stop render error");
     ResetAudioRendererParams(rendererParams_);
     fmtSupported_ = false;
     reSrcFfFmt_ = AV_SAMPLE_FMT_NONE;
@@ -400,10 +387,7 @@ Status AudioServerSinkPlugin::Start()
         return Status::ERROR_WRONG_STATE;
     }
     bool ret = audioRenderer_->Start();
-    if (!ret) {
-        MEDIA_LOG_E_SHORT("AudioRenderer::Start failed");
-        return Status::ERROR_UNKNOWN;
-    }
+    FALSE_RETURN_V_MSG(ret, Status::ERROR_UNKNOWN, "AudioRenderer::Start failed");
     MEDIA_LOG_I_SHORT("AudioRenderer::Start end");
     return Status::OK;
 }
@@ -412,13 +396,9 @@ Status AudioServerSinkPlugin::Stop()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Stop");
     MEDIA_LOG_D_SHORT("Stop entered.");
-    if (StopRender()) {
-        MEDIA_LOG_I_SHORT("stop render success");
-        return Status::OK;
-    } else {
-        MEDIA_LOG_E_SHORT("stop render failed");
-    }
-    return Status::ERROR_UNKNOWN;
+    FALSE_RETURN_V_MSG(StopRender(), Status::ERROR_UNKNOWN, "stop render failed");
+    MEDIA_LOG_I_SHORT("stop render success");
+    return Status::OK;
 }
 
 int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t duration)
@@ -472,10 +452,7 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 {
     sampleRate_ = sampleRate;
     auto supportedSampleRateList = OHOS::AudioStandard::AudioRenderer::GetSupportedSamplingRates();
-    if (supportedSampleRateList.empty()) {
-        MEDIA_LOG_E_SHORT("GetSupportedSamplingRates fail");
-        return false;
-    }
+    FALSE_RETURN_V_MSG(!supportedSampleRateList.empty(), false, "GetSupportedSamplingRates fail");
     for (const auto &rate : supportedSampleRateList) {
         if (static_cast<uint32_t>(rate) == sampleRate) {
             rendererParams_.sampleRate = rate;
@@ -490,10 +467,7 @@ bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 bool AudioServerSinkPlugin::AssignChannelNumIfSupported(uint32_t channelNum)
 {
     auto supportedChannelsList = OHOS::AudioStandard::AudioRenderer::GetSupportedChannels();
-    if (supportedChannelsList.empty()) {
-        MEDIA_LOG_E_SHORT("GetSupportedChannels fail");
-        return false;
-    }
+    FALSE_RETURN_V_MSG(!supportedChannelsList.empty(), false, "GetSupportedChannels fail");
     for (const auto &channel : supportedChannelsList) {
         if (static_cast<uint32_t>(channel) == channelNum) {
             rendererParams_.channelCount = channel;
@@ -746,14 +720,12 @@ Status AudioServerSinkPlugin::GetVolume(float &volume)
 
 Status AudioServerSinkPlugin::SetVolume(float volume)
 {
-    MEDIA_LOG_I_T("SetVolume entered.");
+    MEDIA_LOG_D("SetVolume entered.");
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetVolume(volume);
-        if (ret != OHOS::AudioStandard::SUCCESS) {
-            MEDIA_LOG_E_T("set volume failed with code " PUBLIC_LOG_D32, ret);
-            return Status::ERROR_UNKNOWN;
-        }
-        MEDIA_LOG_I("SetVolume succ");
+        FALSE_RETURN_V_MSG_E(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+            "set volume failed with code " PUBLIC_LOG_D32, ret);
+        MEDIA_LOG_D("SetVolume succ");
         audioRendererVolume_ = volume;
         return Status::OK;
     }
@@ -776,10 +748,8 @@ Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
     MEDIA_LOG_I_SHORT("SetAudioEffectMode %{public}d", effectMode);
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetAudioEffectMode(static_cast<OHOS::AudioStandard::AudioEffectMode>(effectMode));
-        if (ret != OHOS::AudioStandard::SUCCESS) {
-            MEDIA_LOG_E_SHORT("set AudioEffectMode failed with code " PUBLIC_LOG_D32, ret);
-            return Status::ERROR_UNKNOWN;
-        }
+        FALSE_RETURN_V_MSG(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+            "set AudioEffectMode failed with code " PUBLIC_LOG_D32, ret);
         return Status::OK;
     }
     return Status::ERROR_WRONG_STATE;
@@ -800,10 +770,8 @@ Status AudioServerSinkPlugin::SetSpeed(float speed)
     MEDIA_LOG_I_SHORT("SetSpeed entered.");
     if (audioRenderer_ != nullptr) {
         int32_t ret = audioRenderer_->SetSpeed(speed);
-        if (ret != OHOS::AudioStandard::SUCCESS) {
-            MEDIA_LOG_E_SHORT("set speed failed with code " PUBLIC_LOG_D32, ret);
-            return Status::ERROR_UNKNOWN;
-        }
+        FALSE_RETURN_V_MSG(ret == OHOS::AudioStandard::SUCCESS, Status::ERROR_UNKNOWN,
+            "set speed failed with code " PUBLIC_LOG_D32, ret);
         return Status::OK;
     }
     return Status::ERROR_WRONG_STATE;
@@ -820,14 +788,9 @@ Status AudioServerSinkPlugin::Pause()
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I_SHORT("Pause entered");
-    if (audioRenderer_ == nullptr) {
-        MEDIA_LOG_E_SHORT("audio renderer pause fail");
-        return Status::ERROR_UNKNOWN;
-    }
-    if (audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
-        MEDIA_LOG_E_SHORT("audio renderer no need pause");
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pause fail");
+    FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
+        Status::OK, "audio renderer no need pause");
     sliceCount_++;
     FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), Status::ERROR_UNKNOWN, "renderer pause fail.");
     MEDIA_LOG_I_SHORT("audio renderer pause success");
@@ -839,14 +802,9 @@ Status AudioServerSinkPlugin::PauseTransitent()
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
     MEDIA_LOG_I_SHORT("PauseTransitent entered.");
     OHOS::Media::AutoLock lock(renderMutex_);
-    if (audioRenderer_ == nullptr) {
-        MEDIA_LOG_E_SHORT("audio renderer pauseTransitent fail");
-        return Status::ERROR_UNKNOWN;
-    }
-    if (audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
-        MEDIA_LOG_E_SHORT("audio renderer no need pauseTransitent");
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG(audioRenderer_ != nullptr, Status::ERROR_UNKNOWN, "audio renderer pauseTransitent fail");
+    FALSE_RETURN_V_MSG(audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING,
+        Status::OK, "audio renderer no need pauseTransitent");
     sliceCount_++;
     FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN, "renderer pauseTransitent fail.");
     MEDIA_LOG_I_SHORT("audio renderer pauseTransitent success");
@@ -873,10 +831,8 @@ Status AudioServerSinkPlugin::DrainCacheData(bool render)
     }
     AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
         audioRenderer_->GetStatus() : AudioStandard::RendererState::RENDERER_INVALID;
-    if (rendererState == AudioStandard::RendererState::RENDERER_PAUSED) {
-        MEDIA_LOG_W("audioRenderer_ is still paused, try again later");
-        return Status::ERROR_AGAIN;
-    }
+    FALSE_RETURN_V_MSG(rendererState != AudioStandard::RendererState::RENDERER_PAUSED,
+        Status::ERROR_AGAIN, "audioRenderer_ is still paused, try again later");
     if (rendererState != AudioStandard::RendererState::RENDERER_RUNNING) {
         cachedBuffers_.clear();
         MEDIA_LOG_W("Drop cache buffer because audioRenderer_ state invalid");

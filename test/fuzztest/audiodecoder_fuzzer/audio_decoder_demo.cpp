@@ -190,10 +190,10 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
         }
     } else if (audioType_ == AudioBufferFormatType::TYPE_VIVID) {
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-            "Fatal: Configure fail");
+            "Fatal: TYPE_VIVID Configure fail");
     } else if (audioType_ == AudioBufferFormatType::TYPE_APE) {
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
-            "Fatal: Configure fail");
+            "Fatal: TYPE_APE Configure fail");
     } else {
         DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false,
             "Fatal: Configure fail");

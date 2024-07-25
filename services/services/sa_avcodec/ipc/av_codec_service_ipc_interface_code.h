@@ -49,7 +49,8 @@ enum class CodecServiceInterfaceCode {
     GET_INPUT_FORMAT,
     DESTROY_STUB,
     SET_DECRYPT_CONFIG,
-    RENDER_OUTPUT_BUFFER_AT_TIME
+    RENDER_OUTPUT_BUFFER_AT_TIME,
+    SET_CUSTOM_BUFFER
 };
 
 enum class AVCodecListServiceInterfaceCode {

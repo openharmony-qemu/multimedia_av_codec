@@ -113,6 +113,24 @@ int32_t CodecServiceProxy::Prepare()
     return reply.ReadInt32();
 }
 
+int32_t CodecServiceProxy::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+
+    token = buffer->WriteToMessageParcel(data);
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write to messageParcel failed!");
+    int32_t ret =
+        Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_CUSTOM_BUFFER), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+
+    return reply.ReadInt32();
+}
+
 int32_t CodecServiceProxy::Start()
 {
     MessageParcel data;

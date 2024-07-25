@@ -83,7 +83,6 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
 
   external_deps = [
     "c_utils:utils",
-    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

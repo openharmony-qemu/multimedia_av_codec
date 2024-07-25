@@ -179,7 +179,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_SET_HDR_START, TestSize.Level1)
     int usingStreamId = downloader.GetInUseVideoStreamId();
     std::shared_ptr<DashStreamDescription> stream = downloader.GetStreamByStreamId(usingStreamId);
     EXPECT_NE(stream, nullptr);
-    EXPECT_FALSE(stream->isHdr_);
+    EXPECT_FALSE(stream->videoType_ == DASH_VIDEO_TYPE_HDR_VIVID);
 }
 
 }

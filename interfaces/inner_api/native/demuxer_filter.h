@@ -40,6 +40,7 @@ public:
     Status DoStop() override;
     Status DoPause() override;
     Status DoResume() override;
+    Status DoResumeDragging() override;
     Status DoFlush() override;
     Status Reset();
     Status PauseForSeek();
