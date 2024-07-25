@@ -217,14 +217,14 @@ HWTEST_F(HlsMediaDownloaderUnitTest, DownBufferSize2, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, RiseBufferSize1, TestSize.Level1)
 {
     hlsMediaDownloader->totalRingBufferSize_ = 0;
-    hlsMediaDownloader->DownBufferSize();
+    hlsMediaDownloader->RiseBufferSize();
     EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, 1 * 1024 * 1024);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, RiseBufferSize2, TestSize.Level1)
 {
     hlsMediaDownloader->totalRingBufferSize_ = MAX_BUFFER_SIZE;
-    hlsMediaDownloader->DownBufferSize();
+    hlsMediaDownloader->RiseBufferSize();
     EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, MAX_BUFFER_SIZE);
 }
 
@@ -250,11 +250,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetDownloadErrorState, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SetDemuxerState, TestSize.Level1)
 {
-    hlsMediaDownloader->SetDownloadErrorState();
+    hlsMediaDownloader->SetDemuxerState();
     EXPECT_TRUE(hlsMediaDownloader->isReadFrame_);
-    EXPECT_TRUE(hlsMediaDownloader->downloadErrorState_);
+    EXPECT_TRUE(hlsMediaDownloader->isFirstFrameArrived_);
 }
-
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
