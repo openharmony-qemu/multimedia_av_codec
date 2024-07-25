@@ -82,6 +82,8 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::vector<uint32_t> indexs_;
+    std::vector<uint32_t> dropIndexs_;
+    int64_t lastBufferPts_ = INT64_MIN;
     std::atomic<bool> isThreadExit_ = true;
 };
 } // namespace MediaAVCodec
