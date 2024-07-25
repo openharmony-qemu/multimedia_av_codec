@@ -492,7 +492,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     return false;
 }
 
-void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail)
+void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool isEnd)
 {
     // residue segment duration
     uint32_t remainDuration = 0;
@@ -545,12 +545,12 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
     }
 }
 
-void DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool isEnd)
+bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool isEnd)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     remainLastNumberSeq = -1;
     size_t clearTail = 0;
-    CleanByTimeInternal(remainLastNumberSeq, clearTail);
+    CleanByTimeInternal(remainLastNumberSeq, clearTail, isEnd);
 
     if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
         remainLastNumberSeq = mediaSegment_->numberSeq_;
@@ -647,8 +647,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
 
         // last packet len is 0 of chunk
         if (len == 0 || (mediaSegment->contentLength_ > 0 &&
-                        (mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_) >=
-                        mediaSegment->contentLength_)) {
+            (mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_) >= mediaSegment->contentLength_)) {
             mediaSegment->isEos_ = true;
             if (mediaSegment->contentLength_ == 0) {
                 mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
