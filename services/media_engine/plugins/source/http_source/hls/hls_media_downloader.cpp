@@ -416,7 +416,10 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
-            size_t curBufferSize = buffer_->GetSize();
+            size_t curBufferSize = 0;
+            if (buffer_ != nullptr){
+                curBufferSize = buffer_->GetSize();
+            }
             MEDIA_LOG_I("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64 " KByte",
             static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
             readTotalBits_ = 0;
