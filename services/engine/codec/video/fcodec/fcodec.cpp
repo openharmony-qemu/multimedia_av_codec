@@ -91,7 +91,7 @@ void FCodec::OpenDumpFile()
     AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
     CHECK_AND_RETURN_LOG(dumpModeStr.length() == 2, "dumpModeStr length should equal 2"); // 2
     char fileName[PATH_MAX_LEN] = {0};
-    int ret = 0;
+    int ret;
     if (dumpModeStr[0] == '1') {
         ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h264", DUMP_PATH, this);
         CHECK_AND_RETURN_LOG(ret > 0, "Fail to sprintf input fileName");

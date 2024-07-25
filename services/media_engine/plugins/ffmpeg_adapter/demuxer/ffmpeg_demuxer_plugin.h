@@ -65,7 +65,6 @@ public:
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
-    Status ParserRefInit(int64_t timeStampMs) override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
@@ -134,9 +133,10 @@ private:
     bool CanDropAvcPkt(const AVPacket& pkt);
     bool CanDropHevcPkt(const AVPacket& pkt);
     void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
+    Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status ParserBoxInfo();
-    Status ParserFirstDts();
+    Status SelectProGopId();
+    void ParserBoxInfo();
     bool WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead);
 
     std::mutex mutex_ {};
@@ -171,7 +171,7 @@ private:
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
-
+    bool isInit_ = false;
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track
