@@ -60,7 +60,7 @@ Status HdiCodec::InitComponent(const std::string &name)
 
 sptr<ICodecComponentManager> HdiCodec::GetComponentManager()
 {
-    sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(true);
+    sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(false); // false: ipc
     return compMgr;
 }
 

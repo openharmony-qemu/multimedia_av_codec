@@ -81,9 +81,9 @@ ohos_executable("av_codec_demo") {
     "./audio_demo/avcodec_audio_avbuffer_decoder_inner_demo.cpp",
     "./audio_demo/avcodec_audio_avbuffer_flac_encoder_demo.cpp",
     "./audio_demo/avcodec_audio_avbuffer_g711mu_encoder_demo.cpp",
+    "./audio_demo/avcodec_audio_avbuffer_mp3_encoder_demo.cpp",
     "./audio_demo/avcodec_audio_avbuffer_lbvc_decoder_inner_demo.cpp",
     "./audio_demo/avcodec_audio_avbuffer_lbvc_encoder_inner_demo.cpp",
-    "./audio_demo/avcodec_audio_avbuffer_mp3_encoder_demo.cpp",
     "./audio_demo/avcodec_audio_decoder_demo.cpp",
     "./audio_demo/avcodec_audio_decoder_inner_demo.cpp",
     "./audio_demo/avcodec_audio_encoder_inner_demo.cpp",
@@ -113,7 +113,6 @@ ohos_executable("av_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
-    "drm_framework:native_drm",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
