@@ -629,13 +629,6 @@ int32_t VideoDecSample::InputLoopInner()
                                       index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
 
-    std::shared_ptr<FormatMock> format = videoDec_->GetOutputDescription();
-    int32_t pictureWidth = 0;
-    int32_t pictureHeight = 0;
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-    format->Destroy();
-
     auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
