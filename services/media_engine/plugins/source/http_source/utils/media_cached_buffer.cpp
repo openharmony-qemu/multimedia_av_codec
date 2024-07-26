@@ -593,9 +593,9 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
     if (totalReadSize_ > MAX_TOTAL_READ_SIZE && chunkNum > 0) {
         auto preChunkSize = (MAX_TOTAL_READ_SIZE - 1) / chunkNum;
         for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
-            iter->totalReadSize = preChunkSize * iter->chunks.size();
+            iter->totalReadSize = static_cast<uint64_t>(preChunkSize * iter->chunks.size());
         }
-        totalReadSize_ = preChunkSize * chunkNum;
+        totalReadSize_ = static_cast<uint64_t>(preChunkSize * chunkNum);
     }
 
     auto fragmentInsertPos = std::upper_bound(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(), offset,
