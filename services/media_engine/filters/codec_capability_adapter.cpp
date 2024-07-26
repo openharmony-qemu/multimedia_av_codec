@@ -52,7 +52,7 @@ Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, 
     if (capabilityData == nullptr) {
         return Status::ERROR_UNKNOWN;
     }
-    if (capabilityData->featuresMap.count(MediaAVCodec::AVCapabilityFeature::VIDEO_WATERMARK)) {
+    if (capabilityData->featuresMap.count(static_cast<int32_t>(MediaAVCodec::AVCapabilityFeature::VIDEO_WATERMARK))) {
         isWatermarkSupported = true;
     } else {
         isWatermarkSupported = false;
