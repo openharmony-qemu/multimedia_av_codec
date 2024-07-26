@@ -679,6 +679,7 @@ int32_t VideoDecSample::OutputLoopInner()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
+    CheckFormatKey();
     if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS && needDump_) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
