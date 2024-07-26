@@ -47,6 +47,7 @@ void MediaDemuxerUnitTest::SetUp()
 void MediaDemuxerUnitTest::TearDown()
 {
 }
+
 class MediaDemuxerTestCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
 public:
     explicit MediaDemuxerTestCallback()
