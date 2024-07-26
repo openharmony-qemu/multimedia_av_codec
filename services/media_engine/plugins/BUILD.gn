@@ -31,8 +31,6 @@ group("av_codec_media_engine_plugins") {
     "source/http_source:media_plugin_HttpSource",
   ]
   if (!use_clang_coverage) {
-      deps += [
-         "sink:media_plugin_AudioServerSink",
-      ]
+    deps += [ "sink:media_plugin_AudioServerSink" ]
   }
 }
