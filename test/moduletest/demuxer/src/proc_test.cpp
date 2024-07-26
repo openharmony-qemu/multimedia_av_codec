@@ -163,7 +163,8 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
         }
     }
 }
-static void CheckAudioParam(OH_AVSource *Audiosource, int &AudioallFrame){
+static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
+{
     int akeyCount = 0;
     int tarckType = 0;
     OH_AVCodecBufferAttr bufferAttr;
@@ -175,7 +176,7 @@ static void CheckAudioParam(OH_AVSource *Audiosource, int &AudioallFrame){
     int32_t index = 0;
     const char* mimeType = nullptr;
     while (!audioIsEnd) {
-        trackFormat = OH_AVSource_GetTrackFormat(Audiosource, index);
+        trackFormat = OH_AVSource_GetTrackFormat(audioSource, index);
         ASSERT_NE(trackFormat, nullptr);
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
@@ -189,16 +190,16 @@ static void CheckAudioParam(OH_AVSource *Audiosource, int &AudioallFrame){
             ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
             if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
-                cout << AudioallFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                cout << audioFrameAll << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 continue;
             }
-            AudioallFrame++;
+            audioFrameAll++;
             if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
                 akeyCount++;
             }
         }
     }
-    if (count == 1){
+    if (count == 1) {
         ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
         ASSERT_EQ(layout, LAYOUTMONO);
         ASSERT_EQ(rate, SAMPLERATEMONO);
@@ -1745,7 +1746,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6200, TestSize.Level2)
     ASSERT_EQ(103, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
-    //WavMuxer();
 }
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6300
@@ -1865,7 +1865,6 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6600, TestSize.Level0)
     ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
-    
 }
 
 /**

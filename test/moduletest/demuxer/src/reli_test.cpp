@@ -138,15 +138,14 @@ void DemuxFuncWav(int i, int loop)
     bool audioIsEnd = false;
     OH_AVCodecBufferAttr bufferAttr;
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer_list[i], 0));
-    //ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer_list[i], 1));
     while (!audioIsEnd) {
         for (int32_t index = 0; index < g_track; index++) {
             if (audioIsEnd && (index == MEDIA_TYPE_AUD)) {
                 continue;
             }
-            ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer_list[i], index, avBuffer_list[i]));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer_list[i], index, avBuffer_list[i]));
             ASSERT_NE(avBuffer_list[i], nullptr);
-            ASSERT_EQ(AV_ERR_OK,OH_AVBuffer_GetBufferAttr(avBuffer_list[i], &bufferAttr));
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer_list[i], &bufferAttr));
             if ((index == MEDIA_TYPE_AUD) && (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 audioIsEnd = true;
             }
