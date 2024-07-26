@@ -78,7 +78,7 @@ HWTEST(TestAudioSink, find_audio_sink_process, TestSize.Level1)
     ASSERT_TRUE(freeStatus == Status::OK);
 }
 
-HWTEST(TestAudioSink, find_audio_sink_set_volume001, TestSize.Level1)
+HWTEST(TestAudioSink, find_audio_sink_set_volume, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
