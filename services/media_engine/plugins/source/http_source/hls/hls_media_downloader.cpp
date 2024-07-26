@@ -53,6 +53,8 @@ constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int SECOND_TO_MILLIONSECOND = 1000;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
+constexpr int SEEK_STATUS_RETRY_TIMES = 100;
+constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -411,6 +413,15 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     isSeekingFlag = true;
     seekTime_ = static_cast<uint64_t>(seekTime);
+    int32_t retry {0};
+    do {
+        retry++;
+        if (retry >= SEEK_STATUS_RETRY_TIMES) { // 100 means retry times
+            MEDIA_LOG_I("Seek may be failed");
+            break;
+        }
+        OSAL::SleepFor(SEEK_STATUS_SLEEP_TIME); // 50 means sleep time pre retry
+    } while (!playListDownloader_->IsParseAndNotifyFinished());
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
     memset_s(decryptCache_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
     memset_s(decryptBuffer_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
@@ -497,7 +508,6 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         isDownloadStarted_ = true;
         PutRequestIntoDownloader(playInfo);
     }
-    isNeedStopPlayListTask_ = true;
 }
 
 bool HlsMediaDownloader::GetStartedStatus()
@@ -826,13 +836,6 @@ uint64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, doub
 
 void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const std::string& location)
 {
-    if (isNeedStopPlayListTask_ && GetSeekable() == Seekable::SEEKABLE) {
-        MEDIA_LOG_I("Stop playlist task enter.");
-        playListDownloader_->Cancel();
-        playListDownloader_->Close();
-        isNeedStopPlayListTask_ = false;
-        MEDIA_LOG_I("Stop playlist task exit.");
-    }
     uint32_t bitRate = downloadRequest_->GetBitRate();
     if (!playList_->Empty()) {
         size_t fragmentSize = downloadRequest_->GetFileContentLength();

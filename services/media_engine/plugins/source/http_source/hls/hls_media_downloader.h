@@ -157,7 +157,6 @@ private:
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
-    bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
