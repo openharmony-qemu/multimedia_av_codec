@@ -912,38 +912,51 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
     }
 }
 
-bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead)
-{
-    if (*vttPkt == nullptr) {
-        if (pkt->size > 0) {
-            *vttPkt = av_packet_alloc();
-            (*vttPkt)->pts = pkt->pts;
-            (*vttPkt)->dts = pkt->dts;
-            (*vttPkt)->size = pkt->size;
-            *(pkt->data + pkt->size) = '\0';
-            (*vttPkt)->data = pkt->data;
+bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt) {
+    auto trackId = pkt->stream_index;
+    if (pkt->size > 0) {    // vttc
+        return false;
+    } else {    // vtte
+        if (cacheQueue_.HasCache(trackId)) {
+            std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+                cacheSamplePacket->pkts[0]->duration = pkt->pts - cacheSamplePacket->pkts[0]->pts;
+            }
         }
-        pkt = nullptr;
-        return true;
-    } else {
-        pkt->duration = pkt->pts - (*vttPkt)->pts;
-        pkt->pts = (*vttPkt)->pts;
-        pkt->dts = (*vttPkt)->dts;
-        pkt->size = (*vttPkt)->size;
-        *((*vttPkt)->data + (*vttPkt)->size) = '\0';
-        pkt->data = (*vttPkt)->data;
+    }
+    av_packet_unref(pkt);
+    pkt = nullptr;
+    return true;
+}
 
-        *vttPkt = nullptr;
-        continueRead = false;
+bool FFmpegDemuxerPlugin::IsWebvttMP4(const AVStream *avStream)
+{
+    if (avStream->codecpar->codec_id == AV_CODEC_ID_WEBVTT &&
+        FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4) {
+        return true;
     }
     return false;
+}
+
+void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
+{
+    if (pkt != nullptr) {
+        auto trackId = pkt->stream_index;
+        AVStream *avStream = formatContext_->streams[trackId];
+        if (IsWebvttMP4(avStream) && pkt->size == 0 && cacheQueue_.HasCache(trackId)) {
+            std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+                cacheSamplePacket->pkts[0]->duration =
+                    formatContext_->streams[pkt->stream_index]->duration - cacheSamplePacket->pkts[0]->pts;
+            }
+        }
+    }
 }
 
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     AVPacket *pkt = nullptr;
-    AVPacket *vttPkt = nullptr;
     bool continueRead = true;
     while (continueRead) {
         if (pkt == nullptr) {
@@ -954,6 +967,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
         sLock.unlock();
         if (ffmpegRet == AVERROR_EOF) { // eos
+            WebvttMP4EOSProcess(pkt);
             av_packet_free(&pkt);
             PushEOSToAllCache();
             return Status::END_OF_STREAM;
@@ -975,12 +989,9 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             av_packet_unref(pkt);
             continue;
         }
-        AVStream *avStream = formatContext_->streams[pkt->stream_index];
-        if (avStream->codecpar->codec_id == AV_CODEC_ID_WEBVTT &&
-            FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4) {
-            if (WebvttPktProcess(&vttPkt, pkt, continueRead)) {
-                continue;
-            }
+        AVStream *avStream = formatContext_->streams[trackId];
+        if (IsWebvttMP4(avStream) && WebvttPktProcess(pkt)) {
+            continue;
         } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) &&
             GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;

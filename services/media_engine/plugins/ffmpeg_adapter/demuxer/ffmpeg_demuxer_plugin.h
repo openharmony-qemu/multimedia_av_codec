@@ -137,7 +137,9 @@ private:
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status SelectProGopId();
     void ParserBoxInfo();
-    bool WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead);
+    bool WebvttPktProcess(AVPacket *pkt);
+    bool IsWebvttMP4(const AVStream *avStream);
+    void WebvttMP4EOSProcess(const AVPacket *pkt);
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
