@@ -48,6 +48,22 @@ Status CodecCapabilityAdapter::GetAvailableEncoder(std::vector<MediaAVCodec::Cap
     return Status::OK;
 }
 
+Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, bool &isWatermarkSupported)
+{
+    MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(codecMimeType,
+        true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
+    
+    if (capabilityData == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
+    if (capabilityData->featuresMap.count(static_cast<int32_t>(MediaAVCodec::AVCapabilityFeature::VIDEO_WATERMARK))) {
+        isWatermarkSupported = true;
+    } else {
+        isWatermarkSupported = false;
+    }
+    return Status::OK;
+}
+
 Status CodecCapabilityAdapter::GetAudioEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo)
 {
     MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(
