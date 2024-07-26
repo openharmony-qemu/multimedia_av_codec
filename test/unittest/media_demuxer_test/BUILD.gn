@@ -77,7 +77,7 @@ ohos_unittest("media_demuxer_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = media_demuxer_test_sources + [ "media_demuxer_unit_test.cpp" ]
-  deps = [ 
+  deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/googletest:gmock_main",
   ]
