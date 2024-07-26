@@ -191,7 +191,7 @@ void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint3
 
 void VideoSampleBase::PushEosFrame()
 {
-    auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer();
+    auto bufferInfoOpt = context_->inputBufferQueue.DequeueBuffer(100); // 100ms
     CHECK_AND_RETURN(bufferInfoOpt != std::nullopt);
     auto &bufferInfo = bufferInfoOpt.value();
 
