@@ -1964,6 +1964,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
     RemoveValue();
 }
 
+#ifndef DEMUXER_CAPI_BUFFER_UNIT_TEST
 /**
  * @tc.name: Demuxer_ReadSample_3002
  * @tc.desc: copy current sample to buffer(vtt, en)
@@ -2078,6 +2079,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3003, TestSize.Level1)
     ASSERT_EQ(frames_[0], 10);
     RemoveValue();
 }
+#endif
 
 /**
  * @tc.name: Demuxer_SeekToTime_3000
@@ -2112,6 +2114,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
     }
 }
 
+#ifndef DEMUXER_CAPI_BUFFER_UNIT_TEST
 /**
  * @tc.name: Demuxer_SeekToTime_3002
  * @tc.desc: seek to the specified time(vtt, en)
@@ -2176,6 +2179,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3003, TestSize.Level1)
         }
     }
 }
+#endif
 
 /**
  * @tc.name: Demuxer_SetMediaKeySystemInfoCallback_4000

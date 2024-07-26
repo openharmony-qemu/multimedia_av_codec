@@ -912,7 +912,8 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
     }
 }
 
-bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt) {
+bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
+{
     auto trackId = pkt->stream_index;
     if (pkt->size > 0) {    // vttc
         return false;
