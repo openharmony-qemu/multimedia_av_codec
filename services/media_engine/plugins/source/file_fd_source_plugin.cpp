@@ -394,8 +394,9 @@ void FileFdSourcePlugin::CacheDataLoop()
     
     DeleteCacheBuffer(cacheBuffer);
 
-    FALSE_RETURN_NO_LOG(isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0));
-    NotifyBufferingEnd();
+    if (isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0)) {
+        NotifyBufferingEnd();
+    }
 }
 
 void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
@@ -405,7 +406,7 @@ void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
     // ioctl has cache
-    FALSE_RETURN_NO_LOG(ioResult != 0);
+    FALSE_RETURN(ioResult != 0);
     // EIO  5
     FALSE_RETURN_MSG(errno != EIO, "ioctl has no cache");
     MEDIA_LOG_I("ioctl errno " PUBLIC_LOG_D32, errno);
@@ -416,7 +417,7 @@ Status FileFdSourcePlugin::Stop()
     MEDIA_LOG_I("Stop enter.");
     isInterrupted_ = true;
     MEDIA_LOG_I("Stop isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    FALSE_RETURN_V_NO_LOG(downloadTask_ != nullptr, Status::OK);
+    FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
     downloadTask_->StopAsync();
     return Status::OK;
 }
@@ -426,14 +427,14 @@ Status FileFdSourcePlugin::Reset()
     MEDIA_LOG_I("Reset enter.");
     isInterrupted_ = true;
     MEDIA_LOG_I("Reset isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    FALSE_RETURN_V_NO_LOG(downloadTask_ != nullptr, Status::OK);
+    FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
     downloadTask_->StopAsync();
     return Status::OK;
 }
 
 void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
 {
-    FALSE_RETURN_NO_LOG(downloadTask_ != nullptr);
+    FALSE_RETURN(downloadTask_ != nullptr);
     if (isAsync) {
         downloadTask_->PauseAsync();
     } else {
@@ -638,17 +639,18 @@ int64_t FileFdSourcePlugin::GetLastSize(uint64_t position)
 
 void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
 {
-    FALSE_RETURN_NO_LOG((curTime - lastCheckTime_) > RECORD_TIME_INTERVAL);
-    MEDIA_LOG_I("CacheDataLoop curTime_: " PUBLIC_LOG_U64 " lastCheckTime_: "
+    if ((curTime - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+        MEDIA_LOG_I("CacheDataLoop curTime_: " PUBLIC_LOG_U64 " lastCheckTime_: "
         PUBLIC_LOG_U64 " downloadSize_: " PUBLIC_LOG_U64, curTime, lastCheckTime_, downloadSize_);
-    float duration = static_cast<double>(curTime - lastCheckTime_) / MILLISECOUND_TO_SECOND;
-    avgDownloadSpeed_ = downloadSize_ / duration; //b/s
-    MEDIA_LOG_I("downloadDuration: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F,
-        duration, avgDownloadSpeed_);
-    downloadSize_ = 0;
-    lastCheckTime_ = curTime;
-    FALSE_RETURN_NO_LOG(currentBitRate_ > 0);
-    UpdateWaterLineAbove();
+        float duration = static_cast<double>(curTime - lastCheckTime_) / MILLISECOUND_TO_SECOND;
+        avgDownloadSpeed_ = downloadSize_ / duration; //b/s
+        MEDIA_LOG_I("downloadDuration: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F,
+            duration, avgDownloadSpeed_);
+        downloadSize_ = 0;
+        lastCheckTime_ = curTime;
+        FALSE_RETURN(currentBitRate_ > 0);
+        UpdateWaterLineAbove();
+    }
 }
 
 void FileFdSourcePlugin::UpdateWaterLineAbove()
@@ -680,8 +682,9 @@ float FileFdSourcePlugin::GetCacheTime(float num)
 
 void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
 {
-    FALSE_RETURN_NO_LOG(buffer != nullptr);
-    delete[] buffer;
+    if (buffer != nullptr) {
+        delete[] buffer;
+    }
 }
 
 void FileFdSourcePlugin::CheckReadTime()
@@ -698,9 +701,8 @@ void FileFdSourcePlugin::CheckReadTime()
 
 bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 {
-    FALSE_RETURN_V_NO_LOG(lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
-        curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER, false);
-    return true;
+    return lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
+        curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER;
 }
 } // namespace FileFdSource
 } // namespace Plugin
