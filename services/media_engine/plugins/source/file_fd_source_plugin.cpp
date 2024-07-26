@@ -496,12 +496,11 @@ void FileFdSourcePlugin::NotifyBufferingStart()
 
 void FileFdSourcePlugin::NotifyBufferingPercent()
 {
-    MEDIA_LOG_I("NotifyBufferingPercent, ringBufferSize_ " PUBLIC_LOG_U64
-        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
     if (waterLineAbove_ != 0) {
         auto bp = static_cast<float>(ringBufferSize_) / static_cast<float>(waterLineAbove_) * PERCENT_100;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
-            MEDIA_LOG_I("Read OnEvent BUFFERING_PERCENT" PUBLIC_LOG_D32, static_cast<int32_t>(bp));
+            MEDIA_LOG_I("NotifyBufferingPercent, ringBufferSize_ " PUBLIC_LOG_U64 ", waterLineAbove_ " PUBLIC_LOG_U64
+                "PERCENT " PUBLIC_LOG_D32, ringBufferSize_, waterLineAbove_, static_cast<int32_t>(bp));
             callback_->OnEvent({PluginEventType::BUFFERING_PERCENT,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
@@ -512,6 +511,7 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
 
 void FileFdSourcePlugin::NotifyBufferingEnd()
 {
+    NotifyBufferingPercent();
     MEDIA_LOG_I("NotifyBufferingEnd, ringBufferSize_ " PUBLIC_LOG_U64
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
     MEDIA_LOG_I("water line above, ringBufferSize_ " PUBLIC_LOG_U64, ringBufferSize_);
