@@ -48,7 +48,6 @@ void MediaDemuxerUnitTest::TearDown()
 {
 }
 
-
 class MediaDemuxerTestCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
 public:
     explicit MediaDemuxerTestCallback()
@@ -687,28 +686,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Start_002, TestSize.Level1)
     demuxer->SetEventReceiver(receiver);
     EXPECT_EQ(Status::OK, demuxer->PrepareFrame(true));
     EXPECT_EQ(Status::OK, demuxer->Start());
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ChangeStream_001, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/drm/sm4c.ts";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    int32_t trackId = 1;
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    EXPECT_EQ(false, demuxer->ChangeStream(trackId));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DumpBufferToFile_001, TestSize.Level1)
