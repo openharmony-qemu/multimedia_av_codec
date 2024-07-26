@@ -135,6 +135,29 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0200, TestSize.Level1)
     EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
 }
 /**
+ * @tc.name: FileFdSource_read_0300
+ * @tc.desc: FileFdSource_read_0300
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0300, TestSize.Level1)
+{
+    fileFdSourcePlugin_->NotifyBufferingStart();
+    std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
+    fileFdSourcePlugin_->isCloudFile_ = true;
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
+}
+/**
+ * @tc.name: FileFdSource_read_0400
+ * @tc.desc: FileFdSource_read_0400
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0400, TestSize.Level1)
+{
+    std::shared_ptr<Buffer> buffer = nullptr;
+    fileFdSourcePlugin_->isCloudFile_ = true;
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
+}
+/**
  * @tc.name: FileFdSource_ParseUriInfo_0100
  * @tc.desc: FileFdSource_ParseUriInfo_0100
  * @tc.type: FUNC
@@ -143,6 +166,19 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0100, TestSize.Level1)
 {
     std::string uri = "";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
+    fileFdSourcePlugin_->SetSource(source);
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Reset());
+}
+/**
+ * @tc.name: FileFdSource_ParseUriInfo_0200
+ * @tc.desc: FileFdSource_ParseUriInfo_0200
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_ParseUriInfo_0200, TestSize.Level1)
+{
+    std::string uri = "";
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
+    fileFdSourcePlugin_->isCloudFile_ = true;
     fileFdSourcePlugin_->SetSource(source);
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Reset());
 }
@@ -165,6 +201,18 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetBundleName_0100, TestSize.Level1)
     fileFdSourcePlugin_->Stop();
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
+}
+/**
+ * @tc.name: FileFdSource_getCacheTime_0100
+ * @tc.desc: FileFdSource_getCacheTime_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->GetCacheTime(0.0);
+    fileFdSourcePlugin_->GetCacheTime(1.0);
+    fileFdSourcePlugin_->GetCacheTime(2.0);
+    fileFdSourcePlugin_->HasCacheData(0);
 }
 } // namespace FileSource
 } // namespace Plugins
