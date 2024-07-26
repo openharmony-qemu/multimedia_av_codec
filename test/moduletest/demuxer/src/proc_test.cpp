@@ -68,6 +68,15 @@ constexpr uint32_t ACTUAL_COEFFICIENTS = 2;
 constexpr uint32_t ACTUAL_PRIMARIES = 2;
 constexpr uint32_t AVC_ROTATION = 270;
 constexpr uint32_t HEVC_ROTATION = 90;
+constexpr int32_t LAYOUTMONO = 4;
+constexpr int32_t LAYOUTDUAL = 3;
+constexpr int32_t SAMPLERATEMONO = 8000;
+constexpr int32_t SAMPLERATEDUAL = 44100;
+constexpr int32_t COUNTMONO = 1;
+constexpr int32_t COUNTDUAL = 2;
+constexpr int32_t BITRATEMONO = 64000;
+constexpr int32_t BITRATEDUAL = 705600;
+constexpr int32_t FRAME_REMAINING = 100;
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
 void DemuxerProcNdkTest::SetUp()
@@ -154,7 +163,7 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
         }
     }
 }
-static void CheckAudioParam(int &AudioTrackCount ,OH_AVSource *Audiosource, int &AudioallFrame){
+static void CheckAudioParam(OH_AVSource *Audiosource, int &AudioallFrame){
     int akeyCount = 0;
     int tarckType = 0;
     OH_AVCodecBufferAttr bufferAttr;
@@ -163,45 +172,44 @@ static void CheckAudioParam(int &AudioTrackCount ,OH_AVSource *Audiosource, int 
     int32_t rate = 0;
     int64_t bitrate = 0;
     int64_t layout = 0;
+    int32_t index = 0;
     const char* mimeType = nullptr;
     while (!audioIsEnd) {
-        for (int32_t index = 0; index < AudioTrackCount; index++) {
-            trackFormat = OH_AVSource_GetTrackFormat(Audiosource, index);
-            ASSERT_NE(trackFormat, nullptr);
-            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-            ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
-            ASSERT_NE(avBuffer, nullptr);
-            ASSERT_EQ(AV_ERR_OK,OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
-            if (tarckType == MEDIA_TYPE_AUD) {
-                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &rate));
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &count));
-                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
-                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
-                if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << AudioallFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                    continue;
-                }
-                AudioallFrame++;
-                if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    akeyCount++;
-                }
+        trackFormat = OH_AVSource_GetTrackFormat(Audiosource, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+        ASSERT_NE(avBuffer, nullptr);
+        ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+        if (tarckType == MEDIA_TYPE_AUD) {
+            ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &rate));
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &count));
+            ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
+            ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
+            if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                audioIsEnd = true;
+                cout << AudioallFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+            AudioallFrame++;
+            if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                akeyCount++;
             }
         }
     }
     if (count == 1){
         ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
-        ASSERT_EQ(layout, 4);
-        ASSERT_EQ(rate, 8000);
-        ASSERT_EQ(count, 1);
-        ASSERT_EQ(bitrate, 64000);
+        ASSERT_EQ(layout, LAYOUTMONO);
+        ASSERT_EQ(rate, SAMPLERATEMONO);
+        ASSERT_EQ(count, COUNTMONO);
+        ASSERT_EQ(bitrate, BITRATEMONO);
     } else {
         ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
-        ASSERT_EQ(layout, 3);
-        ASSERT_EQ(rate, 44100);
-        ASSERT_EQ(count, 2);
-        ASSERT_EQ(bitrate, 705600);
+        ASSERT_EQ(layout, LAYOUTDUAL);
+        ASSERT_EQ(rate, SAMPLERATEDUAL);
+        ASSERT_EQ(count, COUNTDUAL);
+        ASSERT_EQ(bitrate, BITRATEDUAL);
     }
     cout << akeyCount << "---akeyCount---" << endl;
 }
@@ -1733,7 +1741,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6200, TestSize.Level2)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
-    CheckAudioParam(g_trackCount , source, audioFrame);
+    CheckAudioParam(source, audioFrame);
     ASSERT_EQ(103, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
@@ -1761,7 +1769,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6300, TestSize.Level2)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
-    CheckAudioParam(g_trackCount , source, audioFrame);
+    CheckAudioParam(source, audioFrame);
     ASSERT_EQ(103, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
 }
@@ -1790,7 +1798,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6400, TestSize.Level2)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
-    CheckAudioParam(g_trackCount , source, audioFrame);
+    CheckAudioParam(source, audioFrame);
     ASSERT_EQ(7, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
@@ -1817,7 +1825,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6500, TestSize.Level2)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
-    CheckAudioParam(g_trackCount , source, audioFrame);
+    CheckAudioParam(source, audioFrame);
     ASSERT_EQ(7, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
 }
@@ -1848,13 +1856,13 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6600, TestSize.Level0)
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
     int time = 4600000;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000 , SEEK_MODE_CLOSEST_SYNC));
-    ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
     time = 92000;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000 , SEEK_MODE_CLOSEST_SYNC));
-    ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
-    CheckAudioParam(g_trackCount , source, audioFrame);
-    ASSERT_EQ(100, audioFrame);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
     
@@ -1886,28 +1894,17 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6700, TestSize.Level0)
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
     int time = 4736000;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000 , SEEK_MODE_CLOSEST_SYNC));
-    ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
     time = 600000;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000 , SEEK_MODE_CLOSEST_SYNC));
-    ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
     time = 92000;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000 , SEEK_MODE_CLOSEST_SYNC));
-    ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
-    CheckAudioParam(g_trackCount , source, audioFrame);
-    ASSERT_EQ(100, audioFrame);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
-    // int time = 4736000;
-    // while (true) {
-    //     if (time <= 0) {
-    //         break;
-    //     }
-    //     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time / 1000, SEEK_MODE_CLOSEST_SYNC));
-    //     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
-    //     cout << "----------attr.flags------------" << attr.flags << "----attr.size-----" << attr.size << endl;
-    //     cout << "----attr.pts-----" << attr.pts << endl;
-    //     time = time - 50000;
-    // }
     close(fd);
 }
 
@@ -1937,10 +1934,10 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6800, TestSize.Level0)
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
     int time = 92000;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000 , SEEK_MODE_CLOSEST_SYNC));
-    ASSERT_EQ(AV_ERR_OK,OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
-    CheckAudioParam(g_trackCount , source, audioFrame);
-    ASSERT_EQ(100, audioFrame);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(FRAME_REMAINING, audioFrame);
     cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
 }

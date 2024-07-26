@@ -2460,7 +2460,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
         vector<std::thread> vecThread;
         for (int i = 0; i < g_maxThread; i++) {
             char file[256] = {};
-            snprintf(file, len, "/data/test/media/16/%d_wav_audio_test_202406290859.wav", i);
+            sprintf_s(file, len, "/data/test/media/16/%d_wav_audio_test_202406290859.wav", i);
             g_fdList[i] = open(file, O_RDONLY);
             int64_t size = GetFileSize(file);
             cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
