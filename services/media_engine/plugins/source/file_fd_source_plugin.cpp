@@ -698,7 +698,7 @@ void FileFdSourcePlugin::CheckReadTime()
 
 bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 {
-    FALSE_RETURN_V(lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
+    FALSE_RETURN_V_NO_LOG(lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
         curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER, false);
     return true;
 }
