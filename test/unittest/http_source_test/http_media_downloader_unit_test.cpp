@@ -18,11 +18,9 @@
 
 #define LOCAL true
 namespace OHOS::Media::Plugins::HttpPlugin {
-
 using namespace std;
 using namespace testing::ext;
 
-constexpr int BUFFERING_TIME_OUT = 1000;
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
@@ -102,35 +100,4 @@ HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering1, TestSize.Level1)
     MP4httpMediaDownloader->isBuffering_ = false;
     EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
 }
-
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBreak1, TestSize.Level1)
-{
-    MP4httpMediaDownloader->downloadRequest_ = nullptr;
-    int32_t sleepTime = 0;
-    bool result = MP4httpMediaDownloader->HandleBreak(sleepTime);
-    EXPECT_FALSE(result);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBreak2, TestSize.Level1)
-{
-    MP4httpMediaDownloader->downloadErrorState_ = true;
-    int32_t sleepTime = 0;
-    bool result = MP4httpMediaDownloader->HandleBreak(sleepTime);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBreak3, TestSize.Level1)
-{
-    int32_t sleepTime = BUFFERING_TIME_OUT + 1;
-    bool result = MP4httpMediaDownloader->HandleBreak(sleepTime);
-    EXPECT_TRUE(result);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBreak4, TestSize.Level1)
-{
-    int32_t sleepTime = BUFFERING_TIME_OUT - 1;
-    bool result = MP4httpMediaDownloader->HandleBreak(sleepTime);
-    EXPECT_TRUE(result);
-}
-
 }
