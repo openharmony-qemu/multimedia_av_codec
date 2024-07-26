@@ -1382,11 +1382,10 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...)
 {
     va_list args;
-    size_t maxSize = 1024; // 1024 max size of one log
+    int32_t maxSize = 1024; // 1024 max size of one log
     std::vector<char> buf(maxSize);
     va_start(args, reinterpret_cast<const char*>(pMsg));
-    size_t size = static_cast<size_t>(vsnprintf_s(buf.data(), buf.size(), buf.size()-1,
-        reinterpret_cast<const char*>(pMsg), args));
+    int32_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1, reinterpret_cast<const char*>(pMsg), args);
     va_end(args);
     if (size >= maxSize) {
         size = maxSize - 1;
