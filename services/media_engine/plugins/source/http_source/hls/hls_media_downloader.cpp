@@ -37,8 +37,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-constexpr int RECORD_TIME_INTERVAL = 3000;
-constexpr uint32_t SAMPLE_INTERVAL = 6000;
+constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
@@ -47,6 +46,7 @@ constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
+constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr int32_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr float DEFAULT_CACHE_TIME = 0.3;
@@ -358,7 +358,7 @@ Status HlsMediaDownloader::CheckPlaylist(unsigned char* buff, ReadDataInfo& read
     return Status::ERROR_UNKNOWN;
 }
 
-Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
@@ -404,6 +404,31 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
     return Status::OK;
+}
+
+Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
+{
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    auto ret = ReadDelegate(buff, readDataInfo);
+    readTotalBits_ += readDataInfo.realReadLength_;
+    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
+        readRecordDuringTime_ = now - lastReadCheckTime_;
+        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
+        if (readDuration > ZERO_THRESHOLD) {
+            double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
+            size_t curBufferSize = 0;
+            if (buffer_ != nullptr) {
+                curBufferSize = buffer_->GetSize();
+            }
+            MEDIA_LOG_I("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
+            " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
+            readTotalBits_ = 0;
+        }
+        lastReadCheckTime_ = now;
+        readRecordDuringTime_ = 0;
+    }
+    
+    return ret;
 }
 
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
@@ -627,7 +652,7 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
     }
 
-    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= RECORD_TIME_INTERVAL) {
+    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
         MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
         " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
         BufferDownRecord* record = new BufferDownRecord();
@@ -661,59 +686,53 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
             DownBufferSize();
         }
     }
-    DownloadReportLoop();
+    DownloadReport();
 }
 
-constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
-void HlsMediaDownloader::DownloadReportLoop()
+double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
 {
-    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
-        uint64_t curDownloadBits = totalBits_ - lastBits_;
-        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            // 周期下载量达阈值，统计有效下载时长
-            downloadDuringTime_ += now - lastCheckTime_ < 0? 0 : now - lastCheckTime_;
-            // 有效下载数据量
-            downloadBits_ += curDownloadBits;
-            double downloadDuration = static_cast<double>(now - lastCheckTime_) / 1000;
-            if (downloadDuration > ZERO_THRESHOLD) {
-                double downloadSpeed = downloadBits_ / downloadDuration;
-                avgSpeedSum_ += downloadSpeed / AVG_SPEED_SUM_SCALE;
-                recordSpeedCount_ ++;
-                MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " bit/s", static_cast<int32_t>(downloadSpeed));
-            }
-        }
-        // 下载总数据量
-        lastBits_ = totalBits_;
-        lastCheckTime_ = now;
-    }
-
-    if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
-        std::shared_ptr<RecordData> recordBuff = std::make_shared<RecordData>();
-        if (downloadDuringTime_ > 0) {
-            double tmpNumerator = static_cast<double>(downloadBits_);
-            double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
-            double downloadRate = tmpNumerator / tmpDenominator;
-            recordBuff->downloadRate = downloadRate;
-            if (downloadRate > ZERO_THRESHOLD) {
-                avgDownloadSpeed_ = downloadRate;
-            }
-        } else {
-            recordBuff->downloadRate = 0;
-        }
-        // 缓冲区剩余时长
-        uint64_t bufferDuration = bufferedDuration_ / currentBitrate_;
-        if (buffer_ != nullptr) {
-            uint64_t remainingBuffer = buffer_->GetSize() * 8;
-            MEDIA_LOG_D("The remaining of the buffer : " PUBLIC_LOG_U64, remainingBuffer);
-        }
-        recordBuff->bufferDuring = bufferDuration;
-        recordBuff->next = recordData_;
-        recordData_ = recordBuff;
-        recordCount_++;
+    double downloadRate = 0;
+    double tmpNumerator = static_cast<double>(downloadBits_);
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    if (tmpDenominator > ZERO_THRESHOLD) {
+        downloadRate = tmpNumerator / tmpDenominator;
+        avgDownloadSpeed_ = downloadRate;
         downloadDuringTime_ = 0;
         downloadBits_ = 0;
-        lastRecordTime_ = now;
+    }
+    
+    return downloadRate;
+}
+
+void HlsMediaDownloader::DownloadReport()
+{
+    uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
+    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
+        uint64_t curDownloadBits = totalBits_ - lastBits_;
+        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+            downloadDuringTime_ = now - lastCheckTime_;
+            downloadBits_ = curDownloadBits;
+            totalDownloadDuringTime_ += downloadDuringTime_;
+
+            std::shared_ptr<RecordData> recordBuff = std::make_shared<RecordData>();
+            double downloadRate = CalculateCurrentDownloadSpeed();
+            recordBuff->downloadRate = downloadRate;
+            size_t remainingBuffer = 0;
+            if (buffer_ != nullptr) {
+                remainingBuffer = buffer_->GetSize();
+            }
+            MEDIA_LOG_I("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
+                " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            // Remaining playable time: s
+            uint64_t bufferDuration = bufferedDuration_ / 1024 / 1024 / currentBitrate_;
+            recordBuff->bufferDuring = bufferDuration;
+            recordBuff->next = recordData_;
+            recordData_ = recordBuff;
+            recordCount_++;
+        }
+        // Total amount of downloaded data
+        lastBits_ = totalBits_;
+        lastCheckTime_ = now;
     }
     if (!isDownloadFinish_ && (static_cast<int64_t>(now) - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
         MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
@@ -1005,7 +1024,7 @@ void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
     if (minDuration == 0 || bufferedDuration_ < minDuration) {
         minDuration = bufferedDuration_;
     }
-    if ((nowTime - lastReadTime_) >= RECORD_TIME_INTERVAL || bufferedDuration_ == 0) {
+    if ((nowTime - lastReadTime_) >= SAMPLE_INTERVAL || bufferedDuration_ == 0) {
         BufferLeastRecord* record = new BufferLeastRecord();
         record->minDuration = minDuration;
         record->next = bufferLeastRecord_;
