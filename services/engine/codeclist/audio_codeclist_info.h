@@ -36,10 +36,10 @@ public:
     CapabilityData GetFlacEncoderCapability();
     CapabilityData GetG711muEncoderCapability();
     CapabilityData GetG711muDecoderCapability();
-    CapabilityData GetLbvcDecoderCapability();
-    CapabilityData GetLbvcEncoderCapability();
     CapabilityData GetAPEDecoderCapability();
     CapabilityData GetMP3EncoderCapability();
+    CapabilityData GetLbvcDecoderCapability();
+    CapabilityData GetLbvcEncoderCapability();
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetAmrnbEncoderCapability();

@@ -88,13 +88,14 @@ public:
     Status SetCurrentBitRate(int32_t bitRate) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
     uint64_t GetMinBuffer();
-    void DownloadReportLoop();
+    void DownloadReport();
     void ReportDownloadSpeed();
     bool CheckRiseBufferSize();
     bool CheckPulldownBufferSize();
@@ -117,6 +118,7 @@ private:
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
+    double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
 
 private:
@@ -227,6 +229,10 @@ private:
     bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
 
+    uint64_t lastReadCheckTime_ = 0;
+    uint64_t readTotalBits_ = 0;
+    uint64_t readRecordDuringTime_ = 0;
+    uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};

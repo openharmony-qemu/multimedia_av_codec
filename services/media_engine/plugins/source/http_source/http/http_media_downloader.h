@@ -59,13 +59,14 @@ public:
     bool GetReadFrame();
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
-    void OnWriteRingBuffer(uint32_t len);
-    void DownloadReportLoop();
+    void OnWriteBuffer(uint32_t len);
+    void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
+    Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -86,6 +87,7 @@ private:
     void ChangeDownloadPos();
     int32_t GetWaterLineAbove();
     void HandleCachedDuration();
+    double CalculateCurrentDownloadSpeed();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -130,6 +132,12 @@ private:
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
+
+    uint64_t lastReadCheckTime_ {0};
+    uint64_t readTotalBits_ {0};
+    uint64_t readRecordDuringTime_ {0};
+    uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
+    uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
