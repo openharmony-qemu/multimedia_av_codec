@@ -62,7 +62,7 @@ public:
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
     void Resume();
-    void Pause();
+    void Pause(bool isAsync = false);
     void Close();
     void Stop();
     void Start();

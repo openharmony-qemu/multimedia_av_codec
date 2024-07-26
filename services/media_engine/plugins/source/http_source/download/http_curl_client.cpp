@@ -35,6 +35,9 @@ const uint32_t MAX_STRING_LENGTH = 4096;
 const std::string USER_AGENT = "User-Agent";
 const int32_t MAX_LEN = 128;
 const std::string DISPLAYVERSION = "const.product.software.version";
+constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
+constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
+constexpr uint32_t MILLS_TO_SECOND = 1000;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -245,9 +248,11 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
 
 Status HttpCurlClient::Close()
 {
+    if (easyHandle_) {
+        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+    }
     AutoLock lock(mutex_);
     MEDIA_LOG_I("Close client");
-    curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT, 1);
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -314,6 +319,9 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
         MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeoutMs);
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeoutMs);
     }
+    int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
+    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
+    curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
     InitCurProxy(url);
 }
 
