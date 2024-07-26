@@ -1119,6 +1119,9 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     CHECK_AND_RETURN_RET_LOG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
+    if (postProcessing_) {
+        AVCODEC_LOGI("Post processing is configured");
+    }
     return ret;
 }
 
