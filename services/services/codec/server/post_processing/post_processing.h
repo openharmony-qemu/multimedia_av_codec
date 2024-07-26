@@ -23,6 +23,7 @@
 #include <type_traits>
 #include "surface.h"
 #include "avcodec_errors.h"
+#include "avcodec_trace.h"
 #include "codecbase.h"
 #include "meta/format.h"
 #include "media_description.h"
@@ -42,6 +43,7 @@ public:
     static std::unique_ptr<PostProcessing<T>> Create(const std::shared_ptr<CodecBase> codec,
         const Format& format, int32_t& ret)
     {
+        AVCODEC_SYNC_TRACE;
         auto p = std::make_unique<PostProcessing<T>>(codec);
         if (!p) {
             AVCODEC_LOGE("Create post processing failed");
@@ -59,6 +61,7 @@ public:
 
     int32_t SetCallback(const Callback& callback, void* userData)
     {
+        AVCODEC_SYNC_TRACE;
         callback_ = callback;
         callbackUserData_ = userData;
         return AVCS_ERR_OK;
@@ -67,6 +70,7 @@ public:
     int32_t SetOutputSurface(sptr<Surface> surface)
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
+        AVCODEC_SYNC_TRACE;
         switch (state_.Get()) {
             case State::CONFIGURED:
                 {
@@ -99,6 +103,8 @@ public:
             "Invalid post processing state: %{public}s", state_.Name());
         CHECK_AND_RETURN_RET_LOG(config_.outputSurface != nullptr, AVCS_ERR_INVALID_VAL, "Output surface is not set");
 
+        AVCODEC_SYNC_TRACE;
+
         int32_t ret = controller_->Create();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare failed");
 
@@ -126,6 +132,7 @@ public:
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         CHECK_AND_RETURN_RET_LOG(state_.Get() == State::PREPARED || state_.Get() == State::STOPPED,
             AVCS_ERR_INVALID_STATE, "Invalid post processing state: %{public}s", state_.Name());
+        AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Start();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start failed");
         state_.Set(State::RUNNING);
@@ -137,6 +144,7 @@ public:
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         CHECK_AND_RETURN_RET_LOG(state_.Get() == State::RUNNING, AVCS_ERR_INVALID_STATE,
             "Invalid post processing state: %{public}s", state_.Name());
+        AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Stop();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start failed");
         state_.Set(State::STOPPED);
@@ -148,6 +156,7 @@ public:
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         CHECK_AND_RETURN_RET_LOG(state_.Get() == State::RUNNING, AVCS_ERR_INVALID_STATE,
             "Invalid post processing state: %{public}s", state_.Name());
+        AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Flush();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Flush failed");
         return AVCS_ERR_OK;
@@ -156,6 +165,7 @@ public:
     int32_t Reset()
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
+        AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Reset();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Reset failed");
         codec_.reset();
@@ -166,6 +176,7 @@ public:
     int32_t Release()
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
+        AVCODEC_SYNC_TRACE;
         controller_->Release();
         controller_->UnloadInterfaces();
         codec_.reset();
@@ -178,6 +189,7 @@ public:
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         CHECK_AND_RETURN_RET_LOG(state_.Get() == State::RUNNING, AVCS_ERR_INVALID_STATE,
             "Invalid post processing state: %{public}s", state_.Name());
+        AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->ReleaseOutputBuffer(index, render);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "ReleaseOutputBuffer failed");
         return AVCS_ERR_OK;
