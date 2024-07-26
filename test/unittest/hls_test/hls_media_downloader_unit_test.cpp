@@ -33,6 +33,7 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr int MAX_RECORD_COUNT = 10;
+constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
@@ -253,6 +254,56 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetDemuxerState, TestSize.Level1)
     hlsMediaDownloader->SetDemuxerState();
     EXPECT_TRUE(hlsMediaDownloader->isReadFrame_);
     EXPECT_TRUE(hlsMediaDownloader->isFirstFrameArrived_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut1, TestSize.Level1)
+{
+    hlsMediaDownloader->readTime_ = READ_SLEEP_TIME_OUT;
+    EXPECT_TRUE(hlsMediaDownloader->CheckReadTimeOut());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut2, TestSize.Level1)
+{
+    hlsMediaDownloader->downloadErrorState_ = true;
+    EXPECT_TRUE(hlsMediaDownloader->CheckReadTimeOut());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut3, TestSize.Level1)
+{
+    hlsMediaDownloader->isTimeOut_ = true;
+    EXPECT_TRUE(hlsMediaDownloader->CheckReadTimeOut());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut4, TestSize.Level1)
+{
+    hlsMediaDownloader->downloader_ = nullptr;
+    EXPECT_FALSE(hlsMediaDownloader->CheckReadTimeOut());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut5, TestSize.Level1)
+{
+    hlsMediaDownloader->callback_ = nullptr;
+    EXPECT_FALSE(hlsMediaDownloader->CheckReadTimeOut());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
+{
+    hlsMediaDownloader->readTime_ = READ_SLEEP_TIME_OUT - 1;
+    hlsMediaDownloader->downloadErrorState_ = false;
+    hlsMediaDownloader->isTimeOut_ = false;
+    EXPECT_FALSE(hlsMediaDownloader->CheckReadTimeOut());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckBreakCondition, TestSize.Level1)
+{
+    hlsMediaDownloader->downloadErrorState_ = true;
+    EXPECT_TRUE(hlsMediaDownloader->CheckBreakCondition());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, HandleBuffering, TestSize.Level1)
+{
+    hlsMediaDownloader->isBuffering_ = false;
+    EXPECT_FALSE(hlsMediaDownloader->HandleBuffering());
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
