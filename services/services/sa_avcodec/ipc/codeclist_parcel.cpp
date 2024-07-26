@@ -60,6 +60,7 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteInt32Vector(capabilityData.bitrateMode);
     (void)Marshalling(parcel, capabilityData.measuredFrameRate);
     (void)Marshalling(parcel, capabilityData.profileLevelsMap);
+    (void)parcel.WriteBool(capabilityData.supportSwapWidthHeight);
     (void)Marshalling(parcel, capabilityData.featuresMap);
     AVCODEC_LOGD("success to Marshalling capabilityDataArray");
 
@@ -137,6 +138,7 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
                              "failed to Unmarshalling measuredFrameRate vector");
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.profileLevelsMap), false,
                              "failed to Unmarshalling profileLevels map");
+    capabilityData.supportSwapWidthHeight = parcel.ReadBool();
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.featuresMap), false,
                              "failed to Unmarshalling features map");
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");

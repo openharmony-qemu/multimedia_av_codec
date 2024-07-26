@@ -59,6 +59,7 @@ string g_codecName;
 string g_codecNameHEVC;
 OH_AVFormat *format;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
+constexpr int32_t DEFAULT_WIDTH_GET_MAX_HEIGHT = 1776;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 } // namespace
@@ -1243,7 +1244,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4410, TestSize.Level2)
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH_GET_MAX_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_GE(range.minVal, 0);
@@ -1252,7 +1253,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4410, TestSize.Level2)
     ASSERT_NE(nullptr, vdec_);
     format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH_GET_MAX_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
     ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
