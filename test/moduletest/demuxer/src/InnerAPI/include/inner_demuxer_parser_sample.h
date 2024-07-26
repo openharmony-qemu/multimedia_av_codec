@@ -100,7 +100,7 @@ private:
     int32_t trackCount;
     int64_t duration;
     int32_t videoTrackIdx;
-    int64_t usleepTime = 100000;
+    int64_t usleepTime = 300000;
 
     nlohmann::json gopJson_;
     nlohmann::json frameLayerJson_;
