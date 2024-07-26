@@ -79,6 +79,7 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    (void)EnableEncoderParamsFeedback(format);
     return AVCS_ERR_OK;
 }
 
@@ -154,6 +155,23 @@ int32_t HEncoder::SetLTRParam(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
     enableLTR_ = true;
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::EnableEncoderParamsFeedback(const Format &format)
+{
+    int32_t enableParamsFeedback {};
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, enableParamsFeedback)) {
+        return AVCS_ERR_OK;
+    }
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableParamsFeedback ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamEncParamsFeedback, param)) {
+        HLOGE("configure encoder params feedback[%d] failed", enableParamsFeedback);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    HLOGI("configure encoder params feedback[%d] success", enableParamsFeedback);
     return AVCS_ERR_OK;
 }
 
@@ -883,6 +901,8 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffe
     WrapLTRParamIntoOmxBuffer(omxBuffer, meta);
     WrapRequestIFrameParamIntoOmxBuffer(omxBuffer, meta);
     WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
+    WrapStartQPIntoOmxBuffer(omxBuffer, meta);
+    WrapIsSkipFrameIntoOmxBuffer(omxBuffer, meta);
     meta->Clear();
 }
 
@@ -938,6 +958,28 @@ void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer
     HLOGI("pts=%" PRId64 ", qp=(%d~%d)", omxBuffer->pts, minQp, maxQp);
 }
 
+void HEncoder::WrapStartQPIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                        const shared_ptr<Media::Meta> &meta)
+{
+    int32_t startQp {};
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_START, startQp)) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamQPStsart);
+    AppendToVector(omxBuffer->alongParam, startQp);
+}
+
+void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                            const shared_ptr<Media::Meta> &meta)
+{
+    bool isSkip {};
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, isSkip)) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamSkipFrame);
+    AppendToVector(omxBuffer->alongParam, isSkip);
+}
+
 void HEncoder::ExtractPerFrameParamFromOmxBuffer(
     const shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
 {
@@ -966,13 +1008,16 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
             }
             case OMX_IndexParamEncOutLTR: {
                 auto *encOutLtrParam = reader.Read<CodecEncOutLTRParam>();
-                if (encOutLtrParam == nullptr) {
+                ExtractPerFrameLTRParam(encOutLtrParam, meta);
+                break;
+            }
+            case OMX_IndexParamEncOutFrameLayer: {
+                auto *frameLayer = reader.Read<OMX_S32>();
+                if (frameLayer == nullptr) {
                     return;
                 }
-                HLOGD("pts=%" PRId64 ", isLTR=(%d), poc=(%d)", omxBuffer->pts, encOutLtrParam->isLTR,
-                      encOutLtrParam->poc);
-                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, encOutLtrParam->isLTR);
-                meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(encOutLtrParam->poc));
+                HLOGD("pts=%" PRId64 ", frameLayer=(%d)", omxBuffer->pts, *frameLayer);
+                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, *frameLayer);
                 break;
             }
             default: {
@@ -981,6 +1026,15 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
         }
     }
     omxBuffer->alongParam.clear();
+}
+
+void HEncoder::ExtractPerFrameLTRParam(const CodecEncOutLTRParam* ltrParam, shared_ptr<Media::Meta> &meta)
+{
+    if (ltrParam == nullptr) {
+        return;
+    }
+    meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, ltrParam->isLTR);
+    meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(ltrParam->poc));
 }
 
 int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()

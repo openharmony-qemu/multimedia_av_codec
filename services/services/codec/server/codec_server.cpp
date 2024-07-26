@@ -1170,6 +1170,7 @@ int32_t CodecServer::PreparePostProcessing()
         ret = postProcessing_->Prepare();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare post processing failed");
 
+        AVCODEC_LOGI("Post processing is prepared");
         return AVCS_ERR_OK;
     }
 }
@@ -1182,6 +1183,7 @@ int32_t CodecServer::StartPostProcessing()
             StatusChanged(ERROR);
         } else {
             StartPostProcessingTask();
+            AVCODEC_LOGI("Post processing is started");
         }
         return ret;
     } else {
@@ -1209,6 +1211,7 @@ int32_t CodecServer::StopPostProcessing()
     if (postProcessingOutputBufferInfoQueue_) {
         postProcessingOutputBufferInfoQueue_->Clear();
     }
+    AVCODEC_LOGI("Post processing is stopped");
     return AVCS_ERR_OK;
 }
 
@@ -1231,6 +1234,7 @@ int32_t CodecServer::FlushPostProcessing()
         postProcessingOutputBufferInfoQueue_->Clear();
     }
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Flush post processing failed");
+    AVCODEC_LOGI("Post processing is flushed");
     return AVCS_ERR_OK;
 }
 
@@ -1245,12 +1249,14 @@ int32_t CodecServer::ResetPostProcessing()
         CleanPostProcessingResource();
         postProcessing_.reset();
     }
+    AVCODEC_LOGI("Post processing is reset");
     return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::ReleasePostProcessing()
 {
     ResetPostProcessing();
+    AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }
 

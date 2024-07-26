@@ -142,7 +142,6 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
 {
-    hasSubtitle_ = true;
     return demuxer_->SetSubtitleSource(source);
 }
 
@@ -476,9 +475,9 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
-Status DemuxerFilter::StartAudioTask()
+Status DemuxerFilter::StartTask(int32_t trackId)
 {
-    return demuxer_->StartAudioTask();
+    return demuxer_->StartTask(trackId);
 }
 
 Status DemuxerFilter::SelectTrack(int32_t trackId)
@@ -589,8 +588,6 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
         return true;
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W_SHORT("mediaType disabled, index: %zu", index);
-        return true;
-    } else if (mediaType == Plugins::MediaType::SUBTITLE && !hasSubtitle_) {
         return true;
     }
     return false;

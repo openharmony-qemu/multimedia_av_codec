@@ -333,14 +333,8 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     }
     Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
     if (ret == Status::OK) {
-        if (IsDash()) {
-            if (buffer != nullptr && buffer->streamID != streamID) {
-                SetNewVideoStreamID(buffer->streamID);
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_HEADER, dash change, oldStreamID = " PUBLIC_LOG_D32
-                    ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                return Status::END_OF_STREAM;
-            }
-        }
+        Status result = CheckChangeStreamID(streamID, buffer);
+        FALSE_RETURN_V(result == Status::OK, result);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
         return ret;
     }
@@ -351,20 +345,33 @@ Status StreamDemuxer::HandleReadHeader(int32_t streamID, int64_t offset, std::sh
     return ret;
 }
 
+Status StreamDemuxer::CheckChangeStreamID(int32_t streamID, std::shared_ptr<Buffer>& buffer)
+{
+    if (IsDash()) {
+        if (buffer != nullptr && buffer->streamID != streamID) {
+            if (GetNewVideoStreamID() == streamID) {
+                SetNewVideoStreamID(buffer->streamID);
+            } else if (GetNewAudioStreamID() == streamID) {
+                SetNewAudioStreamID(buffer->streamID);
+            } else if (GetNewSubtitleStreamID() == streamID) {
+                SetNewSubtitleStreamID(buffer->streamID);
+            } else {}
+            MEDIA_LOG_I("Demuxer parse dash change, oldStreamID = " PUBLIC_LOG_D32
+                ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
+            return Status::END_OF_STREAM;
+        }
+    }
+    return Status::OK;
+}
+
 Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
     MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
     Status ret = getRange_(streamID, static_cast<uint64_t>(offset), expectedLen, buffer);
     if (ret == Status::OK) {
-        if (IsDash()) {
-            if (buffer != nullptr && buffer->streamID != streamID) {
-                SetNewVideoStreamID(buffer->streamID);
-                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, dash change, oldStreamID = " PUBLIC_LOG_D32
-                    ", newStreamID = " PUBLIC_LOG_D32, streamID, buffer->streamID);
-                return Status::END_OF_STREAM;
-            }
-        }
+        Status result = CheckChangeStreamID(streamID, buffer);
+        FALSE_RETURN_V(result == Status::OK, result);
         DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
         DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
         if (buffer != nullptr && buffer->GetMemory() != nullptr &&
