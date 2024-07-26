@@ -73,7 +73,7 @@ uint64_t GetFileSize(int32_t fd)
     int ret = fstat(fd, &s);
     if (ret == 0) {
         fileSize = static_cast<uint64_t>(s.st_size);
-        FALSE_RETURN_V_MSG_E(fileSize != 0, fileSize, "fileSize 0, fstat ret 0");
+        FALSE_RETURN_NO_LOG_V_MSG_E(fileSize != 0, fileSize, "fileSize 0, fstat ret 0");
         return fileSize;
     } else {
         MEDIA_LOG_W("GetFileSize error ret " PUBLIC_LOG_D32 ", errno " PUBLIC_LOG_D32, ret, errno);
@@ -115,7 +115,7 @@ FileFdSourcePlugin::~FileFdSourcePlugin()
     steadyClock_.Reset();
     isInterrupted_ = true;
     MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
+    FALSE_RETURN_NO_LOG_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
     MEDIA_LOG_I("~FileFdSourcePlugin out.");
 }
@@ -138,10 +138,10 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     CheckFileType();
     if (isCloudFile_) {
         ringBuffer_ = std::make_shared<RingBuffer>(CACHE_SIZE);
-        FALSE_RETURN_V_MSG_E(!(ringBuffer_ == nullptr || !ringBuffer_->Init()),
+        FALSE_RETURN_NO_LOG_V_MSG_E(!(ringBuffer_ == nullptr || !ringBuffer_->Init()),
             Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
         downloadTask_ = std::make_shared<Task>(std::string("downloadTaskFD"));
-        FALSE_RETURN_V_MSG_E(downloadTask_ != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
+        FALSE_RETURN_NO_LOG_V_MSG_E(downloadTask_ != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
         downloadTask_->RegisterJob([this] {
             CacheDataLoop();
             return 0;
@@ -159,7 +159,7 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
 
 Status FileFdSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
-    FALSE_RETURN_V_MSG_E(fd_ != -1, Status::ERROR_WRONG_STATE, "no valid fd");
+    FALSE_RETURN_NO_LOG_V_MSG_E(fd_ != -1, Status::ERROR_WRONG_STATE, "no valid fd");
     if (isCloudFile_) {
         return ReadOnlineFile(0, buffer, offset, expectedLen);
     } else {
@@ -171,7 +171,7 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     uint64_t offset, size_t expectedLen)
 {
     std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
-    FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
+    FALSE_RETURN_NO_LOG_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
@@ -210,13 +210,13 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     }
 
     std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
-    FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
+    FALSE_RETURN_NO_LOG_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
 
     size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, 1);
     if (size == 0) {
-        FALSE_RETURN_V_MSG_E(GetLastSize(position_) != 0, Status::END_OF_STREAM, "ReadCloud END_OF_STREAM");
+        FALSE_RETURN_NO_LOG_V_MSG_E(GetLastSize(position_) != 0, Status::END_OF_STREAM, "ReadCloud END_OF_STREAM");
         MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
             PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position_);
         return Status::OK;
@@ -239,7 +239,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
 
 Status FileFdSourcePlugin::SeekTo(uint64_t offset)
 {
-    FALSE_RETURN_V_MSG_E(fd_ != -1 && seekable_ == Seekable::SEEKABLE,
+    FALSE_RETURN_NO_LOG_V_MSG_E(fd_ != -1 && seekable_ == Seekable::SEEKABLE,
         Status::ERROR_WRONG_STATE, "no valid fd or no seekable.");
 
     MEDIA_LOG_I("SeekTo offset: " PUBLIC_LOG_U64, offset);
@@ -265,7 +265,7 @@ Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 
 Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
 {
-    FALSE_RETURN_V_MSG_E(ringBuffer_ != nullptr, Status::ERROR_WRONG_STATE, "SeekCloud ringBuffer_ is nullptr");
+    FALSE_RETURN_NO_LOG_V_MSG_E(ringBuffer_ != nullptr, Status::ERROR_WRONG_STATE, "SeekCloud ringBuffer_ is nullptr");
     MEDIA_LOG_D("SeekCloud, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
     if (ringBuffer_->Seek(offset)) {
         MEDIA_LOG_I("SeekCloud ringBuffer_ seek hit, offset " PUBLIC_LOG_U64, offset);
@@ -308,13 +308,13 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
     }
     MEDIA_LOG_I("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
     std::smatch fdUriMatch;
-    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
+    FALSE_RETURN_NO_LOG_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
-    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
+    FALSE_RETURN_NO_LOG_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
-    FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
+    FALSE_RETURN_NO_LOG_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
     fileSize_ = GetFileSize(fd_);
     if (fdUriMatch.size() == 4) { // 4：4 sub match
@@ -394,7 +394,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     
     DeleteCacheBuffer(cacheBuffer);
 
-    FALSE_RETURN(isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0));
+    FALSE_RETURN_NO_LOG(isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0));
     NotifyBufferingEnd();
 }
 
@@ -405,9 +405,9 @@ void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
     // ioctl has cache
-    FALSE_RETURN(ioResult == 0);
+    FALSE_RETURN_NO_LOG(ioResult != 0);
     // EIO  5
-    FALSE_RETURN_MSG(errno == EIO, "ioctl has no cache");
+    FALSE_RETURN_NO_LOG_MSG(errno != EIO, "ioctl has no cache");
     MEDIA_LOG_I("ioctl errno " PUBLIC_LOG_D32, errno);
 }
 
@@ -416,7 +416,7 @@ Status FileFdSourcePlugin::Stop()
     MEDIA_LOG_I("Stop enter.");
     isInterrupted_ = true;
     MEDIA_LOG_I("Stop isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
+    FALSE_RETURN_NO_LOG_V(downloadTask_ != nullptr, Status::OK);
     downloadTask_->StopAsync();
     return Status::OK;
 }
@@ -426,14 +426,14 @@ Status FileFdSourcePlugin::Reset()
     MEDIA_LOG_I("Reset enter.");
     isInterrupted_ = true;
     MEDIA_LOG_I("Reset isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
+    FALSE_RETURN_NO_LOG_V(downloadTask_ != nullptr, Status::OK);
     downloadTask_->StopAsync();
     return Status::OK;
 }
 
 void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
 {
-    FALSE_RETURN(downloadTask_ != nullptr);
+    FALSE_RETURN_NO_LOG(downloadTask_ != nullptr);
     if (isAsync) {
         downloadTask_->PauseAsync();
     } else {
@@ -638,7 +638,7 @@ int64_t FileFdSourcePlugin::GetLastSize(uint64_t position)
 
 void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
 {
-    FALSE_RETURN((curTime - lastCheckTime_) > RECORD_TIME_INTERVAL);
+    FALSE_RETURN_NO_LOG((curTime - lastCheckTime_) > RECORD_TIME_INTERVAL);
     MEDIA_LOG_I("CacheDataLoop curTime_: " PUBLIC_LOG_U64 " lastCheckTime_: "
         PUBLIC_LOG_U64 " downloadSize_: " PUBLIC_LOG_U64, curTime, lastCheckTime_, downloadSize_);
     float duration = static_cast<double>(curTime - lastCheckTime_) / MILLISECOUND_TO_SECOND;
@@ -647,13 +647,13 @@ void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
         duration, avgDownloadSpeed_);
     downloadSize_ = 0;
     lastCheckTime_ = curTime;
-    FALSE_RETURN(currentBitRate_ > 0);
+    FALSE_RETURN_NO_LOG(currentBitRate_ > 0);
     UpdateWaterLineAbove();
 }
 
 void FileFdSourcePlugin::UpdateWaterLineAbove()
 {
-    FALSE_RETURN_MSG(currentBitRate_ > 0, "currentBitRate_ = 0");
+    FALSE_RETURN_NO_LOG_MSG(currentBitRate_ > 0, "currentBitRate_ <= 0");
     float cacheTime = GetCacheTime(avgDownloadSpeed_ / currentBitRate_);
     MEDIA_LOG_I("cacheTime: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F
         "currentBitRate: " PUBLIC_LOG_D32, cacheTime, avgDownloadSpeed_, currentBitRate_);
@@ -680,7 +680,7 @@ float FileFdSourcePlugin::GetCacheTime(float num)
 
 void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
 {
-    FALSE_RETURN(buffer != nullptr);
+    FALSE_RETURN_NO_LOG(buffer != nullptr);
     delete[] buffer;
 }
 
@@ -698,7 +698,7 @@ void FileFdSourcePlugin::CheckReadTime()
 
 bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 {
-    FALSE_RETURN_V(lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
+    FALSE_RETURN_NO_LOG_V(lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
         curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER, false);
     return true;
 }
