@@ -200,6 +200,61 @@ HWTEST_F(HlsMediaDownloaderUnitTest, OnReadRingBuffer4, TestSize.Level1)
     EXPECT_NE(hlsMediaDownloader->bufferLeastRecord_->next, nullptr);
 }
 
+HWTEST_F(HlsMediaDownloaderUnitTest, DownBufferSize1, TestSize.Level1)
+{
+    hlsMediaDownloader->totalRingBufferSize_ = 10 * 1024 * 1024;
+    hlsMediaDownloader->DownBufferSize();
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, 9 * 1024 * 1024);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, DownBufferSize2, TestSize.Level1)
+{
+    hlsMediaDownloader->totalRingBufferSize_ = RING_BUFFER_SIZE;
+    hlsMediaDownloader->DownBufferSize();
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, RING_BUFFER_SIZE);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, RiseBufferSize1, TestSize.Level1)
+{
+    hlsMediaDownloader->totalRingBufferSize_ = 0;
+    hlsMediaDownloader->RiseBufferSize();
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, 1 * 1024 * 1024);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, RiseBufferSize2, TestSize.Level1)
+{
+    hlsMediaDownloader->totalRingBufferSize_ = MAX_BUFFER_SIZE;
+    hlsMediaDownloader->RiseBufferSize();
+    EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, MAX_BUFFER_SIZE);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckPulldownBufferSize, TestSize.Level1)
+{
+    hlsMediaDownloader->recordData_ = nullptr;
+    bool result = hlsMediaDownloader->CheckPulldownBufferSize();
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, CheckRiseBufferSize, TestSize.Level1)
+{
+    hlsMediaDownloader->recordData_ = nullptr;
+    bool result = hlsMediaDownloader->CheckRiseBufferSize();
+    EXPECT_FALSE(result);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SetDownloadErrorState, TestSize.Level1)
+{
+    hlsMediaDownloader->SetDownloadErrorState();
+    EXPECT_TRUE(hlsMediaDownloader->downloadErrorState_);
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SetDemuxerState, TestSize.Level1)
+{
+    hlsMediaDownloader->SetDemuxerState();
+    EXPECT_TRUE(hlsMediaDownloader->isReadFrame_);
+    EXPECT_TRUE(hlsMediaDownloader->isFirstFrameArrived_);
+}
+
 HWTEST_F(HlsMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
 {
     EXPECT_EQ(hlsMediaDownloader->totalRingBufferSize_, RING_BUFFER_SIZE);
