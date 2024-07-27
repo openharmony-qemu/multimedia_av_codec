@@ -879,7 +879,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentationTimeUsByFrameIndex_010, TestSize.Level1)
 {
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();    
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     int64_t presentationTimeUs;
     EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
     uint32_t frameIndex;
