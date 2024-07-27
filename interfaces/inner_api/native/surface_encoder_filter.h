@@ -39,6 +39,7 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
+    Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
     sptr<Surface> GetInputSurface();

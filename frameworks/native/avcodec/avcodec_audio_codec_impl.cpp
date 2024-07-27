@@ -90,7 +90,8 @@ int32_t AVCodecAudioCodecImpl::Prepare()
     implProducer_ = implBufferQueue_->GetProducer();
     codecService_->SetOutputBufferQueue(implProducer_);
     int32_t ret = codecService_->Prepare();
-
+    CHECK_AND_RETURN_RET_LOG_LIMIT(ret != AVCS_ERR_INVALID_OPERATION, AVCS_ERR_OK,
+        LOGD_FREQUENCY, "no need prepare");
     CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_STATE, "prepare fail, ret:%{public}d", ret);
 
     implConsumer_ = implBufferQueue_->GetConsumer();

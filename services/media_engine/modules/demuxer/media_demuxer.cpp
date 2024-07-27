@@ -1141,6 +1141,7 @@ Status MediaDemuxer::Flush()
 Status MediaDemuxer::StopAllTask()
 {
     MEDIA_LOG_I("StopAllTask enter.");
+    isDemuxerLoopExecuting_ = false;
     if (streamDemuxer_ != nullptr) {
         streamDemuxer_->SetIsIgnoreParse(true);
     }
@@ -1164,6 +1165,7 @@ Status MediaDemuxer::StopAllTask()
 Status MediaDemuxer::PauseAllTask()
 {
     MEDIA_LOG_I("PauseAllTask enter.");
+    isDemuxerLoopExecuting_ = false;
     // To accelerate DemuxerLoop thread to run into PAUSED state
     for (auto &iter : taskMap_) {
         if (iter.second != nullptr) {
@@ -1183,6 +1185,7 @@ Status MediaDemuxer::PauseAllTask()
 Status MediaDemuxer::ResumeAllTask()
 {
     MEDIA_LOG_I("ResumeAllTask enter.");
+    isDemuxerLoopExecuting_ = true;
     streamDemuxer_->SetIsIgnoreParse(false);
 
     auto it = bufferQueueMap_.begin();
@@ -1324,6 +1327,7 @@ Status MediaDemuxer::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Reset");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
+    isDemuxerLoopExecuting_ = false;
     ResetInner();
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
@@ -1353,6 +1357,7 @@ Status MediaDemuxer::Start()
     }
     isThreadExit_ = false;
     isStopped_ = false;
+    isDemuxerLoopExecuting_ = true;
     if (!doPrepareFrame_) {
         auto it = bufferQueueMap_.begin();
         while (it != bufferQueueMap_.end()) {
@@ -1438,9 +1443,6 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
         std::string mimeType;
         auto trackMeta = mediaInfo.tracks[index];
-        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("invalid") == 0) {
-            continue;
-        }
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
         MEDIA_LOG_I("InitMediaMetaData push track, index = " PUBLIC_LOG_D32 " mimeType = " PUBLIC_LOG_S,
             index, mimeType.data());
@@ -1553,9 +1555,6 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     bufferQueueMap_.erase(currentTrackId);
     bufferMap_.erase(currentTrackId);
 
-    MEDIA_LOG_I("HandleSelectTrackChangeStream dash, InnerSelectTrack done");
-    isSelectTrack_.store(false);
-
     MEDIA_LOG_I("HandleSelectTrackChangeStream dash, end");
     return true;
 }
@@ -1626,8 +1625,6 @@ bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
 
         MEDIA_LOG_I("SelectBitRateChangeStream dash, UpdateTempTrackMapInfo done");
         InnerSelectTrack(trackId);
-        MEDIA_LOG_I("SelectBitRateChangeStream dash, InnerSelectTrack video done");
-        isSelectBitRate_.store(false);
         MEDIA_LOG_I("SelectBitRateChangeStream dash, end");
         return true;
     }
@@ -1725,12 +1722,14 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             auto result = SelectBitRateChangeStream(trackId);
             if (result) {
                 streamDemuxer_->SetChangeFlag(true);
+                isSelectBitRate_.store(false);
                 return Status::OK;
             }
         } else if (isSelectTrack_) {
             auto result = SelectTrackChangeStream(trackId);
             if (result) {
                 streamDemuxer_->SetChangeFlag(true);
+                isSelectTrack_.store(false);
                 return Status::OK;
             }
         }
@@ -2041,13 +2040,10 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag)
     isSelectBitRate_.store(flag);
 }
 
-bool MediaDemuxer::CanDoSelectBitRate()
+bool MediaDemuxer::CanAutoSelectBitRate()
 {
     // calculating auto selectbitrate time
-    if (streamDemuxer_) {
-        return streamDemuxer_->CanDoChangeStream();
-    }
-    return false;
+    return !(isSelectBitRate_.load()) && !(isSelectTrack_.load());
 }
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
@@ -2090,6 +2086,28 @@ Status MediaDemuxer::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         MEDIA_LOG_E("MediaDemuxer GetPresentationTimeUsByFrameIndex failed");
     }
     return ret;
+}
+
+Status MediaDemuxer::ResumeDemuxerReadLoop()
+{
+    MEDIA_LOG_I("ResumeDemuxerReadLoop in.");
+    if (isDemuxerLoopExecuting_) {
+        MEDIA_LOG_I("Has already resumed");
+        return Status::OK;
+    }
+    isDemuxerLoopExecuting_ = true;
+    return ResumeAllTask();
+}
+
+Status MediaDemuxer::PauseDemuxerReadLoop()
+{
+    MEDIA_LOG_I("PauseDemuxerReadLoop in.");
+    if (isDemuxerLoopExecuting_) {
+        MEDIA_LOG_I("Has already pause");
+        return Status::OK;
+    }
+    isDemuxerLoopExecuting_ = false;
+    return PauseAllTask();
 }
 } // namespace Media
 } // namespace OHOS

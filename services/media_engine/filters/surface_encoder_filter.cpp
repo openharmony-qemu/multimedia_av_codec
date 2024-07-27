@@ -142,6 +142,16 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     return mediaCodec_->Configure(parameter);
 }
 
+Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer)
+{
+    MEDIA_LOG_I("SetWatermark");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
+    return mediaCodec_->SetWatermark(waterMarkBuffer);
+}
+
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");

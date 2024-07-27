@@ -44,6 +44,7 @@ public:
     void SetCallback(const std::shared_ptr<MediaCodecParameterWithAttrCallback> &callback);
 
     void ClearListenerCache();
+    void PrintListenerCache();
     bool WriteInputParameterToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputBufferToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
