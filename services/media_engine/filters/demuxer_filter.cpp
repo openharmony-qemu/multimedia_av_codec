@@ -589,6 +589,8 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W_SHORT("mediaType disabled, index: %zu", index);
         return true;
+    } else if (mediaType == Plugins::MediaType::TIMEDMETA) {
+        return true;
     }
     return false;
 }
