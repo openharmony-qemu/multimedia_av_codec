@@ -578,7 +578,7 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
                 DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
     realLen = GetDecrptyRealLen(writeDataPoint, waitLen, writeLen);
     totalLen_ += realLen;
-    bool isWriteRingBufferSuccess {true}
+    bool isWriteRingBufferSuccess {true};
     if (!buffer_->WriteBuffer(decryptCache_, realLen)) {
         isWriteRingBufferSuccess = false;
     }
