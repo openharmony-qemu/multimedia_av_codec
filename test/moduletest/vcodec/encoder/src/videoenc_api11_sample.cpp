@@ -699,6 +699,7 @@ void VEncAPI11Sample::SetForceIDR()
 
 void VEncAPI11Sample::SetLTRParameter(OH_AVBuffer *buffer)
 {
+    static bool useLtrOnce = false;
     if (!ltrParam.enableUseLtr) {
         return;
     }
@@ -726,9 +727,9 @@ void VEncAPI11Sample::SetLTRParameter(OH_AVBuffer *buffer)
         if (!ltrParam.useLtrOnce) {
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
         } else {
-            if (!ltrParam.useLtrOnce) {
+            if (!useLtrOnce) {
                 OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
-                ltrParam.useLtrOnce = true;
+                useLtrOnce = true;
             }
         }
     } else if (frameCount == useLtrIndex && frameCount > 0) {

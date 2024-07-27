@@ -16,10 +16,10 @@
 #include <shared_mutex>
 #include "common/log.h"
 #include "osal/task/autolock.h"
-#include "avcodec_codec_name.h"
-#include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
 #include "osal/utils/dump_buffer.h"
+#include "avcodec_trace.h"
+#include "plugin/plugin_manager_v2.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "MediaCodec" };
@@ -110,7 +110,6 @@ int32_t MediaCodec::Init(const std::string &name)
 {
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("Init enter, name: " PUBLIC_LOG_S, name.c_str());
-    MEDIA_LOG_I("MediaCodec::Init");
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Init");
     if (state_ != CodecState::UNINITIALIZED) {
         MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());

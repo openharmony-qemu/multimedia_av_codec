@@ -16,8 +16,8 @@
 #ifndef DEFERRED_PROCCESSING_LRU_CACHE_H
 #define DEFERRED_PROCCESSING_LRU_CACHE_H
 
-#include<list>
-#include<unordered_map>
+#include <list>
+#include <unordered_map>
 
 namespace OHOS {
 namespace Media {
@@ -25,7 +25,7 @@ namespace Media {
 template<class KeyT, class ValueT>
 class LruCache {
 public:
-    LruCache(size_t cacheSize) : cacheSize_(cacheSize)
+    explicit LruCache(size_t cacheSize) : cacheSize_(cacheSize)
     {
         if (cacheSize == 0) {
             cacheSize_ = 1;
@@ -113,8 +113,8 @@ public:
             return false;
         }
         for (auto& item : itemList_) {
-            auto it == itemMap_.find(item.first);
-            if (it = itemMap_.end()) {
+            auto it = itemMap_.find(item.first);
+            if (it == itemMap_.end()) {
                 return false;
             }
             if (it->second == itemList_.end()) {

@@ -152,6 +152,7 @@ protected:
     }
     void ResetReadSizeAlloc();
     CacheChunk* UpdateFragmentCacheForDelHead(FragmentIterator& fragmentIter);
+    void HandleFragmentPos(FragmentIterator& fragmentIter);
 
 private:
     std::mutex mutex_;
@@ -166,7 +167,6 @@ private:
     FragmentCacheBufferList fragmentCacheBuffer_;
     CacheChunkList freeChunks_;
     size_t fragmentMaxNum_;
-    uint64_t cacheReleaseDelayFactor_;
     LruCache<int64_t, FragmentIterator> lruCache_;
 };
 

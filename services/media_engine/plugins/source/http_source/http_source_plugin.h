@@ -52,6 +52,7 @@ public:
     Status SelectBitRate(uint32_t bitRate) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
+    Status SelectStream(int32_t streamID) override;
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;

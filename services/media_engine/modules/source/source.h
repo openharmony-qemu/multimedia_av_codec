@@ -96,6 +96,7 @@ public:
     Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status SelectStream(int32_t streamID);
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);

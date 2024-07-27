@@ -23,7 +23,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 constexpr uint32_t INDEX_ARRAY = 2;
 std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
-    {VideoPixelFormat::YUV420P, AV_PIX_FMT_YUV420P},
+    {VideoPixelFormat::YUVI420, AV_PIX_FMT_YUV420P},
     {VideoPixelFormat::NV12, AV_PIX_FMT_NV12},
     {VideoPixelFormat::NV21, AV_PIX_FMT_NV21},
     {VideoPixelFormat::RGBA, AV_PIX_FMT_RGBA},
@@ -53,7 +53,7 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
-    CHECK_AND_RETURN_RET_LOG(pixFmt == VideoPixelFormat::YUV420P || pixFmt == VideoPixelFormat::NV12 ||
+    CHECK_AND_RETURN_RET_LOG(pixFmt == VideoPixelFormat::YUVI420 || pixFmt == VideoPixelFormat::NV12 ||
                                  pixFmt == VideoPixelFormat::NV21,
                              AVCS_ERR_UNSUPPORT, "pixFmt: %{public}d do not support", pixFmt);
     int32_t srcPos = 0;
@@ -66,7 +66,7 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
         srcPos += dataSize;
     }
     srcPos = 0;
-    if (pixFmt == VideoPixelFormat::YUV420P) {
+    if (pixFmt == VideoPixelFormat::YUVI420) {
         dataSize = scaleLineSize[1];
         writeSize = dataSize > (stride / UV_SCALE_FACTOR) ? (stride / UV_SCALE_FACTOR) : dataSize;
         for (int32_t colNum = 0; colNum < (height / UV_SCALE_FACTOR); colNum++) {
@@ -118,7 +118,7 @@ int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     int32_t ySize = static_cast<int32_t>(scaleLineSize[0] * height);      // yuv420: 411 nv21
     int32_t uvSize = static_cast<int32_t>(scaleLineSize[1] * height / 2); // 2
     int32_t frameSize = 0;
-    if (pixFmt == VideoPixelFormat::YUV420P) {
+    if (pixFmt == VideoPixelFormat::YUVI420) {
         frameSize = ySize + (uvSize * 2); // 2
     } else if (pixFmt == VideoPixelFormat::NV21 || pixFmt == VideoPixelFormat::NV12) {
         frameSize = ySize + uvSize;
@@ -126,7 +126,7 @@ int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     CHECK_AND_RETURN_RET_LOG(memory->GetCapacity() >= frameSize, AVCS_ERR_NO_MEMORY,
                              "output buffer size is not enough: real[%{public}d], need[%{public}u]",
                              memory->GetCapacity(), frameSize);
-    if (pixFmt == VideoPixelFormat::YUV420P) {
+    if (pixFmt == VideoPixelFormat::YUVI420) {
         memory->Write(scaleData[0], ySize);
         memory->Write(scaleData[1], uvSize);
         memory->Write(scaleData[2], uvSize); // 2
@@ -238,7 +238,7 @@ GraphicTransformType TranslateSurfaceRotation(const VideoRotation &rotation)
 GraphicPixelFormat TranslateSurfaceFormat(const VideoPixelFormat &surfaceFormat)
 {
     switch (surfaceFormat) {
-        case VideoPixelFormat::YUV420P: {
+        case VideoPixelFormat::YUVI420: {
             return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
         }
         case VideoPixelFormat::RGBA: {
@@ -273,7 +273,7 @@ AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat)
 
 bool IsYuvFormat(VideoPixelFormat &format)
 {
-    return (format == VideoPixelFormat::YUV420P || format == VideoPixelFormat::NV12 ||
+    return (format == VideoPixelFormat::YUVI420 || format == VideoPixelFormat::NV12 ||
             format == VideoPixelFormat::NV21);
 }
 

@@ -88,7 +88,7 @@ size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
             size += quePool_[queIndex].blockQue->Size();
         }
     }
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheSize = " PUBLIC_LOG_D32, name_.c_str(), size);
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheSize = " PUBLIC_LOG_ZU, name_.c_str(), size);
     return size;
 }
 

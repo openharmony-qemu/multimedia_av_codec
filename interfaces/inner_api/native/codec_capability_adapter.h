@@ -30,6 +30,7 @@ public:
     void Init();
 
     Status GetAvailableEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
+    Status IsWatermarkSupported(std::string &CodecMimeType, bool &isWatermarkSupported);
 private:
     Status GetVideoEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
 

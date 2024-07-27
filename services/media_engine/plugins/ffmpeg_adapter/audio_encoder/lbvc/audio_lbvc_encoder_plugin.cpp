@@ -251,7 +251,7 @@ Status AudioLbvcEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (!meta->Get<Tag::MEDIA_BITRATE>(bitRate_)) {
-        AVCODEC_LOGE("AudioLbvcEncoderPlugin no AUDIO_SAMPLE_RATE");
+        AVCODEC_LOGE("AudioLbvcEncoderPlugin no BITRATE");
         return Status::ERROR_INVALID_PARAMETER;
     }
 
