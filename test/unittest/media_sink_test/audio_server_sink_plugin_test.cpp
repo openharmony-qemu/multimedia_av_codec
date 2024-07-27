@@ -429,15 +429,15 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_callback, TestSize.Level1)
     OHOS::AudioStandard::InterruptEvent event1{InterruptType::INTERRUPT_TYPE_BEGIN,
         InterruptForceType::INTERRUPT_FORCE, InterruptHint::INTERRUPT_HINT_PAUSE};
     callback->OnInterrupt(event1);
-    EXPECT_EQ(true, callback->isPaused);
+    EXPECT_EQ(true, callback->isPaused_);
     OHOS::AudioStandard::InterruptEvent event2{InterruptType::INTERRUPT_TYPE_BEGIN,
         InterruptForceType::INTERRUPT_FORCE, InterruptHint::INTERRUPT_HINT_STOP};
     callback->OnInterrupt(event2);
-    EXPECT_EQ(false, callback->isPaused);
+    EXPECT_EQ(false, callback->isPaused_);
     OHOS::AudioStandard::InterruptEvent event3{InterruptType::INTERRUPT_TYPE_BEGIN,
-        InterruptForceType::INTERRUPT_SHARED, InterruptHint::INTERRUPT_HINT_STOP};
+        InterruptForceType::INTERRUPT_SHARE, InterruptHint::INTERRUPT_HINT_STOP};
     callback->OnInterrupt(event3);
-    EXPECT_EQ(false, callback->isPaused);
+    EXPECT_EQ(false, callback->isPaused_);
     callback->OnStateChange(RendererState::RENDERER_INVALID, StateChangeCmdType::CMD_FROM_CLIENT);
 }
 
@@ -463,7 +463,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_release_file, TestSize.Level
     ASSERT_TRUE(audioServerSinkPlugin != nullptr);
     std::string path = "data/media/audio-sink-entire.pcm";
     audioServerSinkPlugin->entireDumpFile_ = fopen(path.c_str(), "wb+");
-    path = "data/media/audio-sink-slice-" + std::to_string(sliceCount_) + ".pcm";
+    path = "data/media/audio-sink-slice-.pcm";
     audioServerSinkPlugin->sliceDumpFile_ = fopen(path.c_str(), "wb+");
     ASSERT_EQ(nullptr, audioServerSinkPlugin->entireDumpFile_);
     ASSERT_EQ(nullptr, audioServerSinkPlugin->sliceDumpFile_);
@@ -478,7 +478,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_reset, TestSize.Level1)
     audioServerSinkPlugin->resample_ = std::make_shared<Ffmpeg::Resample>();
     float volume = 0;
     int32_t duration = 0;
-    ASSERT_EQ(0, audioServerSinkPlugin->SetVolumeWithRamp());
+    ASSERT_EQ(0, audioServerSinkPlugin->SetVolumeWithRamp(volume, duration));
     ASSERT_EQ(Status::OK, audioServerSinkPlugin->Reset());
 }
 
@@ -507,9 +507,9 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_002, TestSize.
     ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(AudioSamplingRate::SAMPLE_RATE_11025));
     
     uint32_t sampleRate = 16000;
-    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(16000));
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate));
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    ASSERT_EQ(Status::OK, meta->Set<Tag::AUDIO_RENDER_SET_FLAG>(true));
+    meta->Set<Tag::AUDIO_RENDER_SET_FLAG>(true);
     ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
     audioServerSinkPlugin->GetParameter(meta);
 }
@@ -528,6 +528,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_cache_data, TestSize.Level1)
     audioServerSinkPlugin->CacheData(nullptr, 0);
     audioServerSinkPlugin->CacheData(nullptr, 0);
     audioServerSinkPlugin->CacheData(nullptr, 0);
+    int32_t DEFAULT_BUFFER_NUM = 8;
     ASSERT_EQ(DEFAULT_BUFFER_NUM, audioServerSinkPlugin->cachedBuffers_.size());
 }
 
