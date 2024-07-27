@@ -1555,9 +1555,6 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
     bufferQueueMap_.erase(currentTrackId);
     bufferMap_.erase(currentTrackId);
 
-    MEDIA_LOG_I("HandleSelectTrackChangeStream dash, InnerSelectTrack done");
-    isSelectTrack_.store(false);
-
     MEDIA_LOG_I("HandleSelectTrackChangeStream dash, end");
     return true;
 }
@@ -1628,8 +1625,6 @@ bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
 
         MEDIA_LOG_I("SelectBitRateChangeStream dash, UpdateTempTrackMapInfo done");
         InnerSelectTrack(trackId);
-        MEDIA_LOG_I("SelectBitRateChangeStream dash, InnerSelectTrack video done");
-        isSelectBitRate_.store(false);
         MEDIA_LOG_I("SelectBitRateChangeStream dash, end");
         return true;
     }
@@ -1727,12 +1722,14 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
             auto result = SelectBitRateChangeStream(trackId);
             if (result) {
                 streamDemuxer_->SetChangeFlag(true);
+                isSelectBitRate_.store(false);
                 return Status::OK;
             }
         } else if (isSelectTrack_) {
             auto result = SelectTrackChangeStream(trackId);
             if (result) {
                 streamDemuxer_->SetChangeFlag(true);
+                isSelectTrack_.store(false);
                 return Status::OK;
             }
         }
@@ -2043,13 +2040,10 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag)
     isSelectBitRate_.store(flag);
 }
 
-bool MediaDemuxer::CanDoSelectBitRate()
+bool MediaDemuxer::CanAutoSelectBitRate()
 {
     // calculating auto selectbitrate time
-    if (streamDemuxer_) {
-        return streamDemuxer_->CanDoChangeStream();
-    }
-    return false;
+    return !(isSelectBitRate_.load()) && !(isSelectTrack_.load());
 }
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
