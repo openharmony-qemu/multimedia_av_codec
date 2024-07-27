@@ -63,7 +63,7 @@ public:
         (void)flag;
     }
 
-    bool CanDoSelectBitRate() override
+    bool CanAutoSelectBitRate() override
     {
         return true;
     }
