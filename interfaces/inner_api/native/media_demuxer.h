@@ -104,7 +104,7 @@ public:
     void OnBufferAvailable(uint32_t trackId);
 
     void SetSelectBitRateFlag(bool flag) override;
-    bool CanDoSelectBitRate() override;
+    bool CanAutoSelectBitRate() override;
 
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);

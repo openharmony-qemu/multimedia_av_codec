@@ -47,9 +47,9 @@ public:
         callbackWrap_->SetSelectBitRateFlag(flag);
     }
 
-    bool CanDoSelectBitRate() override
+    bool CanAutoSelectBitRate() override
     {
-        return callbackWrap_->CanDoSelectBitRate();
+        return callbackWrap_->CanAutoSelectBitRate();
     }
 
     void SetCallbackWrap(Callback* callbackWrap)
@@ -80,7 +80,7 @@ public:
 
     void OnEvent(const Plugins::PluginEvent &event) override;
     void SetSelectBitRateFlag(bool flag) override;
-    bool CanDoSelectBitRate() override;
+    bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
     int64_t GetDuration();

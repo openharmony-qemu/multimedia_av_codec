@@ -296,9 +296,9 @@ void Source::SetSelectBitRateFlag(bool flag)
     mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
 }
 
-bool Source::CanDoSelectBitRate()
+bool Source::CanAutoSelectBitRate()
 {
-    return mediaDemuxerCallback_->CanDoSelectBitRate();
+    return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
 void Source::SetInterruptState(bool isInterruptNeeded)
