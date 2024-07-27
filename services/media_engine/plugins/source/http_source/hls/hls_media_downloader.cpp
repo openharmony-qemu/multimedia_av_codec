@@ -618,7 +618,6 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
             MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64, DECRYPT_UNIT_LEN);
         }
     }
-
     writeDataPoint += writeLen;
     waitLen -= writeLen;
     if (waitLen > 0 && isWriteRingBufferSuccess) {
