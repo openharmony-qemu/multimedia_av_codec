@@ -368,9 +368,24 @@ ohos_unittest("av_audio_media_codec_unit_test") {
     "$av_codec_root_dir/services/media_engine/modules/media_codec",
   ]
 
-  cflags = av_codec_unittest_cflags
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
 
-  cflags_cc = cflags
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
 
   public_configs = []
 

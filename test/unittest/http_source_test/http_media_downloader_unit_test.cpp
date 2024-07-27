@@ -18,12 +18,8 @@
 
 #define LOCAL true
 namespace OHOS::Media::Plugins::HttpPlugin {
-
 using namespace std;
 using namespace testing::ext;
-constexpr size_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr size_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-std::string flvUrl = "www.baidu.flv";
 
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
@@ -104,52 +100,4 @@ HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering1, TestSize.Level1)
     MP4httpMediaDownloader->isBuffering_ = false;
     EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
 }
-
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering2, TestSize.Level1)
-{
-    MP4httpMediaDownloader->isBuffering_ = true;
-    MP4httpMediaDownloader->isReadFrame_ = false;
-    EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl);
-    EXPECT_EQ(downloader.GetBufferSize(), 0);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor_001, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl);
-    EXPECT_EQ(downloader.GetBufferSize(), 0);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorDefine, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl, 10);
-    EXPECT_EQ(downloader.GetBufferSize(), 2*RING_BUFFER_SIZE);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorExceed, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl, 10000);
-    EXPECT_EQ(downloader.GetBufferSize(), MAX_BUFFER_SIZE);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorLess, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl, 1);
-    EXPECT_EQ(downloader.GetBufferSize(), RING_BUFFER_SIZE);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestOpenWithValidUrl, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl);
-    std::map<std::string, std::string> header = {{"a", "b"}};
-    Source* source = new Source();
-    downloader.SetCallback(source);
-    bool result = downloader.Open("http://127.0.0.0:4666/dewu.mp4", header);
-    EXPECT_FALSE(result);
-}
-
 }

@@ -111,8 +111,15 @@ public:
     std::string SnifferMediaType(int32_t streamID);
     bool IsDash() const;
     void SetIsDash(bool flag);
+
+    Status SetNewAudioStreamID(int32_t streamID);
     Status SetNewVideoStreamID(int32_t streamID);
+    Status SetNewSubtitleStreamID(int32_t streamID);
     int32_t GetNewVideoStreamID();
+    int32_t GetNewAudioStreamID();
+    int32_t GetNewSubtitleStreamID();
+    bool CanDoChangeStream();
+    void SetChangeFlag(bool flag);
 protected:
     std::shared_ptr<Source> source_;
     std::function<Status(int32_t, uint64_t, size_t)> checkRange_;
@@ -129,6 +136,9 @@ public:
 private:
     bool isDash_ = {false};
     std::atomic<int32_t> newVideoStreamID_ = -1;
+    std::atomic<int32_t> newAudioStreamID_ = -1;
+    std::atomic<int32_t> newSubtitleStreamID_ = -1;
+    std::atomic<bool> changeStreamFlag_ = true;
 };
 } // namespace Media
 } // namespace OHOS

@@ -47,7 +47,7 @@ public:
 class __attribute__((visibility("default"))) AVBufferMockFactory {
 public:
     static std::shared_ptr<AVBufferMock> CreateAVBuffer(const int32_t &capacity);
-
+    static std::shared_ptr<AVBufferMock> CreateAVBuffer(std::shared_ptr<AVBuffer> buffer);
 private:
     AVBufferMockFactory() = delete;
     ~AVBufferMockFactory() = delete;

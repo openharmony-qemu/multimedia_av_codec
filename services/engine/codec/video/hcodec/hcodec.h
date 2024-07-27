@@ -37,6 +37,7 @@ public:
     int32_t Init(Media::Meta &callerInfo) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetInputSurface(sptr<Surface> surface) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
@@ -64,6 +65,7 @@ protected:
         INIT,
         SET_CALLBACK,
         CONFIGURE,
+        CONFIGURE_BUFFER,
         CREATE_INPUT_SURFACE,
         SET_INPUT_SURFACE,
         SET_OUTPUT_SURFACE,
@@ -168,6 +170,7 @@ protected:
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
+    virtual int32_t OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer) { return AVCS_ERR_UNSUPPORT; }
     bool GetPixelFmtFromUser(const Format &format);
     static std::optional<double> GetFrameRateFromUser(const Format &format);
     int32_t SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info);

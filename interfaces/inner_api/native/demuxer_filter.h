@@ -40,6 +40,7 @@ public:
     Status DoStop() override;
     Status DoPause() override;
     Status DoResume() override;
+    Status DoResumeDragging() override;
     Status DoFlush() override;
     Status Reset();
     Status PauseForSeek();
@@ -61,7 +62,7 @@ public:
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
 
-    Status StartAudioTask();
+    Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
@@ -96,7 +97,8 @@ public:
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
-
+    Status ResumeDemuxerReadLoop();
+    Status PauseDemuxerReadLoop();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -139,7 +141,6 @@ private:
     std::string videoMime_;
     std::string audioMime_;
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
-    std::atomic<bool> hasSubtitle_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

@@ -26,6 +26,7 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
 #include "videodec_sample.h"
+#include "videodec_api11_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -286,5 +287,27 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0200, TestSize.Level3)
     vDecSampleExtra->DEFAULT_FRAME_RATE = 30;
     vDecSampleExtra->SURFACE_OUTPUT = false;
     ASSERT_EQ(AV_ERR_UNKNOWN, vDecSampleExtra->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_RELI_ATTIME_0010
+ * @tc.name      : test h264 asyn decode surface,use at time
+ * @tc.desc      : perf test
+ */
+HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_ATTIME_0010, TestSize.Level3)
+{
+    while (true) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = true;
+        vDecSample->rsAtTime = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface("OH.Media.Codec.Decoder.Video.AVC"));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(0, vDecSample->errCount);
+    }
 }
 } // namespace

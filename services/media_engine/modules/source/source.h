@@ -47,9 +47,9 @@ public:
         callbackWrap_->SetSelectBitRateFlag(flag);
     }
 
-    bool CanDoSelectBitRate() override
+    bool CanAutoSelectBitRate() override
     {
-        return callbackWrap_->CanDoSelectBitRate();
+        return callbackWrap_->CanAutoSelectBitRate();
     }
 
     void SetCallbackWrap(Callback* callbackWrap)
@@ -80,7 +80,7 @@ public:
 
     void OnEvent(const Plugins::PluginEvent &event) override;
     void SetSelectBitRateFlag(bool flag) override;
-    bool CanDoSelectBitRate() override;
+    bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
     int64_t GetDuration();
@@ -96,6 +96,7 @@ public:
     Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status SelectStream(int32_t streamID);
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
     static std::string GetUriSuffix(const std::string& uri);

@@ -41,21 +41,27 @@ void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shar
 
 void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    int32_t aveQp {};
-    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp)) {
-        TLOGI("buffer->pts_[%" PRId64 "], qp[%d]", buffer->pts_, aveQp);
-    }
-    double mse {};
-    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse)) {
-        TLOGI("buffer->pts_[%" PRId64 "], mse[%f]", buffer->pts_, mse);
-    }
-    bool isLTR {};
-    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLTR)) {
-        TLOGI("buffer->pts_[%" PRId64 "], isLTR[%d]", buffer->pts_, isLTR);
-    }
-    int32_t poc {};
-    if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, poc)) {
-        TLOGI("buffer->pts_[%" PRId64 "], poc[%d]", buffer->pts_, poc);
+    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+        int32_t aveQp {};
+        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp)) {
+            TLOGI("buffer->pts_[%" PRId64 "], qp[%d]", buffer->pts_, aveQp);
+        }
+        double mse {};
+        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse)) {
+            TLOGI("buffer->pts_[%" PRId64 "], mse[%f]", buffer->pts_, mse);
+        }
+        bool isLTR {};
+        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLTR)) {
+            TLOGI("buffer->pts_[%" PRId64 "], isLTR[%d]", buffer->pts_, isLTR);
+        }
+        int32_t poc {};
+        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, poc)) {
+            TLOGI("buffer->pts_[%" PRId64 "], poc[%d]", buffer->pts_, poc);
+        }
+        int32_t frameLayer {};
+        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, frameLayer)) {
+            TLOGI("buffer->pts_[%" PRId64 "], frameLayer[%d]", buffer->pts_, frameLayer);
+        }
     }
     tester_->AfterGotOutput(OH_AVCodecBufferAttr {
         .pts = buffer->pts_,
@@ -235,6 +241,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.ltrFrameCount > 0) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, opt_.ltrFrameCount);
     }
+    if (opt_.paramsFeedback == 1) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_PARAMS_FEEDBACK, opt_.paramsFeedback);
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {
@@ -242,6 +251,15 @@ bool TesterCodecBase::ConfigureEncoder()
         return false;
     }
     CostRecorder::Instance().Update(begin, "Configure");
+
+    if (opt_.waterMark.isSet) {
+        shared_ptr<AVBuffer> buffer = CreateWaterMarkBuffer();
+        err = codec_->SetCustomBuffer(buffer);
+        if (err != AVCS_ERR_OK) {
+            TLOGE("SetCustomBuffer failed");
+            return false;
+        }
+    }
     return true;
 }
 
@@ -292,6 +310,12 @@ bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams
     }
     if (param.discard.has_value()) {
         meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, param.discard.value());
+    }
+    if (param.ebrParam.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.ebrParam->minQp));
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.ebrParam->maxQp));
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_START, static_cast<int32_t>(param.ebrParam->startQp));
+        meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_SKIP, static_cast<bool>(param.ebrParam->isSkip));
     }
     return true;
 }

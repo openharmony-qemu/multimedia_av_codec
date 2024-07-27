@@ -42,7 +42,7 @@ public:
     Status Stop();
     Status Resume();
     Status Pause();
-    Status Seek(int64_t mediaTime);
+    Status Seek(int64_t mediaTime, bool isClosest = false);
     Status Reset() override;
     bool InSeeking();
     std::condition_variable seekCond_;
@@ -122,6 +122,7 @@ private:
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
+    void UpdateFirstPtsAfterSeek(int64_t mediaTime);
 
     int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};

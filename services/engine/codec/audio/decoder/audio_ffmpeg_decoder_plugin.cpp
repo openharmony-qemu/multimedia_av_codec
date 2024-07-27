@@ -144,11 +144,6 @@ int32_t AudioFfmpegDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
     return ReceiveBuffer(outBuffer);
 }
 
-void AudioFfmpegDecoderPlugin::DisableNeedResample()
-{
-    needResample_ = 0;
-}
-
 int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());

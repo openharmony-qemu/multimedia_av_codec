@@ -81,6 +81,7 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;
 #endif
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t DumpInfo(int32_t fd);
     void SetCallerInfo(const Meta &callerInfo);
 
@@ -126,6 +127,7 @@ private:
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
+    int32_t ParamCheck(Format &config);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -137,7 +139,6 @@ private:
     std::string lastErrMsg_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
-    bool isStarted_ = false;
     struct CallerInfo {
         pid_t pid = -1;
         uid_t uid = 0;

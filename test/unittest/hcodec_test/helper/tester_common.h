@@ -100,6 +100,8 @@ protected:
     // encoder only
     bool RunEncoder();
     virtual bool ConfigureEncoder() = 0;
+    bool UpdateMemberFromResourceParam(const ResourceParams& param);
+    std::shared_ptr<Media::AVBuffer> CreateWaterMarkBuffer();
     virtual bool SetEncoderParameter(const SetParameterParams& param) { return true; }
     virtual bool SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams& param) { return true; }
     virtual sptr<Surface> CreateInputSurface() = 0;
@@ -111,10 +113,12 @@ protected:
     bool WaitForInputSurfaceBuffer(BufInfo& buf);
     bool ReturnInputSurfaceBuffer(BufInfo& buf);
     uint32_t ReadOneFrame(ImgBuf& dstImg);
-    uint32_t ReadOneFrameYUV420P(ImgBuf& dstImg);
-    uint32_t ReadOneFrameYUV420SP(ImgBuf& dstImg);
-    uint32_t ReadOneFrameRGBA(ImgBuf& dstImg);
+    static uint32_t ReadOneFrameYUV420P(std::ifstream& src, ImgBuf& dstImg);
+    static uint32_t ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg);
+    static uint32_t ReadOneFrameRGBA(std::ifstream& src, ImgBuf& dstImg);
     sptr<Surface> producerSurface_;
+    uint32_t w_ = 0;
+    uint32_t h_ = 0;
     GraphicPixelFormat displayFmt_;
     static constexpr uint32_t BYTES_PER_PIXEL_RBGA = 4;
     static constexpr uint32_t SAMPLE_RATIO = 2;

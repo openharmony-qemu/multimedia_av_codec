@@ -99,6 +99,10 @@ HevcDecoder::HevcDecoder(const std::string &name) : codecName_(name), state_(Sta
         AVCODEC_LOGE("HevcDecoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         state_ = State::ERROR;
     }
+
+    initParams_.logFxn = nullptr;
+    initParams_.uiChannelID = 0;
+    InitHevcParams();
 }
 
 void HevcDecoder::HevcFuncMatch()
@@ -384,8 +388,22 @@ void HevcDecoder::InitBuffers()
             }
         }
     }
-    memset_s(&hevcDecoderInputArgs_, sizeof(HEVC_DEC_INARGS), 0, sizeof(HEVC_DEC_INARGS));
-    memset_s(&hevcDecoderOutpusArgs_, sizeof(HEVC_DEC_OUTARGS), 0, sizeof(HEVC_DEC_OUTARGS));
+    InitHevcParams();
+}
+
+void HevcDecoder::InitHevcParams()
+{
+    hevcDecoderInputArgs_.pStream = nullptr;
+    hevcDecoderInputArgs_.uiStreamLen = 0;
+    hevcDecoderInputArgs_.uiTimeStamp = 0;
+    hevcDecoderOutpusArgs_.pucOutYUV[0] = nullptr;
+    hevcDecoderOutpusArgs_.pucOutYUV[1] = nullptr; // 1 u channel
+    hevcDecoderOutpusArgs_.pucOutYUV[2] = nullptr; // 2 v channel
+    hevcDecoderOutpusArgs_.uiDecBitDepth = 0;
+    hevcDecoderOutpusArgs_.uiDecHeight = 0;
+    hevcDecoderOutpusArgs_.uiDecStride = 0;
+    hevcDecoderOutpusArgs_.uiDecWidth = 0;
+    hevcDecoderOutpusArgs_.uiTimeStamp = 0;
 }
 
 void HevcDecoder::ResetData()
@@ -479,16 +497,7 @@ int32_t HevcDecoder::Flush()
         renderTask_->Pause();
     }
 
-    std::unique_lock<std::mutex> runLock(decRunMutex_);
-    if (hevcDecoderFlushFrameFunc_ != nullptr && hevcSDecoder_ != nullptr) {
-        int32_t ret = 0;
-        while (ret == 0) {
-            ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
-        }
-    }
-    runLock.unlock();
-
-    ReleaseBuffers();
+    ResetBuffers();
     state_ = State::FLUSHED;
     AVCODEC_LOGI("Flush codec successful, state: Flushed");
     return AVCS_ERR_OK;
@@ -609,8 +618,8 @@ int32_t HevcDecoder::GetOutputFormat(Format &format)
     AVCODEC_SYNC_TRACE;
     if ((!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) &&
         hevcDecoderOutpusArgs_.uiDecStride != 0) {
-        int32_t stride = hevcDecoderOutpusArgs_.uiDecStride;
-        int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
+        int32_t stride = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
+        int32_t maxInputSize = static_cast<int32_t>(static_cast<UINT32>(stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
 
@@ -640,7 +649,7 @@ void HevcDecoder::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
     inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE,
-                                static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1));
+        static_cast<int32_t>(static_cast<UINT32>(stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1));
     AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d",
                  width_, height_, stride, inputBufferSize_);
 }
@@ -655,8 +664,8 @@ int32_t HevcDecoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize
         CHECK_AND_CONTINUE_LOG(allocator != nullptr, "input buffer %{public}d allocator is nullptr", i);
         buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, inBufferSize);
         CHECK_AND_CONTINUE_LOG(buf->avBuffer != nullptr, "Allocate input buffer failed, index=%{public}d", i);
-        AVCODEC_LOGI("Allocate input buffer success: index=%{public}d, addr=%{public}p, size=%{public}d", i,
-                     buf->avBuffer->memory_->GetAddr(), buf->avBuffer->memory_->GetCapacity());
+        AVCODEC_LOGI("Allocate input buffer success: index=%{public}d, size=%{public}d", i,
+                     buf->avBuffer->memory_->GetCapacity());
 
         buffers_[INDEX_INPUT].emplace_back(buf);
         valBufferCnt++;
@@ -706,8 +715,8 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                 AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
             buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
-            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, addr=%{public}p, size=%{public}d", i,
-                         buf->avBuffer->memory_->GetAddr(), buf->avBuffer->memory_->GetCapacity());
+            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
+                         buf->avBuffer->memory_->GetCapacity());
         } else {
             buf->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
             CHECK_AND_CONTINUE_LOG(buf->sMemory->GetSurfaceBuffer() != nullptr,
@@ -772,9 +781,8 @@ int32_t HevcDecoder::UpdateOutputBuffer(uint32_t index)
         outputBuffer->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
         CHECK_AND_RETURN_RET_LOG(outputBuffer->avBuffer != nullptr, AVCS_ERR_NO_MEMORY,
                                  "Buffer allocate failed, index=%{public}d", index);
-        AVCODEC_LOGI(
-            "update output buffer success: index=%{public}d, addr=%{public}p, size=%{public}d",
-            index, outputBuffer->avBuffer->memory_->GetAddr(), outputBuffer->avBuffer->memory_->GetCapacity());
+        AVCODEC_LOGI("update output buffer success: index=%{public}d, size=%{public}d", index,
+                     outputBuffer->avBuffer->memory_->GetCapacity());
 
         outputBuffer->owner_ = HBuffer::Owner::OWNED_BY_CODEC;
         outputBuffer->width = width_;
@@ -943,8 +951,8 @@ void HevcDecoder::SendFrame()
         AVCODEC_LOGI("Send eos end");
     } else {
         hevcDecoderInputArgs_.pStream = inputAVBuffer->memory_->GetAddr();
-        hevcDecoderInputArgs_.uiStreamLen = static_cast<int32_t>(inputAVBuffer->memory_->GetSize());
-        hevcDecoderInputArgs_.uiTimeStamp = inputAVBuffer->pts_;
+        hevcDecoderInputArgs_.uiStreamLen = static_cast<UINT32>(inputAVBuffer->memory_->GetSize());
+        hevcDecoderInputArgs_.uiTimeStamp = static_cast<UINT64>(inputAVBuffer->pts_);
     }
 
     if (dumpInFile_ && dumpInFile_->is_open() && !isSendEos_) {
@@ -989,7 +997,7 @@ int32_t HevcDecoder::DecodeFrameOnce()
                         "hevcDecoderFlushFrameFunc_ = nullptr, cannot call decoder");
         ret = -1;
     }
-    int32_t bitDepth = hevcDecoderOutpusArgs_.uiDecBitDepth;
+    int32_t bitDepth = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecBitDepth);
     if (ret == 0) {
         CHECK_AND_RETURN_RET_LOG(bitDepth == BIT_DEPTH8BIT || bitDepth == BIT_DEPTH10BIT, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
@@ -1060,7 +1068,8 @@ void HevcDecoder::FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32
             outAVBuffer4Surface_[index]->pts_ = frameBuffer->avBuffer->pts_;
             outAVBuffer4Surface_[index]->flag_ = frameBuffer->avBuffer->flag_;
         }
-        callback_->OnOutputBufferAvailable(index, sInfo_.surface ? outAVBuffer4Surface_[index] : frameBuffer->avBuffer);
+        callback_->OnOutputBufferAvailable(index, sInfo_.surface ?
+            outAVBuffer4Surface_[index] : frameBuffer->avBuffer);
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT);
@@ -1082,22 +1091,23 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 v channel
     if (bitDepth == BIT_DEPTH8BIT) {
         cachedFrame_->format = static_cast<int>(AVPixelFormat::AV_PIX_FMT_YUV420P);
-        cachedFrame_->linesize[0] = hevcDecoderOutpusArgs_.uiDecStride;
-        cachedFrame_->linesize[1] = hevcDecoderOutpusArgs_.uiDecStride >> 1; // 1 u channel
-        cachedFrame_->linesize[2] = hevcDecoderOutpusArgs_.uiDecStride >> 1; // 2 v channel
+        cachedFrame_->linesize[0] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride);
+        cachedFrame_->linesize[1] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride >> 1); // 1 u channel
+        cachedFrame_->linesize[2] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride >> 1); // 2 v channel
     } else {
         cachedFrame_->format = static_cast<int>(AVPixelFormat::AV_PIX_FMT_YUV420P10LE);
-        cachedFrame_->linesize[0] = hevcDecoderOutpusArgs_.uiDecStride * 2; // 2 10bit per pixel 2bits
-        cachedFrame_->linesize[1] = hevcDecoderOutpusArgs_.uiDecStride; // 1 u channel
-        cachedFrame_->linesize[2] = hevcDecoderOutpusArgs_.uiDecStride; // 2 v channel
+        cachedFrame_->linesize[0] =
+            static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride * 2); // 2 10bit per pixel 2bytes
+        cachedFrame_->linesize[1] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride); // 1 u channel
+        cachedFrame_->linesize[2] = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecStride); // 2 v channel
         if (outputPixelFmt_ == VideoPixelFormat::NV21) { // exchange uv channel
             cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 u -> v
             cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 2 v -> u
         }
     }
-    cachedFrame_->width = hevcDecoderOutpusArgs_.uiDecWidth;
-    cachedFrame_->height = hevcDecoderOutpusArgs_.uiDecHeight;
-    cachedFrame_->pts = hevcDecoderOutpusArgs_.uiTimeStamp;
+    cachedFrame_->width = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecWidth);
+    cachedFrame_->height = static_cast<int32_t>(hevcDecoderOutpusArgs_.uiDecHeight);
+    cachedFrame_->pts = static_cast<int64_t>(hevcDecoderOutpusArgs_.uiTimeStamp);
 }
 
 void HevcDecoder::DumpOutputBuffer(int32_t bitDepth)
@@ -1131,14 +1141,16 @@ void HevcDecoder::DumpConvertOut(struct SurfaceInfo &surfaceInfo)
     if (surfaceInfo.scaleData[0] != nullptr) {
         int32_t srcPos = 0;
         int32_t dataSize = surfaceInfo.scaleLineSize[0];
-        int32_t writeSize = dataSize > surfaceInfo.surfaceStride ? surfaceInfo.surfaceStride : dataSize;
+        int32_t writeSize = dataSize > static_cast<int32_t>(surfaceInfo.surfaceStride) ?
+            static_cast<int32_t>(surfaceInfo.surfaceStride) : dataSize;
         for (int32_t i = 0; i < height_; i++) {
             dumpConvertFile_->write(reinterpret_cast<char *>(surfaceInfo.scaleData[0] + srcPos), writeSize);
             srcPos += dataSize;
         }
         srcPos = 0;
         dataSize = surfaceInfo.scaleLineSize[1];
-        writeSize = dataSize > surfaceInfo.surfaceStride ? surfaceInfo.surfaceStride : dataSize;
+        writeSize = dataSize > static_cast<int32_t>(surfaceInfo.surfaceStride) ?
+            static_cast<int32_t>(surfaceInfo.surfaceStride) : dataSize;
         for (int32_t i = 0; i < height_ / 2; i++) {  // 2
             dumpConvertFile_->write(reinterpret_cast<char *>(surfaceInfo.scaleData[1] + srcPos), writeSize);
             srcPos += dataSize;
@@ -1370,10 +1382,10 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...)
 {
     va_list args;
-    size_t maxSize = 1024; // 1024 max size of one log
+    int32_t maxSize = 1024; // 1024 max size of one log
     std::vector<char> buf(maxSize);
     va_start(args, reinterpret_cast<const char*>(pMsg));
-    size_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1, reinterpret_cast<const char*>(pMsg), args);
+    int32_t size = vsnprintf_s(buf.data(), buf.size(), buf.size()-1, reinterpret_cast<const char*>(pMsg), args);
     va_end(args);
     if (size >= maxSize) {
         size = maxSize - 1;

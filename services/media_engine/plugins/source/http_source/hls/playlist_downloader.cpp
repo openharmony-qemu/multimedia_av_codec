@@ -65,7 +65,10 @@ PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
 
 PlayListDownloader::~PlayListDownloader()
 {
-    updateTask_->Stop();
+    MEDIA_LOG_I("PlayListDownloader::~PlayListDownloader");
+    if (updateTask_ != nullptr) {
+        updateTask_->StopAsync();
+    }
 }
 
 void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
@@ -190,7 +193,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
-    int32_t contentlen = downloadRequest_->GetFileContentLength();
+    int32_t contentlen = static_cast<int32_t>(downloadRequest_->GetFileContentLength());
     std::string location;
     downloadRequest_->GetLocation(location);
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
@@ -227,20 +230,38 @@ void PlayListDownloader::ParseManifest(const std::string& location, bool isPrePa
 
 void PlayListDownloader::Resume()
 {
-    downloader_->Resume();
-    if (IsLive()) {
+    MEDIA_LOG_I("PlayListDownloader::Resume.");
+    if (downloader_ != nullptr) {
+        downloader_->Resume();
+    }
+    if (IsLive() && updateTask_ != nullptr) {
         MEDIA_LOG_I("updateTask_ Start.");
         updateTask_->Start();
     }
 }
 
-void PlayListDownloader::Pause()
+void PlayListDownloader::Pause(bool isAsync)
 {
+    MEDIA_LOG_I("PlayListDownloader::Pause.");
+    if (updateTask_ == nullptr) {
+        return;
+    }
     if (IsLive()) {
         MEDIA_LOG_I("updateTask_ Pause.");
-        updateTask_->Pause();
+        if (isAsync) {
+            updateTask_->PauseAsync();
+        } else {
+            updateTask_->Pause();
+        }
     }
-    downloader_->Pause();
+    if (downloader_ == nullptr) {
+        return;
+    }
+    if (isAsync) {
+        downloader_->Pause(true);
+    } else {
+        downloader_->Pause();
+    }
 }
 
 void PlayListDownloader::Close()
@@ -249,20 +270,31 @@ void PlayListDownloader::Close()
         MEDIA_LOG_I("updateTask_ Close.");
         updateTask_->StopAsync();
     }
+    Stop();
 }
 
 void PlayListDownloader::Stop()
 {
-    downloader_->Stop();
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("PlayListDownloader::Stop.");
+        downloader_->Stop(true);
+    }
 }
 
 void PlayListDownloader::Start()
 {
-    downloader_->Start();
+    MEDIA_LOG_I("PlayListDownloader::Start.");
+    if (downloader_ != nullptr) {
+        downloader_->Start();
+    }
 }
 
 void PlayListDownloader::Cancel()
 {
+    MEDIA_LOG_I("PlayListDownloader::Cancel.");
+    if (downloader_ != nullptr) {
+        downloader_->Cancel();
+    }
     playList_.clear();
 }
 

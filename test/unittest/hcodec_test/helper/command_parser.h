@@ -45,6 +45,19 @@ struct LTRParam {
     uint32_t useLTRPoc;
 };
 
+struct EBRParam {
+    int32_t minQp;
+    int32_t maxQp;
+    int32_t startQp;
+    int32_t isSkip;
+};
+
+enum ParamType {
+    SET_PARAM,
+    PER_FRAME_PARAM,
+    RESOURCE_PARAM,
+};
+
 struct SetParameterParams {
     std::optional<bool> requestIdr;
     std::optional<uint32_t> bitRate;
@@ -59,6 +72,23 @@ struct PerFrameParams {
     std::optional<QPRange> qpRange;
     std::optional<LTRParam> ltrParam;
     std::optional<bool> discard;
+    std::optional<EBRParam> ebrParam;
+};
+
+struct ResourceParams {
+    std::string inputFile;
+    uint32_t dispW = 0;
+    uint32_t dispH = 0;
+    VideoPixelFormat pixFmt = VideoPixelFormat::NV12;
+};
+
+struct WaterMarkParam {
+    bool isSet = false;
+    ResourceParams waterMarkFile;
+    int32_t dstX;
+    int32_t dstY;
+    int32_t dstW;
+    int32_t dstH;
 };
 
 struct CommandOpt {
@@ -93,6 +123,8 @@ struct CommandOpt {
     std::optional<int32_t> repeatAfter;
     std::optional<int32_t> repeatMaxCnt;
     std::optional<uint32_t> layerCnt;
+    WaterMarkParam waterMark;
+    bool paramsFeedback;
 
     // decoder only
     bool render = false;
@@ -100,13 +132,17 @@ struct CommandOpt {
     VideoRotation rotation = VIDEO_ROTATION_0;
     int flushCnt = 0;
 
+    // associate with frame number
     std::map<uint32_t, SetParameterParams> setParameterParamsMap;
     std::map<uint32_t, PerFrameParams> perFrameParamsMap;
+    std::map<uint32_t, ResourceParams> resourceParamsMap;
 
     void Print() const;
-    void ParseParamFromCmdLine(bool isPerFrame, const char *cmd);
+    void ParseParamFromCmdLine(ParamType paramType, const char *cmd);
     void ParseSetParameter(uint32_t frameNo, const std::string &s);
     void ParsePerFrameParam(uint32_t frameNo, const std::string &s);
+    static void ParseResourceParam(const std::string &src, ResourceParams& dst);
+    void ParseWaterMark(const char *cmd);
 };
 
 CommandOpt Parse(int argc, char *argv[]);

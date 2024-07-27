@@ -17,6 +17,8 @@
 #define MEDIA_DEMUXER_UNIT_TEST_H
 
 #include "media_demuxer.h"
+#include "demuxer_plugin_manager.h"
+#include "stream_demuxer.h"
 #include "gtest/gtest.h"
 #include "source/source.h"
 #include "common/media_source.h"

@@ -25,6 +25,7 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
 #include "videodec_sample.h"
+#include "videodec_api11_sample.h"
 #include "native_avcapability.h"
 
 using namespace std;
@@ -280,7 +281,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_001, TestSize.Level3)
         for (int i = 0; i < 16; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             decVec.push_back(vDecSample);
-            vDecSample->INP_DIR = H264Array[i];
+            vDecSample->INP_DIR = h264Array[i];
             vDecSample->DEFAULT_WIDTH = 480;
             vDecSample->DEFAULT_HEIGHT = 360;
             vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -311,7 +312,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_002, TestSize.Level3)
         for (int i = 0; i < 16; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             decVec.push_back(vDecSample);
-            vDecSample->INP_DIR = H265Array[i];
+            vDecSample->INP_DIR = h265Array[i];
             vDecSample->DEFAULT_WIDTH = 480;
             vDecSample->DEFAULT_HEIGHT = 360;
             vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -342,7 +343,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_003, TestSize.Level3)
         for (int i = 0; i < 16; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             decVec.push_back(vDecSample);
-            vDecSample->INP_DIR = ResChangeArray[i];
+            vDecSample->INP_DIR = resChangeArray[i];
             vDecSample->DEFAULT_WIDTH = 480;
             vDecSample->DEFAULT_HEIGHT = 360;
             vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -358,6 +359,28 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_003, TestSize.Level3)
         });
         ASSERT_EQ(AV_ERR_OK, errorCount);
         decVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_RELI_ATTIME_0010
+ * @tc.name      : test h264 asyn decode surface,use at time
+ * @tc.desc      : perf test
+ */
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_RELI_ATTIME_0010, TestSize.Level3)
+{
+    while (true) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
+        vDecSample->INP_DIR = INP_DIR_720_30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->rsAtTime = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
 }
 } // namespace

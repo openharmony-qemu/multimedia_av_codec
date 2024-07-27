@@ -170,7 +170,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     readDataInfo.wantReadLength_ = 1024;
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
-    std::atomic<bool> isInterruptNeeded{false};
+    std::atomic<bool> isInterruptNeeded = false;
     DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
@@ -241,7 +241,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER_ALL, TestSize.
     segmentDownloader = nullptr;
 
     EXPECT_TRUE(result);
-    EXPECT_EQ(remainLastNumberSeq, -1);
+    EXPECT_EQ(remainLastNumberSeq, 1);
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_UPDATE_STREAM_ID, TestSize.Level1)

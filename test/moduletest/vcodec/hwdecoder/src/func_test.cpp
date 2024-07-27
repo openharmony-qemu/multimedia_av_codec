@@ -17,6 +17,7 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
 #include "videodec_sample.h"
+#include "videodec_api11_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
@@ -44,6 +45,8 @@ public:
 protected:
     const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
+    const char *INP_DIR_1080_20 = "/data/test/media/1920_1080_20M_30.h265";
+    const char *inpDirVivid = "/data/test/media/hlg_vivid_4k.h265";
 };
 } // namespace Media
 } // namespace OHOS
@@ -899,5 +902,64 @@ HWTEST_F(HwdecFuncNdkTest, FLUSH_CHECK_001, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample1->errCount);
     cout << "--Flush--" << vDecSample1->outCount << endl;
     ASSERT_EQ(vDecSample->outCount, vDecSample1->outCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_ATTIME_0010
+ * @tc.name      : test h264 asyn decode surface,use at time
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_ATTIME_0010, TestSize.Level0)
+{
+    shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_720_30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->DEFAULT_WIDTH = 1280;
+    vDecSample->DEFAULT_HEIGHT = 720;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->rsAtTime = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_ATTIME_0011
+ * @tc.name      : test h265 asyn decode surface,use at time
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_ATTIME_0011, TestSize.Level1)
+{
+    shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->INP_DIR = INP_DIR_1080_20;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->rsAtTime = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_FUNCTION_ATTIME_0012
+ * @tc.name      : test h265 10bit asyn decode surface,use at time
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_ATTIME_0012, TestSize.Level1)
+{
+    shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+    vDecSample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
+    vDecSample->INP_DIR = inpDirVivid;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->DEFAULT_WIDTH = 3840;
+    vDecSample->DEFAULT_HEIGHT = 2160;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->rsAtTime = true;
+    vDecSample->useHDRSource = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 } // namespace

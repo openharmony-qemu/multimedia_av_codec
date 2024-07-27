@@ -124,7 +124,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
-    AudioSampleFormat sampleFmt;
+    AudioSampleFormat sampleFmt = SAMPLE_S16LE;
     parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFmt);
     parameter->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, codecCtx->bits_per_coded_sample);
     if (codecCtx->bits_per_coded_sample == 0) {
