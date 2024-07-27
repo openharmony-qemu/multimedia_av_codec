@@ -139,7 +139,6 @@ private:
     std::string lastErrMsg_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
-    bool isStarted_ = false;
     struct CallerInfo {
         pid_t pid = -1;
         uid_t uid = 0;
