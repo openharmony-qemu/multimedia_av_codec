@@ -57,85 +57,52 @@ std::shared_ptr<VideoSink> VideoSinkCreate()
 
 HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
 {
-    auto videoSink = std::make_shared<VideoSink>();
-    ASSERT_TRUE(videoSink != nullptr);
-    std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
-    videoSink->SetEventReceiver(testEventReceiver);
-    auto meta = std::make_shared<Meta>();
-    videoSink->SetParameter(meta);
-    videoSink->ResetRenderStarted();
-    videoSink->ResetSyncInfo();
-    videoSink->SetLastPts(0);
-    videoSink->SetFirstPts(HST_TIME_NONE);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    videoSink->SetSyncCenter(syncCenter);
-    videoSink->SetSeekFlag();
+    auto sink = VideoSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
     uint64_t latency = 0;
-    videoSink->GetLatency(latency);
+    sink->GetLatency(latency);
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 0; // not eos
-    videoSink->DoSyncWrite(buffer);
+    sink->DoSyncWrite(buffer);
     buffer->flag_ = BUFFER_FLAG_EOS;
-    videoSink->DoSyncWrite(buffer);
-    (void)videoSink->CheckBufferLatenessMayWait(buffer);
+    sink->DoSyncWrite(buffer);
+    (void)sink->CheckBufferLatenessMayWait(buffer);
 }
 
 HWTEST(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
 {
-    auto videoSink = std::make_shared<VideoSink>();
-    ASSERT_TRUE(videoSink != nullptr);
-    std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
-    videoSink->SetEventReceiver(testEventReceiver);
-    auto meta = std::make_shared<Meta>();
-    videoSink->SetParameter(meta);
-    videoSink->ResetRenderStarted();
-    videoSink->ResetSyncInfo();
-    videoSink->SetLastPts(0);
-    videoSink->SetFirstPts(HST_TIME_NONE);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    videoSink->SetSyncCenter(syncCenter);
-    videoSink->SetSeekFlag();
+    auto sink = VideoSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     buffer->flag_ = 0; // not eos
-    videoSink->DoSyncWrite(buffer);
+    sink->DoSyncWrite(buffer);
     const std::shared_ptr<AVBuffer> buffer2 = AVBuffer::CreateAVBuffer(config);
     buffer->flag_ = 0; // not eos
-    videoSink->DoSyncWrite(buffer2);
-    (void)videoSink->CheckBufferLatenessMayWait(buffer);
+    sink->DoSyncWrite(buffer2);
+    (void)sink->CheckBufferLatenessMayWait(buffer);
 }
 
 HWTEST(TestVideoSink, do_sync_write_eos, TestSize.Level1)
 {
-    auto videoSink = std::make_shared<VideoSink>();
-    ASSERT_TRUE(videoSink != nullptr);
-    std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
-    videoSink->SetEventReceiver(testEventReceiver);
-    auto meta = std::make_shared<Meta>();
-    videoSink->SetParameter(meta);
-    videoSink->ResetRenderStarted();
-    videoSink->ResetSyncInfo();
-    videoSink->SetLastPts(0);
-    videoSink->SetFirstPts(HST_TIME_NONE);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    videoSink->SetSyncCenter(syncCenter);
-    videoSink->SetSeekFlag();
+    auto sink = VideoSinkCreate();
+    ASSERT_TRUE(sink != nullptr);
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
     buffer->flag_ = 1; // eos
-    videoSink->DoSyncWrite(buffer);
-    videoSink->DoSyncWrite(buffer);
+    sink->DoSyncWrite(buffer);
+    sink->DoSyncWrite(buffer);
     buffer->flag_ = BUFFER_FLAG_EOS;
-    videoSink->DoSyncWrite(buffer);
-    (void)videoSink->CheckBufferLatenessMayWait(buffer);
+    sink->DoSyncWrite(buffer);
+    (void)sink->CheckBufferLatenessMayWait(buffer);
 }
 }  // namespace Test
 }  // namespace Media
