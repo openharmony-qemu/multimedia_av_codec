@@ -119,6 +119,7 @@ public:
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
+    void SetCacheLimit(uint32_t limitSize);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;

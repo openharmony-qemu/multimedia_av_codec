@@ -76,6 +76,7 @@ public:
         int64_t presentationTimeUs, uint32_t &frameIndex) override;
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         uint32_t frameIndex, int64_t &presentationTimeUs) override;
+    void SetCacheLimit(uint32_t limitSize) override;
 
 private:
     enum DumpMode : unsigned long {
@@ -108,11 +109,11 @@ private:
 
     void InitBitStreamContext(const AVStream& avStream);
     void ConvertAvcToAnnexb(AVPacket& pkt);
-    void PushEOSToAllCache();
+    Status PushEOSToAllCache();
     void ShowSelectedTracks();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    void AddPacketToCacheQueue(AVPacket *pkt);
+    Status AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -140,6 +141,7 @@ private:
     bool WebvttPktProcess(AVPacket *pkt);
     bool IsWebvttMP4(const AVStream *avStream);
     void WebvttMP4EOSProcess(const AVPacket *pkt);
+    Status CheckCacheDataLimit(uint32_t trackId);
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -155,7 +157,7 @@ private:
     std::shared_ptr<StreamParserManager> streamParser_ {nullptr};
     bool streamParserInited_ {false};
 
-    void GetVideoFirstKeyFrame(uint32_t trackIndex);
+    Status GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
     AVPacket *firstFrame_ = nullptr;
 
@@ -174,6 +176,7 @@ private:
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
     bool isInit_ = false;
+    uint32_t cachelimitSize_ = 0;
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track

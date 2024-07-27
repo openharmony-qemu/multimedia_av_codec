@@ -92,6 +92,19 @@ size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
     return size;
 }
 
+uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    MEDIA_LOG_I("block queue " PUBLIC_LOG_S " GetCacheDataSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
+        name_.c_str(), trackIndex);
+    uint32_t dataSize = 0;
+    for (auto queIndex : queMap_[trackIndex]) {
+        dataSize += quePool_[queIndex].dataSize;
+    }
+    MEDIA_LOG_I("block queue " PUBLIC_LOG_S " GetCacheDataSize = " PUBLIC_LOG_U32, name_.c_str(), dataSize);
+    return dataSize;
+}
+
 bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
@@ -122,6 +135,7 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
         return;
     }
     blockQue->Clear();
+    quePool_[queueIndex].dataSize = 0;
     quePool_[queueIndex].isValid = true;
     return;
 }
@@ -161,6 +175,9 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
         return false;
     }
     sizeMap_[trackIndex] += 1;
+    for (auto pkt : block->pkts) {
+        quePool_[pushIndex].dataSize += pkt->size;
+    }
     return quePool_[pushIndex].blockQue->Push(block);
 }
 
@@ -181,6 +198,9 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Size() > 0) {
             auto block = quePool_[queIndex].blockQue->Pop();
+            for (auto pkt : block->pkts) {
+                quePool_[queIndex].dataSize -= pkt->size;
+            }
             if (quePool_[queIndex].blockQue->Empty()) {
                 ResetQueue(queIndex);
                 MEDIA_LOG_D("track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool.",
@@ -255,6 +275,7 @@ uint32_t BlockQueuePool::GetValidQueue()
     }
     quePool_[queCount_] = {
         false,
+        0,
         std::make_shared<BlockQueue<std::shared_ptr<SamplePacket>>>("source_que_" + std::to_string(queCount_),
             singleQueSize_)
     };
