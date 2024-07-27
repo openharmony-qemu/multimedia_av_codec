@@ -82,7 +82,13 @@ public:
     void ClearCaches()
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
-        caches_.clear();
+        for (auto iter = caches_.begin(); iter != caches_.end();) {
+            if (iter->second.expired()) {
+                iter = caches_.erase(iter);
+            } else {
+                ++iter;
+            }
+        }
     }
 
 private:

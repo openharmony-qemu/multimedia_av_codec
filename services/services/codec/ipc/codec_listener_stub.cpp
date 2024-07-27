@@ -60,21 +60,19 @@ public:
     CodecBufferCache() = default;
     ~CodecBufferCache() = default;
 
-    void ReadFromParcel(uint32_t index, MessageParcel &parcel, BufferElem &elem,
+    bool ReadFromParcel(uint32_t index, MessageParcel &parcel, BufferElem &elem,
                         const UpdateFilter filter = ELEM_GET_AVBUFFER)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         auto iter = caches_.find(index);
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
         if (flag_ == CacheFlag::HIT_CACHE) {
-            if (iter == caches_.end()) {
-                AVCODEC_LOGE("Mark hit cache, but can find the index's cache, index: %{public}u", index);
-                return;
-            }
+            CHECK_AND_RETURN_RET_LOG(iter != caches_.end(), false,
+                                     "Mark hit cache, but can find the index's cache, index: %{public}u", index);
             iter->second.owner = OWNED_BY_USER;
             isOutput_ ? HitOutputCache(iter->second, parcel, filter) : HitInputCache(iter->second, parcel, filter);
             elem = iter->second;
-            return;
+            return CheckReadFromParcelResult(elem, filter);
         }
         if (flag_ == CacheFlag::UPDATE_CACHE) {
             elem.owner = OWNED_BY_USER;
@@ -86,14 +84,14 @@ public:
                 iter->second = elem;
                 PrintLogOnUpdateBuffer(index);
             }
-            return;
+            return CheckReadFromParcelResult(elem, filter);
         }
         // invalidate cache flag_
         if (iter != caches_.end()) {
             caches_.erase(iter);
         }
         AVCODEC_LOGE("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag_);
-        return;
+        return false;
     }
 
     void GetBufferElem(uint32_t index, BufferElem &elem)
@@ -271,6 +269,25 @@ private:
             }
         }
     }
+
+    bool CheckReadFromParcelResult(const BufferElem &elem, const UpdateFilter filter)
+    {
+        switch (filter) {
+            case ELEM_GET_AVBUFFER:
+                return true;
+            case ELEM_GET_AVMEMORY:
+                return elem.buffer != nullptr;
+            case ELEM_GET_PARAMETER:
+                return elem.buffer != nullptr && elem.parameter != nullptr;
+            case ELEM_GET_ATRRIBUTE:
+                return elem.buffer != nullptr && elem.parameter != nullptr && elem.attribute != nullptr;
+            default:
+                AVCODEC_LOGE("unknown filter:%{public}d", static_cast<int32_t>(filter));
+                break;
+        }
+        return false;
+    }
+
     enum class CacheFlag : uint8_t {
         HIT_CACHE = 1,
         UPDATE_CACHE,
@@ -396,27 +413,31 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
     BufferElem elem;
     std::shared_ptr<MediaCodecParameterCallback> paramCb = paramCallback_.lock();
     if (paramCb != nullptr) {
-        inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_PARAMETER);
+        bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_PARAMETER);
+        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
         paramCb->OnInputParameterAvailable(index, elem.parameter);
         elem.buffer->meta_ = elem.parameter->GetMeta();
         return;
     }
     std::shared_ptr<MediaCodecParameterWithAttrCallback> attrCb = paramWithAttrCallback_.lock();
     if (attrCb != nullptr) {
-        inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_ATRRIBUTE);
+        bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_ATRRIBUTE);
+        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
         attrCb->OnInputParameterWithAttrAvailable(index, elem.attribute, elem.parameter);
         elem.buffer->meta_ = elem.parameter->GetMeta();
         return;
     }
     std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
     if (mediaCb != nullptr) {
-        inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVBUFFER);
+        bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVBUFFER);
+        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
         mediaCb->OnInputBufferAvailable(index, elem.buffer);
         return;
     }
     std::shared_ptr<AVCodecCallback> cb = callback_.lock();
     if (cb != nullptr) {
-        inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
+        bool ret = inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
+        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
         cb->OnInputBufferAvailable(index, elem.memory);
         return;
     }
@@ -427,13 +448,15 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &d
     BufferElem elem;
     std::shared_ptr<MediaCodecCallback> mediaCb = videoCallback_.lock();
     if (mediaCb != nullptr) {
-        outputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVBUFFER);
+        bool ret = outputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVBUFFER);
+        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
         mediaCb->OnOutputBufferAvailable(index, elem.buffer);
         return;
     }
     std::shared_ptr<AVCodecCallback> cb = callback_.lock();
     if (cb != nullptr) {
-        outputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
+        bool ret = outputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
+        CHECK_AND_RETURN_LOG(ret, "read from parel failed");
         std::shared_ptr<AVBuffer> &buffer = elem.buffer;
         AVCodecBufferInfo info;
         info.presentationTimeUs = buffer->pts_;
@@ -471,6 +494,12 @@ void CodecListenerStub::ClearListenerCache()
 {
     inputBufferCache_->ClearCaches();
     outputBufferCache_->ClearCaches();
+}
+
+void CodecListenerStub::PrintListenerCache()
+{
+    inputBufferCache_->PrintCachesInfo();
+    outputBufferCache_->PrintCachesInfo();
 }
 
 bool CodecListenerStub::WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
