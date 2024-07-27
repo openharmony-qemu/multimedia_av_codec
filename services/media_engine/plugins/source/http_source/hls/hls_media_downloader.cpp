@@ -427,7 +427,6 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
     memset_s(decryptBuffer_, RING_BUFFER_SIZE, 0x00, RING_BUFFER_SIZE);
     afterAlignRemainedLength_ = 0;
     isLastDecryptWriteError_ = false;
-    lastRealLen_ = 0;
     buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
@@ -534,7 +533,7 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     return ret;
 }
 
-uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen)
+uint32_t HlsMediaDownloader::GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen)
 {
     uint32_t realLen;
     errno_t err {0};
@@ -552,7 +551,7 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint
     if (err != 0) {
         MEDIA_LOG_D("minWriteLen: " PUBLIC_LOG_D32, minWriteLen);
     }
-    realLen = writeLen + afterAlignRemainedLength_;
+    realLen = minWriteLen + afterAlignRemainedLength_;
     AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
     return realLen;
 }
@@ -560,8 +559,6 @@ uint32_t HlsMediaDownloader::GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint
 void HlsMediaDownloader::ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen,
                                             uint32_t realLen, uint8_t *writeDataPoint)
 {
-    lastRealLen_ = 0;
-    isLastDecryptWriteError_ = false;
     errno_t err {0};
     err = memset_s(decryptCache_, realLen, 0x00, realLen);
     if (err != 0) {
@@ -590,31 +587,47 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     uint32_t waitLen = len;
     errno_t err {0};
     uint32_t realLen;
-    if (!isLastDecryptWriteError_) {
-        if ((waitLen + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
-            err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
-                           DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
-                           writeDataPoint, waitLen);
-            if (err != 0) {
-                MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64,
-                            DECRYPT_UNIT_LEN - afterAlignRemainedLength_);
-            }
-            afterAlignRemainedLength_ += waitLen;
-            return true;
+    if ((waitLen + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
+        err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
+                        DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
+                        writeDataPoint, waitLen);
+        if (err != 0) {
+            MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64,
+                        DECRYPT_UNIT_LEN - afterAlignRemainedLength_);
         }
-        writeLen = ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) *
-                    DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
-        realLen = GetLastDecrptyRealLen(writeDataPoint, waitLen, writeLen);
-    } else {
-        realLen = lastRealLen_;
+        afterAlignRemainedLength_ += waitLen;
+        return true;
     }
+    writeLen = ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) *
+                DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
+    realLen = GetLastDecrptyRealLen(writeDataPoint, waitLen, writeLen);
     totalLen_ += realLen;
+    bool isWriteRingBufferSuccess {true}
     if (!buffer_->WriteBuffer(decryptCache_, realLen)) {
-        isLastDecryptWriteError_ = true;
-        lastRealLen_ = realLen;
-        return false;
+        isWriteRingBufferSuccess = false;
     }
-    ResetDecryptBuffer(waitLen, writeLen, realLen, writeDataPoint);
+    errno_t err {0};
+    err = memset_s(decryptCache_, realLen, 0x00, realLen);
+    if (err != 0) {
+        MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
+    }
+    if (isWriteRingBufferSuccess) {
+            afterAlignRemainedLength_ = 0;
+        err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
+        if (err != 0) {
+            MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64, DECRYPT_UNIT_LEN);
+        }
+    }
+
+    writeDataPoint += writeLen;
+    waitLen -= writeLen;
+    if (waitLen > 0 && isWriteRingBufferSuccess) {
+        afterAlignRemainedLength_ = waitLen;
+        err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
+        if (err != 0) {
+            MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32, waitLen);
+        }
+    }
     return true;
 }
 
