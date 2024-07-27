@@ -31,11 +31,14 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOUR
 namespace OHOS {
 namespace Media {
 
-constexpr size_t CACHE_FRAGMENT_MAX_NUM = 4;
-constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 30.0;
+constexpr size_t CACHE_FRAGMENT_MAX_NUM_DEFAULT = 8; // Minimum number of fragment nodes
+constexpr size_t CACHE_FRAGMENT_MIN_NUM_DEFAULT = 2; // Maximum number of fragment nodes
+constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 128.0; // Restricting the cache size of seek operation, 128 = 2MB
 constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
-constexpr double DEFAULT_RELEASE_DELAY_FACTOR = 10;
+constexpr double CACHE_RELEASE_FACTOR_DEFAULT = 10u;
 constexpr double TO_PERCENT = 100;
+constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
+constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
 
 inline constexpr bool BoundedIntervalComp(int64_t mid, int64_t start, int64_t end)
 {
@@ -61,7 +64,10 @@ inline void InitChunkInfo(CacheChunk& chunkInfo, int64_t offset)
 }
 
 CacheMediaChunkBufferImpl::CacheMediaChunkBufferImpl()
-    : totalBuffSize_(0), totalReadSize_(0), chunkMaxNum_(0), chunkSize_(0), bufferAddr_(nullptr) {}
+    : totalBuffSize_(0), totalReadSize_(0), chunkMaxNum_(0), chunkSize_(0), bufferAddr_(nullptr),
+      fragmentMaxNum_(CACHE_FRAGMENT_MAX_NUM_DEFAULT),
+      cacheReleaseDelayFactor_(CACHE_RELEASE_FACTOR_DEFAULT),
+      lruCache_(CACHE_FRAGMENT_MAX_NUM_DEFAULT) {}
 
 CacheMediaChunkBufferImpl::~CacheMediaChunkBufferImpl()
 {
@@ -80,6 +86,8 @@ CacheMediaChunkBufferImpl::~CacheMediaChunkBufferImpl()
 
 bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
 {
+    lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_DEFAULT);
+
     if (totalBuffSize == 0 || chunkSize == 0 || totalBuffSize < chunkSize) {
         return false;
     }
@@ -89,8 +97,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
         return false;
     }
-    if (newFragmentInitChunkNum > static_cast<double>(chunkNum * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR)) {
-        newFragmentInitChunkNum = std::max(1.0, static_cast<double>(chunkNum * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR));
+    if (newFragmentInitChunkNum > static_cast<double>(chunkNum) * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR) {
+        newFragmentInitChunkNum = std::max(1.0, static_cast<double>(chunkNum) * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR);
     }
     std::lock_guard lock(mutex_);
     if (bufferAddr_ != nullptr) {
@@ -116,7 +124,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
         freeChunks_.push_back(chunkInfo);
         temp += sizePerChunk;
     }
-    chunkMaxNum_ = static_cast<uint32_t>(chunkNum) - 1; // 1
+    chunkMaxNum_ = static_cast<uint32_t>(chunkNum) - 1; // -1
     totalBuffSize_ = totalBuffSize;
     chunkSize_ = chunkSize;
     initReadSizeFactor_ = newFragmentInitChunkNum / (chunkMaxNum_ - newFragmentInitChunkNum);
@@ -143,6 +151,22 @@ void CacheMediaChunkBufferImpl::UpdateAccessPos(FragmentIterator& fragmentPos, C
 size_t CacheMediaChunkBufferImpl::Read(void* ptr, int64_t offset, size_t readSize)
 {
     std::lock_guard lock(mutex_);
+    size_t hasReadSize = 0;
+    uint8_t* dst = static_cast<uint8_t*>(ptr);
+    int64_t hasReadOffset = offset;
+    size_t oneReadSize = ReadInner(dst, hasReadOffset, readSize);
+    hasReadSize = oneReadSize;
+    while (hasReadSize < readSize && oneReadSize != 0) {
+        dst += oneReadSize;
+        hasReadOffset += oneReadSize;
+        oneReadSize = ReadInner(dst, hasReadOffset, readSize - hasReadSize);
+        hasReadSize += oneReadSize;
+    }
+    return hasReadSize;
+}
+
+size_t CacheMediaChunkBufferImpl::ReadInner(void* ptr, int64_t offset, size_t readSize)
+{
     auto fragmentPos = GetOffsetFragmentCache(readPos_, offset, LeftBoundedRightOpenComp);
     if (readSize == 0 || fragmentPos == fragmentCacheBuffer_.end()) {
         return 0;
@@ -157,6 +181,10 @@ size_t CacheMediaChunkBufferImpl::Read(void* ptr, int64_t offset, size_t readSiz
     uint8_t* dst = static_cast<uint8_t*>(ptr);
     int64_t offsetChunk = offset;
     if (chunkPos != fragmentPos->chunks.end()) {
+        auto readOffset = offset - fragmentPos->offsetBegin;
+        if ((readOffset - fragmentPos->accessLength) > ACCESS_OFFSET_MAX_LENGTH) {
+            chunkPos = SplitFragmentCacheBuffer(fragmentPos, offset, chunkPos);
+        }
         size_t hasReadSize = 0;
         while (hasReadSize < readSize && chunkPos != fragmentPos->chunks.end()) {
             auto chunkInfo = *chunkPos;
@@ -178,6 +206,7 @@ size_t CacheMediaChunkBufferImpl::Read(void* ptr, int64_t offset, size_t readSiz
         fragmentPos->totalReadSize += hasReadSize;
         totalReadSize_ += hasReadSize;
         readPos_ = fragmentPos;
+        lruCache_.Refer(fragmentPos->offsetBegin, fragmentPos);
         return hasReadSize;
     }
     return 0;
@@ -262,6 +291,7 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(int64_t offset, size_t writeSize,
             chunkInfo->dataLength = static_cast<uint32_t>(moveLen);
             auto lostLength = newOffset - nextFragmentPos->offsetBegin;
             nextFragmentPos->dataLength -= lostLength;
+            lruCache_.Update(nextFragmentPos->offsetBegin, newOffset, nextFragmentPos);
             nextFragmentPos->offsetBegin = newOffset;
             nextFragmentPos->accessLength = 0;
             nextFragmentPos->accessPos = nextFragmentPos->chunks.end();
@@ -287,6 +317,8 @@ void CacheMediaChunkBufferImpl::WriteMergerPost(FragmentIterator& nextFragmentPo
         return;
     }
     writePos_->dataLength += nextFragmentPos->dataLength;
+    writePos_->totalReadSize += nextFragmentPos->totalReadSize;
+    nextFragmentPos->totalReadSize = 0; // avoid total size sub
     writePos_->chunks.splice(writePos_->chunks.end(), nextFragmentPos->chunks);
     EraseFragmentCache(nextFragmentPos);
 }
@@ -328,6 +360,8 @@ size_t CacheMediaChunkBufferImpl::Write(void* ptr, int64_t inOffset, size_t inWr
         nextFragmentPos = fragmentCacheBuffer_.end();
     }
     WriteMergerPost(nextFragmentPos);
+
+    auto chunkInfoTmp = writePos_->chunks.back();
     return writeSizeTmp + dupWriteSize;
 }
 
@@ -339,6 +373,15 @@ bool CacheMediaChunkBufferImpl::Seek(int64_t offset)
         readPos_ = readPos;
         auto chunkPos = GetOffsetChunkCache(readPos->chunks, offset, LeftBoundedRightOpenComp);
         if (chunkPos != readPos->chunks.end()) {
+            auto readOffset = offset - readPos->offsetBegin;
+            if ((readOffset - readPos->accessLength) >=  ACCESS_OFFSET_MAX_LENGTH) {
+                chunkPos = SplitFragmentCacheBuffer(readPos, offset, chunkPos);
+            }
+
+            if (chunkPos == readPos->chunks.end()) {
+                return false;
+            }
+            lruCache_.Refer(readPos->offsetBegin, readPos);
             (*readPos).accessPos = chunkPos;
             (*readPos).accessLength = offset - (*readPos).offsetBegin;
             readPos->readTime = Clock::now();
@@ -352,10 +395,16 @@ size_t CacheMediaChunkBufferImpl::GetBufferSize(int64_t offset)
 {
     std::lock_guard lock(mutex_);
     auto readPos = GetOffsetFragmentCache(readPos_, offset, LeftBoundedRightOpenComp);
-    if (readPos != fragmentCacheBuffer_.end()) {
-        return static_cast<size_t>(readPos->dataLength - (offset - readPos->offsetBegin));
+    size_t bufferSize = 0;
+    while (readPos != fragmentCacheBuffer_.end()) {
+        int64_t nextOffsetBegin = readPos->offsetBegin + readPos->dataLength;
+        bufferSize = static_cast<size_t>(nextOffsetBegin - offset);
+        readPos++;
+        if (readPos == fragmentCacheBuffer_.end() || nextOffsetBegin != readPos->offsetBegin) {
+            break;
+        }
     }
-    return 0;
+    return bufferSize;
 }
 
 size_t CacheMediaChunkBufferImpl::GetNextBufferOffset(int64_t offset)
@@ -368,7 +417,14 @@ size_t CacheMediaChunkBufferImpl::GetNextBufferOffset(int64_t offset)
     if (fragmentPos != fragmentCacheBuffer_.end()) {
         if (LeftBoundedRightOpenComp(offset, fragmentPos->offsetBegin,
             fragmentPos->offsetBegin + fragmentPos->dataLength)) {
-            fragmentPos = std::next(fragmentPos);
+            int64_t nextOffsetBegin = fragmentPos->offsetBegin + fragmentPos->dataLength;
+            ++fragmentPos;
+            while (fragmentPos != fragmentCacheBuffer_.end()) {
+                if (nextOffsetBegin != fragmentPos->offsetBegin) {
+                    break;
+                }
+                ++fragmentPos;
+            }
         }
     }
     if (fragmentPos != fragmentCacheBuffer_.end()) {
@@ -386,6 +442,7 @@ FragmentIterator CacheMediaChunkBufferImpl::EraseFragmentCache(const FragmentIte
         writePos_ = fragmentCacheBuffer_.end();
     }
     totalReadSize_ -= iter->totalReadSize;
+    lruCache_.Delete(iter->offsetBegin);
     return fragmentCacheBuffer_.erase(iter);
 }
 
@@ -436,11 +493,13 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
 }
 
 
-CacheChunk* UpdateFragmentCacheForDelHead(FragmentCacheBuffer& fragment)
+CacheChunk* CacheMediaChunkBufferImpl::UpdateFragmentCacheForDelHead(FragmentIterator& fragmentIter)
 {
+    FragmentCacheBuffer& fragment = *fragmentIter;
     auto cacheChunk = fragment.chunks.front();
     fragment.chunks.pop_front();
 
+    auto oldOffsetBegin = fragment.offsetBegin;
     int64_t dataLength = static_cast<int64_t>(cacheChunk->dataLength);
     fragment.offsetBegin += dataLength;
     fragment.dataLength -= dataLength;
@@ -449,6 +508,7 @@ CacheChunk* UpdateFragmentCacheForDelHead(FragmentCacheBuffer& fragment)
     } else {
         fragment.accessLength = 0;
     }
+    lruCache_.Update(oldOffsetBegin, fragmentIter->offsetBegin, fragmentIter);
     return cacheChunk;
 }
 
@@ -477,20 +537,26 @@ inline CacheChunk* PopFreeCacheChunk(CacheChunkList& freeChunks, int64_t offset)
     return tmp;
 }
 
-void CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(const FragmentIterator& currWritePos)
+void CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos)
 {
-    FragmentIterator minFragmentPos = fragmentCacheBuffer_.end();
-    auto nowTime = Clock::now();
-    for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
-        if (iter != currWritePos) {
-            if (nowTime > iter->readTime) {
-                nowTime = iter->readTime;
-                minFragmentPos = iter;
-            }
+    int64_t offset = -1;
+    FragmentIterator fragmentIterator = fragmentCacheBuffer_.end();
+    auto ret = lruCache_.GetLruNode(offset, fragmentIterator);
+    if (!ret) {
+        return;
+    }
+    if (fragmentIterator == fragmentCacheBuffer_.end()) {
+        return;
+    }
+    if (currWritePos == fragmentIterator) {
+        lruCache_.Refer(offset, currWritePos);
+        ret = lruCache.GetLruNode(offset, fragmentIterator);
+        if (!ret) {
+            return;
         }
     }
     freeChunks_.splice(freeChunks_.end(), minFragmentPos->chunks);
-    EraseFragmentCache(minFragmentPos);
+    EraseFragmentCache(fragmentIterator);
     return;
 }
 
@@ -517,9 +583,9 @@ void CacheMediaChunkBufferImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterato
     auto& fragmentCacheChunks = *fragmentIter;
     while (fragmentCacheChunks.chunks.size() >= allowChunkNum &&
         fragmentCacheChunks.accessLength > static_cast<int64_t>(static_cast<double>(fragmentCacheChunks.dataLength) *
-        DEFAULT_RELEASE_DELAY_FACTOR / TO_PERCENT)) {
+        CACHE_RELEASE_FACTOR_DEFAULT / TO_PERCENT)) {
         if (fragmentCacheChunks.accessPos != fragmentCacheChunks.chunks.begin()) {
-            auto tmp = UpdateFragmentCacheForDelHead(fragmentCacheChunks);
+            auto tmp = UpdateFragmentCacheForDelHead(fragmentIter);
             freeChunks_.push_back(tmp);
         } else {
             MEDIA_LOG_D("judge has read finish.");
@@ -547,10 +613,6 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
         return nullptr;
     }
     auto currWritePos = GetOffsetFragmentCache(writePos_, offset, BoundedIntervalComp);
-    if (fragmentCacheBuffer_.size() > CACHE_FRAGMENT_MAX_NUM) {
-        MEDIA_LOG_I("more than fragment max num");
-        CheckThresholdFragmentCacheBuffer(currWritePos);
-    }
     size_t allowChunkNum = 0;
     if (currWritePos != fragmentCacheBuffer_.end()) {
         allowChunkNum = CalcAllowMaxChunkNum(currWritePos->totalReadSize, currWritePos->offsetBegin);
@@ -574,6 +636,12 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
     if (!freeChunks_.empty()) {
         return PopFreeCacheChunk(freeChunks_, offset);
     }
+    while (fragmentCacheBuffer_.size() > CACHE_FRAGMENT_MIN_NUM_DEFAULT) {
+        CheckThresholdFragmentCacheBuffer(currWritePos);
+        if (!freeChunks_.empty()) {
+            return PopFreeCacheChunk(freeChunks_, offset);
+        }
+    }
     MEDIA_LOG_D("clear other fragment unread chunk.");
     for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
         if (iter != currWritePos) {
@@ -587,17 +655,69 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
     return nullptr;
 }
 
-ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
+ChunkIterator CacheMediaChunkBufferImpl::SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
+    int64_t offset, ChunkIterator chunkPos)
 {
-    int64_t chunkNum = static_cast<int64_t>(chunkMaxNum_ + 1) - static_cast<int64_t>(freeChunks_.size());
-    if (totalReadSize_ > MAX_TOTAL_READ_SIZE && chunkNum > 0) {
-        auto preChunkSize = (MAX_TOTAL_READ_SIZE - 1) / chunkNum;
-        for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
-            iter->totalReadSize = preChunkSize * iter->chunks.size();
+    if (fragmentCacheBuffer_.size() >= CACHE_FRAGMENT_MAX_NUM_DEFAULT) {
+        CheckThresholdFragmentCacheBuffer(currFragmentIter);
+    }
+    ResetReadSizeAlloc();
+
+    auto& chunkInfo = * chunkPos;
+    CacheChunk* splitHead = nullptr;
+    if (offset != chunkInfo->offset) {
+        if (freeChunks_.empty()) {
+            splitHead = GetFreeCacheChunk(-1);
+        } else {
+            splitHead = PopFreeCacheChunk(freeChunks_, offset);
         }
-        totalReadSize_ = preChunkSize * chunkNum;
+        if (splitHead == nullptr) {
+            return currFragmentIter->chunks.end();
+        }
     }
 
+    auto newFragmentPos = fragmentCacheBuffer_.emplace(std::next(currFragmentIter), offset);
+    if (splitHead == nullptr) {
+        newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, chunkPos,
+            currFragmentIter->chunks.end());
+    } else {
+        newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, std::next(chunkPos),
+            currFragmentIter->chunks.end());
+        newFragmentPos->chunks.push_front(splitHead);
+        splitHead->offset = offset;
+        auto diff = offset - chunkInfo->offset;
+        if (chunkInfo->dataLength >= diff) {
+            splitHead->dataLength = chunkInfo->dataLength - static_cast<uint32_t>(diff);
+            chunkInfo->dataLength = static_cast<uint32_t>(diff);
+            memcpy_s(splitHead->data, splitHead->dataLength, chunkInfo->data + diff, splitHead->dataLength);
+        } else {
+            splitHead->dataLength = 0; // It can't happen. us_asan can check.
+        }
+    }
+    newFragmentPos->offsetBegin = offset;
+    lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
+    newFragmentPos->dataLength = currFragmentIter->dataLength - (offset - currFragmentIter->offsetBegin);
+    newFragmentPos->accessLength = 0;
+    uint64_t newReadSizeInit = static_cast<uint64_t>(1 + initReadSizeFactor_ * static_cast<double>(totalReadSize_));
+    newFragmentPos->totalReadSize = newReadSizeInit;
+    totalReadSize_ += newReadSizeInit;
+
+    newFragmentPos->readTime = Clock::now();
+    newFragmentPos->accessPos = newFragmentPos->chunks.begin();
+
+    currFragmentIter->dataLength = offset - currFragmentIter->offsetBegin;
+    currFragmentIter = newFragmentPos;
+
+    return newFragmentPos->accessPos;
+}
+
+ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
+{
+    if (fragmentCacheBuffer_.size() >= CACHE_FRAGMENT_MAX_NUM_DEFAULT) {
+        auto fragmentIterTmp = fragmentCacheBuffer_.end();
+        CheckThresholdFragmentCacheBuffer(fragmentIterTmp);
+    }
+    ResetReadSizeAlloc();
     auto fragmentInsertPos = std::upper_bound(fragmentCacheBuffer_.begin(), fragmentCacheBuffer_.end(), offset,
         [](auto mediaOffset, const FragmentCacheBuffer& fragment) {
             if (mediaOffset <= fragment.offsetBegin + fragment.dataLength) {
@@ -611,6 +731,7 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
     newFragmentPos->totalReadSize = newReadSizeInit;
     writePos_ = newFragmentPos;
     writePos_->accessPos = writePos_->chunks.end();
+    lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
     auto freeChunk = GetFreeCacheChunk(offset);
     if (freeChunk == nullptr) {
         MEDIA_LOG_D("get free cache chunk fail.");
@@ -618,6 +739,18 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
     }
     writePos_->accessPos = newFragmentPos->chunks.emplace(newFragmentPos->chunks.end(), freeChunk);
     return writePos_->accessPos;
+}
+
+void CacheMediaChunkBufferImpl::ResetReadSizeAlloc()
+{
+    int64_t chunkNum = static_cast<int64_t>(chunkMaxNum_ + 1) - static_cast<int64_t>(freeChunks_.size());
+    if (totalReadSize_ > MAX_TOTAL_READ_SIZE && chunkNum > 0) {
+        auto preChunkSize = (MAX_TOTAL_READ_SIZE - 1) / chunkNum;
+        for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
+            iter->totalReadSize = preChunkSize * iter->chunks.size();
+        }
+        totalReadSize_ = preChunkSize * chunkNum;
+    }
 }
 
 void CacheMediaChunkBufferImpl::Dump(uint64_t param)
@@ -690,7 +823,7 @@ bool CacheMediaChunkBufferImpl::CheckInner()
         }
         CheckFragment(fragment, checkSuccess);
     }
-    if (chunkNum != chunkMaxNum_) {
+    if (chunkNum != chunkMaxNum_ + 1) {
         checkSuccess = false;
     }
 
