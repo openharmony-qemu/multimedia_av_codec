@@ -996,7 +996,7 @@ void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
 {
     static uint32_t minDuration = 0;
     uint64_t nowTime = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    // len是字节 转换成bit
+    // Bytes to bit
     uint32_t duration = len * 8;
     if (duration >= bufferedDuration_) {
         bufferedDuration_ = 0;
