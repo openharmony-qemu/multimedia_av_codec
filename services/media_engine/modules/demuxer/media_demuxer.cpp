@@ -2110,7 +2110,7 @@ Status MediaDemuxer::PauseDemuxerReadLoop()
     return PauseAllTask();
 }
 
-bool MediaDemuxer::IsVideoEosSendOut()
+bool MediaDemuxer::IsVideoEos()
 {
     return (videoTrackId_ != TRACK_ID_DUMMY) && eosMap_[videoTrackId_];
 }
