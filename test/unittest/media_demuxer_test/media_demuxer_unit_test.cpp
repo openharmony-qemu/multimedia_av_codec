@@ -875,4 +875,5 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010
     demuxer->DeregisterVideoStreamReadyCallback();
     EXPECT_EQ(demuxer->HasVideo(), true);
 }
+
 }
