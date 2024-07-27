@@ -582,7 +582,6 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     if (!buffer_->WriteBuffer(decryptCache_, realLen)) {
         isWriteRingBufferSuccess = false;
     }
-    errno_t err {0};
     err = memset_s(decryptCache_, realLen, 0x00, realLen);
     if (err != 0) {
         MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
