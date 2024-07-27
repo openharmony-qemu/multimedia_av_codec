@@ -730,10 +730,10 @@ Status DemuxerFilter::PauseDemuxerReadLoop()
     return demuxer_->PauseDemuxerReadLoop();
 }
 
-bool DemuxerFilter::IsVideoEosSendOut()
+bool DemuxerFilter::IsVideoEos()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
-    return demuxer_->IsVideoEosSendOut();
+    return demuxer_->IsVideoEos();
 }
 } // namespace Pipeline
 } // namespace Media
