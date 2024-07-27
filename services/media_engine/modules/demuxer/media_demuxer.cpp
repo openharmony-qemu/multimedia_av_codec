@@ -466,6 +466,10 @@ Status MediaDemuxer::ReportDrmInfos(const std::multimap<std::string, std::vector
 Status MediaDemuxer::ProcessDrmInfos()
 {
     MEDIA_LOG_D("ProcessDrmInfos");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "ProcessDrmInfos failed due to source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "ProcessDrmInfos failed due to demuxerPluginManager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
         "ProcessDrmInfos failed due to get demuxer plugin failed.");
