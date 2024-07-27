@@ -751,7 +751,7 @@ void CacheMediaChunkBufferImpl::ResetReadSizeAlloc()
         for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
             iter->totalReadSize = preChunkSize * static_cast<uint64_t>(iter->chunks.size());
         }
-        totalReadSize_ = preChunkSize * chunkNum;
+        totalReadSize_ = preChunkSize * static_cast<uint64_t>(chunkNum);
     }
 }
 
