@@ -26,11 +26,9 @@ group("av_codec_media_engine_plugins") {
     "ffmpeg_adapter/audio_encoder/lbvc:media_plugin_LbvcAudioEncoder",
     "ffmpeg_adapter/audio_encoder/mp3:media_plugin_Mp3AudioEncoder",
     "source:media_plugin_DataStreamSource",
+    "sink:media_plugin_AudioServerSink",
     "source:media_plugin_FileFdSource",
     "source:media_plugin_FileSource",
     "source/http_source:media_plugin_HttpSource",
   ]
-  if (!use_clang_coverage) {
-    deps += [ "sink:media_plugin_AudioServerSink" ]
-  }
 }
