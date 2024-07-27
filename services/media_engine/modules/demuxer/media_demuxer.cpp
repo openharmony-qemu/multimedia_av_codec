@@ -2109,5 +2109,10 @@ Status MediaDemuxer::PauseDemuxerReadLoop()
     isDemuxerLoopExecuting_ = false;
     return PauseAllTask();
 }
+
+bool MediaDemuxer::IsVideoEosSendOut()
+{
+    return eosMap_[videoTrackId_];
+}
 } // namespace Media
 } // namespace OHOS

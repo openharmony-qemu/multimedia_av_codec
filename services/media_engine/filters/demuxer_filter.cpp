@@ -729,6 +729,12 @@ Status DemuxerFilter::PauseDemuxerReadLoop()
     MEDIA_LOG_I("PauseDemuxerReadLoop start.");
     return demuxer_->PauseDemuxerReadLoop();
 }
+
+bool DemuxerFilter::IsVideoEosSendOut()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsVideoEosSendOut();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
