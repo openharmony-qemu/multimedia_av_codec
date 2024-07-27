@@ -415,6 +415,122 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_SetAudioDumpBySysParam, Test
     audioServerSinkPlugin->DumpSliceAudioBuffer(buffer->memory_->GetAddr(), size);
 }
 
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_callback, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    ASSERT_TRUE(audioServerSinkPlugin->audioRenderer_ == nullptr);
+    std::shared_ptr<Pipeline::EventReceiver> receiver = std::make_shared<TestEventReceiver>();
+    audioServerSinkPlugin->SetEventReceiver(receiver);
+    bool isPaused = false;
+    std::shared_ptr<AudioServerSinkPlugin::AudioRendererCallbackImpl> callback =
+        std::make_shared<AudioServerSinkPlugin::AudioRendererCallbackImpl>(receiver, isPaused);
+    OHOS::AudioStandard::InterruptEvent event1{InterruptType::INTERRUPT_TYPE_BEGIN,
+        InterruptForceType::INTERRUPT_FORCE, InterruptHint::INTERRUPT_HINT_PAUSE};
+    callback->OnInterrupt(event1);
+    EXPECT_EQ(true, callback->isPaused);
+    OHOS::AudioStandard::InterruptEvent event2{InterruptType::INTERRUPT_TYPE_BEGIN,
+        InterruptForceType::INTERRUPT_FORCE, InterruptHint::INTERRUPT_HINT_STOP};
+    callback->OnInterrupt(event2);
+    EXPECT_EQ(false, callback->isPaused);
+    OHOS::AudioStandard::InterruptEvent event3{InterruptType::INTERRUPT_TYPE_BEGIN,
+        InterruptForceType::INTERRUPT_SHARED, InterruptHint::INTERRUPT_HINT_STOP};
+    callback->OnInterrupt(event3);
+    EXPECT_EQ(false, callback->isPaused);
+    callback->OnStateChange(RendererState::RENDERER_INVALID, StateChangeCmdType::CMD_FROM_CLIENT);
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_init, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    audioServerSinkPlugin->audioRenderSetFlag_ = true;
+    audioServerSinkPlugin->rendererOptions_.rendererInfo.streamUsage = STREAM_USAGE_AUDIOBOOK;
+    audioServerSinkPlugin->Init();
+    ASSERT_TRUE(audioServerSinkPlugin->audioRenderer_ != nullptr);
+
+    audioServerSinkPlugin->rendererOptions_.rendererInfo.streamUsage = STREAM_USAGE_GAME;
+    audioServerSinkPlugin->Init();
+    ASSERT_TRUE(audioServerSinkPlugin->audioRenderer_ != nullptr);
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_release_file, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    std::string path = "data/media/audio-sink-entire.pcm";
+    audioServerSinkPlugin->entireDumpFile_ = fopen(path.c_str(), "wb+");
+    path = "data/media/audio-sink-slice-" + std::to_string(sliceCount_) + ".pcm";
+    audioServerSinkPlugin->sliceDumpFile_ = fopen(path.c_str(), "wb+");
+    ASSERT_EQ(nullptr, audioServerSinkPlugin->entireDumpFile_);
+    ASSERT_EQ(nullptr, audioServerSinkPlugin->sliceDumpFile_);
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->Reset());
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_reset, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    audioServerSinkPlugin->resample_ = std::make_shared<Ffmpeg::Resample>();
+    float volume = 0;
+    int32_t duration = 0;
+    ASSERT_EQ(0, audioServerSinkPlugin->SetVolumeWithRamp());
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->Reset());
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_001, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    audioServerSinkPlugin->audioRenderSetFlag_ = true;
+    audioServerSinkPlugin->audioRenderInfo_.streamUsage = STREAM_USAGE_AUDIOBOOK;
+    audioServerSinkPlugin->Init();
+    uint32_t sampleRate = 16000;
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(sampleRate));
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->GetParameter(meta));
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_get_parameter_002, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    audioServerSinkPlugin->audioRenderSetFlag_ = true;
+    audioServerSinkPlugin->audioRenderInfo_.streamUsage = STREAM_USAGE_AUDIOBOOK;
+    audioServerSinkPlugin->Init();
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(AudioSamplingRate::SAMPLE_RATE_11025));
+    
+    uint32_t sampleRate = 16000;
+    ASSERT_TRUE(audioServerSinkPlugin->AssignSampleRateIfSupported(16000));
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_EQ(Status::OK, meta->Set<Tag::AUDIO_RENDER_SET_FLAG>(true));
+    ASSERT_EQ(Status::OK, audioServerSinkPlugin->SetParameter(meta));
+    audioServerSinkPlugin->GetParameter(meta);
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_cache_data, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    audioServerSinkPlugin->CacheData(nullptr, 0);
+    ASSERT_EQ(DEFAULT_BUFFER_NUM, audioServerSinkPlugin->cachedBuffers_.size());
+}
+
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
