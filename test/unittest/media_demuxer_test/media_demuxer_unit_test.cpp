@@ -876,4 +876,74 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010
     EXPECT_EQ(demuxer->HasVideo(), true);
 }
 
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentationTimeUsByFrameIndex_010, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();    
+    int64_t presentationTimeUs;
+    EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
+    uint32_t frameIndex;
+    EXPECT_EQ(demuxer->GetFrameIndexByPresentationTimeUs(0, 1, frameIndex), Status::ERROR_NULL_POINTER);
+
+    demuxer->demuxerPluginManager_ = nullptr;
+    EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->GetFrameIndexByPresentationTimeUs(0, 1, frameIndex), Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    sample->pts_ = 100;
+
+    demuxer->audioTrackId_ = 0;
+    demuxer->shouldCheckAudioFramePts_ = false;
+    demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->lastAudioPts_ = 101;
+    demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->shouldCheckAudioFramePts_ = true;
+    demuxer->CheckDropAudioFrame(sample, 0);
+
+    demuxer->subtitleTrackId_ = 0;
+    demuxer->shouldCheckSubtitleFramePts_ = false;
+    demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->lastSubtitlePts_ = 101;
+    demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->shouldCheckSubtitleFramePts_ = true;
+    demuxer->CheckDropAudioFrame(sample, 0);
+
+    demuxer->videoTrackId_ = 1;
+    demuxer->isDecodeOptimizationEnabled_ = true;
+
+    uint8_t* data = new uint8_t[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, 100, 100);
+    demuxer->framerate_ = 1.5;
+    demuxer->speed_ = 1.0;
+    demuxer->decoderFramerateUpperLimit_ = 100;
+    EXPECT_EQ(demuxer->IsBufferDroppable(buffer, 1), false);
+    
+    demuxer->framerate_ = 15000;
+    demuxer->speed_ = 1.0;
+    demuxer->decoderFramerateUpperLimit_ = 100;
+    EXPECT_EQ(demuxer->IsBufferDroppable(buffer, 1), false);
+
+    buffer->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
+    EXPECT_EQ(demuxer->IsBufferDroppable(buffer, 1), true);
+
+    delete[] data;
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsContainIdrFrame_015, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->ResumeDragging();
+    const uint8_t buffer[] = "111111111111111111111111111111111111111111";
+    demuxer->videoMime_ = std::string(MimeType::VIDEO_AVC);
+    EXPECT_EQ(demuxer->IsContainIdrFrame(buffer, sizeof(buffer)), false);
+    demuxer->videoMime_ = std::string(MimeType::VIDEO_HEVC);
+    EXPECT_EQ(demuxer->IsContainIdrFrame(buffer, sizeof(buffer)), false);
+    demuxer->videoMime_ = std::string("aaaaa");
+    EXPECT_EQ(demuxer->IsContainIdrFrame(buffer, sizeof(buffer)), true);
+}
+
 }
