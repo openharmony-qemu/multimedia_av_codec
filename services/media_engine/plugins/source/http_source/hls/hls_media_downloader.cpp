@@ -76,7 +76,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     steadyClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     aesKey_.rounds = 0;
-    for (int i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
         aesKey_.rd_key[i] = 0;
     }
 }
@@ -97,7 +97,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
     aesKey_.rounds = 0;
-    for (int i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
         aesKey_.rd_key[i] = 0;
     }
 }
@@ -118,7 +118,7 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
     aesKey_.rounds = 0;
-    for (int i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
+    for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
         aesKey_.rd_key[i] = 0;
     }
 }
@@ -589,8 +589,8 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     uint32_t realLen;
     if ((waitLen + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
         err = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_,
-                        DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
-                        writeDataPoint, waitLen);
+                       DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
+                       writeDataPoint, waitLen);
         if (err != 0) {
             MEDIA_LOG_D("afterAlignRemainedLength_: " PUBLIC_LOG_D64,
                         DECRYPT_UNIT_LEN - afterAlignRemainedLength_);
