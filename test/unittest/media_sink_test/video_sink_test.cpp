@@ -63,7 +63,6 @@ HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
     videoSink->SetParameter(meta);
-    videoSink->ResetRenderStarted();
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
@@ -92,7 +91,6 @@ HWTEST(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
     videoSink->SetParameter(meta);
-    videoSink->ResetRenderStarted();
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
@@ -119,7 +117,6 @@ HWTEST(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
     videoSink->SetParameter(meta);
-    videoSink->ResetRenderStarted();
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
