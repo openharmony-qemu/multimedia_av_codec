@@ -454,7 +454,7 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             // auto switch
             bool switchFlag = true;
             if (callback_ != nullptr) {
-                switchFlag = callback_->CanDoSelectBitRate();
+                switchFlag = callback_->CanAutoSelectBitRate();
             }
             if (switchFlag) {
                 bool flag = CheckAutoSelectBitrate(streamId);
