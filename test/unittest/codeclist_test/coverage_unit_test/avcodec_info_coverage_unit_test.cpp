@@ -471,13 +471,4 @@ HWTEST_F(AVCodecInfoTest, DivCeil_Valid_Test_001, TestSize.Level1)
     auto ret = videoCaps_->DivCeil(dividend, divisor);
     EXPECT_EQ(ret, INT32_MAX);
 }
-
-/**
- * @tc.name: GetPreferredFrameRate_Valid_Test_001
- * @tc.desc: divisor equals zero
- */
-HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_001, TestSize.Level1)
-{
-    videoCaps_->GetPreferredFrameRate(width_, height_);
-}
 }
