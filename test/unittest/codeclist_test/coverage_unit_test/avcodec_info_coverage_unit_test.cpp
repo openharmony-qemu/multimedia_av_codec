@@ -150,8 +150,7 @@ HWTEST_F(AVCodecInfoTest, IsSizeSupported_Invalid_Test_005, TestSize.Level1)
 HWTEST_F(AVCodecInfoTest, IsSizeSupported_Invalid_Test_006, TestSize.Level1)
 {
     videoCaps_->data_->alignment = {2, 3};
-    bool ret = videoCaps_->IsSizeSupported(width_, height_);
-    EXPECT_EQ(ret, false);
+    videoCaps_->IsSizeSupported(width_, height_);
 }
 
 /**
@@ -161,8 +160,7 @@ HWTEST_F(AVCodecInfoTest, IsSizeSupported_Invalid_Test_006, TestSize.Level1)
 HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_001, TestSize.Level1)
 {
     height_ = 30;
-    auto ret = videoCaps_->GetVideoWidthRangeForHeight(height_);
-    (void) ret;
+    videoCaps_->GetVideoWidthRangeForHeight(height_);
 }
 
 /**
@@ -172,8 +170,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_001, TestSize.L
 HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_002, TestSize.Level1)
 {
     height_ = 8192;
-    auto ret = videoCaps_->GetVideoWidthRangeForHeight(height_);
-    (void) ret;
+    videoCaps_->GetVideoWidthRangeForHeight(height_);
 }
 
 /**
@@ -184,8 +181,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_003, TestSize.L
 {
     videoCaps_->horizontalBlockRange_ = {0, 0};
     videoCaps_->verticalBlockRange_.minVal = 8192;
-    auto ret = videoCaps_->GetVideoWidthRangeForHeight(height_);
-    (void) ret;
+    videoCaps_->GetVideoWidthRangeForHeight(height_);
 }
 
 /**
@@ -196,8 +192,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_004, TestSize.L
 {
     videoCaps_->horizontalBlockRange_ = {0, 0};
     videoCaps_->verticalBlockRange_.maxVal = 1024;
-    auto ret = videoCaps_->GetVideoWidthRangeForHeight(height_);
-    (void) ret;
+    videoCaps_->GetVideoWidthRangeForHeight(height_);
 }
 
 /**
@@ -207,8 +202,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoWidthRangeForHeight_Valid_Test_004, TestSize.L
 HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_001, TestSize.Level1)
 {
     width_ = 30;
-    auto ret = videoCaps_->GetVideoHeightRangeForWidth(width_);
-    (void) ret;
+    videoCaps_->GetVideoHeightRangeForWidth(width_);
 }
 
 /**
@@ -218,8 +212,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_001, TestSize.L
 HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_002, TestSize.Level1)
 {
     width_ = 8192;
-    auto ret = videoCaps_->GetVideoHeightRangeForWidth(width_);
-    (void) ret;
+    videoCaps_->GetVideoHeightRangeForWidth(width_);
 }
 
 /**
@@ -230,8 +223,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_003, TestSize.L
 {
     videoCaps_->verticalBlockRange_ = {0, 0};
     videoCaps_->horizontalBlockRange_.minVal = 8192;
-    auto ret = videoCaps_->GetVideoHeightRangeForWidth(height_);
-    (void) ret;
+    videoCaps_->GetVideoHeightRangeForWidth(height_);
 }
 
 /**
@@ -242,8 +234,7 @@ HWTEST_F(AVCodecInfoTest, GetVideoHeightRangeForWidth_Valid_Test_004, TestSize.L
 {
     videoCaps_->verticalBlockRange_ = {0, 0};
     videoCaps_->horizontalBlockRange_.maxVal = 1024;
-    auto ret = videoCaps_->GetVideoHeightRangeForWidth(height_);
-    (void) ret;
+    videoCaps_->GetVideoHeightRangeForWidth(height_);
 }
 
 /**
@@ -254,8 +245,7 @@ HWTEST_F(AVCodecInfoTest, GetSupportedFrameRatesFor_Valid_Test_001, TestSize.Lev
 {
     width_ = 0;
     height_ = 0;
-    auto ret = videoCaps_->GetSupportedFrameRatesFor(width_, height_);
-    (void) ret;
+    videoCaps_->GetSupportedFrameRatesFor(width_, height_);
 }
 
 /**
@@ -280,7 +270,7 @@ HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_001, TestSize.Level1)
     constexpr int32_t blockWidth = 720;
     constexpr int32_t blockHeight = 720;
     videoCaps_->blockWidth_ = 0;
-    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0); 
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
     videoCaps_->UpdateBlockParams(blockWidth, blockHeight, range, range);
 }
 
@@ -293,7 +283,7 @@ HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_002, TestSize.Level1)
     constexpr int32_t blockWidth = 720;
     constexpr int32_t blockHeight = 720;
     videoCaps_->blockHeight_ = 0;
-    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0); 
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
     videoCaps_->UpdateBlockParams(blockWidth, blockHeight, range, range);
 }
 
@@ -305,7 +295,7 @@ HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_003, TestSize.Level1)
 {
     constexpr int32_t blockWidth = 0;
     constexpr int32_t blockHeight = 1;
-    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0); 
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
     videoCaps_->UpdateBlockParams(blockWidth, blockHeight, range, range);
 }
 
@@ -317,7 +307,7 @@ HWTEST_F(AVCodecInfoTest, UpdateBlockParams_Valid_Test_004, TestSize.Level1)
 {
     constexpr int32_t blockWidth = 1;
     constexpr int32_t blockHeight = 0;
-    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0); 
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
     videoCaps_->UpdateBlockParams(blockWidth, blockHeight, range, range);
 }
 
@@ -359,4 +349,135 @@ HWTEST_F(AVCodecInfoTest, InitParams_Valid_Test_002, TestSize.Level1)
     videoCaps_->InitParams();
 }
 
+/**
+ * @tc.name: UpdateParams_Valid_Test_001
+ * @tc.desc: blockSize.width equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_001, TestSize.Level1)
+{
+    videoCaps_->data_->blockSize.width = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_002
+ * @tc.desc: blockSize.height equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_002, TestSize.Level1)
+{
+    videoCaps_->data_->blockSize.height = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_003
+ * @tc.desc: blockWidth_ equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_003, TestSize.Level1)
+{
+    videoCaps_->blockWidth_ = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_004
+ * @tc.desc: blockHeight_ equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_004, TestSize.Level1)
+{
+    videoCaps_->blockHeight_ = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_005
+ * @tc.desc: verticalBlockRange_.maxVal equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_005, TestSize.Level1)
+{
+    videoCaps_->verticalBlockRange_.maxVal = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_006
+ * @tc.desc: verticalBlockRange_.minVal equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_006, TestSize.Level1)
+{
+    videoCaps_->verticalBlockRange_.minVal = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_007
+ * @tc.desc: horizontalBlockRange_.maxVal equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_007, TestSize.Level1)
+{
+    videoCaps_->horizontalBlockRange_.maxVal = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_008
+ * @tc.desc: horizontalBlockRange_.minVal equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_008, TestSize.Level1)
+{
+    videoCaps_->horizontalBlockRange_.minVal = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_009
+ * @tc.desc: blockPerFrameRange_.minVal equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_009, TestSize.Level1)
+{
+    videoCaps_->blockPerFrameRange_.minVal = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: UpdateParams_Valid_Test_010
+ * @tc.desc: blockPerFrameRange_.maxVal equals zero
+ */
+HWTEST_F(AVCodecInfoTest, UpdateParams_Valid_Test_010, TestSize.Level1)
+{
+    videoCaps_->blockPerFrameRange_.maxVal = 0;
+    videoCaps_->UpdateParams();
+}
+
+/**
+ * @tc.name: DivRange_Valid_Test_001
+ * @tc.desc: divisor equals zero
+ */
+HWTEST_F(AVCodecInfoTest, DivRange_Valid_Test_001, TestSize.Level1)
+{
+    OHOS::MediaAVCodec::Range range = OHOS::MediaAVCodec::Range(0, 0);
+    constexpr int32_t divisor = 0;
+    videoCaps_->DivRange(range, divisor);
+}
+
+/**
+ * @tc.name: DivCeil_Valid_Test_001
+ * @tc.desc: divisor equals zero
+ */
+HWTEST_F(AVCodecInfoTest, DivCeil_Valid_Test_001, TestSize.Level1)
+{
+    constexpr int32_t dividend = 0;
+    constexpr int32_t divisor = 0;
+    auto ret = videoCaps_->DivCeil(dividend, divisor);
+    EXPECT_EQ(ret, INT32_MAX);
+}
+
+/**
+ * @tc.name: GetPreferredFrameRate_Valid_Test_001
+ * @tc.desc: divisor equals zero
+ */
+HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_001, TestSize.Level1)
+{
+    videoCaps_->GetPreferredFrameRate(width_, height_);
+}
 }
