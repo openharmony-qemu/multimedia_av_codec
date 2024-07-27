@@ -83,6 +83,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
     "video_resize_filter.cpp",
+    "metadata_filter.cpp",
   ]
 
   deps = [
