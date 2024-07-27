@@ -154,10 +154,10 @@ HevcDecoder::~HevcDecoder()
         dumpInFile_->close();
     }
     if (dumpOutFile_ != nullptr) {
-        dumpInFile_->close();
+        dumpOutFile_->close();
     }
     if (dumpConvertFile_ != nullptr) {
-        dumpInFile_->close();
+        dumpConvertFile_->close();
     }
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
