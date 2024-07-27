@@ -237,12 +237,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
 
 Downloader::~Downloader()
 {
-<<<<<<< HEAD
-    AutoLock lock(taskMutex_);
-    Stop(false);
-=======
     Stop(true);
->>>>>>> 0611668af46ad57229826672ed4d03bf8c7da998
     if (client_ != nullptr) {
         client_->Deinit();
         client_ = nullptr;
