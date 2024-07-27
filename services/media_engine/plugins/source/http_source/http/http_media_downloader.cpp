@@ -239,6 +239,7 @@ bool HttpMediaDownloader::HandleBuffering()
     if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         return false;
     }
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     size_t fileRemain = 0;
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
     if (fileContenLen > readOffset_) {
@@ -260,6 +261,7 @@ bool HttpMediaDownloader::HandleBuffering()
 
     if (!isBuffering_ && isFirstFrameArrived_) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
     MEDIA_LOG_D("HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
@@ -295,6 +297,7 @@ bool HttpMediaDownloader::StartBuffering()
                 readOffset_, GetCurrentBufferSize(), waterLineAbove_);
             isBuffering_ = true;
             MEDIA_LOG_I("CacheData OnEvent BUFFERING_START.");
+            UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
             return true;
         }

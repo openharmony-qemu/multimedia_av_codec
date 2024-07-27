@@ -315,10 +315,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    if (timeoutMs > 0) {
-        MEDIA_LOG_I("InitCurlEnvironment url: " PUBLIC_LOG_S " timeout:" PUBLIC_LOG_D32, url.c_str(), timeoutMs);
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, timeoutMs);
-    }
     int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
