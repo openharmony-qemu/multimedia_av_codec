@@ -815,18 +815,21 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitDefaultPlay_011, TestSiz
     info.type = Plugins::SUBTITLE;
     streams.push_back(info2);
 
-    demuxerPluginManager->InitDefaultPlay(streams);
+    EXPECT_EQ(demuxerPluginManager->InitDefaultPlay(streams), Status::OK);
     demuxerPluginManager->GetStreamCount();
 
-    int32_t trackId;
-    int32_t innerTrackId;
-    demuxerPluginManager->GetTrackInfoByStreamID(0, trackId, innerTrackId);
     demuxerPluginManager->LoadDemuxerPlugin(-1, nullptr);
     demuxerPluginManager->curSubTitleStreamID_  = -1;
     Plugins::MediaInfo mediaInfo;
     demuxerPluginManager->LoadCurrentSubtitlePlugin(nullptr, mediaInfo);
     demuxerPluginManager->GetTmpInnerTrackIDByTrackID(-1);
     demuxerPluginManager->GetInnerTrackIDByTrackID(-1);
+
+    int32_t trackId;
+    int32_t innerTrackId;
+    demuxerPluginManager->GetTrackInfoByStreamID(0, trackId, innerTrackId);
+    EXPECT_EQ(trackId, 0);
+    EXPECT_EQ(innerTrackId, 0);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Dts2FrameId_012, TestSize.Level1)
@@ -835,19 +838,19 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Dts2FrameId_012, TestSize.Level1)
     uint32_t frameId = 0;
     std::vector<uint32_t> IFramePos = { 100 };
 
-    demuxer->Dts2FrameId(100, frameId, 0);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::ERROR_NULL_POINTER);
     demuxer->GetIFramePos(IFramePos);
 
     demuxer->source_  = nullptr;
-    demuxer->Dts2FrameId(100, frameId, 0);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::ERROR_NULL_POINTER);
     demuxer->GetIFramePos(IFramePos);
 
     demuxer->demuxerPluginManager_  = nullptr;
-    demuxer->Dts2FrameId(100, frameId, 0);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::ERROR_NULL_POINTER);
     demuxer->GetIFramePos(IFramePos);
 
-    demuxer->SetFrameRate(-1.0, 0);
-    demuxer->SetFrameRate(1.0, 0);
+    EXPECT_EQ(demuxer->SetFrameRate(-1.0, 0), Status::OK);
+    EXPECT_EQ(demuxer->SetFrameRate(1.0, 0), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010, TestSize.Level1)
@@ -869,8 +872,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010
     demuxer->OnDumpInfo(-1);
     demuxer->OnDumpInfo(123);
     demuxer->OptimizeDecodeSlow(false);
-    demuxer->HasVideo();
     demuxer->DeregisterVideoStreamReadyCallback();
+    EXPECT_EQ(demuxer->HasVideo(), true);
 }
 
 }

@@ -1443,9 +1443,6 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
         std::string mimeType;
         auto trackMeta = mediaInfo.tracks[index];
-        if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("invalid") == 0) {
-            continue;
-        }
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
         MEDIA_LOG_I("InitMediaMetaData push track, index = " PUBLIC_LOG_D32 " mimeType = " PUBLIC_LOG_S,
             index, mimeType.data());
