@@ -876,4 +876,28 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010
     EXPECT_EQ(demuxer->HasVideo(), true);
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsBufferDroppable_001, TestSize.Level1)
+{
+    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+    int32_t vTrackId = 0;
+    int32_t aTrackId = 1;
+    demuxer->demuxerPluginManager_->SetIsDash(true);
+    demuxer->SetDumpInfo(true, 0);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[aTrackId], vTrackId);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[aTrackId], aTrackId);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[vTrackId], vTrackId);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[vTrackId], aTrackId);
+    demuxer->OptimizeDecodeSlow(true);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[aTrackId], vTrackId);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[aTrackId], aTrackId);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[vTrackId], vTrackId);
+    demuxer->IsBufferDroppable(demuxer->bufferMap_[vTrackId], aTrackId);
+}
+
 }

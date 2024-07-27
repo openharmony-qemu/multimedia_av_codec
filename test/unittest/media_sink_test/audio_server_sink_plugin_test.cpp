@@ -15,7 +15,10 @@
 
 #include "gtest/gtest.h"
 #include "audio_server_sink_plugin.h"
+#include "audio_info.h"
+#include "audio_interrupt_info.h"
 
+using namespace OHOS::AudioStandard;
 using namespace testing::ext;
 using namespace OHOS::Media::Plugins;
 
