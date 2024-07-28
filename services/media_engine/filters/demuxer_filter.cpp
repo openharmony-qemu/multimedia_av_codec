@@ -28,6 +28,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
+constexpr uint32_t maxCacheLimitSize = 50 * 1024 * 1024;
 }
 
 namespace OHOS {
@@ -137,7 +138,9 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
         return Status::ERROR_INVALID_PARAMETER;
     }
     mediaSource_ = source;
-    return demuxer_->SetDataSource(mediaSource_);
+    Status ret = demuxer_->SetDataSource(mediaSource_);
+    demuxer_->SetCacheLimit(maxCacheLimitSize);
+    return ret;
 }
 
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)

@@ -998,9 +998,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             WebvttMP4EOSProcess(vttPkt);
             av_packet_free(&pkt);
             ret = PushEOSToAllCache();
-            if (ret != Status::OK) {
-                return ret;
-            }
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PushEOSToAllCache failed.");
             return Status::END_OF_STREAM;
         }
         if (ffmpegRet < 0) { // fail
@@ -1014,23 +1012,20 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
-        }
-        auto trackId = pkt->stream_index;
-        if (!TrackIsSelected(trackId)) {
+        } 
+        if (!TrackIsSelected(static_cast<uint32_t>(pkt->stream_index))) {
             av_packet_unref(pkt);
             continue;
         }
-        AVStream *avStream = formatContext_->streams[trackId];
+        AVStream *avStream = formatContext_->streams[pkt->stream_index];
         if (IsWebvttMP4(avStream) && WebvttPktProcess(&vttPkt, pkt, continueRead)) {
             continue;
-        } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) &&
+        } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(static_cast<uint32_t>(pkt->stream_index)) &&
             GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;
         }
         ret = AddPacketToCacheQueue(pkt);
-        if (ret != Status::OK) {
-            return ret;
-        }
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed.");
         pkt = nullptr;
     }
     return ret;
@@ -1372,9 +1367,8 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
             auto avStream = formatContext_->streams[trackIndex];
             if (HaveValidParser(avStream->codecpar->codec_id)) {
                 ret = GetVideoFirstKeyFrame(trackIndex);
-                if (ret != Status::OK) {
-                    return ret;
-                }
+                FALSE_RETURN_V_MSG_E(ret == Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+                    "Get first frame failed is due to error no memory");
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
                 streamParser_->ConvertExtraDataToAnnexb(
@@ -1766,6 +1760,9 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         } else if (ret == Status::ERROR_AGAIN) {
             MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
+        } else if (ret == Status::ERROR_NO_MEMORY) {
+            MEDIA_LOG_E("cache data size is greater than cache limit size. ret = " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_NO_MEMORY;
         }
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
@@ -1814,6 +1811,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
         } else if (ret == Status::ERROR_AGAIN) {
             MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
+        } else if (ret == Status::ERROR_NO_MEMORY) {
+            MEDIA_LOG_E("cache data size is greater than cache limit size. ret = " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_NO_MEMORY;
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
@@ -1965,7 +1965,8 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize) {
+void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
+{
     cachelimitSize_ = limitSize;
 }
 

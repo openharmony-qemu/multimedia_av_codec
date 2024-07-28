@@ -95,13 +95,14 @@ size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
 uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_I("block queue " PUBLIC_LOG_S " GetCacheDataSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheDataSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
         name_.c_str(), trackIndex);
     uint32_t dataSize = 0;
     for (auto queIndex : queMap_[trackIndex]) {
         dataSize += quePool_[queIndex].dataSize;
     }
-    MEDIA_LOG_I("block queue " PUBLIC_LOG_S " GetCacheDataSize = " PUBLIC_LOG_U32, name_.c_str(), dataSize);
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S "trackIndex = " PUBLIC_LOG_U32 " GetCacheDataSize = " PUBLIC_LOG_U32,
+        name_.c_str(), trackIndex, dataSize);
     return dataSize;
 }
 
@@ -199,7 +200,13 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         if (quePool_[queIndex].blockQue->Size() > 0) {
             auto block = quePool_[queIndex].blockQue->Pop();
             for (auto pkt : block->pkts) {
-                quePool_[queIndex].dataSize -= pkt->size;
+                if (quePool_[queIndex].dataSize >= pkt->size) {
+                    quePool_[queIndex].dataSize -= pkt->size;
+                } else {
+                    MEDIA_LOG_D("quePool_[queIndex].dataSize=" PUBLIC_LOG_D32 "pkt->size=" PUBLIC_LOG_D32,
+                        quePool_[queIndex].dataSize, pkt->size);
+                    quePool_[queIndex].dataSize = 0;
+                }
             }
             if (quePool_[queIndex].blockQue->Empty()) {
                 ResetQueue(queIndex);
