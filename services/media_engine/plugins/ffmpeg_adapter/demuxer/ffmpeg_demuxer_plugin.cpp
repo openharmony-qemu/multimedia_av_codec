@@ -1012,7 +1012,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
                 return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
-        } 
+        }
         if (!TrackIsSelected(static_cast<uint32_t>(pkt->stream_index))) {
             av_packet_unref(pkt);
             continue;
@@ -1754,16 +1754,13 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
-        } else if (ret == Status::ERROR_UNKNOWN) {
-            MEDIA_LOG_E("read from ffmpeg faild.");
-            return Status::ERROR_UNKNOWN;
-        } else if (ret == Status::ERROR_AGAIN) {
-            MEDIA_LOG_E("read from ffmpeg faild, try again.");
-            return Status::ERROR_AGAIN;
-        } else if (ret == Status::ERROR_NO_MEMORY) {
-            MEDIA_LOG_E("cache data size is greater than cache limit size. ret = " PUBLIC_LOG_D32, ret);
-            return Status::ERROR_NO_MEMORY;
         }
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
+            "read from ffmpeg faild.");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
+            "read from ffmpeg faild, try again.");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+            "cache data size is greater than cache limit size.");
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     auto samplePacket = cacheQueue_.Front(trackId);

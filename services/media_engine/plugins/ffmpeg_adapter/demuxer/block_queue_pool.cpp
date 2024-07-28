@@ -200,13 +200,8 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         if (quePool_[queIndex].blockQue->Size() > 0) {
             auto block = quePool_[queIndex].blockQue->Pop();
             for (auto pkt : block->pkts) {
-                if (quePool_[queIndex].dataSize >= pkt->size) {
-                    quePool_[queIndex].dataSize -= pkt->size;
-                } else {
-                    MEDIA_LOG_D("quePool_[queIndex].dataSize=" PUBLIC_LOG_D32 "pkt->size=" PUBLIC_LOG_D32,
-                        quePool_[queIndex].dataSize, pkt->size);
-                    quePool_[queIndex].dataSize = 0;
-                }
+                quePool_[queIndex].dataSize =
+                    quePool_[queIndex].dataSize >= pkt->size ? quePool_[queIndex].dataSize -= pkt->size : 0;
             }
             if (quePool_[queIndex].blockQue->Empty()) {
                 ResetQueue(queIndex);
