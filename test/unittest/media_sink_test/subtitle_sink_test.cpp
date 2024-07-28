@@ -135,7 +135,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case2, TestSize.Level1
     sink->isThreadExit_ = true;
     sink->RenderLoop();
     sink->isEos_ = false;
-    sink->filledOutputBuffer_ = std::shared_ptr<AVBuffer>(new AVBuffer());
+    sink->filledOutputBuffer_ = std::make_shared<AVBuffer>();
     sink->filledOutputBuffer_->flag_ = 1;
     sink->filledOutputBuffer_->memory_= std::make_shared<AVMemory>();
     sink->DrainOutputBuffer(true);
@@ -171,7 +171,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case3, TestSize.Level1
     sink->isThreadExit_ = true;
     sink->shouldUpdate_ = false;
     sink->RenderLoop();
-    sink->filledOutputBuffer_ = std::shared_ptr<AVBuffer>(new AVBuffer());
+    sink->filledOutputBuffer_ = std::make_shared<AVBuffer>();
     sink->filledOutputBuffer_->flag_ = 1;
     sink->filledOutputBuffer_->memory_= std::make_shared<AVMemory>();
     sink->DrainOutputBuffer(true);
@@ -207,7 +207,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case4, TestSize.Level1
     sink->subtitleInfoVec_.push_back({"test", 1, 1});
     sink->isThreadExit_ = true;
     sink->RenderLoop();
-    sink->filledOutputBuffer_ = std::shared_ptr<AVBuffer>(new AVBuffer());
+    sink->filledOutputBuffer_ = std::make_shared<AVBuffer>();
     sink->filledOutputBuffer_->flag_ = 1;
     sink->filledOutputBuffer_->memory_= std::make_shared<AVMemory>();
     sink->DrainOutputBuffer(true);
@@ -243,7 +243,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case5, TestSize.Level1
     sink->subtitleInfoVec_.push_back({"test", 2, 1});
     sink->isThreadExit_ = true;
     sink->RenderLoop();
-    sink->filledOutputBuffer_ = std::shared_ptr<AVBuffer>(new AVBuffer());
+    sink->filledOutputBuffer_ = std::make_shared<AVBuffer>();
     sink->filledOutputBuffer_->flag_ = 1;
     sink->filledOutputBuffer_->memory_= std::make_shared<AVMemory>();
     sink->DrainOutputBuffer(true);
@@ -277,7 +277,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case6, TestSize.Level1
     sink->Prepare();
     sink->isThreadExit_ = true;
     sink->RenderLoop();
-    sink->filledOutputBuffer_ = std::shared_ptr<AVBuffer>(new AVBuffer());
+    sink->filledOutputBuffer_ = std::make_shared<AVBuffer>();
     sink->filledOutputBuffer_->flag_ = 1;
     sink->filledOutputBuffer_->memory_= std::make_shared<AVMemory>();
     sink->DrainOutputBuffer(true);
