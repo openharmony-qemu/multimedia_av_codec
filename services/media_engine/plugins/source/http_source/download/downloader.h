@@ -172,6 +172,7 @@ private:
     bool BeginDownload();
 
     int64_t HttpDownloadLoop();
+    void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
@@ -189,13 +190,14 @@ private:
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
-    std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     std::atomic<bool> shouldStartNextRequest {false};
     size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
+    std::shared_ptr<Task> task_;
+    std::atomic<bool> isDestructor_ {false};
 };
 }
 }

@@ -237,11 +237,17 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
 
 Downloader::~Downloader()
 {
+    isDestructor_ = true;
+    MEDIA_LOG_I("~Downloader In");
     Stop(false);
+    if (task_ != nullptr) {
+        task_ = nullptr;
+    }
     if (client_ != nullptr) {
         client_->Deinit();
         client_ = nullptr;
     }
+    MEDIA_LOG_I("~Downloader out");
 }
 
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
@@ -310,7 +316,9 @@ void Downloader::Stop(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Stop");
     MEDIA_LOG_I("Stop Begin");
-    requestQue_->SetActive(false);
+    if (requestQue_ != nullptr) {
+        requestQue_->SetActive(false);
+    }
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
     }
@@ -318,10 +326,12 @@ void Downloader::Stop(bool isAsync)
         client_->Close();
     }
     shouldStartNextRequest = true;
-    if (isAsync) {
-        task_->StopAsync();
-    } else {
-        task_->Stop();
+    if (task_ != nullptr) {
+        if (isAsync) {
+            task_->StopAsync();
+        } else {
+            task_->Stop();
+        }
     }
     MEDIA_LOG_I("Stop End");
 }
@@ -425,11 +435,18 @@ int64_t Downloader::HttpDownloadLoop()
         BeginDownload();
         shouldStartNextRequest = currentRequest_->IsClosed();
     }
-    if (currentRequest_ == nullptr) {
-        MEDIA_LOG_I("currentRequest is null");
+    if (currentRequest_ == nullptr || client_ == nullptr) {
+        MEDIA_LOG_I("currentRequest_ %{public}d client_ %{public}d nullptr",
+                    currentRequest_ != nullptr, client_ != nullptr);
         task_->PauseAsync();
         return -1;
     }
+    RequestData();
+    return 0;
+}
+
+void Downloader::RequestData()
+{
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
         + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
     NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
@@ -438,22 +455,24 @@ int64_t Downloader::HttpDownloadLoop()
     if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
         startPos = -1;
     }
-    Status ret = client_->RequestData(startPos, currentRequest_->requestSize_,
-                                      serverCode, clientCode);
+    Status ret = client_->RequestData(startPos, currentRequest_->requestSize_, serverCode, clientCode);
     currentRequest_->clientError_ = clientCode;
     currentRequest_->serverError_ = serverCode;
     if (ret == Status::OK) {
         HandleRetOK();
     } else {
-        task_->PauseAsync();
+        if (task_ != nullptr) {
+            task_->PauseAsync();
+        }
         MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
                     ",request queue size: " PUBLIC_LOG_U64,
                     static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
                     static_cast<int64_t>(requestQue_->Size()));
-        std::shared_ptr<Downloader> unused;
-        currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
+        if (!isDestructor_) {
+            std::shared_ptr<Downloader> unused;
+            currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
+        }
     }
-    return 0;
 }
 
 void Downloader::HandlePlayingFinish()

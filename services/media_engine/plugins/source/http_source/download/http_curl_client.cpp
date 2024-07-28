@@ -262,11 +262,17 @@ Status HttpCurlClient::Close()
 
 Status HttpCurlClient::Deinit()
 {
+    MEDIA_LOG_I("Deinit in");
+    if (easyHandle_) {
+        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+    }
+    AutoLock lock(mutex_);
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
     }
     curl_global_cleanup();
+    MEDIA_LOG_I("Deinit out");
     return Status::OK;
 }
 

@@ -63,14 +63,6 @@ PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
     PlayListDownloaderInit();
 }
 
-PlayListDownloader::~PlayListDownloader()
-{
-    MEDIA_LOG_I("PlayListDownloader::~PlayListDownloader");
-    if (updateTask_ != nullptr) {
-        updateTask_->Stop();
-    }
-}
-
 void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
 {
     httpHeader_ = httpHeader;

@@ -50,7 +50,7 @@ public:
     HlsMediaDownloader() noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration);
     explicit HlsMediaDownloader(std::string mimeType);
-    ~HlsMediaDownloader() override = default;
+    ~HlsMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
