@@ -62,7 +62,6 @@ HWTEST(TestSubtitleSink, do_sync_write_not_eos, TestSize.Level1)
     sink->SetSyncCenter(syncCenter);
     sink->PrepareInputBufferQueue();
     sink->Prepare();
-    sink->state_ = Pipeline::FilterState::READY;
     auto bufferQP = sink->GetBufferQueueProducer();
     ASSERT_TRUE(bufferQP != nullptr);
     auto bufferQC = sink->GetBufferQueueConsumer();
