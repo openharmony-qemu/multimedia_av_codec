@@ -77,8 +77,10 @@ private:
     int32_t stopCount_{0};
     int32_t eosCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
+    std::map<std::string, int32_t> trackIndexMap_;
     std::string videoCodecMimeType_;
     std::string audioCodecMimeType_;
+    std::string metaDataCodecMimeType_;
     std::string bundleName_;
     uint64_t instanceId_{0};
     int32_t appUid_ {0};

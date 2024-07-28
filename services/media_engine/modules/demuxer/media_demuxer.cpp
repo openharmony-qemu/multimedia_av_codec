@@ -2122,5 +2122,10 @@ void MediaDemuxer::SetCacheLimit(uint32_t limitSize)
 
     pluginTemp->SetCacheLimit(limitSize);
 }
+
+bool MediaDemuxer::IsVideoEos()
+{
+    return (videoTrackId_ != TRACK_ID_DUMMY) && eosMap_[videoTrackId_];
+}
 } // namespace Media
 } // namespace OHOS
