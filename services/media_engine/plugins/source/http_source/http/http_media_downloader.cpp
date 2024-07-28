@@ -691,7 +691,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
     isServerAcceptRange_ = downloadRequest_->IsServerAcceptRange();
 
     size_t hasWriteSize = 0;
-    while (hasWriteSize < len && !isInterruptNeeded_.load()) {
+    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_) {
         if (isNeedClean_) {
             MEDIA_LOG_D("isNeedClean true.");
             return true;
