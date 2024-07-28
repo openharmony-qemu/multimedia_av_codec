@@ -944,7 +944,7 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, boo
         pkt->dts = (*vttPkt)->dts;
         pkt->size = (*vttPkt)->size;
         *((*vttPkt)->data + (*vttPkt)->size) = '\0';
-        ret = memmove_s(pkt->data, pkt->size, (*vttPkt)->data, (*vttPkt)->size);
+        int32_t ret = memmove_s(pkt->data, pkt->size, (*vttPkt)->data, (*vttPkt)->size);
         if (ret != 0) {
             MEDIA_LOG_E("pkt memmove_s failed, ret=" PUBLIC_LOG_D32, ret);
         }
@@ -968,7 +968,7 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(AVPacket *vttPkt)
     if (vttPkt != nullptr) {
         auto trackId = vttPkt->stream_index;
         AVStream *avStream = formatContext_->streams[trackId];
-        if (IsWebvttMP4(avStream) && pkt->size != 0) {
+        if (IsWebvttMP4(avStream) && vttPkt->size != 0) {
             vttPkt->duration = formatContext_->streams[trackId]->duration - vttPkt->pts;
             AddPacketToCacheQueue(vttPkt);
             vttPkt = nullptr;
