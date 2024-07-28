@@ -638,7 +638,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_001, TestSize.Level1)
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_002, TestSize.Level1)
 {
-    string srtPath = "/data/test/media/H264_AAC_multi_track.mp4";
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
     int64_t fileSize = 0;
     if (!srtPath.empty()) {
         struct stat fileStatus {};
@@ -775,7 +775,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_001, TestSize.Level1)
     demuxer->streamDemuxer_->SetIsIgnoreParse(false);
     demuxer->isStopped_ = false;
     demuxer->isPaused_ = true;
-
+    demuxer->isSeekError_ = false;
+    EXPECT_EQ(time, demuxer->ReadLoop(trackId));
     demuxer->streamDemuxer_->SetIsIgnoreParse(false);
     demuxer->isStopped_ = false;
     demuxer->isPaused_ = false;
