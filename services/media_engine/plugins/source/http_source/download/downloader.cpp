@@ -456,6 +456,18 @@ int64_t Downloader::HttpDownloadLoop()
     return 0;
 }
 
+void Downloader::HandlePlayingFinish()
+{
+    if (requestQue_->Empty()) {
+        task_->PauseAsync();
+    }
+    shouldStartNextRequest = true;
+    if (currentRequest_->downloadDoneCallback_) {
+        currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
+        currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
+    }
+}
+
 void Downloader::HandleRetOK()
 {
     if (currentRequest_->retryTimes_ > 0) {
@@ -478,27 +490,13 @@ void Downloader::HandleRetOK()
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
             currentRequest_->startPos_, currentRequest_->url_.c_str());
         currentRequest_->isEos_ = true;
-        if (requestQue_->Empty()) {
-            task_->PauseAsync();
-        }
-        shouldStartNextRequest = true;
-        if (currentRequest_->downloadDoneCallback_) {
-            currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
-        }
+        HandlePlayingFinish();
         return;
     }
     if (currentRequest_->headerInfo_.fileContentLen == 0 && remaining <= 0) {
         currentRequest_->isEos_ = true;
         currentRequest_->Close();
-        if (requestQue_->Empty()) {
-            task_->PauseAsync();
-        }
-        shouldStartNextRequest = true;
-        if (currentRequest_->downloadDoneCallback_) {
-            currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
-        }
+        HandlePlayingFinish();
         return;
     }
     if (remaining < PER_REQUEST_SIZE) {

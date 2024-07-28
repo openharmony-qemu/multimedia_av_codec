@@ -172,6 +172,7 @@ private:
     bool BeginDownload();
 
     int64_t HttpDownloadLoop();
+    void HandlePlayingFinish();
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
