@@ -905,16 +905,19 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::PushEOSToAllCache()
+Status FFmpegDemuxerPlugin::PushEOSToAllCache()
 {
     MEDIA_LOG_W("Push EOS frame into the cache of all tracks");
+    Status ret = Status::OK;
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         auto streamIndex = selectedTrackIds_[i];
         MEDIA_LOG_I("Push eos frame into the cache queue " PUBLIC_LOG_D32 ".", streamIndex);
         std::shared_ptr<SamplePacket> eosSample = std::make_shared<SamplePacket>();
         eosSample->isEOS = true;
         cacheQueue_.Push(streamIndex, eosSample);
+        ret = CheckCacheDataLimit(streamIndex);
     }
+    return ret;
 }
 
 bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead)
@@ -987,6 +990,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
     AVPacket *pkt = nullptr;
     AVPacket *vttPkt = nullptr;
     bool continueRead = true;
+    Status ret = Status::OK;
     while (continueRead) {
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
@@ -998,7 +1002,8 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         if (ffmpegRet == AVERROR_EOF) { // eos
             WebvttMP4EOSProcess(vttPkt);
             av_packet_free(&pkt);
-            PushEOSToAllCache();
+            ret = PushEOSToAllCache();
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PushEOSToAllCache failed.");
             return Status::END_OF_STREAM;
         }
         if (ffmpegRet < 0) { // fail
@@ -1013,22 +1018,22 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             }
             return Status::ERROR_UNKNOWN;
         }
-        auto trackId = pkt->stream_index;
-        if (!TrackIsSelected(trackId)) {
+        if (!TrackIsSelected(static_cast<uint32_t>(pkt->stream_index))) {
             av_packet_unref(pkt);
             continue;
         }
-        AVStream *avStream = formatContext_->streams[trackId];
+        AVStream *avStream = formatContext_->streams[pkt->stream_index];
         if (IsWebvttMP4(avStream) && WebvttPktProcess(&vttPkt, pkt, continueRead)) {
             continue;
-        } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) &&
+        } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(static_cast<uint32_t>(pkt->stream_index)) &&
             GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;
         }
-        AddPacketToCacheQueue(pkt);
+        ret = AddPacketToCacheQueue(pkt);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed.");
         pkt = nullptr;
     }
-    return Status::OK;
+    return ret;
 }
 
 Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample)
@@ -1361,11 +1366,14 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetSeiInfo failed due to formatContext_ is nullptr.");
+    Status ret = Status::OK;
     if (streamParser_ != nullptr && !streamParserInited_) {
         for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
             auto avStream = formatContext_->streams[trackIndex];
             if (HaveValidParser(avStream->codecpar->codec_id)) {
-                GetVideoFirstKeyFrame(trackIndex);
+                ret = GetVideoFirstKeyFrame(trackIndex);
+                FALSE_RETURN_V_MSG_E(ret == Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+                    "Get first frame failed is due to error no memory");
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
                 streamParser_->ConvertExtraDataToAnnexb(
@@ -1375,7 +1383,7 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
             }
         }
     }
-    return Status::OK;
+    return ret;
 }
 
 Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
@@ -1502,9 +1510,10 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     }
 }
 
-void FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
+Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
 {
     auto trackId = pkt->stream_index;
+    Status ret = Status::OK;
     if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
@@ -1516,22 +1525,25 @@ void FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             cacheSamplePacket->pkts.push_back(pkt);
             cacheSamplePacket->offset = 0;
             cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
+            ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
         }
     }
     DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
         avpacketIndex_++, pkt->pts, pkt->pos};
     Dump(dumpParam);
+    return ret;
 }
 
-void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
+Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
 {
-    FALSE_RETURN_MSG(formatContext_ != nullptr, "formatContext_ is null");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is null");
     MEDIA_LOG_I("GetVideoFirstKeyFrame enter\n");
     AVPacket *pkt = nullptr;
+    Status ret = Status::OK;
     while (1) {
         if (pkt == nullptr) {
             pkt = av_packet_alloc();
-            FALSE_RETURN_MSG(pkt != nullptr, "av_packet_alloc fail");
+            FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc fail");
         }
 
         std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -1546,19 +1558,23 @@ void FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
         Dump(dumpParam);
 
         cacheQueue_.AddTrackQueue(pkt->stream_index);
-        AddPacketToCacheQueue(pkt);
+        ret = AddPacketToCacheQueue(pkt);
+        if (ret != Status::OK) {
+            return ret;
+        }
 
         if (static_cast<uint32_t>(pkt->stream_index) == trackIndex) {
             firstFrame_ = av_packet_alloc();
-            FALSE_RETURN_MSG(firstFrame_ != nullptr, "av_packet_alloc fail");
-            int ret = av_new_packet(firstFrame_, pkt->size);
-            FALSE_RETURN_MSG(ret >= 0, "av_new_packet fail");
+            FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc fail");
+            int avRet = av_new_packet(firstFrame_, pkt->size);
+            FALSE_RETURN_V_MSG_E(avRet >= 0, Status::ERROR_INVALID_DATA, "av_new_packet fail");
             av_packet_copy_props(firstFrame_, pkt);
             memcpy_s(firstFrame_->data, pkt->size, pkt->data, pkt->size);
             break;
         }
         pkt = nullptr;
     }
+    return ret;
 }
 
 void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& format)
@@ -1743,13 +1759,13 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
-        } else if (ret == Status::ERROR_UNKNOWN) {
-            MEDIA_LOG_E("read from ffmpeg faild.");
-            return Status::ERROR_UNKNOWN;
-        } else if (ret == Status::ERROR_AGAIN) {
-            MEDIA_LOG_E("read from ffmpeg faild, try again.");
-            return Status::ERROR_AGAIN;
         }
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
+            "read from ffmpeg faild.");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
+            "read from ffmpeg faild, try again.");
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+            "cache data size is greater than cache limit size.");
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     auto samplePacket = cacheQueue_.Front(trackId);
@@ -1797,6 +1813,9 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
         } else if (ret == Status::ERROR_AGAIN) {
             MEDIA_LOG_E("read from ffmpeg faild, try again.");
             return Status::ERROR_AGAIN;
+        } else if (ret == Status::ERROR_NO_MEMORY) {
+            MEDIA_LOG_E("cache data size is greater than cache limit size. ret = " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_NO_MEMORY;
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
@@ -1936,6 +1955,21 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackInde
         presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(entry->timestamp, avStream->time_base));
     }
     return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
+{
+    auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
+    if (cachelimitSize_ != 0 && cacheDataSize > cachelimitSize_) {
+        MEDIA_LOG_E("cache data size is greater than cache limit size");
+        return Status::ERROR_NO_MEMORY;
+    }
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
+{
+    cachelimitSize_ = limitSize;
 }
 
 namespace { // plugin set
