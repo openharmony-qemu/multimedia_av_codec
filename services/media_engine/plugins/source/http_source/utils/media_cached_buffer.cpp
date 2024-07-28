@@ -746,12 +746,12 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
 void CacheMediaChunkBufferImpl::ResetReadSizeAlloc()
 {
     int64_t chunkNum = static_cast<int64_t>(chunkMaxNum_ + 1) - static_cast<int64_t>(freeChunks_.size());
-    if (totalReadSize_ > MAX_TOTAL_READ_SIZE && chunkNum > 0) {
-        auto preChunkSize = (MAX_TOTAL_READ_SIZE - 1) / chunkNum;
+    if (totalReadSize_ > static_cast<uint64_t>(MAX_TOTAL_READ_SIZE) && chunkNum > 0) {
+        uint64_t preChunkSize = static_cast<uint64_t>((MAX_TOTAL_READ_SIZE - 1) / chunkNum);
         for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
-            iter->totalReadSize = preChunkSize * iter->chunks.size();
+            iter->totalReadSize = preChunkSize * static_cast<uint64_t>(iter->chunks.size());
         }
-        totalReadSize_ = preChunkSize * chunkNum;
+        totalReadSize_ = preChunkSize * static_cast<uint64_t>(chunkNum);
     }
 }
 
