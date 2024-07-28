@@ -425,13 +425,17 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     std::string formatName(parserRefFormatContext_.get()->iformat->name);
     FALSE_RETURN_V_MSG_E(formatName.find("mp4") != std::string::npos, Status::ERROR_UNSUPPORTED_FORMAT,
                          "only support mp4.");
-    parserRefVideoStreamIdx_ =
-        av_find_best_stream(parserRefFormatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-    FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN,
-                         "ParserRefHeader failed due to can not find video stream.");
+    for (uint32_t trackIndex = 0; trackIndex < parserRefFormatContext_->nb_streams; trackIndex++) {
+        AVStream *stream = parserRefFormatContext_->streams[trackIndex];
+        if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+            stream->discard = AVDISCARD_ALL;
+        } else {
+            parserRefVideoStreamIdx_ = trackIndex;
+        }
+    }
+    FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");
     AVStream *videoStream = parserRefFormatContext_->streams[parserRefVideoStreamIdx_];
-    FALSE_RETURN_V_MSG_E(videoStream != nullptr, Status::ERROR_UNKNOWN,
-                         "ParserRefHeader failed due to video stream is null.");
+    FALSE_RETURN_V_MSG_E(videoStream != nullptr, Status::ERROR_UNKNOWN, "Video stream is null.");
     processingIFrame_.assign(IFramePos_.begin(), IFramePos_.end());
     FALSE_RETURN_V_MSG_E(
         videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
@@ -456,11 +460,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
     sLock.unlock();
-    if (pkt->stream_index != parserRefVideoStreamIdx_) {
-        return Status::OK;
-    }
     if (ffmpegRet < 0 && ffmpegRet != AVERROR_EOF) {
-        av_packet_free(&pkt);
         MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
                     AVStrError(ffmpegRet).c_str(), int(parserRefIoContext_.retry));
         if (parserRefIoContext_.retry) {
@@ -470,6 +470,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
             return Status::ERROR_AGAIN;
         }
         return Status::ERROR_UNKNOWN;
+    }
+    if (pkt->stream_index != parserRefVideoStreamIdx_ && ffmpegRet != AVERROR_EOF) {
+        return Status::OK;
     }
     int64_t dts = AvTime2Us(
         ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
@@ -497,7 +500,6 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
         }
 
         if (formatContext_ == nullptr || tmpGopId + 1 != parserCurGopId_ || !updatePosIsForward_) {
-            av_packet_free(&pkt);
             return Status::END_OF_STREAM;
         }
     }
@@ -556,6 +558,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
     while (formatContext_ != nullptr && parserState_ && parserCurGopId_ != -1) {
         Status rlt = ParserRefInfoLoop(pkt, curStreamId);
         if (rlt != Status::OK) {
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+            parserState_ = true;
             return rlt;
         }
         if (pkt->stream_index == parserRefVideoStreamIdx_) {
