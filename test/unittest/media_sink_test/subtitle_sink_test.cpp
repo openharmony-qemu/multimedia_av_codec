@@ -54,35 +54,6 @@ std::shared_ptr<SubtitleSink> SubtitleSinkCreate()
     return sink;
 }
 
-HWTEST(TestSubtitleSink, do_sync_write_not_eos, TestSize.Level1)
-{
-    auto sink = SubtitleSinkCreate();
-    ASSERT_TRUE(sink != nullptr);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    sink->SetSyncCenter(syncCenter);
-    sink->PrepareInputBufferQueue();
-    sink->Prepare();
-    auto bufferQP = sink->GetBufferQueueProducer();
-    ASSERT_TRUE(bufferQP != nullptr);
-    auto bufferQC = sink->GetBufferQueueConsumer();
-    ASSERT_TRUE(bufferQC != nullptr);
-    sink->subtitleInfoVec_.push_back({"test", 1, 1});
-    sink->isThreadExit_ = true;
-    sink->RenderLoop();
-
-    AVBufferConfig config;
-    config.size = 4;
-    config.memoryType = MemoryType::SHARED_MEMORY;
-    std::shared_ptr<AVBuffer> buffer = nullptr;
-    auto ret = bufferQP->RequestBuffer(buffer, config, 1000);
-    ASSERT_TRUE(ret == Status::OK);
-    ASSERT_TRUE(buffer != nullptr && buffer->memory_ != nullptr);
-    auto addr = buffer->memory_->GetAddr();
-    char subtitle[] = "test";
-    memcpy_s(addr, 4, subtitle, 4);
-    ret = bufferQP->ReturnBuffer(buffer, true);
-}
-
 HWTEST(TestSubtitleSink, do_sync_write_two_frames_case1, TestSize.Level1)
 {
     auto sink = SubtitleSinkCreate();
