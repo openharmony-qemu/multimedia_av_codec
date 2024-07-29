@@ -382,16 +382,15 @@ int32_t DashSegmentDownloader::GetWaterLineAbove()
 {
     int32_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (downloadRequest_ != nullptr && realTimeBitBate_ > 0) {
-        uint32_t downloadBiteRate = downloadRequest_->GetBitRate();
         MEDIA_LOG_D("GetWaterLineAbove streamId: " PUBLIC_LOG_D32 " realTimeBitBate: "
-            PUBLIC_LOG_D64 " downloadBiteRate: " PUBLIC_LOG_U32, streamId_, realTimeBitBate_, downloadBiteRate);
-        if (downloadBiteRate == 0) {
+            PUBLIC_LOG_D64 " downloadBiteRate: " PUBLIC_LOG_U32, streamId_, realTimeBitBate_, downloadBiteRate_);
+        if (downloadBiteRate_ == 0) {
             MEDIA_LOG_I("GetWaterLineAbove streamId: " PUBLIC_LOG_D32 " use default waterLineAbove: "
                 PUBLIC_LOG_D32, streamId_, waterLineAbove);
             return waterLineAbove;
         }
 
-        if (realTimeBitBate_ > static_cast<int64_t>(downloadBiteRate)) {
+        if (realTimeBitBate_ > static_cast<int64_t>(downloadBiteRate_)) {
             waterLineAbove = static_cast<int32_t>(DEFAULT_MAX_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
         } else {
             waterLineAbove = static_cast<int32_t>(DEFAULT_MIN_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
@@ -992,6 +991,7 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
         size_t fragmentSize = downloadRequest_->GetFileContentLength();
         double duration = downloadRequest_->GetDuration();
         CalculateBitRate(fragmentSize, duration);
+        downloadBiteRate_ = downloadRequest_->GetBitRate();
     }
 
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {

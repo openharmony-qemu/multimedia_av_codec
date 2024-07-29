@@ -228,6 +228,7 @@ private:
     bool isBuffering_{false};
     bool isReadFrame_{false};
     bool isBufferEnough_{true};
+    uint32_t downloadBiteRate_{0};
     int64_t realTimeBitBate_{0};
     uint64_t lastDurationRecord_{0};
     int32_t lastCachedSize_{0};
