@@ -1848,6 +1848,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6600, TestSize.Level0)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1885,6 +1887,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6700, TestSize.Level0)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1925,6 +1929,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6800, TestSize.Level0)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
     ASSERT_EQ(1, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));

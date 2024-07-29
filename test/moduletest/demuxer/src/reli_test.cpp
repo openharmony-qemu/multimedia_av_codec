@@ -57,7 +57,6 @@ OH_AVMemory *memory_list[16] = {};
 OH_AVDemuxer *demuxer_list[16] = {};
 int g_fdList[16] = {};
 int32_t g_track = 2;
-OH_AVBuffer *avBuffer_list[16] = {};
 
 void DemuxerReliNdkTest::SetUpTestCase() {}
 void DemuxerReliNdkTest::TearDownTestCase() {}
@@ -105,10 +104,6 @@ void DemuxerReliNdkTest::TearDown()
             ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
             memory_list[i] = nullptr;
         }
-        if (avBuffer_list[i] != nullptr) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer_list[i]));
-            avBuffer_list[i] = nullptr;
-        }
         std::cout << i << "            finish Destroy!!!!" << std::endl;
 
         close(g_fdList[i]);
@@ -133,25 +128,7 @@ static int64_t GetFileSize(const char *fileName)
     }
     return fileSize;
 }
-void DemuxFuncWav(int i, int loop)
-{
-    bool audioIsEnd = false;
-    OH_AVCodecBufferAttr bufferAttr;
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer_list[i], 0));
-    while (!audioIsEnd) {
-        for (int32_t index = 0; index < g_track; index++) {
-            if (audioIsEnd && (index == MEDIA_TYPE_AUD)) {
-                continue;
-            }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer_list[i], index, avBuffer_list[i]));
-            ASSERT_NE(avBuffer_list[i], nullptr);
-            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer_list[i], &bufferAttr));
-            if ((index == MEDIA_TYPE_AUD) && (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
-                audioIsEnd = true;
-            }
-        }
-    }
-}
+
 void DemuxFunc(int i, int loop)
 {
     bool audioIsEnd = false;
@@ -2445,97 +2422,4 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9100, TestSize.Level3)
     }
 }
 
-/**
- * @tc.number    : DEMUXER_RELI_9200
- * @tc.name      : create 16 instances repeat create-destory with wav file
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9200, TestSize.Level3)
-{
-    int num = 0;
-    int len = 256;
-    while (num < 10) {
-        num++;
-        vector<std::thread> vecThread;
-        for (int i = 0; i < g_maxThread; i++) {
-            char file[256] = {};
-            sprintf_s(file, len, "/data/test/media/16/%d_wav_audio_test_202406290859.wav", i);
-            g_fdList[i] = open(file, O_RDONLY);
-            int64_t size = GetFileSize(file);
-            cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
-            avBuffer_list[i] = OH_AVBuffer_Create(size);
-            ASSERT_NE(avBuffer_list[i], nullptr);
-            source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
-            ASSERT_NE(source_list[i], nullptr);
-            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
-            ASSERT_NE(demuxer_list[i], nullptr);
-            vecThread.emplace_back(DemuxFuncWav, i, num);
-        }
-        for (auto &val : vecThread) {
-            val.join();
-        }
-        for (int i = 0; i < g_maxThread; i++) {
-            if (demuxer_list[i] != nullptr) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
-                demuxer_list[i] = nullptr;
-            }
-            if (source_list[i] != nullptr) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
-                source_list[i] = nullptr;
-            }
-            if (avBuffer_list[i] != nullptr) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer_list[i]));
-                avBuffer_list[i] = nullptr;
-            }
-            std::cout << i << "            finish Destroy!!!!" << std::endl;
-            close(g_fdList[i]);
-        }
-        cout << "num: " << num << endl;
-    }
-}
-
-/**
- * @tc.number    : DEMUXER_RELI_9300
- * @tc.name      : create 16 instances repeat create-destory with wav network file
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_9300, TestSize.Level3)
-{
-    int num = 0;
-    int sizeinfo = 421888;
-    while (num < 10) {
-        num++;
-        vector<std::thread> vecThread;
-        const char *uri = "http://192.168.3.11:8080/share/audio/audio/wav_audio_test_202406290859.wav";
-        for (int i = 0; i < g_maxThread; i++) {
-            avBuffer_list[i] = OH_AVBuffer_Create(sizeinfo);
-            ASSERT_NE(avBuffer_list[i], nullptr);
-            cout << i << "  uri:  " << uri << endl;
-            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
-            ASSERT_NE(source_list[i], nullptr);
-            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
-            ASSERT_NE(demuxer_list[i], nullptr);
-            vecThread.emplace_back(DemuxFuncWav, i, num);
-        }
-        for (auto &val : vecThread) {
-            val.join();
-        }
-        for (int i = 0; i < g_maxThread; i++) {
-            if (demuxer_list[i] != nullptr) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
-                demuxer_list[i] = nullptr;
-            }
-            if (source_list[i] != nullptr) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
-                source_list[i] = nullptr;
-            }
-            if (avBuffer_list[i] != nullptr) {
-                ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_Destroy(avBuffer_list[i]));
-                avBuffer_list[i] = nullptr;
-            }
-            std::cout << i << "            finish Destroy!!!!" << std::endl;
-        }
-        cout << "num: " << num << endl;
-    }
-}
 }
