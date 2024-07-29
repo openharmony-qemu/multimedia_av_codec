@@ -16,7 +16,6 @@
 
 #include "avcodec_trace.h"
 #include "http_source_plugin.h"
-#include "download/http_curl_client.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
 #include "dash/dash_media_downloader.h"

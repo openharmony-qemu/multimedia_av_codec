@@ -140,7 +140,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
 HttpMediaDownloader::~HttpMediaDownloader()
 {
-    MEDIA_LOG_I("~HttpMediaDownloader dtor");
+    MEDIA_LOG_I("%{public}p ~HttpMediaDownloader dtor", this);
     Close(false);
 }
 
