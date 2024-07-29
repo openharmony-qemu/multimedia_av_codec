@@ -1145,7 +1145,7 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
         pluginImpl_->name, AVStrError(ret).c_str());
     MEDIA_LOG_I("FFmpeg open input finish");
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
-        MEDIA_LOG_W("Live flv resource, reset probe size to " PUBLIC_LOG_D64, LIVE_FLV_PROBE_SIZE);
+        MEDIA_LOG_W("Flv resource, reset probe size to " PUBLIC_LOG_D64, LIVE_FLV_PROBE_SIZE);
         formatContext->probesize = LIVE_FLV_PROBE_SIZE;
     }
     ret = avformat_find_stream_info(formatContext, NULL);
