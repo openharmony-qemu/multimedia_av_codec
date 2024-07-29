@@ -27,7 +27,7 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 constexpr uint32_t TIME_OUT_MS = 1000;
@@ -127,7 +127,7 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
         return Status::ERROR_UNKNOWN;
     }
     if (!releaseBufferTask_) {
-        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
+        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder",  "", TaskType::SINGLETON);
         releaseBufferTask_->RegisterJob([this] {
             ReleaseBuffer();
             return 0;
@@ -623,8 +623,8 @@ void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Form
             MEDIA_LOG_I("video encoder enableTemporalScale is false!");
             return;
         }
-
-        bool isSupported = true;
+        OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+        bool isSupported = OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
         if (isSupported) {
             MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is supported!");
             format.PutIntValue(MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY,
