@@ -153,7 +153,7 @@ public:
 
     virtual Status Reset() = 0;
 
-    virtual void SetDemuxerState() {}
+    virtual void SetDemuxerState(int32_t streamId) {}
 
     virtual void SetDownloadErrorState() {}
 

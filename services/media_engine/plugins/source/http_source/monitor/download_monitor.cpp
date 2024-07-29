@@ -218,9 +218,9 @@ void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
     downloader_->SetIsTriggerAutoMode(isAuto);
 }
 
-void DownloadMonitor::SetDemuxerState()
+void DownloadMonitor::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState();
+    downloader_->SetDemuxerState(streamId);
 }
 
 void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)

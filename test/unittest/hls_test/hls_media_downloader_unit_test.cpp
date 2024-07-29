@@ -251,7 +251,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetDownloadErrorState, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, SetDemuxerState, TestSize.Level1)
 {
-    hlsMediaDownloader->SetDemuxerState();
+    hlsMediaDownloader->SetDemuxerState(0);
     EXPECT_TRUE(hlsMediaDownloader->isReadFrame_);
     EXPECT_TRUE(hlsMediaDownloader->isFirstFrameArrived_);
 }

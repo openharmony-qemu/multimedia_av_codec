@@ -860,7 +860,7 @@ void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
     isAutoSelectBitrate_ = isAuto;
 }
 
-void HlsMediaDownloader::SetDemuxerState()
+void HlsMediaDownloader::SetDemuxerState(int32_t streamId)
 {
     MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;

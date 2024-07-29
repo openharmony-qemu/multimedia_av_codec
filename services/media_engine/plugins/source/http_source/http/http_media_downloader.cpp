@@ -783,7 +783,7 @@ void HttpMediaDownloader::DownloadReport()
     }
 }
 
-void HttpMediaDownloader::SetDemuxerState()
+void HttpMediaDownloader::SetDemuxerState(int32_t streamId)
 {
     MEDIA_LOG_I("SetDemuxerState");
     isFirstFrameArrived_ = true;
