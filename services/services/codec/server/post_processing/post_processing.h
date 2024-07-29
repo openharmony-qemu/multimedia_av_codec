@@ -132,7 +132,7 @@ public:
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         CHECK_AND_RETURN_RET_LOG(state_.Get() == State::PREPARED || state_.Get() == State::STOPPED,
-            AVCS_ERR_INVALID_STATE, "Invalid post processing state: %{public}s", state_.Name());
+            AVCS_ERR_INVALID_OPERATION, "Post processing is not prepared");
         AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Start();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start failed");
