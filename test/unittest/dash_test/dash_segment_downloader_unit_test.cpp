@@ -51,7 +51,7 @@ void DashSegmentDownloaderUnitTest::TearDown(void) {}
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     EXPECT_NE(segmentDownloader, nullptr);
@@ -61,7 +61,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER, TestSize.L
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
@@ -84,7 +84,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_RANGE, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
@@ -109,7 +109,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_RANGE, TestSize.Level1)
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_INIT_SEGMENT, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashInitSegment> initSeg = std::make_shared<DashInitSegment>();
@@ -138,7 +138,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_INIT_SEGMENT, TestSize.Le
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
@@ -171,7 +171,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
     std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
+    DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded, false);
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
 
@@ -182,7 +182,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
@@ -218,7 +218,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER, TestSize.Leve
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER_ALL, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
@@ -246,7 +246,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER_ALL, TestSize.
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_UPDATE_STREAM_ID, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     segmentDownloader->UpdateStreamId(2);
     EXPECT_EQ(segmentDownloader->GetStreamId(), 2);
@@ -254,21 +254,21 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_UPDATE_STREAM_ID, TestSize.Level1)
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_GET_CONTENT_LENGTH, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     EXPECT_EQ(segmentDownloader->GetContentLength(), 0);
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_GET_IS_SEGMENT_FINISH, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     EXPECT_FALSE(segmentDownloader->IsSegmentFinish());
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
             1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
@@ -302,7 +302,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_SUCCESS_001, TestSize.Level1)
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(nullptr,
             0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
     std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
     segmentSp->url_ = VIDEO_MEDIA_SEGMENT_URL_1;

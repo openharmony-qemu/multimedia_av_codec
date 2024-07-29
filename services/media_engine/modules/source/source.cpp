@@ -107,9 +107,9 @@ void Source::SetBundleName(const std::string& bundleName)
     }
 }
 
-void Source::SetDemuxerState()
+void Source::SetDemuxerState(int32_t streamId)
 {
-    plugin_->SetDemuxerState();
+    plugin_->SetDemuxerState(streamId);
 }
 
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)

@@ -78,7 +78,7 @@ public:
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();

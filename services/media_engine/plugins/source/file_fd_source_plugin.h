@@ -48,7 +48,7 @@ public:
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
     Status Stop() override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetBundleName(const std::string& bundleName) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
     void SetInterruptState(bool isInterruptNeeded) override;

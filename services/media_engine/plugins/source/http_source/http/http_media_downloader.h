@@ -50,7 +50,7 @@ public:
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
