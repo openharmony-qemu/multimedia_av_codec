@@ -199,10 +199,11 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         SetFaultEvent("SurfaceEncoderAdapter::Configure, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
+    int32_t ret = static_cast<int32_t>(Status::OK);
     if (!isTransCoderMode) {
         std::shared_ptr<MediaAVCodec::MediaCodecParameterWithAttrCallback> droppedFramesCallback =
         std::make_shared<DroppedFramesCallback>(shared_from_this());
-        int32_t ret = codecServer_->SetCallback(droppedFramesCallback);
+        ret = codecServer_->SetCallback(droppedFramesCallback);
         if (ret != 0) {
             MEDIA_LOG_I("Set dropped Frames Callback failed");
             SetFaultEvent("DroppedFramesCallback::DroppedFramesCallback error", ret);
