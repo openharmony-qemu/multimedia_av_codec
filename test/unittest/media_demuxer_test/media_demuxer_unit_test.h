@@ -41,7 +41,7 @@ public:
 class DemuxerPluginMock : public Plugins::DemuxerPlugin {
 public:
     explicit DemuxerPluginMock(std::string name) : DemuxerPlugin(std::move(name))
-    {    
+    {
     }
     ~DemuxerPluginMock()
     {

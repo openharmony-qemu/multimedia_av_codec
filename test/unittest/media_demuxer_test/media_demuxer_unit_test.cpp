@@ -1289,7 +1289,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_016, TestSize.Level1)
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_UNKNOWN); 
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_UNKNOWN);
 
     Meta metaTmp1;
     metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
@@ -1311,7 +1311,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
 
     demuxer->audioTrackId_ = 0;
     demuxer->videoTrackId_ = 1;
-    demuxer->subtitleTrackId_ = 2;   
+    demuxer->subtitleTrackId_ = 2;
 
     EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::OK);
     EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::OK);
