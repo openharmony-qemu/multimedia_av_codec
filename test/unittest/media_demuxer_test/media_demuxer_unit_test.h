@@ -40,83 +40,111 @@ public:
 
 class DemuxerPluginMock : public Plugins::DemuxerPlugin {
 public:
-    explicit DemuxerPluginMock(std::string name) : DemuxerPlugin(std::move(name)) {
-        
+    explicit DemuxerPluginMock(std::string name) : DemuxerPlugin(std::move(name))
+    {    
     }
-    ~DemuxerPluginMock() override {
-
+    ~DemuxerPluginMock() override
+    {
     }
-    virtual Status Reset() override {
+    virtual Status Reset() override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status Start() override {
+    virtual Status Start() override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status Stop() override {
+    virtual Status Stop() override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status Flush() override {
+    virtual Status Flush() override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source) override {
+    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetMediaInfo(MediaInfo& mediaInfo) override {
+    virtual Status GetMediaInfo(MediaInfo& mediaInfo) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetUserMeta(std::shared_ptr<Meta> meta) override {
+    virtual Status GetUserMeta(std::shared_ptr<Meta> meta) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status SelectTrack(uint32_t trackId) override {
+    virtual Status SelectTrack(uint32_t trackId) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status UnselectTrack(uint32_t trackId) override {
+    virtual Status UnselectTrack(uint32_t trackId) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override {
+    virtual Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode,
+        int64_t& realSeekTime) override {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override {
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) override {
+    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override {
+    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual void ResetEosStatus() override {
+    virtual void ResetEosStatus() override
+    {
         return;
     }
-    virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override {
+    virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status ParserRefInfo() override {
+    virtual Status ParserRefInfo() override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override {
+    virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample,
+        FrameLayerInfo &frameLayerInfo) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override {
+    virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override {
+    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos) override {
+    virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos) override
+    {
         return Status::ERROR_UNKNOWN;
     }
-    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override {
+    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override
+    {
         return Status::ERROR_UNKNOWN;
     }
     virtual Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-        int64_t presentationTimeUs, uint32_t &frameIndex) override {
-            return Status::ERROR_UNKNOWN;
-        }
-   virtual  Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-        uint32_t frameIndex, int64_t &presentationTimeUs) override {
-            return Status::ERROR_UNKNOWN;
-        }
+        int64_t presentationTimeUs, uint32_t &frameIndex) override
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+    virtual  Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs) override
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+    virtual void SetCacheLimit(uint32_t limitSize) override
+    {
+        return;
+    }
 };
 
 }

@@ -1190,13 +1190,13 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetTrackTypeByTrackID_016, TestSize.
     Meta metaTmp4;
     metaTmp4.Set<Tag::MIME_TYPE>("aaaa");
     demuxerManager->curMediaInfo_.tracks.push_back(metaTmp4);
-	EXPECT_EQ(demuxerManager->GetTrackTypeByTrackID(0), TRACK_AUDIO);
+    EXPECT_EQ(demuxerManager->GetTrackTypeByTrackID(0), TRACK_AUDIO);
 	EXPECT_EQ(demuxerManager->GetTrackTypeByTrackID(1), TRACK_VIDEO);
 	EXPECT_EQ(demuxerManager->GetTrackTypeByTrackID(2), TRACK_SUBTITLE);
 	EXPECT_EQ(demuxerManager->GetTrackTypeByTrackID(3), TRACK_INVALID);
 	
 	EXPECT_EQ(demuxerManager->IsSubtitleMime("application/x-subrip"), true);
-	EXPECT_EQ(demuxerManager->IsSubtitleMime("text/vtt"), true);
+    EXPECT_EQ(demuxerManager->IsSubtitleMime("text/vtt"), true);
 	EXPECT_EQ(demuxerManager->IsSubtitleMime("aaaaa"), false);
 }
 
@@ -1218,7 +1218,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_Start_016, TestSize.Level1)
 	info1.plugin = pluginMock;
 	demuxerManager->streamInfoMap_[0] = info1;
 	MediaStreamInfo info2;
-	info2.plugin = pluginMock;
+    info2.plugin = pluginMock;
 	demuxerManager->streamInfoMap_[1] = info1;
 	MediaStreamInfo info3;
 	info3.plugin = pluginMock;
@@ -1226,24 +1226,24 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_Start_016, TestSize.Level1)
 
 	demuxerManager->curVideoStreamID_ = 0;
 	demuxerManager->curAudioStreamID_ = -1;
-	demuxerManager->curSubTitleStreamID_ = -1;
+    demuxerManager->curSubTitleStreamID_ = -1;
     EXPECT_EQ(demuxerManager->Start(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Stop(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Reset(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Flush(), Status::ERROR_UNKNOWN);
     int64_t realSeekTime;
     EXPECT_EQ(demuxerManager->SeekTo(1, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::ERROR_UNKNOWN);
-	demuxerManager->curVideoStreamID_ = -1;
-	demuxerManager->curAudioStreamID_ = 1;
-	demuxerManager->curSubTitleStreamID_ = -1;
+    demuxerManager->curVideoStreamID_ = -1;
+    demuxerManager->curAudioStreamID_ = 1;
+    demuxerManager->curSubTitleStreamID_ = -1;
     EXPECT_EQ(demuxerManager->Start(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Stop(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Reset(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Flush(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->SeekTo(1, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::ERROR_UNKNOWN);
-	demuxerManager->curVideoStreamID_ = -1;
-	demuxerManager->curAudioStreamID_ = -1;
-	demuxerManager->curSubTitleStreamID_ =2;
+    demuxerManager->curVideoStreamID_ = -1;
+    demuxerManager->curAudioStreamID_ = -1;
+    demuxerManager->curSubTitleStreamID_ =2;
     EXPECT_EQ(demuxerManager->Start(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Stop(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Reset(), Status::ERROR_UNKNOWN);
@@ -1255,22 +1255,21 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     
-	demuxer->source_->seekToTimeFlag_ = true;
-	demuxer->videoTrackId_  = 0;
-	demuxer->demuxerPluginManager_->isDash_ = false;
+    demuxer->source_->seekToTimeFlag_ = true;
+    demuxer->videoTrackId_  = 0;
+    demuxer->demuxerPluginManager_->isDash_ = false;
 
-	std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
     sample->pts_ = 100;
-	EXPECT_EQ(demuxer->ProcessVideoStartTime(0, sample), Status::OK);
-	
-	EXPECT_EQ(demuxer->DoSelectTrack(0, TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxer->ProcessVideoStartTime(0, sample), Status::OK);
+    EXPECT_EQ(demuxer->DoSelectTrack(0, TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     
-	Meta metaTmp1;
+    Meta metaTmp1;
     metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
     demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp1);
     Meta metaTmp2;
@@ -1282,17 +1281,17 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_016, TestSize.Level1)
 
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     demuxer->streamDemuxer_->isIgnoreParse_ = true;
-	EXPECT_EQ(demuxer->StartTask(0), Status::OK);
-	EXPECT_EQ(demuxer->StartTask(1), Status::OK);
-	EXPECT_EQ(demuxer->StartTask(2), Status::OK);
+    EXPECT_EQ(demuxer->StartTask(0), Status::OK);
+    EXPECT_EQ(demuxer->StartTask(1), Status::OK);
+    EXPECT_EQ(demuxer->StartTask(2), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-	EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_UNKNOWN); 
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::ERROR_UNKNOWN); 
 
-	Meta metaTmp1;
+    Meta metaTmp1;
     metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
     demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp1);
     Meta metaTmp2;
@@ -1304,20 +1303,20 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleDashSelectTrack_016, TestSize.
     Meta metaTmp4;
     metaTmp4.Set<Tag::MIME_TYPE>("aaaaa");
     demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
-	
-	demuxer->demuxerPluginManager_->AddTrackMapInfo(0, 0);
-	demuxer->demuxerPluginManager_->AddTrackMapInfo(1, 0);
-	demuxer->demuxerPluginManager_->AddTrackMapInfo(2, 0);
-	demuxer->demuxerPluginManager_->AddTrackMapInfo(3, 0);
-	
-	demuxer->audioTrackId_ = 0;
-	demuxer->videoTrackId_ = 1;
-	demuxer->subtitleTrackId_ = 2;   
 
-	EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::OK);
-	EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::OK);
-	EXPECT_EQ(demuxer->HandleDashSelectTrack(2), Status::OK);
-	EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_INVALID_OPERATION);
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(0, 0);
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(1, 0);
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(2, 0);
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(3, 0);
+
+    demuxer->audioTrackId_ = 0;
+    demuxer->videoTrackId_ = 1;
+    demuxer->subtitleTrackId_ = 2;   
+
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(0), Status::OK);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(1), Status::OK);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(2), Status::OK);
+    EXPECT_EQ(demuxer->HandleDashSelectTrack(3), Status::ERROR_INVALID_OPERATION);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekToTimePre_016, TestSize.Level1)
