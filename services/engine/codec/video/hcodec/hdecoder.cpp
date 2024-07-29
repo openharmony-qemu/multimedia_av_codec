@@ -528,6 +528,7 @@ void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
         CancelBufferToSurface(info);
     }
     FreeOmxBuffer(portIndex, info);
+    ReduceOwner((portIndex == OMX_DirInput), info.owner);
     pool.erase(pool.begin() + i);
 }
 

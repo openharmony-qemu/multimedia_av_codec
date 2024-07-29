@@ -465,10 +465,13 @@ Status MediaDemuxer::ReportDrmInfos(const std::multimap<std::string, std::vector
 
 Status MediaDemuxer::ProcessDrmInfos()
 {
-    MEDIA_LOG_D("ProcessDrmInfos");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "source is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
+                         "demuxerPluginManager is nullptr");
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "ProcessDrmInfos failed due to get demuxer plugin failed.");
+        "get demuxer plugin failed.");
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     Status ret = pluginTemp->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
@@ -1716,6 +1719,8 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
 
     if (demuxerPluginManager_->IsDash()) {
         if (isSelectBitRate_ && (trackId == videoTrackId_)) {
@@ -1766,6 +1771,12 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     Status ret = pluginTemp->ReadSample(innerTrackID, sample);
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read buffer eos for track " PUBLIC_LOG_U32, trackId);
+    } else if (ret == Status::ERROR_NO_MEMORY) {
+        MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32,
+            trackId, static_cast<int32_t>(ret));
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_NO_MEMORY});
+        }
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
@@ -1802,6 +1813,13 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
         }
         if (ret == Status::OK || ret == Status::ERROR_AGAIN) {
             return 0; // retry next frame
+        } else if (ret == Status::ERROR_NO_MEMORY) {
+            MEDIA_LOG_E("cache data size is greater than cache limit size");
+            taskMap_[trackId]->Pause();
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_NO_MEMORY});
+            }
+            return 0;
         } else {
             MEDIA_LOG_D("ReadLoop wait, track:" PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32,
                 trackId, static_cast<int32_t>(ret));
@@ -2108,6 +2126,27 @@ Status MediaDemuxer::PauseDemuxerReadLoop()
     }
     isDemuxerLoopExecuting_ = false;
     return PauseAllTask();
+}
+
+void MediaDemuxer::SetCacheLimit(uint32_t limitSize)
+{
+    MEDIA_LOG_D("SetCacheLimit");
+    FALSE_RETURN_MSG(demuxerPluginManager_ != nullptr, "SetCacheLimit failed due to demuxerPluginManager_ is nullptr.");
+    int32_t tempTrackId = (videoTrackId_ != TRACK_ID_DUMMY ? videoTrackId_ : -1);
+    tempTrackId = (tempTrackId == -1 ? audioTrackId_ : tempTrackId);
+    int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = demuxerPluginManager_->GetPluginByStreamID(streamID);
+    FALSE_RETURN_MSG(pluginTemp != nullptr, "SetCacheLimit failed due to get demuxer plugin failed.");
+
+    pluginTemp->SetCacheLimit(limitSize);
+}
+
+bool MediaDemuxer::IsVideoEos()
+{
+    if (videoTrackId_ == TRACK_ID_DUMMY) {
+        return true;
+    }
+    return eosMap_[videoTrackId_];
 }
 } // namespace Media
 } // namespace OHOS

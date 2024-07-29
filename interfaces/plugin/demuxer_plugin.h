@@ -165,6 +165,8 @@ struct DemuxerPlugin : public PluginBase {
 
     virtual Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         uint32_t frameIndex, int64_t &presentationTimeUs) = 0;
+
+    virtual void SetCacheLimit(uint32_t limitSize) = 0;
 };
 
 /// Demuxer plugin api major number.

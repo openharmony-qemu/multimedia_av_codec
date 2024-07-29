@@ -140,7 +140,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
 HttpMediaDownloader::~HttpMediaDownloader()
 {
-    MEDIA_LOG_I("~HttpMediaDownloader dtor");
+    MEDIA_LOG_I("%{public}p ~HttpMediaDownloader dtor", this);
     Close(false);
 }
 
@@ -239,6 +239,7 @@ bool HttpMediaDownloader::HandleBuffering()
     if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         return false;
     }
+    UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
     size_t fileRemain = 0;
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
     if (fileContenLen > readOffset_) {
@@ -260,6 +261,7 @@ bool HttpMediaDownloader::HandleBuffering()
 
     if (!isBuffering_ && isFirstFrameArrived_) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
+        UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
     MEDIA_LOG_D("HandleBuffering bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: " PUBLIC_LOG_ZU
@@ -295,6 +297,7 @@ bool HttpMediaDownloader::StartBuffering()
                 readOffset_, GetCurrentBufferSize(), waterLineAbove_);
             isBuffering_ = true;
             MEDIA_LOG_I("CacheData OnEvent BUFFERING_START.");
+            UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
             return true;
         }
@@ -688,7 +691,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
     isServerAcceptRange_ = downloadRequest_->IsServerAcceptRange();
 
     size_t hasWriteSize = 0;
-    while (hasWriteSize < len && !isInterruptNeeded_.load()) {
+    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_) {
         if (isNeedClean_) {
             MEDIA_LOG_D("isNeedClean true.");
             return true;
@@ -951,7 +954,7 @@ void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
         return;
     }
     int32_t deltaSize = bufferSize - lastCachedSize_;
-    if (deltaSize >= UPDATE_CACHE_STEP) {
+    if (deltaSize >= static_cast<int32_t>(UPDATE_CACHE_STEP)) {
         int percent = (bufferSize >= static_cast<int32_t>(waterLineAbove_)) ?
                         100 : bufferSize * 100 / static_cast<int32_t>(waterLineAbove_); // 100
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});

@@ -28,7 +28,7 @@ av_audio_sink_unittest_cflags = [
   "-Wno-unused-but-set-variable",
   "-Wno-format",
   "-Dprivate=public",
-  "-Dprtected=public",
+  "-Dprotected=public",
 ]
 
 ##################################################################################################################

@@ -63,6 +63,7 @@ struct MuxerFaultInfo {
     std::string callerType;
     std::string videoCodec;
     std::string audioCodec;
+    std::string metaCodec;
     std::string containerFormat;
     std::string errMsg;
 };

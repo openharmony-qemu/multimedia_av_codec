@@ -28,6 +28,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
+constexpr uint32_t maxCacheLimitSize = 50 * 1024 * 1024;
 }
 
 namespace OHOS {
@@ -137,7 +138,9 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
         return Status::ERROR_INVALID_PARAMETER;
     }
     mediaSource_ = source;
-    return demuxer_->SetDataSource(mediaSource_);
+    Status ret = demuxer_->SetDataSource(mediaSource_);
+    demuxer_->SetCacheLimit(maxCacheLimitSize);
+    return ret;
 }
 
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
@@ -589,6 +592,8 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W_SHORT("mediaType disabled, index: %zu", index);
         return true;
+    } else if (mediaType == Plugins::MediaType::TIMEDMETA) {
+        return true;
     }
     return false;
 }
@@ -728,6 +733,12 @@ Status DemuxerFilter::PauseDemuxerReadLoop()
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "PauseDemuxerReadLoop failed.");
     MEDIA_LOG_I("PauseDemuxerReadLoop start.");
     return demuxer_->PauseDemuxerReadLoop();
+}
+
+bool DemuxerFilter::IsVideoEos()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsVideoEos();
 }
 } // namespace Pipeline
 } // namespace Media

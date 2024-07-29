@@ -18,7 +18,6 @@
 
 #include "avcodec_trace.h"
 #include "downloader.h"
-#include "http_curl_client.h"
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
@@ -227,7 +226,7 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
 {
     shouldStartNextRequest = true;
 
-    client_ = std::make_shared<HttpCurlClient>(&RxHeaderData, &RxBodyData, this);
+    client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
     client_->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
@@ -237,11 +236,12 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
 
 Downloader::~Downloader()
 {
-    Stop(true);
+    Stop(false);
     if (client_ != nullptr) {
         client_->Deinit();
         client_ = nullptr;
     }
+    MEDIA_LOG_I("%{public}p ~Downloader", this);
 }
 
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
@@ -432,28 +432,44 @@ int64_t Downloader::HttpDownloadLoop()
     }
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
         + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
-    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
-    NetworkServerErrorCode serverCode = 0;
     int64_t startPos = currentRequest_->startPos_;
     if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
         startPos = -1;
     }
-    Status ret = client_->RequestData(startPos, currentRequest_->requestSize_,
-                                      serverCode, clientCode);
-    currentRequest_->clientError_ = clientCode;
-    currentRequest_->serverError_ = serverCode;
-    if (ret == Status::OK) {
-        HandleRetOK();
-    } else {
-        task_->PauseAsync();
-        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
-                    ",request queue size: " PUBLIC_LOG_U64,
-                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
-                    static_cast<int64_t>(requestQue_->Size()));
-        std::shared_ptr<Downloader> unused;
-        currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-    }
+    std::string url = currentRequest_->url_;
+    std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
+
+    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
+        currentRequest_->clientError_ = clientCode;
+        currentRequest_->serverError_ = serverCode;
+        if (ret == Status::OK) {
+            HandleRetOK();
+        } else {
+            task_->PauseAsync();
+            MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+                ",request queue size: " PUBLIC_LOG_U64,
+                static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
+                static_cast<int64_t>(requestQue_->Size()));
+            std::shared_ptr<Downloader> unused;
+            currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
+        }
+    };
+    MEDIA_LOG_I("RequestData enter.");
+    client_->RequestData(startPos, currentRequest_->requestSize_, url, httpHeader, handleResponseCb);
+    MEDIA_LOG_I("RequestData end.");
     return 0;
+}
+
+void Downloader::HandlePlayingFinish()
+{
+    if (requestQue_->Empty()) {
+        task_->PauseAsync();
+    }
+    shouldStartNextRequest = true;
+    if (currentRequest_->downloadDoneCallback_) {
+        currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
+        currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
+    }
 }
 
 void Downloader::HandleRetOK()
@@ -478,27 +494,13 @@ void Downloader::HandleRetOK()
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
             currentRequest_->startPos_, currentRequest_->url_.c_str());
         currentRequest_->isEos_ = true;
-        if (requestQue_->Empty()) {
-            task_->PauseAsync();
-        }
-        shouldStartNextRequest = true;
-        if (currentRequest_->downloadDoneCallback_) {
-            currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
-        }
+        HandlePlayingFinish();
         return;
     }
     if (currentRequest_->headerInfo_.fileContentLen == 0 && remaining <= 0) {
         currentRequest_->isEos_ = true;
         currentRequest_->Close();
-        if (requestQue_->Empty()) {
-            task_->PauseAsync();
-        }
-        shouldStartNextRequest = true;
-        if (currentRequest_->downloadDoneCallback_) {
-            currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
-        }
+        HandlePlayingFinish();
         return;
     }
     if (remaining < PER_REQUEST_SIZE) {
@@ -625,7 +627,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     if (!mediaDownloader->currentRequest_->isDownloading_) {
         mediaDownloader->currentRequest_->isDownloading_ = true;
     }
-    if (!mediaDownloader->currentRequest_->saveData_(static_cast<uint8_t *>(buffer), dataLen)) {
+    if (!mediaDownloader->currentRequest_->saveData_(static_cast<uint8_t *>(buffer), static_cast<uint32_t>(dataLen))) {
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }

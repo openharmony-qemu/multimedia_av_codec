@@ -67,7 +67,7 @@ PlayListDownloader::~PlayListDownloader()
 {
     MEDIA_LOG_I("PlayListDownloader::~PlayListDownloader");
     if (updateTask_ != nullptr) {
-        updateTask_->StopAsync();
+        updateTask_->Stop();
     }
 }
 

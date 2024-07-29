@@ -21,9 +21,10 @@
 #include <string>
 #include "osal/task/task.h"
 #include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
-#include "network_client.h"
+#include "network/network_client.h"
 #include <chrono>
 #include "securec.h"
 
@@ -172,6 +173,7 @@ private:
     bool BeginDownload();
 
     int64_t HttpDownloadLoop();
+    void HandlePlayingFinish();
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
