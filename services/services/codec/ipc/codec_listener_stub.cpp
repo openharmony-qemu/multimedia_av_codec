@@ -66,9 +66,11 @@ public:
         std::lock_guard<std::shared_mutex> lock(mutex_);
         auto iter = caches_.find(index);
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
+        if (flag_ == CacheFlag::HIT_CACHE && iter == caches_.end()) {
+            AVCODEC_LOGW("Mark hit cache, but can find the index's cache, index: %{public}u", index);
+            flag_ = CacheFlag::UPDATE_CACHE;
+        }
         if (flag_ == CacheFlag::HIT_CACHE) {
-            CHECK_AND_RETURN_RET_LOG(iter != caches_.end(), false,
-                                     "Mark hit cache, but can find the index's cache, index: %{public}u", index);
             iter->second.owner = OWNED_BY_USER;
             isOutput_ ? HitOutputCache(iter->second, parcel, filter) : HitInputCache(iter->second, parcel, filter);
             elem = iter->second;
