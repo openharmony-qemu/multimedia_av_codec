@@ -825,7 +825,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
 void Downloader::PauseLoop(bool isAsync)
 {
     if (task_ == nullptr) {
-        return
+        return;
     }
     if (isAsync) {
         task_->PauseAsync();
