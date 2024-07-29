@@ -48,6 +48,18 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
     }
 }
 
+HlsPlayListDownloader::~HlsPlayListDownloader()
+{
+    MEDIA_LOG_I("~HlsPlayListDownloader in");
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
+    }
+    if (updateTask_ != nullptr) {
+        updateTask_->Stop();
+    }
+    MEDIA_LOG_I("~HlsPlayListDownloader out");
+}
+
 void HlsPlayListDownloader::UpdateManifest()
 {
     if (currentVariant_ && currentVariant_->m3u8_ && !currentVariant_->m3u8_->uri_.empty()) {

@@ -123,6 +123,18 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
     }
 }
 
+HlsMediaDownloader::~HlsMediaDownloader()
+{
+    MEDIA_LOG_I("~HlsMediaDownloader in");
+    if (playListDownloader_ != nullptr) {
+        playListDownloader_ = nullptr;
+    }
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
+    }
+    MEDIA_LOG_I("~HlsMediaDownloader out");
+}
+
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
@@ -843,7 +855,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
 
     // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_ &&
-        playListDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
+        playListDownloader_ != nullptr && playListDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
         AutoSelectBitrate(bitRate);
     }
 }
