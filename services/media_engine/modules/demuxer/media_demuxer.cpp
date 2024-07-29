@@ -2143,7 +2143,10 @@ void MediaDemuxer::SetCacheLimit(uint32_t limitSize)
 
 bool MediaDemuxer::IsVideoEos()
 {
-    return (videoTrackId_ != TRACK_ID_DUMMY) && eosMap_[videoTrackId_];
+    if (videoTrackId_ == TRACK_ID_DUMMY) {
+        return true;
+    }
+    return eosMap_[videoTrackId_];
 }
 } // namespace Media
 } // namespace OHOS
