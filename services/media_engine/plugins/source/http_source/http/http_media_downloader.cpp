@@ -52,6 +52,7 @@ constexpr int64_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 10;
+constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -290,13 +291,13 @@ bool HttpMediaDownloader::StartBuffering()
         isEos = downloadRequest_->IsEos();
     }
     if (isFirstFrameArrived_ && GetCurrentBufferSize() < cacheWaterLine && !isEos && !HandleBreak()) {
-        waterLineAbove_ = std::min(fileRemain, static_cast<size_t>(GetWaterLineAbove()));
+        waterLineAbove_ = std::max(MIN_WATER_LINE_ABOVE, static_cast<size_t>(GetWaterLineAbove()));
 
         if (!isBuffering_) {
             MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " wantReadLength " PUBLIC_LOG_ZU,
                 readOffset_, GetCurrentBufferSize(), waterLineAbove_);
             isBuffering_ = true;
-            MEDIA_LOG_I("CacheData OnEvent BUFFERING_START.");
+            MEDIA_LOG_I("CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
             UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
             return true;
