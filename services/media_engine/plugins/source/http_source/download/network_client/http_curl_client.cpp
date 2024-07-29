@@ -178,6 +178,11 @@ void GetHttpProxyInfo(std::string &host, int32_t &port, std::string &exclusions)
     exclusions = ToString(httpProxy.GetExclusionList());
 }
 
+std::shared_ptr<NetworkClient> NetworkClient::GetInstance(RxHeader headCallback, RxBody bodyCallback, void *userParam)
+{
+    return std::make_shared<HttpCurlClient>(headCallback, bodyCallback, userParam);
+}
+
 HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
     : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
 {
@@ -372,8 +377,8 @@ void HttpCurlClient::HandleUserAgent()
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
 // Should Pause HttpDownload thread then Close, Deinit.
-Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
-                                   NetworkClientErrorCode& clientCode)
+Status HttpCurlClient::RequestData(long startPos, int len, const std::string& url,
+    const std::map<std::string, std::string>& httpHeader, HandleResponseCbFunc completedCb)
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
@@ -393,8 +398,9 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
         CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
         CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR};
-    clientCode = NetworkClientErrorCode::ERROR_OK;
-    serverCode = 0;
+    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
+    NetworkServerErrorCode serverCode = 0;
+    Status ret = Status::OK;
     if (returnCode != CURLE_OK) {
         MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
         if (notRetrySet.find(returnCode) != notRetrySet.end()) {
@@ -404,17 +410,18 @@ Status HttpCurlClient::RequestData(long startPos, int len, NetworkServerErrorCod
         } else {
             clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
         }
-        return Status::ERROR_CLIENT;
+        ret = Status::ERROR_CLIENT;
     } else {
         int64_t httpCode = 0;
         curl_easy_getinfo(easyHandle_, CURLINFO_RESPONSE_CODE, &httpCode);
         if (httpCode >= 400) { // 400
             MEDIA_LOG_E("Http error " PUBLIC_LOG_D64, httpCode);
             serverCode = httpCode;
-            return Status::ERROR_SERVER;
+            ret = Status::ERROR_SERVER;
         }
     }
-    return Status::OK;
+    completedCb(clientCode, serverCode, ret);
+    return ret;
 }
 }
 }

@@ -73,6 +73,7 @@ public:
     Status NotifyEos();
     Status SetParameter(const std::shared_ptr<Meta> &parameter);
     std::shared_ptr<Meta> GetOutputFormat();
+    void TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
@@ -88,7 +89,7 @@ private:
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureEnableFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
-    bool CheckFrames(int64_t currentPts);
+    bool CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime);
     void GetCurrentTime(int64_t &currentTime);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
@@ -114,6 +115,7 @@ private:
     int64_t startBufferTime_{-1};
     int64_t lastBufferTime_{-1};
     bool isStart_ = false;
+    bool isResume_ = false;
     std::string codecMimeType_;
     std::string bundleName_;
     uint64_t instanceId_{0};
