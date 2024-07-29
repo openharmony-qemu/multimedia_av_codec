@@ -68,6 +68,15 @@ constexpr uint32_t ACTUAL_COEFFICIENTS = 2;
 constexpr uint32_t ACTUAL_PRIMARIES = 2;
 constexpr uint32_t AVC_ROTATION = 270;
 constexpr uint32_t HEVC_ROTATION = 90;
+constexpr int32_t LAYOUTMONO = 4;
+constexpr int32_t LAYOUTDUAL = 3;
+constexpr int32_t SAMPLERATEMONO = 8000;
+constexpr int32_t SAMPLERATEDUAL = 44100;
+constexpr int32_t COUNTMONO = 1;
+constexpr int32_t COUNTDUAL = 2;
+constexpr int32_t BITRATEMONO = 64000;
+constexpr int32_t BITRATEDUAL = 705600;
+constexpr int32_t FRAME_REMAINING = 100;
 void DemuxerProcNdkTest::SetUpTestCase() {}
 void DemuxerProcNdkTest::TearDownTestCase() {}
 void DemuxerProcNdkTest::SetUp()
@@ -154,7 +163,57 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
         }
     }
 }
-
+static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
+{
+    int akeyCount = 0;
+    int tarckType = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    bool audioIsEnd = false;
+    int32_t count = 0;
+    int32_t rate = 0;
+    int64_t bitrate = 0;
+    int64_t layout = 0;
+    int32_t index = 0;
+    const char* mimeType = nullptr;
+    while (!audioIsEnd) {
+        trackFormat = OH_AVSource_GetTrackFormat(audioSource, index);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+        ASSERT_NE(avBuffer, nullptr);
+        ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+        if (tarckType == MEDIA_TYPE_AUD) {
+            ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &rate));
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &count));
+            ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
+            ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
+            if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                audioIsEnd = true;
+                cout << audioFrameAll << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+            audioFrameAll++;
+            if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                akeyCount++;
+            }
+        }
+    }
+    if (count == 1) {
+        ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+        ASSERT_EQ(layout, LAYOUTMONO);
+        ASSERT_EQ(rate, SAMPLERATEMONO);
+        ASSERT_EQ(count, COUNTMONO);
+        ASSERT_EQ(bitrate, BITRATEMONO);
+    } else {
+        ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+        ASSERT_EQ(layout, LAYOUTDUAL);
+        ASSERT_EQ(rate, SAMPLERATEDUAL);
+        ASSERT_EQ(count, COUNTDUAL);
+        ASSERT_EQ(bitrate, BITRATEDUAL);
+    }
+    cout << akeyCount << "---akeyCount---" << endl;
+}
 static void SetAllParam(OH_AVFormat *paramFormat)
 {
     int64_t duration = 0;
@@ -1657,5 +1716,233 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4700, TestSize.Level0)
         }
     }
     ASSERT_EQ(HEVC_ROTATION, rotation);
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6200
+ * @tc.name      : create pcm-mulaw wav demuxer with file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6200, TestSize.Level2)
+{
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/wav_audio_test_202406290859.wav";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(103, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6300
+ * @tc.name      : create pcm-mulaw wav demuxer with network file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6300, TestSize.Level2)
+{
+    int audioFrame = 0;
+    int sizeinfo = 421888;
+    const char *uri = "http://192.168.3.11:8080/share/audio/audio/wav_audio_test_202406290859.wav";
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    avBuffer = OH_AVBuffer_Create(sizeinfo);
+    ASSERT_NE(avBuffer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(103, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6400
+ * @tc.name      : create pcm-mulaw wav demuxer with Mono channel file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6400, TestSize.Level2)
+{
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/7FBD5E21-503C-41A8-83B4-34548FC01562.wav";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(7, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6500
+ * @tc.name      : create pcm-mulaw wav demuxer with Mono channel uri file
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6500, TestSize.Level2)
+{
+    int sizeinfo = 28672;
+    int audioFrame = 0;
+    const char *uri = "http://192.168.3.11:8080/share/audio/audio/7FBD5E21-503C-41A8-83B4-34548FC01562.wav";
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    avBuffer = OH_AVBuffer_Create(sizeinfo);
+    ASSERT_NE(avBuffer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(7, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6600
+ * @tc.name      : create pcm+mulaw wav demuxer with file and forward back seek+read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6600, TestSize.Level0)
+{
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/wav_audio_test_202406290859.wav";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int tarckType = 0;
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    int time = 4600000;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    time = 92000;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(FRAME_REMAINING, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6700
+ * @tc.name      : create pcm+mulaw wav demuxer with file and back seek+read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6700, TestSize.Level0)
+{
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/wav_audio_test_202406290859.wav";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int tarckType = 0;
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    int time = 4736000;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    time = 600000;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    time = 92000;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(FRAME_REMAINING, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_PROCESS_6800
+ * @tc.name      : create pcm+mulaw wav demuxer with file and forward seek+read
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6800, TestSize.Level0)
+{
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/wav_audio_test_202406290859.wav";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int tarckType = 0;
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+    int time = 92000;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, time/1000, SEEK_MODE_CLOSEST_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+    CheckAudioParam(source, audioFrame);
+    ASSERT_EQ(FRAME_REMAINING, audioFrame);
+    cout << "-----------audioFrame-----------" << audioFrame << endl;
     close(fd);
 }
