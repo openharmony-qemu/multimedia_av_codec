@@ -993,7 +993,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5100, TestSize.Level2)
  */
 HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5200, TestSize.Level2)
 {
-   vDecSample->SF_OUTPUT = true;
+    vDecSample->SF_OUTPUT = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     int32_t ret = vDecSample->DecodeSetSurface();
     ASSERT_EQ(AV_ERR_OK, ret);
