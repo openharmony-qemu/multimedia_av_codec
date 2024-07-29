@@ -274,11 +274,7 @@ void Downloader::Pause(bool isAsync)
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     MEDIA_LOG_I("pause Begin");
     requestQue_->SetActive(false, false);
-    if (isAsync) {
-        task_->PauseAsync();
-    } else {
-        task_->Pause();
-    }
+    PauseLoop(isAsync);
     MEDIA_LOG_I("pause End");
 }
 
@@ -425,7 +421,7 @@ int64_t Downloader::HttpDownloadLoop()
             MEDIA_LOG_W("HttpDownloadLoop tempRequest is null.");
             noTaskLoopTimes_++;
             if (noTaskLoopTimes_ >= LOOP_TIMES) {
-                task_->PauseAsync();
+                PauseLoop(true);
             }
             return 0;
         }
@@ -437,7 +433,7 @@ int64_t Downloader::HttpDownloadLoop()
     if (currentRequest_ == nullptr || client_ == nullptr) {
         MEDIA_LOG_I("currentRequest_ %{public}d client_ %{public}d nullptr",
                     currentRequest_ != nullptr, client_ != nullptr);
-        task_->PauseAsync();
+        PauseLoop(true);
         return -1;
     }
     RequestData();
@@ -458,34 +454,34 @@ void Downloader::RequestData()
     auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
+        if (isDestructor_) {
+            return;
+        }
+
         if (ret == Status::OK) {
             HandleRetOK();
-	    } else {
-	        if (task_ != nullptr) {
-	            task_->PauseAsync();
-	        }
+        } else {
+            PauseLoop(true);
             MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
                 ",request queue size: " PUBLIC_LOG_U64,
                 static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
                 static_cast<int64_t>(requestQue_->Size()));
-	        if (!isDestructor_) {
-	            std::shared_ptr<Downloader> unused;
-	            currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-	        }
+            std::shared_ptr<Downloader> unused;
+            currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
+        }
     };
     MEDIA_LOG_I("RequestData enter.");
     client_->RequestData(startPos, currentRequest_->requestSize_, url, httpHeader, handleResponseCb);
     MEDIA_LOG_I("RequestData end.");
-    return 0;
 }
 
 void Downloader::HandlePlayingFinish()
 {
     if (requestQue_->Empty()) {
-        task_->PauseAsync();
+        PauseLoop(true);
     }
     shouldStartNextRequest = true;
-    if (currentRequest_->downloadDoneCallback_) {
+    if (currentRequest_->downloadDoneCallback_ && !isDestructor_) {
         currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
         currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
     }
@@ -498,7 +494,7 @@ void Downloader::HandleRetOK()
     }
     if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
         currentRequest_->isEos_ = true;
-        task_->PauseAsync();
+        PauseLoop(true);
         return;
     }
     
@@ -824,6 +820,18 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     }
 
     return size * nitems;
+}
+
+void Downloader::PauseLoop(bool isAsync)
+{
+    if (task_ == nullptr) {
+        return
+    }
+    if (isAsync) {
+        task_->PauseAsync();
+    } else {
+        task_->Pause();
+    }
 }
 }
 }

@@ -188,6 +188,7 @@ private:
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
+    void PauseLoop(bool isAsync = false);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
