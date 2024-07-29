@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1032,4 +1032,5 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_5300, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
+}
 } // namespace
