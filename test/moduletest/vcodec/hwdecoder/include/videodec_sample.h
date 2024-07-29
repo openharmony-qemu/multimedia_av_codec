@@ -142,6 +142,7 @@ public:
     bool inputCallbackStop = false;
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
+    int32_t DecodeSetSurface();
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
