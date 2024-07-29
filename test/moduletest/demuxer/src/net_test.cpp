@@ -156,10 +156,10 @@ namespace {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer_list[i], index, avBuffer_list[i]));
             ASSERT_NE(avBuffer_list[i], nullptr);
             ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer_list[i], &bufferAttr));
-            if ((index == OH_MediaType::MEDIA_TYPE_AUD) && (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+            if ((index == OH_MediaType::MEDIA_TYPE_AUD) &&
+             (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
                 audioIsEnd = true;
             }
-            
         }
     }
     /**
