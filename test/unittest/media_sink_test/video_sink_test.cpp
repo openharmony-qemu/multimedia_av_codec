@@ -46,6 +46,7 @@ std::shared_ptr<VideoSink> VideoSinkCreate()
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
     videoSink->SetParameter(meta);
+    videoSink->ResetRenderStarted();
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
