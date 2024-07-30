@@ -718,7 +718,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         }
         canWrite_ = true;
     }
-    if (isInterruptNeeded_.load()) {
+    if (isInterruptNeeded_.load() || isInterrupt_) {
         MEDIA_LOG_D("isInterruptNeeded true, return false.");
         return false;
     }
