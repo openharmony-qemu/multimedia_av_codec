@@ -680,7 +680,7 @@ float FileFdSourcePlugin::GetCacheTime(float num)
     return CACHE_TIME_DEFAULT;
 }
 
-void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer,size_t bufferSize)
+void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer, size_t bufferSize)
 {
     if (buffer != nullptr) {
         delete[] buffer;
