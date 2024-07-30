@@ -67,7 +67,7 @@ const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const uint32_t MS_TO_SEC = 1000;
-const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024;
+const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
