@@ -712,8 +712,10 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                 AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
             buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
-            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                         buf->avBuffer->memory_->GetCapacity());
+            if (buf->avBuffer != nullptr) {
+                AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
+                            buf->avBuffer->memory_->GetCapacity());
+            }
         } else {
             buf->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
             CHECK_AND_CONTINUE_LOG(buf->sMemory->GetSurfaceBuffer() != nullptr,
