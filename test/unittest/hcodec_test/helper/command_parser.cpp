@@ -65,6 +65,7 @@ enum ShortOption {
     OPT_DEC_THEN_ENC,
     OPT_ROTATION,
     OPT_FLUSH_CNT,
+    OPT_SCALE_MODE,
 };
 
 static struct option g_longOptions[] = {
@@ -108,6 +109,7 @@ static struct option g_longOptions[] = {
     {"render",          required_argument,  nullptr, OPT_RENDER},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
+    {"scaleMode",       required_argument,  nullptr, OPT_SCALE_MODE},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -158,6 +160,7 @@ void ShowUsage()
     std::cout << " --paramsFeedback     0 means don't feedback, 1 means feedback" << std::endl;
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
+    std::cout << " --scaleMode          target scale mode after decode, see @OH_ScalingMode" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -286,6 +289,8 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_FLUSH_CNT:
                 opt.flushCnt = stol(optarg);
                 break;
+            case OPT_SCALE_MODE:
+                opt.scaleMode = static_cast<OH_ScalingMode>(stol(optarg));
             default:
                 break;
         }

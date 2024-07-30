@@ -131,6 +131,7 @@ struct CommandOpt {
     bool decThenEnc = false;
     VideoRotation rotation = VIDEO_ROTATION_0;
     int flushCnt = 0;
+    std::optional<uint32_t> scaleMode;
 
     // associate with frame number
     std::map<uint32_t, SetParameterParams> setParameterParamsMap;
