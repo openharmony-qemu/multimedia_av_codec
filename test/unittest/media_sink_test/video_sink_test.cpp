@@ -59,18 +59,23 @@ HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
 {
     auto videoSink = std::make_shared<VideoSink>();
     ASSERT_TRUE(videoSink != nullptr);
+    auto syncCenter = std::make_shared<MediaSyncManager>();
+    ASSERT_TRUE(syncCenter != nullptr);
+    videoSink->SetSyncCenter(syncCenter);
     std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    ASSERT_TRUE(testEventReceiver != nullptr);
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
-    videoSink->SetParameter(meta);
+    ASSERT_TRUE(meta != nullptr);
+    auto setParam = videoSink->SetParameter(meta);
+    ASSERT_TRUE(setParam == Status::OK);
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    videoSink->SetSyncCenter(syncCenter);
     videoSink->SetSeekFlag();
     uint64_t latency = 0;
-    videoSink->GetLatency(latency);
+    auto getLatency = videoSink->GetLatency(latency);
+    ASSERT_TRUE(getLatency == Status::OK);
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
@@ -80,59 +85,85 @@ HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     videoSink->DoSyncWrite(buffer);
     buffer->flag_ = BUFFER_FLAG_EOS;
     videoSink->DoSyncWrite(buffer);
+    buffer->pts_ = 1;
+    videoSink->lastBufferTime_ = 1;
+    videoSink->seekFlag_ = false;
     (void)videoSink->CheckBufferLatenessMayWait(buffer);
+    float speed = 0;
+    videoSink->GetSpeed(speed);
 }
 
 HWTEST(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
 {
     auto videoSink = std::make_shared<VideoSink>();
     ASSERT_TRUE(videoSink != nullptr);
+    auto syncCenter = std::make_shared<MediaSyncManager>();
+    ASSERT_TRUE(syncCenter != nullptr);
+    videoSink->SetSyncCenter(syncCenter);
     std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    ASSERT_TRUE(testEventReceiver != nullptr);
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
-    videoSink->SetParameter(meta);
+    ASSERT_TRUE(meta != nullptr);
+    auto setParam = videoSink->SetParameter(meta);
+    ASSERT_TRUE(setParam == Status::OK);
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    videoSink->SetSyncCenter(syncCenter);
     videoSink->SetSeekFlag();
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 0; // not eos
     videoSink->DoSyncWrite(buffer);
     const std::shared_ptr<AVBuffer> buffer2 = AVBuffer::CreateAVBuffer(config);
+    ASSERT_TRUE(buffer2 != nullptr);
     buffer->flag_ = 0; // not eos
     videoSink->DoSyncWrite(buffer2);
+    buffer->pts_ = 1;
+    videoSink->lastBufferTime_ = 1;
+    videoSink->seekFlag_ = false;
     (void)videoSink->CheckBufferLatenessMayWait(buffer);
+    float speed = 0;
+    videoSink->GetSpeed(speed);
 }
 
 HWTEST(TestVideoSink, do_sync_write_eos, TestSize.Level1)
 {
     auto videoSink = std::make_shared<VideoSink>();
     ASSERT_TRUE(videoSink != nullptr);
+    auto syncCenter = std::make_shared<MediaSyncManager>();
+    ASSERT_TRUE(syncCenter != nullptr);
+    videoSink->SetSyncCenter(syncCenter);
     std::shared_ptr<EventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    ASSERT_TRUE(testEventReceiver != nullptr);
     videoSink->SetEventReceiver(testEventReceiver);
     auto meta = std::make_shared<Meta>();
-    videoSink->SetParameter(meta);
+    ASSERT_TRUE(meta != nullptr);
+    auto setParam = videoSink->SetParameter(meta);
+    ASSERT_TRUE(setParam == Status::OK);
     videoSink->ResetSyncInfo();
     videoSink->SetLastPts(0);
     videoSink->SetFirstPts(HST_TIME_NONE);
-    auto syncCenter = std::make_shared<MediaSyncManager>();
-    videoSink->SetSyncCenter(syncCenter);
     videoSink->SetSeekFlag();
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
     const std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 1; // eos
     videoSink->DoSyncWrite(buffer);
     videoSink->DoSyncWrite(buffer);
     buffer->flag_ = BUFFER_FLAG_EOS;
     videoSink->DoSyncWrite(buffer);
+    buffer->pts_ = 1;
+    videoSink->lastBufferTime_ = 1;
+    videoSink->seekFlag_ = false;
     (void)videoSink->CheckBufferLatenessMayWait(buffer);
+    float speed = 0;
+    videoSink->GetSpeed(speed);
 }
 }  // namespace Test
 }  // namespace Media
