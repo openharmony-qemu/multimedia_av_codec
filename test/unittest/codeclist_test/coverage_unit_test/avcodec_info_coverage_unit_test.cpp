@@ -471,4 +471,30 @@ HWTEST_F(AVCodecInfoTest, DivCeil_Valid_Test_001, TestSize.Level1)
     auto ret = videoCaps_->DivCeil(dividend, divisor);
     EXPECT_EQ(ret, INT32_MAX);
 }
+
+/**
+ * @tc.name: GetPreferredFrameRate_Valid_Test_001
+ * @tc.desc: measuredFrameRate.size() equals zero
+ */
+HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_001, TestSize.Level1)
+{
+    videoCaps_->blockPerFrameRange_ = {1000000, 2000000};
+    videoCaps_->blockWidth_ = 0;
+    videoCaps_->data_->measuredFrameRate.clear();
+    videoCaps_->GetPreferredFrameRate(width_, height_);
 }
+
+/**
+ * @tc.name: GetPreferredFrameRate_Valid_Test_002
+ * @tc.desc: measuredFrameRate
+ */
+HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_002, TestSize.Level1)
+{
+    ImgSize imageSize = {1, DEFAULT_WIDTH / 2};
+    MediaAVCodec::Range range = {1, INT32_MAX};
+    videoCaps_->blockPerFrameRange_ = {1000000, 2000000};
+    videoCaps_->blockWidth_ = 0;
+    videoCaps_->data_->measuredFrameRate.emplace(imageSize, range);
+    videoCaps_->GetPreferredFrameRate(width_, height_);
+}
+}//namespace
