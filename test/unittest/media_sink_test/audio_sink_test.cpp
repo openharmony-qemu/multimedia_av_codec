@@ -22,6 +22,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 }
 
 using namespace testing::ext;
@@ -43,6 +44,130 @@ public:
     }
 
 private:
+};
+
+class TestAudioSinkMock : public AudioSinkPlugin {
+public:
+
+    explicit TestAudioSinkMock(std::string name): AudioSinkPlugin(std::move(name)) {}
+
+    Status Start() override
+    {
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status Stop() override
+    {
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status PauseTransitent() override
+    {
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status Pause() override
+    {
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status Resume() override
+    {
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status GetLatency(uint64_t &hstTime) override
+    {
+        (void)hstTime;
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status SetAudioEffectMode(int32_t effectMode) override
+    {
+        (void)effectMode;
+        return Status::ERROR_UNKNOWN;
+    };
+
+    Status GetAudioEffectMode(int32_t &effectMode) override
+    {
+        (void)effectMode;
+        return Status::ERROR_UNKNOWN;
+    };
+
+    int64_t GetPlayedOutDurationUs(int64_t nowUs) override
+    {
+        (void)nowUs;
+        return 0;
+    }
+    Status GetMute(bool& mute) override
+    {
+        (void)mute;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status SetMute(bool mute) override
+    {
+        (void)mute;
+        return Status::ERROR_UNKNOWN;
+    }
+
+    Status GetVolume(float& volume) override
+    {
+        (void)volume;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status SetVolume(float volume) override
+    {
+        (void)volume;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status GetSpeed(float& speed) override
+    {
+        (void)speed;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status SetSpeed(float speed) override
+    {
+        (void)speed;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status GetFrameSize(size_t& size) override
+    {
+        (void)size;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status GetFrameCount(uint32_t& count) override
+    {
+        (void)count;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status Write(const std::shared_ptr<AVBuffer>& input) override
+    {
+        (void)input;
+        return Status::ERROR_UNKNOWN;
+    }
+    Status Flush() override
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+    Status Drain() override
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+    Status GetFramePosition(int32_t &framePosition) override
+    {
+        (void)framePosition;
+        return Status::ERROR_UNKNOWN;
+    }
+    void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver) override
+    {
+        (void)receiver;
+    }
+    int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) override
+    {
+        (void)targetVolume;
+        (void)duration;
+        return 0;
+    }
 };
 
 std::shared_ptr<AudioSink> AudioSinkCreate()
@@ -433,6 +558,25 @@ HWTEST(TestAudioSink, audio_sink_init006, TestSize.Level1) {
     ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
 }
 
+HWTEST(TestAudioSink, audio_sink_init007, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+    audioSink->plugin_ = audioSink->CreatePlugin();
+    meta->SetData(Tag::MEDIA_START_TIME, 0);
+    ASSERT_NE(nullptr, audioSink->plugin_);
+    audioSink->samplePerFrame_ = 1;
+    audioSink->sampleRate_  = -1;
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    EXPECT_EQ(audioSink->playingBufferDurationUs_, 0);
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
 HWTEST(TestAudioSink, audio_sink_GetBufferQueueProducer, TestSize.Level1) {
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
@@ -450,6 +594,9 @@ HWTEST(TestAudioSink, audio_sink_GetBufferQueueProducer, TestSize.Level1) {
     auto initStatus = audioSink->Init(meta, testEventReceiver);
     ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
 
+    // Get Buffer Queue Producer
+    ASSERT_EQ(audioSink->GetBufferQueueProducer(), nullptr);
+
     // Prepare AudioSink
     auto prepareStatus = audioSink->Prepare();
     ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should succeed";
@@ -463,6 +610,8 @@ HWTEST(TestAudioSink, audio_sink_GetBufferQueueConsumer, TestSize.Level1) {
     
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
+
+    ASSERT_EQ(audioSink->GetBufferQueueConsumer(), nullptr);
 
     auto prepareStatus = audioSink->Prepare();
     ASSERT_EQ(prepareStatus, Status::OK) << "Prepare should succeed";
@@ -483,6 +632,8 @@ HWTEST(TestAudioSink, audio_sink_TestSetParameter, TestSize.Level1) {
 
     auto setParameterStatus = audioSink->SetParameter(meta);
     ASSERT_EQ(setParameterStatus, Status::OK) << "SetParameter should succeed";
+    audioSink->plugin_ = nullptr;
+    ASSERT_EQ(audioSink->SetParameter(nullptr), Status::ERROR_NULL_POINTER);
 }
 
 HWTEST(TestAudioSink, audio_sink_TestSetParameter02, TestSize.Level1) {
@@ -503,6 +654,7 @@ HWTEST(TestAudioSink, audio_sink_TestPrepare, TestSize.Level1) {
 
     auto status = audioSink->Prepare();
     ASSERT_EQ(status, Status::OK) << "Prepare should return OK";
+    ASSERT_EQ(Status::ERROR_INVALID_OPERATION, audioSink->Prepare());
 }
 
 HWTEST(TestAudioSink, audio_sink_TestStart, TestSize.Level1) {
@@ -514,6 +666,10 @@ HWTEST(TestAudioSink, audio_sink_TestStart, TestSize.Level1) {
 
     auto startStatus = audioSink->Start();
     ASSERT_EQ(startStatus, Status::OK) << "Start should return OK";
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Start());
 }
 
 HWTEST(TestAudioSink, audio_sink_TestStop, TestSize.Level1)
@@ -528,6 +684,13 @@ HWTEST(TestAudioSink, audio_sink_TestStop, TestSize.Level1)
 
     auto stopStatus = audioSink->Stop();
     ASSERT_EQ(stopStatus, Status::OK) << "Stop should return OK";
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
+    ASSERT_EQ(Status::OK, audioSink->Stop());
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Stop());
 }
 
 HWTEST(TestAudioSink, audio_sink_TestPause, TestSize.Level1)
@@ -542,6 +705,19 @@ HWTEST(TestAudioSink, audio_sink_TestPause, TestSize.Level1)
 
     auto pauseStatus = audioSink->Pause();
     ASSERT_EQ(pauseStatus, Status::OK) << "Pause should return OK";
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
+    ASSERT_EQ(audioSink->Pause(), Status::OK);
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::STOP;
+    ASSERT_EQ(audioSink->Pause(), Status::OK);
+
+    audioSink->isTransitent_  = true;
+    audioSink->isEos_  = false;
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Pause());
 }
 
 HWTEST(TestAudioSink, audio_sink_TestResume, TestSize.Level1)
@@ -558,6 +734,24 @@ HWTEST(TestAudioSink, audio_sink_TestResume, TestSize.Level1)
 
     auto resumeStatus = audioSink->Resume();
     ASSERT_EQ(resumeStatus, Status::OK) << "Resume should return OK";
+
+    audioSink->eosInterruptType_  = AudioSink::EosInterruptState::PAUSE;
+    audioSink->eosDraining_ = false;
+    audioSink->eosTask_  = nullptr;
+    ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Resume());
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Resume());
+}
+
+HWTEST(TestAudioSink, audio_sink_SetVolume, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    ASSERT_EQ(Status::ERROR_INVALID_PARAMETER, audioSink->SetVolume(-1));
+    audioSink->plugin_ = nullptr;
+    ASSERT_EQ(Status::ERROR_NULL_POINTER, audioSink->SetVolume(0));
 }
 
 HWTEST(TestAudioSink, audio_sink_TestFlush, TestSize.Level1)
@@ -572,6 +766,249 @@ HWTEST(TestAudioSink, audio_sink_TestFlush, TestSize.Level1)
 
     auto flushStatus = audioSink->Flush();
     ASSERT_EQ(flushStatus, Status::OK) << "Flush should return OK";
+}
+
+HWTEST(TestAudioSink, audio_sink_UpdateAudioWriteTimeMayWait, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    audioSink->UpdateAudioWriteTimeMayWait();
+    ASSERT_EQ(audioSink->lastBufferWriteTime_, 0);
+
+    audioSink->latestBufferDuration_ = MAX_BUFFER_DURATION_US + 1;
+    audioSink->lastBufferWriteSuccess_ = true;
+    audioSink->UpdateAudioWriteTimeMayWait();
+    ASSERT_EQ(audioSink->latestBufferDuration_, MAX_BUFFER_DURATION_US);
+
+    audioSink->lastBufferWriteSuccess_ = false;
+    audioSink->UpdateAudioWriteTimeMayWait();
+    ASSERT_EQ(audioSink->latestBufferDuration_, MAX_BUFFER_DURATION_US);
+
+    audioSink->latestBufferDuration_ = 1;
+    audioSink->UpdateAudioWriteTimeMayWait();
+    ASSERT_EQ(audioSink->latestBufferDuration_, 1);
+}
+
+HWTEST(TestAudioSink, audio_sink_HandleEosInner, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
+    audioSink->HandleEosInner(true);
+    EXPECT_EQ(false, audioSink->eosDraining_);
+    EXPECT_EQ(audioSink->eosInterruptType_, AudioSink::EosInterruptState::NONE);
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::RESUME;
+    audioSink->HandleEosInner(true);
+    EXPECT_EQ(false, audioSink->eosDraining_);
+    EXPECT_EQ(audioSink->eosInterruptType_, AudioSink::EosInterruptState::NONE);
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::STOP;
+    audioSink->HandleEosInner(true);
+    EXPECT_EQ(false, audioSink->eosDraining_);
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
+    audioSink->eosTask_ = std::make_unique<Task>("OS_EOSa", "test", TaskType::AUDIO, TaskPriority::HIGH, false);
+    audioSink->HandleEosInner(false);
+    EXPECT_EQ(true, audioSink->eosDraining_);
+
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
+    audioSink->eosTask_ = nullptr;
+    audioSink->HandleEosInner(false);
+    EXPECT_EQ(false, audioSink->eosDraining_);
+    EXPECT_EQ(audioSink->eosInterruptType_, AudioSink::EosInterruptState::NONE);
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    audioSink->eosInterruptType_ = AudioSink::EosInterruptState::INITIAL;
+    audioSink->HandleEosInner(false);
+    EXPECT_EQ(false, audioSink->eosDraining_);
+    EXPECT_EQ(audioSink->eosInterruptType_, AudioSink::EosInterruptState::NONE);
+}
+
+HWTEST(TestAudioSink, audio_sink_DrainAndReportEosEvent, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    audioSink->SetSyncCenter(syncCenter);
+    audioSink->DrainAndReportEosEvent();
+    ASSERT_EQ(false, audioSink->eosDraining_);
+}
+
+// plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr
+HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_001, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
+    audioSink->inputBufferQueueConsumer_ = nullptr;
+    audioSink->DrainOutputBuffer();
+    ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
+}
+
+// plugin_ != nullptr || inputBufferQueueConsumer_ == nullptr
+HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_002, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->inputBufferQueueConsumer_ = nullptr;
+    audioSink->DrainOutputBuffer();
+    ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
+}
+
+// plugin_ != nullptr || inputBufferQueueConsumer_ != nullptr, ret != Status::OK || filledOutputBuffer == nullptr
+HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_003, TestSize.Level1)
+{
+    auto audioSink = std::make_shared<AudioSink>();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->inputBufferQueue_ = AVBufferQueue::Create(5, MemoryType::SHARED_MEMORY, "test");
+    audioSink->inputBufferQueueConsumer_ = audioSink->inputBufferQueue_->GetConsumer();
+    audioSink->DrainOutputBuffer();
+    ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
+}
+
+HWTEST(TestAudioSink, audio_sink_ResetSyncInfo, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    audioSink->SetSyncCenter(syncCenter);
+    audioSink->ResetSyncInfo();
+    ASSERT_TRUE(!audioSink->syncCenter_.expired());
+}
+
+// lastReportedClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ != true
+HWTEST(TestAudioSink, audio_sink_DoSyncWrite_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    audioSink->firstPts_  = 0;
+    audioSink->lastReportedClockTime_ = 0;
+    audioSink->forceUpdateTimeAnchorNextTime_ = false;
+    audioSink->playingBufferDurationUs_  = 1;
+    AVBufferConfig config;
+    config.size = 9;
+    config.capacity = 9;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
+}
+
+// lastReportedClockTime_ != HST_TIME_NONE || forceUpdateTimeAnchorNextTime_ == true
+HWTEST(TestAudioSink, audio_sink_DoSyncWrite_002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    audioSink->firstPts_  = 0;
+    audioSink->lastReportedClockTime_ = 0;
+    audioSink->forceUpdateTimeAnchorNextTime_ = true;
+    audioSink->playingBufferDurationUs_  = 1;
+    AVBufferConfig config;
+    config.size = 9;
+    config.capacity = 9;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<OHOS::Media::AVBuffer> buffer = AVBuffer::CreateAVBuffer(config);
+    ASSERT_EQ(0, audioSink->DoSyncWrite(buffer));
+}
+
+HWTEST(TestAudioSink, audio_sink_SetSpeed_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    audioSink->plugin_ = nullptr;
+    ASSERT_EQ(Status::ERROR_NULL_POINTER, audioSink->SetSpeed(0));
+}
+
+HWTEST(TestAudioSink, audio_sink_SetSpeed_002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+
+    ASSERT_EQ(Status::ERROR_INVALID_PARAMETER, audioSink->SetSpeed(0));
+}
+
+HWTEST(TestAudioSink, audio_sink_SetAudioEffectMode, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
+
+    ASSERT_EQ(Status::ERROR_NULL_POINTER, audioSink->SetAudioEffectMode(0));
+}
+
+HWTEST(TestAudioSink, audio_sink_GetAudioEffectMode, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
+    int32_t effectMode = 0;
+    ASSERT_EQ(Status::ERROR_NULL_POINTER, audioSink->GetAudioEffectMode(effectMode));
+}
+
+HWTEST(TestAudioSink, audio_sink_getPendingAudioPlayoutDurationUs_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->numFramesWritten_ = 10;
+    audioSink->samplePerFrame_ = 10;
+    audioSink->sampleRate_ = 1;
+    int64_t nowUs = 0;
+    ASSERT_EQ(100000000, audioSink->getPendingAudioPlayoutDurationUs(nowUs));
+}
+
+HWTEST(TestAudioSink, audio_sink_getPendingAudioPlayoutDurationUs_002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->numFramesWritten_ = -10;
+    audioSink->samplePerFrame_ = 10;
+    audioSink->sampleRate_ = 1;
+    int64_t nowUs = 0;
+    ASSERT_EQ(0, audioSink->getPendingAudioPlayoutDurationUs(nowUs));
+}
+
+HWTEST(TestAudioSink, audio_sink_getDurationUsPlayedAtSampleRate_001, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    uint32_t numFrames = 0;
+    ASSERT_EQ(0, audioSink->getDurationUsPlayedAtSampleRate(numFrames));
+}
+
+HWTEST(TestAudioSink, audio_sink_getDurationUsPlayedAtSampleRate_002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    uint32_t numFrames = 0;
+    ASSERT_EQ(0, audioSink->getDurationUsPlayedAtSampleRate(numFrames));
+}
+
+HWTEST(TestAudioSink, audio_sink_ChangeTrack, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
+    audioSink->volume_ = 0;
+    audioSink->speed_  = -1;
+    audioSink->effectMode_ = -1;
+    audioSink->state_  = Pipeline::FilterState::RUNNING;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_EQ(Status::OK, audioSink->ChangeTrack(meta, nullptr));
 }
 } // namespace Test
 } // namespace Media
