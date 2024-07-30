@@ -167,4 +167,4 @@ HWTEST(TestVideoSink, do_sync_write_eos, TestSize.Level1)
 }
 }  // namespace Test
 }  // namespace Media
-}  // namespace OHOS 
+}  // namespace OHOS
