@@ -714,7 +714,7 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
             buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
             if (buf->avBuffer != nullptr) {
                 AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                            buf->avBuffer->memory_->GetCapacity());
+                             buf->avBuffer->memory_->GetCapacity());
             }
         } else {
             buf->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
