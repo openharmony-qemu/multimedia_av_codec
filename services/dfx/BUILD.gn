@@ -77,9 +77,7 @@ ohos_shared_library("av_codec_service_dfx") {
   ]
 
   if (av_codec_support_hidumper) {
-    external_deps += [
-      "hidumper:lib_dump_usage",
-    ]
+    external_deps += [ "hidumper:lib_dump_usage" ]
   }
 
   subsystem_name = "multimedia"
