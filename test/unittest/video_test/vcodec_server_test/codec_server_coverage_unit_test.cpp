@@ -640,10 +640,27 @@ HWTEST_F(CodecServerUnitTest, SetInputSurface_Valid_Test_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: SetInputSurface_Invalid_Test_S001
+ * @tc.name: SetInputSurface_Valid_Test_002
+ * @tc.desc: codec SetInputSurface
+ */
+HWTEST_F(CodecServerUnitTest, SetInputSurface_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isModeConfirmed_ = false;
+    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
+    sptr<Surface> surface = CreateSurface();
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetInputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+        int32_t ret = server_->SetInputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.name: SetInputSurface_Invalid_Test_001
  * @tc.desc: 1. SetInputSurface in invalid state
  */
-HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_S001, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, SetInputSurface_Invalid_Test_001, TestSize.Level1)
 {
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::INITIALIZED, CodecServer::CodecStatus::UNINITIALIZED,
@@ -713,6 +730,24 @@ HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_001, TestSize.Level1)
 HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_002, TestSize.Level1)
 {
     CreateHCodecByMime();
+    server_->isModeConfirmed_ = false;
+    server_->status_ = CodecServer::CodecStatus::CONFIGURED;
+    sptr<Surface> surface = CreateSurface();
+    if (surface != nullptr) {
+        EXPECT_CALL(*codecBaseMock_, SetOutputSurface(surface)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+        int32_t ret = server_->SetOutputSurface(surface);
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    }
+}
+
+/**
+ * @tc.name: SetOutputSurface_Valid_Test_003
+ * @tc.desc: 3. codec SetOutputSurface
+ */
+HWTEST_F(CodecServerUnitTest, SetOutputSurface_Valid_Test_003, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
     server_->isModeConfirmed_ = false;
     server_->status_ = CodecServer::CodecStatus::CONFIGURED;
     sptr<Surface> surface = CreateSurface();
@@ -1047,6 +1082,157 @@ HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
     AVCodecErrorType errorType = AVCODEC_ERROR_INTERNAL;
     int32_t errorCode = AVCS_ERR_OK;
     codecBaseCallback->OnError(errorType, errorCode);
+}
+
+/**
+ * @tc.name: PreparePostProcessing_Invalid_Test_001
+ * @tc.desc: postProcessing controller is null
+ */
+HWTEST_F(CodecServerUnitTest, PreparePostProcessing_Invalid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
+    int32_t ret = server_->PreparePostProcessing();
+    EXPECT_NE(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: PreparePostProcessing_Valid_Test_002
+ * @tc.desc: codec PreparePostProcessing
+ */
+HWTEST_F(CodecServerUnitTest, PreparePostProcessing_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = nullptr;
+    int32_t ret = server_->PreparePostProcessing();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: StartPostProcessing_Invalid_Test_001
+ * @tc.desc: postProcessing controller is null
+ */
+HWTEST_F(CodecServerUnitTest, StartPostProcessing_Invalid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
+    int32_t ret = server_->StartPostProcessing();
+    EXPECT_NE(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: StopPostProcessing_inValid_Test_001
+ * @tc.desc: postProcessing controller is null
+ */
+HWTEST_F(CodecServerUnitTest, StopPostProcessing_inValid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessingTask_ = nullptr;
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
+    int32_t ret = server_->StopPostProcessing();
+    EXPECT_NE(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: StopPostProcessing_Valid_Test_002
+ * @tc.desc: codec StopPostProcessing
+ */
+HWTEST_F(CodecServerUnitTest, StopPostProcessing_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto bufferInfoQueue = std::make_shared<CodecServer::DecodedBufferInfoQueue>(DEFAULT_LOCK_FREE_QUEUE_NAME);
+    server_->postProcessingTask_ = std::make_unique<TaskThread>(DEFAULT_TASK_NAME);
+    server_->postProcessing_ = nullptr;
+    server_->decodedBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
+    int32_t ret = server_->StopPostProcessing();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: FlushPostProcessing_Invalid_Test_001
+ * @tc.desc: postProcessing flush failed
+ */
+HWTEST_F(CodecServerUnitTest, FlushPostProcessing_Invalid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto bufferInfoQueue = std::make_shared<CodecServer::DecodedBufferInfoQueue>(DEFAULT_LOCK_FREE_QUEUE_NAME);
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
+    server_->postProcessingTask_ = std::make_unique<TaskThread>(DEFAULT_TASK_NAME);
+    server_->decodedBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
+    int32_t ret = server_->FlushPostProcessing();
+    EXPECT_NE(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: FlushPostProcessing_Valid_Test_002
+ * @tc.desc: codec FlushPostProcessing
+ */
+HWTEST_F(CodecServerUnitTest, FlushPostProcessing_Valid_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = nullptr;
+    int32_t ret = server_->FlushPostProcessing();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: ResetPostProcessing_Valid_Test_001
+ * @tc.desc: codec ResetPostProcessing
+ */
+HWTEST_F(CodecServerUnitTest, ResetPostProcessing_Valid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->postProcessing_ = std::make_unique<CodecServer::PostProcessingType>(server_->codecBase_);
+    int32_t ret = server_->ResetPostProcessing();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: StartPostProcessingTask_Valid_Test_001
+ * @tc.desc: codec StartPostProcessingTask
+ */
+HWTEST_F(CodecServerUnitTest, StartPostProcessingTask_Valid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto bufferInfoQueue = std::make_shared<CodecServer::DecodedBufferInfoQueue>(DEFAULT_LOCK_FREE_QUEUE_NAME);
+    server_->postProcessingTask_ = nullptr;
+    server_->decodedBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
+    server_->StartPostProcessingTask();
+}
+
+/**
+ * @tc.name: DeactivatePostProcessingQueue_Valid_Test_001
+ * @tc.desc: codec DeactivatePostProcessingQueue
+ */
+HWTEST_F(CodecServerUnitTest, DeactivatePostProcessingQueue_Valid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto bufferInfoQueue = std::make_shared<CodecServer::DecodedBufferInfoQueue>(DEFAULT_LOCK_FREE_QUEUE_NAME);
+    server_->decodedBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
+    server_->DeactivatePostProcessingQueue();
+}
+
+/**
+ * @tc.name: CleanPostProcessingResource_Valid_Test_001
+ * @tc.desc: codec CleanPostProcessingResource
+ */
+HWTEST_F(CodecServerUnitTest, CleanPostProcessingResource_Valid_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto bufferInfoQueue = std::make_shared<CodecServer::DecodedBufferInfoQueue>(DEFAULT_LOCK_FREE_QUEUE_NAME);
+    server_->postProcessingTask_ = std::make_unique<TaskThread>(DEFAULT_TASK_NAME);
+    server_->decodedBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
+    server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
+    server_->CleanPostProcessingResource();
 }
 
 /**
