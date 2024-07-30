@@ -105,11 +105,15 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
+    fileFdSourcePlugin_->waterLineAbove_ = 1;
     fileFdSourcePlugin_->NotifyBufferingPercent();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
     fileFdSourcePlugin_->NotifyBufferingPercent();
-
+    
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
+    fileFdSourcePlugin_->NotifyBufferingPercent();
+    fileFdSourcePlugin_->isBuffering_ = true;
+    fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingPercent();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
     delete sourceCallback;
