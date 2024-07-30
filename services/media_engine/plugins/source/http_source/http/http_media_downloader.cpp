@@ -965,7 +965,7 @@ void HttpMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
     }
 }
 
-void HttpMediaDownloader::CheckBufferingOneSeconds()
+bool HttpMediaDownloader::CheckBufferingOneSeconds()
 {
     MEDIA_LOG_I("CheckBufferingOneSeconds in");
     int32_t sleepTime = 0;
