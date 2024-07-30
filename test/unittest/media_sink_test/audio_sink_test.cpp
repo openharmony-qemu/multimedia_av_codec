@@ -845,7 +845,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_001, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->plugin_ = nullptr;
     audioSink->inputBufferQueueConsumer_ = nullptr;
-    audioSink->DrainOutputBuffer(true);
+    audioSink->DrainOutputBuffer();
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -855,7 +855,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_002, TestSize.Level1)
     auto audioSink = std::make_shared<AudioSink>();
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueueConsumer_ = nullptr;
-    audioSink->DrainOutputBuffer(true);
+    audioSink->DrainOutputBuffer();
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
@@ -866,7 +866,7 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_003, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueue_ = AVBufferQueue::Create(5, MemoryType::SHARED_MEMORY, "test");
     audioSink->inputBufferQueueConsumer_ = audioSink->inputBufferQueue_->GetConsumer();
-    audioSink->DrainOutputBuffer(true);
+    audioSink->DrainOutputBuffer();
     ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
 }
 
