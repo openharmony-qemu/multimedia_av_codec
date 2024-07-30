@@ -74,7 +74,8 @@ HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     videoSink->SetFirstPts(HST_TIME_NONE);
     videoSink->SetSeekFlag();
     uint64_t latency = 0;
-    videoSink->GetLatency(latency);
+    auto getLatency = videoSink->GetLatency(latency);
+    ASSERT_TRUE(getLatency == Status::OK);
     AVBufferConfig config;
     config.size = 4;
     config.memoryType = MemoryType::SHARED_MEMORY;
@@ -89,7 +90,7 @@ HWTEST(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     videoSink->seekFlag_ = false;
     (void)videoSink->CheckBufferLatenessMayWait(buffer);
     float speed = 0;
-    auto getSpeedStatus = videoSink->GetSpeed(speed);
+    videoSink->GetSpeed(speed);
 }
 
 HWTEST(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
