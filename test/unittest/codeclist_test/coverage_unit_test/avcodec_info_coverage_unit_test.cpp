@@ -486,7 +486,7 @@ HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_001, TestSize.Level1)
 
 /**
  * @tc.name: GetPreferredFrameRate_Valid_Test_002
- * @tc.desc: measuredFrameRate
+ * @tc.desc: can not match measuredFrameRate
  */
 HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_002, TestSize.Level1)
 {
