@@ -497,4 +497,4 @@ HWTEST_F(AVCodecInfoTest, GetPreferredFrameRate_Valid_Test_002, TestSize.Level1)
     videoCaps_->data_->measuredFrameRate.emplace(imageSize, range);
     videoCaps_->GetPreferredFrameRate(width_, height_);
 }
-}//namespace
+} // namespace
