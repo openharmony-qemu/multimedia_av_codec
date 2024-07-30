@@ -26,6 +26,7 @@ declare_args() {
   av_codec_support_codec_perf_test = false
   av_codec_support_drm = false
   av_codec_enable_special_codec = false
+  av_codec_support_hidumper = false
 }
 av_codec_sanitize = {
   boundary_sanitize = true
@@ -106,4 +107,14 @@ if (av_codec_support_drm) {
   av_codec_defines += [ "SUPPORT_DRM" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_DRM" ]
+}
+
+av_codec_support_hidumper = false
+if (defined(global_parts_info) &&
+    defined(global_parts_info.hiviewdfx_hidumper)) {
+  av_codec_support_hidumper = true
+}
+
+if (av_codec_support_hidumper) {
+  av_codec_defines += [ "SUPPORT_HIDUMPER" ]
 }
