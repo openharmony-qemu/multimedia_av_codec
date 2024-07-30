@@ -94,8 +94,8 @@ private:
     bool isReadFrame_ {false};
     bool isSeekHit_ {false};
     uint64_t cachePosition_ {0};
-    int64_t waterLineAbove_ {0};
-    bool isCloudFile_ {false};
+    int64_t waterLineAbove_ {1};
+    bool isCloudFile_ {true};
     std::shared_ptr<RingBuffer> ringBuffer_;
 
     int64_t ringBufferSize_ {0};
