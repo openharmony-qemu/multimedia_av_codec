@@ -588,7 +588,9 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
         std::vector<uint32_t> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-            releaseBufferCondition_.wait(lock);
+            releaseBufferCondition_.wait(lock, [this] {
+                return !indexs_.empty();
+            });
             indexs = indexs_;
             indexs_.clear();
         }
