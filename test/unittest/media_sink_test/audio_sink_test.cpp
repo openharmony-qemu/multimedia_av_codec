@@ -265,6 +265,16 @@ HWTEST(TestAudioSink, find_audio_sink_set_volume004, TestSize.Level1)
     ASSERT_TRUE(setVolumeWithRampStatus == 0);
 }
 
+HWTEST(TestAudioSink, find_audio_sink_set_volume005, TestSize.Level1)
+{
+    std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    audioSink->plugin_ = nullptr;
+    float volume = -0.5f;
+    auto setVolumeStatus =  audioSink->SetVolume(volume);
+    ASSERT_TRUE(setVolumeStatus == Status::ERROR_NULL_POINTER);
+}
+
 HWTEST(TestAudioSink, find_audio_sink_set_sync_center, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
@@ -502,6 +512,53 @@ HWTEST(TestAudioSink, audio_sink_init004, TestSize.Level1) {
 }
 
 HWTEST(TestAudioSink, audio_sink_init005, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 1024);
+    meta->SetData(Tag::MEDIA_START_TIME, 1);
+    meta->SetData(Tag::MIME_TYPE, "audio/x-ape");
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_init006, TestSize.Level1) {
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto meta = std::make_shared<Meta>();
+    auto testEventReceiver = std::make_shared<TestEventReceiver>();
+
+    // Set some data in meta for testing
+    meta->SetData(Tag::APP_PID, 12345);
+    meta->SetData(Tag::APP_UID, 67890);
+    meta->SetData(Tag::AUDIO_SAMPLE_RATE, 44100);
+    meta->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, 1024);
+    meta->SetData(Tag::MIME_TYPE, "audio/mpeg");
+
+    // Call Init method
+    auto initStatus = audioSink->Init(meta, testEventReceiver);
+    ASSERT_EQ(initStatus, Status::OK) << "Init should succeed with valid parameters";
+
+    // Verify the internal state of AudioSink
+    ASSERT_TRUE(audioSink->IsInitialized()) << "AudioSink should be initialized";
+    ASSERT_TRUE(audioSink->HasPlugin()) << "Plugin should be initialized";
+}
+
+HWTEST(TestAudioSink, audio_sink_init007, TestSize.Level1) {
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
     auto meta = std::make_shared<Meta>();

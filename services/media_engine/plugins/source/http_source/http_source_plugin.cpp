@@ -379,9 +379,9 @@ Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
     return Status::OK;
 }
 
-void HttpSourcePlugin::SetDemuxerState()
+void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState();
+    downloader_->SetDemuxerState(streamId);
 }
 
 void HttpSourcePlugin::SetDownloadErrorState()

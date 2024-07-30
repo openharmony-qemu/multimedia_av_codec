@@ -50,7 +50,7 @@ public:
     HlsMediaDownloader() noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration);
     explicit HlsMediaDownloader(std::string mimeType);
-    ~HlsMediaDownloader() override = default;
+    ~HlsMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -78,7 +78,7 @@ public:
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
@@ -119,6 +119,7 @@ private:
     void CaculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
+    bool CheckBufferingOneSeconds();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;

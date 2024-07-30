@@ -52,7 +52,7 @@ public:
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     Status SelectStream(int32_t streamID) override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;

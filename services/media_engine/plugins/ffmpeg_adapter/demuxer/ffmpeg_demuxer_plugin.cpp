@@ -67,6 +67,7 @@ const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const uint32_t MS_TO_SEC = 1000;
+const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
@@ -1226,12 +1227,18 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
+    MEDIA_LOG_I("FFmpeg init begin");
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
     FALSE_RETURN_V_MSG_E((ret == 0), nullptr,
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
         pluginImpl_->name, AVStrError(ret).c_str());
-
+    MEDIA_LOG_I("FFmpeg open input finish");
+    if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
+        MEDIA_LOG_W("Flv resource, reset probe size to " PUBLIC_LOG_D64, LIVE_FLV_PROBE_SIZE);
+        formatContext->probesize = LIVE_FLV_PROBE_SIZE;
+    }
     ret = avformat_find_stream_info(formatContext, NULL);
+    MEDIA_LOG_I("FFmpeg parse stream info finish");
     FALSE_RETURN_V_MSG_E((ret >= 0), nullptr,
         "Init AVFormatContext failed due to avformat_find_stream_info failed by " PUBLIC_LOG_S
         ", err:" PUBLIC_LOG_S ".", pluginImpl_->name, AVStrError(ret).c_str());

@@ -59,7 +59,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetPlayStrategy(PlayStrategy* playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;

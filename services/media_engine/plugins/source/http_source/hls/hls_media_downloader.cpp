@@ -55,6 +55,8 @@ constexpr int SECOND_TO_MILLIONSECOND = 1000;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
+constexpr int32_t ONE_SECONDS = 1000;
+constexpr int32_t TEN_MILLISECONDS = 10;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -121,6 +123,18 @@ HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
     for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
         aesKey_.rd_key[i] = 0;
     }
+}
+
+HlsMediaDownloader::~HlsMediaDownloader()
+{
+    MEDIA_LOG_I("~HlsMediaDownloader in");
+    if (playListDownloader_ != nullptr) {
+        playListDownloader_ = nullptr;
+    }
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
+    }
+    MEDIA_LOG_I("~HlsMediaDownloader out");
 }
 
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
@@ -344,7 +358,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         return Status::END_OF_STREAM;
     }
 
-    if (isBuffering_) {
+    if (isBuffering_ && CheckBufferingOneSeconds()) {
         MEDIA_LOG_I("Read return error again.");
         return Status::ERROR_AGAIN;
     }
@@ -470,7 +484,8 @@ void HlsMediaDownloader::ResetPlaylistCapacity(size_t size)
 
 void HlsMediaDownloader::PlaylistBackup(const PlayInfo& fragment)
 {
-    if (playListDownloader_->IsParseFinished() && (GetSeekable() == Seekable::UNSEEKABLE)) {
+    if (playListDownloader_ != nullptr && playListDownloader_->IsParseFinished() &&
+        (GetSeekable() == Seekable::UNSEEKABLE)) {
         if (backPlayList_.size() > 0) {
             backPlayList_.clear();
         }
@@ -843,7 +858,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const st
 
     // bitrate above 0, user is not selecting, auto seliect is not going, playlist is done, is not seeking
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_ &&
-        playListDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
+        playListDownloader_ != nullptr && playListDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag) {
         AutoSelectBitrate(bitRate);
     }
 }
@@ -860,7 +875,7 @@ void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
     isAutoSelectBitrate_ = isAuto;
 }
 
-void HlsMediaDownloader::SetDemuxerState()
+void HlsMediaDownloader::SetDemuxerState(int32_t streamId)
 {
     MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;
@@ -1170,6 +1185,22 @@ void HlsMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
         lastCachedSize_ = bufferSize;
     }
+}
+
+bool HlsMediaDownloader::CheckBufferingOneSeconds()
+{
+    MEDIA_LOG_I("CheckBufferingOneSeconds in");
+    int32_t sleepTime = 0;
+    // return error again 1 time 1s, avoid ffmpeg error
+    while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
+        if (!isBuffering_) {
+            break;
+        }
+        OSAL::SleepFor(TEN_MILLISECONDS);
+        sleepTime += TEN_MILLISECONDS;
+    }
+    MEDIA_LOG_I("CheckBufferingOneSeconds out");
+    return isBuffering_;
 }
 }
 }

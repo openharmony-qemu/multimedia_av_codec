@@ -90,7 +90,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
-    void SetDemuxerState();
+    void SetDemuxerState(int32_t streamId);
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     Status Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);

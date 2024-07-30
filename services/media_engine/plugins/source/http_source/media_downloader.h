@@ -81,7 +81,7 @@ public:
     {
         MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
     }
-    virtual void SetDemuxerState()
+    virtual void SetDemuxerState(int32_t streamId)
     {
         MEDIA_LOG_W("SetDemuxerState is unimplemented.");
     }

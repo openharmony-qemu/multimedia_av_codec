@@ -866,3 +866,9 @@ int32_t VDecNdkSample::RepeatCallSetSurface()
     }
     return ret;
 }
+
+int32_t VDecNdkSample::DecodeSetSurface()
+{
+    CreateSurface();
+    return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
+}
