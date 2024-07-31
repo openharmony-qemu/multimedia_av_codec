@@ -52,6 +52,9 @@ public:
     std::queue<AVCodecBufferFlag> flagQueue_;
     std::queue<std::shared_ptr<AVSharedMemory>> inBufferQueue_;
     std::queue<std::shared_ptr<AVSharedMemory>> outBufferQueue_;
+    std::queue<std::shared_ptr<Format>> inFormatQueue_;
+    std::queue<std::shared_ptr<Format>> inAttrQueue_;
+
 };
 
 class VEncInnerCallback : public AVCodecCallback, public NoCopyable {
@@ -69,8 +72,20 @@ private:
     std::shared_ptr<VEncInnerSignal> innersignal_;
 };
 
+
+class VEncParamWithAttrCallbackTest : public MediaCodecParameterWithAttrCallback {
+public:
+    explicit VEncParamWithAttrCallbackTest(std::shared_ptr<VEncInnerSignal>);
+    virtual ~VEncParamWithAttrCallbackTest();
+    void OnInputParameterWithAttrAvailable(uint32_t index, std::shared_ptr<Format> attribute,
+                                           std::shared_ptr<Format> parameter) override;
+private:
+    std::shared_ptr<VEncInnerSignal> signal_ = nullptr;
+};
+
 class VEncNdkInnerSample : public NoCopyable {
 public:
+    explicit VEncNdkInnerSample(std::shared_ptr<VEncInnerSignal> signal);
     VEncNdkInnerSample() = default;
     ~VEncNdkInnerSample();
     
@@ -92,6 +107,7 @@ public:
     int32_t ReleaseOutputBuffer(uint32_t index);
     int32_t SetParameter(const Format &format);
     int32_t SetCallback();
+    int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallback> cb);
     int32_t GetInputFormat(Format &format);
 
     int32_t StartVideoEncoder();
@@ -104,10 +120,12 @@ public:
     int32_t StateEOS();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
+    int32_t PushInputParameter(uint32_t index);
     bool RandomEOS(uint32_t index);
     void RepeatStartBeforeEOS();
     void SetEOS(uint32_t index);
     void WaitForEOS();
+    void InputParamLoopFunc();
     void InputFuncSurface();
     void InputFunc();
     void OutputFunc();
@@ -116,6 +134,9 @@ public:
     void StopInloop();
     void StopOutloop();
     void ReleaseInFile();
+    void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
+    bool IsFrameDiscard(uint32_t index);
+    bool CheckOutputFrameCount();
 
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
@@ -126,9 +147,11 @@ public:
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
-    
+    uint32_t DEFAULT_KEY_I_FRAME_INTERVAL = 333; // 1300 测试用例
+
     uint32_t errCount = 0;
     uint32_t outCount = 0;
+    uint32_t inCount = 0;
     uint32_t frameCount = 0;
     bool enableForceIDR = false;
     bool sleepOnFPS = false;
@@ -136,11 +159,26 @@ public:
     bool repeatRun = false;
     bool enableRandomEos = false;
     int64_t encodeCount = 0;
+    uint32_t DEFAULT_BITRATE_MODE = CBR;
+    bool enableRepeat = false;
+    bool enableSeekEos = false;
+    int32_t DEFAULT_FRAME_AFTER = 1;
+    int32_t DEFAULT_MAX_COUNT = 1;
+    uint32_t DEFAULT_KEY_I_INTERVAL = 10;
+    int32_t discardInterval = -1;
+    bool isDiscardFrame = false;
+    std::vector<int32_t> discardFrameIndex;
+    int32_t discardMaxIndex = -1;
+    int32_t discardMinIndex = -1;
+    int32_t discardFrameCount = 0;
+    int32_t inputFrameCount = 0;
+    bool setMaxCount = false;
     
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
+    std::unique_ptr<std::thread> inputParamLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::shared_ptr<AVCodecVideoEncoder> venc_;
     std::shared_ptr<VEncInnerSignal> signal_;
@@ -148,6 +186,7 @@ private:
     int stride_;
     OHNativeWindow *nativeWindow;
     static constexpr uint32_t SAMPLE_RATIO = 2;
+    bool isSetParamCallback_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

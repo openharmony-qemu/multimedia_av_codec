@@ -475,4 +475,70 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
     ret = venc_->GetInputFormat(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_REPEAT_0100
+ * @tc.name      : set frame after 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0100, TestSize.Level0)
+{
+    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    vEncInnerSample->DEFAULT_WIDTH = 1280;
+    vEncInnerSample->DEFAULT_HEIGHT = 720;
+    vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+    vEncInnerSample->surfaceInput = true;
+    vEncInnerSample->enableRepeat = true;
+    vEncInnerSample->setMaxCount = true;
+    vEncInnerSample->DEFAULT_FRAME_AFTER = 0;
+    vEncInnerSample->DEFAULT_MAX_COUNT = -1;
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_REPEAT_0200
+ * @tc.name      : set frame after -1
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0200, TestSize.Level1)
+{
+    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    vEncInnerSample->DEFAULT_WIDTH = 1280;
+    vEncInnerSample->DEFAULT_HEIGHT = 720;
+    vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+    vEncInnerSample->surfaceInput = true;
+    vEncInnerSample->enableRepeat = true;
+    vEncInnerSample->setMaxCount = true;
+    vEncInnerSample->DEFAULT_FRAME_AFTER = -1;
+    vEncInnerSample->DEFAULT_MAX_COUNT = -1;
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_REPEAT_0300
+ * @tc.name      : set max count 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0300, TestSize.Level1)
+{
+    auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+    vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+    vEncInnerSample->DEFAULT_WIDTH = 1280;
+    vEncInnerSample->DEFAULT_HEIGHT = 720;
+    vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
+    vEncInnerSample->surfaceInput = true;
+    vEncInnerSample->enableRepeat = true;
+    vEncInnerSample->setMaxCount = true;
+    vEncInnerSample->DEFAULT_FRAME_AFTER = 1;
+    vEncInnerSample->DEFAULT_MAX_COUNT = 0;
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+    ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
+}
 } // namespace
