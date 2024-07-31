@@ -177,7 +177,7 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     }
     sizeMap_[trackIndex] += 1;
     for (auto pkt : block->pkts) {
-        quePool_[pushIndex].dataSize += pkt->size;
+        quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
     }
     return quePool_[pushIndex].blockQue->Push(block);
 }
@@ -200,8 +200,9 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         if (quePool_[queIndex].blockQue->Size() > 0) {
             auto block = quePool_[queIndex].blockQue->Pop();
             for (auto pkt : block->pkts) {
+                uint32_t pktSize = static_cast<uint32_t>(pkt->size);
                 quePool_[queIndex].dataSize =
-                    quePool_[queIndex].dataSize >= pkt->size ? quePool_[queIndex].dataSize -= pkt->size : 0;
+                    quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
             }
             if (quePool_[queIndex].blockQue->Empty()) {
                 ResetQueue(queIndex);
