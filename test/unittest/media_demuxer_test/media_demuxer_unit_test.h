@@ -40,64 +40,67 @@ public:
 
 class DemuxerPluginMock : public Plugins::DemuxerPlugin {
 public:
-    explicit DemuxerPluginMock(std::string name) : DemuxerPlugin(std::move(name))
+    explicit DemuxerPluginMock(std::string name) : DemuxerPlugin(name)
     {
+        mapStatus_["StatusOK"] = Status::OK;
+        mapStatus_["StatusErrorUnknown"] = Status::ERROR_UNKNOWN;
+        name_ = name;
     }
     ~DemuxerPluginMock()
     {
     }
     virtual Status Reset()
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status Start()
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status Stop()
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status Flush()
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status SetDataSource(const std::shared_ptr<DataSource>& source)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetMediaInfo(MediaInfo& mediaInfo)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetUserMeta(std::shared_ptr<Meta> meta)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status SelectTrack(uint32_t trackId)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status UnselectTrack(uint32_t trackId)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode,
         int64_t& realSeekTime)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual void ResetEosStatus()
     {
@@ -105,47 +108,50 @@ public:
     }
     virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status ParserRefInfo() override
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample,
         FrameLayerInfo &frameLayerInfo)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
         int64_t presentationTimeUs, uint32_t &frameIndex)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual  Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         uint32_t frameIndex, int64_t &presentationTimeUs)
     {
-        return Status::ERROR_UNKNOWN;
+        return mapStatus_[name_];
     }
     virtual void SetCacheLimit(uint32_t limitSize)
     {
         return;
     }
+private:
+    std::map<std::string, Status> mapStatus_;
+    std::string name_;
 };
 
 }
