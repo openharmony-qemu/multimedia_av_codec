@@ -75,7 +75,7 @@ private:
     void GetCurrentSpeed(int64_t curTime);
     float GetCacheTime(float num);
     void UpdateWaterLineAbove();
-    void DeleteCacheBuffer(const char* buffer);
+    void DeleteCacheBuffer(char* buffer, size_t bufferSize);
     void CheckReadTime();
     bool IsValidTime(int64_t curTime, int64_t lastTime);
     
