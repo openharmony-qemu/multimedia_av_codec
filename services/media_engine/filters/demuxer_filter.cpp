@@ -204,7 +204,7 @@ Status DemuxerFilter::DoPrepare()
     return Status::OK;
 }
 
-Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_tt &successNodeCount)
+Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount)
 {
     Status ret = Status::OK;
     for (size_t index = 0; index < trackInfos.size(); index++) {
