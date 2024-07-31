@@ -149,6 +149,9 @@ public:
     {
         return;
     }
+private:
+    std::map<std::string, Status> mapStatus_;
+    std::string name_;
 };
 
 }
