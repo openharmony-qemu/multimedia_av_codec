@@ -44,11 +44,6 @@ using namespace OHOS::Media;
 using namespace testing::ext;
 
 namespace {
-static std::shared_ptr<AVSource> source = nullptr;
-static std::shared_ptr<AVDemuxer> demuxer = nullptr;
-} // namespace
-
-namespace {
 class DemuxerNetNdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
@@ -67,12 +62,26 @@ public:
 static OH_AVMemory *memory = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+static OH_AVSource *source = nullptr;
+static OH_AVDemuxer *demuxer = nullptr;
+static int32_t g_trackCount = 0;
+static OH_AVBuffer *avBuffer = nullptr;
+
 static int32_t g_maxThread = 16;
 OH_AVSource *source_list[16] = {};
 OH_AVMemory *memory_list[16] = {};
 OH_AVDemuxer *demuxer_list[16] = {};
 int g_fdList[16] = {};
 OH_AVBuffer *avBuffer_list[16] = {};
+
+constexpr int32_t LAYOUTMONO = 4;
+constexpr int32_t LAYOUTDUAL = 3;
+constexpr int32_t SAMPLERATEMONO = 8000;
+constexpr int32_t SAMPLERATEDUAL = 44100;
+constexpr int32_t COUNTMONO = 1;
+constexpr int32_t COUNTDUAL = 2;
+constexpr int32_t BITRATEMONO = 64000;
+constexpr int32_t BITRATEDUAL = 705600;
 
 void DemuxerNetNdkTest::SetUpTestCase() {}
 void DemuxerNetNdkTest::TearDownTestCase() {}
@@ -83,35 +92,35 @@ void DemuxerNetNdkTest::TearDown()
         close(fd_);
         fd_ = -1;
     }
-
+    if (demuxer != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer);
+        demuxer = nullptr;
+    }
     if (source != nullptr) {
+        OH_AVSource_Destroy(source);
         source = nullptr;
     }
-
-    if (demuxer != nullptr) {
-        demuxer = nullptr;
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
     }
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
-
     if (sourceFormat != nullptr) {
         OH_AVFormat_Destroy(sourceFormat);
         sourceFormat = nullptr;
     }
-
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
     }
-
     for (int i = 0; i < g_maxThread; i++) {
         if (demuxer_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
             demuxer_list[i] = nullptr;
         }
-
         if (source_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
             source_list[i] = nullptr;
@@ -125,7 +134,6 @@ void DemuxerNetNdkTest::TearDown()
             avBuffer_list[i] = nullptr;
         }
         std::cout << i << "            finish Destroy!!!!" << std::endl;
-
         close(g_fdList[i]);
     }
 }
@@ -161,6 +169,58 @@ namespace {
                 audioIsEnd = true;
             }
         }
+    }
+
+    static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
+    {
+        int akeyCount = 0;
+        int tarckType = 0;
+        OH_AVCodecBufferAttr bufferAttr;
+        bool audioIsEnd = false;
+        int32_t count = 0;
+        int32_t rate = 0;
+        int64_t bitrate = 0;
+        int64_t layout = 0;
+        int32_t index = 0;
+        const char* mimeType = nullptr;
+        while (!audioIsEnd) {
+            trackFormat = OH_AVSource_GetTrackFormat(audioSource, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, index, avBuffer));
+            ASSERT_NE(avBuffer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+            if (tarckType == OH_MediaType::MEDIA_TYPE_AUD) {
+                ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, &rate));
+                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, &count));
+                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_CHANNEL_LAYOUT, &layout));
+                ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &bitrate));
+                if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                    audioIsEnd = true;
+                    cout << audioFrameAll << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                    continue;
+                }
+                audioFrameAll++;
+                if (bufferAttr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                    akeyCount++;
+                }
+            }
+        }
+        if (count == 1) {
+            ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+            ASSERT_EQ(layout, LAYOUTMONO);
+            ASSERT_EQ(rate, SAMPLERATEMONO);
+            ASSERT_EQ(count, COUNTMONO);
+            ASSERT_EQ(bitrate, BITRATEMONO);
+        } else {
+            ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+            ASSERT_EQ(layout, LAYOUTDUAL);
+            ASSERT_EQ(rate, SAMPLERATEDUAL);
+            ASSERT_EQ(count, COUNTDUAL);
+            ASSERT_EQ(bitrate, BITRATEDUAL);
+        }
+        cout << akeyCount << "---akeyCount---" << endl;
     }
     /**
      * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0110
@@ -315,4 +375,57 @@ namespace {
             cout << "num: " << num << endl;
         }
     }
+    /**
+     * @tc.number    : DEMUXER_FUNC_NET_003
+     * @tc.name      : create pcm-mulaw wav demuxer with network file
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_NET_003, TestSize.Level2)
+    {
+        int audioFrame = 0;
+        int sizeinfo = 421888;
+        const char *uri = "http://192.168.3.11:8080/share/audio/audio/wav_audio_test_202406290859.wav";
+        source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        avBuffer = OH_AVBuffer_Create(sizeinfo);
+        ASSERT_NE(avBuffer, nullptr);
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        }
+        CheckAudioParam(source, audioFrame);
+        ASSERT_EQ(103, audioFrame);
+        cout << "-----------audioFrame-----------" << audioFrame << endl;
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_NET_004
+     * @tc.name      : create pcm-mulaw wav demuxer with Mono channel uri file
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_NET_004, TestSize.Level2)
+    {
+        int sizeinfo = 28672;
+        int audioFrame = 0;
+        const char *uri = "http://192.168.3.11:8080/share/audio/audio/7FBD5E21-503C-41A8-83B4-34548FC01562.wav";
+        source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        avBuffer = OH_AVBuffer_Create(sizeinfo);
+        ASSERT_NE(avBuffer, nullptr);
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+        }
+        CheckAudioParam(source, audioFrame);
+        ASSERT_EQ(7, audioFrame);
+        cout << "-----------audioFrame-----------" << audioFrame << endl;
+    }
+
 } // namespace
