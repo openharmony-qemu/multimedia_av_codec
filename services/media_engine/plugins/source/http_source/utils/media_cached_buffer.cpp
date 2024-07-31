@@ -157,7 +157,7 @@ size_t CacheMediaChunkBufferImpl::Read(void* ptr, int64_t offset, size_t readSiz
     hasReadSize = oneReadSize;
     while (hasReadSize < readSize && oneReadSize != 0) {
         dst += oneReadSize;
-        hasReadOffset += oneReadSize;
+        hasReadOffset += static_cast<int64_t>(oneReadSize);
         oneReadSize = ReadInner(dst, hasReadOffset, readSize - hasReadSize);
         hasReadSize += oneReadSize;
     }
