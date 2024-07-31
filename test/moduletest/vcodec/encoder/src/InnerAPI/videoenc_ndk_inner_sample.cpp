@@ -926,7 +926,7 @@ void VEncNdkInnerSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, ui
     while (discardFrameIndex.size() < count) {
         uint32_t num = 0;
         if (max != 0) {
-            num = rd() % max + min;
+            num = rand() % max + min;
         }
         if (find(discardFrameIndex.begin(), discardFrameIndex.end(), num) == discardFrameIndex.end()) {
             cout << num << ",";
