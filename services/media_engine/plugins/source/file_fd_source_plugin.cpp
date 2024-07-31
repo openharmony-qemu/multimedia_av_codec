@@ -173,6 +173,7 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
+
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("ReadLocal buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
 
@@ -682,7 +683,7 @@ float FileFdSourcePlugin::GetCacheTime(float num)
 
 void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer, size_t bufferSize)
 {
-    if (buffer != nullptr) {
+    if (buffer != nullptr && bufferSize >= 0) {
         delete[] buffer;
     }
 }
