@@ -94,9 +94,11 @@ void VEncInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
     innersignal_->outCond_.notify_all();
 }
 
-VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(std::shared_ptr<VEncInnerSignal> signal) : signal_(signal) {}
+VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(
+    std::shared_ptr<VEncInnerSignal> signal) : signal_(signal) {}
 
-VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() {
+VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() 
+{
     signal_ = nullptr;
 }
 
@@ -299,7 +301,7 @@ int32_t VEncNdkInnerSample::SetParameter(const Format &format)
 
 int32_t VEncNdkInnerSample::SetCallback()
 {
-    if(signal_ == nullptr) {
+    if (signal_ == nullptr) {
         signal_ = make_shared<VEncInnerSignal>();
     }
     if (signal_ == nullptr) {
@@ -329,10 +331,8 @@ int32_t VEncNdkInnerSample::GetInputFormat(Format &format)
 
 int32_t VEncNdkInnerSample::StartVideoEncoder()
 {
-    cout << "StartVideoEncoder" << endl;
     isRunning_.store(true);
     int32_t ret = 0;
-
     if (surfaceInput) {
         ret = CreateInputSurface();
         if (ret != AVCS_ERR_OK) {
@@ -341,7 +341,6 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
     }
     ret = venc_->Start();
     if (ret != AVCS_ERR_OK) {
-        cout << "Failed to start codec" << endl;
         isRunning_.store(false);
         signal_->inCond_.notify_all();
         signal_->outCond_.notify_all();
@@ -362,13 +361,13 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
 
     if (surfaceInput) {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFuncSurface, this);
-        inputParamLoop_ = isSetParamCallback_ ? make_unique<thread>(&VEncNdkInnerSample::InputParamLoopFunc,this):nullptr;
+        inputParamLoop_ = isSetParamCallback_ ? make_unique<thread>(&VEncNdkInnerSample::InputParamLoopFunc,
+         this):nullptr;
     } else {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFunc, this);
     }
 
     if (inputLoop_ == nullptr) {
-        cout << "Failed to create input loop" << endl;
         isRunning_.store(false);
         venc_->Stop();
         ReleaseInFile();
@@ -377,7 +376,6 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
     
     outputLoop_ = make_unique<thread>(&VEncNdkInnerSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
         isRunning_.store(false);
         venc_->Stop();
         ReleaseInFile();
@@ -697,17 +695,25 @@ void VEncNdkInnerSample::InputFuncSurface()
             break;
         }
         usleep(FRAME_INTERVAL);
-        inCount = inCount + 1;
-        if (enableRepeat && inCount == 15) {
-            if (setMaxCount) {
-                usleep(730000);
-            }else {
-                usleep(1000000);
-            }
-            if (enableSeekEos) {
-                inFile_->clear();
-                inFile_->seekg(-1, ios::beg);
-            }
+        InputEnableRepeatSleep();
+    }
+}
+
+void VEncNdkInnerSample::InputEnableRepeatSleep()
+{
+    inCount = inCount + 1;
+    int32_t inCountNum = 15;
+    if (enableRepeat && inCount == inCountNum) {
+        if (setMaxCount) {
+            int32_t sleepTimeMaxCount = 730000;
+            usleep(sleepTimeMaxCount);
+        } else {
+            int32_t sleepTime = 1000000;
+            usleep(sleepTime);
+        }
+        if (enableSeekEos) {
+            inFile_->clear();
+            inFile_->seekg(-1, ios::beg);
         }
     }
 }
@@ -734,27 +740,18 @@ void VEncNdkInnerSample::InputParamLoopFunc()
         signal_->inAttrQueue_.pop();
         if (attr != nullptr) {
             int64_t pts = 0;
-            if (true != attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts)){
+            if (true != attr->GetLongValue(Media::Tag::MEDIA_TIME_STAMP, pts)) {
                 return;
             }
-            // UNITTEST_INFO_LOG("attribute: %s", attr->DumpInfo());
         }
-
-        // if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
-        //     format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
-        // }
-
-        if (IsFrameDiscard(inputFrameCount)) { // 2: encode half frames
+        if (IsFrameDiscard(inputFrameCount)) {
             discardFrameCount++;
             format->PutIntValue(Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, 1);
         }
-        // UNITTEST_INFO_LOG("parameter: %s", format->DumpInfo());
         int32_t ret = PushInputParameter(index);
         if (ret != AV_ERR_OK) {
             cout << "Fatal: PushInputData fail, exit" << endl;
         }
-
-
     }
 }
 
@@ -928,10 +925,11 @@ void VEncNdkInnerSample::ReleaseInFile()
 void VEncNdkInnerSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, uint32_t min)
 {
     cout << "random farame index :";
-    while (discardFrameIndex.size() < count)
-    {
-        uint32_t num = rand() % max + min;
-        
+    while (discardFrameIndex.size() < count) {
+        uint32_t num = 0;
+        if (max != 0) {
+            num = rand() % max + min;
+        }
         if (find(discardFrameIndex.begin(), discardFrameIndex.end(), num) == discardFrameIndex.end()) {
             cout << num << ",";
             discardFrameIndex.push_back(num);
@@ -948,21 +946,21 @@ bool VEncNdkInnerSample::IsFrameDiscard(uint32_t index)
     }
     if (discardMinIndex > -1 && discardMaxIndex >= discardMinIndex) {
         if (index >= discardMinIndex && index <= discardMaxIndex) {
-
             return true;
         }
     }
     if (find(discardFrameIndex.begin(), discardFrameIndex.end(), index) != discardFrameIndex.end()) {
         return true;
     }
-    if (discardInterval > 0 && index % discardInterval == 0){
+    if (discardInterval > 0 && index % discardInterval == 0) {
         return true;
     }
     return false;
 }
 
 bool VEncNdkInnerSample::CheckOutputFrameCount()
-{   cout << "checooutpuframecount" << inputFrameCount << ", " << discardFrameCount<< ", " << outCount << endl;
+{   
+    cout << "checooutpuframecount" << inputFrameCount << ", " << discardFrameCount<< ", " << outCount << endl;
     if (inputFrameCount - discardFrameCount == outCount) {
         return true;
     }
