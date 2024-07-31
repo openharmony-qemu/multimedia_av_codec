@@ -92,17 +92,9 @@ void DemuxerNetNdkTest::TearDown()
         close(fd_);
         fd_ = -1;
     }
-    if (source != nullptr) {
-        OH_AVSource_Destroy(source);
-        source = nullptr;
-    }
     if (demuxer != nullptr) {
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
-    }
-    if (memory != nullptr) {
-        OH_AVMemory_Destroy(memory);
-        memory = nullptr;
     }
     if (source != nullptr) {
         OH_AVSource_Destroy(source);
