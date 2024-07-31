@@ -122,6 +122,7 @@ private:
     void FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
+    Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
