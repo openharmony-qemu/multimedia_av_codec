@@ -97,7 +97,7 @@ void VEncInnerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
 VEncParamWithAttrCallbackTest::VEncParamWithAttrCallbackTest(
     std::shared_ptr<VEncInnerSignal> signal) : signal_(signal) {}
 
-VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest() 
+VEncParamWithAttrCallbackTest::~VEncParamWithAttrCallbackTest()
 {
     signal_ = nullptr;
 }
@@ -156,8 +156,7 @@ int32_t VEncNdkInnerSample::Configure()
         format.PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
         if (setMaxCount) {
             format.PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, DEFAULT_MAX_COUNT);
-        }
-        
+        } 
     }
     if (isDiscardFrame) {
         format.PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_KEY_I_FRAME_INTERVAL);
@@ -651,7 +650,6 @@ void VEncNdkInnerSample::InputFuncSurface()
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         if (nativeWindow == nullptr) {
-            cout << "nativeWindow == nullptr" << endl;
             break;
         }
 
@@ -936,7 +934,6 @@ void VEncNdkInnerSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, ui
         }
         cout << endl;
     }
-    
 }
 
 bool VEncNdkInnerSample::IsFrameDiscard(uint32_t index)
@@ -959,7 +956,7 @@ bool VEncNdkInnerSample::IsFrameDiscard(uint32_t index)
 }
 
 bool VEncNdkInnerSample::CheckOutputFrameCount()
-{   
+{
     cout << "checooutpuframecount" << inputFrameCount << ", " << discardFrameCount<< ", " << outCount << endl;
     if (inputFrameCount - discardFrameCount == outCount) {
         return true;

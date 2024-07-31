@@ -54,7 +54,6 @@ public:
     std::queue<std::shared_ptr<AVSharedMemory>> outBufferQueue_;
     std::queue<std::shared_ptr<Format>> inFormatQueue_;
     std::queue<std::shared_ptr<Format>> inAttrQueue_;
-
 };
 
 class VEncInnerCallback : public AVCodecCallback, public NoCopyable {
@@ -134,6 +133,7 @@ public:
     void StopInloop();
     void StopOutloop();
     void ReleaseInFile();
+    void InputEnableRepeatSleep();
     void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
@@ -147,7 +147,7 @@ public:
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
-    uint32_t DEFAULT_KEY_I_FRAME_INTERVAL = 333; // 1300 测试用例
+    uint32_t DEFAULT_KEY_I_FRAME_INTERVAL = 333; // 1300 测试用例，1000、333
 
     uint32_t errCount = 0;
     uint32_t outCount = 0;
