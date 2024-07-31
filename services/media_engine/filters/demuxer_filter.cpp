@@ -186,15 +186,28 @@ Status DemuxerFilter::DoPrepare()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     FALSE_RETURN_V_MSG_E(mediaSource_ != nullptr, Status::ERROR_INVALID_PARAMETER, "No valid media source");
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
-    size_t trackCount = trackInfos.size();
-    MEDIA_LOG_I_SHORT("trackCount: %{public}d", trackCount);
-    if (trackCount == 0) {
+    MEDIA_LOG_I_SHORT("trackCount: %{public}d", trackInfos.size());
+    if (trackInfos.size() == 0) {
         MEDIA_LOG_E_SHORT("Doprepare: trackCount is invalid.");
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
         return Status::ERROR_INVALID_PARAMETER;
     }
     int32_t successNodeCount = 0;
-    for (size_t index = 0; index < trackCount; index++) {
+    Status ret = HandleTrackInfos(trackInfos, successNodeCount);
+    if (ret != Status::OK) {
+        return ret;
+    }
+    if (successNodeCount == 0) {
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+    return Status::OK;
+}
+
+Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_tt &successNodeCount)
+{
+    Status ret = Status::OK;
+    for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
         std::string mime;
@@ -219,18 +232,14 @@ Status DemuxerFilter::DoPrepare()
             MEDIA_LOG_W_SHORT("callback is nullptr");
             continue;
         }
-        auto ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
         if (ret != Status::OK) {
             FaultDemuxerEventInfoWrite(streamType);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
         successNodeCount++;
     }
-    if (successNodeCount == 0) {
-        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
-        return Status::ERROR_UNSUPPORTED_FORMAT;
-    }
-    return Status::OK;
+    return ret;
 }
 
 void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
