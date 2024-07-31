@@ -92,7 +92,6 @@ void DemuxerNetNdkTest::TearDown()
         close(fd_);
         fd_ = -1;
     }
-
     if (source != nullptr) {
         OH_AVSource_Destroy(source);
         source = nullptr;
@@ -101,7 +100,6 @@ void DemuxerNetNdkTest::TearDown()
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
     }
-
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
@@ -118,23 +116,19 @@ void DemuxerNetNdkTest::TearDown()
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
-
     if (sourceFormat != nullptr) {
         OH_AVFormat_Destroy(sourceFormat);
         sourceFormat = nullptr;
     }
-
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
     }
-
     for (int i = 0; i < g_maxThread; i++) {
         if (demuxer_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
             demuxer_list[i] = nullptr;
         }
-
         if (source_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
             source_list[i] = nullptr;
@@ -148,7 +142,6 @@ void DemuxerNetNdkTest::TearDown()
             avBuffer_list[i] = nullptr;
         }
         std::cout << i << "            finish Destroy!!!!" << std::endl;
-
         close(g_fdList[i]);
     }
 }
