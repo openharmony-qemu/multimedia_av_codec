@@ -22,6 +22,7 @@
 #include "iconsumer_surface.h"
 #include "videoenc_inner_sample.h"
 #include "meta/meta_key.h"
+#include <random>
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -34,6 +35,7 @@ constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
+std::random_device rd;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -926,7 +928,7 @@ void VEncNdkInnerSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, ui
     while (discardFrameIndex.size() < count) {
         uint32_t num = 0;
         if (max != 0) {
-            num = rand() % max + min;
+            num = rd() % max + min;
         }
         if (find(discardFrameIndex.begin(), discardFrameIndex.end(), num) == discardFrameIndex.end()) {
             cout << num << ",";
