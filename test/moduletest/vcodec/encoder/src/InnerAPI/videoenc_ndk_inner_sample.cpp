@@ -156,7 +156,7 @@ int32_t VEncNdkInnerSample::Configure()
         format.PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_FRAME_AFTER, DEFAULT_FRAME_AFTER);
         if (setMaxCount) {
             format.PutIntValue(Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, DEFAULT_MAX_COUNT);
-        } 
+        }
     }
     if (isDiscardFrame) {
         format.PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_KEY_I_FRAME_INTERVAL);
@@ -926,7 +926,7 @@ void VEncNdkInnerSample::PushRandomDiscardIndex(uint32_t count, uint32_t max, ui
     while (discardFrameIndex.size() < count) {
         uint32_t num = 0;
         if (max != 0) {
-            num = rand() % max + min;
+            num = rd() % max + min;
         }
         if (find(discardFrameIndex.begin(), discardFrameIndex.end(), num) == discardFrameIndex.end()) {
             cout << num << ",";
