@@ -98,6 +98,46 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.
     sourceCallback = nullptr;
 }
 /**
+ * @tc.name: FileFdSource_NotifyBufferingPercent_0100
+ * @tc.desc: FileFdSource_NotifyBufferingPercent_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0100, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    fileFdSourcePlugin_->waterLineAbove_ = 1;
+    fileFdSourcePlugin_->NotifyBufferingPercent();
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
+    fileFdSourcePlugin_->NotifyBufferingPercent();
+    
+    fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
+    fileFdSourcePlugin_->NotifyBufferingPercent();
+    fileFdSourcePlugin_->isBuffering_ = true;
+    fileFdSourcePlugin_->isInterrupted_ = false;
+    fileFdSourcePlugin_->NotifyBufferingPercent();
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
+    delete sourceCallback;
+    sourceCallback = nullptr;
+}
+/**
+ * @tc.name: FileFdSource_NotifyBufferingEnd_0100
+ * @tc.desc: FileFdSource_NotifyBufferingEnd_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0100, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    fileFdSourcePlugin_->NotifyBufferingEnd();
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
+    fileFdSourcePlugin_->NotifyBufferingEnd();
+
+    fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
+    fileFdSourcePlugin_->NotifyBufferingEnd();
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
+    delete sourceCallback;
+    sourceCallback = nullptr;
+}
+/**
  * @tc.name: FileFdSource_NotifyReadFail_0100
  * @tc.desc: FileFdSource_NotifyReadFail_0100
  * @tc.type: FUNC
@@ -210,9 +250,24 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetBundleName_0100, TestSize.Level1)
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
 {
     fileFdSourcePlugin_->GetCacheTime(0.0);
+    fileFdSourcePlugin_->GetCacheTime(0.2);
+    fileFdSourcePlugin_->GetCacheTime(0.5);
     fileFdSourcePlugin_->GetCacheTime(1.0);
     fileFdSourcePlugin_->GetCacheTime(2.0);
     fileFdSourcePlugin_->HasCacheData(0);
+}
+/**
+ * @tc.name: FileFdSource_checkReadTime_0100
+ * @tc.desc: FileFdSource_checkReadTime_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0100, TestSize.Level1)
+{
+    int64_t curTime = 0;
+    int64_t lastTime = 0;
+    auto isValidTime = fileFdSourcePlugin_->IsValidTime(curTime, lastTime);
+    ASSERT_FALSE(isValidTime);
+    fileFdSourcePlugin_->CheckReadTime();
 }
 } // namespace FileSource
 } // namespace Plugins
