@@ -412,6 +412,8 @@ Status SurfaceEncoderAdapter::Reset()
     stopTime_ = -1;
     totalPauseTime_ = 0;
     isStart_ = false;
+    mappingTimeQueue_.clear();
+    pauseResumeQueue_.clear();
     if (ret == 0) {
         return Status::OK;
     } else {
