@@ -79,7 +79,7 @@ private:
     time_t lastReadTime_ {0};
     Callback* callback_ {nullptr};
     Mutex taskMutex_ {};
-    uint32_t haveReadData_ {0};
+    uint64_t haveReadData_ {0};
 };
 }
 }
