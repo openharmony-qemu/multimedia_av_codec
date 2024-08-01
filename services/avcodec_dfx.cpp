@@ -19,7 +19,9 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "hitrace_meter.h"
+#ifdef SUPPORT_HIDUMPER
 #include "dump_usage.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecDFX"};
@@ -78,8 +80,12 @@ void FaultEventWrite(FaultType faultType, const std::string& msg, const std::str
 
 void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
 {
+#ifdef SUPPORT_HIDUMPER
     OHOS::HiviewDFX::DumpUsage dumpUse;
     uint64_t useMemory = dumpUse.GetPss(getpid());
+#else
+    uint64_t useMemory = 0;
+#endif
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "SERVICE_START_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "MODULE", module.c_str(), "TIME", useTime,
                     "MEMORY", useMemory);

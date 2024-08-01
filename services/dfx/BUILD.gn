@@ -69,13 +69,16 @@ ohos_shared_library("av_codec_service_dfx") {
   external_deps = [
     "c_utils:utils",
     "hicollie:libhicollie",
-    "hidumper:lib_dump_usage",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "media_foundation:media_foundation",
   ]
+
+  if (av_codec_support_hidumper) {
+    external_deps += [ "hidumper:lib_dump_usage" ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"
