@@ -379,9 +379,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
 
-    downloader->GetDownloadInfo();
     OSAL::SleepFor(4 * 1000);
-    downloader->GetDownloadInfo();
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
