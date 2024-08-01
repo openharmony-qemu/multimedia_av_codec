@@ -147,10 +147,19 @@ public:
         return 0;
     }
 
-    void OnError(int32_t errorCode)
+    void OnError(CodecErrorType errorType, int32_t errorCode)
     {
-        if (callback_) {
-            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, errorCode);
+        if (callback_ == nullptr) {
+            return;
+        }
+        switch (errorType) {
+            case CodecErrorType::CODEC_DRM_DECRYTION_FAILED:
+                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED,
+                    StatusToAVCodecServiceErrCode(static_cast<Media::Status>(errorCode)));
+                break;
+            default:
+                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, errorCode);
+                break;
         }
     }
 
@@ -178,8 +187,7 @@ private:
 void AudioCodecCallback::OnError(Media::CodecErrorType errorType, int32_t errorCode)
 {
     if (codec_) {
-        (void)errorType;
-        codec_->OnError(errorCode);
+        codec_->OnError(errorType, errorCode);
     }
 }
 

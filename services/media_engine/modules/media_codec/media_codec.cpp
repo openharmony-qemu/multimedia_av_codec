@@ -488,13 +488,22 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
     }
     // 4. decrypt
     drmRes = drmDecryptor_->DrmAudioCencDecrypt(drmInBuf, drmOutBuf, bufSize);
-    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "DrmAudioCencDecrypt return error");
+    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_DRM_DECRYPT_FAILED, "DrmAudioCencDecrypt return error");
 
     // 5. copy decrypted data from drm output buffer back
     drmRes = memcpy_s(filledInputBuffer->memory_->GetAddr(), bufSize,
         drmOutBuf->memory_->GetAddr(), bufSize);
     FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "memcpy_s drmOutBuf failed");
     return Status::OK;
+}
+
+void MediaCodec::HandleAudioCencDecryptError()
+{
+    MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+    if (mediaCodecCallback_ != nullptr) {
+        mediaCodecCallback_->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED,
+            static_cast<int32_t>(Status::ERROR_DRM_DECRYPT_FAILED));
+    }
 }
 
 int32_t MediaCodec::PrepareInputBufferQueue()
@@ -603,7 +612,7 @@ void MediaCodec::ProcessInputBuffer()
         if (drmDecryptor_ != nullptr) {
             ret = DrmAudioCencDecrypt(filledInputBuffer);
             if (ret != Status::OK) {
-                MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+                HandleAudioCencDecryptError();
                 break;
             }
         }
