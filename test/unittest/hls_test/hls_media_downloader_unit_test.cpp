@@ -362,24 +362,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     EXPECT_TRUE(result);
 }
 
-class SourceCallback : public Plugins::Callback {
-public:
-    void OnEvent(const Plugins::PluginEvent &event) override
-    {
-        (void)event;
-    }
-
-    void SetSelectBitRateFlag(bool flag) override
-    {
-        (void)flag;
-    }
-
-    bool CanDoSelectBitRate() override
-    {
-        return true;
-    }
-};
-
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
@@ -387,8 +369,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->SetCallback(sourceCallback);
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
@@ -414,8 +394,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted, TestSize.Level1)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
     };
-    Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->SetCallback(sourceCallback);
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
