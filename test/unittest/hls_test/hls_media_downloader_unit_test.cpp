@@ -374,7 +374,7 @@ public:
         (void)flag;
     }
 
-    bool CanAutoSelectBitRate() override
+    bool CanDoSelectBitRate() override
     {
         return true;
     }
@@ -392,7 +392,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
-    unsigned char buff[20];
+    unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
@@ -419,7 +419,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
-    unsigned char buff[20];
+    downloader->GetStartedStatus();
+    unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
@@ -442,7 +443,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_null, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
-    unsigned char buff[20];
+    downloader->GetStartedStatus();
+    unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
@@ -457,7 +459,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_null, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_MAX_M3U8, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>("application/m3u8");
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720_5K.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -465,7 +467,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_MAX_M3U8, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
-    unsigned char buff[20];
+    downloader->GetStartedStatus();
+    unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
@@ -488,12 +491,13 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_SelectBR, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
-    unsigned char buff[20];
+    unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
+    downloader->AutoSelectBitrate(1000000);
 
     OSAL::SleepFor(4 * 1000);
     downloader->Close(true);
