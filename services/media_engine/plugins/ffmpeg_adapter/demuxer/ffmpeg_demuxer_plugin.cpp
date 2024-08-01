@@ -843,6 +843,9 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
     } else {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
     }
+    if (samplePacket->pkts[0]->pts != AV_NOPTS_VALUE) {
+        sample->absPts_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
+    }
     // durantion dts
     if (samplePacket->pkts[0]->duration != AV_NOPTS_VALUE) {
         int64_t duration = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->duration, avStream->time_base));
