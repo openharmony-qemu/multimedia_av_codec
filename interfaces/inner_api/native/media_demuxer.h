@@ -118,8 +118,6 @@ public:
 
     Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
-    Status ResumeDemuxerReadLoop();
-    Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
 private:
     class AVBufferQueueProducerListener;
@@ -261,7 +259,6 @@ private:
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
     int64_t lastSubtitlePts_ = 0;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
-    std::atomic<bool> isDemuxerLoopExecuting_ {false};
 };
 } // namespace Media
 } // namespace OHOS

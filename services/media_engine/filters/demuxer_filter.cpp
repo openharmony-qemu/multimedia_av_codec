@@ -728,22 +728,6 @@ bool DemuxerFilter::IsRenderNextVideoFrameSupported()
     return demuxer_->IsRenderNextVideoFrameSupported();
 }
 
-Status DemuxerFilter::ResumeDemuxerReadLoop()
-{
-    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeDemuxerReadLoop");
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "ResumeDemuxerReadLoop failed.");
-    MEDIA_LOG_I("ResumeDemuxerReadLoop start.");
-    return demuxer_->ResumeDemuxerReadLoop();
-}
-
-Status DemuxerFilter::PauseDemuxerReadLoop()
-{
-    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseDemuxerReadLoop");
-    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "PauseDemuxerReadLoop failed.");
-    MEDIA_LOG_I("PauseDemuxerReadLoop start.");
-    return demuxer_->PauseDemuxerReadLoop();
-}
-
 bool DemuxerFilter::IsVideoEos()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
