@@ -90,6 +90,8 @@ Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t s
 
 Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
+    FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
+        "GetPeekRange interrupt %{public}" PRId32 ", %{public}" PRIu64 " %{public}" PRIu64, streamID, offset, size);
     if (bufferPtr == nullptr) {
         MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
         return Status::ERROR_INVALID_PARAMETER;
@@ -218,7 +220,7 @@ Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
 {
     Status err = Status::OK;
     int32_t retryTimes = 0;
-    while (true) {
+    while (true && !isInterruptNeeded_.load()) {
         err = source_->Read(streamID, data, offset, size);
         if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
             OSAL::SleepFor(TRY_READ_SLEEP_TIME);
@@ -230,6 +232,7 @@ Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
         }
         break;
     }
+    FALSE_LOG_MSG(!isInterruptNeeded_.load(), "ReadRetry interrupted");
     return err;
 }
 
