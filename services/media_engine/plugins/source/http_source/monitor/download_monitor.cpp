@@ -89,10 +89,12 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
-    haveReadData_ += readDataInfo.realReadLength_;
-    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U32, haveReadData_);
+    if (ULLONG_MAX - haveReadData_ > readDataInfo.realReadLength_) {
+        haveReadData_ += readDataInfo.realReadLength_;
+    }
+    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
     if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
-        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U32, haveReadData_);
+        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U64, haveReadData_);
     }
     return ret;
 }
