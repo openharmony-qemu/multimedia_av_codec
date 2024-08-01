@@ -294,6 +294,7 @@ bool HttpMediaDownloader::StartBuffering()
     }
     if (isFirstFrameArrived_ && GetCurrentBufferSize() < cacheWaterLine && !isEos && !HandleBreak()) {
         waterLineAbove_ = std::max(MIN_WATER_LINE_ABOVE, static_cast<size_t>(GetWaterLineAbove()));
+        waterLineAbove_ = std::min(waterLineAbove_, fileRemain);
 
         if (!isBuffering_) {
             MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " wantReadLength " PUBLIC_LOG_ZU,

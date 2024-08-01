@@ -100,7 +100,6 @@ protected:
     bool WriteInPlace(FragmentIterator& fragmentPos, uint8_t* ptr, int64_t inOffset,
                       size_t inWriteSize, size_t& outWriteSize);
     bool WriteMergerPre(int64_t offset, size_t writeSize, FragmentIterator& nextFragmentPos);
-    size_t WriteMergerPost(FragmentIterator& fragmentPos, uint8_t* ptr, int64_t inOffset, size_t inWriteSize);
     void WriteMergerPost(FragmentIterator& nextFragmentPos);
     size_t ReadInner(void* ptr, int64_t offset, size_t readSize);
 
