@@ -91,7 +91,7 @@ Status StreamDemuxer::ReadHeaderData(int32_t streamID, uint64_t offset, size_t s
 Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
     FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE,
-        "GetPeekRange interrupt %{public}" PRId32 ", %{public}" PRIu64 " %{public}" PRIu64, streamID, offset, size);
+        "GetPeekRange interrupt " PUBLIC_LOG_D32 " " PUBLIC_LOG_U64 " " PUBLIC_LOG_ZU, streamID, offset, size);
     if (bufferPtr == nullptr) {
         MEDIA_LOG_E("GetPeekRange bufferPtr invalid.");
         return Status::ERROR_INVALID_PARAMETER;
