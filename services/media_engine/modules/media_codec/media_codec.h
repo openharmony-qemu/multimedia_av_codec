@@ -54,6 +54,7 @@ enum class CodecState : int32_t {
 
 enum class CodecErrorType : int32_t {
     CODEC_ERROR_INTERNAL,
+    CODEC_DRM_DECRYTION_FAILED,
     CODEC_ERROR_EXTEND_START = 0X10000,
 };
 
@@ -152,6 +153,8 @@ private:
     void ClearBufferQueue();
 
     void ClearInputBuffer();
+
+    void HandleAudioCencDecryptError();
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
