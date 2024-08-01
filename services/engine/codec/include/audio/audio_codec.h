@@ -158,7 +158,8 @@ public:
                     StatusToAVCodecServiceErrCode(static_cast<Media::Status>(errorCode)));
                 break;
             default:
-                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, errorCode);
+                callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
+                    StatusToAVCodecServiceErrCode(static_cast<Media::Status>(errorCode)));
                 break;
         }
     }
