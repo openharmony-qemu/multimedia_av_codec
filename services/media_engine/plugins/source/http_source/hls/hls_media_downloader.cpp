@@ -593,16 +593,13 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
                 DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
     realLen = GetDecrptyRealLen(writeDataPoint, waitLen, writeLen);
     totalLen_ += realLen;
-    bool isWriteRingBufferSuccess {true};
-    if (!buffer_->WriteBuffer(decryptCache_, realLen)) {
-        isWriteRingBufferSuccess = false;
-    }
+    bool isWriteRingBufferSuccess = buffer_->WriteBuffer(decryptCache_, realLen);
     err = memset_s(decryptCache_, realLen, 0x00, realLen);
     if (err != 0) {
         MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
     }
     if (isWriteRingBufferSuccess) {
-            afterAlignRemainedLength_ = 0;
+        afterAlignRemainedLength_ = 0;
         err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
         if (err != 0) {
             MEDIA_LOG_D("DECRYPT_UNIT_LEN: " PUBLIC_LOG_D64, DECRYPT_UNIT_LEN);
