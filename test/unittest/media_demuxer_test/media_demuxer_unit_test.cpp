@@ -189,6 +189,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnBufferAvailable_006, TestSize.Leve
     demuxer->SetDumpInfo(false, 111);
     demuxer->SetDumpInfo(true, 111);
     std::shared_ptr<Meta> userMeta = demuxer->GetUserMeta();
+    demuxer->mediaMetaData_.globalMeta = std::make_shared<Meta>();
 
     int64_t durationMs;
     EXPECT_EQ(demuxer->GetDuration(durationMs), true);
@@ -953,13 +954,14 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Le
     demuxer->shouldCheckAudioFramePts_ = true;
     demuxer->CheckDropAudioFrame(sample, 0);
 
-    demuxer->subtitleTrackId_ = 0;
+    demuxer->subtitleTrackId_ = 1;
     demuxer->shouldCheckSubtitleFramePts_ = false;
-    demuxer->CheckDropAudioFrame(sample, 0);
-    demuxer->lastSubtitlePts_ = 101;
-    demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->CheckDropAudioFrame(sample, 1);
     demuxer->shouldCheckSubtitleFramePts_ = true;
-    demuxer->CheckDropAudioFrame(sample, 0);
+    demuxer->lastSubtitlePts_ = 101;
+    demuxer->CheckDropAudioFrame(sample, 1);
+    demuxer->lastSubtitlePts_ = 99;
+    demuxer->CheckDropAudioFrame(sample, 1);
 
     demuxer->videoTrackId_ = 1;
     demuxer->isDecodeOptimizationEnabled_ = true;
