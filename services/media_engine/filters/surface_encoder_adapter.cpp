@@ -412,6 +412,8 @@ Status SurfaceEncoderAdapter::Reset()
     stopTime_ = -1;
     totalPauseTime_ = 0;
     isStart_ = false;
+    mappingTimeQueue_.clear();
+    pauseResumeQueue_.clear();
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -588,7 +590,9 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
         std::vector<uint32_t> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-            releaseBufferCondition_.wait(lock);
+            releaseBufferCondition_.wait(lock, [this] {
+                return !indexs_.empty();
+            });
             indexs = indexs_;
             indexs_.clear();
         }

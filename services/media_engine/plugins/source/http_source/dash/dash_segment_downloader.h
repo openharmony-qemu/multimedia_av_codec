@@ -23,6 +23,7 @@
 #include "dash_common.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
+#include "common/media_core.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
 
@@ -36,7 +37,9 @@ enum DashReadRet {
     DASH_READ_OK = 1,
     DASH_READ_SEGMENT_DOWNLOAD_FINISH = 2,
     DASH_READ_END = 3, // segment download finish and buffer read finish
-    DASH_READ_TIMEOUT = 4
+    DASH_READ_TIMEOUT = 4,
+    DASH_READ_AGAIN = 5,
+    DASH_READ_INTERRUPT = 6
 };
 
 struct DashBufferSegment {
@@ -128,14 +131,16 @@ using SegmentDownloadDoneCbFunc = std::function<void(int streamId)>;
 
 class DashSegmentDownloader {
 public:
-    DashSegmentDownloader(int streamId, MediaAVCodec::MediaType streamType, uint64_t expectDuration);
+    DashSegmentDownloader(Callback *callback, int streamId, MediaAVCodec::MediaType streamType,
+                          uint64_t expectDuration);
     virtual ~DashSegmentDownloader();
 
     bool Open(const std::shared_ptr<DashSegment> &dashSegment);
     void Close(bool isAsync, bool isClean);
     void Pause();
     void Resume();
-    DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded);
+    DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded,
+                     bool isLastSegment);
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
@@ -143,6 +148,8 @@ public:
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
     void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment);
     void UpdateStreamId(int streamId);
+    void SetCurrentBitRate(int32_t bitRate);
+    void SetDemuxerState();
     int GetStreamId() const;
     MediaAVCodec::MediaType GetStreamType() const;
     size_t GetContentLength();
@@ -166,11 +173,22 @@ private:
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
                          int32_t currentStreamId);
     std::shared_ptr<DashBufferSegment> GetCurrentSegment();
-    bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &ret, const std::atomic<bool> &isInterruptNeeded);
+    bool IsSegmentFinished(uint32_t &realReadLength, bool isLastSegment, DashReadRet &readRet);
+    bool CheckReadInterrupt(uint32_t &realReadLength, uint32_t wantReadLength, DashReadRet &readRet,
+                            const std::atomic<bool> &isInterruptNeeded, bool isLastSegment);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
     void OnWriteRingBuffer(uint32_t len);
+    bool HandleBuffering(const std::atomic<bool> &isInterruptNeeded, bool isLastSegment);
+    bool HandleCache();
+    bool CheckReadTimeOut();
+    void HandleCachedDuration();
+    int32_t GetWaterLineAbove();
+    void CalculateBitRate(size_t fragmentSize, double duration);
+    bool CheckAllSegmentFinish(bool isLastSegment);
+    bool CheckBreakCondition(bool isLastSegment);
+    void UpdateCachedPercent(BufferingInfoType infoType);
 
 private:
     static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
@@ -203,6 +221,19 @@ private:
     uint64_t downloadDuringTime_ {0};
     uint64_t downloadBits_ {0};
     SteadyClock steadyClock_;
+
+    // play water line
+    Callback* callback_{nullptr};
+    uint32_t waterLineAbove_{0};
+    bool isBuffering_{false};
+    bool isReadFrame_{false};
+    bool isBufferEnough_{true};
+    uint32_t downloadBiteRate_{0};
+    int64_t realTimeBitBate_{0};
+    uint64_t lastDurationRecord_{0};
+    int32_t lastCachedSize_{0};
+    bool isTimeOut_{false};
+    bool isFirstFrameArrived_{false};
 };
 }
 }

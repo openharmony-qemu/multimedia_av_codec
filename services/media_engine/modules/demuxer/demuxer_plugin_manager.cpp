@@ -547,7 +547,7 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
         if (ret != Status::OK) {
-            return ret;
+            MEDIA_LOG_E("subtitle SeekTo failed, ret = " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
         }
     }
     return Status::OK;

@@ -64,10 +64,8 @@ constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
-    const char *ffmpegCodec;
-    const bool isEncoder;
 } SUPPORT_HEVC_DECODER[] = {
-    {AVCodecCodecName::VIDEO_DECODER_HEVC_NAME, CodecMimeType::VIDEO_HEVC, "h265", false},
+    {AVCodecCodecName::VIDEO_DECODER_HEVC_NAME, CodecMimeType::VIDEO_HEVC},
 };
 constexpr uint32_t SUPPORT_HEVC_DECODER_NUM = sizeof(SUPPORT_HEVC_DECODER) / sizeof(SUPPORT_HEVC_DECODER[0]);
 } // namespace
@@ -190,9 +188,8 @@ void HevcDecoder::OpenDumpFile()
     AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
 
     char fileName[PATH_MAX_LEN] = {0};
-    int ret = 0;
     if (dumpModeStr == "10" || dumpModeStr == "11") {
-        ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
+        int ret = sprintf_s(fileName, sizeof(fileName), "%s/input_%p.h265", DUMP_PATH, this);
         if (ret > 0) {
             dumpInFile_ = std::make_shared<std::ofstream>();
             dumpInFile_->open(fileName, std::ios::out | std::ios::binary);
@@ -203,7 +200,7 @@ void HevcDecoder::OpenDumpFile()
         }
     }
     if (dumpModeStr == "1" || dumpModeStr == "01" || dumpModeStr == "11") {
-        ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
+        int ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
         if (ret > 0) {
             dumpOutFile_ = std::make_shared<std::ofstream>();
             dumpOutFile_->open(fileName, std::ios::out | std::ios::binary);
@@ -715,8 +712,10 @@ int32_t HevcDecoder::AllocateOutputBuffer(int32_t bufferCnt)
                 AVAllocatorFactory::CreateSurfaceAllocator(sInfo_.requestConfig);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}d allocator is nullptr", i);
             buf->avBuffer = AVBuffer::CreateAVBuffer(allocator, 0);
-            AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
-                         buf->avBuffer->memory_->GetCapacity());
+            if (buf->avBuffer != nullptr) {
+                AVCODEC_LOGI("Allocate output share buffer success: index=%{public}d, size=%{public}d", i,
+                             buf->avBuffer->memory_->GetCapacity());
+            }
         } else {
             buf->sMemory = std::make_shared<FSurfaceMemory>(&sInfo_);
             CHECK_AND_CONTINUE_LOG(buf->sMemory->GetSurfaceBuffer() != nullptr,
@@ -968,10 +967,10 @@ void HevcDecoder::SendFrame()
     runLock.unlock();
 
     if (isSendEos_) {
-        auto index = codecAvailQue_->Front();
-        std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
+        auto outIndex = codecAvailQue_->Front();
+        std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][outIndex];
         frameBuffer->avBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
-        FramePostProcess(buffers_[INDEX_OUTPUT][index], index, AVCS_ERR_OK, AVCS_ERR_OK);
+        FramePostProcess(buffers_[INDEX_OUTPUT][outIndex], outIndex, AVCS_ERR_OK, AVCS_ERR_OK);
         state_ = State::EOS;
     } else if (ret < 0) {
         AVCODEC_LOGE("decode frame error: ret = %{public}d", ret);
@@ -1028,7 +1027,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         targetPixelFmt = VideoPixelFormat::NV12;
     }
-    AVPixelFormat ffmpegFormat = AVPixelFormat::AV_PIX_FMT_NV12;
+    AVPixelFormat ffmpegFormat;
     if (bitDepth_ == BIT_DEPTH10BIT) {
         ffmpegFormat = AVPixelFormat::AV_PIX_FMT_P010LE;
     } else {
