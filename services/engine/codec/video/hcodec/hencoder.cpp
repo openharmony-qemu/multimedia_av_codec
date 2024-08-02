@@ -246,8 +246,8 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
 int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
 {
     if (!caps_.port.video.isSupportWaterMark) {
-        HLOGW("this device dont support water mark, ignore");
-        return AVCS_ERR_OK;
+        HLOGE("this device dont support water mark");
+        return AVCS_ERR_UNSUPPORT;
     }
     if (buffer == nullptr || buffer->memory_ == nullptr || buffer->meta_ == nullptr) {
         HLOGE("invalid buffer");
@@ -1230,7 +1230,6 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         int32_t err = NotifyOmxToEmptyThisInBuffer(info);
         if (err != AVCS_ERR_OK) {
             ResetSlot(info);
-            callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_EMPTY_INPUT_FAILED);
         }
     }
 }
