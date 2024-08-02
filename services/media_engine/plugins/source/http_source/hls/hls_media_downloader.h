@@ -119,7 +119,6 @@ private:
     void CaculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
-    bool CheckBufferingOneSeconds();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -223,6 +222,7 @@ private:
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
+    bool isBufferEnough_ {true};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
     bool isLastDecryptWriteError_ {false};
