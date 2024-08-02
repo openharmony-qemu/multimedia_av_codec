@@ -49,12 +49,12 @@ VDecAPI11Sample *vDecSample2 = NULL;
 void HwdecHdr2SdrStateNdkTest::SetUpTestCase() {}
 void HwdecHdr2SdrStateNdkTest::TearDownTestCase() {}
 
-void HwdecHdr2SdrStateNdkTest::SetUp() 
+void HwdecHdr2SdrStateNdkTest::SetUp()
 {
     vDecSample2 = new VDecAPI11Sample();
     vDecSample2->SF_OUTPUT = true;
-    if( !access( "/system/lib64/media/", 0)) {
-        vDecSample2->TRANSFER_FLAG = true;    
+    if (!access( "/system/lib64/media/", 0)) {
+        vDecSample2->TRANSFER_FLAG = true;
     } else {
         vDecSample2->TRANSFER_FLAG = false;
     }
@@ -91,6 +91,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0099, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -112,6 +114,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0100, TestSize.Level2)
     int32_t ret = vDecSample2->DecodeSetSurface();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -135,6 +139,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0200, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -157,6 +163,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0300, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -176,6 +184,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0400, TestSize.Level2)
     int32_t ret = vDecSample2->DecodeSetSurface();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -199,6 +209,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -221,6 +233,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0600, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -242,6 +256,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0700, TestSize.Level2)
     int32_t ret = vDecSample2->DecodeSetSurface();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -267,6 +283,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -289,6 +307,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_0900, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -310,6 +330,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_1000, TestSize.Level2)
     int32_t ret = vDecSample2->DecodeSetSurface();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -436,6 +458,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_1600, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(0, vDecSample2->errCount);
@@ -859,6 +883,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_3500, TestSize.Level1)
     vDecSample2->inputCallbackFlush = true;
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
@@ -877,6 +903,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_3600, TestSize.Level1)
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
 }
 
@@ -893,6 +921,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_3700, TestSize.Level1)
     vDecSample2->outputCallbackFlush = true;
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
 }
@@ -911,6 +941,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_3800, TestSize.Level1)
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
 }
 
@@ -928,6 +960,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_3900, TestSize.Level1)
     vDecSample2->inputCallbackFlush = true;
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
@@ -947,6 +981,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_4000, TestSize.Level1)
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
 }
 
@@ -965,6 +1001,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_4100, TestSize.Level1)
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
+    ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
 }
 
@@ -982,6 +1020,8 @@ HWTEST_F(HwdecHdr2SdrStateNdkTest, HEVC_HW_HDR2SDR_FUNC_4200, TestSize.Level1)
     vDecSample2->outputCallbackStop = true;
     ret = vDecSample2->StartVideoDecoder();
     vDecSample2->AFTER_EOS_DESTORY_CODEC = false;
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ret = vDecSample2->StartDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
     vDecSample2->WaitForEOS();
 }

@@ -101,6 +101,7 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
+    int32_t StartDecoder();
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
