@@ -500,7 +500,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
     testUrl = "fd://1?offset=512&size=1024";
     downloader->Open(testUrl, httpHeader);
     downloader->Close(true);
-    testUrl = "fd://data/test/media/test_cbr/720_1M/video_720.m3u8?offset=2048&size=1024";
+    testUrl = "fd://data/test/media/test_cbr/720_1M/video_720.m3u8?offset=1024&size=2048";
     downloader->Open(testUrl, httpHeader);
     downloader->Close(true);
     downloader = nullptr;
