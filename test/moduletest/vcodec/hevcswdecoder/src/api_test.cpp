@@ -2272,7 +2272,8 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1400, TestSize.Level2)
         uint32_t levelNum = 0;
         uint32_t profileNum = 0;
         const int32_t *profiles = nullptr;
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
+            OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
         ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -2298,7 +2299,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1400, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(nullptr, AVC_PROFILE_BASELINE, 1));
     }
 }
@@ -2310,7 +2311,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8100, TestSize.Level2)
  */
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)){
+    if (!access("/system/lib64/media/", 0)) {
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
