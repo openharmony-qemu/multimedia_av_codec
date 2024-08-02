@@ -188,7 +188,12 @@ Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
 
     MEDIA_LOG_DD("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
-    auto size = std::fread(bufData->GetWritableAddr(expectedLen), sizeof(char), expectedLen, fp_);
+    auto bufDataAddr = bufData->GetWritableAddr(expectedLen);
+    if (bufDataAddr != nullptr) {
+        MEDIA_LOG_E("Read bufData GetWritableAddr fail");
+        return Status::ERROR_NO_MEMORY;
+    }
+    auto size = std::fread(bufDataAddr, sizeof(char), expectedLen, fp_);
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
     MEDIA_LOG_DD("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU, position_, bufData->GetSize());
