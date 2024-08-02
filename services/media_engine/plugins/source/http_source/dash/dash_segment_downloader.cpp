@@ -268,7 +268,6 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
     }
 
     readTime_ = 0;
-    int64_t startTime = steadyClock_.ElapsedMilliseconds();
     while (buffer_->GetSize() < wantReadLength && !isInterruptNeeded.load()) {
         if (CheckAllSegmentFinish(isLastSegment)) {
             return false;
@@ -281,8 +280,7 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
             return true;
         }
         OSAL::SleepFor(READ_SLEEP_INTERVAL_MS);  // 5
-        int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ = static_cast<uint64_t>(endTime - startTime);
+        readTime_ += READ_SLEEP_INTERVAL_MS;
     }
     if (isInterruptNeeded.load()) {
         realReadLength = 0;
@@ -295,6 +293,8 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
 
 bool DashSegmentDownloader::CheckReadTimeOut()
 {
+    MEDIA_LOG_D("CheckReadTimeOut streamId: " PUBLIC_LOG_D32 " readTime: " PUBLIC_LOG_U64 " isTimeout:"
+        PUBLIC_LOG_D32, streamId_, readTime_, isTimeOut_);
     if (readTime_ >= READ_SLEEP_TIME_OUT_MS || isTimeOut_) {
         isTimeOut_ = true;
         return true;
