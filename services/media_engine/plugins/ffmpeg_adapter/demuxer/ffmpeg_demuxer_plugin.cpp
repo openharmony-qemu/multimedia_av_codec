@@ -1628,10 +1628,10 @@ bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
 Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    ShowSelectedTracks();
     MEDIA_LOG_I("Select track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Select track failed due to AVFormatContext is nullptr.");
+    ShowSelectedTracks();
     if (trackId >= static_cast<uint32_t>(formatContext_.get()->nb_streams)) {
         MEDIA_LOG_E("Select track failed due to trackId is invalid, just have " PUBLIC_LOG_D32 " tracks in file.",
             formatContext_.get()->nb_streams);
@@ -1661,10 +1661,10 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    ShowSelectedTracks();
     MEDIA_LOG_I("Unselect track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
+    ShowSelectedTracks();
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (TrackIsSelected(trackId)) {
@@ -1973,7 +1973,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
     auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
     if (cachelimitSize_ != 0 && cacheDataSize > cachelimitSize_) {
-        MEDIA_LOG_E("cache data size is greater than cache limit size");
+        MEDIA_LOG_E("Data cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32, cacheDataSize, cachelimitSize_);
         return Status::ERROR_NO_MEMORY;
     }
     return Status::OK;
@@ -1981,6 +1981,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 
 void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
+    MEDIA_LOG_I("Set cache limit " PUBLIC_LOG_U32, limitSize);
     cachelimitSize_ = limitSize;
 }
 
