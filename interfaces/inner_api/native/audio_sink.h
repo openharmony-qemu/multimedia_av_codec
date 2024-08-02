@@ -61,6 +61,7 @@ public:
     void SetThreadGroupId(const std::string& groupId);
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+    Status SetMuted(bool isMuted);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -130,6 +131,7 @@ private:
     int64_t playingBufferDurationUs_ {0};
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
+    bool isMuted_ = false;
 };
 }
 }

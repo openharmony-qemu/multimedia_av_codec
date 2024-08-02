@@ -1087,6 +1087,19 @@ void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& 
     (void)fwrite(buffer, bytesSingle, 1, sliceDumpFile_);
     (void)fflush(sliceDumpFile_);
 }
+
+Status AudioServerSinkPlugin::SetMuted(bool isMuted)
+{
+    FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (isMuted) {
+        audioRenderer_->SetSilentModeAndMixWithOthers(true);
+        MEDIA_LOG_I("WINDDRAW audioRenderer SETMUTED END");
+    } else {
+        audioRenderer_->SetSilentModeAndMixWithOthers(false);
+        MEDIA_LOG_I("WINDDRAW audioRenderer SETMUTED END");
+    }
+    return Status::OK;
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
