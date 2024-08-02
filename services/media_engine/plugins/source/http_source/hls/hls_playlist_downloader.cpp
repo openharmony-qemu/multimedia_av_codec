@@ -211,7 +211,7 @@ void HlsPlayListDownloader::PreParseManifest(const std::string& location)
     std::string tsTag = M3U8_TS_TAG;
     int tsTagSize = static_cast<int>(tsTag.size());
     while ((tsIndex = static_cast<int>(playList_.find(tsTag, tsIndex))) <
-            static_cast<int>(playList_.length())) {
+            static_cast<int>(playList_.length()) && tsIndex != -1) { // -1
         if (tsNum == 0) {
             firstTsTagIndex = tsIndex;
         }
