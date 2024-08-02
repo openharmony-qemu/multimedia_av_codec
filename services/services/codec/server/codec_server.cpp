@@ -587,21 +587,55 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     }
 }
 
+
+int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, int32_t svpFlag)
+{
+    AVCODEC_LOGI("CheckDrmSvpConsistency");
+    // check codec name when secure video path is false
+    if (svpFlag == false) {
+        std::string tmpName = codecName_;
+        transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+        if (tmpName.find(".secure") != std::string::npos) {
+            AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is false but the decoder is secure!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        return AVCS_ERR_OK;
+    }
+
+    // check codec name when secure video path is true
+    std::string tmpName = codecName_;
+    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+    if (tmpName.find(".secure") == std::string::npos) {
+        AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is true but the decoder is not secure!");
+        return AVCS_ERR_INVALID_VAL;
+    }
+
+    // check session level when secure video path is true
+#ifdef SUPPORT_DRM
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_VAL, "keySession is nullptr");
+    DrmStandard::IMediaKeySessionService::ContentProtectionLevel sessionLevel;
+    int ret = keySession->GetContentProtectionLevel(&sessionLevel);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_VAL, "GetContentProtectionLevel failed");
+    if (sessionLevel <
+        DrmStandard::IMediaKeySessionService::ContentProtectionLevel::CONTENT_PROTECTION_LEVEL_HW_CRYPTO) {
+        AVCODEC_LOGE("SetDecryptionConfig failed, key session's content protection level is too low!");
+        return AVCS_ERR_INVALID_VAL;
+    }
+#endif 
+
+    return AVCS_ERR_OK;
+}
+
 #ifdef SUPPORT_DRM
 int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_LOGI("CodecServer::SetDecryptConfig");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    // Check the consistency of svp and codecname.
-    if (svpFlag == true) {
-        std::string tmpName = codecName_;
-        transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
-        if (tmpName.find(".secure") == std::string::npos) {
-            AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is true but not create secure decoder!");
-            return AVCS_ERR_INVALID_VAL;
-        }
-    }
+
+    int32_t ret = CheckDrmSvpConsistency(svpFlag);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "check svp failed");
+
     if (drmDecryptor_ == nullptr) {
         drmDecryptor_ = std::make_shared<CodecDrmDecrypt>();
     }
