@@ -276,36 +276,32 @@ int32_t VDecAPI11Sample::RunVideoDec_Surface(string codeName)
         cout << "Failed to create surface" << endl;
         return AV_ERR_UNKNOWN;
     }
+
     err = CreateVideoDecoder(codeName);
     if (err != AV_ERR_OK) {
         cout << "Failed to create video decoder" << endl;
         return err;
     }
+
     err = SetVideoDecoderCallback();
     if (err != AV_ERR_OK) {
         cout << "Failed to setCallback" << endl;
         Release();
         return err;
     }
+
     err = ConfigureVideoDecoder();
     if (err != AV_ERR_OK) {
         cout << "Failed to configure video decoder" << endl;
         Release();
         return err;
     }
+
     err = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
     if (err != AV_ERR_OK) {
         cout << "Failed to set surface" << endl;
         return err;
     }
-
-    // if (TRANSFER_FLAG && PREPARE_FLAG) {
-    //     err = OH_VideoDecoder_Prepare(vdec_);
-    //     if (err != AV_ERR_OK) {
-    //         cout << "Failed to prepare hdr2sdr" << err << endl;
-    //         return err;
-    //     }
-    // }
 
     err = StartVideoDecoder();
     if (err != AV_ERR_OK) {
@@ -338,14 +334,6 @@ int32_t VDecAPI11Sample::RunVideoDec(string codeName)
         Release();
         return err;
     }
-
-    // if (TRANSFER_FLAG && PREPARE_FLAG) {
-    //     err = OH_VideoDecoder_Prepare(vdec_);
-    //     if (err != AV_ERR_OK) {
-    //         cout << "Failed to prepare hdr2sdr buffer mode! " << err << endl;
-    //         return err;
-    //     }
-    // }
 
     err = StartVideoDecoder();
     if (err != AV_ERR_OK) {
@@ -406,7 +394,7 @@ int32_t VDecAPI11Sample::CreateVideoDecoder(string codeName)
 int32_t VDecAPI11Sample::StartVideoDecoder()
 {
     isRunning_.store(true);
-    if(PREPARE_FLAG){
+    if (PREPARE_FLAG) {
         int res = OH_VideoDecoder_Prepare(vdec_);
         if (res != AV_ERR_OK) {
             cout << "Failed to start codec, prepare failed!  " << res << endl;

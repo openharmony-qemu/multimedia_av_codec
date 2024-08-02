@@ -53,10 +53,9 @@ void HwdecHdr2SdrStateNdkTest::SetUp(void)
 { 
     vDecSample2 = new VDecAPI11Sample();
     vDecSample2->SF_OUTPUT = true;
-    if(!access("/system/lib64/media/", 0)){
-        vDecSample2->TRANSFER_FLAG = true;
-    }
-    else{
+    if (!access("/system/lib64/media/", 0)) {
+        vDecSample2->TRANSFER_FLAG = true    
+    } else {
         vDecSample2->TRANSFER_FLAG = false;
     }
     OH_AVCapability *cap_hevc2 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
