@@ -591,13 +591,13 @@ Seekable FileFdSourcePlugin::GetSeekable()
 
 void FileFdSourcePlugin::CheckFileType()
 {
-    int location; // 1本地，2云端
-    int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &location);
-    MEDIA_LOG_I("SetSource ioctl location, ret " PUBLIC_LOG_D32 ", errno"
-        PUBLIC_LOG_D32, ioResult, errno);
+    int loc; // 1本地，2云端
+    int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &loc);
+    MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
+        PUBLIC_LOG_D32, ioResult, loc, errno);
 
     if (ioResult == 0) {
-        if (location == IOCTL_CLOUD) {
+        if (loc == IOCTL_CLOUD) {
             isCloudFile_ = true;
             MEDIA_LOG_I("ioctl file is cloud");
             int ret = ioctl(fd_, HMDFS_IOC_RESTORE_READ);
