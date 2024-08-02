@@ -806,7 +806,6 @@ void HttpMediaDownloader::SetDownloadErrorState()
             Close(true);
         }
     }
-    OnClientErrorEvent();
 }
 
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)

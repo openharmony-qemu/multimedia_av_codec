@@ -883,10 +883,6 @@ void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (callback_ != nullptr) {
-        MEDIA_LOG_I("Read time out, OnEvent");
-        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-    }
 }
 
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
