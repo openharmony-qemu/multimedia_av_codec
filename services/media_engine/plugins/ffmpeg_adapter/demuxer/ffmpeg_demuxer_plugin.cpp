@@ -1971,7 +1971,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
     auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
     if (cachelimitSize_ != 0 && cacheDataSize > cachelimitSize_) {
-        MEDIA_LOG_E("cache data size is greater than cache limit size");
+        MEDIA_LOG_E("Data cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32, cacheDataSize, cachelimitSize_);
         return Status::ERROR_NO_MEMORY;
     }
     return Status::OK;
@@ -1979,6 +1979,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 
 void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
+    MEDIA_LOG_I("Set cache limit " PUBLIC_LOG_U32, limitSize);
     cachelimitSize_ = limitSize;
 }
 
