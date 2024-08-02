@@ -432,47 +432,6 @@ int32_t VDecAPI11Sample::StartDecoder()
     return AV_ERR_OK;
 }
 
-int32_t VDecAPI11Sample::StartDecoder()
-{
-    isRunning_.store(true);
-    inFile_ = make_unique<ifstream>();
-    if (inFile_ == nullptr) {
-        isRunning_.store(false);
-        (void)OH_VideoDecoder_Stop(vdec_);
-        return AV_ERR_UNKNOWN;
-    }
-    inFile_->open(INP_DIR, ios::in | ios::binary);
-    if (!inFile_->is_open()) {
-        cout << "failed open file " << INP_DIR << endl;
-        isRunning_.store(false);
-        (void)OH_VideoDecoder_Stop(vdec_);
-        inFile_->close();
-        inFile_.reset();
-        inFile_ = nullptr;
-        return AV_ERR_UNKNOWN;
-    }
-    inputLoop_ = make_unique<thread>(&VDecAPI11Sample::InputFuncTest, this);
-    if (inputLoop_ == nullptr) {
-        cout << "Failed to create input loop" << endl;
-        isRunning_.store(false);
-        (void)OH_VideoDecoder_Stop(vdec_);
-        ReleaseInFile();
-        return AV_ERR_UNKNOWN;
-    }
-    outputLoop_ = make_unique<thread>(&VDecAPI11Sample::OutputFuncTest, this);
-    if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
-        isRunning_.store(false);
-        (void)OH_VideoDecoder_Stop(vdec_);
-        ReleaseInFile();
-        StopInloop();
-        Release();
-        return AV_ERR_UNKNOWN;
-    }
-
-    return AV_ERR_OK;
-}
-
 int32_t VDecAPI11Sample::StartVideoDecoder()
 {
     isRunning_.store(true);
