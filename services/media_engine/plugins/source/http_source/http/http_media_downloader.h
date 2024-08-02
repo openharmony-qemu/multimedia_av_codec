@@ -65,8 +65,9 @@ public:
     void UpdateCachedPercent(BufferingInfoType infoType);
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    bool SaveRingBufferData(uint8_t* data, uint32_t len);
+    bool SaveCacheBufferData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
+    bool SaveRingBufferData(uint8_t* data, uint32_t len);
     void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -82,11 +83,12 @@ private:
     bool HandleBuffering();
     bool StartBuffering();
     size_t GetCurrentBufferSize();
-    bool HandleBreak(int32_t& sleepTime);
+    bool HandleBreak();
     void ChangeDownloadPos();
     int32_t GetWaterLineAbove();
     void HandleCachedDuration();
     double CalculateCurrentDownloadSpeed();
+    bool CheckBufferingOneSeconds();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -100,7 +102,6 @@ private:
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
     uint64_t readTime_ {0};
-    bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     std::atomic<bool> isInterruptNeeded_{false};
@@ -132,8 +133,6 @@ private:
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
-    bool isBufferEnough_ {false};
-    bool isErrorBreak_ {false};
 
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBits_ {0};
