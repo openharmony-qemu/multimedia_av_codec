@@ -57,7 +57,7 @@ public:
 
     size_t ReadBuffer(void* ptr, size_t readSize, int waitTimes = 0)
     {
-        return ret_;
+        return sRet_;
     }
 
     bool Seek(uint64_t offset)
@@ -72,8 +72,15 @@ public:
         (void)cleanData;
     }
 
-    size_t ret_;
-    bool bRet_;
+    bool WriteBuffer(void* ptr, size_t writeSize)
+    {
+        (void)ptr;
+        (void)writeSize;
+        return bRet_;
+    }
+
+    size_t sRet_ = 0;
+    bool bRet_ = false;
 };
 
 class CallbackMock : public Plugins::Callback {
@@ -386,13 +393,13 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_CacheDataLoop_0100, TestSize.Level1)
     fileFdSourcePlugin_->size_ = 10;
     std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
     fileFdSourcePlugin_->ringBuffer_ = buffer;
-    buffer->ret_ = true;
+    buffer->bRet_ = true;
     fileFdSourcePlugin_->isBuffering_ = true;
     fileFdSourcePlugin_->waterLineAbove_ = 0;
     fileFdSourcePlugin_->CacheDataLoop();
     EXPECT_EQ(0, fileFdSourcePlugin_->ringBufferSize_);
 
-    buffer->ret_ = false;
+    buffer->bRet_ = false;
     fileFdSourcePlugin_->inSeek_ = false;
     fileFdSourcePlugin_->isInterrupted_ = true;
     fileFdSourcePlugin_->ringBufferSize_ = 10;
