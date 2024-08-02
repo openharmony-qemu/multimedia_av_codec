@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include "network/network_typs.h"
 #include "common/media_core.h"
 
 namespace OHOS {
@@ -170,7 +171,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
             totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         HandleBuffering();
     };
-    MediaSouce mediaSouce;
+    RequestInfo mediaSouce;
     mediaSouce.url = url;
     mediaSouce.httpHeader = httpHeader;
     downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);

@@ -371,8 +371,8 @@ void HttpCurlClient::HandleUserAgent()
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
 // Should Pause HttpDownload thread then Close, Deinit.
-Status HttpCurlClient::RequestData(long startPos, int len, const std::string& url,
-    const std::map<std::string, std::string>& httpHeader, HandleResponseCbFunc completedCb)
+Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& requestInfo,
+    HandleResponseCbFunc completedCb)
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);

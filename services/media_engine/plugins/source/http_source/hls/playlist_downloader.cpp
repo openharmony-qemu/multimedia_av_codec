@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
 
 namespace OHOS {
@@ -84,7 +85,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
-    MediaSouce mediaSouce;
+    RequestInfo mediaSouce;
     mediaSouce.url = url;
     mediaSouce.httpHeader = httpHeader_;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
