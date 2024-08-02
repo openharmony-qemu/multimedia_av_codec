@@ -1091,13 +1091,9 @@ void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& 
 Status AudioServerSinkPlugin::SetMuted(bool isMuted)
 {
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
-    if (isMuted) {
-        audioRenderer_->SetSilentModeAndMixWithOthers(true);
-        MEDIA_LOG_I("WINDDRAW audioRenderer SETMUTED END");
-    } else {
-        audioRenderer_->SetSilentModeAndMixWithOthers(false);
-        MEDIA_LOG_I("WINDDRAW audioRenderer SETMUTED END");
-    }
+    MEDIA_LOG_D("SetMuted in");
+    audioRenderer_->SetSilentModeAndMixWithOthers(isMuted);
+    MEDIA_LOG_I("SetMuted out");
     return Status::OK;
 }
 } // namespace Plugin
