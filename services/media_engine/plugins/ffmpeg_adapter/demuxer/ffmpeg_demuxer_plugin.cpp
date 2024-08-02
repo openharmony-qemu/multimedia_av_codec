@@ -1626,10 +1626,10 @@ bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
 Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    ShowSelectedTracks();
     MEDIA_LOG_I("Select track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Select track failed due to AVFormatContext is nullptr.");
+    ShowSelectedTracks();
     if (trackId >= static_cast<uint32_t>(formatContext_.get()->nb_streams)) {
         MEDIA_LOG_E("Select track failed due to trackId is invalid, just have " PUBLIC_LOG_D32 " tracks in file.",
             formatContext_.get()->nb_streams);
@@ -1659,10 +1659,10 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    ShowSelectedTracks();
     MEDIA_LOG_I("Unselect track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
+    ShowSelectedTracks();
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (TrackIsSelected(trackId)) {
