@@ -405,6 +405,28 @@ Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwa
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::ParserFirstDts()
+{
+    AVPacket *pkt = av_packet_alloc();
+    bool isEnd = false;
+    while (!isEnd) {
+        int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
+        if (ffmpegRet < 0) {
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+            return;
+        }
+        if (pkt->stream_index == parserRefVideoStreamIdx_) {
+            firstDts_ = AvTime2Us(
+                ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
+            MEDIA_LOG_I("Success to parser first dts: " PUBLIC_LOG_D64, firstDts_);
+            isEnd = true;
+        }
+    }
+    av_packet_unref(pkt);
+    av_packet_free(&pkt);
+}
+
 Status FFmpegDemuxerPlugin::ParserRefInit()
 {
     FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
@@ -442,6 +464,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
         Status::ERROR_UNSUPPORTED_FORMAT, "ParserRefHeader failed due to codec type not support." PUBLIC_LOG_D32,
         videoStream->codecpar->codec_id);
+    ParserFirstDts();
     CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
@@ -1295,27 +1318,6 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
         }
     }
     MEDIA_LOG_I("Success to parser fps: " PUBLIC_LOG_F ", IFramePos size: " PUBLIC_LOG_ZU, fps_, IFramePos_.size());
-
-    AVPacket *pkt = av_packet_alloc();
-    bool isEnd = false;
-    while (!isEnd) {
-        int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-        if (ffmpegRet < 0) {
-            av_packet_unref(pkt);
-            av_packet_free(&pkt);
-            return;
-        }
-        if (pkt->stream_index == videoStreamIdx) {
-            firstDts_ = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, videoStream->time_base));
-            MEDIA_LOG_I("Success to parser first dts: " PUBLIC_LOG_D64, firstDts_);
-            isEnd = true;
-        }
-    }
-    auto ret = av_seek_frame(formatContext_.get(), videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
-    FALSE_RETURN_MSG(ret >= 0, "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".",
-                     AVStrError(ret).c_str());
-    av_packet_unref(pkt);
-    av_packet_free(&pkt);
 }
 
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)

@@ -134,6 +134,7 @@ private:
     bool CanDropAvcPkt(const AVPacket& pkt);
     bool CanDropHevcPkt(const AVPacket& pkt);
     void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
+    void ParserFirstDts();
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
     Status SelectProGopId();
