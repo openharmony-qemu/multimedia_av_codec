@@ -1144,6 +1144,7 @@ Status MediaDemuxer::Flush()
 Status MediaDemuxer::StopAllTask()
 {
     MEDIA_LOG_I("StopAllTask enter.");
+    isDemuxerLoopExecuting_ = false;
     if (streamDemuxer_ != nullptr) {
         streamDemuxer_->SetIsIgnoreParse(true);
     }
@@ -1167,6 +1168,7 @@ Status MediaDemuxer::StopAllTask()
 Status MediaDemuxer::PauseAllTask()
 {
     MEDIA_LOG_I("PauseAllTask enter.");
+    isDemuxerLoopExecuting_ = false;
     // To accelerate DemuxerLoop thread to run into PAUSED state
     for (auto &iter : taskMap_) {
         if (iter.second != nullptr) {
@@ -1186,6 +1188,7 @@ Status MediaDemuxer::PauseAllTask()
 Status MediaDemuxer::ResumeAllTask()
 {
     MEDIA_LOG_I("ResumeAllTask enter.");
+    isDemuxerLoopExecuting_ = true;
     streamDemuxer_->SetIsIgnoreParse(false);
 
     auto it = bufferQueueMap_.begin();
@@ -1327,6 +1330,7 @@ Status MediaDemuxer::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Reset");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
+    isDemuxerLoopExecuting_ = false;
     ResetInner();
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
@@ -1356,6 +1360,7 @@ Status MediaDemuxer::Start()
     }
     isThreadExit_ = false;
     isStopped_ = false;
+    isDemuxerLoopExecuting_ = true;
     if (!doPrepareFrame_) {
         auto it = bufferQueueMap_.begin();
         while (it != bufferQueueMap_.end()) {
@@ -2099,6 +2104,28 @@ Status MediaDemuxer::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         MEDIA_LOG_E("MediaDemuxer GetPresentationTimeUsByFrameIndex failed");
     }
     return ret;
+}
+
+Status MediaDemuxer::ResumeDemuxerReadLoop()
+{
+    MEDIA_LOG_I("ResumeDemuxerReadLoop in.");
+    if (isDemuxerLoopExecuting_) {
+        MEDIA_LOG_I("Has already resumed");
+        return Status::OK;
+    }
+    isDemuxerLoopExecuting_ = true;
+    return ResumeAllTask();
+}
+
+Status MediaDemuxer::PauseDemuxerReadLoop()
+{
+    MEDIA_LOG_I("PauseDemuxerReadLoop in.");
+    if (isDemuxerLoopExecuting_) {
+        MEDIA_LOG_I("Has already pause");
+        return Status::OK;
+    }
+    isDemuxerLoopExecuting_ = false;
+    return PauseAllTask();
 }
 
 void MediaDemuxer::SetCacheLimit(uint32_t limitSize)

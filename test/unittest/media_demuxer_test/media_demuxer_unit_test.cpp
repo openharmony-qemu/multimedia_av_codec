@@ -1048,6 +1048,25 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsBufferDroppable_001,
     EXPECT_EQ(false, demuxer->IsBufferDroppable(demuxer->bufferMap_[vTrackId], vTrackId));
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DemuxerReadLoop_001, TestSize.Level1)
+{
+    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+
+    EXPECT_EQ(Status::OK, demuxer->Start());
+
+    EXPECT_EQ(Status::OK, demuxer->PauseDemuxerReadLoop());
+    EXPECT_EQ(Status::OK, demuxer->PauseDemuxerReadLoop());
+    EXPECT_EQ(Status::OK, demuxer->ResumeDemuxerReadLoop());
+    EXPECT_EQ(Status::OK, demuxer->ResumeDemuxerReadLoop());
+    EXPECT_EQ(Status::OK, demuxer->StopAllTask());
+}
+
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentation_001, TestSize.Level1)
 {
     string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
