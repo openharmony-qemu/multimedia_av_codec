@@ -54,6 +54,7 @@ public:
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
@@ -134,8 +135,14 @@ private:
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
 
+    struct RecordData {
+        double downloadRate {0};
+        uint64_t bufferDuring {0};
+    };
+    std::shared_ptr<RecordData> recordData_;
+    uint64_t currentBitrate_ {1 * 1024 * 1024};         //bps
     uint64_t lastReadCheckTime_ {0};
-    uint64_t readTotalBits_ {0};
+    uint64_t readTotalBytes_ {0};
     uint64_t readRecordDuringTime_ {0};
     uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
     uint64_t totalDownloadDuringTime_ {0};

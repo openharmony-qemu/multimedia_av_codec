@@ -357,6 +357,13 @@ void Downloader::SetRequestSize(size_t downloadRequestSize)
     downloadRequestSize_ = downloadRequestSize;
 }
 
+void Downloader::GetIp(std::string &ip)
+{
+    if (client_ != nullptr) {
+        client_->GetIp(ip);
+    }
+}
+
 // Pause download thread before use currentRequest_
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {

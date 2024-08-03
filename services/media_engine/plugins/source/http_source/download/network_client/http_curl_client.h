@@ -54,6 +54,7 @@ public:
     Status Close() override;
 
     Status Deinit() override;
+    Status GetIp(std::string &ip) override;
 
 private:
     void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
@@ -63,6 +64,7 @@ private:
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
     void HandleUserAgent();
+    Status SetIp();
 
 private:
     RxHeader rxHeader_;
@@ -72,6 +74,8 @@ private:
     mutable Mutex mutex_;
     bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
+    std::string ip_ {};
+    bool ipFlag_ {false};
     bool isFirstRequest_ {true};
     bool isFirstOpen_ {true};
 };

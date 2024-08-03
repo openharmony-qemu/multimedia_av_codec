@@ -550,6 +550,14 @@ Status DemuxerFilter::GetDownloadInfo(DownloadInfo& downloadInfo)
     return demuxer_->GetDownloadInfo(downloadInfo);
 }
 
+Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (demuxer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return demuxer_->GetPlaybackInfo(playbackInfo);
+}
+
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
 {
     if (mediaSource_ == nullptr) {
