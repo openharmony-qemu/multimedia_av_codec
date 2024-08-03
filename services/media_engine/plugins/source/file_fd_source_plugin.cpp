@@ -399,7 +399,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
 }
 
-bool FileFdSourcePlugin::HasCacheData(size_t size, size_t offset);
+bool FileFdSourcePlugin::HasCacheData(size_t size, size_t offset)
 {
     HmdfsHasCache ioctlData;
     ioctlData.offset = static_cast<int64_t>(offset);
