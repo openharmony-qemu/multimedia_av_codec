@@ -72,7 +72,7 @@ private:
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
-    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
+    int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
     int32_t PushBlankBufferToCurrSurface();
 
     // stop/release
