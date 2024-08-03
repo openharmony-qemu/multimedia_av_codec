@@ -25,6 +25,7 @@
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
 #include "network/network_client.h"
+#include "network/network_typs.h"
 #include <chrono>
 #include "securec.h"
 
@@ -76,21 +77,15 @@ using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Do
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
 
-struct MediaSouce {
-    std::string url;
-    std::map<std::string, std::string> httpHeader;
-    int32_t timeoutMs{-1};
-};
-
 class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
 
     size_t GetFileContentLength() const;
@@ -130,7 +125,7 @@ private:
 
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
-    MediaSouce mediaSouce_ {};
+    RequestInfo mediaSouce_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished

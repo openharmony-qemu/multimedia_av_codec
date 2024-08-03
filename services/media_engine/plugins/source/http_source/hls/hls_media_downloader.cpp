@@ -22,6 +22,7 @@
 #include "plugin/plugin_time.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include "network/network_typs.h"
 #include "common/media_core.h"
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -147,7 +148,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         UpdateDownloadFinished(url, location);
     };
 
-    MediaSouce mediaSouce;
+    RequestInfo mediaSouce;
     mediaSouce.url = playInfo.url_;
     mediaSouce.httpHeader = httpHeader_;
     // TO DO: If the fragment file is too large, should not requestWholeFile.

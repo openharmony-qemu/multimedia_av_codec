@@ -59,7 +59,7 @@ DownloadRequest::DownloadRequest(const std::string& url,
     headerInfo_.contentLen = 0;
 }
 
-DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                                  bool requestWholeFile)
     : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), mediaSouce_(mediaSouce),
     requestWholeFile_(requestWholeFile)
@@ -74,7 +74,7 @@ DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statu
 DownloadRequest::DownloadRequest(double duration,
                                  DataSaveFunc saveData,
                                  StatusCallbackFunc statusCallback,
-                                 MediaSouce mediaSouce,
+                                 RequestInfo mediaSouce,
                                  bool requestWholeFile)
     : duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
     mediaSouce_(mediaSouce), requestWholeFile_(requestWholeFile)
@@ -448,8 +448,10 @@ void Downloader::RequestData()
     if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
         startPos = -1;
     }
-    std::string url = currentRequest_->url_;
-    std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
+    RequestInfo sourceInfo;
+    sourceInfo.url = currentRequest_->url_;
+    sourceInfo.httpHeader = currentRequest_->httpHeader_;
+    sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
 
     auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
@@ -471,7 +473,7 @@ void Downloader::RequestData()
         }
     };
     MEDIA_LOG_I("RequestData enter.");
-    client_->RequestData(startPos, currentRequest_->requestSize_, url, httpHeader, handleResponseCb);
+    client_->RequestData(startPos, currentRequest_->requestSize_, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("RequestData end.");
 }
 
