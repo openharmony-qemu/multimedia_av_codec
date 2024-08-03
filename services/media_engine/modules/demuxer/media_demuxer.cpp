@@ -1780,12 +1780,6 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     Status ret = pluginTemp->ReadSample(innerTrackID, sample);
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read buffer eos for track " PUBLIC_LOG_U32, trackId);
-    } else if (ret == Status::ERROR_NO_MEMORY) {
-        MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32,
-            trackId, static_cast<int32_t>(ret));
-        if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY});
-        }
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
