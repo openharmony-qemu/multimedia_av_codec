@@ -517,6 +517,7 @@ void FileFdSourcePlugin::NotifyBufferingEnd()
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
     MEDIA_LOG_I("water line above, ringBufferSize_ " PUBLIC_LOG_U64, ringBufferSize_);
     isBuffering_ = false;
+    lastReadTime_ = 0;
     if (callback_ != nullptr && !isInterrupted_) {
         MEDIA_LOG_I("NotifyBufferingEnd success .");
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
