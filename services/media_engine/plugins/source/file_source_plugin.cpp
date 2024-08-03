@@ -189,7 +189,7 @@ Status FileSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
 
     MEDIA_LOG_DD("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
     auto bufDataAddr = bufData->GetWritableAddr(expectedLen);
-    if (bufDataAddr != nullptr) {
+    if (bufDataAddr == nullptr) {
         MEDIA_LOG_E("Read bufData GetWritableAddr fail");
         return Status::ERROR_NO_MEMORY;
     }
