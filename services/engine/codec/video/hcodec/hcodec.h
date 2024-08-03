@@ -130,7 +130,7 @@ protected:
         bool isInput = true;
         BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
-        std::chrono::time_point<std::chrono::steady_clock> lastFlushTime;
+        int64_t lastFlushTime;
         uint32_t bufferId = 0;
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
