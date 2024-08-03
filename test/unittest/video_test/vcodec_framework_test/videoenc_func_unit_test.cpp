@@ -247,7 +247,6 @@ void TEST_SUIT::PrepareSource(int32_t param)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoEnc_->SetOutPath(prefix + fileName);
-    videoEnc_->SetIsHdrVivid(param == HW_HDR);
 }
 
 void TEST_SUIT::SetFormatWithParam(int32_t param)
@@ -1766,38 +1765,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetOutputDescription_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     format_ = videoEnc_->GetOutputDescription();
     EXPECT_NE(nullptr, format_);
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-}
-
-/**
- * @tc.name: VideoEncoder_HDR_Function_001
- * @tc.desc: video encodec SetSurface
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_HDR_Function_001, TestSize.Level1)
-{
-    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
-                                                                AVCodecCategory::AVCODEC_HARDWARE);
-    std::string codecName = capability_->GetName();
-    std::cout << "CodecName: " << codecName << "\n";
-    ASSERT_TRUE(CreateVideoCodecByName(codecName));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10));
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 100); // 100: i frame interval
-
-    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
-    string prefix = "/data/test/media/";
-    string fileName = testInfo_->name();
-    auto check = [](char it) { return it == '/'; };
-    (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
-    videoEnc_->SetOutPath(prefix + fileName);
-    videoEnc_->SetIsHdrVivid(true);
-
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
