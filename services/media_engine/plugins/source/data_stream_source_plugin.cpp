@@ -138,15 +138,6 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
     int32_t realLen;
     do {
-        if (seekable_ == Plugins::Seekable::SEEKABLE) {
-            FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
-            expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
-            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-            realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
-        } else {
-            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-            realLen = dataSrc_->ReadAt(expectedLen, memory);
-        }
         if (realLen > 0) {
             retryTimes_ = 0;
             HandleBufferingEnd();
@@ -167,15 +158,13 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
     offset_ += static_cast<uint64_t>(realLen);
-    auto bufferMem = buffer->GetMemory();
-    FALSE_RETURN_V_MSG(bufferMem != nullptr, Status::ERROR_NO_MEMORY, "read buffer GetMemory fail");
-    if (buffer && bufferMem) {
-        bufferMem->Write(memory->GetBase(), realLen, 0);
+    if (buffer && buffer->GetMemory()) {
+        buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
     } else {
         buffer = WrapAVSharedMemory(memory, realLen);
     }
     FALSE_RETURN_V(buffer != nullptr, Status::ERROR_AGAIN);
-    bufferMem = buffer->GetMemory();
+    auto bufferMem = buffer->GetMemory();
     FALSE_RETURN_V_MSG(bufferMem != nullptr, Status::ERROR_NO_MEMORY, "read buffer GetMemory fail");
     MEDIA_LOG_D("DataStreamSourcePlugin Read, size: " PUBLIC_LOG_ZU ", realLen: " PUBLIC_LOG_D32
         ", retryTimes: " PUBLIC_LOG_U32, (buffer && bufferMem) ?
