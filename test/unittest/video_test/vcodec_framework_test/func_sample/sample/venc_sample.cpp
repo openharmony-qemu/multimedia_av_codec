@@ -489,11 +489,6 @@ void VideoEncSample::SetOutPath(const std::string &path)
     outPath_ = path + ".dat";
 }
 
-void VideoEncSample::SetIsHdrVivid(bool isHdrVivid)
-{
-    isHdrVivid_ = isHdrVivid;
-}
-
 void VideoEncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -541,9 +536,6 @@ void VideoEncSample::FlushInner()
 
 int32_t VideoEncSample::ReadOneFrame()
 {
-    if (isHdrVivid_ && isSurfaceMode_) {
-        return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-    }
     return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
 }
 
