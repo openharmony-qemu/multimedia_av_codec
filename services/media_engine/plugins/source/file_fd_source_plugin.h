@@ -63,7 +63,7 @@ private:
     Status SeekToOfflineFile(uint64_t offset);
     Status SeekToOnlineFile(uint64_t offset);
     void CacheDataLoop();
-    bool HasCacheData(size_t size, size_t offset);
+    void HasCacheData(size_t bufferSize);
     void HandleReadResult(size_t bufferSize, int size);
     std::shared_ptr<Memory> GetBufferPtr(std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 

@@ -399,18 +399,17 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
 }
 
-bool FileFdSourcePlugin::HasCacheData(size_t size, size_t offset)
+void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
 {
     HmdfsHasCache ioctlData;
-    ioctlData.offset = static_cast<int64_t>(offset);
-    ioctlData.readSize = static_cast<int64_t>(size);
+    ioctlData.offset = static_cast<int64_t>(cachePosition_);
+    ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
-    if (ioResult == 0) {
-        return true;
-    } else {
-        MEDIA_LOG_I("ioctl ioctl has no cache with errno " PUBLIC_LOG_D32, errno);
-        return false;
-    }
+    // ioctl has cache
+    FALSE_RETURN(ioResult != 0);
+    // EIO  5
+    FALSE_RETURN_MSG(errno != EIO, "ioctl has no cache");
+    MEDIA_LOG_I("ioctl errno " PUBLIC_LOG_D32, errno);
 }
 
 Status FileFdSourcePlugin::Stop()
