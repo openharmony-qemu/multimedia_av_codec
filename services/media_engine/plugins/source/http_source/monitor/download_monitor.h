@@ -66,6 +66,7 @@ public:
     Status SelectStream(int32_t streamId) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
     int64_t HttpMonitorLoop();

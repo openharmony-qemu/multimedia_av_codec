@@ -379,6 +379,14 @@ Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    MEDIA_LOG_I("HttpSourcePlugin::GetPlaybackInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->GetPlaybackInfo(playbackInfo);
+    return Status::OK;
+}
+
 void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
 {
     downloader_->SetDemuxerState(streamId);
