@@ -138,6 +138,15 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
     int32_t realLen;
     do {
+        if (seekable_ == Plugins::Seekable::SEEKABLE) {
+            FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
+            expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
+            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+            realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
+        } else {
+            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+            realLen = dataSrc_->ReadAt(expectedLen, memory);
+        }
         if (realLen > 0) {
             retryTimes_ = 0;
             HandleBufferingEnd();
