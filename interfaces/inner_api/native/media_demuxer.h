@@ -258,6 +258,7 @@ private:
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
+    std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
     int64_t lastSubtitlePts_ = 0;
