@@ -1251,7 +1251,15 @@ int32_t CodecServer::ResetPostProcessing()
 
 int32_t CodecServer::ReleasePostProcessing()
 {
-    ResetPostProcessing();
+    if (postProcessing_) {
+        DeactivatePostProcessingQueue();
+        if (postProcessingTask_) {
+            postProcessingTask_->Stop();
+        }
+        postProcessing_->Release();
+        CleanPostProcessingResource();
+        postProcessing_.reset();
+    }
     AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }
