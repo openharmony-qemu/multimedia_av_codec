@@ -1818,7 +1818,8 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             return 0; // retry next frame
         } else if (ret == Status::ERROR_NO_MEMORY) {
             MEDIA_LOG_E("cache data size is greater than cache limit size");
-            if (eventReceiver_ != nullptr) {
+            if (eventReceiver_ != nullptr && !isOnEventNoMemory_.load()) {
+                isOnEventNoMemory_.store(true);
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY});
             }
             return 0;
