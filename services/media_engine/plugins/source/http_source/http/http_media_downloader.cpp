@@ -701,13 +701,13 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
     size_t hasWriteSize = 0;
     while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_) {
         if (isNeedClean_) {
-            MEDIA_LOG_D("isNeedClean true.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "isNeedClean true.");
             return true;
         }
         size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
         writeOffset_ += res;
         hasWriteSize += res;
-        MEDIA_LOG_D("writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
         if (res > 0 || hasWriteSize == len) {
             HandleCachedDuration();
             continue;
@@ -726,7 +726,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = true;
     }
     if (isInterruptNeeded_.load() || isInterrupt_) {
-        MEDIA_LOG_D("isInterruptNeeded true, return false.");
+        MEDIA_LOG_I("isInterruptNeeded true, return false.");
         return false;
     }
     OnWriteBuffer(len);

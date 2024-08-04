@@ -747,20 +747,6 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
     return true;
 }
 
-bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
-{
-    if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
-        !strncmp(key, "content-length", strlen("content-length"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, false);
-        info->contentLen = atol(StringTrim(token));
-        if (info->contentLen <= 0) {
-            info->isChunked = true;
-        }
-    }
-    return true;
-}
-
 // Check if this server supports range download. (HTTP)
 bool Downloader::HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
 {
