@@ -2122,7 +2122,7 @@ Status MediaDemuxer::ResumeDemuxerReadLoop()
 Status MediaDemuxer::PauseDemuxerReadLoop()
 {
     MEDIA_LOG_I("PauseDemuxerReadLoop in.");
-    if (isDemuxerLoopExecuting_) {
+    if (!isDemuxerLoopExecuting_) {
         MEDIA_LOG_I("Has already pause");
         return Status::OK;
     }
