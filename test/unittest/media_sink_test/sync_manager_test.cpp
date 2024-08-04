@@ -62,7 +62,6 @@ HWTEST_F(TestSyncManager, sync_manager_get, TestSize.Level1)
 
 HWTEST_F(TestSyncManager, sync_manager_life_cycle, TestSize.Level1)
 {
-
     // Resume
     auto resumeStatus = syncManager_->Resume();
     ASSERT_EQ(resumeStatus, Status::OK);

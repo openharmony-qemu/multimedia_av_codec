@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef MEDIA_SYNC_CENTER_MOCK_H
+#define MEDIA_SYNC_CENTER_MOCK_H
 #include <queue>
 #include "common/status.h"
 #include "media_sync_manager.h"
@@ -47,3 +50,4 @@ public:
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
+#endif // MEDIA_SYNC_CENTER_MOCK_H
