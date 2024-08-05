@@ -2003,7 +2003,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7000, TestSize.Level2)
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_API_7100
+ * @tc.number    : VIDEO_SWDEC_CAP_API_7100
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
  * @tc.desc      : api test
  */
@@ -2013,7 +2013,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
-        OH_AVErrCode ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
+        ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
         ASSERT_NE(nullptr, pixelFormat_1);
         ASSERT_GT(pixelFormatNum_1, 0);
         ASSERT_EQ(AV_ERR_OK, ret_1);
