@@ -633,7 +633,7 @@ int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionSe
     AVCODEC_LOGI("CodecServer::SetDecryptConfig");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
 
-    int32_t ret = CheckDrmSvpConsistency(svpFlag);
+    int32_t ret = CheckDrmSvpConsistency(keySession, svpFlag);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "check svp failed");
 
     if (drmDecryptor_ == nullptr) {
