@@ -44,6 +44,9 @@ public:
     {
         mapStatus_["StatusOK"] = Status::OK;
         mapStatus_["StatusErrorUnknown"] = Status::ERROR_UNKNOWN;
+        mapStatus_["StatusErrorNoMemory"] = Status::ERROR_NO_MEMORY;
+        mapStatus_["StatusAgain"] = Status::ERROR_AGAIN;
+        mapStatus_["StatusErrorNullPoint"] = Status::ERROR_NULL_POINTER;
         name_ = name;
     }
     ~DemuxerPluginMock()
@@ -148,6 +151,53 @@ public:
     virtual void SetCacheLimit(uint32_t limitSize)
     {
         return;
+    }
+private:
+    std::map<std::string, Status> mapStatus_;
+    std::string name_;
+};
+
+class SourcePluginMock : public Plugins::SourcePlugin {
+public:
+    explicit SourcePluginMock(std::string name) : SourcePlugin(name)
+    {
+        mapStatus_["StatusOK"] = Status::OK;
+        mapStatus_["StatusErrorUnknown"] = Status::ERROR_UNKNOWN;
+        mapStatus_["StatusErrorNoMemory"] = Status::ERROR_NO_MEMORY;
+        mapStatus_["StatusAgain"] = Status::ERROR_AGAIN;
+        mapStatus_["StatusErrorNullPoint"] = Status::ERROR_NULL_POINTER;
+        name_ = name;
+    }
+    ~SourcePluginMock()
+    {
+    }
+    virtual Status SetSource(std::shared_ptr<MediaSource> source)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetSize(uint64_t& size)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Seekable GetSeekable()
+    {
+        return Seekable::SEEKABLE;
+    }
+    virtual Status SeekTo(uint64_t offset)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Reset()
+    {
+        return mapStatus_[name_];
     }
 private:
     std::map<std::string, Status> mapStatus_;
