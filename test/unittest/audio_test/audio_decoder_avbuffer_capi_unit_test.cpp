@@ -791,6 +791,14 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_GetOutputFormat_01, Te
     Release();
 }
 
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_State_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));
+    bool isValid = false;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_IsValid(audioDec_, &isValid));
+    Release();
+}
+
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Mp3_IsValid_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_MP3));

@@ -222,6 +222,19 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_OnDumpInfo_01, TestSize.Level1)
     mediaCodec = nullptr;
 }
 
+/*
+if (fd < 0) {
+        MEDIA_LOG_E("MediaCodec::OnDumpInfo fd is invalid.");
+        return;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_OnDumpInfo_02, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_DEC_CODEC_NAME));
+    mediaCodec->OnDumpInfo(-1);
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, Test_ProcessInputBuffer_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -247,6 +260,7 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_SetCodecCallback_02, TestSize.Level1)
     EXPECT_EQ(0, mediaCodec->SetCodecCallback(mediaCallback));
     mediaCodec = nullptr;
 }
+
 HWTEST_F(AudioMediaCodecUnitTest, Test_SetOutputSurface_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -263,6 +277,162 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputSurface_01, TestSize.Level1)
     EXPECT_EQ(nullptr, mediaCodec->GetInputSurface());
     mediaCodec = nullptr;
 }
+
+/*
+if (isBufferMode_ && isSurfaceMode_) {
+        MEDIA_LOG_E("state error");
+        return (int32_t)Status::ERROR_UNKNOWN;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_01, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+
+    sptr<Surface> surface = nullptr;
+    EXPECT_EQ(0, mediaCodec->SetOutputSurface(surface));
+
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_AAC_IS_ADTS>(AUDIO_AAC_IS_ADTS);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    EXPECT_EQ((int32_t) Status::ERROR_UNKNOWN, mediaCodec->Prepare());
+    EXPECT_EQ(nullptr, mediaCodec->GetInputSurface());
+}
+
+/*
+FALSE_RETURN_V(state_ == CodecState::CONFIGURED,
+        (int32_t)Status::ERROR_INVALID_STATE);
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_02, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_DEC_CODEC_NAME));
+    sptr<Surface> surface = nullptr;
+    EXPECT_EQ(0, mediaCodec->SetOutputSurface(surface));
+    EXPECT_NE((int32_t) Status::OK, mediaCodec->Prepare());
+}
+
+/*
+if (isSurfaceMode_) {
+        return nullptr;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_03, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_AAC_IS_ADTS>(AUDIO_AAC_IS_ADTS);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Prepare());
+
+    EXPECT_EQ(nullptr, mediaCodec->GetInputSurface());
+}
+
+/*
+if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::STOPPING || state_ == CodecState::RELEASING) {
+        MEDIA_LOG_D("Stop, state_=%{public}s", StateToString(state_).data());
+        return (int32_t)Status::OK;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_Stop_01, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
+    EXPECT_EQ(0, mediaCodec->Init(AAC_DEC_CODEC_NAME));
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_AAC_IS_ADTS>(AUDIO_AAC_IS_ADTS);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    
+    EXPECT_EQ((int32_t) Status::ERROR_INVALID_STATE, mediaCodec->Stop());
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
+}
+
+/*
+if (state_ == CodecState::FLUSHED) {
+    MEDIA_LOG_W("Flush, state is already flushed, state_=%{public}s .", StateToString(state_).data());
+    return (int32_t)Status::OK;
+}
+if (state_ != CodecState::RUNNING && state_ != CodecState::END_OF_STREAM) {
+    MEDIA_LOG_E("Flush failed, state =%{public}s", StateToString(state_).data());
+    return (int32_t)Status::ERROR_INVALID_STATE;
+}
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_Flush_01, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ(0, mediaCodec->Init(AAC_DEC_CODEC_NAME));
+    
+    EXPECT_NE((int32_t) Status::OK, mediaCodec->Flush());
+    auto implBufferQueue_ =
+        Media::AVBufferQueue::Create(DEFAULT_BUFFER_NUM, Media::MemoryType::SHARED_MEMORY, "UT-TEST");
+    EXPECT_EQ(0, mediaCodec->SetOutputBufferQueue(implBufferQueue_->GetProducer()));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_AAC_IS_ADTS>(AUDIO_AAC_IS_ADTS);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    EXPECT_EQ(0, mediaCodec->Configure(meta));
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Prepare());
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Start());
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Flush());
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Flush());
+}
+
+/*
+if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
+    MEDIA_LOG_W("adapter reset, state is already released, state =%{public}s .", StateToString(state_).data());
+    return (int32_t)Status::OK;
+}
+if (state_ == CodecState::INITIALIZING) {
+    MEDIA_LOG_W("adapter reset, state is initialized, state =%{public}s .", StateToString(state_).data());
+    state_ = CodecState::INITIALIZED;
+    return (int32_t)Status::OK;
+} 用不上，删了
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_Reset_01, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Reset());
+}
+
+/*
+if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
+    MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
+    return (int32_t)Status::OK;
+}
+if (state_ == CodecState::INITIALIZING) {
+    MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
+    state_ = CodecState::RELEASING;
+    return (int32_t)Status::OK;
+}
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Test_Release_01, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
+}
+
+// HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
+// {
+//     auto plugin = std::make_shared<FFmpegBaseEncoder>();
+
+// }
 
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_01, TestSize.Level1)
 {
@@ -394,6 +564,18 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_09, TestSize.Level1)
     EXPECT_EQ(Status::OK, plugin->Stop());
 }
 
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_10, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.AAC";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    inputBuffer = nullptr;
+    EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(inputBuffer));
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_01, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
@@ -519,5 +701,81 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_07, TestSize.Level1)
     EXPECT_EQ(Status::OK, plugin->Flush());
     EXPECT_EQ(Status::OK, plugin->Reset());
 }
+
+HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_08, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    inputBuffer = nullptr;
+    EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(inputBuffer));
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_09, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+
+    EXPECT_EQ(Status::OK, plugin->Reset());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_10, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+
+    EXPECT_NE(Status::OK, plugin->Stop());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, G711EncoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.G711mu";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    inputBuffer = nullptr;
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+    EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(inputBuffer));
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.AAC";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, Mp3DecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Mpeg";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, AmrwbDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Amrwb";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, FlacDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
 }  // namespace MediaAVCodec
 }  // namespace OHOS
