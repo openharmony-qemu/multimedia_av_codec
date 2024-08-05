@@ -49,7 +49,9 @@ public:
 };
 
 namespace {
+OH_AVErrCode ret_1 = AV_ERR_OK;
 uint32_t pixelFormatNum_1 = 0;
+const int32_t *pixelFormat_1 = nullptr;
 OH_AVCodec *vdec_ = NULL;
 OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
@@ -2008,15 +2010,13 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7000, TestSize.Level2)
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVErrCode ret = AV_ERR_OK;
-        const int32_t *pixelFormat = nullptr;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
-        ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum_1);
-        ASSERT_NE(nullptr, pixelFormat);
+        OH_AVErrCode ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
+        ASSERT_NE(nullptr, pixelFormat_1);
         ASSERT_GT(pixelFormatNum_1, 0);
-        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(AV_ERR_OK, ret_1);
         for (int i = 0; i < pixelFormatNum_1; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -2024,8 +2024,8 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
             ASSERT_NE(nullptr, format);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-            EXPECT_GE(pixelFormat[i], 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[i]);
+            EXPECT_GE(pixelFormat_1[i], 0);
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat_1[i]);
             EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
             OH_AVFormat_Destroy(format);
             OH_VideoDecoder_Destroy(vdec_);
@@ -2067,15 +2067,13 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
 HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1200, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        OH_AVErrCode ret = AV_ERR_OK;
-        const int32_t *pixelFormat = nullptr;
         OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
             OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         ASSERT_NE(nullptr, capability);
-        ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum_1);
-        ASSERT_NE(nullptr, pixelFormat);
+        ret_1 = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat_1, &pixelFormatNum_1);
+        ASSERT_NE(nullptr, pixelFormat_1);
         ASSERT_GT(pixelFormatNum_1, 0);
-        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(AV_ERR_OK, ret_1);
         for (int i = 0; i < pixelFormatNum_1; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -2083,8 +2081,8 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1200, TestSize.Level2)
             ASSERT_NE(nullptr, format);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
             (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-            EXPECT_GE(pixelFormat[i], 0);
-            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[i]);
+            EXPECT_GE(pixelFormat_1[i], 0);
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat_1[i]);
             EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
             OH_AVFormat_Destroy(format);
             OH_VideoDecoder_Destroy(vdec_);
