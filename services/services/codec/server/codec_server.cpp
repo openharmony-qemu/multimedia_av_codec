@@ -587,7 +587,6 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     }
 }
 
-
 int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
     int32_t svpFlag)
 {
