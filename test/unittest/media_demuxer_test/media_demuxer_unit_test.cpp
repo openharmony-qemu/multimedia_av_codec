@@ -888,17 +888,17 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010
 }
 
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentationTimeUsByFrameIndex_010, TestSize.Level1)
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetRelativePresentationTimeUsByIndex_010, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    int64_t presentationTimeUs;
-    EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
-    uint32_t frameIndex;
-    EXPECT_EQ(demuxer->GetFrameIndexByPresentationTimeUs(0, 1, frameIndex), Status::ERROR_NULL_POINTER);
+    uint64_t relativePresentationTimeUs;
+    EXPECT_EQ(demuxer->GetRelativePresentationTimeUsByIndex(0, 1, relativePresentationTimeUs), Status::ERROR_NULL_POINTER);
+    uint32_t index;
+    EXPECT_EQ(demuxer->GetIndexByRelativePresentationTimeUs(0, 1, index), Status::ERROR_NULL_POINTER);
 
     demuxer->demuxerPluginManager_ = nullptr;
-    EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
-    EXPECT_EQ(demuxer->GetFrameIndexByPresentationTimeUs(0, 1, frameIndex), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->GetRelativePresentationTimeUsByIndex(0, 1, relativePresentationTimeUs), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->GetIndexByRelativePresentationTimeUs(0, 1, index), Status::ERROR_NULL_POINTER);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Level1)
@@ -1018,8 +1018,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentation_001, TestSize.Level1
         AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    int64_t presentationTimeUs = 0;
-    EXPECT_EQ(Status::OK, demuxer->GetPresentationTimeUsByFrameIndex(0, 0, presentationTimeUs));
+    uint64_t relativePresentationTimeUs = 0;
+    EXPECT_EQ(Status::OK, demuxer->GetRelativePresentationTimeUsByIndex(0, 0, relativePresentationTimeUs));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetFrameIndex_001, TestSize.Level1)
@@ -1041,8 +1041,8 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetFrameIndex_001, TestSize.Level1)
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
     EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
     sleep(1);
-    uint32_t frameIndex = 0;
-    EXPECT_EQ(Status::ERROR_MISMATCHED_TYPE, demuxer->GetFrameIndexByPresentationTimeUs(0, 0, frameIndex));
+    uint32_t index = 0;
+    EXPECT_EQ(Status::ERROR_MISMATCHED_TYPE, demuxer->GetIndexByRelativePresentationTimeUs(0, 0, index));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_001, TestSize.Level1)

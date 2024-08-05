@@ -2261,74 +2261,74 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
 
 #ifndef DEMUXER_CAPI_UNIT_TEST
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1000
- * @tc.desc: Get frameIndex by pts(audio track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1000
+ * @tc.desc: Get index by pts(audio track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 69659;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 69659;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 3);
+    ASSERT_EQ(index, 3);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1001
- * @tc.desc: Get frameIndex by pts(video track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1001
+ * @tc.desc: Get index by pts(video track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 66666;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 66666;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(index, 4);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1002
- * @tc.desc: Get frameIndex by pts(not MP4)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1002
+ * @tc.desc: Get index by pts(not MP4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1002, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 69659;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 69659;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 0);
+    ASSERT_EQ(index, 0);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1003
- * @tc.desc: Get frameIndex by pts(non-standard pts & different track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1003
+ * @tc.desc: Get index by pts(non-standard pts & different track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1003, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1003, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
@@ -2336,89 +2336,89 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1003, TestSi
 
     // standard pts & video track
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 166666;
-    uint32_t frameIndex = 0;
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    uint64_t relativePresentationTimeUs = 166666;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 10);
+    ASSERT_EQ(index, 10);
 
     // non-standard pts & video track
     trackIndex = 1;
-    presentationTimeUs = 166667;
-    frameIndex = 0;
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    relativePresentationTimeUs = 166667;
+    index = 0;
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_NE(ret, AV_ERR_OK);
 
     // standard pts & audio track
     trackIndex = 0;
-    presentationTimeUs = 232199;
-    frameIndex = 0;
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    relativePresentationTimeUs = 232199;
+    index = 0;
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 10);
+    ASSERT_EQ(index, 10);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1000
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1000
  * @tc.desc: get pts by frameIndex(audio track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 2;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 2;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 46439);
+    ASSERT_EQ(relativePresentationTimeUs, 46439);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1001
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1001
  * @tc.desc: get pts by frameIndex(video track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 2;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 2;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 33333);
+    ASSERT_EQ(relativePresentationTimeUs, 33333);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1002
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1002
  * @tc.desc: get pts by frameIndex(not MP4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1002, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 10;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 10;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 0);
+    ASSERT_EQ(relativePresentationTimeUs, 0);
 }
 
 /**
@@ -2433,18 +2433,18 @@ HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1000, TestSize.Leve
     ASSERT_NE(format_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 92879;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 92879;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(index, 4);
 
-    int64_t presentationTimeUs1 = 0;
+    uint64_t relativePresentationTimeUs1 = 0;
 
-    ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs1);
+    ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(presentationTimeUs1, 92879);
+    ASSERT_EQ(relativePresentationTimeUs1, 92879);
 }
 
 /**
@@ -2459,18 +2459,18 @@ HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1001, TestSize.Leve
     ASSERT_NE(format_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 4;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 4;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(presentationTimeUs, 92879);
+    ASSERT_EQ(relativePresentationTimeUs, 92879);
 
-    uint32_t frameIndex1 = 0;
+    uint32_t index1 = 0;
 
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex1);
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex1, 4);
+    ASSERT_EQ(index1, 4);
 }
 #endif
 

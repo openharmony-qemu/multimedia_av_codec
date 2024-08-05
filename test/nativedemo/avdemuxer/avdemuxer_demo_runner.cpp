@@ -21,6 +21,7 @@
 #include <thread>
 #include <sys/stat.h>
 #include <fstream>
+#include <chrono>
 
 #include "avcodec_common.h"
 #include "buffer/avsharedmemorybase.h"
@@ -245,15 +246,31 @@ static void RunDrmNativeDemuxer(const std::string &filePath, const std::string &
 
 static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemuxerDemo)
 {
-    uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 100000;    // pts 100000
-    uint32_t frameIndex = 0;
-    innerDemuxerDemo->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
-    printf("GetFrameIndexByPresentationTimeUs, frameIndex = %d\n", frameIndex);
-    presentationTimeUs = 0;
-    frameIndex = 100;    // frameIndex 100
-    innerDemuxerDemo->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
-    printf("GetPresentationTimeUsByFrameIndex, presentationTimeUs = %" PRId64 "\n", presentationTimeUs);
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 0;    // pts 0
+    uint32_t index = 0;
+
+    using clock = std::chrono::high_resolution_clock;
+    auto start = clock::now();
+    auto end = clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    for (uint32_t i = 0; i < 10 ; ++i) {
+        index = i;
+        start = clock::now();
+        innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+        end = clock::now();
+        elapsed = end - start;
+        printf("GetRelativePresentationTimeUsByIndex, relativePresentationTimeUs = %" PRId64 "\n", relativePresentationTimeUs); 
+        std::cout << "Function took " << elapsed.count() << " seconds to run.\n";
+
+        start = clock::now();
+        innerDemuxerDemo->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+        end = clock::now();
+        elapsed = end - start;
+        printf("GetIndexByRelativePresentationTimeUs, index = %d\n", index);
+        std::cout << "Function took " << elapsed.count() << " seconds to run.\n";
+    }
 }
 
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)

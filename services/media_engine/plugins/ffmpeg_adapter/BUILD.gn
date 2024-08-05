@@ -85,6 +85,8 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
 
   sanitize = av_codec_sanitize
 
+  defines = ["OHOS_EXPAND_MP4_INFO"]
+
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
