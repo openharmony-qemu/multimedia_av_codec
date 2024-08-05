@@ -222,12 +222,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_OnDumpInfo_01, TestSize.Level1)
     mediaCodec = nullptr;
 }
 
-/*
-if (fd < 0) {
-        MEDIA_LOG_E("MediaCodec::OnDumpInfo fd is invalid.");
-        return;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_OnDumpInfo_02, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -278,12 +272,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputSurface_01, TestSize.Level1)
     mediaCodec = nullptr;
 }
 
-/*
-if (isBufferMode_ && isSurfaceMode_) {
-        MEDIA_LOG_E("state error");
-        return (int32_t)Status::ERROR_UNKNOWN;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -304,10 +292,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_01, TestSize.Level1)
     EXPECT_EQ(nullptr, mediaCodec->GetInputSurface());
 }
 
-/*
-FALSE_RETURN_V(state_ == CodecState::CONFIGURED,
-        (int32_t)Status::ERROR_INVALID_STATE);
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_02, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -317,11 +301,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_02, TestSize.Level1)
     EXPECT_NE((int32_t) Status::OK, mediaCodec->Prepare());
 }
 
-/*
-if (isSurfaceMode_) {
-        return nullptr;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_03, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -339,12 +318,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_GetInputBufferQueue_03, TestSize.Level1)
     EXPECT_EQ(nullptr, mediaCodec->GetInputSurface());
 }
 
-/*
-if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::STOPPING || state_ == CodecState::RELEASING) {
-        MEDIA_LOG_D("Stop, state_=%{public}s", StateToString(state_).data());
-        return (int32_t)Status::OK;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_Stop_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -364,16 +337,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_Stop_01, TestSize.Level1)
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Stop());
 }
 
-/*
-if (state_ == CodecState::FLUSHED) {
-    MEDIA_LOG_W("Flush, state is already flushed, state_=%{public}s .", StateToString(state_).data());
-    return (int32_t)Status::OK;
-}
-if (state_ != CodecState::RUNNING && state_ != CodecState::END_OF_STREAM) {
-    MEDIA_LOG_E("Flush failed, state =%{public}s", StateToString(state_).data());
-    return (int32_t)Status::ERROR_INVALID_STATE;
-}
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_Flush_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
@@ -394,45 +357,17 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_Flush_01, TestSize.Level1)
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Flush());
 }
 
-/*
-if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-    MEDIA_LOG_W("adapter reset, state is already released, state =%{public}s .", StateToString(state_).data());
-    return (int32_t)Status::OK;
-}
-if (state_ == CodecState::INITIALIZING) {
-    MEDIA_LOG_W("adapter reset, state is initialized, state =%{public}s .", StateToString(state_).data());
-    state_ = CodecState::INITIALIZED;
-    return (int32_t)Status::OK;
-} 用不上，删了
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_Reset_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Reset());
 }
 
-/*
-if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-    MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
-    return (int32_t)Status::OK;
-}
-if (state_ == CodecState::INITIALIZING) {
-    MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
-    state_ = CodecState::RELEASING;
-    return (int32_t)Status::OK;
-}
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Test_Release_01, TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
 }
-
-// HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
-// {
-//     auto plugin = std::make_shared<FFmpegBaseEncoder>();
-
-// }
 
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_01, TestSize.Level1)
 {
