@@ -80,12 +80,18 @@ void PlayListDownloader::DoOpen(const std::string& url)
     mediaSouce.url = url;
     mediaSouce.httpHeader = httpHeader_;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
+    if (downloadRequest_ == nullptr) {
+        MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
+        return;
+    }
     auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-    downloader_->Download(downloadRequest_, -1); // -1
-    downloader_->Start();
+    if (downloader_ != nullptr) {
+        downloader_->Download(downloadRequest_, -1); // -1
+        downloader_->Start();
+    }
 }
 
 void PlayListDownloader::DoOpenNative(const std::string& url)
