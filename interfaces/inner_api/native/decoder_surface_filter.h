@@ -53,6 +53,7 @@ public:
     Status DoStart() override;
     Status DoPause() override;
     Status DoResume() override;
+    Status DoResumeDragging() override;
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
@@ -153,6 +154,7 @@ private:
     ConditionVariable firstFrameCond_;
     std::atomic<bool> doPrepareFrame_{false};
     bool renderFirstFrame_{false};
+    std::atomic<bool> isRenderStarted_{false};
     Mutex formatChangeMutex_{};
     int32_t rateUpperLimit_{0};
 

@@ -34,7 +34,7 @@ private:
     int32_t StartThread() override;
     void InputThread();
     void OutputThread();
-    int32_t CreateWindow(OHNativeWindow *&window);
+    int32_t CreateWindow(std::shared_ptr<NativeWindow> &window);
     void OnBufferAvailable() override;
 
     OHOS::sptr<OHOS::Surface> surfaceConsumer_ = nullptr;

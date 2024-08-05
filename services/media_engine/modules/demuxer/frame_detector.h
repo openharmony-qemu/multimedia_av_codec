@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-enum CodeType {
+enum class CodeType {
     H264,
     H265
 };

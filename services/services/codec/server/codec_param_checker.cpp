@@ -99,6 +99,7 @@ int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, 
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -141,6 +142,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     FramerateChecker,
     RotaitonChecker,
     ScalingModeChecker,
+    PostProcessingChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -199,7 +201,7 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
         }
         return scenario;
     }
-    CHECK_AND_RETURN_RET_LOG(capData.featuresMap.count(
+    CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
         static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)),
         scenario, "Not support temporal scalability");
 
@@ -354,6 +356,27 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, CodecScenario s
     CHECK_AND_RETURN_RET_LOG(rotation == 0 || rotation == 90 || rotation == 180 || rotation == 270,
         AVCS_ERR_CODEC_PARAM_INCORRECT, "Param invalid, %{public}s: %{public}d, only support {0, 90, 180, 270}",
         MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);    //  Invalid rotation
+
+    return AVCS_ERR_OK;
+}
+
+int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    int32_t colorSpace;
+    bool hasColorSpace = format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
+    if (!hasColorSpace) {
+        return AVCS_ERR_OK;
+    }
+    CHECK_AND_RETURN_RET_LOG(
+        scenario == CodecScenario::CODEC_SCENARIO_DEC_NORMAL && capData.mimeType == CodecMimeType::VIDEO_HEVC &&
+            capData.isVendor,
+        AVCS_ERR_INVALID_VAL,
+        "colorspace conversion is not available for the codec.");
+
+    constexpr int32_t colorSpaceBt709Limited = 8; // see OH_COLORSPACE_BT709_LIMITED in native_buffer.h;
+    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited, AVCS_ERR_INVALID_VAL,
+        "The output color space %{public}d is not supported", colorSpace);
+    PrintParam(true, MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
 
     return AVCS_ERR_OK;
 }

@@ -19,9 +19,8 @@
 #include "common/log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
-constexpr int64_t EOS_DRAIN_INTERVAL_US = 200000; // try drain each 200ms
 }
 
 namespace OHOS {
@@ -50,7 +49,7 @@ AudioSink::AudioSink()
 
 AudioSink::~AudioSink()
 {
-    MEDIA_LOG_I("AudioSink dtor");
+    MEDIA_LOG_D("AudioSink dtor");
 }
 
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
@@ -65,6 +64,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     if (samplePerFrame_ > 0 && sampleRate_ > 0) {
@@ -84,7 +84,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {
         isApe_ = true;
-        MEDIA_LOG_I("AudioSink::Init is ape");
+        MEDIA_LOG_I("Init is ape");
     }
 
     return Status::OK;
@@ -135,6 +135,7 @@ Status AudioSink::Prepare()
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
+        eosDraining_ = false;
     }
     return ret;
 }
@@ -199,7 +200,7 @@ Status AudioSink::Resume()
         eosInterruptType_ = EosInterruptState::RESUME;
         if (!eosDraining_ && eosTask_ != nullptr) {
             eosTask_->SubmitJobOnce([this] {
-                HandleEosInner();
+                HandleEosInner(false);
             });
         }
     }
@@ -213,6 +214,7 @@ Status AudioSink::Flush()
     {
         AutoLock lock(eosMutex_);
         eosInterruptType_ = EosInterruptState::NONE;
+        eosDraining_ = false;
     }
     return ret;
 }
@@ -244,13 +246,13 @@ Status AudioSink::SetVolume(float volume)
 
 int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 {
-    MEDIA_LOG_I("AudioSink::SetVolumeWithRamp entered. ");
+    MEDIA_LOG_I("SetVolumeWithRamp");
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
-    MEDIA_LOG_I("AudioSink::SetIsTransitent entered. ");
+    MEDIA_LOG_I("SetIsTransitent");
     isTransitent_ = isTransitent;
     return Status::OK;
 }
@@ -307,23 +309,33 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
 }
 
-void AudioSink::HandleEosInner()
+void AudioSink::HandleEosInner(bool drain)
 {
     AutoLock lock(eosMutex_);
-    eosDraining_ = true;
-    if (eosInterruptType_ != EosInterruptState::INITIAL && eosInterruptType_ != EosInterruptState::RESUME) {
-        MEDIA_LOG_W("drain audiosink interrupted");
-        eosDraining_ = false;
+    eosDraining_ = true; // start draining task
+    switch (eosInterruptType_) {
+        case EosInterruptState::INITIAL: // No user operation during EOS drain, complete drain normally
+            break;
+        case EosInterruptState::RESUME: // EOS drain is resumed after pause, do necessary changes
+            if (drain) {
+                // pause and resume happened before this task, audiosink latency should be updated
+                drain = false;
+            }
+            eosInterruptType_ = EosInterruptState::INITIAL; // Reset EOS draining state
+            break;
+        default: // EOS drain is interrupted by pause or stop, and not resumed
+            MEDIA_LOG_W("Drain audiosink interrupted");
+            eosDraining_ = false; // abort draining task
+            return;
+    }
+    if (drain) {
+        MEDIA_LOG_I("Drain audiosink and report EOS");
+        DrainAndReportEosEvent();
         return;
     }
     uint64_t latency = 0;
     if (plugin_->GetLatency(latency) != Status::OK) {
-        MEDIA_LOG_W("failed to get latency, drain directly");
-        DrainAndReportEosEvent();
-        return;
-    }
-    if (latency < EOS_DRAIN_INTERVAL_US) {
-        MEDIA_LOG_I("Drain audiosink and report EOS");
+        MEDIA_LOG_W("Failed to get latency, drain audiosink directly");
         DrainAndReportEosEvent();
         return;
     }
@@ -332,10 +344,10 @@ void AudioSink::HandleEosInner()
         DrainAndReportEosEvent();
         return;
     }
-    MEDIA_LOG_D("Drain audiosink wait next INTERVAL, latency = " PUBLIC_LOG_U64, latency);
+    MEDIA_LOG_I("Drain audiosink wait latency = " PUBLIC_LOG_U64, latency);
     eosTask_->SubmitJobOnce([this] {
-            HandleEosInner();
-        }, EOS_DRAIN_INTERVAL_US, false);
+            HandleEosInner(true);
+        }, latency, false);
 }
  
 void AudioSink::DrainAndReportEosEvent()
@@ -343,7 +355,7 @@ void AudioSink::DrainAndReportEosEvent()
     plugin_->Drain();
     plugin_->PauseTransitent();
     eosInterruptType_ = EosInterruptState::NONE;
-    eosDraining_ = false;
+    eosDraining_ = false; // finish draining task
     isEos_ = true;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
@@ -378,13 +390,17 @@ void AudioSink::DrainOutputBuffer()
         (filledOutputBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNITS))) {
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         AutoLock eosLock(eosMutex_);
+        if (eosDraining_) {
+            // avoid submit handle eos task multiple times
+            return;
+        }
         eosInterruptType_ = EosInterruptState::INITIAL;
         if (eosTask_ == nullptr) {
             DrainAndReportEosEvent();
             return;
         }
         eosTask_->SubmitJobOnce([this] {
-            HandleEosInner();
+            HandleEosInner(false);
         });
         return;
     }
@@ -465,7 +481,7 @@ Status AudioSink::SetSpeed(float speed)
 
 Status AudioSink::SetAudioEffectMode(int32_t effectMode)
 {
-    MEDIA_LOG_I("AudioSink::SetAudioEffectMode entered. ");
+    MEDIA_LOG_I("SetAudioEffectMode");
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
@@ -475,7 +491,7 @@ Status AudioSink::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioSink::GetAudioEffectMode(int32_t &effectMode)
 {
-    MEDIA_LOG_I("AudioSink::GetAudioEffectMode entered. ");
+    MEDIA_LOG_I("GetAudioEffectMode");
     if (plugin_ == nullptr) {
         return Status::ERROR_NULL_POINTER;
     }
@@ -541,7 +557,7 @@ void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 
 Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
-    MEDIA_LOG_I("AudioSink::GetAudioEffectMode ChangeTrack. ");
+    MEDIA_LOG_I("GetAudioEffectMode ChangeTrack. ");
     std::lock_guard<std::mutex> lock(pluginMutex_);
     Status res = Status::OK;
 
@@ -560,6 +576,7 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     if (volume_ >= 0) {
@@ -578,5 +595,11 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     return res;
 }
 
+Status AudioSink::SetMuted(bool isMuted)
+{
+    isMuted_ = isMuted;
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    return plugin_->SetMuted(isMuted);
+}
 } // namespace MEDIA
 } // namespace OHOS

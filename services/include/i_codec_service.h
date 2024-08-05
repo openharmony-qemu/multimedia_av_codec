@@ -40,6 +40,7 @@ public:
     virtual int32_t Init(AVCodecType type, bool isMimeType,
         const std::string &name, Media::Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) = 0;
     virtual int32_t Configure(const Format &format) = 0;
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;

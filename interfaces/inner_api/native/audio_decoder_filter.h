@@ -33,7 +33,7 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
 
-    Status PrepareFrame(bool renderFirstFrame) override;
+    Status DoPrepareFrame(bool renderFirstFrame) override;
 
     Status DoPrepare() override;
 
@@ -79,6 +79,10 @@ public:
     void OnDumpInfo(int32_t fd);
 
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
+
+    void OnError(CodecErrorType errorType, int32_t errorCode);
+
+    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -114,6 +118,19 @@ private:
     int64_t totalPausedTime_{0};
     uint64_t instanceId_ = 0;
     std::string appName_;
+};
+
+class AudioDecoderCallback : public AudioBaseCodecCallback {
+public:
+    explicit AudioDecoderCallback(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter);
+    virtual ~AudioDecoderCallback();
+
+    void OnError(CodecErrorType errorType, int32_t errorCode) override;
+
+    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
+
+private:
+    std::weak_ptr<AudioDecoderFilter> audioDecoderFilter_;
 };
 } // namespace Pipeline
 } // namespace MEDIA

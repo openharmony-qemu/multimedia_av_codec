@@ -46,7 +46,6 @@ namespace AudioDemoAuto {
         (void)codec;
         (void)errorCode;
         (void)userData;
-        cout << "Error received, errorCode:" << errorCode << endl;
     }
 
     void OnOutputFormatChanged(OH_AVCodec* codec, OH_AVFormat* format, void* userData)
@@ -78,7 +77,7 @@ namespace AudioDemoAuto {
         if (attr) {
             signal->attrQueue_.push(*attr);
         } else {
-            cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
+            cout << "OnOutputBufferAvailable, attr is nullptr!" << endl;
         }
         signal->outCond_.notify_all();
     }
@@ -535,7 +534,7 @@ void ADecDemoAuto::InputFunc()
         strncpy_s((char *)OH_AVMemory_GetAddr(buffer), currentSize, inputdata.c_str(), currentSize);
         int32_t ret = HandleNormalInput(index, pts, currentSize);
         if (ret != AVCS_ERR_OK) {
-            cout << "Fatal error, exit" << endl;
+            cout << "Fatal, exit" << endl;
             isRunning_.store(false);
             break;
         }

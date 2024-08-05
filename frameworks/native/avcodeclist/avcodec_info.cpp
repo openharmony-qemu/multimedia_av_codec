@@ -227,7 +227,8 @@ Range VideoCaps::GetSupportedFrameRatesFor(int32_t width, int32_t height)
 
 void VideoCaps::LoadLevelParams()
 {
-    if (this->GetCodecInfo()->IsSoftwareOnly()) {
+    std::shared_ptr<AVCodecInfo> codecInfo = this->GetCodecInfo();
+    if (codecInfo == nullptr || codecInfo->IsSoftwareOnly()) {
         return;
     }
     if (data_->mimeType == CodecMimeType::VIDEO_AVC) {
@@ -330,6 +331,12 @@ void VideoCaps::InitParams()
     }
     if (data_->blockPerFrame.minVal == 0 || data_->blockPerFrame.maxVal == 0) {
         data_->blockPerFrame = Range(1, INT32_MAX);
+    }
+    if (data_->supportSwapWidthHeight) {
+        Range side = Range(std::min(data_->width.minVal, data_->height.minVal),
+                           std::max(data_->width.maxVal, data_->height.maxVal));
+        data_->width = side;
+        data_->height = side;
     }
     if (data_->width.minVal == 0 || data_->width.maxVal == 0) {
         data_->width = Range(1, INT32_MAX);

@@ -202,8 +202,8 @@ sptr<Surface> VideoResizeFilter::GetInputSurface()
     sptr<Surface> inputSurface = videoEnhancer_->GetInputSurface();
     if (inputSurface != nullptr) {
         inputSurface->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
-        return inputSurface;
     }
+    return inputSurface;
 #else
     MEDIA_LOG_E("no VPE module");
     if (eventReceiver_) {

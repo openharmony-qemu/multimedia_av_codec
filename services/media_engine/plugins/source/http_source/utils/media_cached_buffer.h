@@ -22,6 +22,9 @@
 #include <list>
 #include <chrono>
 
+#include "common/log.h"
+#include "lru_cache.h"
+
 namespace OHOS {
 namespace Media {
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
@@ -97,8 +100,8 @@ protected:
     bool WriteInPlace(FragmentIterator& fragmentPos, uint8_t* ptr, int64_t inOffset,
                       size_t inWriteSize, size_t& outWriteSize);
     bool WriteMergerPre(int64_t offset, size_t writeSize, FragmentIterator& nextFragmentPos);
-    size_t WriteMergerPost(FragmentIterator& fragmentPos, uint8_t* ptr, int64_t inOffset, size_t inWriteSize);
     void WriteMergerPost(FragmentIterator& nextFragmentPos);
+    size_t ReadInner(void* ptr, int64_t offset, size_t readSize);
 
     template<typename Pred>
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, int64_t offset, Pred pred)
@@ -134,8 +137,9 @@ protected:
 
     size_t WriteChunk(FragmentCacheBuffer& fragmentCacheBuffer, ChunkIterator& chunkPos,
                       void* ptr, int64_t offset, size_t writeSize);
-    void CheckThresholdFragmentCacheBuffer(const FragmentIterator& currWritePos);
+    void CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos);
     ChunkIterator AddFragmentCacheBuffer(int64_t offset);
+    ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, int64_t offset, ChunkIterator chunkPos);
 
     void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
     void DeleteUnreadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
@@ -145,6 +149,9 @@ protected:
             static_cast<double>(totalReadSize_)) * chunkMaxNum_);
         return allowNum;
     }
+    void ResetReadSizeAlloc();
+    CacheChunk* UpdateFragmentCacheForDelHead(FragmentIterator& fragmentIter);
+    void HandleFragmentPos(FragmentIterator& fragmentIter);
 
 private:
     std::mutex mutex_;
@@ -158,6 +165,8 @@ private:
     uint8_t* bufferAddr_ {nullptr};
     FragmentCacheBufferList fragmentCacheBuffer_;
     CacheChunkList freeChunks_;
+    size_t fragmentMaxNum_;
+    LruCache<int64_t, FragmentIterator> lruCache_;
 };
 
 class CacheMediaBuffer {

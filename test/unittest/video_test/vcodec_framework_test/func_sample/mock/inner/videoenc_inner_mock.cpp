@@ -185,6 +185,13 @@ int32_t VideoEncInnerMock::Prepare()
 {
     if (videoEnc_ != nullptr) {
         return videoEnc_->Prepare();
+}
+
+int32_t VideoEncInnerMock::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
+{
+    if (videoEnc_ != nullptr) {
+        auto buf = std::static_pointer_cast<AVBufferInnerMock>(buffer);
+        return videoEnc_->SetCustomBuffer(buf->GetAVBuffer());
     }
     return AV_ERR_UNKNOWN;
 }

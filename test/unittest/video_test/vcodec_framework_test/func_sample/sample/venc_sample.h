@@ -131,15 +131,14 @@ public:
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
     bool IsValid();
+    int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
     void SetOutPath(const std::string &path);
-    void SetIsHdrVivid(bool isHdrVivid);
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool needCheckSHA_ = false;
     bool needSleep_ = false;
     static bool needDump_;
     bool isAVBufferMode_ = false;
-    bool isHdrVivid_ = false;
     bool isTemporalScalabilitySyncIdr_ = false;
     bool isDiscardFrame_ = false;
 

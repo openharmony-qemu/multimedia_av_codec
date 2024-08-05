@@ -146,7 +146,6 @@ struct DemuxerPlugin : public PluginBase {
 
     virtual void ResetEosStatus() = 0;
 
-    virtual Status ParserRefInit(int64_t timeStampMs) = 0;
     virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) = 0;
     virtual Status ParserRefInfo() = 0;
     virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) = 0;
@@ -166,6 +165,8 @@ struct DemuxerPlugin : public PluginBase {
 
     virtual Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         uint32_t frameIndex, int64_t &presentationTimeUs) = 0;
+
+    virtual void SetCacheLimit(uint32_t limitSize) = 0;
 };
 
 /// Demuxer plugin api major number.

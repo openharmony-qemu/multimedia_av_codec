@@ -26,7 +26,7 @@ namespace HttpPlugin {
 class HlsPlayListDownloader : public PlayListDownloader {
 public:
     using PlayListDownloader::PlayListDownloader;
-    ~HlsPlayListDownloader() override = default;
+    ~HlsPlayListDownloader() override;
 
     void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void UpdateManifest() override;

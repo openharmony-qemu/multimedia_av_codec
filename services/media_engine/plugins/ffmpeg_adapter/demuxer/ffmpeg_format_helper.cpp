@@ -81,12 +81,14 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MPEG2TS, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_MPEG2VIDEO, MimeType::VIDEO_MPEG2},
     {AV_CODEC_ID_HEVC, MimeType::VIDEO_HEVC},
+    {AV_CODEC_ID_VVC, MimeType::VIDEO_VVC},
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
     {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
+    {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
 };
 
@@ -94,6 +96,8 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"mpegts", FileType::MPEGTS},
     {"matroska,webm", FileType::MKV},
     {"amr", FileType::AMR},
+    {"amrnb", FileType::AMR},
+    {"amrwb", FileType::AMR},
     {"aac", FileType::AAC},
     {"mp3", FileType::MP3},
     {"flac", FileType::FLAC},
@@ -102,6 +106,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"flv", FileType::FLV},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
+    {"webvtt", FileType::VTT},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
@@ -369,6 +374,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
+        format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_id));
     }
@@ -504,6 +510,9 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
                 format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
                 break;
         }
+    } else {
+        MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as dafault 0");
+        format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
 }
 

@@ -36,6 +36,7 @@ public:
 
     virtual int32_t Init(AVCodecType type, bool isMimeType, const std::string &name, Media::Meta &callerInfo) = 0;
     virtual int32_t Configure(const Format &format) = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;
@@ -59,6 +60,7 @@ public:
         (void)svpFlag;
         return 0;
     }
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
 
     virtual int32_t DestroyStub() = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecService");

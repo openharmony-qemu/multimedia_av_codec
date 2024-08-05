@@ -48,6 +48,18 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
     }
 }
 
+HlsPlayListDownloader::~HlsPlayListDownloader()
+{
+    MEDIA_LOG_I("~HlsPlayListDownloader in");
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
+    }
+    if (updateTask_ != nullptr) {
+        updateTask_->Stop();
+    }
+    MEDIA_LOG_I("~HlsPlayListDownloader out");
+}
+
 void HlsPlayListDownloader::UpdateManifest()
 {
     if (currentVariant_ && currentVariant_->m3u8_ && !currentVariant_->m3u8_->uri_.empty()) {
@@ -103,6 +115,12 @@ Seekable HlsPlayListDownloader::GetSeekable() const
 
 void HlsPlayListDownloader::NotifyListChange()
 {
+    if (currentVariant_ == nullptr || callback_ == nullptr) {
+        return;
+    }
+    if (currentVariant_->m3u8_ == nullptr) {
+        return;
+    }
     auto files = currentVariant_->m3u8_->files_;
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
@@ -113,7 +131,11 @@ void HlsPlayListDownloader::NotifyListChange()
             currentVariant_->m3u8_->iv_);
     } else {
         MEDIA_LOG_E("Decrypkey is not needed.");
-        callback_->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
+        if (master_ != nullptr) {
+            callback_->OnSourceKeyChange(master_->key_, master_->keyLen_, master_->iv_);
+        } else {
+            callback_->OnSourceKeyChange(nullptr, 0, nullptr);
+        }
     }
     playList.reserve(files.size());
     for (const auto &file: files) {
@@ -187,8 +209,9 @@ void HlsPlayListDownloader::PreParseManifest(const std::string& location)
     int firstTsTagIndex = 0;
     int lastTsTagIndex = 0;
     std::string tsTag = M3U8_TS_TAG;
-    int tsTagSize = tsTag.size();
-    while ((tsIndex = playList_.find(tsTag, tsIndex)) < playList_.length()) {
+    int tsTagSize = static_cast<int>(tsTag.size());
+    while ((tsIndex = static_cast<int>(playList_.find(tsTag, tsIndex))) <
+            static_cast<int>(playList_.length()) && tsIndex != -1) { // -1
         if (tsNum == 0) {
             firstTsTagIndex = tsIndex;
         }

@@ -14,6 +14,7 @@
  */
 
 #include "codec_client.h"
+#include <cmath>
 #include "avcodec_errors.h"
 #include "codec_service_proxy.h"
 #include "meta/meta_key.h"
@@ -112,6 +113,7 @@ void CodecClient::InitLabel(AVCodecType type)
     if (listenerStub_ != nullptr) {
         listenerStub_->InitLabel(uid_);
     }
+    type_ = type;
 }
 
 int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name,
@@ -150,6 +152,28 @@ int32_t CodecClient::Configure(const Format &format)
     if (!hasOnceConfigured_) {
         hasOnceConfigured_ = ret == AVCS_ERR_OK;
     }
+    return ret;
+}
+
+int32_t CodecClient::Prepare()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+
+    int32_t ret = codecProxy_->Prepare();
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+
+    return ret;
+}
+
+int32_t CodecClient::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "buffer is nullptr");
+
+    int32_t ret = codecProxy_->SetCustomBuffer(buffer);
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -223,6 +247,7 @@ int32_t CodecClient::Reset()
         SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
+        hasOnceConfigured_ = false;
         if (converter_ != nullptr) {
             converter_->NeedToResetFormatOnce();
         }
@@ -313,6 +338,8 @@ int32_t CodecClient::GetOutputFormat(Format &format)
     if (callbackMode_ == MEMORY_CALLBACK && converter_ != nullptr) {
         converter_->SetFormat(format);
         converter_->GetFormat(format);
+    } else {
+        UpdateFormat(format);
     }
     return ret;
 }
@@ -440,6 +467,8 @@ int32_t CodecClient::GetInputFormat(Format &format)
     if (callbackMode_ == MEMORY_CALLBACK && converter_ != nullptr) {
         converter_->SetFormat(format);
         converter_->GetFormat(format);
+    } else {
+        UpdateFormat(format);
     }
     return ret;
 }
@@ -449,6 +478,32 @@ void CodecClient::UpdateGeneration()
     if (listenerStub_ != nullptr && needUpdateGeneration_) {
         listenerStub_->UpdateGeneration();
         needUpdateGeneration_ = false;
+    }
+}
+
+void CodecClient::UpdateFormat(Format &format)
+{
+    if (format.ContainKey(Tag::VIDEO_STRIDE) || format.ContainKey(Tag::VIDEO_SLICE_HEIGHT)) {
+        int32_t width = 0;
+        int32_t height = 0;
+        switch (type_) {
+            case AVCODEC_TYPE_VIDEO_ENCODER:
+                format.GetIntValue(Tag::VIDEO_WIDTH, width);
+                format.GetIntValue(Tag::VIDEO_HEIGHT, height);
+                break;
+            case AVCODEC_TYPE_VIDEO_DECODER:
+                format.GetIntValue(Tag::VIDEO_PIC_WIDTH, width);
+                format.GetIntValue(Tag::VIDEO_PIC_HEIGHT, height);
+                break;
+            default:
+                return;
+        }
+        int32_t wStride = 0;
+        int32_t hStride = 0;
+        format.GetIntValue(Tag::VIDEO_STRIDE, wStride);
+        format.GetIntValue(Tag::VIDEO_SLICE_HEIGHT, hStride);
+        format.PutIntValue(Tag::VIDEO_STRIDE, std::max(width, wStride));
+        format.PutIntValue(Tag::VIDEO_SLICE_HEIGHT, std::max(height, hStride));
     }
 }
 
@@ -477,6 +532,7 @@ void CodecClient::OnOutputFormatChanged(const Format &format)
         }
         callback_->OnOutputFormatChanged(format);
     } else if (videoCallback_ != nullptr) {
+        UpdateFormat(const_cast<Format &>(format));
         videoCallback_->OnOutputFormatChanged(format);
     }
 }

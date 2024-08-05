@@ -26,20 +26,18 @@ namespace MediaAVCodec {
 namespace Sample {
 class Demuxer : public DataProducerBase {
 public:
-    int32_t Init(SampleInfo &info) override;
+    int32_t Init(const std::shared_ptr<SampleInfo> &info) override;
     int32_t Seek(int64_t position)override;
 
 private:
     int32_t FillBuffer(CodecBufferInfo &bufferInfo) override;
-    int64_t GetFileSize(char * const filePath);
-    int32_t GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, SampleInfo &info);
+    int64_t GetFileSize(int32_t fd);
+    int32_t GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat);
     bool IsEOS() override;
 
     std::shared_ptr<FILE> file_ = nullptr;
     std::shared_ptr<OH_AVSource> source_ = nullptr;
     std::shared_ptr<OH_AVDemuxer> demuxer_ = nullptr;
-    int32_t fileFd_ = -1;
-    int64_t fileSize_ = -1;
     int32_t videoTrackId_ = -1;
 };
 } // Sample

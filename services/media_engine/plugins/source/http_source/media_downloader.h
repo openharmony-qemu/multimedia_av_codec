@@ -58,6 +58,10 @@ public:
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
     }
+    virtual void GetPlaybackInfo(PlaybackInfo& playbackInfo)
+    {
+        MEDIA_LOG_E("GetPlaybackInfo is unimplemented.");
+    }
     virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");
@@ -81,13 +85,18 @@ public:
     {
         MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
     }
-    virtual void SetDemuxerState()
+    virtual void SetDemuxerState(int32_t streamId)
     {
         MEDIA_LOG_W("SetDemuxerState is unimplemented.");
     }
     virtual void SetDownloadErrorState()
     {
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
+    }
+    virtual Status SetCurrentBitRate(int32_t bitRate)
+    {
+        MEDIA_LOG_W("SetCurrentBitRate is unimplemented.");
+        return Status::OK;
     }
     virtual void SetPlayStrategy(PlayStrategy* playStrategy)
     {
@@ -97,6 +106,11 @@ public:
     virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
     {
         MEDIA_LOG_W("GetStreamInfo is unimplemented.");
+        return Status::OK;
+    }
+    virtual Status SelectStream(int32_t streamId)
+    {
+        MEDIA_LOG_W("SelectStream is unimplemented.");
         return Status::OK;
     }
 };

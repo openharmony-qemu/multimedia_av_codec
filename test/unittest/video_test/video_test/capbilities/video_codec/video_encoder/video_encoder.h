@@ -60,7 +60,6 @@ public:
 /********************* API11 *********************/
 class VideoEncoderAPI11 : public VideoEncoder {
 public:
-    int32_t PushInput(CodecBufferInfo &info) override;
     int32_t FreeOutput(uint32_t bufferIndex) override;
 
 protected:

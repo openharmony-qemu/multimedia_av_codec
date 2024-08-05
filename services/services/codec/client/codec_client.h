@@ -40,6 +40,7 @@ public:
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
                  Media::Meta &callerInfo, API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
@@ -63,6 +64,7 @@ public:
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag) override;
 #endif
+    int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
 
     void AVCodecServerDied();
 
@@ -80,6 +82,7 @@ public:
 private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
+    void UpdateFormat(Format &format);
     void SetNeedListen(const bool needListen);
     void InitLabel(AVCodecType type);
     typedef enum : uint32_t {
@@ -98,6 +101,7 @@ private:
     bool hasOnceConfigured_ = false;
     uint32_t callbackMode_ = INVALID_CALLBACK;
     uint32_t codecMode_ = CODEC_BUFFER_MODE;
+    AVCodecType type_ = AVCODEC_TYPE_NONE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;

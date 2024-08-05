@@ -29,6 +29,8 @@ namespace HttpPlugin {
 struct DashPreparedAction {
     int64_t seekPosition_ {-1};
     DashMpdBitrateParam preparedBitrateParam_;
+    DashMpdTrackParam preparedAudioParam_;
+    DashMpdTrackParam preparedSubtitleParam_;
 };
 
 class DashMediaDownloader : public MediaDownloader, public DashMpdCallback {
@@ -50,6 +52,7 @@ public:
     bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitrate) override;
+    Status SelectStream(int32_t streamId) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void SetDownloadErrorState() override;
@@ -60,19 +63,32 @@ public:
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void UpdateDownloadFinished(int streamId);
     void SetInterruptState(bool isInterruptNeeded) override;
+    Status SetCurrentBitRate(int32_t bitRate) override;
+    void SetDemuxerState(int32_t streamId) override;
 
 private:
     void ReceiveMpdStreamInitEvent();
     void ReceiveMpdParseOkEvent();
     void VideoSegmentDownloadFinished(int streamId);
     void GetSegmentToDownload(int downloadStreamId, bool streamSwitchFlag);
-    bool SelectBitrateInternal(uint32_t bitrate);
+    void CleanVideoSegmentBuffer(bool &bufferCleanFlag, int64_t &remainLastNumberSeq);
+    bool SelectBitrateInternal(bool bufferCleanFlag, int64_t remainLastNumberSeq);
     bool CheckAutoSelectBitrate(int streamId);
     uint32_t GetNextBitrate(std::shared_ptr<DashSegmentDownloader> segmentDownloader);
     bool AutoSelectBitrateInternal(uint32_t bitrate);
+    bool IsSeekingInSwitch();
     void SeekInternal(int64_t seekTimeMs);
-    bool DoPreparedAction();
+    Status SelectAudio(const std::shared_ptr<DashStreamDescription> &streamDesc);
+    Status SelectAudioInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
+    Status SelectSubtitle(const std::shared_ptr<DashStreamDescription> &streamDesc);
+    Status SelectSubtitleInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
+    bool DoPreparedSwitchBitrate(bool preActionSwitchBitrate, int &streamId);
+    bool DoPreparedSwitchAudio(bool preActionSwitchAduio, int &streamId);
+    bool DoPreparedSwitchSubtitle(bool preActionSwitchSubtitle, int &streamId);
+    bool DoPreparedAction(int &streamId);
+    void UpdateSegmentIndexAfterSidxParseOk();
     void ResetBitrateParam();
+    void ResetTrackParam();
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloader(int32_t streamId);
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type);
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
@@ -91,8 +107,10 @@ private:
     bool downloadErrorState_ {false};
     int64_t breakpoint_ {0};
     DashMpdBitrateParam bitrateParam_;
+    DashMpdTrackParam trackParam_;
     DashPreparedAction preparedAction_;
     std::mutex switchMutex_;
+    std::mutex parseSidxMutex_;
     uint64_t expectDuration_{0};
 };
 }

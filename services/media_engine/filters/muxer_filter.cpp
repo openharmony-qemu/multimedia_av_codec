@@ -30,6 +30,7 @@ static const std::unordered_map<OHOS::Media::Plugins::OutputFormat, std::string>
     {OHOS::Media::Plugins::OutputFormat::M4A, OHOS::Media::Plugins::MimeType::MEDIA_M4A},
     {OHOS::Media::Plugins::OutputFormat::AMR, OHOS::Media::Plugins::MimeType::MEDIA_AMR},
     {OHOS::Media::Plugins::OutputFormat::MP3, OHOS::Media::Plugins::MimeType::MEDIA_MP3},
+    {OHOS::Media::Plugins::OutputFormat::WAV, OHOS::Media::Plugins::MimeType::MEDIA_WAV},
 };
 }
 
@@ -250,6 +251,14 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         audioCodecMimeType_ = mimeType;
     } else if (mimeType.find("video/") == 0) {
         videoCodecMimeType_ = mimeType;
+    } else if (mimeType.find("meta/") == 0) {
+        metaDataCodecMimeType_ = mimeType;
+        std::string srcMimeType;
+        meta->Get<Tag::TIMED_METADATA_SRC_TRACK_MIME>(srcMimeType);
+        if (trackIndexMap_.find(srcMimeType) != trackIndexMap_.end()) {
+            auto sourceTrackIndex = trackIndexMap_.at(videoCodecMimeType_);
+            meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
+        }
     }
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK) {
@@ -257,6 +266,7 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         SetFaultEvent("MuxerFilter::OnLinked error", (int32_t)ret);
         return ret;
     }
+    trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
@@ -356,6 +366,7 @@ void MuxerFilter::SetFaultEvent(const std::string &errMsg)
     muxerFaultInfo.callerType = "player_framework";
     muxerFaultInfo.videoCodec = videoCodecMimeType_;
     muxerFaultInfo.audioCodec = audioCodecMimeType_;
+    muxerFaultInfo.metaCodec = metaDataCodecMimeType_;
     muxerFaultInfo.containerFormat = GetContainerFormat(outputFormat_);
     muxerFaultInfo.errMsg = errMsg;
     FaultMuxerEventWrite(muxerFaultInfo);

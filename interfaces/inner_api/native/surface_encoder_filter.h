@@ -26,6 +26,7 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
+#include "avcodec_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,6 +40,7 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
+    Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer);
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
     sptr<Surface> GetInputSurface();
@@ -61,6 +63,7 @@ public:
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

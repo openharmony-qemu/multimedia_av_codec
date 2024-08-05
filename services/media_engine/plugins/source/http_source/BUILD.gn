@@ -47,14 +47,31 @@ config("http_source_plugin_config") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
-    "//third_party/curl/include",
-    "//third_party/openssl/include",
   ]
 }
 
 ohos_shared_library("media_plugin_HttpSource") {
   stack_protector_ret = true
   install_enable = true
+  sanitize = av_codec_sanitize
+
+  configs = [
+    ":http_source_plugin_config",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  deps = [
+    ":media_plugin_HttpSource_static",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client:http_curl_client",
+  ]
+
+  relative_install_dir = "media/media_plugins"
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}
+
+ohos_static_library("media_plugin_HttpSource_static") {
+  stack_protector_ret = true
   sanitize = av_codec_sanitize
 
   configs = [
@@ -93,7 +110,6 @@ ohos_shared_library("media_plugin_HttpSource") {
     "dash/mpd_parser/sidx_box_parser.cpp",
     "dash/utils/time_utils.cpp",
     "download/downloader.cpp",
-    "download/http_curl_client.cpp",
     "hls/hls_media_downloader.cpp",
     "hls/hls_playlist_downloader.cpp",
     "hls/hls_tags.cpp",
@@ -107,13 +123,9 @@ ohos_shared_library("media_plugin_HttpSource") {
     "xml/xml_parser.cpp",
   ]
 
-  deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "//third_party/curl:curl_shared",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
-  external_deps = [
+  public_external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
@@ -121,11 +133,10 @@ ohos_shared_library("media_plugin_HttpSource") {
     "ipc:ipc_single",
     "libxml2:libxml2",
     "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

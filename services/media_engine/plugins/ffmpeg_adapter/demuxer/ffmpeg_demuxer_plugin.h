@@ -65,7 +65,6 @@ public:
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
-    Status ParserRefInit(int64_t timeStampMs) override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
@@ -77,6 +76,7 @@ public:
         int64_t presentationTimeUs, uint32_t &frameIndex) override;
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
         uint32_t frameIndex, int64_t &presentationTimeUs) override;
+    void SetCacheLimit(uint32_t limitSize) override;
 
 private:
     enum DumpMode : unsigned long {
@@ -93,7 +93,7 @@ private:
         std::atomic<bool> retry {false};
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
-        DumpMode dumpMode;
+        DumpMode dumpMode {DUMP_NONE};
     };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
@@ -109,11 +109,11 @@ private:
 
     void InitBitStreamContext(const AVStream& avStream);
     void ConvertAvcToAnnexb(AVPacket& pkt);
-    void PushEOSToAllCache();
+    Status PushEOSToAllCache();
     void ShowSelectedTracks();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    void AddPacketToCacheQueue(AVPacket *pkt);
+    Status AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -127,15 +127,22 @@ private:
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
     void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
     int FindNaluSpliter(int size, const uint8_t *data);
     bool CanDropAvcPkt(const AVPacket& pkt);
     bool CanDropHevcPkt(const AVPacket& pkt);
     void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
+    void ParserFirstDts();
+    Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status ParserBoxInfo();
-    Status ParserFirstDts();
+    Status SelectProGopId();
+    void ParserBoxInfo();
+    bool WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead);
+    bool IsWebvttMP4(const AVStream *avStream);
+    void WebvttMP4EOSProcess(AVPacket *vttPkt);
+    Status CheckCacheDataLimit(uint32_t trackId);
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -151,7 +158,7 @@ private:
     std::shared_ptr<StreamParserManager> streamParser_ {nullptr};
     bool streamParserInited_ {false};
 
-    void GetVideoFirstKeyFrame(uint32_t trackIndex);
+    Status GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
     AVPacket *firstFrame_ = nullptr;
 
@@ -169,7 +176,8 @@ private:
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
-
+    bool isInit_ = false;
+    uint32_t cachelimitSize_ = 0;
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track

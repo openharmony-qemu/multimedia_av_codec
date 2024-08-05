@@ -48,11 +48,10 @@ public:
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
     Status Stop() override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetBundleName(const std::string& bundleName) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
     void SetInterruptState(bool isInterruptNeeded) override;
-    Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void NotifyBufferingStart();
     void NotifyBufferingPercent();
     void NotifyBufferingEnd();
@@ -76,8 +75,10 @@ private:
     void GetCurrentSpeed(int64_t curTime);
     float GetCacheTime(float num);
     void UpdateWaterLineAbove();
-    void DeleteCacheBuffer(char* buffer);
-
+    void DeleteCacheBuffer(char* buffer, size_t bufferSize);
+    void CheckReadTime();
+    bool IsValidTime(int64_t curTime, int64_t lastTime);
+    
     int32_t fd_ {-1};
     int64_t offset_ {0};
     uint64_t size_ {0};

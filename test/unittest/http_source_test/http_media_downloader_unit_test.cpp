@@ -14,22 +14,45 @@
  */
 
 #include "http_media_downloader_unit_test.h"
+#include "http_server_demo.h"
 
 #define LOCAL true
 namespace OHOS::Media::Plugins::HttpPlugin {
-
 using namespace std;
 using namespace testing::ext;
-constexpr size_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr size_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
-std::string flvUrl = "www.baidu.flv";
+
+const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
+const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
+
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
+std::shared_ptr<HttpMediaDownloader> MP4httpMediaDownloader;
+std::shared_ptr<HttpMediaDownloader> FLVhttpMediaDownloader;
+bool g_flvResult = false;
+bool g_mp4Result = false;
 
 void HttpMediaDownloaderUnitTest::SetUpTestCase(void)
 {
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+    MP4httpMediaDownloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE);
+    FLVhttpMediaDownloader = std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    MP4httpMediaDownloader->SetStatusCallback(statusCallback);
+    FLVhttpMediaDownloader->SetStatusCallback(statusCallback);
+    std::map<std::string, std::string> httpHeader;
+    g_flvResult = FLVhttpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
+    g_mp4Result = MP4httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
 }
 
 void HttpMediaDownloaderUnitTest::TearDownTestCase(void)
 {
+    MP4httpMediaDownloader->Close(true);
+    FLVhttpMediaDownloader->Close(true);
+    MP4httpMediaDownloader = nullptr;
+    FLVhttpMediaDownloader = nullptr;
+    g_server->StopServer();
+    g_server = nullptr;
 }
 
 void HttpMediaDownloaderUnitTest::SetUp()
@@ -40,44 +63,41 @@ void HttpMediaDownloaderUnitTest::TearDown()
 {
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, GetContentLength, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(flvUrl);
-    EXPECT_EQ(downloader.GetBufferSize(), 0);
+    MP4httpMediaDownloader->GetContentLength();
+    FLVhttpMediaDownloader->GetContentLength();
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructor_001, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, GetStartedStatus, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(flvUrl);
-    EXPECT_EQ(downloader.GetBufferSize(), 0);
+    MP4httpMediaDownloader->startedPlayStatus_ = false;
+    FLVhttpMediaDownloader->startedPlayStatus_ = false;
+    EXPECT_FALSE(MP4httpMediaDownloader->GetStartedStatus());
+    EXPECT_FALSE(FLVhttpMediaDownloader->GetStartedStatus());
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorDefine, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(flvUrl, 10);
-    EXPECT_EQ(downloader.GetBufferSize(), 2*RING_BUFFER_SIZE);
+    EXPECT_TRUE(g_flvResult);
+    EXPECT_TRUE(g_mp4Result);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorExceed, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_PAUSE_RESUME, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(flvUrl, 10000);
-    EXPECT_EQ(downloader.GetBufferSize(), MAX_BUFFER_SIZE);
+    MP4httpMediaDownloader->Pause();
+    FLVhttpMediaDownloader->Pause();
+    EXPECT_TRUE(MP4httpMediaDownloader->isInterrupt_);
+    EXPECT_TRUE(FLVhttpMediaDownloader->isInterrupt_);
+    MP4httpMediaDownloader->Resume();
+    FLVhttpMediaDownloader->Resume();
+    EXPECT_FALSE(MP4httpMediaDownloader->isInterrupt_);
+    EXPECT_FALSE(FLVhttpMediaDownloader->isInterrupt_);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TestDefaultConstructorLess, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering1, TestSize.Level1)
 {
-    HttpMediaDownloader downloader(flvUrl, 1);
-    EXPECT_EQ(downloader.GetBufferSize(), RING_BUFFER_SIZE);
+    MP4httpMediaDownloader->isBuffering_ = false;
+    EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
 }
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TestOpenWithValidUrl, TestSize.Level1)
-{
-    HttpMediaDownloader downloader(flvUrl);
-    std::map<std::string, std::string> header = {{"a", "b"}};
-    Source* source = new Source();
-    downloader.SetCallback(source);
-    bool result = downloader.Open("http://127.0.0.0:4666/dewu.mp4", header);
-    EXPECT_FALSE(result);
-}
-
 }

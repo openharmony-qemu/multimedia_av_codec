@@ -23,7 +23,7 @@ namespace Media {
 namespace Plugins {
 class ReferenceParserManager {
 public:
-    static std::shared_ptr<ReferenceParserManager> Create(CodecType codecType, std::vector<uint32_t> IFramePos);
+    static std::shared_ptr<ReferenceParserManager> Create(CodecType codecType, std::vector<uint32_t> &IFramePos);
     ReferenceParserManager() {};
     ReferenceParserManager(const ReferenceParserManager &) = delete;
     ReferenceParserManager operator=(const ReferenceParserManager &) = delete;
@@ -43,7 +43,7 @@ private:
     static void *handler_;
     static void *LoadPluginFile(const std::string &path);
     static bool CheckSymbol(void *handler);
-    using CreateFunc = RefParser *(*)(CodecType, std::vector<uint32_t>);
+    using CreateFunc = RefParser *(*)(CodecType, std::vector<uint32_t>&);
     using DestroyFunc = void (*)(RefParser *);
     static CreateFunc createFunc_;
     static DestroyFunc destroyFunc_;

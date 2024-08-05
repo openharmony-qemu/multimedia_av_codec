@@ -17,6 +17,8 @@
 #define MEDIA_DEMUXER_UNIT_TEST_H
 
 #include "media_demuxer.h"
+#include "demuxer_plugin_manager.h"
+#include "stream_demuxer.h"
 #include "gtest/gtest.h"
 #include "source/source.h"
 #include "common/media_source.h"
@@ -34,6 +36,122 @@ public:
     void SetUp(void);
 
     void TearDown(void);
+};
+
+class DemuxerPluginMock : public Plugins::DemuxerPlugin {
+public:
+    explicit DemuxerPluginMock(std::string name) : DemuxerPlugin(name)
+    {
+        mapStatus_["StatusOK"] = Status::OK;
+        mapStatus_["StatusErrorUnknown"] = Status::ERROR_UNKNOWN;
+        name_ = name;
+    }
+    ~DemuxerPluginMock()
+    {
+    }
+    virtual Status Reset()
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Start()
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Stop()
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Flush()
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status SetDataSource(const std::shared_ptr<DataSource>& source)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetMediaInfo(MediaInfo& mediaInfo)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetUserMeta(std::shared_ptr<Meta> meta)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status SelectTrack(uint32_t trackId)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status UnselectTrack(uint32_t trackId)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode,
+        int64_t& realSeekTime)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+    {
+        return mapStatus_[name_];
+    }
+    virtual void ResetEosStatus()
+    {
+        return;
+    }
+    virtual Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status ParserRefInfo() override
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample,
+        FrameLayerInfo &frameLayerInfo)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetIFramePos(std::vector<uint32_t> &IFramePos)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true)
+    {
+        return mapStatus_[name_];
+    }
+    virtual Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
+        int64_t presentationTimeUs, uint32_t &frameIndex)
+    {
+        return mapStatus_[name_];
+    }
+    virtual  Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
+        uint32_t frameIndex, int64_t &presentationTimeUs)
+    {
+        return mapStatus_[name_];
+    }
+    virtual void SetCacheLimit(uint32_t limitSize)
+    {
+        return;
+    }
+private:
+    std::map<std::string, Status> mapStatus_;
+    std::string name_;
 };
 
 }

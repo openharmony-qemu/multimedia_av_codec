@@ -38,11 +38,23 @@ enum StreamType {
     SUBTITLE
 };
 
+enum VideoType {
+    VIDEO_TYPE_SDR = 0,
+    VIDEO_TYPE_HDR_VIVID = 1,
+    VIDEO_TYPE_HDR_10
+};
+
 class StreamInfo {
 public:
     int32_t streamId;
     StreamType type;
     uint32_t bitRate;
+
+    int32_t videoHeight = 0;
+    int32_t videoWidth = 0;
+    std::string lang = "";
+    VideoType videoType = VideoType::VIDEO_TYPE_SDR;
+    std::string trackName = "";
 };
 
 /**
@@ -141,13 +153,18 @@ public:
 
     virtual Status Reset() = 0;
 
-    virtual void SetDemuxerState() {}
+    virtual void SetDemuxerState(int32_t streamId) {}
 
     virtual void SetDownloadErrorState() {}
 
     virtual void SetBundleName(const std::string& bundleName) {}
 
     virtual Status GetDownloadInfo(DownloadInfo& downloadInfo)
+    {
+        return Status::OK;
+    }
+
+    virtual Status GetPlaybackInfo(PlaybackInfo& playbackInfo)
     {
         return Status::OK;
     }
@@ -196,6 +213,11 @@ public:
     }
 
     virtual Status GetStreamInfo(std::vector<StreamInfo>& streams)
+    {
+        return Status::OK;
+    }
+
+    virtual Status SelectStream(int32_t streamID)
     {
         return Status::OK;
     }

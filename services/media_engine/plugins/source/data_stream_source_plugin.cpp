@@ -166,18 +166,17 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
     } while (realLen < 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
     FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
-    offset_ += realLen;
+    offset_ += static_cast<uint64_t>(realLen);
     if (buffer && buffer->GetMemory()) {
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
     } else {
         buffer = WrapAVSharedMemory(memory, realLen);
     }
+    FALSE_RETURN_V(buffer != nullptr, Status::ERROR_AGAIN);
     MEDIA_LOG_D("DataStreamSourcePlugin Read, size: " PUBLIC_LOG_ZU ", realLen: " PUBLIC_LOG_D32
         ", retryTimes: " PUBLIC_LOG_U32, (buffer && buffer->GetMemory()) ?
         buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
-    if (realLen == 0) {
-        return Status::ERROR_AGAIN;
-    }
+    FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     return Status::OK;
 }
 
@@ -207,7 +206,7 @@ void DataStreamSourcePlugin::HandleBufferingEnd()
 Status DataStreamSourcePlugin::GetSize(uint64_t& size)
 {
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
-        size = size_;
+        size = static_cast<uint64_t>(size_);
     } else {
         size = std::max(static_cast<size_t>(offset_), DEFAULT_PREDOWNLOAD_SIZE_BYTE);
     }

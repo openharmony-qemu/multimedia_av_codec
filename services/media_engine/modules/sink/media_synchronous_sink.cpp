@@ -19,7 +19,7 @@
 #include "plugin/plugin_time.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediaSynchronousSink" };
 }
 
 namespace OHOS {
@@ -91,7 +91,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
     int64_t trackStartTime = 0;
     meta->GetData(Tag::MEDIA_START_TIME, trackStartTime);
     uint32_t trackId = 0;
-    FALSE_LOG(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
+    (void)(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
         syncCenter->SetMediaTimeRangeStart(Plugins::HstTime2Us(trackStartTime), trackId, this);
@@ -102,7 +102,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
             syncCenter->SetMediaTimeRangeEnd(trackDuration + trackStartTime, trackId, this);
         }
     } else {
-        MEDIA_LOG_W("Get duration failed");
+        MEDIA_LOG_D_SHORT("Get duration failed");
         if (syncCenter) {
             syncCenter->SetMediaTimeRangeEnd(INT64_MAX, trackId, this);
         }

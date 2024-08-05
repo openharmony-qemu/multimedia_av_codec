@@ -138,6 +138,15 @@ int32_t CodecBase::Configure(const Format &format)
     return mock->Configure();
 }
 
+int32_t CodecBase::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("");
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->SetCustomBuffer(buffer);
+}
+
 int32_t CodecBase::Start()
 {
     std::lock_guard<std::mutex> lock(g_mutex);

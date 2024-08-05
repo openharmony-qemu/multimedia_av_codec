@@ -74,6 +74,9 @@ ohos_fuzztest("AudioDecoderFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
   ]
+
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 ###############################################################################

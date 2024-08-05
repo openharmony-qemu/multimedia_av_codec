@@ -88,7 +88,6 @@ static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
     (void)codec;
     (void)errorCode;
     (void)userData;
-    cout << "Error received, errorCode:" << errorCode << endl;
 }
 
 static void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
@@ -119,8 +118,6 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     if (buffer) {
         cout << "OnOutputBufferAvailable received, index:" << index << ", size:" << buffer->buffer_->memory_->GetSize()
              << ", flags:" << buffer->buffer_->flag_ << ", pts: " << buffer->buffer_->pts_ << endl;
-    } else {
-        cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
     }
     signal->outCond_.notify_all();
 }
