@@ -588,7 +588,8 @@ int32_t CodecServer::GetOutputFormat(Format &format)
 }
 
 
-int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, int32_t svpFlag)
+int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    int32_t svpFlag)
 {
     AVCODEC_LOGI("CheckDrmSvpConsistency");
     // check codec name when secure video path is false
@@ -596,7 +597,7 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
         std::string tmpName = codecName_;
         transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
         if (tmpName.find(".secure") != std::string::npos) {
-            AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is false but the decoder is secure!");
+            AVCODEC_LOGE("CheckDrmSvpConsistency failed, svpFlag is false but the decoder is secure!");
             return AVCS_ERR_INVALID_VAL;
         }
         return AVCS_ERR_OK;
@@ -606,7 +607,7 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
     std::string tmpName = codecName_;
     transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
     if (tmpName.find(".secure") == std::string::npos) {
-        AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is true but the decoder is not secure!");
+        AVCODEC_LOGE("CheckDrmSvpConsistency failed, svpFlag is true but the decoder is not secure!");
         return AVCS_ERR_INVALID_VAL;
     }
 
@@ -618,10 +619,10 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
     CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_VAL, "GetContentProtectionLevel failed");
     if (sessionLevel <
         DrmStandard::IMediaKeySessionService::ContentProtectionLevel::CONTENT_PROTECTION_LEVEL_HW_CRYPTO) {
-        AVCODEC_LOGE("SetDecryptionConfig failed, key session's content protection level is too low!");
+        AVCODEC_LOGE("CheckDrmSvpConsistency failed, key session's content protection level is too low!");
         return AVCS_ERR_INVALID_VAL;
     }
-#endif 
+#endif
 
     return AVCS_ERR_OK;
 }
