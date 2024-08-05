@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,7 +30,7 @@
 
 namespace OHOS {
 namespace Media {
-class DemuxerCapNdkTest : public testing::Test {
+class DemuxerFunc2NdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -57,14 +57,14 @@ constexpr int32_t VTTBACK = 4;
 constexpr int32_t VTTFORWARD = 7;
 constexpr int32_t VTTSEEKFORWARD = 5100;
 constexpr int32_t VTTSEEKBACK = 2100;
-void DemuxerCapNdkTest::SetUpTestCase() {}
-void DemuxerCapNdkTest::TearDownTestCase() {}
-void DemuxerCapNdkTest::SetUp()
+void DemuxerFunc2NdkTest::SetUpTestCase() {}
+void DemuxerFunc2NdkTest::TearDownTestCase() {}
+void DemuxerFunc2NdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
-void DemuxerCapNdkTest::TearDown()
+void DemuxerFunc2NdkTest::TearDown()
 {
     if (trackFormat != nullptr) {
         OH_AVFormat_Destroy(trackFormat);
@@ -122,7 +122,7 @@ static int64_t GetFileSize(const char *fileName)
  * @tc.name      : create vtt demuxer with file and read
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_4800, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_4800, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -168,7 +168,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_4800, TestSize.Level0)
  * @tc.name      : create vtt demuxer with file and forward back seek+read
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_4900, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_4900, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -224,7 +224,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_4900, TestSize.Level0)
  * @tc.name      : create vtt demuxer with file and back seek+read
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5000, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_5000, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -280,7 +280,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5000, TestSize.Level0)
  * @tc.name      : create vtt demuxer with file and forward seek+read
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5100, TestSize.Level0)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_5100, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -336,7 +336,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5100, TestSize.Level0)
  * @tc.name      : create vtt demuxer with error file -- no empty paragraphs
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5600, TestSize.Level2)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_5600, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -376,7 +376,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5600, TestSize.Level2)
  * @tc.name      : create vtt demuxer with error file -- subtitle sequence error
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5700, TestSize.Level2)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_5700, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -416,7 +416,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5700, TestSize.Level2)
  * @tc.name      : create vtt demuxer with error file -- timeline format error null
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5800, TestSize.Level2)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_5800, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/vtt_5800.vtt";
@@ -444,7 +444,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5800, TestSize.Level2)
  * @tc.name      : create vtt demuxer with error file -- subtitle is empty
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5900, TestSize.Level2)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_5900, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
@@ -485,7 +485,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_5900, TestSize.Level2)
  * @tc.desc      : function test
  * fail
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_6000, TestSize.Level2)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_6000, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     const char *file = "/data/test/media/vtt_6000.vtt";
@@ -508,7 +508,7 @@ HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_6000, TestSize.Level2)
  * @tc.name      : create vtt demuxer with error file -- alternating Up and Down Times
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerCapNdkTest, SUB_MEDIA_DEMUXER_VTT_6100, TestSize.Level2)
+HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_6100, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     const char* mimeType = nullptr;
