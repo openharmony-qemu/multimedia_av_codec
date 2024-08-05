@@ -71,7 +71,6 @@ void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>
 
 void PlayListDownloader::DoOpen(const std::string& url)
 {
-    playList_.clear();
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                       std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
@@ -204,6 +203,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
     ParseManifest(location);
+    playList_.clear();
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -230,9 +230,6 @@ void PlayListDownloader::ParseManifest(const std::string& location, bool isPrePa
 void PlayListDownloader::Resume()
 {
     MEDIA_LOG_I("PlayListDownloader::Resume.");
-    if (downloader_ != nullptr) {
-        downloader_->Resume();
-    }
     if (IsLive() && updateTask_ != nullptr) {
         MEDIA_LOG_I("updateTask_ Start.");
         updateTask_->Start();
@@ -252,14 +249,6 @@ void PlayListDownloader::Pause(bool isAsync)
         } else {
             updateTask_->Pause();
         }
-    }
-    if (downloader_ == nullptr) {
-        return;
-    }
-    if (isAsync) {
-        downloader_->Pause(true);
-    } else {
-        downloader_->Pause();
     }
 }
 
