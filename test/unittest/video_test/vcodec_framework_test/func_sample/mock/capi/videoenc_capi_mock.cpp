@@ -224,6 +224,11 @@ int32_t VideoEncCapiMock::Configure(std::shared_ptr<FormatMock> format)
     }
 }
 
+int32_t VideoEncCapiMock::Prepare()
+{
+    return OH_VideoEncoder_Prepare(codec_);
+}
+
 int32_t VideoEncCapiMock::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
 {
     (void)buffer;

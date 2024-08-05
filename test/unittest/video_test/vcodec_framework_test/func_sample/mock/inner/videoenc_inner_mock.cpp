@@ -181,6 +181,14 @@ int32_t VideoEncInnerMock::Configure(std::shared_ptr<FormatMock> format)
     return AV_ERR_UNKNOWN;
 }
 
+int32_t VideoEncInnerMock::Prepare()
+{
+    if (videoEnc_ != nullptr) {
+        return videoEnc_->Prepare();
+    }
+    return AV_ERR_UNKNOWN;
+}
+
 int32_t VideoEncInnerMock::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
 {
     if (videoEnc_ != nullptr) {
