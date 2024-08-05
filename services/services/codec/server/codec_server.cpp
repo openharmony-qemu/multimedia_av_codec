@@ -592,10 +592,11 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
     int32_t svpFlag)
 {
     AVCODEC_LOGI("CheckDrmSvpConsistency");
+    std::string tmpName = codecName_;
+    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+
     // check codec name when secure video path is false
     if (svpFlag == false) {
-        std::string tmpName = codecName_;
-        transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
         if (tmpName.find(".secure") != std::string::npos) {
             AVCODEC_LOGE("CheckDrmSvpConsistency failed, svpFlag is false but the decoder is secure!");
             return AVCS_ERR_INVALID_VAL;
@@ -604,8 +605,6 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
     }
 
     // check codec name when secure video path is true
-    std::string tmpName = codecName_;
-    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
     if (tmpName.find(".secure") == std::string::npos) {
         AVCODEC_LOGE("CheckDrmSvpConsistency failed, svpFlag is true but the decoder is not secure!");
         return AVCS_ERR_INVALID_VAL;
