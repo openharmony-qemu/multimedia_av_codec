@@ -57,6 +57,7 @@ constexpr int32_t RETRY_TIMES                   = 3;
 constexpr int32_t TO_BYTE                       = 8;
 constexpr int32_t PERCENT_100                   = 100;
 constexpr int32_t MAX_RANK                      = 100;
+constexpr int32_t READ_RETRY                    = 2;
 constexpr float CACHE_LEVEL_1                   = 0.3;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
@@ -217,7 +218,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
 
-    size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, 2);
+    size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, READ_RETRY);
     if (size == 0) {
         FALSE_RETURN_V_MSG_E(GetLastSize(position_) != 0, Status::END_OF_STREAM, "ReadCloud END_OF_STREAM");
         MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_D64 ", size_ "
