@@ -28,6 +28,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
+constexpr uint32_t maxCacheLimitSize = 50 * 1024 * 1024;
 }
 
 namespace OHOS {
@@ -137,7 +138,9 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
         return Status::ERROR_INVALID_PARAMETER;
     }
     mediaSource_ = source;
-    return demuxer_->SetDataSource(mediaSource_);
+    Status ret = demuxer_->SetDataSource(mediaSource_);
+    demuxer_->SetCacheLimit(maxCacheLimitSize);
+    return ret;
 }
 
 Status DemuxerFilter::SetSubtitleSource(const std::shared_ptr<MediaSource> source)
@@ -183,15 +186,28 @@ Status DemuxerFilter::DoPrepare()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     FALSE_RETURN_V_MSG_E(mediaSource_ != nullptr, Status::ERROR_INVALID_PARAMETER, "No valid media source");
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
-    size_t trackCount = trackInfos.size();
-    MEDIA_LOG_I_SHORT("trackCount: %{public}d", trackCount);
-    if (trackCount == 0) {
+    MEDIA_LOG_I_SHORT("trackCount: %{public}d", trackInfos.size());
+    if (trackInfos.size() == 0) {
         MEDIA_LOG_E_SHORT("Doprepare: trackCount is invalid.");
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
         return Status::ERROR_INVALID_PARAMETER;
     }
     int32_t successNodeCount = 0;
-    for (size_t index = 0; index < trackCount; index++) {
+    Status ret = HandleTrackInfos(trackInfos, successNodeCount);
+    if (ret != Status::OK) {
+        return ret;
+    }
+    if (successNodeCount == 0) {
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
+    return Status::OK;
+}
+
+Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount)
+{
+    Status ret = Status::OK;
+    for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
         std::string mime;
@@ -216,18 +232,14 @@ Status DemuxerFilter::DoPrepare()
             MEDIA_LOG_W_SHORT("callback is nullptr");
             continue;
         }
-        auto ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
         if (ret != Status::OK) {
             FaultDemuxerEventInfoWrite(streamType);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
         successNodeCount++;
     }
-    if (successNodeCount == 0) {
-        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_CONTAINER_TYPE});
-        return Status::ERROR_UNSUPPORTED_FORMAT;
-    }
-    return Status::OK;
+    return ret;
 }
 
 void DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
@@ -538,6 +550,14 @@ Status DemuxerFilter::GetDownloadInfo(DownloadInfo& downloadInfo)
     return demuxer_->GetDownloadInfo(downloadInfo);
 }
 
+Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (demuxer_ == nullptr) {
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return demuxer_->GetPlaybackInfo(playbackInfo);
+}
+
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
 {
     if (mediaSource_ == nullptr) {
@@ -588,6 +608,8 @@ bool DemuxerFilter::ShouldTrackSkipped(Plugins::MediaType mediaType, std::string
         return true;
     } else if (!disabledMediaTracks_.empty() && disabledMediaTracks_.find(mediaType) != disabledMediaTracks_.end()) {
         MEDIA_LOG_W_SHORT("mediaType disabled, index: %zu", index);
+        return true;
+    } else if (mediaType == Plugins::MediaType::TIMEDMETA) {
         return true;
     }
     return false;
@@ -728,6 +750,12 @@ Status DemuxerFilter::PauseDemuxerReadLoop()
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_OPERATION, "PauseDemuxerReadLoop failed.");
     MEDIA_LOG_I("PauseDemuxerReadLoop start.");
     return demuxer_->PauseDemuxerReadLoop();
+}
+
+bool DemuxerFilter::IsVideoEos()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, false, "demuxer_ is nullptr");
+    return demuxer_->IsVideoEos();
 }
 } // namespace Pipeline
 } // namespace Media

@@ -246,8 +246,8 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
 int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
 {
     if (!caps_.port.video.isSupportWaterMark) {
-        HLOGW("this device dont support water mark, ignore");
-        return AVCS_ERR_OK;
+        HLOGE("this device dont support water mark");
+        return AVCS_ERR_UNSUPPORT;
     }
     if (buffer == nullptr || buffer->memory_ == nullptr || buffer->meta_ == nullptr) {
         HLOGE("invalid buffer");
@@ -1069,6 +1069,7 @@ void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
     }
     const BufferInfo &info = pool[i];
     FreeOmxBuffer(portIndex, info);
+    ReduceOwner((portIndex == OMX_DirInput), info.owner);
     pool.erase(pool.begin() + i);
 }
 
@@ -1207,8 +1208,8 @@ void HEncoder::TraverseAvaliableSlots()
 
 void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
 {
-    ChangeOwner(info, BufferOwner::OWNED_BY_US);
     if (entry.item == nullptr) {
+        ChangeOwner(info, BufferOwner::OWNED_BY_US);
         HLOGI("got input eos");
         inputPortEos_ = true;
         info.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
@@ -1217,9 +1218,9 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         return;
     }
     if (!WaitFence(entry.item->fence)) {
-        ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
         return;
     }
+    ChangeOwner(info, BufferOwner::OWNED_BY_US);
     WrapSurfaceBufferToSlot(info, entry.item->buffer, entry.pts, 0);
     encodingBuffers_[info.bufferId] = entry;
     if (enableSurfaceModeInputCb_) {

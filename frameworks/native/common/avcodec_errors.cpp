@@ -177,7 +177,8 @@ const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
     {Status::ERROR_SURFACE_INNER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
     {Status::ERROR_NULL_SURFACE_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
     {Status::ERROR_IPC_WRITE_INTERFACE_TOKEN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
-    {Status::ERROR_IPC_SEND_REQUEST, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN}};
+    {Status::ERROR_IPC_SEND_REQUEST, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_DRM_DECRYPT_FAILED, AVCodecServiceErrCode::AVCS_ERR_DECRYPT_FAILED}};
 
 std::string ErrorMessageOk(const std::string &param1, const std::string &param2)
 {

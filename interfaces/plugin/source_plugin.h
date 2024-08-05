@@ -153,13 +153,18 @@ public:
 
     virtual Status Reset() = 0;
 
-    virtual void SetDemuxerState() {}
+    virtual void SetDemuxerState(int32_t streamId) {}
 
     virtual void SetDownloadErrorState() {}
 
     virtual void SetBundleName(const std::string& bundleName) {}
 
     virtual Status GetDownloadInfo(DownloadInfo& downloadInfo)
+    {
+        return Status::OK;
+    }
+
+    virtual Status GetPlaybackInfo(PlaybackInfo& playbackInfo)
     {
         return Status::OK;
     }

@@ -350,6 +350,7 @@ int32_t HCodec::StartingState::AllocateBuffers()
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    codec_->UpdateOwner();
     return AVCS_ERR_OK;
 }
 
@@ -436,6 +437,10 @@ void HCodec::StartingState::OnStateExited()
             codec_->ClearBufferPool(OMX_DirOutput);
         }
     }
+    codec_->lastOwnerChangeTime_ = chrono::steady_clock::now();
+    ParamSP param = make_shared<ParamBundle>();
+    param->SetValue(KEY_LAST_OWNER_CHANGE_TIME, codec_->lastOwnerChangeTime_);
+    codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, param, THREE_SECONDS_IN_US);
     BaseState::OnStateExited();
 }
 
@@ -487,6 +492,10 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             sptr<Surface> surface;
             (void)info.param->GetValue("surface", surface);
             ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->OnPrintAllBufferOwner(info);
             return;
         }
         default:
@@ -619,6 +628,10 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
             return;
         }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->OnPrintAllBufferOwner(info);
+            return;
+        }
         default: {
             BaseState::OnMsgReceived(info);
         }
@@ -697,6 +710,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
         int32_t err = codec_->compNode_->SendCommand(CODEC_COMMAND_PORT_ENABLE, OMX_DirOutput, {});
         if (err == HDF_SUCCESS) {
             ret = codec_->AllocateBuffersOnPort(OMX_DirOutput);
+            codec_->UpdateOwner(false);
         } else {
             SLOGE("ask omx to enable out port failed, ret=%d", ret);
             ret = AVCS_ERR_UNKNOWN;
@@ -764,6 +778,10 @@ void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::CHECK_IF_STUCK: {
             OnCheckIfStuck(info);
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->OnPrintAllBufferOwner(info);
             return;
         }
         default: {

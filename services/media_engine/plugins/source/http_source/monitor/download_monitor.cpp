@@ -89,10 +89,12 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
-    haveReadData_ += readDataInfo.realReadLength_;
-    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U32, haveReadData_);
+    if (ULLONG_MAX - haveReadData_ > readDataInfo.realReadLength_) {
+        haveReadData_ += readDataInfo.realReadLength_;
+    }
+    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
     if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
-        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U32, haveReadData_);
+        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U64, haveReadData_);
     }
     return ret;
 }
@@ -218,9 +220,9 @@ void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
     downloader_->SetIsTriggerAutoMode(isAuto);
 }
 
-void DownloadMonitor::SetDemuxerState()
+void DownloadMonitor::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState();
+    downloader_->SetDemuxerState(streamId);
 }
 
 void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
@@ -258,6 +260,14 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
     if (downloader_ != nullptr) {
         MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
         downloader_->GetDownloadInfo(downloadInfo);
+    }
+}
+
+void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetPlaybackInfo");
+        downloader_->GetPlaybackInfo(playbackInfo);
     }
 }
 

@@ -81,6 +81,7 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -104,12 +105,13 @@ public:
     void OnBufferAvailable(uint32_t trackId);
 
     void SetSelectBitRateFlag(bool flag) override;
-    bool CanDoSelectBitRate() override;
+    bool CanAutoSelectBitRate() override;
 
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
+    bool IsVideoEos();
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
@@ -119,6 +121,7 @@ public:
     Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
+    void SetCacheLimit(uint32_t limitSize);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -255,6 +258,7 @@ private:
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
+    std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
     int64_t lastSubtitlePts_ = 0;

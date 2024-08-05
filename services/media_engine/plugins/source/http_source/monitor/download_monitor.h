@@ -59,13 +59,14 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetPlayStrategy(PlayStrategy* playStrategy) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     Status SelectStream(int32_t streamId) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
     int64_t HttpMonitorLoop();
@@ -79,7 +80,7 @@ private:
     time_t lastReadTime_ {0};
     Callback* callback_ {nullptr};
     Mutex taskMutex_ {};
-    uint32_t haveReadData_ {0};
+    uint64_t haveReadData_ {0};
 };
 }
 }

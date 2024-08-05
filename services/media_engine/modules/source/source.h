@@ -47,9 +47,9 @@ public:
         callbackWrap_->SetSelectBitRateFlag(flag);
     }
 
-    bool CanDoSelectBitRate() override
+    bool CanAutoSelectBitRate() override
     {
-        return callbackWrap_->CanDoSelectBitRate();
+        return callbackWrap_->CanAutoSelectBitRate();
     }
 
     void SetCallbackWrap(Callback* callbackWrap)
@@ -80,7 +80,7 @@ public:
 
     void OnEvent(const Plugins::PluginEvent &event) override;
     void SetSelectBitRateFlag(bool flag) override;
-    bool CanDoSelectBitRate() override;
+    bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
     int64_t GetDuration();
@@ -90,12 +90,13 @@ public:
     Status SetCurrentBitRate(int32_t bitRate);
     void SetCallback(Callback* callback);
     bool IsNeedPreDownload();
-    void SetDemuxerState();
+    void SetDemuxerState(int32_t streamId);
     Status GetStreamInfo(std::vector<StreamInfo>& streams);
     Status Read(int32_t streamID, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
     Status SeekTo(uint64_t offset);
     void SetInterruptState(bool isInterruptNeeded);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status SelectStream(int32_t streamID);
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

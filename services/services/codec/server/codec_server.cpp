@@ -320,7 +320,6 @@ int32_t CodecServer::Start()
         StatusChanged(ERROR);
     } else {
         StatusChanged(RUNNING);
-        isStarted_ = true;
         isModeConfirmed_ = true;
         CodecDfxInfo codecDfxInfo;
         GetCodecDfxInfo(codecDfxInfo);
@@ -339,13 +338,12 @@ int32_t CodecServer::Stop()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if ((retPostProcessing + retCodec) != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(CONFIGURED);
-    isStarted_ = false;
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     return AVCS_ERR_OK;
 }
 
@@ -358,13 +356,12 @@ int32_t CodecServer::Flush()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t retPostProcessing = FlushPostProcessing();
     int32_t retCodec = codecBase_->Flush();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if (retPostProcessing + retCodec != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retPostProcessing != AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(FLUSHED);
-    isStarted_ = false;
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     return AVCS_ERR_OK;
 }
 
@@ -378,10 +375,7 @@ int32_t CodecServer::NotifyEos()
     if (ret == AVCS_ERR_OK) {
         CodecStatus newStatus = END_OF_STREAM;
         StatusChanged(newStatus);
-        if (isStarted_) {
-            isStarted_ = false;
-            CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
-        }
+        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -405,14 +399,13 @@ int32_t CodecServer::Reset()
         StatusChanged(ERROR);
     }
     ret = codecBase_->Reset();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
     lastErrMsg_.clear();
-    if (isStarted_ && ret == AVCS_ERR_OK) {
-        isStarted_ = false;
+    if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
-        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -433,15 +426,14 @@ int32_t CodecServer::Release()
     }
     (void)ReleasePostProcessing();
     int32_t ret = codecBase_->Release();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
     if (thread->joinable()) {
         thread->join();
     }
-    if (isStarted_ && ret == AVCS_ERR_OK) {
-        isStarted_ = false;
+    if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
-        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -553,8 +545,9 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
-        GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || (isSetParameterCb_ && status_ == END_OF_STREAM),
+                             AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+                             GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (temporalScalability_ != nullptr) {
         temporalScalability_->ConfigureLTR(index);
@@ -1258,7 +1251,15 @@ int32_t CodecServer::ResetPostProcessing()
 
 int32_t CodecServer::ReleasePostProcessing()
 {
-    ResetPostProcessing();
+    if (postProcessing_) {
+        DeactivatePostProcessingQueue();
+        if (postProcessingTask_) {
+            postProcessingTask_->Stop();
+        }
+        postProcessing_->Release();
+        CleanPostProcessingResource();
+        postProcessing_.reset();
+    }
     AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }

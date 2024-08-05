@@ -366,7 +366,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
     int size = read(fd_, cacheBuffer, bufferSize);
     if (size <= 0) {
-        DeleteCacheBuffer(cacheBuffer);
+        DeleteCacheBuffer(cacheBuffer, bufferSize);
         HandleReadResult(bufferSize, size);
         return;
     }
@@ -374,7 +374,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
-            DeleteCacheBuffer(cacheBuffer);
+            DeleteCacheBuffer(cacheBuffer, bufferSize);
             return;
         }
         usleep(TEN_MILLISECOUNDS);
@@ -392,7 +392,7 @@ void FileFdSourcePlugin::CacheDataLoop()
         ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_, size_, ct);
     }
     
-    DeleteCacheBuffer(cacheBuffer);
+    DeleteCacheBuffer(cacheBuffer, bufferSize);
 
     if (isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0)) {
         NotifyBufferingEnd();
@@ -517,6 +517,7 @@ void FileFdSourcePlugin::NotifyBufferingEnd()
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
     MEDIA_LOG_I("water line above, ringBufferSize_ " PUBLIC_LOG_U64, ringBufferSize_);
     isBuffering_ = false;
+    lastReadTime_ = 0;
     if (callback_ != nullptr && !isInterrupted_) {
         MEDIA_LOG_I("NotifyBufferingEnd success .");
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
@@ -536,7 +537,7 @@ void FileFdSourcePlugin::NotifyReadFail()
     }
 }
 
-void FileFdSourcePlugin::SetDemuxerState()
+void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
 {
     MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;
@@ -591,13 +592,13 @@ Seekable FileFdSourcePlugin::GetSeekable()
 
 void FileFdSourcePlugin::CheckFileType()
 {
-    int location; // 1本地，2云端
-    int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &location);
-    MEDIA_LOG_I("SetSource ioctl location, ret " PUBLIC_LOG_D32 ", location " PUBLIC_LOG_D32 ", errno"
-        PUBLIC_LOG_D32, ioResult, location, errno);
+    int loc; // 1本地，2云端
+    int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &loc);
+    MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
+        PUBLIC_LOG_D32, ioResult, loc, errno);
 
     if (ioResult == 0) {
-        if (location == IOCTL_CLOUD) {
+        if (loc == IOCTL_CLOUD) {
             isCloudFile_ = true;
             MEDIA_LOG_I("ioctl file is cloud");
             int ret = ioctl(fd_, HMDFS_IOC_RESTORE_READ);
@@ -680,9 +681,9 @@ float FileFdSourcePlugin::GetCacheTime(float num)
     return CACHE_TIME_DEFAULT;
 }
 
-void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
+void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer, size_t bufferSize)
 {
-    if (buffer != nullptr) {
+    if (buffer != nullptr && bufferSize > 0) {
         delete[] buffer;
     }
 }

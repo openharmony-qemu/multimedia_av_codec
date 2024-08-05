@@ -74,6 +74,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
 
     FilterType GetFilterType();
 
@@ -94,6 +95,7 @@ public:
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
+    bool IsVideoEos();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
@@ -121,6 +123,7 @@ private:
     void FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
+    Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};

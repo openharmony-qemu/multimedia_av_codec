@@ -247,6 +247,7 @@ int32_t CodecClient::Reset()
         SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
+        hasOnceConfigured_ = false;
         if (converter_ != nullptr) {
             converter_->NeedToResetFormatOnce();
         }

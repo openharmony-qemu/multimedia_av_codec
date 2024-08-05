@@ -236,6 +236,11 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_siz
     if (enableLTR && (ltrParam.ltrCount > 0)) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
     }
+    if (TEMPORAL_UNIFORMLY) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+            UNIFORMLY_SCALED_REFERENCE);
+    }
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -699,7 +704,6 @@ void VEncAPI11Sample::SetForceIDR()
 
 void VEncAPI11Sample::SetLTRParameter(OH_AVBuffer *buffer)
 {
-    static bool useLtrOnce = false;
     if (!ltrParam.enableUseLtr) {
         return;
     }
@@ -727,9 +731,9 @@ void VEncAPI11Sample::SetLTRParameter(OH_AVBuffer *buffer)
         if (!ltrParam.useLtrOnce) {
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
         } else {
-            if (!useLtrOnce) {
+            if (!ltrParam.useLtrOnce) {
                 OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR, useLtrIndex);
-                useLtrOnce = true;
+                ltrParam.useLtrOnce = true;
             }
         }
     } else if (frameCount == useLtrIndex && frameCount > 0) {

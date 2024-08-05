@@ -62,12 +62,16 @@ protected:
 } // namespace OHOS
 namespace {
 OH_AVCapability *cap = nullptr;
+OH_AVCapability *cap_hevc = nullptr;
 string g_codecNameAvc;
+string g_codecNameHEVC;
 } // namespace
 void HwEncReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     g_codecNameAvc = OH_AVCapability_GetName(cap);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
 }
 
 void HwEncReliNdkTest::TearDownTestCase() {}
@@ -199,7 +203,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0010, TestSize.Level3)
             vEncSample->INP_DIR = inpDir720Array[i];
             vEncSample->TEMPORAL_ENABLE = true;
             vEncSample->TEMPORAL_CONFIG = true;
-            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i+2));
             ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -245,7 +249,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0020, TestSize.Level3)
             vEncSample->INP_DIR = inpDir720Array[i];
             vEncSample->TEMPORAL_ENABLE = true;
             vEncSample->TEMPORAL_CONFIG = true;
-            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i+2));
             ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -294,7 +298,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0030, TestSize.Level3)
             if (i % 2 == 0) {
                 vEncSample->TEMPORAL_JUMP_MODE = true;
             }
-            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i));
             ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -327,13 +331,13 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0040, TestSize.Level3)
 
             encVec.push_back(vEncSample);
             vEncSample->INP_DIR = inpDir720Array[i];
-            vEncSample->SURFACE_INPUT = true;
+            vEncSample->SURF_INPUT = true;
             vEncSample->TEMPORAL_ENABLE = true;
             vEncSample->TEMPORAL_CONFIG = true;
             if (i % 2 == 0) {
                 vEncSample->TEMPORAL_JUMP_MODE = true;
             }
-            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i));
             ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -380,7 +384,7 @@ HWTEST_F(HwEncReliNdkTest, RESET_BITRATE_RELI_001, TestSize.Level3)
  * @tc.name      : 16个线程，8个为h265 surf普通编码，8个为h265 surf LTR编码
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_017, TestSize.Level3)
+HWTEST_F(HwEncReliNdkTest, LTR_FUNC_017, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VEncAPI11Sample>> encVec;
@@ -400,7 +404,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_017, TestSize.Level3)
                 vEncApi11Sample->ltrParam.ltrCount = 5;
                 vEncApi11Sample->ltrParam.ltrInterval = 5;
             }
-            ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->StartVideoEncoder());
@@ -417,7 +421,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_017, TestSize.Level3)
  * @tc.name      : 16个线程，8个为h264 buffer普通编码，8个为h265 surf LTR编码
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_018, TestSize.Level3)
+HWTEST_F(HwEncReliNdkTest, LTR_FUNC_018, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VEncAPI11Sample>> encVec;
@@ -436,11 +440,11 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_018, TestSize.Level3)
                 vEncApi11Sample->ltrParam.enableUseLtr = true;
                 vEncApi11Sample->ltrParam.ltrCount = 5;
                 vEncApi11Sample->ltrParam.ltrInterval = 5;
-                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
+                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             } else {
                 vEncApi11Sample->SURF_INPUT = false;
                 vEncApi11Sample->ltrParam.enableUseLtr = false;
-                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
+                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameAvc.c_str()));
             }
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());
@@ -458,7 +462,7 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_018, TestSize.Level3)
  * @tc.name      : 16个线程，8个为h264 surf普通编码，8个为h265 buffer LTR编码
  * @tc.desc      : function test
  */
-HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_019, TestSize.Level3)
+HWTEST_F(HwEncReliNdkTest, LTR_FUNC_019, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VEncAPI11Sample>> encVec;
@@ -477,11 +481,11 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_019, TestSize.Level3)
                 vEncApi11Sample->ltrParam.enableUseLtr = true;
                 vEncApi11Sample->ltrParam.ltrCount = 5;
                 vEncApi11Sample->ltrParam.ltrInterval = 5;
-                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC));
+                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameHEVC.c_str()));
             } else {
                 vEncApi11Sample->SURF_INPUT = true;
                 vEncApi11Sample->ltrParam.enableUseLtr = false;
-                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecName));
+                ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->CreateVideoEncoder(g_codecNameAvc.c_str()));
             }
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->ConfigureVideoEncoder());

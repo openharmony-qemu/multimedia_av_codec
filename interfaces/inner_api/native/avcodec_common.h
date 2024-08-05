@@ -38,6 +38,7 @@ enum AVCodecErrorType : int32_t {
     AVCODEC_ERROR_INTERNAL,
     /* extend error start. The extension error code agreed upon by the plug-in and
        the application will be transparently transmitted by the service. */
+    AVCODEC_ERROR_DECRYTION_FAILED,
     AVCODEC_ERROR_EXTEND_START = 0X10000,
 };
 

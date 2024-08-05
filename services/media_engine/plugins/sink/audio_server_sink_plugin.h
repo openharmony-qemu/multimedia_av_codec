@@ -116,6 +116,7 @@ public:
 
     Status SetAudioEffectMode(int32_t effectMode) override;
 
+    Status SetMuted(bool isMuted) override;
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {

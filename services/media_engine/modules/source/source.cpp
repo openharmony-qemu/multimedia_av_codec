@@ -107,9 +107,9 @@ void Source::SetBundleName(const std::string& bundleName)
     }
 }
 
-void Source::SetDemuxerState()
+void Source::SetDemuxerState(int32_t streamId)
 {
-    plugin_->SetDemuxerState();
+    plugin_->SetDemuxerState(streamId);
 }
 
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
@@ -211,6 +211,16 @@ Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
     return plugin_->GetDownloadInfo(downloadInfo);
 }
 
+Status Source::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    MEDIA_LOG_I("GetPlaybackInfo");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetPlaybackInfo  failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetPlaybackInfo(playbackInfo);
+}
+
 bool Source::IsNeedPreDownload()
 {
     if (plugin_ == nullptr) {
@@ -296,9 +306,9 @@ void Source::SetSelectBitRateFlag(bool flag)
     mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
 }
 
-bool Source::CanDoSelectBitRate()
+bool Source::CanAutoSelectBitRate()
 {
-    return mediaDemuxerCallback_->CanDoSelectBitRate();
+    return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
 void Source::SetInterruptState(bool isInterruptNeeded)

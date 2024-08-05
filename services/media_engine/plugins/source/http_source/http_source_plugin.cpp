@@ -16,7 +16,6 @@
 
 #include "avcodec_trace.h"
 #include "http_source_plugin.h"
-#include "download/http_curl_client.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
 #include "dash/dash_media_downloader.h"
@@ -380,9 +379,17 @@ Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
     return Status::OK;
 }
 
-void HttpSourcePlugin::SetDemuxerState()
+Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 {
-    downloader_->SetDemuxerState();
+    MEDIA_LOG_I("HttpSourcePlugin::GetPlaybackInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->GetPlaybackInfo(playbackInfo);
+    return Status::OK;
+}
+
+void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
+{
+    downloader_->SetDemuxerState(streamId);
 }
 
 void HttpSourcePlugin::SetDownloadErrorState()

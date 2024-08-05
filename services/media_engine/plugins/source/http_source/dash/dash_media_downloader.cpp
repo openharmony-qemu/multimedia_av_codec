@@ -18,7 +18,6 @@
 #include "dash_media_downloader.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
-#include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "utils/time_utils.h"
 #include "utils/bitrate_process_utils.h"
@@ -97,16 +96,26 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
 
-    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_);
-    if (ret == DASH_READ_END && mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_)) {
+    bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_);
+    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_, isLastSegment);
+    MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32 " isLastSegment:" PUBLIC_LOG_D32,
+        readDataInfo.streamId_, ret, isLastSegment);
+    if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
+        if (callback_ != nullptr) {
+            callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
+        }
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_TIMEOUT) {
         if (callback_ != nullptr) {
             MEDIA_LOG_E("Read time out, OnEvent");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
+        return Status::END_OF_STREAM;
+    } else if (ret == DASH_READ_AGAIN) {
+        return Status::ERROR_AGAIN;
+    } else if (ret == DASH_READ_FAILED || ret == DASH_READ_INTERRUPT) {
         return Status::END_OF_STREAM;
     }
     return Status::OK;
@@ -388,7 +397,7 @@ void DashMediaDownloader::OpenInitSegment(
     const std::shared_ptr<DashStreamDescription> &streamDesc, const std::shared_ptr<DashSegment> &seg)
 {
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
-        streamDesc->streamId_, streamDesc->type_, expectDuration_);
+        callback_, streamDesc->streamId_, streamDesc->type_, expectDuration_);
     if (statusCallback_ != nullptr) {
         downloader->SetStatusCallback(statusCallback_);
     }
@@ -454,7 +463,7 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             // auto switch
             bool switchFlag = true;
             if (callback_ != nullptr) {
-                switchFlag = callback_->CanDoSelectBitRate();
+                switchFlag = callback_->CanAutoSelectBitRate();
             }
             if (switchFlag) {
                 bool flag = CheckAutoSelectBitrate(streamId);
@@ -1003,6 +1012,26 @@ void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
     mpdDownloader_->SetInterruptState(isInterruptNeeded);
+}
+
+Status DashMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
+        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    if (segmentDownloader != nullptr) {
+        segmentDownloader->SetCurrentBitRate(bitRate);
+    }
+    return Status::OK;
+}
+
+void DashMediaDownloader::SetDemuxerState(int32_t streamId)
+{
+    MEDIA_LOG_I("SetDemuxerState streamId: " PUBLIC_LOG_D32, streamId);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(streamId);
+    if (segmentDownloader != nullptr) {
+        segmentDownloader->SetDemuxerState();
+    }
 }
 }
 }

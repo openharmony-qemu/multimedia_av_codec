@@ -58,6 +58,7 @@ public:
     Status RemoveTrackQueue(uint32_t trackIndex);
     bool HasCache(uint32_t trackIndex);
     size_t GetCacheSize(uint32_t trackIndex);
+    uint32_t GetCacheDataSize(uint32_t trackIndex);
     void FreeQueue(uint32_t queueIndex);
     bool Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block);
     std::shared_ptr<SamplePacket> Pop(uint32_t trackIndex);
@@ -67,6 +68,7 @@ public:
 private:
     struct InnerQueue {
         bool isValid {false};
+        uint32_t dataSize {0};
         std::shared_ptr<BlockQueue<std::shared_ptr<SamplePacket>>> blockQue {nullptr};
     };
     static constexpr size_t SINGLE_QUEUE_SIZE = 100;
