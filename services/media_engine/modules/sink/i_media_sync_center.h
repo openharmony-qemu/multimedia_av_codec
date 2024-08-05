@@ -94,6 +94,12 @@ struct IMediaSyncCenter {
     virtual float GetPlaybackRate() = 0;
 
     virtual void SetMediaStartPts(int64_t startPts) = 0;
+
+    virtual void ResetMediaStartPts() = 0;
+
+    virtual int64_t GetMediaStartPts() = 0;
+
+    virtual void SetLastAudioBufferDuration(int64_t durationUs) = 0;
 };
 } // namespace Pipeline
 } // namespace Media
