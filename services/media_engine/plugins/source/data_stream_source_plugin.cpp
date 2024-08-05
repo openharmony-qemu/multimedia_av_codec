@@ -173,11 +173,9 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         buffer = WrapAVSharedMemory(memory, realLen);
     }
     FALSE_RETURN_V(buffer != nullptr, Status::ERROR_AGAIN);
-    auto bufferMem = buffer->GetMemory();
-    FALSE_RETURN_V_MSG(bufferMem != nullptr, Status::ERROR_NO_MEMORY, "read buffer GetMemory fail");
     MEDIA_LOG_D("DataStreamSourcePlugin Read, size: " PUBLIC_LOG_ZU ", realLen: " PUBLIC_LOG_D32
-        ", retryTimes: " PUBLIC_LOG_U32, (buffer && bufferMem) ?
-        bufferMem->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
+        ", retryTimes: " PUBLIC_LOG_U32, (buffer && buffer->GetMemory()) ?
+        buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     FALSE_RETURN_V(realLen != 0, Status::ERROR_AGAIN);
     return Status::OK;
 }
