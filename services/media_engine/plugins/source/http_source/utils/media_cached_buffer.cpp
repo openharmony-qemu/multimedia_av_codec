@@ -92,7 +92,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     }
 
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
-    int64_t chunkNum = static_cast<int64_t>((totalBuffSize + chunkSize - 1) / chunkSize) + 1; // 1
+    int64_t chunkNum = totalBuffSize + chunkSize >= 1 ?
+                       static_cast<int64_t>((totalBuffSize + chunkSize - 1) / chunkSize) + 1 : 1; // 1
     if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
         return false;
     }
@@ -123,7 +124,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
         freeChunks_.push_back(chunkInfo);
         temp += sizePerChunk;
     }
-    chunkMaxNum_ = static_cast<uint32_t>(chunkNum) - 1; // -1
+    chunkMaxNum_ = chunkNum >= 1 ? static_cast<uint32_t>(chunkNum) - 1 : 0; // -1
     totalBuffSize_ = totalBuffSize;
     chunkSize_ = chunkSize;
     initReadSizeFactor_ = newFragmentInitChunkNum / (chunkMaxNum_ - newFragmentInitChunkNum);
@@ -747,13 +748,14 @@ ChunkIterator CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(int64_t offset)
 
 void CacheMediaChunkBufferImpl::ResetReadSizeAlloc()
 {
-    int64_t chunkNum = static_cast<int64_t>(chunkMaxNum_ + 1) - static_cast<int64_t>(freeChunks_.size());
-    if (totalReadSize_ > static_cast<uint64_t>(MAX_TOTAL_READ_SIZE) && chunkNum > 0) {
-        uint64_t preChunkSize = static_cast<uint64_t>((MAX_TOTAL_READ_SIZE - 1) / chunkNum);
+    size_t chunkNum = chunkMaxNum_ + 1 >= freeChunks_.size() ?
+                        chunkMaxNum_ + 1 - freeChunks_.size() : 0;
+    if (totalReadSize_ > static_cast<size_t>(MAX_TOTAL_READ_SIZE) && chunkNum > 0) {
+        size_t preChunkSize = static_cast<size_t>(MAX_TOTAL_READ_SIZE - 1) / chunkNum;
         for (auto iter = fragmentCacheBuffer_.begin(); iter != fragmentCacheBuffer_.end(); ++iter) {
-            iter->totalReadSize = preChunkSize * static_cast<uint64_t>(iter->chunks.size());
+            iter->totalReadSize = preChunkSize * iter->chunks.size();
         }
-        totalReadSize_ = preChunkSize * static_cast<uint64_t>(chunkNum);
+        totalReadSize_ = preChunkSize * chunkNum;
     }
 }
 
