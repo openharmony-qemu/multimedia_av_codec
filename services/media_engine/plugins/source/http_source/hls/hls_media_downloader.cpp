@@ -27,6 +27,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -353,6 +354,8 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
+    MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::ReadDelegate, expectedLen: " +
+        std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(buffer_->GetSize()));
     readDataInfo.isEos_ = CheckReadStatus();
     if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
         readDataInfo.realReadLength_ = 0;

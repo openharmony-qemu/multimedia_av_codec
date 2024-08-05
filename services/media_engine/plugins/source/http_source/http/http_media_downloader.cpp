@@ -20,6 +20,7 @@
 #include <regex>
 #include "network/network_typs.h"
 #include "common/media_core.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -366,6 +367,8 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
+    MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::Read, readOffset: " + std::to_string(readOffset_) +
+        ", expectedLen: " + std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(remain));
     // This prevents the read operation from failing to read data when the seek operation is not triggered.
     if (remain < readDataInfo.wantReadLength_ &&
         (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
