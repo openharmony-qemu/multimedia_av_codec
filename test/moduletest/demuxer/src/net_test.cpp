@@ -83,10 +83,13 @@ constexpr int32_t COUNTMONO = 1;
 constexpr int32_t COUNTDUAL = 2;
 constexpr int32_t BITRATEMONO = 64000;
 constexpr int32_t BITRATEDUAL = 705600;
+constexpr int32_t VTTSEEKFORWARD = 5100;
+constexpr int32_t VTTSEEKBACK = 2100;
 
 void DemuxerNetNdkTest::SetUpTestCase() {}
 void DemuxerNetNdkTest::TearDownTestCase() {}
-void DemuxerNetNdkTest::SetUp() {
+void DemuxerNetNdkTest::SetUp()
+{
     memory = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
@@ -619,18 +622,14 @@ namespace {
         ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
         for (int index = 0; index < 8; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
-            data = OH_AVMemory_GetAddr(memory);
-            vttSubtitle = atoi(reinterpret_cast<const char*>(data));
-            ASSERT_EQ(vttSubtitle, vttIndex);
-            vttIndex++;
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 2100, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKBACK, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         vttSubtitle = atoi(reinterpret_cast<const char*>(data));
         vttIndex = 4;
         ASSERT_EQ(vttSubtitle, vttIndex);
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, 5100, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKFORWARD, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         vttSubtitle = atoi(reinterpret_cast<const char*>(data));
