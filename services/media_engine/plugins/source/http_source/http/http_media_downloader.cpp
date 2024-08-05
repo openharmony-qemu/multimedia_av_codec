@@ -276,19 +276,18 @@ bool HttpMediaDownloader::HandleBuffering()
     return isBuffering_;
 }
 
-bool HttpMediaDownloader::StartBuffering()
+bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
 {
-    if (!canWrite_ || downloadRequest_->IsChunkedVod()) {
+    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0) {
         return false;
     }
     size_t cacheWaterLine = 0;
     size_t fileRemain = 0;
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
+    cacheWaterLine = std::max(static_cast<size_t>(wantReadLength), PLAY_WATER_LINE);
     if (fileContenLen > readOffset_) {
         fileRemain = fileContenLen - readOffset_;
-        cacheWaterLine = std::min(fileRemain, PLAY_WATER_LINE);
-    } else {
-        cacheWaterLine = PLAY_WATER_LINE;
+        cacheWaterLine = std::min(fileRemain, cacheWaterLine);
     }
 
     bool isEos = false;
@@ -300,7 +299,7 @@ bool HttpMediaDownloader::StartBuffering()
         waterLineAbove_ = std::min(waterLineAbove_, fileRemain);
 
         if (!isBuffering_) {
-            MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " wantReadLength " PUBLIC_LOG_ZU,
+            MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " waterLineAbove_ " PUBLIC_LOG_ZU,
                 readOffset_, GetCurrentBufferSize(), waterLineAbove_);
             isBuffering_ = true;
             MEDIA_LOG_I("CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
@@ -420,7 +419,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             MEDIA_LOG_I("Return error again.");
             return Status::ERROR_AGAIN;
         }
-        if (StartBuffering()) {
+        if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
         return ReadRingBuffer(buff, readDataInfo);
@@ -432,7 +431,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             MEDIA_LOG_I("Return error again.");
             return Status::ERROR_AGAIN;
         }
-        if (StartBuffering()) {
+        if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
         return ReadCacheBuffer(buff, readDataInfo);
@@ -571,11 +570,11 @@ bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(offset);
-    MEDIA_LOG_D("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
+    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
     if (remain > 0) {
         return HandleSeekHit(offset);
     }
-    MEDIA_LOG_D("Seek miss.");
+    MEDIA_LOG_I("Seek miss.");
     cacheMediaBuffer_->Seek(offset);
     readOffset_ = static_cast<size_t>(offset);
 

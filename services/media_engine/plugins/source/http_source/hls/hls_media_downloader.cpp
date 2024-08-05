@@ -364,7 +364,9 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         MEDIA_LOG_I("Read return error again.");
         return Status::ERROR_AGAIN;
     }
-    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE && !CheckReadStatus()) {
+    size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
+        std::min(PLAY_WATER_LINE, static_cast<int>(readDataInfo.wantReadLength_)) : 0;
+    if (isFirstFrameArrived_ && buffer_->GetSize() < waterLine && !CheckReadStatus()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
