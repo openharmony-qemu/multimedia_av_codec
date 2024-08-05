@@ -386,8 +386,29 @@ int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t anchorClockTime, int
     return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
+void MediaSyncManager::SetLastAudioBufferDuration(int64_t durationUs)
+{
+    if (durationUs > 0) {
+        lastAudioBufferDuration_ = durationUs;
+    } else {
+        lastAudioBufferDuration_ = 0; // If buffer duration is unavailable, treat it as 0.
+    }
+}
+
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 {
+    int64_t maxMediaProgress;
+    if (currentSyncerPriority_ == IMediaSynchronizer::AUDIO_SINK) {
+        maxMediaProgress = currentAnchorMediaTime_ + lastAudioBufferDuration_;
+    } else {
+        maxMediaProgress = currentAnchorMediaTime_;
+    }
+    if (newMediaProgressTime > maxMediaProgress) {
+        lastReportMediaTime_ = maxMediaProgress; // Avoid media progress go too far when data underrun.
+        MEDIA_LOG_W("Data underrun for %{public}" PRId64 " us, currentSyncerPriority_ is %{public}" PRId32,
+            newMediaProgressTime - maxMediaProgress, currentSyncerPriority_);
+        return lastReportMediaTime_;
+    }
     if ((newMediaProgressTime >= lastReportMediaTime_) || frameAfterSeeked_) {
         lastReportMediaTime_ = newMediaProgressTime;
     } else {
@@ -499,7 +520,19 @@ bool MediaSyncManager::InSeeking()
 
 void MediaSyncManager::SetMediaStartPts(int64_t startPts)
 {
-    startPts_ = startPts;
+    if (startPts_ == HST_TIME_NONE || startPts < startPts_) {
+        startPts_ = startPts;
+    }
+}
+
+void MediaSyncManager::ResetMediaStartPts()
+{
+    startPts_ = HST_TIME_NONE;
+}
+
+int64_t MediaSyncManager::GetMediaStartPts()
+{
+    return startPts_;
 }
 
 void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
