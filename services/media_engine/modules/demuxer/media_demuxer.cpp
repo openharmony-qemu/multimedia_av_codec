@@ -614,6 +614,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     demuxerPluginManager_->InitDefaultPlay(streams);
 
     streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    streamDemuxer_->SetInterruptState(isInterruptNeeded_);
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
@@ -647,6 +648,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
     int32_t subtitleStreamID = demuxerPluginManager_->AddExternalSubtitle();
     subStreamDemuxer_ = std::make_shared<StreamDemuxer>();
+    subStreamDemuxer_->SetInterruptState(isInterruptNeeded_);
     subStreamDemuxer_->SetSource(subtitleSource_);
     subStreamDemuxer_->Init(subSource->GetSourceUri());
 
@@ -682,6 +684,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
 void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
+    isInterruptNeeded_ = isInterruptNeeded;
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
