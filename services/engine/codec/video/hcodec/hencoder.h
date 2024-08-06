@@ -110,6 +110,7 @@ private:
     void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                            std::shared_ptr<Media::Meta> &meta) override;
     void ExtractPerFrameLTRParam(const CodecEncOutLTRParam* ltrParam, std::shared_ptr<Media::Meta> &meta);
+    void DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -125,6 +126,8 @@ private:
     };
 
 private:
+    uint32_t width_ = 0;
+    uint32_t height_ = 0;
     bool enableSurfaceModeInputCb_ = false;
     bool enableLTR_ = false;
     bool enableTSVC_ = false;
