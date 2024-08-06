@@ -60,7 +60,10 @@ int64_t DownloadMonitor::HttpMonitorLoop()
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     isPlaying_ = true;
-    retryTasks_.clear();
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     return downloader_->Open(url, httpHeader);
 }
 
@@ -79,7 +82,10 @@ void DownloadMonitor::Resume()
 
 void DownloadMonitor::Close(bool isAsync)
 {
-    retryTasks_.clear();
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     downloader_->Close(isAsync);
     task_->Stop();
     isPlaying_ = false;
