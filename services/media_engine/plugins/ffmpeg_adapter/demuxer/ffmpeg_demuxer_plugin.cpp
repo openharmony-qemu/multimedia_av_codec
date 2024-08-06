@@ -1950,7 +1950,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetRelativePresentationTimeUsByIndex failed due to fileType is not MP4.");
-    
+        
     GetpresentationTimeUsFromFfmpegMOV(Get_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
     GetpresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
@@ -1975,7 +1975,7 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     struct AVCodecMOVStts *stts = avStream->stts_data_head->next;
     struct AVCodecMOVCtts *ctts = avStream->ctts_data_head;
     int32_t ctts_cur_num = 0; //init ctts_cur_num
-    if (ctts->next != NULL) {
+    if (ctts->next != NULL && ctts->next != ctts) {
         ctts = ctts->next;
         ctts_cur_num = ctts->count;
     } else {
