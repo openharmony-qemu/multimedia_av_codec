@@ -82,7 +82,7 @@ private:
     void InitCacheBuffer(uint32_t expectBufferDuration);
 
     bool HandleBuffering();
-    bool StartBuffering();
+    bool StartBuffering(int32_t wantReadLength);
     size_t GetCurrentBufferSize();
     bool HandleBreak();
     void ChangeDownloadPos();
