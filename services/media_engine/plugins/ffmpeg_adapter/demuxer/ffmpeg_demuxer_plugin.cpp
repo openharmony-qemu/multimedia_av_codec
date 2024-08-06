@@ -1912,6 +1912,9 @@ void FFmpegDemuxerPlugin::InitPTSandIndexConvert()
 Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
+    auto avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
     InitPTSandIndexConvert();
 
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -1949,6 +1952,9 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
 Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
+    auto avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
     InitPTSandIndexConvert();
 
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -1974,13 +1980,10 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode, 
+Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
     auto avStream = formatContext_->streams[trackIndex];
-    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
-        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
-
     struct AVCodecMOVStts *stts = avStream->stts_data_head->next;
     struct AVCodecMOVCtts *ctts = avStream->ctts_data_head;
     int32_t ctts_cur_num = 0; //init ctts_cur_num
@@ -1993,8 +1996,8 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
     int32_t stts_cur_num = stts->count;
-
-    while (true) {
+    int64_t nb_frames = (avStream->nb_frames)++;
+    while (nb_frames) {
         if (ctts_cur_num == 0 && ctts->next != ctts) {
             ctts = ctts->next;
             ctts_cur_num = static_cast<int32_t>(ctts->count);
@@ -2002,8 +2005,9 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
         if (ctts->next != ctts) {
             ctts_cur_num--;
         }
-        pts = (dts + (ctts->next == ctts ? 0 : static_cast<int64_t>(ctts->duration))) * 1000 * 1000 /
-            static_cast<int64_t>(avStream->time_scale);
+        pts = (dts + (ctts->next == ctts ? 0 : static_cast<int64_t>(ctts->duration))) *
+            1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+        nb_frames--;
         
         switch (mode) {
             case Get_FIRST_PTS:
@@ -2021,8 +2025,8 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
         }
 
         stts_cur_num--;
-        if (stts->next == NULL && stts_cur_num ==0 &&
-            (ctts->next == NULL | ctts->next == ctts) && ctts_cur_num == 0) {
+        if ((stts->next == NULL) && (stts_cur_num ==0) &&
+            (ctts->next == NULL | ctts->next == ctts) && (ctts_cur_num == 0)) {
                 break;
             }
         dts += static_cast<int64_t>(stts->duration);
@@ -2036,7 +2040,7 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
 
 void FFmpegDemuxerPlugin::IndexToRelativePTSProcess(int64_t pts, uint32_t index)
 {
-    if (IndexToRelativePTSMaxHeap_.size() < index + 1 ) {
+    if (IndexToRelativePTSMaxHeap_.size() < index + 1) {
         IndexToRelativePTSMaxHeap_.push(pts);
     } else {
         if (pts < IndexToRelativePTSMaxHeap_.top()) {

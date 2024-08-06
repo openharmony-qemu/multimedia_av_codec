@@ -180,7 +180,8 @@ void InnerDemuxerSample::CheckLoopForPts(int32_t i)
             }
             if (relativePresentationTimeUs != pair.second) {
                 retForPts = num;
-                cout << "video != pair.second  pts:" << relativePresentationTimeUs << "pair.second:"<< pair.second << endl;
+                cout << "video != pair.second  pts:" << relativePresentationTimeUs <<
+                    "pair.second:"<< pair.second << endl;
                 break;
             }
             indexForPts ++;
@@ -195,7 +196,8 @@ void InnerDemuxerSample::CheckLoopForPts(int32_t i)
             }
             if (relativePresentationTimeUs != pair.second) {
                 retForPts = num;
-                cout << "audio != pair.second pts:" << relativePresentationTimeUs << "pair.second:"<< pair.second << endl;
+                cout << "audio != pair.second pts:" << relativePresentationTimeUs <<
+                    "pair.second:"<< pair.second << endl;
                 break;
             }
             indexForPts ++;

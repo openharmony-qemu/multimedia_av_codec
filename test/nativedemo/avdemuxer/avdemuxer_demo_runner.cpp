@@ -255,13 +255,14 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
     auto end = clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    for (uint32_t i = 0; i < 10 ; ++i) {
+    for (uint32_t i = 0; i < 10 ; ++i) { // get first 10 frames
         index = i;
         start = clock::now();
         innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
         end = clock::now();
         elapsed = end - start;
-        printf("GetRelativePresentationTimeUsByIndex, relativePresentationTimeUs = %" PRId64 "\n", relativePresentationTimeUs); 
+        printf("GetRelativePresentationTimeUsByIndex, relativePresentationTimeUs = %" PRId64 "\n",
+            relativePresentationTimeUs);
         std::cout << "Function took " << elapsed.count() << " seconds to run.\n";
 
         start = clock::now();
@@ -270,35 +271,6 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
         elapsed = end - start;
         printf("GetIndexByRelativePresentationTimeUs, index = %d\n", index);
         std::cout << "Function took " << elapsed.count() << " seconds to run.\n";
-    }
-}
-
-static void RunPtsAndIndexConvert(const std::string &filePath, const std::string &fileMode){
-    auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
-    int32_t fd = -1;
-    if (fileMode == "0") {
-        fd = open(filePath.c_str(), O_RDONLY);
-        if (fd < 0) {
-            printf("open file failed\n");
-            return;
-        }
-        size_t filesize = innerSourceDemo->GetFileSize(filePath);
-        innerSourceDemo->CreateWithFD(fd, 0, filesize);
-    } else if (fileMode == "1") {
-        innerSourceDemo->CreateWithURI(filePath);
-    }
-    auto innerDemuxerDemo = std::make_shared<InnerDemuxerDemo>();
-    innerDemuxerDemo->CreateWithSource(innerSourceDemo->avsource_);
-    int32_t trackCount = 0;
-    int64_t duration = 0;
-    Format source_format = innerSourceDemo->GetSourceFormat();
-    source_format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
-    source_format.GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, duration);
-    printf("====>duration:%" PRId64 " total tracks:%d\n", duration, trackCount);
-    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
-    innerDemuxerDemo->Destroy();
-    if (fileMode == "0" && fd > 0) {
-        close(fd);
     }
 }
 
@@ -325,6 +297,7 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     source_format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
     source_format.GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, duration);
     printf("====>duration:%" PRId64 " total tracks:%d\n", duration, trackCount);
+    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
     for (int32_t i = 0; i < trackCount; i++) {
         innerDemuxerDemo->SelectTrackByID(i); // 添加轨道
     }
@@ -503,7 +476,6 @@ void PrintPrompt()
     cout << "6:native_demuxer all format" << endl;
     cout << "7:native_demuxer drm test" << endl;
     cout << "8:ffmpeg_demuxe ref test" << endl;
-    cout << "9:ffmpeg_demuxe pts and index test" << endl;
 }
 
 void AVSourceDemuxerDemoCase(void)
@@ -550,8 +522,6 @@ void AVSourceDemuxerDemoCase(void)
             return;
         }
         printf("only support local file\n");
-    } else if (mode == "9") {
-        RunPtsAndIndexConvert(filePath, fileMode); 
     } else {
         printf("select 0 or 1\n");
     }

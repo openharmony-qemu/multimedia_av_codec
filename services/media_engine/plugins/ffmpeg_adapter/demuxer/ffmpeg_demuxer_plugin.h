@@ -150,7 +150,7 @@ private:
     void WebvttMP4EOSProcess(AVPacket *vttPkt);
     Status CheckCacheDataLimit(uint32_t trackId);
 
-    Status GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode, 
+    Status GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
         uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
@@ -164,7 +164,6 @@ private:
     int64_t RelativePTSToIndexRightDiff_ = INT64_MAX;
     int64_t RelativePTSToIndexLeftDiff_ = INT64_MAX;
     int64_t RelativePTSToIndexTempDiff_ = INT64_MAX;
-
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;

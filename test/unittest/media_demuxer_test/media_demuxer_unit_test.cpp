@@ -892,12 +892,14 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetRelativePresentationTimeUsByIndex
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     uint64_t relativePresentationTimeUs;
-    EXPECT_EQ(demuxer->GetRelativePresentationTimeUsByIndex(0, 1, relativePresentationTimeUs), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->GetRelativePresentationTimeUsByIndex(0, 1, relativePresentationTimeUs),
+        Status::ERROR_NULL_POINTER);
     uint32_t index;
     EXPECT_EQ(demuxer->GetIndexByRelativePresentationTimeUs(0, 1, index), Status::ERROR_NULL_POINTER);
 
     demuxer->demuxerPluginManager_ = nullptr;
-    EXPECT_EQ(demuxer->GetRelativePresentationTimeUsByIndex(0, 1, relativePresentationTimeUs), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->GetRelativePresentationTimeUsByIndex(0, 1, relativePresentationTimeUs),
+        Status::ERROR_NULL_POINTER);
     EXPECT_EQ(demuxer->GetIndexByRelativePresentationTimeUs(0, 1, index), Status::ERROR_NULL_POINTER);
 }
 
