@@ -115,6 +115,7 @@ public:
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb);
     int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb);
     int32_t Configure(std::shared_ptr<FormatMock> format);
+    int32_t Prepare();
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -133,13 +134,11 @@ public:
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
     void SetOutPath(const std::string &path);
-    void SetIsHdrVivid(bool isHdrVivid);
     int32_t testParam_ = VCodecTestParam::SW_AVC;
     bool needCheckSHA_ = false;
     bool needSleep_ = false;
     static bool needDump_;
     bool isAVBufferMode_ = false;
-    bool isHdrVivid_ = false;
     bool isTemporalScalabilitySyncIdr_ = false;
     bool isDiscardFrame_ = false;
 

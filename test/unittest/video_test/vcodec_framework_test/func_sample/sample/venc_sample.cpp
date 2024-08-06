@@ -294,6 +294,14 @@ int32_t VideoEncSample::Configure(std::shared_ptr<FormatMock> format)
     return videoEnc_->Configure(format);
 }
 
+int32_t VideoEncSample::Prepare()
+{
+    if (videoEnc_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return videoEnc_->Prepare();
+}
+
 int32_t VideoEncSample::SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer)
 {
     if (videoEnc_ == nullptr) {
@@ -489,11 +497,6 @@ void VideoEncSample::SetOutPath(const std::string &path)
     outPath_ = path + ".dat";
 }
 
-void VideoEncSample::SetIsHdrVivid(bool isHdrVivid)
-{
-    isHdrVivid_ = isHdrVivid;
-}
-
 void VideoEncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -541,9 +544,6 @@ void VideoEncSample::FlushInner()
 
 int32_t VideoEncSample::ReadOneFrame()
 {
-    if (isHdrVivid_ && isSurfaceMode_) {
-        return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
-    }
     return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
 }
 

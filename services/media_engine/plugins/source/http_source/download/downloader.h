@@ -178,7 +178,6 @@ private:
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
-    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);

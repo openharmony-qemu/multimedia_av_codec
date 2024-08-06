@@ -20,6 +20,7 @@
 #include <regex>
 #include "network/network_typs.h"
 #include "common/media_core.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -276,19 +277,18 @@ bool HttpMediaDownloader::HandleBuffering()
     return isBuffering_;
 }
 
-bool HttpMediaDownloader::StartBuffering()
+bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
 {
-    if (!canWrite_ || downloadRequest_->IsChunkedVod()) {
+    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0) {
         return false;
     }
     size_t cacheWaterLine = 0;
     size_t fileRemain = 0;
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
+    cacheWaterLine = std::max(static_cast<size_t>(wantReadLength), PLAY_WATER_LINE);
     if (fileContenLen > readOffset_) {
         fileRemain = fileContenLen - readOffset_;
-        cacheWaterLine = std::min(fileRemain, PLAY_WATER_LINE);
-    } else {
-        cacheWaterLine = PLAY_WATER_LINE;
+        cacheWaterLine = std::min(fileRemain, cacheWaterLine);
     }
 
     bool isEos = false;
@@ -300,7 +300,7 @@ bool HttpMediaDownloader::StartBuffering()
         waterLineAbove_ = std::min(waterLineAbove_, fileRemain);
 
         if (!isBuffering_) {
-            MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " wantReadLength " PUBLIC_LOG_ZU,
+            MEDIA_LOG_I("readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " waterLineAbove_ " PUBLIC_LOG_ZU,
                 readOffset_, GetCurrentBufferSize(), waterLineAbove_);
             isBuffering_ = true;
             MEDIA_LOG_I("CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
@@ -366,8 +366,11 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
+    MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::Read, readOffset: " + std::to_string(readOffset_) +
+        ", expectedLen: " + std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(remain));
+    // This prevents the read operation from failing to read data when the seek operation is not triggered.
     if (remain < readDataInfo.wantReadLength_ &&
-        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) { // 防止seek未触发下载导致read读取不到数据
+        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
         ChangeDownloadPos();
     }
 
@@ -420,7 +423,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             MEDIA_LOG_I("Return error again.");
             return Status::ERROR_AGAIN;
         }
-        if (StartBuffering()) {
+        if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
         return ReadRingBuffer(buff, readDataInfo);
@@ -432,7 +435,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             MEDIA_LOG_I("Return error again.");
             return Status::ERROR_AGAIN;
         }
-        if (StartBuffering()) {
+        if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
         return ReadCacheBuffer(buff, readDataInfo);
@@ -508,6 +511,7 @@ void HttpMediaDownloader::ChangeDownloadPos()
     isNeedDropData_ = false;
     size_t downloadOffset = static_cast<size_t>(readOffset_) + cacheMediaBuffer_->GetBufferSize(readOffset_);
     isHitSeeking_ = true;
+    cacheMediaBuffer_->Seek(downloadOffset);
     bool result = downloader_->Seek(downloadOffset);
     isHitSeeking_ = false;
     if (result) {
@@ -571,11 +575,11 @@ bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(offset);
-    MEDIA_LOG_D("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
+    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
     if (remain > 0) {
         return HandleSeekHit(offset);
     }
-    MEDIA_LOG_D("Seek miss.");
+    MEDIA_LOG_I("Seek miss.");
     cacheMediaBuffer_->Seek(offset);
     readOffset_ = static_cast<size_t>(offset);
 
@@ -701,13 +705,13 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
     size_t hasWriteSize = 0;
     while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_) {
         if (isNeedClean_) {
-            MEDIA_LOG_D("isNeedClean true.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "isNeedClean true.");
             return true;
         }
         size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
         writeOffset_ += res;
         hasWriteSize += res;
-        MEDIA_LOG_D("writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "writeOffset " PUBLIC_LOG_ZU " res " PUBLIC_LOG_ZU, writeOffset_, res);
         if (res > 0 || hasWriteSize == len) {
             HandleCachedDuration();
             continue;
@@ -726,7 +730,7 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         canWrite_ = true;
     }
     if (isInterruptNeeded_.load() || isInterrupt_) {
-        MEDIA_LOG_D("isInterruptNeeded true, return false.");
+        MEDIA_LOG_I("isInterruptNeeded true, return false.");
         return false;
     }
     OnWriteBuffer(len);
@@ -959,10 +963,11 @@ void HttpMediaDownloader::HandleCachedDuration()
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
+    // Subtraction of unsigned integers requires size comparison first.
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) { // 无符号整数需要先判断大小再相减
+        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
         MEDIA_LOG_I("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;

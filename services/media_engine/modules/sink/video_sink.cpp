@@ -201,9 +201,14 @@ void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
 
 void VideoSink::SetFirstPts(int64_t pts)
 {
+    auto syncCenter = syncCenter_.lock();
     if (firstPts_ == HST_TIME_NONE) {
-        firstPts_ = pts;
-        MEDIA_LOG_I_SHORT("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
+        if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
+            firstPts_ = syncCenter->GetMediaStartPts();
+        } else {
+            firstPts_ = pts;
+        }
+        MEDIA_LOG_I("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
 }
 

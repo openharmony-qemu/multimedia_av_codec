@@ -333,6 +333,7 @@ void Downloader::Stop(bool isAsync)
 
 bool Downloader::Seek(int64_t offset)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Seek, offset: " + std::to_string(offset));
     AutoLock lock(operatorMutex_);
     FALSE_RETURN_V(currentRequest_ != nullptr, false);
     size_t contentLength = currentRequest_->GetFileContentLength();
@@ -423,7 +424,7 @@ int64_t Downloader::HttpDownloadLoop()
 {
     AutoLock lock(operatorMutex_);
     if (shouldStartNextRequest) {
-        std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
+        std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms timeout limit.
         if (!tempRequest) {
             MEDIA_LOG_W("HttpDownloadLoop tempRequest is null.");
             noTaskLoopTimes_++;
@@ -514,7 +515,7 @@ void Downloader::HandleRetOK()
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
-    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // 检查是否播放结束
+    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
             currentRequest_->startPos_, currentRequest_->url_.c_str());
         currentRequest_->isEos_ = true;
@@ -742,20 +743,6 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;
             }
-        }
-    }
-    return true;
-}
-
-bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
-{
-    if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
-        !strncmp(key, "content-length", strlen("content-length"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, false);
-        info->contentLen = atol(StringTrim(token));
-        if (info->contentLen <= 0) {
-            info->isChunked = true;
         }
     }
     return true;

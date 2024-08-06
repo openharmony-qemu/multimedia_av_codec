@@ -179,6 +179,7 @@ public:
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         AVCODEC_SYNC_TRACE;
         controller_->Release();
+        controller_->Destroy();
         controller_->UnloadInterfaces();
         codec_.reset();
         state_.Set(State::DISABLED);
