@@ -87,7 +87,7 @@ private:
         DUMP_AVBUFFER_OUTPUT = 0b100,
     };
     enum IndexAndPTSConvertMode : unsigned int {
-        Get_FIRST_PTS,
+        GET_FIRST_PTS,
         INDEX_TO_RELATIVEPTS,
         RELATIVEPTS_TO_INDEX,
     };

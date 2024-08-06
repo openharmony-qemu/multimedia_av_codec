@@ -1927,7 +1927,7 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetIndexByRelativePresentationTimeUs failed due to fileType is not MP4.");
     
-    GetpresentationTimeUsFromFfmpegMOV(Get_FIRST_PTS, trackIndex,
+    GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
 
     int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + AbsolutePTSIndexZero_;
@@ -1967,7 +1967,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetRelativePresentationTimeUsByIndex failed due to fileType is not MP4.");
         
-    GetpresentationTimeUsFromFfmpegMOV(Get_FIRST_PTS, trackIndex,
+    GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
     GetpresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
@@ -2011,7 +2011,7 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
         nb_frames--;
         
         switch (mode) {
-            case Get_FIRST_PTS:
+            case GET_FIRST_PTS:
                 AbsolutePTSIndexZero_ = pts < AbsolutePTSIndexZero_ ? pts : AbsolutePTSIndexZero_;
                 break;
             case INDEX_TO_RELATIVEPTS:
