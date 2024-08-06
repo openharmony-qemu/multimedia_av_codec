@@ -205,7 +205,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     // ringbuffer 0 after seek in 20ms, don't notify buffering
     if (isReadFrame_ && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
          (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
-        MEDIA_LOG_I("ringBuffer_->GetSize() " PUBLIC_LOG_U64 " curReadTime_ " PUBLIC_LOG_D64
+        MEDIA_LOG_I("ringBuffer_->GetSize() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
         CheckReadTime();
         FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
@@ -233,7 +233,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         " costTime: " PUBLIC_LOG_U64, position_.load(), expectedLen, ct);
     }
     position_ += static_cast<uint64_t>(size);
-    MEDIA_LOG_D("ringBuffer_->GetSize() " PUBLIC_LOG_U64, ringBuffer_->GetSize());
+    MEDIA_LOG_D("ringBuffer_->GetSize() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
     return Status::OK;
 }
 
@@ -370,7 +370,7 @@ void FileFdSourcePlugin::CacheDataLoop()
         HandleReadResult(bufferSize, size);
         return;
     }
-    MEDIA_LOG_D("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBuffer_->GetSize() " PUBLIC_LOG_U64
+    MEDIA_LOG_D("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBuffer_.size() " PUBLIC_LOG_ZU
         ", size_ " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_);
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
         MEDIA_LOG_I("CacheData ringbuffer write failed");
@@ -385,7 +385,7 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos:" PUBLIC_LOG_U64 ",ringBufferSize " PUBLIC_LOG_U64 ", size "
+        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos:" PUBLIC_LOG_U64 ",ringBuffer.size " PUBLIC_LOG_ZU ", size "
             PUBLIC_LOG_U64 " cTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
     }
     
@@ -513,7 +513,7 @@ void FileFdSourcePlugin::NotifyBufferingEnd()
     NotifyBufferingPercent();
     MEDIA_LOG_I("NotifyBufferingEnd, ringBufferSize_ " PUBLIC_LOG_U64
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBufferSize_, waterLineAbove_);
-    MEDIA_LOG_I("water line above, ringBuffer_->GetSize() " PUBLIC_LOG_U64, ringBuffer_->GetSize());
+    MEDIA_LOG_I("water line above, ringBuffer_->GetSize() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
     isBuffering_ = false;
     lastReadTime_ = 0;
     if (callback_ != nullptr && !isInterrupted_) {
