@@ -205,6 +205,7 @@ HWTEST_F(DemuxerFunc2NdkTest, SUB_MEDIA_DEMUXER_VTT_4900, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
     data = OH_AVMemory_GetAddr(memory);
     vttSubtitle = atoi(reinterpret_cast<const char*>(data));
+    vttIndex = VTTFORWARD;
     ASSERT_EQ(vttSubtitle, VTTFORWARD);
     while (true) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
