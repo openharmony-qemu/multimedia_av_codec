@@ -124,7 +124,7 @@ private:
     void StatusChanged(CodecStatus newStatus);
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     int32_t DrmVideoCencDecrypt(uint32_t index);
-    int32_t CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, int32_t svpFlag);
+    int32_t CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, bool svpFlag);
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
