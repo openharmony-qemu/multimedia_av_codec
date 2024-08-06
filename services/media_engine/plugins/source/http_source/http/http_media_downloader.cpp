@@ -243,7 +243,7 @@ void HttpMediaDownloader::OnClientErrorEvent()
 
 bool HttpMediaDownloader::HandleBuffering()
 {
-    if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
+    if (!isBuffering_ || downloadRequest_->IsChunkedVod() || callback_ == nullptr) {
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
@@ -279,7 +279,7 @@ bool HttpMediaDownloader::HandleBuffering()
 
 bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
 {
-    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0) {
+    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0 || callback_ == nullptr) {
         return false;
     }
     size_t cacheWaterLine = 0;
@@ -958,7 +958,7 @@ int32_t HttpMediaDownloader::GetWaterLineAbove()
 
 void HttpMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ <= 0) {
+    if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *

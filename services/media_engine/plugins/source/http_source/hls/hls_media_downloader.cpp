@@ -311,7 +311,7 @@ bool HlsMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
 
-    if (!isBuffering_ && isFirstFrameArrived_) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
@@ -322,7 +322,7 @@ bool HlsMediaDownloader::HandleBuffering()
 bool HlsMediaDownloader::HandleCache()
 {
     waterLineAbove_ = static_cast<size_t>(GetWaterLineAbove());
-    if (!isBuffering_) {
+    if (!isBuffering_ && callback_ != nullptr) {
         MEDIA_LOG_I("DownloadTask start.");
         isBuffering_ = true;
         UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
@@ -1166,7 +1166,7 @@ int32_t HlsMediaDownloader::GetWaterLineAbove()
 
 void HlsMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ <= 0) {
+    if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
 
