@@ -179,7 +179,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
-    PlayStrategy* playStrategy = nullptr;
+    std::shared_ptr<PlayStrategy> playStrategy;
     if (source != nullptr) {
         uri_ = source->GetSourceUri();
         httpHeader_ = source->GetSourceHeader();
