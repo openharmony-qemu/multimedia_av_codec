@@ -45,7 +45,7 @@ constexpr int32_t FDPOS                         = 2;
 constexpr int32_t READ_TIME                     = 3;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
-constexpr int64_t WATER_LINE_BELOW_DEFAULT      = 5 * 1024;
+constexpr size_t WATER_LINE_BELOW_DEFAULT      = 5 * 1024;
 constexpr int32_t TEN_MILLISECOUNDS             = 10 * 1000;
 constexpr int32_t ONE_SECONDS                   = 1 * 1000 * 1000;
 constexpr int32_t CACHE_TIME_DEFAULT            = 5;
@@ -203,14 +203,14 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     }
 
     // ringbuffer 0 after seek in 20ms, don't notify buffering
-    if (isReadFrame_ && ringBuffer_->GetSize() < static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT) &&
+    if (isReadFrame_ && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
          (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
         MEDIA_LOG_I("ringBuffer_->GetSize() " PUBLIC_LOG_D64 " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
-         CheckReadTime();
+        CheckReadTime();
         FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
-        FALSE_RETURN_V_MSG_E(isReadBlocking_, Status::ERROR_AGAIN, "please not retry read, isReadBlocking false");
-         return Status::ERROR_AGAIN;
+        FALSE_RETURN_V_MSG_E(isReadBlocking_, Status::OK, "please not retry read, isReadBlocking false");
+        return Status::ERROR_AGAIN;
     }
 
     std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
@@ -386,7 +386,7 @@ void FileFdSourcePlugin::CacheDataLoop()
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
         MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64
-        ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
+            ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
     }
     
     DeleteCacheBuffer(cacheBuffer, bufferSize);
