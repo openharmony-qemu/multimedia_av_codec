@@ -43,6 +43,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_
 namespace OHOS {
 namespace Media {
 
+const int32_t TRY_READ_SLEEP_TIME = 10;  //ms
+const int32_t TRY_READ_TIMES = 10;
 constexpr uint64_t LIVE_CONTENT_LENGTH = 2147483646;
 StreamDemuxer::StreamDemuxer() : position_(0)
 {
@@ -213,6 +215,27 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
     return ret;
 }
 
+Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
+    std::shared_ptr<Plugins::Buffer>& data)
+{
+    Status err = Status::OK;
+    int32_t retryTimes = 0;
+    while (true && !isInterruptNeeded_.load()) {
+        err = source_->Read(streamID, data, offset, size);
+        if (err != Status::END_OF_STREAM && data->GetMemory()->GetSize() == 0) {
+            OSAL::SleepFor(TRY_READ_SLEEP_TIME);
+            retryTimes++;
+            if (retryTimes > TRY_READ_TIMES) {
+                break;
+            }
+            continue;
+        }
+        break;
+    }
+    FALSE_LOG_MSG(!isInterruptNeeded_.load(), "ReadRetry interrupted");
+    return err;
+}
+
 Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Plugins::Buffer>& data)
 {
@@ -224,7 +247,7 @@ Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
     Status err;
     auto readSize = size;
     if (source_->IsSeekToTimeSupported() || source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
-        err = source_->Read(streamID, data, offset, size);
+        err = ReadRetry(streamID, offset, readSize, data);
         FALSE_LOG_MSG(err == Status::OK, "hls, plugin read failed.");
         return err;
     }
@@ -250,7 +273,7 @@ Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
         position_ = offset;
     }
 
-    err = source_->Read(streamID, data, offset, size);
+    err = ReadRetry(streamID, offset, readSize, data);
     if (err == Status::OK) {
         position_ += data->GetMemory()->GetSize();
     }
