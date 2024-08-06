@@ -28,7 +28,6 @@
 #include "buffer/avallocator.h"
 #include "common/event.h"
 #include "common/log.h"
-#include "frame_detector.h"
 #include "meta/media_types.h"
 #include "meta/meta.h"
 #include "osal/utils/dump_buffer.h"
