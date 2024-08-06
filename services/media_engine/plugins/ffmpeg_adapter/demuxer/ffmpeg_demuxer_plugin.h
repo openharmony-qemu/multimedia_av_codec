@@ -152,6 +152,7 @@ private:
 
     Status GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode, 
         uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
+    void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSProcessToIndex(int64_t pts, int64_t AbsolutePTS);
     int64_t AbsolutePTSIndexZero_ = INT64_MAX;

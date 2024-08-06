@@ -1898,11 +1898,21 @@ bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
         nalUnitType == 6 || nalUnitType == 8; // 6: RADL_N, 8: RASL_N
 }
 
-Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
-    const uint64_t relativePresentationTimeUs, uint32_t &index)
+void FFmpegDemuxerPlugin::InitPTSandIndexConvert()
 {
     RelativePTSToIndexPosition_ = 0; // init RelativePTSToIndexPosition_
     IndexToRelativePTSMaxHeap_ = std::priority_queue<int64_t>(); // init IndexToRelativePTSMaxHeap_
+    RelativePTSToIndexPTSMin_ = INT64_MAX;
+    RelativePTSToIndexPTSMax_ = INT64_MIN;
+    RelativePTSToIndexRightDiff_ = INT64_MAX;
+    RelativePTSToIndexLeftDiff_ = INT64_MAX;
+    RelativePTSToIndexTempDiff_ = INT64_MAX;
+}
+
+Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+    const uint64_t relativePresentationTimeUs, uint32_t &index)
+{
+    InitPTSandIndexConvert();
 
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetIndexByRelativePresentationTimeUs failed due to formatContext_ is nullptr.");
@@ -1939,8 +1949,7 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
 Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    RelativePTSToIndexPosition_ = 0; // init RelativePTSToIndexPosition_
-    IndexToRelativePTSMaxHeap_ = std::priority_queue<int64_t>(); // init IndexToRelativePTSMaxHeap_
+    InitPTSandIndexConvert();
 
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetRelativePresentationTimeUsByIndex failed due to formatContext_ is nullptr.");
@@ -2050,7 +2059,7 @@ void FFmpegDemuxerPlugin::RelativePTSProcessToIndex(int64_t pts, int64_t Absolut
     if (pts < AbsolutePTS && RelativePTSToIndexTempDiff_ < RelativePTSToIndexLeftDiff_) {
         RelativePTSToIndexLeftDiff_ = RelativePTSToIndexTempDiff_;
     }
-    if (pts >= AbsolutePTS && RelativePTSToIndexTempDiff_ < RelativePTSToIndexLeftDiff_) {
+    if (pts >= AbsolutePTS && RelativePTSToIndexTempDiff_ < RelativePTSToIndexRightDiff_) {
         RelativePTSToIndexRightDiff_ = RelativePTSToIndexTempDiff_;
     }
     if (pts < AbsolutePTS) {

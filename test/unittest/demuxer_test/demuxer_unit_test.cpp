@@ -2342,20 +2342,29 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1003, Tes
     ASSERT_EQ(ret, AV_ERR_OK);
     ASSERT_EQ(index, 10);
 
-    // non-standard pts & video track
-    trackIndex = 1;
-    relativePresentationTimeUs = 166667;
-    index = 0;
-    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
-    ASSERT_NE(ret, AV_ERR_OK);
-
     // standard pts & audio track
     trackIndex = 0;
-    relativePresentationTimeUs = 232199;
+    relativePresentationTimeUs = 23219;
     index = 0;
     ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(index, 10);
+    ASSERT_EQ(index, 1);
+
+    // left non-standard pts & audio track
+    trackIndex = 0;
+    relativePresentationTimeUs = 23218;
+    index = 0;
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(index, 1);
+
+    // right non-standard pts & audio track
+    trackIndex = 0;
+    relativePresentationTimeUs = 23220;
+    index = 0;
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_EQ(index, 1);
 }
 
 /**
@@ -2472,6 +2481,61 @@ HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1001, TestSize.Leve
     ASSERT_EQ(ret, AV_ERR_OK);
     ASSERT_EQ(index1, 4);
 }
+
+/**
+ * @tc.name: Demuxer_PTSOutOfRange_1000
+ * @tc.desc: pts out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_PTSOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 999999999;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_IndexOutOfRange_1000
+ * @tc.desc: Index out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_IndexOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 9999999;
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_TrackOutOfRange_1000
+ * @tc.desc: Track out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_TrackOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+
+    uint32_t trackIndex = 99;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
 #endif
 
 /**
