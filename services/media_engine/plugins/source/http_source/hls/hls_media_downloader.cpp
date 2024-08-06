@@ -27,6 +27,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <regex>
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -353,6 +354,8 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
 {
     FALSE_RETURN_V(buffer_ != nullptr, Status::END_OF_STREAM);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
+    MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::ReadDelegate, expectedLen: " +
+        std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(buffer_->GetSize()));
     readDataInfo.isEos_ = CheckReadStatus();
     if (readDataInfo.isEos_ && buffer_->GetSize() == 0) {
         readDataInfo.realReadLength_ = 0;
@@ -1000,7 +1003,7 @@ void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
 {
     static uint32_t minDuration = 0;
     uint64_t nowTime = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    // len是字节 转换成bit
+    // Bytes to bit
     uint32_t duration = len * 8;
     if (duration >= bufferedDuration_) {
         bufferedDuration_ = 0;

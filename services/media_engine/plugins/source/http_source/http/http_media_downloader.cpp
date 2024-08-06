@@ -20,6 +20,7 @@
 #include <regex>
 #include "network/network_typs.h"
 #include "common/media_core.h"
+#include "avcodec_trace.h"
 
 namespace OHOS {
 namespace Media {
@@ -366,8 +367,11 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
+    MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::Read, readOffset: " + std::to_string(readOffset_) +
+        ", expectedLen: " + std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(remain));
+    // This prevents the read operation from failing to read data when the seek operation is not triggered.
     if (remain < readDataInfo.wantReadLength_ &&
-        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) { // 防止seek未触发下载导致read读取不到数据
+        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
         ChangeDownloadPos();
     }
 
@@ -508,6 +512,7 @@ void HttpMediaDownloader::ChangeDownloadPos()
     isNeedDropData_ = false;
     size_t downloadOffset = static_cast<size_t>(readOffset_) + cacheMediaBuffer_->GetBufferSize(readOffset_);
     isHitSeeking_ = true;
+    cacheMediaBuffer_->Seek(downloadOffset);
     bool result = downloader_->Seek(downloadOffset);
     isHitSeeking_ = false;
     if (result) {
@@ -571,7 +576,7 @@ bool HttpMediaDownloader::SeekRingBuffer(int64_t offset)
 bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(offset);
-    MEDIA_LOG_D("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
+    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, remain, offset);
     if (remain > 0) {
         return HandleSeekHit(offset);
     }
@@ -959,10 +964,11 @@ void HttpMediaDownloader::HandleCachedDuration()
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
         BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
+    // Subtraction of unsigned integers requires size comparison first.
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
-        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) { // 无符号整数需要先判断大小再相减
+        lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
         MEDIA_LOG_I("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;

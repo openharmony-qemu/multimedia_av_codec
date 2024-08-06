@@ -309,9 +309,6 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
         auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
     } else {
-        if (host.empty()) {
-            MEDIA_LOG_I("InitCurlEnvironment host is empty.");
-        }
         if (IsHostNameExcluded(url, exclusions, ",")) {
             MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
         }
