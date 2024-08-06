@@ -221,8 +221,8 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, READ_RETRY);
     if (size == 0) {
         FALSE_RETURN_V_MSG_E(GetLastSize(position_) != 0, Status::END_OF_STREAM, "ReadCloud END_OF_STREAM");
-        MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_D64 ", size_ "
-            PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64 ", isReadBlocking_ %{public}d", fd_, offset, size_, position_.load(), isReadBlocking_.load());
+        MEDIA_LOG_I("read size 0, fd_ " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_D64 ", size_ " PUBLIC_LOG_U64 ", position "
+            PUBLIC_LOG_U64 ", isReadBlocking_ %{public}d", fd_, offset, size_, position_.load(), isReadBlocking_.load());
         bufData->UpdateDataSize(0);
         return Status::OK;
     }
@@ -385,13 +385,14 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64
-            ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
+        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64 ", size_ "
+            PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
     }
     
     DeleteCacheBuffer(cacheBuffer, bufferSize);
 
-    if (isBuffering_ && (static_cast<int64_t>(ringBuffer_->GetSize()) > waterLineAbove_ || GetLastSize(cachePosition_.load()) == 0)) {
+    if (isBuffering_ && (static_cast<int64_t>(ringBuffer_->GetSize()) > waterLineAbove_ ||
+        GetLastSize(cachePosition_.load()) == 0)) {
         NotifyBufferingEnd();
     }
 }
