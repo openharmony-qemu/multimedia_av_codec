@@ -215,6 +215,10 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
             MEDIA_LOG_E_SHORT("mimeType not found, index: %zu", index);
             continue;
         }
+        if (mime.find("invalid") == 0) {
+            MEDIA_LOG_E_SHORT("mimeType is invalid, index: %zu", index);
+            continue;
+        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E_SHORT("mediaType not found, index: %zu", index);
