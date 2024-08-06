@@ -33,6 +33,10 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
 {
     auto statusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        if (isClosed_) {
+            MEDIA_LOG_W("Downloader monitor is already closed.");
+            return;
+        }
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
@@ -79,6 +83,7 @@ void DownloadMonitor::Resume()
 
 void DownloadMonitor::Close(bool isAsync)
 {
+    isClosed_ = true;
     retryTasks_.clear();
     downloader_->Close(isAsync);
     task_->Stop();

@@ -316,6 +316,10 @@ void Downloader::Stop(bool isAsync)
     }
     if (client_ != nullptr) {
         client_->Close();
+        if (!isAsync) {
+            isDestructor_ = true;
+            client_->Deinit();
+        }
     }
     shouldStartNextRequest = true;
     if (isAsync) {
