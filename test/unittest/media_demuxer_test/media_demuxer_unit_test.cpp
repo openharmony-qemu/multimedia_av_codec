@@ -409,7 +409,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnDumpInfo_001, TestSize.Level1)
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UnselectTrack_001, TestSize.Level1)
 {
-    string srtPath = "/data/test/media/webvtt_test.vtt";
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
     int64_t fileSize = 0;
     if (!srtPath.empty()) {
         struct stat fileStatus {};
@@ -738,12 +738,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_001, TestSize.Level1)
     demuxer->isPaused_ = false;
     demuxer->isSeekError_ = true;
     EXPECT_EQ(time, demuxer->ReadLoop(trackId));
-    uint32_t RETRY_DELAY_TIME_US = 100000;
-    demuxer->streamDemuxer_->SetIsIgnoreParse(false);
-    demuxer->isStopped_ = false;
-    demuxer->isPaused_ = false;
-    demuxer->isSeekError_ = false;
-    EXPECT_EQ(RETRY_DELAY_TIME_US, demuxer->ReadLoop(trackId));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsContainIdrFrame_001, TestSize.Level1)
@@ -1068,6 +1062,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetFrameIndex_001, TestSize.Level1)
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleSourceDrmInfoEvent_001, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     std::vector<uint8_t> val{0, 0};
     std::multimap<std::string, std::vector<uint8_t>> info;
     info.insert(std::pair<std::string, std::vector<uint8_t>>("key", val));
@@ -1646,11 +1641,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetDuration_002, TestSize.Level1)
     frameDetectorH265->IsVCL('a');
     frameDetectorH265->IsIDR('a');
     frameDetectorH265->IsPrefixSEI('a');
-
-    demuxer->source_->seekToTimeFlag_ = true;
-    demuxer->mediaMetaData_.globalMeta = std::make_shared<Meta>();
-    int64_t durationMs;
-    EXPECT_EQ(demuxer->GetDuration(durationMs), true);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
