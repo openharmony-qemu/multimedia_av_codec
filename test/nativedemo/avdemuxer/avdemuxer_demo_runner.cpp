@@ -273,6 +273,35 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
     }
 }
 
+static void RunPtsAndIndexConvert(const std::string &filePath, const std::string &fileMode){
+    auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
+    int32_t fd = -1;
+    if (fileMode == "0") {
+        fd = open(filePath.c_str(), O_RDONLY);
+        if (fd < 0) {
+            printf("open file failed\n");
+            return;
+        }
+        size_t filesize = innerSourceDemo->GetFileSize(filePath);
+        innerSourceDemo->CreateWithFD(fd, 0, filesize);
+    } else if (fileMode == "1") {
+        innerSourceDemo->CreateWithURI(filePath);
+    }
+    auto innerDemuxerDemo = std::make_shared<InnerDemuxerDemo>();
+    innerDemuxerDemo->CreateWithSource(innerSourceDemo->avsource_);
+    int32_t trackCount = 0;
+    int64_t duration = 0;
+    Format source_format = innerSourceDemo->GetSourceFormat();
+    source_format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
+    source_format.GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, duration);
+    printf("====>duration:%" PRId64 " total tracks:%d\n", duration, trackCount);
+    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
+    innerDemuxerDemo->Destroy();
+    if (fileMode == "0" && fd > 0) {
+        close(fd);
+    }
+}
+
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
@@ -307,7 +336,6 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     sharedMemory->Init();
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount); // demuxer run
     printf("seek to 1s,mode:SEEK_NEXT_SYNC\n");
-    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
     innerDemuxerDemo->SeekToTime(g_seekTime, SeekMode::SEEK_NEXT_SYNC); // 测试seek功能
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
     printf("seek to 1s,mode:SEEK_PREVIOUS_SYNC\n");
@@ -475,6 +503,7 @@ void PrintPrompt()
     cout << "6:native_demuxer all format" << endl;
     cout << "7:native_demuxer drm test" << endl;
     cout << "8:ffmpeg_demuxe ref test" << endl;
+    cout << "9:ffmpeg_demuxe pts and index test" << endl;
 }
 
 void AVSourceDemuxerDemoCase(void)
@@ -521,6 +550,8 @@ void AVSourceDemuxerDemoCase(void)
             return;
         }
         printf("only support local file\n");
+    } else if (mode == "9") {
+        RunPtsAndIndexConvert(filePath, fileMode); 
     } else {
         printf("select 0 or 1\n");
     }
