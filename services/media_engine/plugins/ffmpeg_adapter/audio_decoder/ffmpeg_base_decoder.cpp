@@ -98,8 +98,8 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         auto memory = inputBuffer->memory_;
         uint8_t *ptr = memory->GetAddr();
         int32_t size = memory->GetSize();
-        if (size <= 0) {
-            AVCODEC_LOGE("send input buffer is less than 0. size:%{public}d", size);
+        if (size <= 0 || size > memory->GetCapacity()) {
+            AVCODEC_LOGE("send input buffer is less than 0 or overflow. size:%{public}d", size);
             return Status::ERROR_UNKNOWN;
         }
         avPacket_->size = memory->GetSize();
