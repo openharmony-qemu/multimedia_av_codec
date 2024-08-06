@@ -541,4 +541,716 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_REPEAT_0300, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, vEncInnerSample->SetCallback());
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncInnerSample->Configure());
 }
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0010
+ * @tc.name      : set width of bufferConfig less than 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0010, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = -1,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0020
+ * @tc.name      : set width of bufferConfig be equal to 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0020, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 0,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0030
+ * @tc.name      : set width of bufferConfig be greater than video width
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0030, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = vEncSample->DEFAULT_WIDTH,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = vEncSample->DEFAULT_WIDTH + 1;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0040
+ * @tc.name      : set height of bufferConfig less than 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0040, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = -1,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0050
+ * @tc.name      : set height of bufferConfig be equal to 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0050, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 0,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0060
+ * @tc.name      : set height of bufferConfig be greater than video height
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0060, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = vEncSample->DEFAULT_HEIGHT,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = vEncSample->DEFAULT_HEIGHT + 1;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0070
+ * @tc.name      : set format of bufferConfig is GRAPHIC_PIXEL_FMT_YCBCR_420_P
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0070, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0080
+ * @tc.name      : set format of bufferConfig is GRAPHIC_PIXEL_FMT_YCBCR_420_SP
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0080, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0090
+ * @tc.name      : set format of bufferConfig is GRAPHIC_PIXEL_FMT_YCRCB_420_SP
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0090, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0100
+ * @tc.name      : set format of bufferConfig is GRAPHIC_PIXEL_FMT_BUTT
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0100, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0110
+ * @tc.name      : set VIDEO_COORDINATE_X of format less than 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0110, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = -1;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0120
+ * @tc.name      : set VIDEO_COORDINATE_X of format greater than video width
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0120, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = vEncSample->DEFAULT_WIDTH + 1;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0130
+ * @tc.name      : set VIDEO_COORDINATE_X of format add waterMark width greater than video width
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0130, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = vEncSample->DEFAULT_HEIGHT - 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0140
+ * @tc.name      : set VIDEO_COORDINATE_Y of format less than 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0140, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = -1;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0150
+ * @tc.name      : set VIDEO_COORDINATE_Y of format greater than video height
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0150, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = vEncSample->DEFAULT_HEIGHT + 1;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0160
+ * @tc.name      : set VIDEO_COORDINATE_Y of format add waterMark height greater than video height
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0160, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = vEncSample->DEFAULT_HEIGHT - 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0170
+ * @tc.name      : set VIDEO_COORDINATE_W of format less than 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0170, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = -1;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0180
+ * @tc.name      : set VIDEO_COORDINATE_W of format greater than video width
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0180, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = -1;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0190
+ * @tc.name      : set VIDEO_COORDINATE_W of format be equal to 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0190, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = 0;
+    vEncSample->videoCoordinateHeight = bufferConfig.height;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0200
+ * @tc.name      : set VIDEO_COORDINATE_H of format less than 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0200, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = -1;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0210
+ * @tc.name      : set VIDEO_COORDINATE_H of format greater than video height
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0210, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = bufferConfig.height - 1;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_WATERMARK_API_0220
+ * @tc.name      : set VIDEO_COORDINATE_H of format be equal to 0
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_INNER_WATERMARK_API_0220, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkInnerSample>();
+    BufferRequestConfig bufferConfig = {
+        .width = 400,
+        .height = 400,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+    };
+    vEncSample->surfaceInput = true;
+    vEncSample->enableWaterMark = true;
+    vEncSample->videoCoordinateX = 100;
+    vEncSample->videoCoordinateY = 100;
+    vEncSample->videoCoordinateWidth = bufferConfig.width;
+    vEncSample->videoCoordinateHeight = 0;
+
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateByName(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->Configure());
+    if (!vEncSample->GetWaterMarkCapability(g_codecMime)) {
+        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vEncSample->SetCustomBuffer(bufferConfig));
+    } else {
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, vEncSample->SetCustomBuffer(bufferConfig));
+    }
+}
 } // namespace
