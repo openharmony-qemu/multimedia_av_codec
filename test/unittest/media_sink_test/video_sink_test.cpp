@@ -191,7 +191,6 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_002, TestSize.Level1)
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(syncCenter);
 
-    syncCenter->returnInt64Queue_.push(Plugins::HST_TIME_NONE);
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
@@ -209,7 +208,23 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_003, TestSize.Level1)
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(syncCenter);
 
-    syncCenter->returnInt64Queue_.push(Plugins::HST_TIME_NONE);
+    syncCenter->returnInt64Queue_.push(1000);
+    syncCenter->returnInt64Queue_.push(2000);
+    buffer->pts_ = 1500;
+    bool result = videoSink_->CheckBufferLatenessMayWait(buffer);
+    EXPECT_EQ(result, false);
+}
+
+HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_004, TestSize.Level1)
+{
+    AVBufferConfig config;
+    config.size = 4;
+    config.memoryType = MemoryType::SHARED_MEMORY;
+    auto buffer = AVBuffer::CreateAVBuffer(config);
+    ASSERT_TRUE(buffer != nullptr);
+    auto syncCenter = std::make_shared<MockMediaSyncCenter>();
+    videoSink_->SetSyncCenter(syncCenter);
+    videoSink_->lastBufferTime_ = 1000;
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
