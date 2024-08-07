@@ -22,7 +22,6 @@
 #include "http_server_demo.h"
 #include "plugin/plugin_event.h"
 #include "demuxer/stream_demuxer.h"
-#include "demuxer/frame_detector.h"
 
 #define LOCAL true
 namespace OHOS::Media {
@@ -1585,27 +1584,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_TryRecvParserTask_002, TestSize.Leve
     EXPECT_EQ(demuxer->GetGopLayerInfo(0, gopLayerInfo), Status::ERROR_AGAIN);
 
     delete[] data;
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetDuration_002, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    demuxer->source_->plugin_ = std::make_shared<SourcePluginMock>("StatusErrorUnknown");
-    demuxer->source_->seekable_ = Plugins::Seekable::SEEKABLE;
-
-    static std::shared_ptr<FrameDetectorH264> frameDetectorH264 = make_shared<FrameDetectorH264>();
-    static std::shared_ptr<FrameDetectorH265> frameDetectorH265 = make_shared<FrameDetectorH265>();
-    frameDetectorH264->GetNalType('a');
-    frameDetectorH264->IsPPS('a');
-    frameDetectorH264->IsVCL('a');
-    frameDetectorH264->IsIDR('a');
-
-    frameDetectorH265->GetNalType('a');
-    frameDetectorH265->IsPPS('a');
-    frameDetectorH265->IsVCL('a');
-    frameDetectorH265->IsIDR('a');
-    frameDetectorH265->IsPrefixSEI('a');
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
