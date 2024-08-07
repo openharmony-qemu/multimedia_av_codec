@@ -982,7 +982,7 @@ int32_t VEncNdkInnerSample::SetCustomBuffer(BufferRequestConfig bufferConfig)
     int32_t waterMarkFlag = enableWaterMark ? 1 : 0;
     auto allocator = Media::AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
     std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
-    if (avbuffer == nullptr){
+    if (avbuffer == nullptr) {
         cout << "avbuffer is nullptr" << endl;
         return AVCS_ERR_INVALID_VAL;
     }

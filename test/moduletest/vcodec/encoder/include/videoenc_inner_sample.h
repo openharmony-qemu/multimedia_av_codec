@@ -138,7 +138,7 @@ public:
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
     int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig);
-    bool ReadCustomDataToAVBuffer(const std::string &fileName, std:: shared_ptr<AVBuffer> buffer);
+    bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(std::string codecMimeType);
 
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
