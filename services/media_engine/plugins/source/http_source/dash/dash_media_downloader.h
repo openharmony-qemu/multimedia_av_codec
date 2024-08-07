@@ -56,7 +56,7 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void SetDownloadErrorState() override;
-    void SetPlayStrategy(PlayStrategy* playStrategy) override;
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;

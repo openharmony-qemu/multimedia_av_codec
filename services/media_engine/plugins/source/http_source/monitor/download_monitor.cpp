@@ -231,7 +231,7 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
-void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
+void DownloadMonitor::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
 {
     if (downloader_ != nullptr) {
         downloader_->SetPlayStrategy(playStrategy);
