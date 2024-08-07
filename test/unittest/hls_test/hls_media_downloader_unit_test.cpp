@@ -14,6 +14,7 @@
  */
 #include "hls_media_downloader_unit_test.h"
 #include "http_server_demo.h"
+#include "source_callback.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -393,6 +394,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     downloader->SetStatusCallback(statusCallback);
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    downloader->SetSource(source);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     unsigned char buff[10];

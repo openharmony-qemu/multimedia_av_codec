@@ -77,7 +77,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekTo(10);
-    httpSourcePlugin->SeekTo(1000000);
+    httpSourcePlugin->SeekTo(100000);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
@@ -106,10 +106,10 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
 {
-    std::vector<StreamInfo> stream;
-    DownloaderInfo downloaderInfo;
-    httpSourcePlugin->GetDownloadInfo(downloaderInfo);
-    httpSourcePlugin->GetStreamInfo(stream);
+    std::vector<StreamInfo> streams;
+    DownloadInfo downloadInfo;
+    httpSourcePlugin->GetDownloadInfo(downloadInfo);
+    httpSourcePlugin->GetStreamInfo(streams);
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     Plugins::Callback* sourceCallback = new SourceCallback();
     httpSourcePlugin->SetSource(source);
@@ -117,14 +117,14 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
-    httpSourcePlugin->GetStreamInfo(stream);
+    httpSourcePlugin->GetStreamInfo(streams);
     httpSourcePlugin->SetReadBlockingFlag(true);
     httpSourcePlugin->SetInterruptState(true);
-    httpSourcePlugin->GetDownloadInfo(downloaderInfo);
+    httpSourcePlugin->GetDownloadInfo(downloadInfo);
     httpSourcePlugin->SetDownloadErrorState();
 }
 
-HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
+HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
     Plugins::Callback* sourceCallback = new SourceCallback();
@@ -134,10 +134,10 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
     httpSourcePlugin->SeekTo(10);
-    httpSourcePlugin->SeekTo(1000000);
+    httpSourcePlugin->SeekTo(100000);
 }
 
-HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
+HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
 {
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     Plugins::Callback* sourceCallback = new SourceCallback();
@@ -146,8 +146,8 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level1)
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
     OSAL::SleepFor(1 * 1000);
-    httpSourcePlugin->SeekTo(10);
-    httpSourcePlugin->SeekTo(1000000);
+    httpSourcePlugin->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
+    httpSourcePlugin->SeekToTime(100000, SeekMode::SEEK_NEXT_SYNC);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Prepare_IsTrue, TestSize.Level1)
