@@ -137,9 +137,13 @@ public:
     void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
+    int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig);
+    bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
+    bool GetWaterMarkCapability(std::string codecMimeType);
 
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *WATER_MARK_DIR = "/data/test/media/128_72_0.rgba";
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 10000000;
@@ -173,6 +177,11 @@ public:
     int32_t discardFrameCount = 0;
     int32_t inputFrameCount = 0;
     bool setMaxCount = false;
+    bool enableWaterMark = false;
+    int32_t videoCoordinateX = 100;
+    int32_t videoCoordinateY = 100;
+    int32_t videoCoordinateWidth = 400;
+    int32_t videoCoordinateHeight = 400;
     
 private:
     std::atomic<bool> isRunning_ { false };
