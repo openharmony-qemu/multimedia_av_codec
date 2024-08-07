@@ -60,15 +60,15 @@ public:
 private:
     StreamParser *streamParser_ {nullptr};
     // .so initialize
-    static void *handler_;
     static void *LoadPluginFile(const std::string &path);
     static bool CheckSymbol(void *handler);
     using CreateFunc = StreamParser *(*)();
     using DestroyFunc = void (*)(StreamParser *);
-    static CreateFunc createFunc_;
-    static DestroyFunc destroyFunc_;
+    StreamType streamType_;
     static std::mutex mtx_;
     static std::map<StreamType, void *> handlerMap_;
+    static std::map<StreamType, CreateFunc> createFuncMap_;
+    static std::map<StreamType, DestroyFunc> destroyFuncMap_;
 };
 } // namespace Plugins
 } // namespace Media
