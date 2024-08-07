@@ -385,6 +385,45 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_001, TestSize.Level1)
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
+HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
+{
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {
+    };
+    downloader->SetStatusCallback(statusCallback);
+    downloader->Open(testUrl, httpHeader);
+    downloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    downloader->Read(buff, readDataInfo);
+    OSAL::SleepFor(1 * 1000);
+
+    downloader->SetCurrentBitRate(-1);
+    downloader->GetWaterLineAbove();
+    downloader->SetCurrentBitRate(10);
+    downloader->GetWaterLineAbove();
+    downloader->HandleCachedDuration();
+    downloader->SetInterruptState(true);
+    downloader->SetInterruptState(false);
+    downloader->GetContentLength();
+    downloader->GetDuration();
+    downloader->GetBitRates();
+    downloader->SetReadBlockingFlag(true);
+    downloader->SetReadBlockingFlag(false);
+    downloader->ReportBitrateStart(100);
+    downloader->CaculateBitRate(0, 0);
+    downloader->CaculateBitRate(1, 0);
+    std::multimap<std::string, std::vector<uint8_t>> drmInfos;
+    downloader->OnDrmInfoChanged(drmInfos);
+    downloader->Close(true);
+    downloader = nullptr;
+}
+
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_Encrypted, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
