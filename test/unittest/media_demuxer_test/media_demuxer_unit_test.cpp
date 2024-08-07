@@ -1035,7 +1035,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentation_001, TestSize.Level1
     demuxer->demuxerPluginManager_->streamInfoMap_[2].plugin = pluginMock;
 
     uint64_t relativePresentationTimeUs = 0;
-    EXPECT_EQ(Status::ERROR_UNKNOWN, demuxer->GetPresentationTimeUsByFrameIndex(0, 0, relativePresentationTimeUs));
+    EXPECT_EQ(Status::ERROR_UNKNOWN, demuxer->GetRelativePresentationTimeUsByIndex(0, 0, relativePresentationTimeUs));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetFrameIndex_001, TestSize.Level1)

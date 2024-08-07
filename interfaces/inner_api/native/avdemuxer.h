@@ -106,8 +106,23 @@ public:
     virtual int32_t GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) = 0;
     virtual int32_t GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) = 0;
 
+    /**
+     * @brief Obtian index by relative pts.
+     * @param trackIndex Get the sampleBuffer from this track.
+     * @param relativePresentationTimeUs Get pts relative to frame 0.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
     virtual int32_t GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) = 0;
+
+    /**
+     * @brief Obtian index by relative pts.
+     * @param trackIndex Get the sampleBuffer from this track.
+     * @param index Get an index that follows the Pts order.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
     virtual int32_t GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) = 0;
 };

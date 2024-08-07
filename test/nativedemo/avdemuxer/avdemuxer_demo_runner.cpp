@@ -248,29 +248,27 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
 {
     uint32_t trackIndex = 0;
     uint64_t relativePresentationTimeUs = 0;    // pts 0
-    uint32_t index = 0;
-
+    
     using clock = std::chrono::high_resolution_clock;
     auto start = clock::now();
     auto end = clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    for (uint32_t i = 0; i < 10 ; ++i) { // get first 10 frames
-        index = i;
+    for (uint32_t index = 0; index < 10 ; ++index) { // get first 10 frames
         start = clock::now();
         innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
         end = clock::now();
         elapsed = end - start;
         printf("GetRelativePresentationTimeUsByIndex, relativePresentationTimeUs = %" PRId64 "\n",
             relativePresentationTimeUs);
-        std::cout << "Function took " << elapsed.count() << " seconds to run.\n";
+        printf("Function took %f seconds to run.\n", elapsed.count());
 
         start = clock::now();
         innerDemuxerDemo->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
         end = clock::now();
         elapsed = end - start;
         printf("GetIndexByRelativePresentationTimeUs, index = %d\n", index);
-        std::cout << "Function took " << elapsed.count() << " seconds to run.\n";
+        printf("Function took %f seconds to run.\n", elapsed.count());
     }
 }
 

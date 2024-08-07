@@ -1915,7 +1915,7 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
 {
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
-        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
+        "GetIndexByRelativePresentationTimeUs failed due to avStream is nullptr.");
     InitPTSandIndexConvert();
 
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -1955,7 +1955,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
 {
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
-        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
+        "GetIndexByRelativePresentationTimeUs failed due to avStream is nullptr.");
     InitPTSandIndexConvert();
 
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
