@@ -51,6 +51,7 @@ public:
     void SetDemuxerState(int32_t streamId) override;
     void SetBundleName(const std::string& bundleName) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetReadBlockingFlag(bool isAllowed) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void NotifyBufferingStart();
     void NotifyBufferingPercent();
@@ -84,16 +85,17 @@ private:
     uint64_t size_ {0};
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
-    uint64_t position_ {0};
+    std::atomic<uint64_t> position_ {0};
     Callback* callback_ {nullptr};
     std::atomic<bool> isBuffering_ {false};
     std::atomic<bool> isInterrupted_ {false};
+    std::atomic<bool> isReadBlocking_ {true};
     std::atomic<bool> inSeek_ {false};
     std::shared_ptr<Task> downloadTask_;
     std::shared_mutex mutex_;
     bool isReadFrame_ {false};
     bool isSeekHit_ {false};
-    uint64_t cachePosition_ {0};
+    std::atomic<uint64_t> cachePosition_ {0};
     int64_t waterLineAbove_ {0};
     bool isCloudFile_ {false};
     std::shared_ptr<RingBuffer> ringBuffer_;
