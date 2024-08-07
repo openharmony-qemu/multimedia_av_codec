@@ -15,6 +15,7 @@
 
 #include "http_media_downloader_unit_test.h"
 #include "http_server_demo.h"
+#include "source_callback.h"
 
 #define LOCAL true
 namespace OHOS::Media::Plugins::HttpPlugin {
