@@ -132,7 +132,6 @@ private:
 
     bool isHttpSource_ = false;
     std::string videoMime_{};
-    bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
