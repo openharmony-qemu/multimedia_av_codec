@@ -30,8 +30,8 @@ constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
-constexpr int32_t RECORD_TIME_INTERVAL = 500;
-constexpr int32_t IS_DOWNLOAD_MIN_BIT = 2000;
+constexpr int32_t RECORD_TIME_INTERVAL = 1000;
+constexpr int32_t IS_DOWNLOAD_MIN_BIT = 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
@@ -47,6 +47,7 @@ constexpr uint32_t BUFFERING_SLEEP_TIME_MS = 10;
 constexpr uint32_t BUFFERING_TIME_OUT_MS = 1000;
 constexpr uint32_t UPDATE_CACHE_STEP = 5 * 1024;
 constexpr uint32_t BUFFERING_PERCENT_FULL = 100;
+constexpr double ZERO_THRESHOLD = 1e-9;
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID, VID_RING_BUFFER_SIZE},
@@ -79,6 +80,7 @@ DashSegmentDownloader::DashSegmentDownloader(Callback *callback, int streamId, M
 
     downloadRequest_ = nullptr;
     mediaSegment_ = nullptr;
+    recordData_ = std::make_shared<RecordData>();
 }
 
 DashSegmentDownloader::~DashSegmentDownloader() noexcept
@@ -96,6 +98,7 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
     steadyClock_.Reset();
     lastCheckTime_ = 0;
     downloadDuringTime_ = 0;
+    totalDownloadDuringTime_ = 0;
     downloadBits_ = 0;
     totalBits_ = 0;
     lastBits_ = 0;
@@ -918,8 +921,32 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = static_cast<uint64_t>(now - lastCheckTime_);
+            downloadDuringTime_ = now - lastCheckTime_;
             downloadBits_ += curDownloadBits;
+            totalDownloadDuringTime_ += downloadDuringTime_;
+            double downloadRate = 0;
+            double tmpNumerator = static_cast<double>(curDownloadBits);
+            double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+            if (tmpDenominator > ZERO_THRESHOLD) {
+                downloadRate = tmpNumerator / tmpDenominator;
+            }
+            size_t remainingBuffer = 0;
+            if (buffer_ != nullptr) {
+                remainingBuffer = buffer_->GetSize();
+            }
+            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
+                " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            if (recordData_ != nullptr) {
+                recordData_->downloadRate = downloadRate;
+                // Remaining playable time: s
+                if (realTimeBitBate_ > 0) {
+                    recordData_->bufferDuring = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT)
+                        / realTimeBitBate_;
+                } else {
+                    recordData_->bufferDuring = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT)
+                        / currentBitrate_;
+                }
+            }
         }
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
@@ -929,6 +956,36 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
 uint64_t DashSegmentDownloader::GetDownloadSpeed() const
 {
     return static_cast<uint64_t>(downloadSpeed_);
+}
+
+void DashSegmentDownloader::GetIp(std::string& ip)
+{
+    if (downloader_){
+        downloader_->GetIp(ip);
+    }
+}
+
+bool DashSegmentDownloader::GetDownloadFinishState()
+{
+    std::shared_ptr<DashInitSegment> finishState = GetDashInitSegment(streamId_);
+    if (finishState){
+        return finishState->isDownloadFinish_;
+    } else {
+        return true;
+    }
+}
+
+std::pair<int64_t, int64_t> DashSegmentDownloader::GetDownloadRecordData()
+{
+    std::pair<int64_t, int64_t> recordData;
+    if (recordData_ != nullptr){
+        recordData.first = static_cast<int64_t>(recordData_->downloadRate);
+        recordData.second = static_cast<int64_t>(recordData_->bufferDuring);
+    } else {
+        recordData.first = 0;
+        recordData.second = 0;
+    }
+    return recordData;
 }
 
 uint32_t DashSegmentDownloader::GetRingBufferSize() const
@@ -980,9 +1037,9 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
 {
     MEDIA_LOG_I("UpdateDownloadFinished:streamId:" PUBLIC_LOG_D32 ", url=" PUBLIC_LOG_S, streamId_, url.c_str());
     std::shared_ptr<DashInitSegment> initSegment = GetDashInitSegment(streamId_);
-    if (downloadDuringTime_ > 0) {
+    if (totalDownloadDuringTime_ > 0) {
         double tmpNumerator = static_cast<double>(downloadBits_);
-        double tmpDenominator = static_cast<double>(downloadDuringTime_);
+        double tmpDenominator = static_cast<double>(totalDownloadDuringTime_);
         double downloadRate = tmpNumerator / tmpDenominator;
         downloadSpeed_ = downloadRate * SPEED_MULTI_FACT;
     } else {

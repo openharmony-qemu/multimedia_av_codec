@@ -285,8 +285,9 @@ Status HttpCurlClient::Deinit()
 
 Status HttpCurlClient::GetIp(std::string &ip)
 {
-    if (!ip.empty()) {
-        ip = ip_;
+    if (!ip_.empty()) {
+        std::string obj(ip_);
+        ip = obj;
     } else {
         MEDIA_LOG_E("Get ip failed, ip is null.");
     }

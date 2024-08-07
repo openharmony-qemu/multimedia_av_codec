@@ -1033,6 +1033,33 @@ void DashMediaDownloader::SetDemuxerState(int32_t streamId)
         segmentDownloader->SetDemuxerState();
     }
 }
+
+void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (segmentDownloaders_.empty()) {
+        return ;
+    }
+    if (segmentDownloaders_[0] != nullptr) {
+        segmentDownloaders_[0]->GetIp(playbackInfo.serverIpAddress);
+    }
+    bool DownloadFinishStateTmp = false;
+    for (int i = 0; i < segmentDownloaders_.size(); i++)
+    {
+        if (playbackInfo.averageDownloadRate < static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed())) {
+            playbackInfo.averageDownloadRate = static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed());
+        }
+        DownloadFinishStateTmp = (DownloadFinishStateTmp || segmentDownloaders_[i]->GetDownloadFinishState());
+        std::pair<int64_t, int64_t> recordData = segmentDownloaders_[i]->GetDownloadRecordData();
+        if (playbackInfo.downloadRate < recordData.first) {
+            playbackInfo.downloadRate = recordData.first;
+        }
+        if (playbackInfo.bufferDuration < recordData.second) {
+            playbackInfo.bufferDuration = recordData.second;
+        }
+    }
+    playbackInfo.isDownloading = DownloadFinishStateTmp ? false : true;
+}
+
 }
 }
 }
