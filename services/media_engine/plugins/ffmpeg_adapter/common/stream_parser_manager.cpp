@@ -44,7 +44,6 @@ StreamParserManager::~StreamParserManager()
 bool StreamParserManager::Init(StreamType streamType)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    streamType_ = streamType;
     if (handlerMap_.count(streamType) && createFuncMap_.count(streamType) && destroyFuncMap_.count(streamType)) {
         return true;
     }
@@ -61,7 +60,7 @@ bool StreamParserManager::Init(StreamType streamType)
     if (handlerMap_.count(streamType) == 0) {
         handlerMap_[streamType] = LoadPluginFile(streamParserPath);
     }
-    if (!CheckSymbol(handlerMap_[streamType])) {
+    if (!CheckSymbol(handlerMap_[streamType], streamType)) {
         MEDIA_LOG_E("Load stream parser so fail");
         return false;
     }
@@ -80,6 +79,7 @@ std::shared_ptr<StreamParserManager> StreamParserManager::Create(StreamType stre
         MEDIA_LOG_E("createFunc_ fail");
         return nullptr;
     }
+    loader->streamType_ = streamType;
     return loader;
 }
 
@@ -190,7 +190,7 @@ void *StreamParserManager::LoadPluginFile(const std::string &path)
     return ptr;
 }
 
-bool StreamParserManager::CheckSymbol(void *handler)
+bool StreamParserManager::CheckSymbol(void *handler, StreamType streamType)
 {
     if (handler) {
         std::string createFuncName = "CreateStreamParser";
@@ -202,8 +202,8 @@ bool StreamParserManager::CheckSymbol(void *handler)
         if (createFunc && destroyFunc) {
             MEDIA_LOG_D("CheckSymbol:  createFuncName %{public}s", createFuncName.c_str());
             MEDIA_LOG_D("CheckSymbol:  destroyFuncName %{public}s", destroyFuncName.c_str());
-            createFuncMap_[streamType_] = createFunc;
-            destroyFuncMap_[streamType_] = destroyFunc;
+            createFuncMap_[streamType] = createFunc;
+            destroyFuncMap_[streamType] = destroyFunc;
             return true;
         }
     }
