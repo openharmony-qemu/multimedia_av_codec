@@ -22,7 +22,6 @@
 #include "http_server_demo.h"
 #include "plugin/plugin_event.h"
 #include "demuxer/stream_demuxer.h"
-#include "demuxer/frame_detector.h"
 
 #define LOCAL true
 namespace OHOS::Media {
@@ -740,28 +739,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_001, TestSize.Level1)
     EXPECT_EQ(time, demuxer->ReadLoop(trackId));
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsContainIdrFrame_001, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/h264_fmp4.mp4";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    int32_t trackId = 0;
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
-    EXPECT_EQ(false, demuxer->IsContainIdrFrame(nullptr, 0));
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnEvent_001, TestSize.Level1)
 {
     string srtPath = "/data/test/media/test_dash/segment_base/media-video-2.mp4";
@@ -952,19 +929,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Le
     EXPECT_EQ(demuxer->IsBufferDroppable(buffer, 1), true);
 
     delete[] data;
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsContainIdrFrame_015, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->ResumeDragging();
-    const uint8_t buffer[] = "111111111111111111111111111111111111111111";
-    demuxer->videoMime_ = std::string(MimeType::VIDEO_AVC);
-    EXPECT_EQ(demuxer->IsContainIdrFrame(buffer, sizeof(buffer)), false);
-    demuxer->videoMime_ = std::string(MimeType::VIDEO_HEVC);
-    EXPECT_EQ(demuxer->IsContainIdrFrame(buffer, sizeof(buffer)), false);
-    demuxer->videoMime_ = std::string("aaaaa");
-    EXPECT_EQ(demuxer->IsContainIdrFrame(buffer, sizeof(buffer)), true);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsBufferDroppable_001,
@@ -1620,27 +1584,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_TryRecvParserTask_002, TestSize.Leve
     EXPECT_EQ(demuxer->GetGopLayerInfo(0, gopLayerInfo), Status::ERROR_AGAIN);
 
     delete[] data;
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetDuration_002, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    demuxer->source_->plugin_ = std::make_shared<SourcePluginMock>("StatusErrorUnknown");
-    demuxer->source_->seekable_ = Plugins::Seekable::SEEKABLE;
-
-    static std::shared_ptr<FrameDetectorH264> frameDetectorH264 = make_shared<FrameDetectorH264>();
-    static std::shared_ptr<FrameDetectorH265> frameDetectorH265 = make_shared<FrameDetectorH265>();
-    frameDetectorH264->GetNalType('a');
-    frameDetectorH264->IsPPS('a');
-    frameDetectorH264->IsVCL('a');
-    frameDetectorH264->IsIDR('a');
-
-    frameDetectorH265->GetNalType('a');
-    frameDetectorH265->IsPPS('a');
-    frameDetectorH265->IsVCL('a');
-    frameDetectorH265->IsIDR('a');
-    frameDetectorH265->IsPrefixSEI('a');
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
