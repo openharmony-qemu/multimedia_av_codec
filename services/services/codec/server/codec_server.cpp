@@ -589,9 +589,10 @@ int32_t CodecServer::GetOutputFormat(Format &format)
 }
 
 int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-    int32_t svpFlag)
+    bool svpFlag)
 {
     AVCODEC_LOGI("CheckDrmSvpConsistency");
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_VAL, "keySession is nullptr");
     std::string tmpName = codecName_;
     transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
 
@@ -612,7 +613,6 @@ int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySes
 
     // check session level when secure video path is true
 #ifdef SUPPORT_DRM
-    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_VAL, "keySession is nullptr");
     DrmStandard::IMediaKeySessionService::ContentProtectionLevel sessionLevel;
     int ret = keySession->GetContentProtectionLevel(&sessionLevel);
     CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_VAL, "GetContentProtectionLevel failed");
