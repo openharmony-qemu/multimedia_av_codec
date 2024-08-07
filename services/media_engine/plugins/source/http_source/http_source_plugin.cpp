@@ -133,6 +133,24 @@ Status HttpSourcePlugin::Stop()
     return Status::OK;
 }
 
+Status HttpSourcePlugin::Pause()
+{
+    MEDIA_LOG_I("Pause enter.");
+    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+        downloader_->Pause();
+    }
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::Resume()
+{
+    MEDIA_LOG_I("Resume enter.");
+    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+        downloader_->Resume();
+    }
+    return Status::OK;
+}
+
 #undef ERROR_INVALID_PARAMETER
 
 Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)

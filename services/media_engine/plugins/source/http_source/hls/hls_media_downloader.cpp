@@ -228,22 +228,13 @@ void HlsMediaDownloader::Close(bool isAsync)
 void HlsMediaDownloader::Pause()
 {
     MEDIA_LOG_I("Pause enter");
-    isInterrupt_ = true;
-    bool cleanData = GetSeekable() != Seekable::SEEKABLE;
-    buffer_->SetActive(false, cleanData);
-    playList_->SetActive(false, cleanData);
     playListDownloader_->Pause();
-    downloader_->Pause();
 }
 
 void HlsMediaDownloader::Resume()
 {
     MEDIA_LOG_I("Resume enter");
-    isInterrupt_ = false;
-    buffer_->SetActive(true);
-    playList_->SetActive(true);
     playListDownloader_->Resume();
-    downloader_->Resume();
 }
 
 bool HlsMediaDownloader::CheckReadStatus()
