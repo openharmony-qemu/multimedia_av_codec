@@ -1216,6 +1216,7 @@ int32_t CodecServer::FlushPostProcessing()
     if (!postProcessing_) {
         return AVCS_ERR_OK;
     }
+    DeactivatePostProcessingQueue();
     if (postProcessingTask_) {
         postProcessingTask_->Pause();
     }
