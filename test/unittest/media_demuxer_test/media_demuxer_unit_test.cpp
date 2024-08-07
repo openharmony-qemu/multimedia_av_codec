@@ -1696,6 +1696,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Le
     streamDemuxer->cacheDataMap_[0] = cacheTmp;
     EXPECT_EQ(streamDemuxer->ResetCache(0), Status::OK);
 }
+
 /**
  * @tc.name: MediaDemuxer_GetProtocolByUri_0100
  * @tc.desc: MediaDemuxer_GetProtocolByUri_0100
