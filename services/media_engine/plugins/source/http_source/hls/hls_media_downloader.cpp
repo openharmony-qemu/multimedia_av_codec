@@ -300,7 +300,7 @@ bool HlsMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
 
-    if (!isBuffering_ && isFirstFrameArrived_) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
@@ -354,7 +354,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         MEDIA_LOG_I("Read return error again.");
         return Status::ERROR_AGAIN;
     }
-    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE && !CheckReadStatus()) {
+    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE && !CheckBreakCondition()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
@@ -1219,6 +1219,10 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
     // return error again 1 time 1s, avoid ffmpeg error
     while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
+            break;
+        }
+        if (CheckBreakCondition()) {
+            isBuffering_ = false;
             break;
         }
         OSAL::SleepFor(TEN_MILLISECONDS);

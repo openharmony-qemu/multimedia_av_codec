@@ -260,7 +260,7 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
     if (GetCurrentBufferSize() >= waterLineAbove_) {
-        MEDIA_LOG_I("Buffer is not enough");
+        MEDIA_LOG_I("Buffer is enough");
         isBuffering_ = false;
     }
     if (HandleBreak()) {
@@ -268,7 +268,7 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
 
-    if (!isBuffering_ && isFirstFrameArrived_) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
@@ -964,7 +964,7 @@ int32_t HttpMediaDownloader::GetWaterLineAbove()
 
 void HttpMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ <= 0) {
+    if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
@@ -1017,6 +1017,10 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
     // return error again 1 time 1s, avoid ffmpeg error
     while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
+            break;
+        }
+        if (HandleBreak()) {
+            isBuffering_ = false;
             break;
         }
         OSAL::SleepFor(TEN_MILLISECONDS);
