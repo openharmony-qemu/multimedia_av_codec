@@ -115,7 +115,7 @@ int32_t HEncoder::SetRepeat(const Format &format)
         HLOGW("invalid repeatMs %d", repeatMs);
         return AVCS_ERR_INVALID_VAL;
     }
-    repeatUs_ = repeatMs * TIME_RATIO_S_TO_MS;
+    repeatUs_ = static_cast<uint64_t>(repeatMs * TIME_RATIO_S_TO_MS);
 
     int repeatMaxCnt = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatMaxCnt)) {
@@ -290,7 +290,7 @@ int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
     int32_t ret = compNode_->SetParameterWithBuffer(CodecHDI::Codec_IndexParamOverlayBuffer, inVec, omxbuffer);
     if (ret != HDF_SUCCESS) {
         HLOGE("SetParameterWithBuffer failed");
-        return AVCS_ERR_UNKNOWN;
+        return AVCS_ERR_INVALID_VAL;
     }
     HLOGI("SetParameterWithBuffer succ");
     return AVCS_ERR_OK;
@@ -365,6 +365,8 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRat
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
+    width_ = width;
+    height_ = height;
     HLOGI("user set width %d, height %d", width, height);
     if (!GetPixelFmtFromUser(format)) {
         return AVCS_ERR_INVALID_VAL;
@@ -980,6 +982,21 @@ void HEncoder::WrapIsSkipFrameIntoOmxBuffer(shared_ptr<CodecHDI::OmxCodecBuffer>
     AppendToVector(omxBuffer->alongParam, isSkip);
 }
 
+void HEncoder::DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight)
+{
+    if (width_ != newWidth || height_ != newHeight) {
+        HLOGI("resolution changed, %ux%u -> %ux%u", width_, height_, newWidth, newHeight);
+        width_ = newWidth;
+        height_ = newHeight;
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, width_);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, height_);
+        HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
+        callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+    }
+}
+
 void HEncoder::ExtractPerFrameParamFromOmxBuffer(
     const shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer, shared_ptr<Media::Meta> &meta)
 {
@@ -988,20 +1005,22 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
     int* index = nullptr;
     while ((index = reader.Read<int>()) != nullptr) {
         switch (*index) {
+            case OMX_IndexConfigCommonOutputSize: {
+                auto *param = reader.Read<OMX_FRAMESIZETYPE>();
+                IF_TRUE_RETURN_VOID(param == nullptr);
+                DealWithResolutionChange(param->nWidth, param->nHeight);
+                break;
+            }
             case OMX_IndexParamEncOutQp: {
                 auto *averageQp = reader.Read<OMX_S32>();
-                if (averageQp == nullptr) {
-                    return;
-                }
+                IF_TRUE_RETURN_VOID(averageQp == nullptr);
                 HLOGD("pts=%" PRId64 ", averageQp=(%d)", omxBuffer->pts, *averageQp);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
                 break;
             }
             case OMX_IndexParamEncOutMse: {
                 auto *averageMseLcu = reader.Read<double>();
-                if (averageMseLcu == nullptr) {
-                    return;
-                }
+                IF_TRUE_RETURN_VOID(averageMseLcu == nullptr);
                 HLOGD("pts=%" PRId64 ", averageMseLcu=(%f)", omxBuffer->pts, *averageMseLcu);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
                 break;
@@ -1013,9 +1032,7 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
             }
             case OMX_IndexParamEncOutFrameLayer: {
                 auto *frameLayer = reader.Read<OMX_S32>();
-                if (frameLayer == nullptr) {
-                    return;
-                }
+                IF_TRUE_RETURN_VOID(frameLayer == nullptr);
                 HLOGD("pts=%" PRId64 ", frameLayer=(%d)", omxBuffer->pts, *frameLayer);
                 meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, *frameLayer);
                 break;
@@ -1165,7 +1182,7 @@ void HEncoder::RepeatIfNecessary(const ParamSP& param)
         HLOGW("stop repeat, list size to big: %zu", avaliableBuffers_.size());
         return;
     }
-    int64_t newPts = newestBuffer_.pts + repeatUs_;
+    int64_t newPts = newestBuffer_.pts + static_cast<int64_t>(repeatUs_);
     HLOGD("generation = %" PRIu64 ", seq = %u, pts %" PRId64 " -> %" PRId64,
           generation, newestBuffer_.item->buffer->GetSeqNum(), newestBuffer_.pts, newPts);
     newestBuffer_.pts = newPts;

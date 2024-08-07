@@ -266,6 +266,7 @@ private:
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
+    std::atomic<bool> isInterruptNeeded_ {false};
 };
 } // namespace Media
 } // namespace OHOS
