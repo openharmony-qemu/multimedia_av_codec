@@ -690,7 +690,9 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
             if (checkFramesPauseTime + frameDifference < currentPts - lastBufferTime_) {
                 totalPauseTime_ = totalPauseTime_ + checkFramesPauseTime;
             }
-            mappingTimeQueue_.push_back({currentPts, currentPts - totalPauseTime_});
+            if (currentPts != 0) {
+                mappingTimeQueue_.push_back({currentPts, currentPts - totalPauseTime_});
+            }
         }
         lastBufferTime_ = currentPts;
     }
