@@ -73,6 +73,8 @@ private:
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
 
+    std::atomic<bool> isClosed_{false};
+
     std::shared_ptr<MediaDownloader> downloader_;
     std::list<RetryRequest> retryTasks_;
     std::atomic<bool> isPlaying_ {false};
