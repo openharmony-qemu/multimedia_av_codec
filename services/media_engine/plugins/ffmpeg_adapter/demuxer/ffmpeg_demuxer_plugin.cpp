@@ -1901,13 +1901,14 @@ bool FFmpegDemuxerPlugin::CanDropHevcPkt(const AVPacket& pkt)
 
 void FFmpegDemuxerPlugin::InitPTSandIndexConvert()
 {
-    RelativePTSToIndexPosition_ = 0; // init RelativePTSToIndexPosition_
-    IndexToRelativePTSMaxHeap_ = std::priority_queue<int64_t>(); // init IndexToRelativePTSMaxHeap_
-    RelativePTSToIndexPTSMin_ = INT64_MAX;
-    RelativePTSToIndexPTSMax_ = INT64_MIN;
-    RelativePTSToIndexRightDiff_ = INT64_MAX;
-    RelativePTSToIndexLeftDiff_ = INT64_MAX;
-    RelativePTSToIndexTempDiff_ = INT64_MAX;
+    indexToRelativePTSFrameCount_ = 0; // init IndexToRelativePTSFrameCount_
+    relativePTSToIndexPosition_ = 0; // init RelativePTSToIndexPosition_
+    indexToRelativePTSMaxHeap_ = std::priority_queue<int64_t>(); // init IndexToRelativePTSMaxHeap_
+    relativePTSToIndexPTSMin_ = INT64_MAX;
+    relativePTSToIndexPTSMax_ = INT64_MIN;
+    relativePTSToIndexRightDiff_ = INT64_MAX;
+    relativePTSToIndexLeftDiff_ = INT64_MAX;
+    relativePTSToIndexTempDiff_ = INT64_MAX;
 }
 
 Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
@@ -1930,22 +1931,22 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
     GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
 
-    int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + AbsolutePTSIndexZero_;
+    int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + absolutePTSIndexZero_;
 
     GetpresentationTimeUsFromFfmpegMOV(RELATIVEPTS_TO_INDEX, trackIndex,
         absolutePTS, index);
     
-    if (absolutePTS < RelativePTSToIndexPTSMin_ || absolutePTS > RelativePTSToIndexPTSMax_) {
+    if (absolutePTS < relativePTSToIndexPTSMin_ || absolutePTS > relativePTSToIndexPTSMax_) {
         return Status::ERROR_INVALID_DATA;
     }
 
-    if (RelativePTSToIndexLeftDiff_ == 0 || RelativePTSToIndexRightDiff_ == 0) {
-        index = RelativePTSToIndexPosition_;
+    if (relativePTSToIndexLeftDiff_ == 0 || relativePTSToIndexRightDiff_ == 0) {
+        index = relativePTSToIndexPosition_;
         return Status::OK;
     }
 
-    index = RelativePTSToIndexLeftDiff_ < RelativePTSToIndexRightDiff_ ?
-        RelativePTSToIndexPosition_ - 1 : RelativePTSToIndexPosition_;
+    index = relativePTSToIndexLeftDiff_ < relativePTSToIndexRightDiff_ ?
+        relativePTSToIndexPosition_ - 1 : relativePTSToIndexPosition_;
     
     return Status::OK;
 }
@@ -1971,12 +1972,12 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
         static_cast<int64_t>(relativePresentationTimeUs), index);
     GetpresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
-    if (index + 1 > IndexToRelativePTSFrameCount_) {
+    if (index + 1 > indexToRelativePTSFrameCount_) {
         return Status::ERROR_INVALID_DATA;
     }
 
-    relativePresentationTimeUs = static_cast<uint64_t>(IndexToRelativePTSMaxHeap_.top()
-        - AbsolutePTSIndexZero_);
+    relativePresentationTimeUs = static_cast<uint64_t>(indexToRelativePTSMaxHeap_.top()
+        - absolutePTSIndexZero_);
 
     return Status::OK;
 }
@@ -2012,7 +2013,7 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
         
         switch (mode) {
             case GET_FIRST_PTS:
-                AbsolutePTSIndexZero_ = pts < AbsolutePTSIndexZero_ ? pts : AbsolutePTSIndexZero_;
+                absolutePTSIndexZero_ = pts < absolutePTSIndexZero_ ? pts : absolutePTSIndexZero_;
                 break;
             case INDEX_TO_RELATIVEPTS:
                 IndexToRelativePTSProcess(pts, index);
@@ -2041,34 +2042,34 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
 
 void FFmpegDemuxerPlugin::IndexToRelativePTSProcess(int64_t pts, uint32_t index)
 {
-    if (IndexToRelativePTSMaxHeap_.size() < index + 1) {
-        IndexToRelativePTSMaxHeap_.push(pts);
+    if (indexToRelativePTSMaxHeap_.size() < index + 1) {
+        indexToRelativePTSMaxHeap_.push(pts);
     } else {
-        if (pts < IndexToRelativePTSMaxHeap_.top()) {
-            IndexToRelativePTSMaxHeap_.pop();
-            IndexToRelativePTSMaxHeap_.push(pts);
+        if (pts < indexToRelativePTSMaxHeap_.top()) {
+            indexToRelativePTSMaxHeap_.pop();
+            indexToRelativePTSMaxHeap_.push(pts);
         }
     }
-    IndexToRelativePTSFrameCount_++;
+    indexToRelativePTSFrameCount_++;
 }
 
-void FFmpegDemuxerPlugin::RelativePTSProcessToIndex(int64_t pts, int64_t AbsolutePTS)
+void FFmpegDemuxerPlugin::RelativePTSProcessToIndex(int64_t pts, int64_t absolutePTS)
 {
-    if (RelativePTSToIndexPTSMin_ > pts) {
-        RelativePTSToIndexPTSMin_ = pts;
+    if (relativePTSToIndexPTSMin_ > pts) {
+        relativePTSToIndexPTSMin_ = pts;
     }
-    if (RelativePTSToIndexPTSMax_ < pts) {
-        RelativePTSToIndexPTSMax_ = pts;
+    if (relativePTSToIndexPTSMax_ < pts) {
+        relativePTSToIndexPTSMax_ = pts;
     }
-    RelativePTSToIndexTempDiff_ = abs(pts - AbsolutePTS);
-    if (pts < AbsolutePTS && RelativePTSToIndexTempDiff_ < RelativePTSToIndexLeftDiff_) {
-        RelativePTSToIndexLeftDiff_ = RelativePTSToIndexTempDiff_;
+    relativePTSToIndexTempDiff_ = abs(pts - absolutePTS);
+    if (pts < absolutePTS && relativePTSToIndexTempDiff_ < relativePTSToIndexLeftDiff_) {
+        relativePTSToIndexLeftDiff_ = relativePTSToIndexTempDiff_;
     }
-    if (pts >= AbsolutePTS && RelativePTSToIndexTempDiff_ < RelativePTSToIndexRightDiff_) {
-        RelativePTSToIndexRightDiff_ = RelativePTSToIndexTempDiff_;
+    if (pts >= absolutePTS && relativePTSToIndexTempDiff_ < relativePTSToIndexRightDiff_) {
+        relativePTSToIndexRightDiff_ = relativePTSToIndexTempDiff_;
     }
-    if (pts < AbsolutePTS) {
-        RelativePTSToIndexPosition_++;
+    if (pts < absolutePTS) {
+        relativePTSToIndexPosition_++;
     }
 }
 

@@ -155,15 +155,15 @@ private:
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSProcessToIndex(int64_t pts, int64_t AbsolutePTS);
-    int64_t AbsolutePTSIndexZero_ = INT64_MAX;
-    std::priority_queue<int64_t> IndexToRelativePTSMaxHeap_;
-    uint32_t IndexToRelativePTSFrameCount_ = 0;
-    uint32_t RelativePTSToIndexPosition_ = 0;
-    int64_t RelativePTSToIndexPTSMin_ = INT64_MAX;
-    int64_t RelativePTSToIndexPTSMax_ = INT64_MIN;
-    int64_t RelativePTSToIndexRightDiff_ = INT64_MAX;
-    int64_t RelativePTSToIndexLeftDiff_ = INT64_MAX;
-    int64_t RelativePTSToIndexTempDiff_ = INT64_MAX;
+    int64_t absolutePTSIndexZero_ = INT64_MAX;
+    std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
+    uint32_t indexToRelativePTSFrameCount_ = 0;
+    uint32_t relativePTSToIndexPosition_ = 0;
+    int64_t relativePTSToIndexPTSMin_ = INT64_MAX;
+    int64_t relativePTSToIndexPTSMax_ = INT64_MIN;
+    int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
