@@ -573,4 +573,18 @@ HWTEST_F(AudioCaptureModuleUnitTest, Audioinit_0200, TestSize.Level1)
     Status ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
 }
+/**
+ * @tc.name: AudioTrackMaxAmplitude_0200
+ * @tc.desc: test TrackMaxAmplitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureModuleUnitTest, AudioTrackMaxAmplitude_0200, TestSize.Level1)
+{
+    int16_t data[5] = {1, 2, 3, 4, 5};
+    audioCaptureModule_->TrackMaxAmplitude(data, 5);
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, 5);
+    int16_t number[5] = {1, -2, 3, -4, 5};
+    audioCaptureModule_->TrackMaxAmplitude(number, 5);
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, 5);
+}
 } // namespace OHOS
