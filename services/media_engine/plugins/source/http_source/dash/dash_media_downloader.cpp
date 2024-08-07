@@ -1043,8 +1043,7 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
         segmentDownloaders_[0]->GetIp(playbackInfo.serverIpAddress);
     }
     bool DownloadFinishStateTmp = false;
-    for (int i = 0; i < segmentDownloaders_.size(); i++)
-    {
+    for (int i = 0; i < segmentDownloaders_.size(); i++) {
         if (playbackInfo.averageDownloadRate < static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed())) {
             playbackInfo.averageDownloadRate = static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed());
         }

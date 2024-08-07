@@ -936,16 +936,16 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
             }
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
                 " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            // Remaining playable time: s
+            uint64_t bufferDuration = 0;
+            if (realTimeBitBate_ > 0) {
+                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / realTimeBitBate_;
+            } else {
+                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+            }
             if (recordData_ != nullptr) {
                 recordData_->downloadRate = downloadRate;
-                // Remaining playable time: s
-                if (realTimeBitBate_ > 0) {
-                    recordData_->bufferDuring = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT)
-                        / realTimeBitBate_;
-                } else {
-                    recordData_->bufferDuring = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT)
-                        / currentBitrate_;
-                }
+                recordData_->bufferDuring = bufferDuration;
             }
         }
         lastBits_ = totalBits_;
@@ -960,7 +960,7 @@ uint64_t DashSegmentDownloader::GetDownloadSpeed() const
 
 void DashSegmentDownloader::GetIp(std::string& ip)
 {
-    if (downloader_){
+    if (downloader_) {
         downloader_->GetIp(ip);
     }
 }
@@ -968,7 +968,7 @@ void DashSegmentDownloader::GetIp(std::string& ip)
 bool DashSegmentDownloader::GetDownloadFinishState()
 {
     std::shared_ptr<DashInitSegment> finishState = GetDashInitSegment(streamId_);
-    if (finishState){
+    if (finishState) {
         return finishState->isDownloadFinish_;
     } else {
         return true;
@@ -978,7 +978,7 @@ bool DashSegmentDownloader::GetDownloadFinishState()
 std::pair<int64_t, int64_t> DashSegmentDownloader::GetDownloadRecordData()
 {
     std::pair<int64_t, int64_t> recordData;
-    if (recordData_ != nullptr){
+    if (recordData_ != nullptr) {
         recordData.first = static_cast<int64_t>(recordData_->downloadRate);
         recordData.second = static_cast<int64_t>(recordData_->bufferDuring);
     } else {
