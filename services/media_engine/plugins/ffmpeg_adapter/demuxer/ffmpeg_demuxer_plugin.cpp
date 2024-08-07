@@ -405,6 +405,28 @@ Status FFmpegDemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwa
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::ParserFirstDts()
+{
+    AVPacket *pkt = av_packet_alloc();
+    bool isEnd = false;
+    while (!isEnd) {
+        int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
+        if (ffmpegRet < 0) {
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+            return;
+        }
+        if (pkt->stream_index == parserRefVideoStreamIdx_) {
+            firstDts_ = AvTime2Us(
+                ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
+            MEDIA_LOG_I("Success to parser first dts: " PUBLIC_LOG_D64, firstDts_);
+            isEnd = true;
+        }
+    }
+    av_packet_unref(pkt);
+    av_packet_free(&pkt);
+}
+
 Status FFmpegDemuxerPlugin::ParserRefInit()
 {
     FALSE_RETURN_V_MSG_E(IFramePos_.size() > 0 && fps_ > 0, Status::ERROR_UNKNOWN,
@@ -442,6 +464,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC || videoStream->codecpar->codec_id == AV_CODEC_ID_H264,
         Status::ERROR_UNSUPPORTED_FORMAT, "ParserRefHeader failed due to codec type not support." PUBLIC_LOG_D32,
         videoStream->codecpar->codec_id);
+    ParserFirstDts();
     CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
@@ -1133,6 +1156,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
         default:
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
+            ioContext->retry = true;
             break;
     }
 
@@ -1295,27 +1319,6 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
         }
     }
     MEDIA_LOG_I("Success to parser fps: " PUBLIC_LOG_F ", IFramePos size: " PUBLIC_LOG_ZU, fps_, IFramePos_.size());
-
-    AVPacket *pkt = av_packet_alloc();
-    bool isEnd = false;
-    while (!isEnd) {
-        int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-        if (ffmpegRet < 0) {
-            av_packet_unref(pkt);
-            av_packet_free(&pkt);
-            return;
-        }
-        if (pkt->stream_index == videoStreamIdx) {
-            firstDts_ = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, videoStream->time_base));
-            MEDIA_LOG_I("Success to parser first dts: " PUBLIC_LOG_D64, firstDts_);
-            isEnd = true;
-        }
-    }
-    auto ret = av_seek_frame(formatContext_.get(), videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
-    FALSE_RETURN_MSG(ret >= 0, "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".",
-                     AVStrError(ret).c_str());
-    av_packet_unref(pkt);
-    av_packet_free(&pkt);
 }
 
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
@@ -1626,10 +1629,10 @@ bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
 Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    ShowSelectedTracks();
     MEDIA_LOG_I("Select track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Select track failed due to AVFormatContext is nullptr.");
+    ShowSelectedTracks();
     if (trackId >= static_cast<uint32_t>(formatContext_.get()->nb_streams)) {
         MEDIA_LOG_E("Select track failed due to trackId is invalid, just have " PUBLIC_LOG_D32 " tracks in file.",
             formatContext_.get()->nb_streams);
@@ -1659,10 +1662,10 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    ShowSelectedTracks();
     MEDIA_LOG_I("Unselect track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
+    ShowSelectedTracks();
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (TrackIsSelected(trackId)) {
@@ -1971,7 +1974,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
     auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
     if (cachelimitSize_ != 0 && cacheDataSize > cachelimitSize_) {
-        MEDIA_LOG_E("cache data size is greater than cache limit size");
+        MEDIA_LOG_E("Data cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32, cacheDataSize, cachelimitSize_);
         return Status::ERROR_NO_MEMORY;
     }
     return Status::OK;
@@ -1979,6 +1982,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 
 void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
+    MEDIA_LOG_I("Set cache limit " PUBLIC_LOG_U32, limitSize);
     cachelimitSize_ = limitSize;
 }
 

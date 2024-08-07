@@ -17,6 +17,7 @@
 #include "dash_segment_downloader.h"
 #include <map>
 #include <algorithm>
+#include "network/network_typs.h"
 #include "dash_mpd_util.h"
 
 namespace OHOS {
@@ -958,7 +959,7 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     if (startPos >= 0 && endPos > 0) {
         requestWholeFile = false;
     }
-    MediaSouce mediaSouce;
+    RequestInfo mediaSouce;
     mediaSouce.url = url;
     mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,

@@ -81,6 +81,7 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -184,6 +185,7 @@ private:
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
+    void InnerFixAbsolutePtsForPlayer(std::shared_ptr<AVBuffer> sample);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
@@ -257,11 +259,13 @@ private:
     std::atomic<bool> isSelectTrack_ = false;
     std::atomic<bool> shouldCheckAudioFramePts_ = false;
     int64_t lastAudioPts_ = 0;
+    std::atomic<bool> isOnEventNoMemory_ = false;
     std::atomic<bool> isSeekError_ = false;
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
     int64_t lastSubtitlePts_ = 0;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
+    std::atomic<bool> isInterruptNeeded_ {false};
 };
 } // namespace Media
 } // namespace OHOS

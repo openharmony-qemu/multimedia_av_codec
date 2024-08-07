@@ -66,11 +66,14 @@ public:
     Status SelectStream(int32_t streamId) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
+
+    std::atomic<bool> isClosed_{false};
 
     std::shared_ptr<MediaDownloader> downloader_;
     std::list<RetryRequest> retryTasks_;

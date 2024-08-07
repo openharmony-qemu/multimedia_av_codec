@@ -164,6 +164,11 @@ public:
         return Status::OK;
     }
 
+    virtual Status GetPlaybackInfo(PlaybackInfo& playbackInfo)
+    {
+        return Status::OK;
+    }
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;

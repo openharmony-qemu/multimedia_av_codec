@@ -354,6 +354,15 @@ Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
     return source_->GetDownloadInfo(downloadInfo);
 }
 
+Status MediaDemuxer::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("GetPlaybackInfo  failed, source_ is null");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->GetPlaybackInfo(playbackInfo);
+}
+
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
 {
     MEDIA_LOG_I("SetDrmCallback called");
@@ -605,6 +614,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     demuxerPluginManager_->InitDefaultPlay(streams);
 
     streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    streamDemuxer_->SetInterruptState(isInterruptNeeded_);
     streamDemuxer_->SetSource(source_);
     streamDemuxer_->Init(uri_);
 
@@ -638,6 +648,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
     int32_t subtitleStreamID = demuxerPluginManager_->AddExternalSubtitle();
     subStreamDemuxer_ = std::make_shared<StreamDemuxer>();
+    subStreamDemuxer_->SetInterruptState(isInterruptNeeded_);
     subStreamDemuxer_->SetSource(subtitleSource_);
     subStreamDemuxer_->Init(subSource->GetSourceUri());
 
@@ -673,6 +684,7 @@ Status MediaDemuxer::SetSubtitleSource(const std::shared_ptr<MediaSource> &subSo
 
 void MediaDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
+    isInterruptNeeded_ = isInterruptNeeded;
     if (source_ != nullptr) {
         source_->SetInterruptState(isInterruptNeeded);
     }
@@ -806,11 +818,11 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
     int32_t curTrackId = -1;
     TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     if (trackType == TrackType::TRACK_AUDIO) {
-        curTrackId = audioTrackId_;
+        curTrackId = static_cast<int32_t>(audioTrackId_);
     } else if (trackType == TrackType::TRACK_VIDEO) {
-        curTrackId = videoTrackId_;
+        curTrackId = static_cast<int32_t>(videoTrackId_);
     } else if (trackType == TrackType::TRACK_SUBTITLE) {
-        curTrackId = subtitleTrackId_;
+        curTrackId = static_cast<int32_t>(subtitleTrackId_);
     } else {   // invalid
         MEDIA_LOG_E("HandleDashSelectTrack trackType invalid");
         return Status::ERROR_UNKNOWN;
@@ -823,7 +835,7 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
 
     if (targetStreamID != demuxerPluginManager_->GetTmpStreamIDByTrackID(curTrackId)) {
         MEDIA_LOG_I("HandleDashSelectTrack SelectStream");
-        selectTrackTrackID_ = trackId;
+        selectTrackTrackID_ = static_cast<uint32_t>(trackId);
         isSelectTrack_.store(true);
         return source_->SelectStream(targetStreamID);
     }
@@ -834,13 +846,13 @@ Status MediaDemuxer::HandleDashSelectTrack(int32_t trackId)
     if (eventReceiver_ != nullptr) {
         if (trackType == TrackType::TRACK_AUDIO) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
-            audioTrackId_ = trackId;
+            audioTrackId_ = static_cast<uint32_t>(trackId);
         } else if (trackType == TrackType::TRACK_VIDEO) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, trackId});
-            videoTrackId_ = trackId;
+            videoTrackId_ = static_cast<uint32_t>(trackId);
         } else if (trackType == TrackType::TRACK_SUBTITLE) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, trackId});
-            subtitleTrackId_ = trackId;
+            subtitleTrackId_ = static_cast<uint32_t>(trackId);
         } else {}
     }
     return Status::OK;
@@ -869,7 +881,7 @@ Status MediaDemuxer::HandleSelectTrack(int32_t trackId)
     TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
     if (trackType == TrackType::TRACK_AUDIO) {
         MEDIA_LOG_I("SelectTrack audio now: " PUBLIC_LOG_D32 ", to: " PUBLIC_LOG_D32, audioTrackId_, trackId);
-        curTrackId = audioTrackId_;
+        curTrackId = static_cast<int32_t>(audioTrackId_);
     } else {    // inner subtitle and video not support
         MEDIA_LOG_W("SelectTrack : " PUBLIC_LOG_D32 " failed, not support", trackId);
         return Status::ERROR_INVALID_PARAMETER;
@@ -884,10 +896,10 @@ Status MediaDemuxer::HandleSelectTrack(int32_t trackId)
     if (eventReceiver_ != nullptr) {
         if (trackType == TrackType::TRACK_AUDIO) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, trackId});
-            audioTrackId_ = trackId;
+            audioTrackId_ =  static_cast<uint32_t>(trackId);
         } else if (trackType == TrackType::TRACK_VIDEO) {
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_VIDEO_TRACK_CHANGE, trackId});
-            videoTrackId_ = trackId;
+            videoTrackId_ =  static_cast<uint32_t>(trackId);
         } else {}
     }
     
@@ -1647,10 +1659,17 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
     }
 }
 
+void MediaDemuxer::InnerFixAbsolutePtsForPlayer(std::shared_ptr<AVBuffer> sample)
+{
+    FALSE_RETURN(sample != nullptr);
+    sample->pts_ = sample->absPts_;
+}
+
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
-if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
+    InnerFixAbsolutePtsForPlayer(bufferMap_[trackId]);
+    if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
         MEDIA_LOG_D("step into HandleRead");
         bool isDiscardable = VideoStreamReadyCallback_->IsVideoStreamDiscardable(bufferMap_[trackId]);
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDiscardable);
@@ -1700,7 +1719,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     MEDIA_LOG_D("CopyFrameToUserQueue enter, track:" PUBLIC_LOG_U32, trackId);
 
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = nullptr;
-    int32_t innerTrackID = trackId;
+    int32_t innerTrackID = static_cast<int32_t>(trackId);
     int32_t id = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         if (demuxerPluginManager_->IsDash() || demuxerPluginManager_->GetTmpStreamIDByTrackID(subtitleTrackId_) != -1) {
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(id);
@@ -1771,12 +1790,6 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     Status ret = pluginTemp->ReadSample(innerTrackID, sample);
     if (ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("Read buffer eos for track " PUBLIC_LOG_U32, trackId);
-    } else if (ret == Status::ERROR_NO_MEMORY) {
-        MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32,
-            trackId, static_cast<int32_t>(ret));
-        if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_NO_MEMORY});
-        }
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read buffer error for track " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32, trackId, (int32_t)(ret));
     }
@@ -1815,9 +1828,9 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             return 0; // retry next frame
         } else if (ret == Status::ERROR_NO_MEMORY) {
             MEDIA_LOG_E("cache data size is greater than cache limit size");
-            taskMap_[trackId]->Pause();
-            if (eventReceiver_ != nullptr) {
-                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_NO_MEMORY});
+            if (eventReceiver_ != nullptr && !isOnEventNoMemory_.load()) {
+                isOnEventNoMemory_.store(true);
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY});
             }
             return 0;
         } else {

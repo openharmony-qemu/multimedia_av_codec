@@ -25,6 +25,7 @@
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
 #include "network/network_client.h"
+#include "network/network_typs.h"
 #include <chrono>
 #include "securec.h"
 
@@ -76,21 +77,15 @@ using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Do
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
 
-struct MediaSouce {
-    std::string url;
-    std::map<std::string, std::string> httpHeader;
-    int32_t timeoutMs{-1};
-};
-
 class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
 
     size_t GetFileContentLength() const;
@@ -130,7 +125,7 @@ private:
 
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
-    MediaSouce mediaSouce_ {};
+    RequestInfo mediaSouce_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
@@ -169,6 +164,7 @@ public:
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
+    void GetIp(std::string &ip);
 private:
     bool BeginDownload();
 
@@ -182,7 +178,6 @@ private:
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
-    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);

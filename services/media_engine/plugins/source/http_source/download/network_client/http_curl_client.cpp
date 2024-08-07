@@ -262,6 +262,7 @@ Status HttpCurlClient::Close()
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
     }
+    ipFlag_ = false;
     return Status::OK;
 }
 
@@ -276,8 +277,19 @@ Status HttpCurlClient::Deinit()
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
     }
+    ipFlag_ = false;
     curl_global_cleanup();
     MEDIA_LOG_I("Deinit out");
+    return Status::OK;
+}
+
+Status HttpCurlClient::GetIp(std::string &ip)
+{
+    if (!ip.empty()) {
+        ip = ip_;
+    } else {
+        MEDIA_LOG_E("Get ip failed, ip is null.");
+    }
     return Status::OK;
 }
 
@@ -297,9 +309,6 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
         auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
     } else {
-        if (host.empty()) {
-            MEDIA_LOG_I("InitCurlEnvironment host is empty.");
-        }
         if (IsHostNameExcluded(url, exclusions, ",")) {
             MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
         }
@@ -377,8 +386,8 @@ void HttpCurlClient::HandleUserAgent()
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
 // Should Pause HttpDownload thread then Close, Deinit.
-Status HttpCurlClient::RequestData(long startPos, int len, const std::string& url,
-    const std::map<std::string, std::string>& httpHeader, HandleResponseCbFunc completedCb)
+Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& requestInfo,
+    HandleResponseCbFunc completedCb)
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
@@ -419,9 +428,28 @@ Status HttpCurlClient::RequestData(long startPos, int len, const std::string& ur
             serverCode = httpCode;
             ret = Status::ERROR_SERVER;
         }
+        SetIp();
     }
     completedCb(clientCode, serverCode, ret);
     return ret;
+}
+
+Status HttpCurlClient::SetIp()
+{
+    FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    Status retSetIp = Status::OK;
+    if (!ipFlag_) {
+        char* ip = nullptr;
+        if (!curl_easy_getinfo(easyHandle_, CURLINFO_PRIMARY_IP, &ip) && ip) {
+            ip_ = ip;
+            ipFlag_ = true;
+        } else {
+            ip_ = "";
+            MEDIA_LOG_E("Set sever ip failed.");
+            retSetIp = Status::ERROR_UNKNOWN;
+        }
+    }
+    return retSetIp;
 }
 }
 }

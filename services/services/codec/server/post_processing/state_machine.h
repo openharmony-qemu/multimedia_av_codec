@@ -27,6 +27,7 @@ enum class State {
     CONFIGURED,
     PREPARED,
     RUNNING,
+    FLUSHED,
     STOPPED
 };
 

@@ -284,6 +284,14 @@ int32_t VideoDecSample::Configure(std::shared_ptr<FormatMock> format)
     return videoDec_->Configure(format);
 }
 
+int32_t VideoDecSample::Prepare()
+{
+    if (videoDec_ == nullptr) {
+        return AV_ERR_UNKNOWN;
+    }
+    return videoDec_->Prepare();
+}
+
 int32_t VideoDecSample::Start()
 {
     if (signal_ == nullptr || videoDec_ == nullptr) {

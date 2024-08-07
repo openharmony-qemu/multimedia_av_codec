@@ -74,6 +74,7 @@ public:
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) = 0;
     virtual int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;
@@ -100,6 +101,7 @@ public:
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb) = 0;
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;

@@ -239,6 +239,8 @@ Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, 
 
 Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::Read, offset: "
+        + std::to_string(offset) + ", expectedLen: " + std::to_string(expectedLen));
     MEDIA_LOG_D("Read enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -376,6 +378,14 @@ Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
     MEDIA_LOG_I("HttpSourcePlugin::GetDownloadInfo");
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     downloader_->GetDownloadInfo(downloadInfo);
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    MEDIA_LOG_I("HttpSourcePlugin::GetPlaybackInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->GetPlaybackInfo(playbackInfo);
     return Status::OK;
 }
 

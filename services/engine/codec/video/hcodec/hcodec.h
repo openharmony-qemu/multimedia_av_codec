@@ -109,8 +109,8 @@ protected:
     };
 
     struct PortInfo {
-        uint32_t width;
-        uint32_t height;
+        uint32_t width = 0;
+        uint32_t height = 0;
         OMX_VIDEO_CODINGTYPE codingType;
         std::optional<PixelFmt> pixelFmt;
         double frameRate;
@@ -130,7 +130,7 @@ protected:
         bool isInput = true;
         BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
-        std::chrono::time_point<std::chrono::steady_clock> lastFlushTime;
+        int64_t lastFlushTime = 0;
         uint32_t bufferId = 0;
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
