@@ -1696,5 +1696,48 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Le
     streamDemuxer->cacheDataMap_[0] = cacheTmp;
     EXPECT_EQ(streamDemuxer->ResetCache(0), Status::OK);
 }
-
+/**
+ * @tc.name: MediaDemuxer_GetProtocolByUri_0100
+ * @tc.desc: MediaDemuxer_GetProtocolByUri_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetProtocolByUri_0100, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
+    demuxer->source_ = std::shared_ptr<Source>();
+    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
+    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
+}
+/**
+ * @tc.name: MediaDemuxer_Resume_0100
+ * @tc.desc: MediaDemuxer_Resume_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_0100, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+    demuxer->source_ = std::shared_ptr<Source>();
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+    demuxer->doPrepareFrame_ = false;
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+    demuxer->doPrepareFrame_ = true;
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+}
+/**
+ * @tc.name: MediaDemuxer_ResumeDragging_0100
+ * @tc.desc: MediaDemuxer_ResumeDragging_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDragging_0100, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->source_ = std::shared_ptr<Source>();
+    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    EXPECT_EQ(demuxer->ResumeDragging(), Status::OK);
+}
 }
