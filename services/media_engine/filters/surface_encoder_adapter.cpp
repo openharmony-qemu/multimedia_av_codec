@@ -540,18 +540,21 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
-    if (startBufferTime_ == -1 && buffer->pts_ != 0) {
-        startBufferTime_ = buffer->pts_;
-    }
+
     int64_t mappingTime = -1;
-    if (startBufferTime_ != -1 || buffer->pts_ != 0) {
+    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
         if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
             MEDIA_LOG_D("buffer->pts fail");
-            return;
+        } else {
+            mappingTime = mappingTimeQueue_.front().second;
+            mappingTimeQueue_.pop_front();
         }
-        mappingTime = mappingTimeQueue_.front().second;
-        mappingTimeQueue_.pop_front();
+        if (startBufferTime_ == -1) {
+            startBufferTime_ = buffer->pts_;
+        }
+    } else {
+        mappingTime = startBufferTime_ + buffer->pts_;
     }
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
@@ -566,9 +569,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
     emptyOutputBuffer->pts_ = mappingTime - startBufferTime_;
-    if (!isTransCoderMode) {
-        emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
-    }
+    emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
@@ -690,9 +691,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
             if (checkFramesPauseTime + frameDifference < currentPts - lastBufferTime_) {
                 totalPauseTime_ = totalPauseTime_ + checkFramesPauseTime;
             }
-            if (currentPts != 0) {
-                mappingTimeQueue_.push_back({currentPts, currentPts - totalPauseTime_});
-            }
+            mappingTimeQueue_.push_back({currentPts, currentPts - totalPauseTime_});
         }
         lastBufferTime_ = currentPts;
     }
