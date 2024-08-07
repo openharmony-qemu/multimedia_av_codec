@@ -51,7 +51,7 @@ int32_t AVMuxerDemo::GetFdByMode(OH_AVOutputFormat format)
 int32_t AVMuxerDemo::GetErrorFd()
 {
     filename = "output.bin";
-    int32_t fd = open(filename.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    int32_t fd = open(filename.c_str(), O_CREAT | O_RDONLY, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         std::cout << "Open file failed! filePath is: " << filename << std::endl;
         return -1;
