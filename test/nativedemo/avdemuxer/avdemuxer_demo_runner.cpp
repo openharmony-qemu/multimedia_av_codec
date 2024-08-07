@@ -256,7 +256,10 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
 
     for (uint32_t index = 0; index < 10 ; ++index) { // get first 10 frames
         start = clock::now();
-        innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+        int32_t ret = innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+        if (ret != 0) {
+            break;
+        }
         end = clock::now();
         elapsed = end - start;
         printf("GetRelativePresentationTimeUsByIndex, relativePresentationTimeUs = %" PRId64 "\n",
@@ -264,7 +267,10 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
         printf("Function took %f seconds to run.\n", elapsed.count());
 
         start = clock::now();
-        innerDemuxerDemo->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+        ret = innerDemuxerDemo->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+        if (ret != 0) {
+            break;
+        }
         end = clock::now();
         elapsed = end - start;
         printf("GetIndexByRelativePresentationTimeUs, index = %d\n", index);

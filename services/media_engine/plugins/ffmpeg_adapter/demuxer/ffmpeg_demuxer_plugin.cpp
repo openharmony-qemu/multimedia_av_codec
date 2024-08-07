@@ -1996,10 +1996,12 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
     auto avStream = formatContext_->streams[trackIndex];
+    FALSE_RETURN_V_MSG_E(avStream->stts_data_head->next != nullptr, Status::ERROR_NULL_POINTER,
+    "GetpresentationTimeUsFromFfmpegMOV failed due to mp4 box info is empty.");
+    FALSE_RETURN_V_MSG_E(avStream->ctts_data_head != nullptr, Status::ERROR_NULL_POINTER,
+    "GetpresentationTimeUsFromFfmpegMOV failed due to mp4 box info is empty.");
     struct AVCodecMOVStts *stts = avStream->stts_data_head->next;
     struct AVCodecMOVCtts *ctts = avStream->ctts_data_head;
-    FALSE_RETURN_V_MSG_E(stts != nullptr && ctts != nullptr, Status::ERROR_NULL_POINTER,
-        "GetpresentationTimeUsFromFfmpegMOV failed due to mp4 box info is empty.");
     int32_t ctts_cur_num = 0; //init ctts_cur_num
     if (ctts->next != NULL && ctts->next != ctts) {
         ctts = ctts->next;
