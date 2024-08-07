@@ -1972,8 +1972,11 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackInde
 
 Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
+    if (cachelimitSize_ == 0) {
+        return Status::OK;
+    }
     auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
-    if (cachelimitSize_ != 0 && cacheDataSize > cachelimitSize_) {
+    if (cacheDataSize > cachelimitSize_) {
         MEDIA_LOG_E("Data cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32, cacheDataSize, cachelimitSize_);
         return Status::ERROR_NO_MEMORY;
     }

@@ -20,6 +20,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr uint32_t MAX_UINT32 = 4294967295;
 }
 
 namespace OHOS {
@@ -99,6 +100,11 @@ uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
         name_.c_str(), trackIndex);
     uint32_t dataSize = 0;
     for (auto queIndex : queMap_[trackIndex]) {
+        if (static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize) > MAX_UINT32) {
+            MEDIA_LOG_D("dataSize(" PUBLIC_LOG_U64 ") is more than Maximum value of uint32",
+                static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize));
+            return MAX_UINT32;
+        }
         dataSize += quePool_[queIndex].dataSize;
     }
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S "trackIndex = " PUBLIC_LOG_U32 " GetCacheDataSize = " PUBLIC_LOG_U32,
