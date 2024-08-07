@@ -1928,13 +1928,15 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetIndexByRelativePresentationTimeUs failed due to fileType is not MP4.");
     
-    GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
+    Status ret = GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
 
     int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + absolutePTSIndexZero_;
 
-    GetpresentationTimeUsFromFfmpegMOV(RELATIVEPTS_TO_INDEX, trackIndex,
+    ret = GetpresentationTimeUsFromFfmpegMOV(RELATIVEPTS_TO_INDEX, trackIndex,
         absolutePTS, index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
     
     if (absolutePTS < relativePTSToIndexPTSMin_ || absolutePTS > relativePTSToIndexPTSMax_) {
         return Status::ERROR_INVALID_DATA;
@@ -1968,16 +1970,22 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetRelativePresentationTimeUsByIndex failed due to fileType is not MP4.");
         
-    GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
+    Status ret = GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
+
     GetpresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
+
     if (index + 1 > indexToRelativePTSFrameCount_) {
         return Status::ERROR_INVALID_DATA;
     }
 
-    relativePresentationTimeUs = static_cast<uint64_t>(indexToRelativePTSMaxHeap_.top()
-        - absolutePTSIndexZero_);
+    int64_t relativepts = indexToRelativePTSMaxHeap_.top() - absolutePTSIndexZero_;
+    FALSE_RETURN_V_MSG_E( relativepts >= 0, Status::ERROR_INVALID_DATA,
+        "GetRelativePresentationTimeUsByIndex failed due to the existence of calculation results less than 0.");
+    relativePresentationTimeUs = static_cast<uint64_t>(relativepts);
 
     return Status::OK;
 }
@@ -1988,6 +1996,8 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     auto avStream = formatContext_->streams[trackIndex];
     struct AVCodecMOVStts *stts = avStream->stts_data_head->next;
     struct AVCodecMOVCtts *ctts = avStream->ctts_data_head;
+    FALSE_RETURN_V_MSG_E(stts != nullptr && ctts != nullptr, Status::ERROR_NULL_POINTER,
+        "GetpresentationTimeUsFromFfmpegMOV failed due to mp4 box info is empty.");
     int32_t ctts_cur_num = 0; //init ctts_cur_num
     if (ctts->next != NULL && ctts->next != ctts) {
         ctts = ctts->next;
@@ -2011,20 +2021,7 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
             1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
         nb_frames--;
         
-        switch (mode) {
-            case GET_FIRST_PTS:
-                absolutePTSIndexZero_ = pts < absolutePTSIndexZero_ ? pts : absolutePTSIndexZero_;
-                break;
-            case INDEX_TO_RELATIVEPTS:
-                IndexToRelativePTSProcess(pts, index);
-                break;
-            case RELATIVEPTS_TO_INDEX:
-                RelativePTSProcessToIndex(pts, absolutePTS);
-                break;
-            default:
-                MEDIA_LOG_E("wrong GetpresentationTimeUsFromFfmpegMOV mode");
-                break;
-        }
+        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
 
         stts_cur_num--;
         if ((stts->next == NULL) && (stts_cur_num ==0) &&
@@ -2040,6 +2037,25 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     return Status::OK;
 }
 
+void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
+    int64_t pts, int64_t absolutePTS, uint32_t index)
+{
+    switch (mode) {
+    case GET_FIRST_PTS:
+        absolutePTSIndexZero_ = pts < absolutePTSIndexZero_ ? pts : absolutePTSIndexZero_;
+        break;
+    case INDEX_TO_RELATIVEPTS:
+        IndexToRelativePTSProcess(pts, index);
+        break;
+    case RELATIVEPTS_TO_INDEX:
+        RelativePTSToIndexProcess(pts, absolutePTS);
+        break;
+    default:
+        MEDIA_LOG_E("wrong GetpresentationTimeUsFromFfmpegMOV mode");
+        break;
+    }
+}
+
 void FFmpegDemuxerPlugin::IndexToRelativePTSProcess(int64_t pts, uint32_t index)
 {
     if (indexToRelativePTSMaxHeap_.size() < index + 1) {
@@ -2053,7 +2069,7 @@ void FFmpegDemuxerPlugin::IndexToRelativePTSProcess(int64_t pts, uint32_t index)
     indexToRelativePTSFrameCount_++;
 }
 
-void FFmpegDemuxerPlugin::RelativePTSProcessToIndex(int64_t pts, int64_t absolutePTS)
+void FFmpegDemuxerPlugin::RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS)
 {
     if (relativePTSToIndexPTSMin_ > pts) {
         relativePTSToIndexPTSMin_ = pts;

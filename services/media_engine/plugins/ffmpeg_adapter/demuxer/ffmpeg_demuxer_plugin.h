@@ -154,7 +154,9 @@ private:
         uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
-    void RelativePTSProcessToIndex(int64_t pts, int64_t AbsolutePTS);
+    void RelativePTSToIndexProcess(int64_t pts, int64_t AbsolutePTS);
+    void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
+        int64_t pts, int64_t absolutePTS, uint32_t index);
     int64_t absolutePTSIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
     uint32_t indexToRelativePTSFrameCount_ = 0;
