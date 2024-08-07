@@ -569,8 +569,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     FALSE_RETURN_MSG(emptyOutputBuffer->memory_ != nullptr, "emptyOutputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = mappingTime - startBufferTime_;
-    emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
+    emptyOutputBuffer->pts_ = (mappingTime - startBufferTime_) / NS_PER_US;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
