@@ -540,18 +540,22 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         std::unique_lock<std::mutex> lock(stopMutex_);
         stopCondition_.notify_all();
     }
-    if (startBufferTime_ == -1 && buffer->pts_ != 0) {
-        startBufferTime_ = buffer->pts_;
-    }
+
     int64_t mappingTime = -1;
-    if (startBufferTime_ != -1 || buffer->pts_ != 0) {
+    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         std::lock_guard<std::mutex> mappingLock(mappingPtsMutex_);
         if (mappingTimeQueue_.empty() || mappingTimeQueue_.front().first != buffer->pts_) {
             MEDIA_LOG_D("buffer->pts fail");
-            return;
+        } else {
+            mappingTime = mappingTimeQueue_.front().second;
+            mappingTimeQueue_.pop_front();
         }
-        mappingTime = mappingTimeQueue_.front().second;
-        mappingTimeQueue_.pop_front();
+        if (startBufferTime_ == -1) {
+            startBufferTime_ = buffer->pts_;
+        }
+    } else {
+        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_D64, buffer->flag_);
+        mappingTime = startBufferTime_ + buffer->pts_;
     }
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
@@ -565,10 +569,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     FALSE_RETURN_MSG(emptyOutputBuffer->memory_ != nullptr, "emptyOutputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = mappingTime - startBufferTime_;
-    if (!isTransCoderMode) {
-        emptyOutputBuffer->pts_ = emptyOutputBuffer->pts_ / NS_PER_US;
-    }
+    emptyOutputBuffer->pts_ = (mappingTime - startBufferTime_) / NS_PER_US;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     {
