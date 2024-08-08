@@ -537,7 +537,7 @@ void FileFdSourcePlugin::NotifyReadFail()
     }
 }
 
-void FileFdSourcePlugin::SetDemuxerState()
+void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
 {
     MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;
