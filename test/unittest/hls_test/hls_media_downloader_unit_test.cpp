@@ -395,7 +395,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
     };
     downloader->SetStatusCallback(statusCallback);
     Plugins::Callback* sourceCallback = new SourceCallback();
-    downloader->SetSource(source);
+    downloader->SetCallback(sourceCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
     unsigned char buff[10];
