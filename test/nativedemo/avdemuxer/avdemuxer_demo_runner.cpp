@@ -256,7 +256,8 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
 
     for (uint32_t index = 0; index < 10 ; ++index) { // get first 10 frames
         start = clock::now();
-        int32_t ret = innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+        int32_t ret = innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex,
+                                                                             index, relativePresentationTimeUs);
         if (ret != 0) {
             break;
         }
