@@ -34,6 +34,7 @@ public:
     virtual void UpdateSeekPos(int64_t seekMs) = 0;
     virtual bool IsVideoStreamDiscardable(const std::shared_ptr<AVBuffer> avBuffer) = 0;
     virtual void ConsumeVideoFrame(const std::shared_ptr<AVBuffer> AVBuffer, uint32_t bufferIndex) = 0;
+    virtual void StopDragging() = 0;
     virtual void Release() = 0;
 };
 
