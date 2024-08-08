@@ -31,7 +31,7 @@ constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
 constexpr int32_t RECORD_TIME_INTERVAL = 1000;
-constexpr int32_t IS_DOWNLOAD_MIN_BIT = 1000;
+constexpr int32_t RECORD_DOWNLOAD_MIN_BIT = 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
@@ -920,7 +920,7 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
-        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+        if (curDownloadBits >= RECORD_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = now - lastCheckTime_;
             downloadBits_ += curDownloadBits;
             totalDownloadDuringTime_ += downloadDuringTime_;
