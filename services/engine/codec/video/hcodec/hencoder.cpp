@@ -22,7 +22,6 @@
 #include "type_converter.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
-#include "hcodec_utils.h"
 #include "v3_0/codec_ext_types.h"
 
 namespace OHOS::MediaAVCodec {
@@ -233,7 +232,7 @@ int32_t HEncoder::SetTemperalLayer(const Format &format)
             HLOGE("user set invalid temporal gop size %d", temporalGopSize);
             return AVCS_ERR_INVALID_VAL;
     }
-    
+
     if (!SetParameter(OMX_IndexParamTemperalLayer, temperalLayerParam)) {
         HLOGE("set temporal layer param failed");
         return AVCS_ERR_UNKNOWN;
@@ -507,7 +506,6 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
         HLOGE("get OMX_IndexParamVideoBitrate failed");
         return AVCS_ERR_UNKNOWN;
     }
-
     optional<VideoEncodeBitrateMode> bitRateMode = GetBitRateModeFromUser(format);
     int32_t quality;
     if (bitRateMode.has_value() && bitRateMode.value() == CQ &&
@@ -518,9 +516,11 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     if (bitRate.has_value()) {
         bitrateType.nTargetBitrate = bitRate.value();
     }
-    if (bitRateMode.has_value() && (bitRateMode.value() == VBR || bitRateMode.value() == CBR)) {
-        bitrateType.eControlRate = (bitRateMode.value() == CBR) ?
-            OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
+    if (bitRateMode.has_value()) {
+        auto omxBitrateMode = TypeConverter::InnerModeToOmxBitrateMode(bitRateMode.value());
+        if (omxBitrateMode.has_value()) {
+            bitrateType.eControlRate = omxBitrateMode.value();
+        }
     }
     if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
         HLOGE("failed to set OMX_IndexParamVideoBitrate");
@@ -528,13 +528,11 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     }
     outputFormat_->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE,
         static_cast<int64_t>(bitrateType.nTargetBitrate));
-    if (bitrateType.eControlRate == OMX_Video_ControlRateConstant ||
-        bitrateType.eControlRate == OMX_Video_ControlRateVariable) {
-        bitRateMode = bitrateType.eControlRate == OMX_Video_ControlRateConstant ? CBR : VBR;
+    auto innerMode = TypeConverter::OmxBitrateModeToInnerMode(bitrateType.eControlRate);
+    if (innerMode.has_value()) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
-            static_cast<int32_t>(bitRateMode.value()));
-        HLOGI("set %s mode and target bitrate %u bps succ", (bitRateMode.value() == CBR) ? "CBR" : "VBR",
-            bitrateType.nTargetBitrate);
+            static_cast<int32_t>(innerMode.value()));
+        HLOGI("set %d mode and target bitrate %u bps succ", bitRateMode.value(), bitrateType.nTargetBitrate);
     } else {
         HLOGI("set default bitratemode and target bitrate %u bps succ", bitrateType.nTargetBitrate);
     }
@@ -1011,47 +1009,98 @@ void HEncoder::ExtractPerFrameParamFromOmxBuffer(
                 DealWithResolutionChange(param->nWidth, param->nHeight);
                 break;
             }
-            case OMX_IndexParamEncOutQp: {
-                auto *averageQp = reader.Read<OMX_S32>();
-                IF_TRUE_RETURN_VOID(averageQp == nullptr);
-                HLOGD("pts=%" PRId64 ", averageQp=(%d)", omxBuffer->pts, *averageQp);
-                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
+            case OMX_IndexParamEncOutQp:
+                ExtractPerFrameAveQpParam(reader, meta);
                 break;
-            }
-            case OMX_IndexParamEncOutMse: {
-                auto *averageMseLcu = reader.Read<double>();
-                IF_TRUE_RETURN_VOID(averageMseLcu == nullptr);
-                HLOGD("pts=%" PRId64 ", averageMseLcu=(%f)", omxBuffer->pts, *averageMseLcu);
-                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
+            case OMX_IndexParamEncOutMse:
+                ExtractPerFrameMSEParam(reader, meta);
                 break;
-            }
-            case OMX_IndexParamEncOutLTR: {
-                auto *encOutLtrParam = reader.Read<CodecEncOutLTRParam>();
-                ExtractPerFrameLTRParam(encOutLtrParam, meta);
+            case OMX_IndexParamEncOutLTR:
+                ExtractPerFrameLTRParam(reader, meta);
                 break;
-            }
-            case OMX_IndexParamEncOutFrameLayer: {
-                auto *frameLayer = reader.Read<OMX_S32>();
-                IF_TRUE_RETURN_VOID(frameLayer == nullptr);
-                HLOGD("pts=%" PRId64 ", frameLayer=(%d)", omxBuffer->pts, *frameLayer);
-                meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, *frameLayer);
+            case OMX_IndexParamEncOutFrameLayer:
+                ExtractPerFrameLayerParam(reader, meta);
                 break;
-            }
-            default: {
+            case OMX_IndexParamEncOutRealBitrate:
+                ExtractPerFrameRealBitrateParam(reader, meta);
                 break;
-            }
+            case OMX_IndexParamEncOutFrameQp:
+                ExtractPerFrameFrameQpParam(reader, meta);
+                break;
+            case OMX_IndexParamEncOutMad:
+                ExtractPerFrameMadParam(reader, meta);
+                break;
+            case OMX_IndexParamEncOutIRatio:
+                ExtractPerFrameIRitioParam(reader, meta);
+                break;
+            default:
+                break;
         }
     }
     omxBuffer->alongParam.clear();
+    if (debugMode_) {
+        auto metaStr = StringifyMeta(meta);
+        HLOGI("%s", metaStr.c_str());
+    }
 }
 
-void HEncoder::ExtractPerFrameLTRParam(const CodecEncOutLTRParam* ltrParam, shared_ptr<Media::Meta> &meta)
+void HEncoder::ExtractPerFrameLTRParam(BinaryReader &reader, shared_ptr<Media::Meta> &meta)
 {
-    if (ltrParam == nullptr) {
-        return;
-    }
+    auto *ltrParam = reader.Read<CodecEncOutLTRParam>();
+    IF_TRUE_RETURN_VOID(ltrParam == nullptr);
     meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, ltrParam->isLTR);
     meta->SetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, static_cast<int32_t>(ltrParam->poc));
+}
+
+void HEncoder::ExtractPerFrameMadParam(BinaryReader &reader, shared_ptr<Media::Meta> &meta)
+{
+    auto *madParam = reader.Read<CodecEncOutMadParam>();
+    IF_TRUE_RETURN_VOID(madParam == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_MADI, madParam->frameMadi);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_MADP, madParam->frameMadp);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_SUM_MADI, madParam->sumMadi);
+}
+
+void HEncoder::ExtractPerFrameRealBitrateParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
+{
+    auto *realBitrate = reader.Read<OMX_S32>();
+    IF_TRUE_RETURN_VOID(realBitrate == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_REAL_BITRATE, *realBitrate);
+}
+
+void HEncoder::ExtractPerFrameFrameQpParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
+{
+    auto *frameQp = reader.Read<OMX_S32>();
+    IF_TRUE_RETURN_VOID(frameQp == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_QP, *frameQp);
+}
+
+void HEncoder::ExtractPerFrameIRitioParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
+{
+    auto *iRatio = reader.Read<OMX_S32>();
+    IF_TRUE_RETURN_VOID(iRatio == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_I_RATIO, *iRatio);
+}
+
+void HEncoder::ExtractPerFrameAveQpParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
+{
+    auto *averageQp = reader.Read<OMX_S32>();
+    IF_TRUE_RETURN_VOID(averageQp == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, *averageQp);
+}
+
+void HEncoder::ExtractPerFrameMSEParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
+{
+    auto *averageMseLcu = reader.Read<double>();
+    IF_TRUE_RETURN_VOID(averageMseLcu == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, *averageMseLcu);
+}
+
+void HEncoder::ExtractPerFrameLayerParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
+{
+    auto *frameLayer = reader.Read<OMX_S32>();
+    IF_TRUE_RETURN_VOID(frameLayer == nullptr);
+    meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, *frameLayer);
 }
 
 int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()

@@ -145,7 +145,8 @@ void ShowUsage()
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
     std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
-    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ)" << std::endl;
+    std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(CBR_VIDEOCALL)"
+              << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
     std::cout << " --qpRange            target encode qpRange, eg. 13,42" << std::endl;
@@ -273,6 +274,7 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_WATERMARK:
                 opt.ParseWaterMark(optarg);
+                break;
             case OPT_ENABLE_PARAMS_FEEDBACK:
                 opt.paramsFeedback = stol(optarg);
                 break;
