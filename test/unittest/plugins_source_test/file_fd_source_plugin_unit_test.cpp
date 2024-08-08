@@ -72,15 +72,8 @@ public:
         (void)cleanData;
     }
 
-    bool WriteBuffer(void* ptr, size_t writeSize)
-    {
-        (void)ptr;
-        (void)writeSize;
-        return bRet_;
-    }
-
-    size_t sRet_ = 0;
-    bool bRet_ = false;
+    size_t readBufferSize_ = 0;
+    bool seekRet_ = false;
 };
 
 class CallbackMock : public Plugins::Callback {
