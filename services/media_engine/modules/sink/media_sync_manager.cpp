@@ -543,6 +543,11 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
     OHOS::Media::AutoLock lock(clockMutex_);
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = IMediaSynchronizer::NONE;
+        if (isSeeking_) {
+            MEDIA_LOG_I_SHORT("reportEos leaving seeking_");
+            isSeeking_ = false;
+            seekCond_.notify_all();
+        }
     }
 }
 } // namespace Pipeline
