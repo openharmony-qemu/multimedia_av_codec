@@ -236,7 +236,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_ERROR, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    httpMediaDownloader->downloadErrorState = true;
+    httpMediaDownloader->downloadErrorState_ = true;
     httpMediaDownloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->CheckIsEosCacheBuffer(buff, readDataInfo);
