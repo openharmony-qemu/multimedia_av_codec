@@ -1347,7 +1347,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");
-
     formatContext_ = InitAVFormatContext(&ioContext_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN,
         "Set datasource failed due to can not init formatContext for source.");
