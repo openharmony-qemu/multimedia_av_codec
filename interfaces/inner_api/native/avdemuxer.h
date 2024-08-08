@@ -108,8 +108,9 @@ public:
 
     /**
      * @brief Obtian index by relative pts.
-     * @param trackIndex Get the sampleBuffer from this track.
-     * @param relativePresentationTimeUs Get pts relative to frame 0.
+     * @param trackIndex Get the index from this track.
+     * @param relativePresentationTimeUs Relative pts which obtian index by.
+     * @param index Frame index of obtian result.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
      */
@@ -117,9 +118,10 @@ public:
         const uint64_t relativePresentationTimeUs, uint32_t &index) = 0;
 
     /**
-     * @brief Obtian index by relative pts.
-     * @param trackIndex Get the sampleBuffer from this track.
-     * @param index Get an index that follows the Pts order.
+     * @brief Obtian relative pts by index.
+     * @param trackIndex Get the relative pts from this track.
+     * @param index Frame index which obtian relative pts by.
+     * @param relativePresentationTimeUs Pts of obtian reuslt.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 5.0
      */

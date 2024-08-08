@@ -1908,43 +1908,43 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
         "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
 
-    uint32_t stts_index = 0;
-    uint32_t ctts_index = 0;
+    uint32_t sttsIndex = 0;
+    uint32_t cttsIndex = 0;
 
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
 
-    int32_t stts_cur_num = static_cast<int32_t>(avStream->stts_data[stts_index].count);
-    int32_t ctts_cur_num = 0;
+    int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
+    int32_t cttsCurNum = 0;
 
     if (avStream->ctts_data != nullptr) {
-        ctts_cur_num = static_cast<int32_t>(avStream->ctts_data[ctts_index].count);
-        while (stts_index < avStream->stts_count && ctts_index < avStream->ctts_count &&
-                ctts_cur_num >= 0 && stts_cur_num >= 0) {
-            if (ctts_cur_num == 0) {
-                ctts_index++;
-                ctts_cur_num = static_cast<int32_t>(avStream->ctts_data[ctts_index].count);
+        cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
+        while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
+                cttsCurNum >= 0 && sttsCurNum >= 0) {
+            if (cttsCurNum == 0) {
+                cttsIndex++;
+                cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
             }
-            ctts_cur_num--;
-            pts = (dts + static_cast<int64_t>(avStream->ctts_data[ctts_index].duration)) *
+            cttsCurNum--;
+            pts = (dts + static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration)) *
                    1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
             PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
-            stts_cur_num--;
-            dts += static_cast<int64_t>(avStream->stts_data[stts_index].duration);
-            if (stts_cur_num == 0) {
-                stts_index++;
-                stts_cur_num = static_cast<int32_t>(avStream->stts_data[stts_index].count);
+            sttsCurNum--;
+            dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+            if (sttsCurNum == 0) {
+                sttsIndex++;
+                sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
             }
         }
     } else {
-        while (stts_index < avStream->stts_count && ctts_cur_num >= 0 && stts_cur_num >= 0) {
+        while (sttsIndex < avStream->stts_count && cttsCurNum >= 0 && sttsCurNum >= 0) {
             pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
             PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
-            stts_cur_num--;
-            dts += static_cast<int64_t>(avStream->stts_data[stts_index].duration);
-            if (stts_cur_num == 0) {
-                stts_index++;
-                stts_cur_num = static_cast<int32_t>(avStream->stts_data[stts_index].count);
+            sttsCurNum--;
+            dts += static_cast<int64_t>(avStream->stts_data[sttsIndex].duration);
+            if (sttsCurNum == 0) {
+                sttsIndex++;
+                sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
             }
         }
     }
