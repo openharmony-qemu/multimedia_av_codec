@@ -23,6 +23,7 @@ using namespace std;
 using namespace testing::ext;
 
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
+const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
 const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
@@ -63,6 +64,43 @@ void HttpMediaDownloaderUnitTest::SetUp()
 void HttpMediaDownloaderUnitTest::TearDown()
 {
 }
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
+{
+    MP4httpMediaDownloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    MP4httpMediaDownloader->Read(buff, readDataInfo);
+    OSAL::SleepFor(1 * 1000);
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK, TestSize.Level1)
+{
+    MP4httpMediaDownloader->GetSeekable();
+    boot result = MP4httpMediaDownloader->SeekToPos(100);
+    EXPECT_TRUE(result);
+    result = MP4httpMediaDownloader->SeekToPos(10000000);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_FLV, TestSize.Level1)
+{
+    FLVhttpMediaDownloader->GetSeekable();
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 10;
+    readDataInfo.isEos_ = true;
+    FLVhttpMediaDownloader->Read(buff, readDataInfo);
+    OSAL::SleepFor(1 * 1000);
+    EXPECT_GE(readDataInfo.realReadLength_, 0);
+}
+
+
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetContentLength, TestSize.Level1)
 {
