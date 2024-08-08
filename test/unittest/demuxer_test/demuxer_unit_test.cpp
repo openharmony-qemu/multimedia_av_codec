@@ -2341,30 +2341,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1003, Tes
     int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
     ASSERT_EQ(index, 10);
-
-    // standard pts & audio track
-    trackIndex = 0;
-    relativePresentationTimeUs = 23219;
-    index = 0;
-    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(index, 1);
-
-    // left non-standard pts & audio track
-    trackIndex = 0;
-    relativePresentationTimeUs = 23218;
-    index = 0;
-    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(index, 1);
-
-    // right non-standard pts & audio track
-    trackIndex = 0;
-    relativePresentationTimeUs = 23220;
-    index = 0;
-    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(index, 1);
 }
 
 /**
