@@ -947,46 +947,22 @@ Status FFmpegDemuxerPlugin::PushEOSToAllCache()
     return ret;
 }
 
-bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket **vttPkt, AVPacket *pkt, bool &continueRead)
+bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
 {
-    if (*vttPkt == nullptr) {
-        if (pkt->size > 0) {
-            *vttPkt = av_packet_alloc();
-            int32_t ret = av_new_packet(*vttPkt, pkt->size);
-            if (ret != 0) {
-                MEDIA_LOG_E("vttPkt av_new_packet failed, ret=" PUBLIC_LOG_D32, ret);
-                av_packet_unref(pkt);
-                return true;
-            }
-            (*vttPkt)->stream_index = pkt->stream_index;
-            (*vttPkt)->pts = pkt->pts;
-            (*vttPkt)->dts = pkt->dts;
-            (*vttPkt)->size = pkt->size;
-            *(pkt->data + pkt->size) = '\0';
-            ret = memmove_s((*vttPkt)->data, (*vttPkt)->size, pkt->data, pkt->size);
-            if (ret != 0) {
-                MEDIA_LOG_E("vttPkt memmove_s failed, ret=" PUBLIC_LOG_D32, ret);
-                return true;
+    auto trackId = pkt->stream_index;
+    if (pkt->size > 0) {    // vttc
+        return false;
+    } else {    // vtte
+        if (cacheQueue_.HasCache(trackId)) {
+            std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+                cacheSamplePacket->pkts[0]->duration = pkt->pts - cacheSamplePacket->pkts[0]->pts;
             }
         }
-        av_packet_unref(pkt);
-        pkt = nullptr;
-        return true;
-    } else {
-        pkt->duration = pkt->pts - (*vttPkt)->pts;
-        pkt->stream_index = (*vttPkt)->stream_index;
-        pkt->pts = (*vttPkt)->pts;
-        pkt->dts = (*vttPkt)->dts;
-        pkt->size = (*vttPkt)->size;
-        *((*vttPkt)->data + (*vttPkt)->size) = '\0';
-        int32_t ret = memmove_s(pkt->data, pkt->size, (*vttPkt)->data, (*vttPkt)->size);
-        if (ret != 0) {
-            MEDIA_LOG_E("pkt memmove_s failed, ret=" PUBLIC_LOG_D32, ret);
-        }
-        av_packet_free(vttPkt);
-        continueRead = false;
     }
-    return false;
+    av_packet_unref(pkt);
+    pkt = nullptr;
+    return true;
 }
 
 bool FFmpegDemuxerPlugin::IsWebvttMP4(const AVStream *avStream)
@@ -998,15 +974,17 @@ bool FFmpegDemuxerPlugin::IsWebvttMP4(const AVStream *avStream)
     return false;
 }
 
-void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(AVPacket *vttPkt)
+void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
 {
-    if (vttPkt != nullptr) {
-        auto trackId = vttPkt->stream_index;
+    if (pkt != nullptr) {
+        auto trackId = pkt->stream_index;
         AVStream *avStream = formatContext_->streams[trackId];
-        if (IsWebvttMP4(avStream) && vttPkt->size != 0) {
-            vttPkt->duration = formatContext_->streams[trackId]->duration - vttPkt->pts;
-            AddPacketToCacheQueue(vttPkt);
-            vttPkt = nullptr;
+        if (IsWebvttMP4(avStream) && pkt->size == 0 && cacheQueue_.HasCache(trackId)) {
+            std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
+            if (cacheSamplePacket != nullptr && cacheSamplePacket->pkts[0]->duration == 0) {
+                cacheSamplePacket->pkts[0]->duration =
+                    formatContext_->streams[pkt->stream_index]->duration - cacheSamplePacket->pkts[0]->pts;
+            }
         }
     }
 }
@@ -1015,7 +993,6 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     AVPacket *pkt = nullptr;
-    AVPacket *vttPkt = nullptr;
     bool continueRead = true;
     Status ret = Status::OK;
     while (continueRead) {
@@ -1027,7 +1004,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
         int ffmpegRet = av_read_frame(formatContext_.get(), pkt);
         sLock.unlock();
         if (ffmpegRet == AVERROR_EOF) { // eos
-            WebvttMP4EOSProcess(vttPkt);
+            WebvttMP4EOSProcess(pkt);
             av_packet_free(&pkt);
             ret = PushEOSToAllCache();
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PushEOSToAllCache failed.");
@@ -1045,15 +1022,16 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             }
             return Status::ERROR_UNKNOWN;
         }
-        if (!TrackIsSelected(static_cast<uint32_t>(pkt->stream_index))) {
+        auto trackId = pkt->stream_index;
+        if (!TrackIsSelected(trackId)) {
             av_packet_unref(pkt);
             continue;
         }
-        AVStream *avStream = formatContext_->streams[pkt->stream_index];
-        if (IsWebvttMP4(avStream) && WebvttPktProcess(&vttPkt, pkt, continueRead)) {
-            continue;
-        } else if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(static_cast<uint32_t>(pkt->stream_index)) &&
-            GetNextFrame(pkt->data, pkt->size))) {
+        AVStream *avStream = formatContext_->streams[trackId];
+        if (IsWebvttMP4(avStream) && WebvttPktProcess(pkt)) {
+            break;
+        } else if (!IsWebvttMP4(avStream) && (!NeedCombineFrame(readId) ||
+            (cacheQueue_.HasCache(static_cast<uint32_t>(trackId)) && GetNextFrame(pkt->data, pkt->size)))) {
             continueRead = false;
         }
         ret = AddPacketToCacheQueue(pkt);
