@@ -195,7 +195,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
         std::unique_lock lock(inputMutex_);
         auto it = inputBufferObjMap_.find(index);
         CHECK_AND_RETURN_RET_LOG(it != inputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
-            "Index does not exsist");
+            "Index does not exist");
         buffer = it->second;
         inputBufferObjMap_.erase(index);
     }
@@ -250,7 +250,7 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
         std::unique_lock lock(outputMutex_);
         auto it = outputBufferObjMap_.find(index);
         CHECK_AND_RETURN_RET_LOG(it != outputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
-            "Index does not exsist");
+            "Index does not exist");
         buffer = it->second;
         outputBufferObjMap_.erase(index);
     }
