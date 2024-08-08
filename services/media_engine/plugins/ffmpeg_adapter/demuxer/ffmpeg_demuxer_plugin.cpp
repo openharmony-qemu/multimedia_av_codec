@@ -1996,47 +1996,57 @@ Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
     auto avStream = formatContext_->streams[trackIndex];
-    FALSE_RETURN_V_MSG_E(avStream->stts_data_head->next != nullptr, Status::ERROR_NULL_POINTER,
-    "GetpresentationTimeUsFromFfmpegMOV failed due to mp4 box info is empty.");
-    FALSE_RETURN_V_MSG_E(avStream->ctts_data_head != nullptr, Status::ERROR_NULL_POINTER,
-    "GetpresentationTimeUsFromFfmpegMOV failed due to mp4 box info is empty.");
-    struct AVCodecMOVStts *stts = avStream->stts_data_head->next;
-    struct AVCodecMOVCtts *ctts = avStream->ctts_data_head;
-    int32_t ctts_cur_num = 0; //init ctts_cur_num
-    if (ctts->next != NULL && ctts->next != ctts) {
-        ctts = ctts->next;
-        ctts_cur_num = ctts->count;
-    } else {
-        ctts->next = ctts;
-    }
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
+        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
+    FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr, Status::ERROR_NULL_POINTER,
+        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is nullptr.");
+    FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
+        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
+
+    uint32_t stts_index = 0;
+    uint32_t ctts_index = 0;
+    bool has_ctts = true;
+
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
-    int32_t stts_cur_num = stts->count;
-    int64_t nb_frames = (avStream->nb_frames) + 1; // Ensure that the number of while loops is sufficient
-    while (nb_frames) {
-        if (ctts_cur_num == 0 && ctts->next != ctts) {
-            ctts = ctts->next;
-            ctts_cur_num = static_cast<int32_t>(ctts->count);
-        }
-        if (ctts->next != ctts) {
-            ctts_cur_num--;
-        }
-        pts = (dts + (ctts->next == ctts ? 0 : static_cast<int64_t>(ctts->duration))) *
-            1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
-        
-        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
 
-        stts_cur_num--;
-        if ((stts->next == NULL) && (stts_cur_num == 0) &&
-            ((ctts->next == NULL) || (ctts->next == ctts)) && (ctts_cur_num == 0)) {
-                break;
+    uint32_t stts_cur_num = static_cast<int32_t>(avStream->stts_data[stts_index].count);
+    uint32_t ctts_cur_num = 0;
+
+    if (avStream->ctts_data != nullptr) {
+        ctts_cur_num = static_cast<int32_t>(avStream->ctts_data[ctts_index].count);
+    } else {
+        has_ctts = false;
+    }
+
+    if (has_ctts) {
+        while (stts_index < avStream->stts_count && ctts_index < avStream->ctts_count) {
+            if (ctts_cur_num == 0) {
+                ctts_index++;
+                ctts_cur_num = static_cast<int32_t>(avStream->ctts_data[ctts_index].count);
+            }
+            ctts_cur_num--;
+            pts = (dts + static_cast<int64_t>(avStream->ctts_data[ctts_index].duration)) * 1000 * 1000 /
+                static_cast<int64_t>(avStream->time_scale); // 1000 is used for converting pts to us
+            PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
+            stts_cur_num--;
+            dts += static_cast<int64_t>(avStream->stts_data[stts_index].duration);
+            if (stts_cur_num == 0) {
+                stts_index++;
+                stts_cur_num = static_cast<int32_t>(avStream->stts_data[stts_index].count);
+            }
         }
-        dts += static_cast<int64_t>(stts->duration);
-        if (stts_cur_num == 0) {
-            stts = stts->next;
-            stts_cur_num = static_cast<int32_t>(stts->count);
+    } else {
+        while (stts_index < avStream->stts_count) {
+            pts = dts * 1000 * 1000 / static_cast<int64_t>(avStream->time_scale); // 1000 is for converting pts to us
+            PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
+            stts_cur_num--;
+            dts += static_cast<int64_t>(avStream->stts_data[stts_index].duration);
+            if (stts_cur_num == 0) {
+                stts_index++;
+                stts_cur_num = static_cast<int32_t>(avStream->stts_data[stts_index].count);
+            }
         }
-        nb_frames--;
     }
     return Status::OK;
 }
