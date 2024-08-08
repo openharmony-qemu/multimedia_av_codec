@@ -198,7 +198,7 @@ int32_t MediaCodec::Prepare()
     MEDIA_LOG_I("Prepare enter");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Prepare");
-    FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED, (int32_t)Status::ERROR_WRONG_STATE,
+    FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED, (int32_t)Status::ERROR_AGAIN,
         "state is flushed, no need prepare");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
     FALSE_RETURN_V(state_ == CodecState::CONFIGURED,
