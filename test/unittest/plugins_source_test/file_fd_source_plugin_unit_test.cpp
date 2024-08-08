@@ -80,10 +80,10 @@ class CallbackMock : public Plugins::Callback {
 public:
     void OnEvent(const PluginEvent &event)
     {
-        ret_ = event.description;
+        description_ = event.description;
     }
 
-    std::string ret_;
+    std::string description_;
 };
 
 class SourceCallback : public Plugins::Callback {
@@ -441,7 +441,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     CallbackMock* cb = new CallbackMock();
     fileFdSourcePlugin_->callback_ = cb;
     fileFdSourcePlugin_->NotifyBufferingStart();
-    EXPECT_EQ("start", cb->readBufferSize_);
+    EXPECT_EQ("start", cb->description_);
     fileFdSourcePlugin_->isInterrupted_ = true;;
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
@@ -457,7 +457,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
-    EXPECT_EQ("0", cb->readBufferSize_);
+    EXPECT_EQ("0", cb->description_);
     delete cb;
     cb = nullptr;
 }
@@ -485,7 +485,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
 
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingEnd();
-    EXPECT_EQ("end", cb->readBufferSize_);
+    EXPECT_EQ("end", cb->description_);
     delete cb;
     cb = nullptr;
 }
