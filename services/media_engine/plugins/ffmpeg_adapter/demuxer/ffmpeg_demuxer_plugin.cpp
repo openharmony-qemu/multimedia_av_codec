@@ -68,6 +68,7 @@ const uint32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const uint32_t MS_TO_SEC = 1000;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
+const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
@@ -1372,6 +1373,9 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Set data source for demuxer successfully.");
+    cachelimitSize_ = DEFAULT_CACHE_LIMIT;
+    outOfLimit_ = false;
+    MEDIA_LOG_I("Using dafault cache limit 50M.");
     return Status::OK;
 }
 
@@ -1972,13 +1976,13 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsByFrameIndex(uint32_t trackInde
 
 Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
-    if (cachelimitSize_ == 0) {
-        return Status::OK;
-    }
-    auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
-    if (cacheDataSize > cachelimitSize_) {
-        MEDIA_LOG_E("Data cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32, cacheDataSize, cachelimitSize_);
-        return Status::ERROR_NO_MEMORY;
+    if (!outOfLimit_) {
+        auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
+        if (cacheDataSize > cachelimitSize_) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32,
+                trackId, cacheDataSize, cachelimitSize_);
+            outOfLimit_ = true;
+        }
     }
     return Status::OK;
 }
