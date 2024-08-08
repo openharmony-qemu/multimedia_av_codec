@@ -206,7 +206,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
     if (isReadFrame_ && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
          (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
-        MEDIA_LOG_I("ringBuffer_->GetSize() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
+        MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
         CheckReadTime();
         FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
@@ -234,7 +234,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         " costTime: " PUBLIC_LOG_U64, position_.load(), expectedLen, ct);
     }
     position_ += static_cast<uint64_t>(size);
-    MEDIA_LOG_D("ringBuffer_->GetSize() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
+    MEDIA_LOG_D("ringBuffer.size() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
     return Status::OK;
 }
 
@@ -267,7 +267,7 @@ Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
 {
     FALSE_RETURN_V_MSG_E(ringBuffer_ != nullptr, Status::ERROR_WRONG_STATE, "SeekCloud ringBuffer_ is nullptr");
-    MEDIA_LOG_D("SeekCloud, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
+    MEDIA_LOG_D("SeekCloud, ringBuffer.size() " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
     if (ringBuffer_->Seek(offset)) {
         position_ = offset + static_cast<uint64_t>(offset_);
         MEDIA_LOG_I("SeekCloud ringBuffer_ seek hit, offset " PUBLIC_LOG_U64, offset);
@@ -386,7 +386,7 @@ void FileFdSourcePlugin::CacheDataLoop()
 
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos:" PUBLIC_LOG_U64 ",ringBuffer.size " PUBLIC_LOG_ZU ", size "
+        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos:" PUBLIC_LOG_U64 ",ringBuffer.size() " PUBLIC_LOG_ZU ", size "
             PUBLIC_LOG_U64 " cTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
     }
     
@@ -483,7 +483,7 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 
 void FileFdSourcePlugin::NotifyBufferingStart()
 {
-    MEDIA_LOG_I("NotifyBufferingStart, ringBufferSize_ " PUBLIC_LOG_U64
+    MEDIA_LOG_I("NotifyBufferingStart, ringBuffer.size() " PUBLIC_LOG_ZU
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
     isBuffering_ = true;
     if (callback_ != nullptr && !isInterrupted_) {
@@ -500,7 +500,7 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
         int64_t bp = static_cast<float>(ringBuffer_->GetSize()) / waterLineAbove_ * PERCENT_100;
         bp = bp > PERCENT_100 ? PERCENT_100 : bp;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
-            MEDIA_LOG_I("NotifyBufferingPercent, ringBufferSize_ " PUBLIC_LOG_U64 ", waterLineAbove_ " PUBLIC_LOG_U64
+            MEDIA_LOG_I("NotifyBufferingPercent, ringBuffer.size() " PUBLIC_LOG_ZU ", waterLineAbove_ " PUBLIC_LOG_U64
                 ", PERCENT " PUBLIC_LOG_D32, ringBuffer_->GetSize(), waterLineAbove_, static_cast<int32_t>(bp));
             callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
@@ -513,9 +513,8 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
 void FileFdSourcePlugin::NotifyBufferingEnd()
 {
     NotifyBufferingPercent();
-    MEDIA_LOG_I("NotifyBufferingEnd, ringBufferSize_ " PUBLIC_LOG_U64
+    MEDIA_LOG_I("NotifyBufferingEnd, ringBuffer.size() " PUBLIC_LOG_ZU
         ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
-    MEDIA_LOG_I("water line above, ringBuffer_->GetSize() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
     isBuffering_ = false;
     lastReadTime_ = 0;
     if (callback_ != nullptr && !isInterrupted_) {
