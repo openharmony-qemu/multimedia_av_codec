@@ -303,7 +303,7 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else {
-        MEDIA_LOG_E("on event error.");
+        MEDIA_LOG_I("on event type undefined.");
     }
 }
 
