@@ -1370,8 +1370,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Set data source for demuxer successfully.");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
-    outOfLimit_ = false;
-    MEDIA_LOG_I("Using default cache limit 50M.");
     return Status::OK;
 }
 
