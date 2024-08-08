@@ -132,7 +132,6 @@ private:
 
     bool isHttpSource_ = false;
     std::string videoMime_{};
-    bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
@@ -265,6 +264,8 @@ private:
     int64_t lastSubtitlePts_ = 0;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
+    std::atomic<bool> isFirstFrameAfterSeek_ {false};
+    std::atomic<bool> isInterruptNeeded_ {false};
 };
 } // namespace Media
 } // namespace OHOS

@@ -228,22 +228,13 @@ void HlsMediaDownloader::Close(bool isAsync)
 void HlsMediaDownloader::Pause()
 {
     MEDIA_LOG_I("Pause enter");
-    isInterrupt_ = true;
-    bool cleanData = GetSeekable() != Seekable::SEEKABLE;
-    buffer_->SetActive(false, cleanData);
-    playList_->SetActive(false, cleanData);
     playListDownloader_->Pause();
-    downloader_->Pause();
 }
 
 void HlsMediaDownloader::Resume()
 {
     MEDIA_LOG_I("Resume enter");
-    isInterrupt_ = false;
-    buffer_->SetActive(true);
-    playList_->SetActive(true);
     playListDownloader_->Resume();
-    downloader_->Resume();
 }
 
 bool HlsMediaDownloader::CheckReadStatus()
@@ -369,7 +360,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
     }
     size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
         std::min(PLAY_WATER_LINE, static_cast<int>(readDataInfo.wantReadLength_)) : 0;
-    if (isFirstFrameArrived_ && buffer_->GetSize() < waterLine && !CheckReadStatus()) {
+    if (isFirstFrameArrived_ && buffer_->GetSize() < waterLine && !CheckBreakCondition()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
         }
@@ -1221,6 +1212,10 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
     // return error again 1 time 1s, avoid ffmpeg error
     while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
+            break;
+        }
+        if (CheckBreakCondition()) {
+            isBuffering_ = false;
             break;
         }
         OSAL::SleepFor(TEN_MILLISECONDS);

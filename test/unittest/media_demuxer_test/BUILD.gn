@@ -18,7 +18,6 @@ module_output_path = "av_codec/unittest"
 media_demuxer_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/demuxer/base_stream_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/demuxer_plugin_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/modules/demuxer/frame_detector.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/media_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/stream_demuxer.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",

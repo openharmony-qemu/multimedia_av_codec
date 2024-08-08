@@ -100,7 +100,7 @@ M3U8::M3U8(std::string uri, std::string name) : uri_(std::move(uri)), name_(std:
 M3U8::~M3U8()
 {
     if (downloader_) {
-        downloader_->Stop();
+        downloader_ = nullptr;
     }
 }
 
@@ -519,9 +519,6 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                     auto name = uriAttribute->QuotedString();
                     auto uri = UriJoin(uri_, name);
                     auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name));
-                    if (minimumVariant_ == nullptr) {
-                        minimumVariant_ = stream;
-                    }
                     if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
                         stream->iframe_ = true;
                     }
@@ -546,7 +543,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
         }
     });
     if (defaultVariant_ == nullptr) {
-        defaultVariant_ = minimumVariant_;
+        defaultVariant_ = variants_.front();
     }
     tags.clear();
 }

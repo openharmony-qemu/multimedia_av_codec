@@ -23,6 +23,7 @@
 #include "videoenc_inner_sample.h"
 #include "meta/meta_key.h"
 #include <random>
+#include "avcodec_list.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -244,8 +245,11 @@ int32_t VEncNdkInnerSample::Reset()
 
 int32_t VEncNdkInnerSample::Release()
 {
-    int32_t ret = venc_->Release();
-    venc_ = nullptr;
+    int32_t ret = 0;
+    if (venc_) {
+        ret = venc_->Release();
+        venc_ = nullptr;
+    }
     if (signal_ != nullptr) {
         signal_ = nullptr;
     }
@@ -689,7 +693,6 @@ void VEncNdkInnerSample::InputFuncSurface()
             break;
         }
         inputFrameCount++;
-        cout << "frameinputcount: " << inputFrameCount << endl;
         err = InputProcess(nativeBuffer, ohNativeWindowBuffer);
         if (err != 0) {
             break;
@@ -972,4 +975,83 @@ int32_t VEncNdkInnerSample::PushInputParameter(uint32_t index)
         return AV_ERR_UNKNOWN;
     }
     return venc_->QueueInputParameter(index);
+}
+
+int32_t VEncNdkInnerSample::SetCustomBuffer(BufferRequestConfig bufferConfig)
+{
+    int32_t waterMarkFlag = enableWaterMark ? 1 : 0;
+    auto allocator = Media::AVAllocatorFactory::CreateSurfaceAllocator(bufferConfig);
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(allocator);
+    if (avbuffer == nullptr) {
+        cout << "avbuffer is nullptr" << endl;
+        return AVCS_ERR_INVALID_VAL;
+    }
+    cout << WATER_MARK_DIR << endl;
+    ReadCustomDataToAVBuffer(WATER_MARK_DIR, avbuffer);
+    Format format;
+    format.SetMeta(avbuffer->meta_);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_WATERMARK, waterMarkFlag);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_X, videoCoordinateX);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_Y, videoCoordinateY);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_W, videoCoordinateWidth);
+    format.PutIntValue(Media::Tag::VIDEO_COORDINATE_H, videoCoordinateHeight);
+    *(avbuffer->meta_) = *(format.GetMeta());
+    int32_t ret = venc_->SetCustomBuffer(avbuffer);
+    return ret;
+}
+
+bool VEncNdkInnerSample::ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer)
+{
+    std::unique_ptr<std::ifstream> inFile = std::make_unique<std::ifstream>();
+    if (inFile == nullptr) {
+        cout << "inFile is nullptr" << endl;
+    }
+    inFile->open(fileName.c_str(), std::ios::in | std::ios::binary);
+    if (!inFile->is_open()) {
+        cout << "open file filed,filename:" << fileName.c_str() << endl;
+    }
+    sptr<SurfaceBuffer> surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
+    if (surfaceBuffer == nullptr) {
+        cout << "in is nullptr" << endl;
+    }
+    int32_t width = surfaceBuffer->GetWidth();
+    int32_t height = surfaceBuffer->GetHeight();
+    int32_t bufferSize = width * height * 4;
+    uint8_t *in = (uint8_t *)malloc(bufferSize);
+    if (in == nullptr) {
+        cout << "in is nullptr" <<endl;
+    }
+    inFile->read(reinterpret_cast<char *>(in), bufferSize);
+    int32_t dstWidthStride = surfaceBuffer->GetStride();
+    uint8_t *dstAddr = (uint8_t *)surfaceBuffer->GetVirAddr();
+    if (dstAddr == nullptr) {
+        cout << "dst is nullptr" << endl;
+    }
+    const int32_t srcWidthStride = width << 2;
+    uint8_t *inStream = in;
+    for (uint32_t i = 0; i < height; ++i) {
+        memcpy_s(dstAddr, dstWidthStride, inStream, srcWidthStride);
+        dstAddr += dstWidthStride;
+        inStream += srcWidthStride;
+    }
+    inFile->close();
+    if (in) {
+        free(in);
+        in = nullptr;
+    }
+    return true;
+}
+
+bool VEncNdkInnerSample::GetWaterMarkCapability(std::string codecMimeType)
+{
+    std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
+    CapabilityData *capabilityData = nullptr;
+    capabilityData = codecCapability->GetCapability(codecMimeType, true, AVCodecCategory::AVCODEC_HARDWARE);
+    if (capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
+        std::cout << "Support watermark" << std::endl;
+        return true;
+    } else {
+        std::cout << " Not support watermark" << std::endl;
+        return false;
+    }
 }

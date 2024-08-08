@@ -98,7 +98,7 @@ public:
         MEDIA_LOG_W("SetCurrentBitRate is unimplemented.");
         return Status::OK;
     }
-    virtual void SetPlayStrategy(PlayStrategy* playStrategy)
+    virtual void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
     {
         MEDIA_LOG_W("SetPlayStrategy is unimplemented.");
     }

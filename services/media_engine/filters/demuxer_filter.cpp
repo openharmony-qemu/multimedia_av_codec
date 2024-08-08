@@ -28,7 +28,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
-constexpr uint32_t maxCacheLimitSize = 50 * 1024 * 1024;
 }
 
 namespace OHOS {
@@ -139,7 +138,6 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     }
     mediaSource_ = source;
     Status ret = demuxer_->SetDataSource(mediaSource_);
-    demuxer_->SetCacheLimit(maxCacheLimitSize);
     return ret;
 }
 
@@ -213,6 +211,10 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         std::string mime;
         if (!meta->GetData(Tag::MIME_TYPE, mime)) {
             MEDIA_LOG_E_SHORT("mimeType not found, index: %zu", index);
+            continue;
+        }
+        if (mime.find("invalid") == 0) {
+            MEDIA_LOG_E_SHORT("mimeType is invalid, index: %zu", index);
             continue;
         }
         MediaType mediaType;

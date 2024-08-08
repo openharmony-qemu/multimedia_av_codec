@@ -29,6 +29,8 @@ av_codec_unittest_cflags = [
   "-fno-rtti",
   "-Wno-unused-but-set-variable",
   "-Wno-format",
+  "-Dprivate=public",
+  "-Dprotected=public",
 ]
 
 ##################################################################################################################

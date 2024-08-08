@@ -33,6 +33,10 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
 {
     auto statusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        if (isClosed_) {
+            MEDIA_LOG_W("Downloader monitor is already closed.");
+            return;
+        }
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
@@ -60,26 +64,34 @@ int64_t DownloadMonitor::HttpMonitorLoop()
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     isPlaying_ = true;
-    retryTasks_.clear();
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     return downloader_->Open(url, httpHeader);
 }
 
 void DownloadMonitor::Pause()
 {
-    downloader_->Pause();
-    isPlaying_ = false;
-    lastReadTime_ = 0;
+    if (downloader_ != nullptr) {
+        downloader_->Pause();
+    }
 }
 
 void DownloadMonitor::Resume()
 {
-    downloader_->Resume();
-    isPlaying_ = true;
+    if (downloader_ != nullptr) {
+        downloader_->Resume();
+    }
 }
 
 void DownloadMonitor::Close(bool isAsync)
 {
-    retryTasks_.clear();
+    isClosed_ = true;
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     downloader_->Close(isAsync);
     task_->Stop();
     isPlaying_ = false;
@@ -231,7 +243,7 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
-void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
+void DownloadMonitor::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
 {
     if (downloader_ != nullptr) {
         downloader_->SetPlayStrategy(playStrategy);

@@ -752,14 +752,14 @@ void MediaCodec::ClearBufferQueue()
 {
     MEDIA_LOG_I("ClearBufferQueue called.");
     if (inputBufferQueueProducer_ != nullptr) {
-        for (auto &buffer : inputBufferVector_) {
+        for (const auto &buffer : inputBufferVector_) {
             inputBufferQueueProducer_->DetachBuffer(buffer);
         }
         inputBufferVector_.clear();
         inputBufferQueueProducer_->SetQueueSize(0);
     }
     if (outputBufferQueueProducer_ != nullptr) {
-        for (auto &buffer : outputBufferVector_) {
+        for (const auto &buffer : outputBufferVector_) {
             outputBufferQueueProducer_->DetachBuffer(buffer);
         }
         outputBufferVector_.clear();
