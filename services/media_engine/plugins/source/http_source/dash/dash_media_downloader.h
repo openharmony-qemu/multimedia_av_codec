@@ -65,6 +65,7 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
     void SetDemuxerState(int32_t streamId) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
     void ReceiveMpdStreamInitEvent();

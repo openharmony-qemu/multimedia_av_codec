@@ -1098,8 +1098,9 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     if (downloader_ != nullptr) {
         downloader_->GetIp(playbackInfo.serverIpAddress);
     }
-    if (totalDownloadDuringTime_ > 0) {
-        playbackInfo.averageDownloadRate = static_cast<int64_t>(totalBits_ / totalDownloadDuringTime_);
+    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    if (tmpDownloadTime > ZERO_THRESHOLD) {
+        playbackInfo.averageDownloadRate = static_cast<int64_t>(totalBits_ / tmpDownloadTime);
     } else {
         playbackInfo.averageDownloadRate = 0;
     }
