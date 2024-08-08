@@ -17,6 +17,7 @@
 #include "avcodec_errors.h"
 #include "type_converter.h"
 #include "hcodec_log.h"
+#include "hcodec_utils.h"
 #include "hcodec_api.h"
 
 namespace OHOS::MediaAVCodec {
@@ -42,26 +43,8 @@ void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shar
 void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
-        int32_t aveQp {};
-        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_AVERAGE, aveQp)) {
-            TLOGI("buffer->pts_[%" PRId64 "], qp[%d]", buffer->pts_, aveQp);
-        }
-        double mse {};
-        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_MSE, mse)) {
-            TLOGI("buffer->pts_[%" PRId64 "], mse[%f]", buffer->pts_, mse);
-        }
-        bool isLTR {};
-        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_IS_LTR, isLTR)) {
-            TLOGI("buffer->pts_[%" PRId64 "], isLTR[%d]", buffer->pts_, isLTR);
-        }
-        int32_t poc {};
-        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, poc)) {
-            TLOGI("buffer->pts_[%" PRId64 "], poc[%d]", buffer->pts_, poc);
-        }
-        int32_t frameLayer {};
-        if (buffer->meta_->GetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_TEMPORAL_ID, frameLayer)) {
-            TLOGI("buffer->pts_[%" PRId64 "], frameLayer[%d]", buffer->pts_, frameLayer);
-        }
+        auto metaStr = StringifyMeta(buffer->meta_);
+        TLOGI("%s", metaStr.c_str());
     }
     tester_->AfterGotOutput(OH_AVCodecBufferAttr {
         .pts = buffer->pts_,

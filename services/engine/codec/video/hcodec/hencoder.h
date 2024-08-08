@@ -19,6 +19,7 @@
 #include "hcodec.h"
 #include "codec_omx_ext.h"
 #include "sync_fence.h"
+#include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
@@ -109,7 +110,14 @@ private:
                                       const std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                            std::shared_ptr<Media::Meta> &meta) override;
-    void ExtractPerFrameLTRParam(const CodecEncOutLTRParam* ltrParam, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameLTRParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameMadParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameRealBitrateParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameFrameQpParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameIRitioParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameAveQpParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameMSEParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameLayerParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
     void DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight);
 
     // stop/release
