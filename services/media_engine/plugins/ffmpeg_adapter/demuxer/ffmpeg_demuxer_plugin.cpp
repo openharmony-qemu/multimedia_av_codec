@@ -1330,7 +1330,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         "DataSource has been inited, need reset first.");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set datasource failed due to source is nullptr.");
-
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
@@ -1341,7 +1340,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     } else {
         ioContext_.fileSize = -1;
     }
-
     MEDIA_LOG_I("fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
@@ -1370,7 +1368,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
             break;
         }
     }
-
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Set data source for demuxer successfully.");
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
