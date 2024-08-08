@@ -49,6 +49,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SaveScaleMode(format);
     (void)SetProcessName();
     (void)SetFrameRateAdaptiveMode(format);
+    (void)SetVrrEnable(format);
     return SetupPort(format);
 }
 
@@ -358,6 +359,46 @@ int32_t HDecoder::SetScaleMode()
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("set ScalingMode %d to surface succ", scaleMode_.value());
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::SetVrrEnable(const Format &format)
+{
+    int32_t vrrEnable = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_VRR, vrrEnable)) {
+        return AVCS_ERR_OK;
+    }
+    if (static_cast<int>(codingType_) != CODEC_OMX_VIDEO_CodingHEVC) {
+        HLOGW("VRR only support for HEVC");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    if (frameRate.has_value() && frameRate.value() != VRR_DEFAULT_INPUT_FRAME_RATE) {
+        HLOGW("VRR only support for 60fps, current frameRate = %lf", frameRate.value());
+        return AVCS_ERR_UNSUPPORT;
+    }
+    int32_t width = 0;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
+        HLOGW("format should contain width");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    int32_t height = 0;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0) {
+        HLOGW("format should contain height");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    if (vrrEnable) {
+        // 通知芯片组件 MV 信息需要上报
+        vrrPredictor_ = OHOS::Media::VideoProcessingEngine::VideoRefreshRatePredictionImpl::Create();
+        if (vrrPredictor_ == nullptr) {
+            HLOGW("VideoRefreshRatePrediction create failed");
+            return AVCS_ERR_UNSUPPORT;
+        }
+        vrrPredictor_->Init(height, width, static_cast<int>(frameRate.value()));
+        isVrrEnable_ = true;
+        lastVrrCheckSecond_ = GetCurrentTimeSecond();
+        HLOGW("VRR enabled");
+    }
     return AVCS_ERR_OK;
 }
 
@@ -1000,5 +1041,46 @@ int32_t HDecoder::PushBlankBufferToCurrSurface()
     }
 
     return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::VrrPrediction(BufferInfo &info)
+{
+    if (vrrPredictor_ == nullptr) {
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    // 获取 MV 数据
+    int32_t videoFps = static_cast<int32_t>(VRR_DEFAULT_INPUT_FRAME_RATE);
+    int32_t videoDropFlag = 0;
+    vrrPredictor_->Process(mvBuffer, &videoFps, &videoDropFlag);
+    if (videoFps < static_cast<int32_t>(VRR_DEFAULT_INPUT_FRAME_RATE)) {
+        continuousHitFrame_++;
+    } else {
+        continuousHitFrame_ = 0;
+    }
+    // check if need to close VRR
+    if (GetCurrentTimeSecond() - lastVrrCheckSecond_ > VRR_CHECK_INTERVAL_SECOND) {
+        lastVrrCheckSecond_ = GetCurrentTimeSecond();
+        if (continuousHitFrame_ > VRR_CHECK_INTERVAL_FRAMES && CheckIfNeedCloseVrr(videoFps)) {
+            info.surfaceBuffer->GetExtraData()->ExtraSet("videoFps", 0);
+            isTempCloseVrr_ = true;
+            continuousHitFrame_ = 0;
+            HLOGI("Temporarily close VRR algo");
+            return AVCS_ERR_OK;
+        }
+    }
+    if (info.omxBuffer->flag & OMX_BUFFERFLAG_EOS) {
+        videoFps = 0;
+    }
+    info.surfaceBuffer->GetExtraData()->ExtraSet("videoFps", videoFps);
+    info.surfaceBuffer->GetExtraData()->ExtraSet("videoDropFlag", videoDropFlag);
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::CheckIfNeedCloseVrr(int32_t vrrFrameRate)
+{
+    auto screenId = Rosen::RSInterfaces::GetInstance().GetDefaultScreenId();
+    uint32_t systemRefreshRate = Rosen::RSInterfaces::GetInstance().GetScreenCurrentRefreshRate(screenId);
+    HLOGI("current systemRefreshRate: %d, vrrFrameRate: %d", systemRefreshRate, vrrFrameRate);
+    return systemRefreshRate > vrrFrameRate;
 }
 } // namespace OHOS::MediaAVCodec

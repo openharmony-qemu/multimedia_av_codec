@@ -1008,6 +1008,16 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
+            if (!isEncoder_ && isVrrEnable_) {
+                if (isTempCloseVrr_) { // close vrr algo for 5 seconds
+                    isTempCloseVrr_ = (GetCurrentTimeSecond() - lastVrrCheckSecond_) <= VRR_CHECK_INTERVAL_SECOND;
+                    if (!isTempCloseVrr_) {
+                        lastVrrCheckSecond_ = GetCurrentTimeSecond();
+                    }
+                } else {
+                    (void)VrrPrediction(info);
+                }
+            }
             NotifyUserOutBufferAvaliable(info);
             if (eos) {
                 outputPortEos_ = true;
@@ -1377,5 +1387,11 @@ const char* HCodec::ToString(MsgWhat what)
         return it->second;
     }
     return "UNKNOWN";
+}
+
+int32_t HCodec::GetCurrentTimeSecond()
+{
+    time_t currentTime = time(0);
+    return currentTime;
 }
 } // namespace OHOS::MediaAVCodec

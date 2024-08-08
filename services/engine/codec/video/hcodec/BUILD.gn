@@ -13,6 +13,8 @@
 
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
+import("//foundation/multimedia/video_processing_engine/config.gni")
+import("$ALGORITHM_EXTENSIONS_DIR/video_variable_refresh_rate/config.gni")
 
 config("hcodec_public_cfg") {
   include_dirs = [
@@ -20,6 +22,8 @@ config("hcodec_public_cfg") {
     "$av_codec_root_dir/services/engine/base/include/",
     "$av_codec_root_dir/interfaces/inner_api/native/",
     "$av_codec_root_dir/services/utils/include/",
+    "//foundation/multimedia/video_processing_engine/interfaces/inner_api",
+    "$ALGORITHM_DIR/common/include",
   ]
 }
 
@@ -59,7 +63,13 @@ ohos_shared_library("hcodec") {
     "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api/osal/uhdf",
     "$av_codec_root_dir/../../../commonlibrary/memory_utils/libdmabufheap/include",
     "$av_codec_root_dir/interfaces/inner_api/native",
+    "//foundation/multimedia/video_processing_engine/interfaces/inner_api",
+    "$ALGORITHM_DIR/common/include",
+    "//foundation/graphic/graphic_2d/rosen/modules/render_service_client/core",
+    "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
   ]
+
+  include_dirs += VRR_INCLUDE_DIRS
 
   deps = [
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
@@ -68,9 +78,12 @@ ohos_shared_library("hcodec") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:display_commontype_idl_headers",
     "drivers_interface_codec:libcodec_proxy_3.0",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
+    "graphic_2d:libgraphic_utils",
+    "graphic_2d:librender_service_client",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -78,6 +91,7 @@ ohos_shared_library("hcodec") {
     "ipc:ipc_core",
     "media_foundation:media_foundation",
     "qos_manager:qos",
+    "video_processing_engine:videoprocessingengine"
   ]
 
   if (build_variant != "user") {

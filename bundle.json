@@ -69,7 +69,8 @@
           "libxml2",
           "video_processing_engine",
           "curl",
-          "openssl"
+          "openssl",
+          "drivers_interface_display"
         ],
         "third_party": [
           "bounds_checking_function"
