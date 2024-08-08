@@ -960,8 +960,7 @@ bool FFmpegDemuxerPlugin::WebvttPktProcess(AVPacket *pkt)
             }
         }
     }
-    av_packet_unref(pkt);
-    pkt = nullptr;
+    av_packet_free(&pkt);
     return true;
 }
 
