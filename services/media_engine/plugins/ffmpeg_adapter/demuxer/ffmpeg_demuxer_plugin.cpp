@@ -1919,9 +1919,9 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
 
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
         "GetIndexByRelativePresentationTimeUs failed due to trackIndex is out of range.");
-    
+
     InitPTSandIndexConvert();
-    
+
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "GetIndexByRelativePresentationTimeUs failed due to avStream is nullptr.");
@@ -1929,16 +1929,16 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetIndexByRelativePresentationTimeUs failed due to fileType is not MP4.");
 
-    Status ret = GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
+    Status ret = GetPresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetPresentationTimeUsFromFfmpegMOV failed.");
 
     int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + absolutePTSIndexZero_;
 
-    ret = GetpresentationTimeUsFromFfmpegMOV(RELATIVEPTS_TO_INDEX, trackIndex,
+    ret = GetPresentationTimeUsFromFfmpegMOV(RELATIVEPTS_TO_INDEX, trackIndex,
         absolutePTS, index);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
-    
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetPresentationTimeUsFromFfmpegMOV failed.");
+
     if (absolutePTS < relativePTSToIndexPTSMin_ || absolutePTS > relativePTSToIndexPTSMax_) {
         MEDIA_LOG_E("AbsolutePTS is out of range.");
         return Status::ERROR_INVALID_DATA;
@@ -1961,7 +1961,7 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
 
     FALSE_RETURN_V_MSG_E(trackIndex < formatContext_->nb_streams, Status::ERROR_INVALID_DATA,
         "GetRelativePresentationTimeUsByIndex failed due to trackIndex is out of range.");
-    
+
     InitPTSandIndexConvert();
 
     auto avStream = formatContext_->streams[trackIndex];
@@ -1970,14 +1970,14 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::GetFileTypeByName(*formatContext_) == FileType::MP4,
         Status::ERROR_MISMATCHED_TYPE, "GetRelativePresentationTimeUsByIndex failed due to fileType is not MP4.");
-        
-    Status ret = GetpresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
-        static_cast<int64_t>(relativePresentationTimeUs), index);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
 
-    GetpresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
+    Status ret = GetPresentationTimeUsFromFfmpegMOV(GET_FIRST_PTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetpresentationTimeUsFromFfmpegMOV failed.");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetPresentationTimeUsFromFfmpegMOV failed.");
+
+    GetPresentationTimeUsFromFfmpegMOV(INDEX_TO_RELATIVEPTS, trackIndex,
+        static_cast<int64_t>(relativePresentationTimeUs), index);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "GetPresentationTimeUsFromFfmpegMOV failed.");
 
     if (index + 1 > indexToRelativePTSFrameCount_) {
         MEDIA_LOG_E("Index is out of range.");
@@ -1992,16 +1992,16 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::GetpresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
+Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
     uint32_t trackIndex, int64_t absolutePTS, uint32_t index)
 {
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
-        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
+        "GetPresentationTimeUsFromFfmpegMOV failed due to avStream is nullptr.");
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
-        Status::ERROR_NULL_POINTER, "GetpresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is empty.");
+        Status::ERROR_NULL_POINTER, "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->stts_data is empty.");
     FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA,
-        "GetpresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
+        "GetPresentationTimeUsFromFfmpegMOV failed due to avStream->time_scale is zero.");
 
     uint32_t stts_index = 0;
     uint32_t ctts_index = 0;
@@ -2060,7 +2060,7 @@ void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode
         RelativePTSToIndexProcess(pts, absolutePTS);
         break;
     default:
-        MEDIA_LOG_E("wrong GetpresentationTimeUsFromFfmpegMOV mode");
+        MEDIA_LOG_E("wrong GetPresentationTimeUsFromFfmpegMOV mode");
         break;
     }
 }

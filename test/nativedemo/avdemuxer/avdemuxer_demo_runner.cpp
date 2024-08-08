@@ -248,7 +248,7 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
 {
     uint32_t trackIndex = 0;
     uint64_t relativePresentationTimeUs = 0;    // pts 0
-    
+
     using clock = std::chrono::high_resolution_clock;
     auto start = clock::now();
     auto end = clock::now();
