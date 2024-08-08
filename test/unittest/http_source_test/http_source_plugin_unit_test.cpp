@@ -16,6 +16,7 @@
 #include "http_source_plugin.h"
 #include "gtest/gtest.h"
 #include "http_server_demo.h"
+#include "source_callback.h"
 
 using namespace std;
 using namespace testing::ext;
