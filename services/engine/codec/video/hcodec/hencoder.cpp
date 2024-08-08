@@ -1077,7 +1077,7 @@ void HEncoder::ExtractPerFrameFrameQpParam(BinaryReader &reader, std::shared_ptr
 
 void HEncoder::ExtractPerFrameIRitioParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta)
 {
-    auto *iRatio = reader.Read<double>();
+    auto *iRatio = reader.Read<OMX_S32>();
     IF_TRUE_RETURN_VOID(iRatio == nullptr);
     meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_FRAME_I_RATIO, *iRatio);
 }
