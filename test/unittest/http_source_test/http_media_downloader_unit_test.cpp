@@ -81,7 +81,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK, TestSize.Level1)
 {
     MP4httpMediaDownloader->GetSeekable();
-    boot result = MP4httpMediaDownloader->SeekToPos(100);
+    bool result = MP4httpMediaDownloader->SeekToPos(100);
     EXPECT_TRUE(result);
     result = MP4httpMediaDownloader->SeekToPos(10000000);
     EXPECT_TRUE(result);
