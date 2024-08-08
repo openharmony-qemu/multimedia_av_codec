@@ -92,8 +92,8 @@ private:
     std::mutex outputMutex_;
     std::mutex outputMutex_2;
     std::atomic<int32_t> bufferConsumerAvailableCount_ = 0;
-    std::atomic<int32_t> indexInput_ = 0;
-    std::atomic<int32_t> indexOutput_ = 0;
+    std::atomic<uint32_t> indexInput_ = 0;
+    std::atomic<uint32_t> indexOutput_ = 0;
     int32_t inputBufferSize_ = 0;
     std::queue<std::shared_ptr<AVBuffer>> inputIndexQueue;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inputBufferObjMap_;

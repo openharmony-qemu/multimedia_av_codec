@@ -30,6 +30,7 @@ const std::string_view ASYNC_OUTPUT_FRAME = "OS_ACodecOut";
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr uint8_t TIME_OUT_MS = 50;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1000;
+constexpr uint32_t MAX_INDEX = 1000000000;
 constexpr int64_t MILLISECONDS = 100;
 } // namespace
 
@@ -90,7 +91,7 @@ int32_t AVCodecAudioCodecImpl::Prepare()
     implProducer_ = implBufferQueue_->GetProducer();
     codecService_->SetOutputBufferQueue(implProducer_);
     int32_t ret = codecService_->Prepare();
-    CHECK_AND_RETURN_RET_LOG_LIMIT(ret != AVCS_ERR_INVALID_OPERATION, AVCS_ERR_OK,
+    CHECK_AND_RETURN_RET_LOG_LIMIT(ret != AVCS_ERR_TRY_AGAIN, AVCS_ERR_OK,
         LOGD_FREQUENCY, "no need prepare");
     CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_STATE, "prepare fail, ret:%{public}d", ret);
 
@@ -112,6 +113,7 @@ int32_t AVCodecAudioCodecImpl::Start()
     CHECK_AND_RETURN_RET_LOG(Prepare() == AVCS_ERR_OK, AVCS_ERR_INVALID_STATE, "Prepare failed");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     int32_t ret = codecService_->Start();
+    CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "Start failed, ret:%{public}d", ret);
     isRunning_ = true;
     indexInput_ = 0;
     indexOutput_ = 0;
@@ -335,7 +337,7 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         }
         CHECK_AND_CONTINUE_LOG(callback_ != nullptr, "callback is nullptr");
         callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
-        indexInput_++;
+        indexInput_ = (indexInput_ >= MAX_INDEX) ? 0 : ++indexInput_;
     }
 
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
@@ -498,7 +500,7 @@ void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32
             impl_->outputBufferObjMap_[impl_->indexOutput_] = buffer;
         }
         impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, buffer);
-        impl_->indexOutput_++;
+        impl_->indexOutput_ = (impl_->indexOutput_ >= MAX_INDEX) ? 0 : ++impl_->indexOutput_;
     }
 }
 } // namespace MediaAVCodec
