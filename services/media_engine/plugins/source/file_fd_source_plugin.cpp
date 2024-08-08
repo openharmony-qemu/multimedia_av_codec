@@ -267,7 +267,7 @@ Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
 {
     FALSE_RETURN_V_MSG_E(ringBuffer_ != nullptr, Status::ERROR_WRONG_STATE, "SeekCloud ringBuffer_ is nullptr");
-    MEDIA_LOG_D("SeekCloud, ringBuffer.size() " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
+    MEDIA_LOG_D("SeekCloud,ringBuffer.size: " PUBLIC_LOG_ZU ",offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
     if (ringBuffer_->Seek(offset)) {
         position_ = offset + static_cast<uint64_t>(offset_);
         MEDIA_LOG_I("SeekCloud ringBuffer_ seek hit, offset " PUBLIC_LOG_U64, offset);
