@@ -177,6 +177,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0100, TestSiz
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->NotifyBufferingEnd();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
     fileFdSourcePlugin_->NotifyBufferingEnd();
@@ -430,6 +432,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_HandleBuffering_0100, TestSize.Level
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSize.Level1)
 {
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->NotifyBufferingPercent();
     fileFdSourcePlugin_->waterLineAbove_ = 1;
     fileFdSourcePlugin_->ringBufferSize_ = 100;;
@@ -453,7 +457,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
-    EXPECT_EQ("10000.000000", cb->ret_);
+    EXPECT_EQ("0", cb->ret_);
     delete cb;
     cb = nullptr;
 }
@@ -465,6 +469,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Level1)
 {
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->isBuffering_ = true;
     fileFdSourcePlugin_->NotifyBufferingEnd();
     EXPECT_EQ(false, fileFdSourcePlugin_->isBuffering_);
