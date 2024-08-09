@@ -87,7 +87,7 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
 
   defines = []
 
-  defines += ["OHOS_EXPAND_MP4_INFO"]
+  defines += [ "OHOS_EXPAND_MP4_INFO" ]
 
   configs = [
     ":ffmpeg_adapter_config",
