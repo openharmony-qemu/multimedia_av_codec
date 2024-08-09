@@ -142,7 +142,16 @@ int32_t DynamicController::StopImpl()
 int32_t DynamicController::FlushImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::FLUSH>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Stop video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Flush video processing failed.");
+    return AVCS_ERR_OK;
+}
+
+int32_t DynamicController::GetOutputFormatImpl(Media::Format &format)
+{
+    void *formatPtr = static_cast<void *>(&format);
+    auto ret = interface_.Invoke<DynamicInterfaceName::GET_OUTPUT_FORMAT>(instance_, formatPtr);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+                             "GetOutputFormat video processing failed.");
     return AVCS_ERR_OK;
 }
 
