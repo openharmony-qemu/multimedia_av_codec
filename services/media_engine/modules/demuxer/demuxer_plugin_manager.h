@@ -129,6 +129,7 @@ public:
     void SetResetEosStatus(bool flag);
     bool CheckTrackIsActive(int32_t trackId);
     int32_t AddExternalSubtitle();
+    Status localSubtitleSeekTo(int64_t seekTime);
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
