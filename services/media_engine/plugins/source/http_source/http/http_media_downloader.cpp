@@ -63,10 +63,10 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
 {
     if (static_cast<int32_t>(url.find(".flv")) != -1) {
         MEDIA_LOG_I("isflv.");
-        isFlv_ = true;
+        isRingBuffer_ = true;
     }
 
-    if (isFlv_) {
+    if (isRingBuffer_) {
         buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
         buffer_->Init();
     } else {
@@ -131,9 +131,9 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 {
     if (static_cast<int32_t>(url.find(".flv")) != -1) {
         MEDIA_LOG_I("isflv.");
-        isFlv_ = true;
+        isRingBuffer_ = true;
     }
-    if (isFlv_) {
+    if (isRingBuffer_) {
         InitRingBuffer(expectBufferDuration);
     } else {
         InitCacheBuffer(expectBufferDuration);
@@ -185,7 +185,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
-    if (isFlv_) {
+    if (isRingBuffer_) {
         buffer_->SetMediaOffset(0);
     }
     downloader_->Start();
@@ -194,7 +194,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
 
 void HttpMediaDownloader::Close(bool isAsync)
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         buffer_->SetActive(false);
     }
     isInterrupt_ = true;
@@ -216,7 +216,7 @@ void HttpMediaDownloader::Close(bool isAsync)
 
 void HttpMediaDownloader::Pause()
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         bool cleanData = GetSeekable() != Seekable::SEEKABLE;
         buffer_->SetActive(false, cleanData);
     }
@@ -227,7 +227,7 @@ void HttpMediaDownloader::Pause()
 
 void HttpMediaDownloader::Resume()
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         buffer_->SetActive(true);
     }
     isInterrupt_ = false;
@@ -417,7 +417,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
 
 Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         FALSE_RETURN_V_MSG(buffer_ != nullptr, Status::END_OF_STREAM, "buffer_ = nullptr");
         FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::END_OF_STREAM, "isInterruptNeeded");
         FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, Status::END_OF_STREAM, "wantReadLength_ <= 0");
@@ -611,7 +611,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset)
 
 bool HttpMediaDownloader::SeekToPos(int64_t offset)
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         return SeekRingBuffer(offset);
     } else {
         return SeekCacheBuffer(offset);
@@ -653,7 +653,7 @@ bool HttpMediaDownloader::GetStartedStatus()
 
 void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    if (isFlv_) {
+    if (isRingBuffer_) {
         FALSE_RETURN(buffer_ != nullptr);
         buffer_->SetReadBlocking(isReadBlockingAllowed);
     }
@@ -687,7 +687,7 @@ bool HttpMediaDownloader::SaveRingBufferData(uint8_t* data, uint32_t len)
 bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     bool ret = true;
-    if (isFlv_) {
+    if (isRingBuffer_) {
         ret = SaveRingBufferData(data, len);
     } else {
         ret = SaveCacheBufferData(data, len);
@@ -818,7 +818,7 @@ void HttpMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
-    if (isFlv_) {
+    if (isRingBuffer_) {
         if (buffer_ != nullptr && buffer_->GetSize() == 0) {
             Close(true);
         }
@@ -924,7 +924,7 @@ bool HttpMediaDownloader::HandleBreak()
 size_t HttpMediaDownloader::GetCurrentBufferSize()
 {
     size_t bufferSize = 0;
-    if (isFlv_) {
+    if (isRingBuffer_) {
         if (buffer_ != nullptr) {
             bufferSize = buffer_->GetSize();
         }
@@ -971,7 +971,7 @@ void HttpMediaDownloader::HandleCachedDuration()
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
         lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
-        MEDIA_LOG_I("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
+        MEDIA_LOG_D("OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
     }

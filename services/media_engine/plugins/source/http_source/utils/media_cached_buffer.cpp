@@ -32,7 +32,7 @@ namespace OHOS {
 namespace Media {
 
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_DEFAULT = 10; // Minimum number of fragment nodes
-constexpr size_t CACHE_FRAGMENT_MIN_NUM_DEFAULT = 2; // Maximum number of fragment nodes
+constexpr size_t CACHE_FRAGMENT_MIN_NUM_DEFAULT = 3; // Maximum number of fragment nodes
 constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 128.0; // Restricting the cache size of seek operation, 128 = 2MB
 constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
 constexpr double CACHE_RELEASE_FACTOR_DEFAULT = 10;
@@ -309,7 +309,8 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(int64_t offset, size_t writeSize,
 
 void CacheMediaChunkBufferImpl::WriteMergerPost(FragmentIterator& nextFragmentPos)
 {
-    if (nextFragmentPos == fragmentCacheBuffer_.end() || writePos_->chunks.empty()) {
+    if (nextFragmentPos == fragmentCacheBuffer_.end() || writePos_->chunks.empty() ||
+        nextFragmentPos->chunks.empty()) {
         return;
     }
     auto preChunkInfo = writePos_->chunks.back();
@@ -502,6 +503,9 @@ size_t CacheMediaChunkBufferImpl::WriteChunk(FragmentCacheBuffer& fragmentCacheB
 CacheChunk* CacheMediaChunkBufferImpl::UpdateFragmentCacheForDelHead(FragmentIterator& fragmentIter)
 {
     FragmentCacheBuffer& fragment = *fragmentIter;
+    if (fragment.chunks.empty()) {
+        return nullptr;
+    }
     auto cacheChunk = fragment.chunks.front();
     fragment.chunks.pop_front();
 
@@ -520,6 +524,9 @@ CacheChunk* CacheMediaChunkBufferImpl::UpdateFragmentCacheForDelHead(FragmentIte
 
 CacheChunk* UpdateFragmentCacheForDelTail(FragmentCacheBuffer& fragment)
 {
+    if (fragment.chunks.empty()) {
+        return nullptr;
+    }
     if (fragment.accessPos == std::prev(fragment.chunks.end())) {
         fragment.accessPos = fragment.chunks.end();
     }
@@ -537,33 +544,36 @@ CacheChunk* UpdateFragmentCacheForDelTail(FragmentCacheBuffer& fragment)
 
 inline CacheChunk* PopFreeCacheChunk(CacheChunkList& freeChunks, int64_t offset)
 {
+    if (freeChunks.empty()) {
+        return nullptr;
+    }
     auto tmp = freeChunks.front();
     freeChunks.pop_front();
     InitChunkInfo(*tmp, offset);
     return tmp;
 }
 
-void CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos)
+bool CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos)
 {
     int64_t offset = -1;
     FragmentIterator fragmentIterator = fragmentCacheBuffer_.end();
     auto ret = lruCache_.GetLruNode(offset, fragmentIterator);
     if (!ret) {
-        return;
+        return false;
     }
     if (fragmentIterator == fragmentCacheBuffer_.end()) {
-        return;
+        return false;
     }
     if (currWritePos == fragmentIterator) {
         lruCache_.Refer(offset, currWritePos);
         ret = lruCache_.GetLruNode(offset, fragmentIterator);
         if (!ret) {
-            return;
+            return false;
         }
     }
     freeChunks_.splice(freeChunks_.end(), fragmentIterator->chunks);
     EraseFragmentCache(fragmentIterator);
-    return;
+    return true;
 }
 
 /***
@@ -592,7 +602,9 @@ void CacheMediaChunkBufferImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterato
         CACHE_RELEASE_FACTOR_DEFAULT / TO_PERCENT)) {
         if (fragmentCacheChunks.accessPos != fragmentCacheChunks.chunks.begin()) {
             auto tmp = UpdateFragmentCacheForDelHead(fragmentIter);
-            freeChunks_.push_back(tmp);
+            if (tmp != nullptr) {
+                freeChunks_.push_back(tmp);
+            }
         } else {
             MEDIA_LOG_D("judge has read finish.");
             break;
@@ -606,7 +618,9 @@ void CacheMediaChunkBufferImpl::DeleteUnreadFragmentCacheBuffer(FragmentIterator
     while (fragmentCacheChunks.chunks.size() > allowChunkNum) {
         if (!fragmentCacheChunks.chunks.empty()) {
             auto tmp = UpdateFragmentCacheForDelTail(fragmentCacheChunks);
-            freeChunks_.push_back(tmp);
+            if (tmp != nullptr) {
+                freeChunks_.push_back(tmp);
+            }
         } else {
             break;
         }
@@ -643,9 +657,12 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
         return PopFreeCacheChunk(freeChunks_, offset);
     }
     while (fragmentCacheBuffer_.size() > CACHE_FRAGMENT_MIN_NUM_DEFAULT) {
-        CheckThresholdFragmentCacheBuffer(currWritePos);
+        auto result = CheckThresholdFragmentCacheBuffer(currWritePos);
         if (!freeChunks_.empty()) {
             return PopFreeCacheChunk(freeChunks_, offset);
+        }
+        if (!result) {
+            break;
         }
     }
     MEDIA_LOG_D("clear other fragment unread chunk.");
