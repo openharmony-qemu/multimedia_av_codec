@@ -223,27 +223,27 @@ int32_t AVDemuxerImpl::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInf
     return StatusToAVCodecServiceErrCode(demuxerEngine_->GetGopLayerInfo(gopId, gopLayerInfo));
 }
 
-int32_t AVDemuxerImpl::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-    int64_t presentationTimeUs, uint32_t &frameIndex)
+int32_t AVDemuxerImpl::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+    const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("GetFrameIndexByPresentationTimeUs");
+    AVCODEC_LOGD("GetIndexByRelativePresentationTimeUs");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Demuxer engine does not exist");
-    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetFrameIndexByPresentationTimeUs(trackIndex,
-        presentationTimeUs, frameIndex));
+    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetIndexByRelativePresentationTimeUs(trackIndex,
+        relativePresentationTimeUs, index));
     return ret;
 }
 
-int32_t AVDemuxerImpl::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-    uint32_t frameIndex, int64_t &presentationTimeUs)
+int32_t AVDemuxerImpl::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+    const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("GetPresentationTimeUsByFrameIndex");
+    AVCODEC_LOGD("GetRelativePresentationTimeUsByIndex");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Demuxer engine does not exist");
-    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetPresentationTimeUsByFrameIndex(trackIndex,
-        frameIndex, presentationTimeUs));
+    int32_t ret = StatusToAVCodecServiceErrCode(demuxerEngine_->GetRelativePresentationTimeUsByIndex(trackIndex,
+        index, relativePresentationTimeUs));
     return ret;
 }
 } // namespace MediaAVCodec
