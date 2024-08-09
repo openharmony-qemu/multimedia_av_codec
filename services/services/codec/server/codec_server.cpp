@@ -394,8 +394,7 @@ int32_t CodecServer::Reset()
         }
         temporalScalability_ = nullptr;
     }
-    int32_t ret;
-    ret = codecBase_->Reset();
+    int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
     ret = ReleasePostProcessing();
