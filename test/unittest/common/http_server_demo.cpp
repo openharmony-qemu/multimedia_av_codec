@@ -37,6 +37,11 @@ HttpServerDemo::~HttpServerDemo()
 
 void HttpServerDemo::StartServer()
 {
+    StartServer(SERVERPORT);
+}
+
+void HttpServerDemo::StartServer(int32_t port)
+{
     threadPool_ = std::make_unique<ThreadPool>("httpServerThreadPool");
     threadPool_->SetMaxTaskNum(THREAD_POOL_MAX_TASKS);
     listenFd_ = socket(AF_INET, SOCK_STREAM, 0);
@@ -48,7 +53,7 @@ void HttpServerDemo::StartServer()
     (void)memset_s(&servaddr, sizeof(servaddr), 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
-    servaddr.sin_port = htons(SERVERPORT);
+    servaddr.sin_port = htons(port);
     int32_t reuseAddr = 1;
     setsockopt(listenFd_, SOL_SOCKET, SO_REUSEADDR, static_cast<void *>(&reuseAddr), sizeof(int32_t));
     setsockopt(listenFd_, SOL_SOCKET, SO_REUSEPORT, static_cast<void *>(&reuseAddr), sizeof(int32_t));

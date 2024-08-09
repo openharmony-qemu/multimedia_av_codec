@@ -23,11 +23,12 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
+constexpr int32_t SERVERPORT = 47777;
 // range 0-1065
-static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:46666/test_dash/segment_base/media-audio-und-mp4a.mp4";
-static const std::string VIDEO_MEDIA_SEGMENT_URL_1 = "http://127.0.0.1:46666/test_dash/segment_list/video/1/seg-1.m4s";
-static const std::string VIDEO_MEDIA_SEGMENT_URL_2 = "http://127.0.0.1:46666/test_dash/segment_list/video/1/seg-2.m4s";
-static const std::string VIDEO_INIT_SEGMENT_URL = "http://127.0.0.1:46666/test_dash/segment_list/video/1/init.mp4";
+static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_base/media-audio-und-mp4a.mp4";
+static const std::string VIDEO_MEDIA_SEGMENT_URL_1 = "http://127.0.0.1:47777/test_dash/segment_list/video/1/seg-1.m4s";
+static const std::string VIDEO_MEDIA_SEGMENT_URL_2 = "http://127.0.0.1:47777/test_dash/segment_list/video/1/seg-2.m4s";
+static const std::string VIDEO_INIT_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_list/video/1/init.mp4";
 }
 using namespace testing::ext;
 
@@ -35,7 +36,7 @@ std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void DashSegmentDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer();
+    g_server->StartServer(SERVERPORT);
     std::cout << "start" << std::endl;
 }
 

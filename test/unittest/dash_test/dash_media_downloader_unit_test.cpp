@@ -24,9 +24,10 @@ namespace Plugins {
 namespace HttpPlugin {
 using namespace testing::ext;
 namespace {
-static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
-static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:46666/test_dash/segment_list/index.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:46666/test_dash/segment_template/index.mpd";
+constexpr int32_t SERVERPORT = 47777;
+static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:47777/test_dash/segment_base/index.mpd";
+static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:47777/test_dash/segment_list/index.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:47777/test_dash/segment_template/index.mpd";
 }
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
@@ -35,7 +36,7 @@ bool g_result = false;
 void DashMediaDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer();
+    g_server->StartServer(SERVERPORT);
     std::cout << "start" << std::endl;
 
     g_mediaDownloader = std::make_shared<DashMediaDownloader>();

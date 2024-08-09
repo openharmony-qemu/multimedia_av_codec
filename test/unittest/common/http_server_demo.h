@@ -50,6 +50,7 @@ public:
     explicit HttpServerDemo();
     virtual ~HttpServerDemo();
     void StartServer();
+    void StartServer(int32_t port);
     void StopServer();
 
 private:
