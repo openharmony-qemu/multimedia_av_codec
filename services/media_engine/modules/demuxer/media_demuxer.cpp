@@ -1052,6 +1052,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         } else {
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_CLOSEST_SYNC);
         }
+        if (subtitleSource_) {
+            demuxerPluginManager_->localSubtitleSeekTo(seekTime);
+        }
         SeekToTimeAfter();
         Plugins::Ms2HstTime(seekTime, realSeekTime);
     } else {

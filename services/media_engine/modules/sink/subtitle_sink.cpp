@@ -158,6 +158,7 @@ Status SubtitleSink::Resume()
 {
     {
         std::unique_lock<std::mutex> lock(mutex_);
+        isEos_ = false;
         state_ = Pipeline::FilterState::RUNNING;
     }
     updateCond_.notify_all();

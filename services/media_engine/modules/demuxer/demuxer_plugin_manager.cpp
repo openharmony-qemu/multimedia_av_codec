@@ -529,6 +529,15 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
     }
 }
 
+Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
+{
+    FALSE_RETURN_V_MSG_E(curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr,
+                         Status::ERROR_NO_MEMORY, "subtitle seek failed, no subtitle");
+    int64_t realSeekTime = 0;
+    return streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_CLOSEST_SYNC,
+                                                               realSeekTime);
+}
+
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
     if (curAudioStreamID_ != -1 && streamInfoMap_[curAudioStreamID_].plugin != nullptr) {
@@ -545,9 +554,9 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     }
     if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
-        if (ret != Status::OK) {
-            MEDIA_LOG_E("subtitle SeekTo failed, ret = " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
-        }
+        if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_CLOSEST_SYNC) {
+            ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
+                -1, seekTime, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realSeekTime);
     }
     return Status::OK;
 }
