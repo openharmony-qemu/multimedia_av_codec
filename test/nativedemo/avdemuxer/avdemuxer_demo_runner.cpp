@@ -21,6 +21,7 @@
 #include <thread>
 #include <sys/stat.h>
 #include <fstream>
+#include <chrono>
 
 #include "avcodec_common.h"
 #include "buffer/avsharedmemorybase.h"
@@ -245,15 +246,37 @@ static void RunDrmNativeDemuxer(const std::string &filePath, const std::string &
 
 static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemuxerDemo)
 {
-    uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 100000;    // pts 100000
-    uint32_t frameIndex = 0;
-    innerDemuxerDemo->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
-    printf("GetFrameIndexByPresentationTimeUs, frameIndex = %d\n", frameIndex);
-    presentationTimeUs = 0;
-    frameIndex = 100;    // frameIndex 100
-    innerDemuxerDemo->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
-    printf("GetPresentationTimeUsByFrameIndex, presentationTimeUs = %" PRId64 "\n", presentationTimeUs);
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 0;    // pts 0
+
+    using clock = std::chrono::high_resolution_clock;
+    auto start = clock::now();
+    auto end = clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    for (uint32_t index = 0; index < 10 ; ++index) { // get first 10 frames
+        start = clock::now();
+        int32_t ret = innerDemuxerDemo->GetRelativePresentationTimeUsByIndex(trackIndex,
+                                                                             index, relativePresentationTimeUs);
+        if (ret != 0) {
+            break;
+        }
+        end = clock::now();
+        elapsed = end - start;
+        printf("GetRelativePresentationTimeUsByIndex, relativePresentationTimeUs = %" PRId64 "\n",
+            relativePresentationTimeUs);
+        printf("Function took %f seconds to run.\n", elapsed.count());
+
+        start = clock::now();
+        ret = innerDemuxerDemo->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+        if (ret != 0) {
+            break;
+        }
+        end = clock::now();
+        elapsed = end - start;
+        printf("GetIndexByRelativePresentationTimeUs, index = %d\n", index);
+        printf("Function took %f seconds to run.\n", elapsed.count());
+    }
 }
 
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
@@ -279,6 +302,7 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     source_format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
     source_format.GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, duration);
     printf("====>duration:%" PRId64 " total tracks:%d\n", duration, trackCount);
+    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
     for (int32_t i = 0; i < trackCount; i++) {
         innerDemuxerDemo->SelectTrackByID(i); // 添加轨道
     }
@@ -290,7 +314,6 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     sharedMemory->Init();
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount); // demuxer run
     printf("seek to 1s,mode:SEEK_NEXT_SYNC\n");
-    ConvertPtsFrameIndexDemo(innerDemuxerDemo);
     innerDemuxerDemo->SeekToTime(g_seekTime, SeekMode::SEEK_NEXT_SYNC); // 测试seek功能
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
     printf("seek to 1s,mode:SEEK_PREVIOUS_SYNC\n");

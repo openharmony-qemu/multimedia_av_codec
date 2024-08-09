@@ -167,35 +167,6 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
     return Status::OK;
 }
 
-void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
-{
-    (void)avcl;
-    char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
-    if (ret < 0) {
-        return;
-    }
-    switch (level) {
-        case AV_LOG_WARNING:
-            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_ERROR:
-            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_FATAL:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_INFO:
-            MEDIA_LOG_I("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
-            break;
-        default:
-            break;
-    }
-}
-
 PLUGIN_DEFINITION(FFmpegMuxer, LicenseType::LGPL, RegisterMuxerPlugins, [] {g_pluginOutputFmt.clear();})
 
 void ResetCodecParameter(AVCodecParameters *par)
