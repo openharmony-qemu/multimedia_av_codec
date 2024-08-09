@@ -82,6 +82,7 @@ int32_t DynamicController::SetOutputSurfaceImpl(sptr<Surface> surface)
     auto ret = interface_.Invoke<DynamicInterfaceName::SET_OUTPUT_SURFACE>(instance_, sf);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
         "Set output surface for video processing failed.");
+    surface->IncStrongRef(surface->GetRefCounter());
     return AVCS_ERR_OK;
 }
 
@@ -91,6 +92,7 @@ int32_t DynamicController::CreateInputSurfaceImpl(sptr<Surface>& surface)
     auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, sf);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
         "Create input surface for video processing failed.");
+    surface->IncStrongRef(surface->GetRefCounter());
     return AVCS_ERR_OK;
 }
 

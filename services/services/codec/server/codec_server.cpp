@@ -394,14 +394,15 @@ int32_t CodecServer::Reset()
         }
         temporalScalability_ = nullptr;
     }
-    int32_t ret = ReleasePostProcessing();
+    int32_t ret;
+    ret = codecBase_->Reset();
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
+    StatusChanged(newStatus);
+    ret = ReleasePostProcessing();
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
     }
-    ret = codecBase_->Reset();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
-    CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
-    StatusChanged(newStatus);
     lastErrMsg_.clear();
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
@@ -424,13 +425,13 @@ int32_t CodecServer::Release()
         }
         temporalScalability_ = nullptr;
     }
-    (void)ReleasePostProcessing();
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
     if (thread->joinable()) {
         thread->join();
     }
+    (void)ReleasePostProcessing();
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
