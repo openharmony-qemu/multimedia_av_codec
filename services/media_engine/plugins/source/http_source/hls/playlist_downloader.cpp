@@ -185,7 +185,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
-    int32_t contentlen = static_cast<int32_t>(downloadRequest_->GetFileContentLength());
+    int32_t contentlen = static_cast<int32_t>(downloadRequest_->GetFileContentLengthNoWait());
     std::string location;
     downloadRequest_->GetLocation(location);
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {

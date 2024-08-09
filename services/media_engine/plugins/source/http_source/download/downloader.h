@@ -94,6 +94,7 @@ public:
                     bool requestWholeFile = false);
 
     size_t GetFileContentLength() const;
+    size_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
