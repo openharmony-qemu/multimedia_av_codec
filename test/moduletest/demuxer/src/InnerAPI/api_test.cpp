@@ -23,6 +23,7 @@
 #include "buffer/avsharedmemory.h"
 #include "buffer/avsharedmemorybase.h"
 #include "securec.h"
+#include "native_avcodec_base.h"
 
 #include <iostream>
 #include <cstdio>
@@ -450,5 +451,255 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0700, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_OK, ret);
     ret = demuxer->SeekToTime(ms, SeekMode::SEEK_NEXT_SYNC);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_API_0010
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with unSupported source
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0010, TestSize.Level1)
+{
+    int32_t trackType;
+    int32_t trackCount;
+    Format source_format;
+    Format track_format;
+    uint32_t frameIndex = 0;
+    const char *file = "/data/test/media/h264_aac_1280.ts";
+    int fd = open(file, O_RDONLY);
+    struct stat fileStatus {};
+    if (stat(file, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = AVSourceFactory::CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    int32_t ret = source->GetSourceFormat(source_format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ASSERT_TRUE(source_format.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount));
+    for (int32_t index = 0; index < trackCount; index++) {
+        ret = demuxer->SelectTrackByID(index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        ret = source->GetTrackFormat(track_format, index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        track_format.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
+        if (trackType == OHOS::Media::MEDIA_TYPE_VID) {
+            ret = demuxer->GetIndexByRelativePresentationTimeUs(index, 100000, frameIndex);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }else if (trackType == OHOS::Media::MEDIA_TYPE_VID) {
+            ret = demuxer->GetIndexByRelativePresentationTimeUs(index, 1804855, frameIndex);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_API_0020
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with non-existent trackIndex
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0020, TestSize.Level1)
+{
+    int32_t trackCount;
+    Format source_format;
+    Format track_format;
+    uint32_t frameIndex = 0;
+    const char *file = "/data/test/media/demuxer_parser_ipb_frame_avc.mp4";
+    int fd = open(file, O_RDONLY);
+    struct stat fileStatus {};
+    if (stat(file, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = AVSourceFactory::CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    int32_t ret = source->GetSourceFormat(source_format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ASSERT_TRUE(source_format.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount));
+    ret = demuxer->GetIndexByRelativePresentationTimeUs(trackCount+1, 7733333, frameIndex);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_API_0030
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with non-existent presentationTimeUs
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0030, TestSize.Level1)
+{
+    int32_t trackType;
+    int32_t trackCount;
+    Format source_format;
+    Format track_format;
+    uint32_t frameIndex = 0;
+    const char *file = "/data/test/media/demuxer_parser_ipb_frame_avc.mp4";
+    int fd = open(file, O_RDONLY);
+    struct stat fileStatus {};
+    if (stat(file, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = AVSourceFactory::CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    int32_t ret = source->GetSourceFormat(source_format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ASSERT_TRUE(source_format.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount));
+    for (int32_t index = 0; index < trackCount; index++) {
+        ret = demuxer->SelectTrackByID(index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        ret = source->GetTrackFormat(track_format, index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        track_format.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
+        if (trackType == OHOS::Media::MEDIA_TYPE_VID) {
+            ret = demuxer->GetIndexByRelativePresentationTimeUs(index, 20000000, frameIndex);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }else if(trackType == OHOS::Media::MEDIA_TYPE_AUD) {
+            ret = demuxer->GetIndexByRelativePresentationTimeUs(index, 20000000, frameIndex);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_API_0040
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with unSupported source
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0040, TestSize.Level1)
+{
+    int32_t trackType;
+    int32_t trackCount;
+    Format source_format;
+    Format track_format;
+    uint64_t presentationTimeUs;
+    const char *file = "/data/test/media/h264_aac_1280.ts";
+    int fd = open(file, O_RDONLY);
+    struct stat fileStatus {};
+    if (stat(file, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = AVSourceFactory::CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    int32_t ret = source->GetSourceFormat(source_format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ASSERT_TRUE(source_format.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount));
+    for (int32_t index = 0; index < trackCount; index++) {
+        ret = demuxer->SelectTrackByID(index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        ret = source->GetTrackFormat(track_format, index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        track_format.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
+        if (trackType == OHOS::Media::MEDIA_TYPE_VID) {
+            ret = demuxer->GetRelativePresentationTimeUsByIndex(index, 5, presentationTimeUs);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }else if (trackType == OHOS::Media::MEDIA_TYPE_AUD) {
+            ret = demuxer->GetRelativePresentationTimeUsByIndex(index, 172, presentationTimeUs);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }
+    }
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_API_0050
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with non-existent trackIndex
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0050, TestSize.Level1)
+{
+    int32_t trackCount;
+    Format source_format;
+    Format track_format;
+    uint64_t presentationTimeUs;
+    const char *file = "/data/test/media/demuxer_parser_ipb_frame_avc.mp4";
+    int fd = open(file, O_RDONLY);
+    struct stat fileStatus {};
+    if (stat(file, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = AVSourceFactory::CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    int32_t ret = source->GetSourceFormat(source_format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ASSERT_TRUE(source_format.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount));
+    ret = demuxer->GetRelativePresentationTimeUsByIndex(trackCount+1, 15, presentationTimeUs);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_API_0060
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with non-existent frameIndex
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0060, TestSize.Level1)
+{
+    int32_t trackType;
+    int32_t trackCount;
+    Format source_format;
+    Format track_format;
+    uint64_t presentationTimeUs;
+    const char *file = "/data/test/media/demuxer_parser_ipb_frame_avc.mp4";
+    int fd = open(file, O_RDONLY);
+    struct stat fileStatus {};
+    if (stat(file, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
+    }
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = AVSourceFactory::CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = AVDemuxerFactory::CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    int32_t ret = source->GetSourceFormat(source_format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ASSERT_TRUE(source_format.GetIntValue(OH_MD_KEY_TRACK_COUNT, trackCount));
+    for (int32_t index = 0; index < trackCount; index++) {
+        ret = demuxer->SelectTrackByID(index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        ret = source->GetTrackFormat(track_format, index);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        track_format.GetIntValue(OH_MD_KEY_TRACK_TYPE, trackType);
+        if (trackType == OHOS::Media::MEDIA_TYPE_VID) {
+            ret = demuxer->GetRelativePresentationTimeUsByIndex(index, 600, presentationTimeUs);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }else if(trackType == OHOS::Media::MEDIA_TYPE_AUD) {
+            ret = demuxer->GetRelativePresentationTimeUsByIndex(index, 600, presentationTimeUs);
+            ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+        }
+    }
+    close(fd);
 }
 } // namespace
