@@ -146,7 +146,7 @@ public:
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd);
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment);
-    void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment);
+    void SetInitSegment(std::shared_ptr<DashInitSegment> initSegment, bool needUpdateState = false);
     void UpdateStreamId(int streamId);
     void SetCurrentBitRate(int32_t bitRate);
     void SetDemuxerState();

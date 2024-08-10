@@ -591,7 +591,7 @@ size_t DashSegmentDownloader::GetRingBufferInitSize(MediaAVCodec::MediaType stre
     }
 }
 
-void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> initSegment)
+void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> initSegment, bool needUpdateState)
 {
     if (initSegment == nullptr) {
         return;
@@ -602,17 +602,22 @@ void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> init
     if (dashInitSegment == nullptr) {
         initSegments_.push_back(initSegment);
         dashInitSegment = initSegment;
+        needUpdateState = true;
     }
 
     if (!dashInitSegment->isDownloadFinish_) {
         dashInitSegment->writeState_ = INIT_SEGMENT_STATE_UNUSE;
     }
 
-    dashInitSegment->readState_ = INIT_SEGMENT_STATE_UNUSE;
+    // seek or first time to set stream init segment should update to UNUSE
+    // read will update state to UNUSE when stream id is changed
+    if (needUpdateState) {
+        dashInitSegment->readState_ = INIT_SEGMENT_STATE_UNUSE;
+    }
     MEDIA_LOG_I("SetInitSegment:streamId:" PUBLIC_LOG_D32 ", isDownloadFinish_="
-        PUBLIC_LOG_D32 ", readIndex=" PUBLIC_LOG_U32 ", readState_="
+        PUBLIC_LOG_D32 ", readIndex=" PUBLIC_LOG_U32 ", readState_=" PUBLIC_LOG_D32 ", update="
         PUBLIC_LOG_D32 ", writeState_=" PUBLIC_LOG_D32, streamId, dashInitSegment->isDownloadFinish_,
-        dashInitSegment->readIndex_, dashInitSegment->readState_, dashInitSegment->writeState_);
+        dashInitSegment->readIndex_, dashInitSegment->readState_, needUpdateState, dashInitSegment->writeState_);
 }
 
 void DashSegmentDownloader::UpdateStreamId(int streamId)
@@ -677,10 +682,6 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
 
             remainLastNumberSeq = it->numberSeq_;
             break;
-        }
-
-        if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
-            remainLastNumberSeq = mediaSegment_->numberSeq_;
         }
 
         ClearSegmentAll();
@@ -797,13 +798,13 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
 
 bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd)
 {
+    Close(true, false);
     std::lock_guard<std::mutex> lock(segmentMutex_);
     remainLastNumberSeq = -1;
     size_t clearTail = 0;
     CleanByTimeInternal(remainLastNumberSeq, clearTail, isEnd);
 
     if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
-        remainLastNumberSeq = mediaSegment_->numberSeq_;
         isEnd = false;
     }
 
@@ -813,7 +814,6 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
 
     if (clearTail > 0) {
         isCleaningBuffer_ = true;
-        Close(true, false);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
