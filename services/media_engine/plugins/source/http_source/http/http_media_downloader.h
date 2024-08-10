@@ -121,7 +121,7 @@ private:
     uint32_t recordSpeedCount_ {0};
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
-    bool isFlv_ {false};
+    bool isRingBuffer_ {false};
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
     std::atomic<bool> canWrite_ {true};

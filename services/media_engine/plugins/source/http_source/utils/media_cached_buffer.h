@@ -137,7 +137,7 @@ protected:
 
     size_t WriteChunk(FragmentCacheBuffer& fragmentCacheBuffer, ChunkIterator& chunkPos,
                       void* ptr, int64_t offset, size_t writeSize);
-    void CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos);
+    bool CheckThresholdFragmentCacheBuffer(FragmentIterator& currWritePos);
     ChunkIterator AddFragmentCacheBuffer(int64_t offset);
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, int64_t offset, ChunkIterator chunkPos);
 
