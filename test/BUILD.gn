@@ -124,6 +124,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audioencoderflush_fuzzer:AudioEncoderFlushFuzzTest",
       "fuzztest/audioencoderpreapi_fuzzer:AudioencoderpreapiFuzzTest",
       "fuzztest/audioencoderreset_fuzzer:AudioEncoderResetFuzzTest",
+      "fuzztest/audiomuxer_fuzzer:AudioMuxerFuzzTest",
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",
