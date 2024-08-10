@@ -1377,7 +1377,7 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
         AVCODEC_LOGE("Set surface fail");
         return AVCS_ERR_INVALID_VAL;
     }
-    if (state_ == State::RUNNING) {
+    if (state_ == State::FLUSHED || state_ == State::RUNNING) {
         return ReplaceOutputSurfaceWhenRunning(surface);
     }
     sInfo_.surface = surface;
