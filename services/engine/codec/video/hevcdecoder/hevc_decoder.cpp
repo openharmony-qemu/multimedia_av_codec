@@ -1272,15 +1272,89 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
     }
 }
 
+int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
+{
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_INVALID_STATE,
+                             "Not support convert from AVBuffer Mode to Surface Mode");
+    sptr<Surface> curSurface = sInfo_.surface;
+    uint64_t oldId = curSurface->GetUniqueId();
+    uint64_t newId = newSurface->GetUniqueId();
+    AVCODEC_LOGI("surface %{public}lu -> %{public}lu", oldId, newId);
+    if (oldId == newId) {
+        return AVCS_ERR_OK;
+    }
+    int32_t outputBufferCnt = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt);
+    int32_t ret = SetQueueSize(newSurface, outputBufferCnt);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    std::unique_lock<std::mutex> sLock(surfaceMutex_);
+    curSurface->CleanCache(true); // make sure old surface is empty and go black
+    newSurface->Connect(); // cleancache will work only if the surface is connected by us
+    newSurface->CleanCache(); // make sure new surface is empty
+    ret = AttachToNewSurface(newSurface);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    
+    int32_t videoRotation = 0;
+    format_.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, videoRotation);
+    newSurface->SetTransform(TranslateSurfaceRotation(static_cast<VideoRotation>(videoRotation)));
+    sInfo_.surface = newSurface;
+    sLock.unlock();
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
+{
+    int32_t err = surface->SetQueueSize(targetSize);
+    if (err != 0) {
+        AVCODEC_LOGE("surface %{public}lu, SetQueueSize to %{public}u failed, GSError=%{public}d",
+            surface->GetUniqueId(), targetSize, err);
+        return AVCS_ERR_UNKNOWN;
+    }
+    AVCODEC_LOGI("surface %{public}lu, SetQueueSize to %{public}u succ", surface->GetUniqueId(), targetSize);
+    return AVCS_ERR_OK;
+}
+
+int32_t HevcDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
+{
+    uint64_t newId = newSurface->GetUniqueId();
+    for (uint32_t index = 0; index < buffers_[INDEX_OUTPUT].size(); index++) {
+        if (buffers_[INDEX_OUTPUT][index]->sMemory == nullptr) {
+            continue;
+        }
+        sptr<SurfaceBuffer> surfaceBuffer = buffers_[INDEX_OUTPUT][index]->sMemory->GetSurfaceBuffer();
+        if (surfaceBuffer == nullptr) {
+            continue;
+        }
+        int32_t err = newSurface->AttachBufferToQueue(surfaceBuffer);
+        if (err != 0) {
+            AVCODEC_LOGE("surface %{public}lu, AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
+                newId, surfaceBuffer->GetSeqNum(), err);
+            return AVCS_ERR_UNKNOWN;
+        }
+        
+        if (buffers_[INDEX_OUTPUT][index]->owner_ == HBuffer::Owner::OWNED_BY_SURFACE) {
+            buffers_[INDEX_OUTPUT][index]->owner_ = HBuffer::Owner::OWNED_BY_US;
+        }
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED ||
-                             state_ == State::FLUSHED), AVCS_ERR_INVALID_STATE,
+                             state_ == State::FLUSHED || state_ == State::RUNNING), AVCS_ERR_INVALID_STATE,
                              "set output surface fail:  not in Initialized or Configured state");
     if (surface == nullptr || surface->IsConsumer()) {
         AVCODEC_LOGE("Set surface fail");
         return AVCS_ERR_INVALID_VAL;
+    }
+    if (state_ == State::RUNNING) {
+        return ReplaceOutputSurfaceWhenRunning(surface);
     }
     sInfo_.surface = surface;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
