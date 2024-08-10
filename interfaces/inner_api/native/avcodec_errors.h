@@ -73,9 +73,9 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_DATA_SOURCE_ERROR_UNKNOWN,                    // avcodec data source error unknow.
     AVCS_ERR_CODEC_PARAM_INCORRECT,                        // video codec param check failed.
 
-    AVCE_ERR_IPC_UNKNOWN,                                  // avcodec ipc unknown err.
-    AVCE_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,            // avcodec ipc err, get sub system ability failed.
-    AVCE_ERR_IPC_SET_DEATH_LISTENER_FAILED,                // avcodec ipc err, set death listener failed.
+    AVCS_ERR_IPC_UNKNOWN,                                  // avcodec ipc unknown err.
+    AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,            // avcodec ipc err, get sub system ability failed.
+    AVCS_ERR_IPC_SET_DEATH_LISTENER_FAILED,                // avcodec ipc err, set death listener failed.
     AVCS_ERR_CREATE_CODECLIST_STUB_FAILED,                 // create codeclist sub service failed.
     AVCS_ERR_CREATE_AVCODEC_STUB_FAILED,                   // create avcodec sub service failed.
 
@@ -88,7 +88,8 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_INVALID_DATA,                                 // Invalid data found when processing input
     AVCS_ERR_DECRYPT_FAILED,                               // drm decrypt failed
     AVCS_ERR_TRY_AGAIN,                                    // try again later
-    AVCS_ERR_EMPTY_INPUT_FAILED,                           //there is somthing wrong for input buffer
+    AVCS_ERR_EMPTY_INPUT_FAILED,                           // there is somthing wrong for input buffer
+    AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,       // video unsupport color space conversion
 
     AVCS_ERR_EXTEND_START = AVCS_ERR_OFFSET + 0xF000,      // extend err start.
 } AVCodecServiceErrCode;
@@ -98,6 +99,7 @@ __attribute__((visibility("default"))) std::string OHAVErrCodeToString(OH_AVErrC
 __attribute__((visibility("default"))) std::string AVCSErrorToOHAVErrCodeString(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) AVCodecServiceErrCode StatusToAVCodecServiceErrCode(Media::Status code);
+__attribute__((visibility("default"))) AVCodecServiceErrCode VPEErrorToAVCSError(int32_t code);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // MEDIA_AVCODEC_ERRORS_H
