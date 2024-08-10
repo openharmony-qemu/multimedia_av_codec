@@ -954,7 +954,7 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 
 void MediaDemuxer::HandleStopPlugin(int32_t trackId)
 {
-    FALSE_RETURN(!subtitleSource_ || trackId != subtitleTrackId_);
+    FALSE_RETURN(!subStreamDemuxer_ || trackId != subtitleTrackId_);
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         MEDIA_LOG_I("HandleStopPlugin, id = " PUBLIC_LOG_D32, streamID);
@@ -964,7 +964,7 @@ void MediaDemuxer::HandleStopPlugin(int32_t trackId)
 
 void MediaDemuxer::HandleStartPlugin(int32_t trackId)
 {
-    FALSE_RETURN(!subtitleSource_ || trackId != subtitleTrackId_);
+    FALSE_RETURN(!subStreamDemuxer_ || trackId != subtitleTrackId_);
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         demuxerPluginManager_->StartPlugin(streamID, streamDemuxer_);
