@@ -570,7 +570,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_PTS_INDEX_INNER_API_0030, TestSize.Leve
         if (trackType == OHOS::Media::MEDIA_TYPE_VID) {
             ret = demuxer->GetIndexByRelativePresentationTimeUs(index, 20000000, frameIndex);
             ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-        }else if(trackType == OHOS::Media::MEDIA_TYPE_AUD) {
+        } else if (trackType == OHOS::Media::MEDIA_TYPE_AUD) {
             ret = demuxer->GetIndexByRelativePresentationTimeUs(index, 20000000, frameIndex);
             ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
         }
