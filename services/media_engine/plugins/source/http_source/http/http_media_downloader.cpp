@@ -784,7 +784,7 @@ void HttpMediaDownloader::DownloadReport()
             // remaining buffer size
             size_t remainingBuffer = GetCurrentBufferSize();    // Byte
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
-                " Byte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+                " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (currentBitrate_ > 0) {

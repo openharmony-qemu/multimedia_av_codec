@@ -409,7 +409,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
             if (buffer_ != nullptr) {
                 curBufferSize = buffer_->GetSize();
             }
-            MEDIA_LOG_I("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
+            MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
             readTotalBytes_ = 0;
         }
@@ -705,7 +705,7 @@ void HlsMediaDownloader::DownloadReport()
             if (buffer_ != nullptr) {
                 remainingBuffer = buffer_->GetSize();
             }
-            MEDIA_LOG_I("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
+            MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
                 " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
