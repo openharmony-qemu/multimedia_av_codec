@@ -266,7 +266,6 @@ Status FFmpegBaseEncoder::AllocateContext(const std::string &name)
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             if (ptr) {
                 avcodec_free_context(&ptr);
-                avcodec_close(ptr);
                 ptr = nullptr;
             }
         });
@@ -333,7 +332,6 @@ Status FFmpegBaseEncoder::ReAllocateContext()
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
         if (ptr) {
             avcodec_free_context(&ptr);
-            avcodec_close(ptr);
             ptr = nullptr;
         }
     });
@@ -386,11 +384,8 @@ void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 Status FFmpegBaseEncoder::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", OSAL::AVStrError(res).c_str());
-            return Status::ERROR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return Status::OK;
 }
