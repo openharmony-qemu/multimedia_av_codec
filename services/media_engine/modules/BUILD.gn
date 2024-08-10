@@ -74,6 +74,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "sink/media_synchronous_sink.cpp",
     "sink/subtitle_sink.cpp",
     "sink/video_sink.cpp",
+    "sink/calc_max_amplitude.cpp",
     "source/audio_capture/audio_capture_module.cpp",
     "source/audio_capture/audio_type_translate.cpp",
     "source/source.cpp",
