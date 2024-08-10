@@ -43,6 +43,7 @@ void DashMediaDownloaderUnitTest::SetUpTestCase(void)
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
     g_mediaDownloader->SetStatusCallback(statusCallback);
+    g_mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_SEGMENT_BASE;
     std::map<std::string, std::string> httpHeader;
     g_result = g_mediaDownloader->Open(testUrl, httpHeader);
@@ -50,6 +51,10 @@ void DashMediaDownloaderUnitTest::SetUpTestCase(void)
 
 void DashMediaDownloaderUnitTest::TearDownTestCase(void)
 {
+    g_mediaDownloader->Pause();
+    g_mediaDownloader->Resume();
+    g_mediaDownloader->SetInterruptState(true);
+    g_mediaDownloader->SetDemuxerState(0);
     g_mediaDownloader->Close(true);
     g_mediaDownloader = nullptr;
 
@@ -101,6 +106,12 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STREAM_INFO, TestSize.Level1)
     EXPECT_GE(streams.size(), 0);
 }
 
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_SET_BITRATE, TestSize.Level1)
+{
+    Status status = g_mediaDownloader->SetCurrentBitRate(1);
+    EXPECT_EQ(status, Status::OK);
+}
+
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE, TestSize.Level1)
 {
     std::vector<StreamInfo> streams;
@@ -131,6 +142,54 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_BITRATE, TestSize.Level1)
     }
 
     EXPECT_TRUE(result);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_AUDIO, TestSize.Level1)
+{
+    std::vector<StreamInfo> streams;
+    g_mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GE(streams.size(), 0);
+
+    int32_t switchingStreamId = -1;
+    for (auto stream : streams) {
+        if (stream.type != AUDIO) {
+            continue;
+        }
+
+        switchingStreamId = stream.streamId;
+        break;
+    }
+
+    Status status = Status::OK;
+    if (switchingStreamId != -1) {
+        status = g_mediaDownloader->SelectStream(switchingStreamId);
+    }
+
+    EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_VIDEO, TestSize.Level1)
+{
+    std::vector<StreamInfo> streams;
+    g_mediaDownloader->GetStreamInfo(streams);
+    EXPECT_GE(streams.size(), 0);
+
+    int32_t switchingStreamId = -1;
+    for (auto stream : streams) {
+        if (stream.type != VIDEO) {
+            continue;
+        }
+
+        switchingStreamId = stream.streamId;
+        break;
+    }
+
+    Status status = Status::OK;
+    if (switchingStreamId != -1) {
+        status = g_mediaDownloader->SelectStream(switchingStreamId);
+    }
+
+    EXPECT_EQ(status, Status::OK);
 }
 
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
@@ -174,6 +233,8 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_READ, TestSize.Level1)
     readDataInfo.streamId_ = streams[0].streamId;
     readDataInfo.nextStreamId_ = streams[0].streamId;
     readDataInfo.wantReadLength_ = 1024;
+    mediaDownloader->Read(buff, readDataInfo);
+    mediaDownloader->SetDownloadErrorState();
     mediaDownloader->Read(buff, readDataInfo);
     mediaDownloader->Close(true);
     mediaDownloader = nullptr;

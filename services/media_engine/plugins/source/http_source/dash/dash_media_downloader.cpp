@@ -343,6 +343,8 @@ void DashMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
     if (playStrategy != nullptr) {
         mpdDownloader_->SetHdrStart(playStrategy->preferHDR);
         mpdDownloader_->SetInitResolution(playStrategy->width, playStrategy->height);
+        mpdDownloader_->SetDefaultLang(playStrategy->audioLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+        mpdDownloader_->SetDefaultLang(playStrategy->subtitleLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
         expectDuration_ = static_cast<uint64_t>(playStrategy->duration);
     }
 }
@@ -809,7 +811,7 @@ Status DashMediaDownloader::SelectSubtitleInternal(const std::shared_ptr<DashStr
 
     int64_t remainLastNumberSeq = -1;
     
-    // 1. clean all segment buffer keep 1000 ms, get switch segment sequence and is segment receive finish flag.
+    // 1. clean all segment buffer, get switch segment sequence and is segment receive finish flag.
     downloader->CleanSegmentBuffer(true, remainLastNumberSeq);
 
     std::lock_guard<std::mutex> lock(switchMutex_);

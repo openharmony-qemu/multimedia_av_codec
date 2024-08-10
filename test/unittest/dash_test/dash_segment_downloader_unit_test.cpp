@@ -78,6 +78,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
     bool result = segmentDownloader->Open(segmentSp);
+    segmentDownloader->Pause();
+    segmentDownloader->Resume();
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
     EXPECT_TRUE(result);
@@ -103,6 +105,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_RANGE, TestSize.Level1)
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
     bool result = segmentDownloader->Open(segmentSp);
+    segmentDownloader->GetRingBufferSize();
+    segmentDownloader->GetRingBufferCapacity();
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
     EXPECT_TRUE(result);

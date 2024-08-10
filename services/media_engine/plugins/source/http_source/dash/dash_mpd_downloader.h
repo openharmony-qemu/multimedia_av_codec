@@ -138,6 +138,7 @@ public:
     void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint32_t nextSegTime);
     void SetHdrStart(bool isHdrStart);
     void SetInitResolution(unsigned int width, unsigned int height);
+    void SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type);
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
 
@@ -158,6 +159,7 @@ private:
     unsigned int GetResolutionDelta(unsigned int width, unsigned int height);
     bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
         const std::shared_ptr<DashStreamDescription> &currentStream);
+    bool IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
     unsigned int GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
@@ -227,6 +229,8 @@ private:
 private:
     std::string url_ {};
     std::string downloadContent_ {}; // mpd content or sidx content
+    std::string defaultAudioLang_ {};
+    std::string defaultSubtitleLang_ {};
     DashMpdCallback* callback_ {nullptr};
     std::shared_ptr<Downloader> downloader_ {nullptr};
     std::shared_ptr<DownloadRequest> downloadRequest_ {nullptr};
