@@ -33,7 +33,7 @@ constexpr int32_t DEFAULT_GOPSIZE = 60;
 
 class TemporalScalability {
 public:
-    explicit TemporalScalability(std::string name);
+    explicit TemporalScalability(const std::string &name);
     virtual ~TemporalScalability();
     bool svcLTR_ = false; // true: LTR
     void ValidateTemporalGopParam(Format &format);
@@ -62,13 +62,13 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
     std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;
     bool IsLTRSolution();
-    int32_t LTRFrameNumCalculate(int32_t tGopSize);
+    int32_t LTRFrameNumCalculate(int32_t tGopSize) const;
     void MarkLTRDecision();
     int32_t LTRPocDecision(int32_t tPoc);
     void AdjacentJumpLTRDecision();
     void UniformlyScaledLTRDecision();
-    void LTRDecision();
-    uint32_t DisposableDecision();
+    static void LTRDecision();
+    uint32_t DisposableDecision() const;
 };
 
 } // namespace MediaAVCodec

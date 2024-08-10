@@ -34,7 +34,7 @@ using namespace Media;
 using namespace Plugins;
 using namespace std;
 
-TemporalScalability::TemporalScalability(string name) : name_(name)
+TemporalScalability::TemporalScalability(const string &name) : name_(name)
 {
     inputIndexQueue_ = make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
 }
