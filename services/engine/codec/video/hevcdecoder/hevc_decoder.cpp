@@ -1279,7 +1279,7 @@ int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
     sptr<Surface> curSurface = sInfo_.surface;
     uint64_t oldId = curSurface->GetUniqueId();
     uint64_t newId = newSurface->GetUniqueId();
-    AVCODEC_LOGI("surface %{public}lu -> %{public}lu", oldId, newId);
+    AVCODEC_LOGI("surface %{public}" PRIu64 " -> %{public}" PRIu64 "", oldId, newId);
     if (oldId == newId) {
         return AVCS_ERR_OK;
     }
@@ -1310,11 +1310,11 @@ int32_t HevcDecoder::SetQueueSize(const sptr<Surface> &surface, uint32_t targetS
 {
     int32_t err = surface->SetQueueSize(targetSize);
     if (err != 0) {
-        AVCODEC_LOGE("surface %{public}lu, SetQueueSize to %{public}u failed, GSError=%{public}d",
+        AVCODEC_LOGE("surface %{public}" PRIu64 ", SetQueueSize to %{public}u failed, GSError=%{public}d",
             surface->GetUniqueId(), targetSize, err);
         return AVCS_ERR_UNKNOWN;
     }
-    AVCODEC_LOGI("surface %{public}lu, SetQueueSize to %{public}u succ", surface->GetUniqueId(), targetSize);
+    AVCODEC_LOGI("surface %{public}" PRIu64 ", SetQueueSize to %{public}u succ", surface->GetUniqueId(), targetSize);
     return AVCS_ERR_OK;
 }
 
@@ -1331,7 +1331,7 @@ int32_t HevcDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
         }
         int32_t err = newSurface->AttachBufferToQueue(surfaceBuffer);
         if (err != 0) {
-            AVCODEC_LOGE("surface %{public}lu, AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
+            AVCODEC_LOGE("surface %{public}" PRIu64 ", AttachBufferToQueue(seq=%{public}u) failed, GSError=%{public}d",
                 newId, surfaceBuffer->GetSeqNum(), err);
             return AVCS_ERR_UNKNOWN;
         }
