@@ -42,7 +42,6 @@ FFmpegBaseEncoder::FFmpegBaseEncoder()
 FFmpegBaseEncoder::~FFmpegBaseEncoder()
 {
     CloseCtxLocked();
-    avCodecContext_.reset();
 }
 
 Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
@@ -210,8 +209,6 @@ Status FFmpegBaseEncoder::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
-    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
         outBuffer_ = nullptr;
@@ -223,7 +220,6 @@ Status FFmpegBaseEncoder::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -232,7 +228,6 @@ Status FFmpegBaseEncoder::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 

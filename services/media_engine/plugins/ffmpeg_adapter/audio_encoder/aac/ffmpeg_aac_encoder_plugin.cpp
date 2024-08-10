@@ -811,7 +811,6 @@ Status FFmpegAACEncoderPlugin::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
-    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
         outBuffer_ = nullptr;
