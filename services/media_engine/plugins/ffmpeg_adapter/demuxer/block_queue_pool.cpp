@@ -20,6 +20,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
+constexpr uint32_t MAX_UINT32 = 4294967295;
 }
 
 namespace OHOS {
@@ -92,6 +93,25 @@ size_t BlockQueuePool::GetCacheSize(uint32_t trackIndex)
     return size;
 }
 
+uint32_t BlockQueuePool::GetCacheDataSize(uint32_t trackIndex)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetCacheDataSize enter, trackIndex: " PUBLIC_LOG_U32 ".",
+        name_.c_str(), trackIndex);
+    uint32_t dataSize = 0;
+    for (auto queIndex : queMap_[trackIndex]) {
+        if (static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize) > MAX_UINT32) {
+            MEDIA_LOG_D("dataSize(" PUBLIC_LOG_U64 ") is more than Maximum value of uint32",
+                static_cast<uint64_t>(dataSize) + static_cast<uint64_t>(quePool_[queIndex].dataSize));
+            return MAX_UINT32;
+        }
+        dataSize += quePool_[queIndex].dataSize;
+    }
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S "trackIndex = " PUBLIC_LOG_U32 " GetCacheDataSize = " PUBLIC_LOG_U32,
+        name_.c_str(), trackIndex, dataSize);
+    return dataSize;
+}
+
 bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
@@ -122,6 +142,7 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
         return;
     }
     blockQue->Clear();
+    quePool_[queueIndex].dataSize = 0;
     quePool_[queueIndex].isValid = true;
     return;
 }
@@ -161,6 +182,9 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
         return false;
     }
     sizeMap_[trackIndex] += 1;
+    for (auto pkt : block->pkts) {
+        quePool_[pushIndex].dataSize += static_cast<uint32_t>(pkt->size);
+    }
     return quePool_[pushIndex].blockQue->Push(block);
 }
 
@@ -181,6 +205,11 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Size() > 0) {
             auto block = quePool_[queIndex].blockQue->Pop();
+            for (auto pkt : block->pkts) {
+                uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+                quePool_[queIndex].dataSize =
+                    quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
+            }
             if (quePool_[queIndex].blockQue->Empty()) {
                 ResetQueue(queIndex);
                 MEDIA_LOG_D("track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool.",
@@ -255,6 +284,7 @@ uint32_t BlockQueuePool::GetValidQueue()
     }
     quePool_[queCount_] = {
         false,
+        0,
         std::make_shared<BlockQueue<std::shared_ptr<SamplePacket>>>("source_que_" + std::to_string(queCount_),
             singleQueSize_)
     };

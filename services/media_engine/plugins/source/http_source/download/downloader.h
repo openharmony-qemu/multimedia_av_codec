@@ -21,9 +21,11 @@
 #include <string>
 #include "osal/task/task.h"
 #include "osal/task/mutex.h"
+#include "osal/task/condition_variable.h"
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
-#include "network_client.h"
+#include "network/network_client.h"
+#include "network/network_typs.h"
 #include <chrono>
 #include "securec.h"
 
@@ -75,21 +77,15 @@ using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Do
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
 
-struct MediaSouce {
-    std::string url;
-    std::map<std::string, std::string> httpHeader;
-    int32_t timeoutMs{-1};
-};
-
 class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo mediaSouce,
                     bool requestWholeFile = false);
 
     size_t GetFileContentLength() const;
@@ -129,7 +125,7 @@ private:
 
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
-    MediaSouce mediaSouce_ {};
+    RequestInfo mediaSouce_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
@@ -168,10 +164,13 @@ public:
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
+    void GetIp(std::string &ip);
 private:
     bool BeginDownload();
 
     int64_t HttpDownloadLoop();
+    void RequestData();
+    void HandlePlayingFinish();
     void HandleRetOK();
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
@@ -179,22 +178,23 @@ private:
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
-    static bool HandleContentLength(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
+    void PauseLoop(bool isAsync = false);
 
     std::string name_;
     std::shared_ptr<NetworkClient> client_;
-    std::shared_ptr<Task> task_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     std::atomic<bool> shouldStartNextRequest {false};
     size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
+    std::shared_ptr<Task> task_;
+    std::atomic<bool> isDestructor_ {false};
 };
 }
 }

@@ -82,6 +82,7 @@ protected:
         STOP,
         RELEASE,
         GET_HIDUMPER_INFO,
+        PRINT_ALL_BUFFER_OWNER,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -108,8 +109,8 @@ protected:
     };
 
     struct PortInfo {
-        uint32_t width;
-        uint32_t height;
+        uint32_t width = 0;
+        uint32_t height = 0;
         OMX_VIDEO_CODINGTYPE codingType;
         std::optional<PixelFmt> pixelFmt;
         double frameRate;
@@ -129,7 +130,7 @@ protected:
         bool isInput = true;
         BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
-        std::chrono::time_point<std::chrono::steady_clock> lastFlushTime;
+        int64_t lastFlushTime = 0;
         uint32_t bufferId = 0;
         std::shared_ptr<CodecHDI::OmxCodecBuffer> omxBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
@@ -140,14 +141,16 @@ protected:
         void BeginCpuAccess();
         void EndCpuAccess();
         bool IsValidFrame() const;
-        void Dump(const std::string& prefix, DumpMode dumpMode, bool isEncoder) const;
+#ifdef BUILD_ENG_VERSION
+        void Dump(const std::string& prefix, uint64_t cnt, DumpMode dumpMode, bool isEncoder) const;
 
     private:
-        void Dump(const std::string& prefix) const;
-        void DumpSurfaceBuffer(const std::string& prefix) const;
-        void DecideDumpInfo(std::optional<uint32_t>& assumeAlignedH, std::string& suffix, bool& dumpAsVideo) const;
+        void Dump(const std::string& prefix, uint64_t cnt) const;
+        void DumpSurfaceBuffer(const std::string& prefix, uint64_t cnt) const;
+        void DecideDumpInfo(int& alignedH, uint32_t& totalSize, std::string& suffix, bool& dumpAsVideo) const;
         void DumpLinearBuffer(const std::string& prefix) const;
         static constexpr char DUMP_PATH[] = "/data/misc/hcodecdump";
+#endif
     };
 
 protected:
@@ -156,12 +159,14 @@ protected:
     static const char* ToString(MsgWhat what);
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
+    void OnPrintAllBufferOwner(const MsgInfo& msg);
     void PrintAllBufferInfo();
     void PrintAllBufferInfo(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
     void PrintStatistic(bool isInput, std::chrono::time_point<std::chrono::steady_clock> now);
     std::string OnGetHidumperInfo();
-    std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
-    void TraceOwner(const std::array<uint32_t, OWNER_CNT>& arr, bool isInput);
+    void UpdateOwner();
+    void UpdateOwner(bool isInput);
+    void ReduceOwner(bool isInput, BufferOwner owner);
     void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
     void ChangeOwnerNormal(BufferInfo& info, BufferOwner newOwner);
     void ChangeOwnerDebug(BufferInfo& info, BufferOwner newOwner);
@@ -344,13 +349,29 @@ protected:
         uint64_t totalCnt = 0;
         uint64_t totalCostUs = 0;
     };
-    std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
-    std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
+
+    // whole lift time
     uint64_t inTotalCnt_ = 0;
-    std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
-    std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
     TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
+
+    // normal: every 200 frames, debug: whole life time
+    static constexpr uint64_t PRINT_PER_FRAME = 200;
+    std::array<TotalCntAndCost, OWNER_CNT> inputHoldTimeRecord_;
+    std::array<TotalCntAndCost, OWNER_CNT> outputHoldTimeRecord_;
+    std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
+    std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
+
+    // used when buffer circulation stoped
+    static constexpr char KEY_LAST_OWNER_CHANGE_TIME[] = "lastOwnerChangeTime";
+    std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime_;
+    uint32_t circulateWarnPrintedTimes_ = 0;
+    static constexpr uint32_t MAX_CIRCULATE_WARN_TIMES = 3;
+
+    std::array<int, HCodec::OWNER_CNT> inputOwner_ {};
+    std::array<std::string, HCodec::OWNER_CNT> inputOwnerStr_ {};
+    std::array<int, HCodec::OWNER_CNT> outputOwner_ {};
+    std::array<std::string, HCodec::OWNER_CNT> outputOwnerStr_ {};
 
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 1000;

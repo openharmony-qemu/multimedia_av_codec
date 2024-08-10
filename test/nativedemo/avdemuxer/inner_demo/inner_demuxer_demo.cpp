@@ -157,22 +157,22 @@ int32_t InnerDemuxerDemo::SeekToTime(int64_t millisecond, Media::SeekMode mode)
     return ret;
 }
 
-int32_t InnerDemuxerDemo::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-    int64_t presentationTimeUs, uint32_t &frameIndex)
+int32_t InnerDemuxerDemo::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+    const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     if (ret != 0) {
-        printf("GetFrameIndexByPresentationTimeUs is failed\n");
+        printf("GetIndexByRelativePresentationTimeUs is failed\n");
     }
     return ret;
 }
 
-int32_t InnerDemuxerDemo::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-    uint32_t frameIndex, int64_t &presentationTimeUs)
+int32_t InnerDemuxerDemo::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+    const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     if (ret != 0) {
-        printf("GetPresentationTimeUsByFrameIndex is failed\n");
+        printf("GetRelativePresentationTimeUsByIndex is failed\n");
     }
     return ret;
 }

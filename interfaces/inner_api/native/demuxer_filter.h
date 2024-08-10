@@ -62,7 +62,7 @@ public:
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true);
 
-    Status StartAudioTask();
+    Status StartTask(int32_t trackId);
     Status SelectTrack(int32_t trackId);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
@@ -74,6 +74,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
 
     FilterType GetFilterType();
 
@@ -94,10 +95,12 @@ public:
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
+    bool IsVideoEos();
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
-
+    Status ResumeDemuxerReadLoop();
+    Status PauseDemuxerReadLoop();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -120,6 +123,7 @@ private:
     void FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
+    Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
@@ -140,7 +144,6 @@ private:
     std::string videoMime_;
     std::string audioMime_;
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
-    std::atomic<bool> hasSubtitle_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

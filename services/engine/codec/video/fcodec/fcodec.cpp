@@ -786,6 +786,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
                      height_, height);
         width_ = width;
         height_ = height;
+        ResetData();
         scale_ = nullptr;
         CalculateBufferSize();
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
@@ -841,6 +842,7 @@ void FCodec::ReleaseBuffers()
         }
     }
     buffers_[INDEX_OUTPUT].clear();
+    outAVBuffer4Surface_.clear();
     oLock.unlock();
     isBufferAllocated_ = false;
 }

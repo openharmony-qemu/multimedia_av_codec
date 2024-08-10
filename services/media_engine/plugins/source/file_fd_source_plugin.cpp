@@ -45,7 +45,7 @@ constexpr int32_t FDPOS                         = 2;
 constexpr int32_t READ_TIME                     = 3;
 constexpr size_t CACHE_SIZE                     = 40 * 1024 * 1024;
 constexpr size_t PER_CACHE_SIZE                 = 48 * 10 * 1024;;
-constexpr size_t WATER_LINE_BELOW_DEFAULT       = 5 * 1024;
+constexpr size_t WATER_LINE_BELOW_DEFAULT      = 5 * 1024;
 constexpr int32_t TEN_MILLISECOUNDS             = 10 * 1000;
 constexpr int32_t ONE_SECONDS                   = 1 * 1000 * 1000;
 constexpr int32_t CACHE_TIME_DEFAULT            = 5;
@@ -57,6 +57,7 @@ constexpr int32_t RETRY_TIMES                   = 3;
 constexpr int32_t TO_BYTE                       = 8;
 constexpr int32_t PERCENT_100                   = 100;
 constexpr int32_t MAX_RANK                      = 100;
+constexpr int32_t READ_RETRY                    = 2;
 constexpr float CACHE_LEVEL_1                   = 0.3;
 
 constexpr unsigned int HMDFS_IOC = 0xf2;
@@ -73,12 +74,10 @@ uint64_t GetFileSize(int32_t fd)
     int ret = fstat(fd, &s);
     if (ret == 0) {
         fileSize = static_cast<uint64_t>(s.st_size);
-        if (fileSize == 0) {
-            MEDIA_LOG_I_SHORT("fileSize 0, fstat ret 0, errno " PUBLIC_LOG_D32, errno);
-        }
+        FALSE_RETURN_V_MSG_E(fileSize != 0, fileSize, "fileSize 0, fstat ret 0");
         return fileSize;
     } else {
-        MEDIA_LOG_W_SHORT("GetFileSize error ret " PUBLIC_LOG_D32 ", errno " PUBLIC_LOG_D32, ret, errno);
+        MEDIA_LOG_W("GetFileSize error ret " PUBLIC_LOG_D32 ", errno " PUBLIC_LOG_D32, ret, errno);
     }
     return fileSize;
 }
@@ -89,7 +88,7 @@ bool isNumber(const std::string& str)
 }
 Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
 {
-    MEDIA_LOG_I_SHORT("fileSourceRegister is started");
+    MEDIA_LOG_I("fileSourceRegister is started");
     SourcePluginDef definition;
     definition.name = "FileFdSource";
     definition.description = "File Fd source";
@@ -113,38 +112,35 @@ FileFdSourcePlugin::FileFdSourcePlugin(std::string name)
 
 FileFdSourcePlugin::~FileFdSourcePlugin()
 {
-    MEDIA_LOG_I_SHORT("~FileFdSourcePlugin in.");
+    MEDIA_LOG_I("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
     isInterrupted_ = true;
-    MEDIA_LOG_I_SHORT("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    if (downloadTask_ != nullptr) {
-        downloadTask_->Stop();
-    }
-    MEDIA_LOG_I_SHORT("~FileFdSourcePlugin out.");
+    MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
+    FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
+    downloadTask_->Stop();
+    MEDIA_LOG_I("~FileFdSourcePlugin out.");
 }
 
 Status FileFdSourcePlugin::SetCallback(Callback* cb)
 {
-    MEDIA_LOG_D_SHORT("SetCallback in " PUBLIC_LOG_D32, cb != nullptr);
+    MEDIA_LOG_D("SetCallback in " PUBLIC_LOG_D32, cb != nullptr);
     callback_ = cb;
     return Status::OK;
 }
 
 Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 {
-    MEDIA_LOG_I_SHORT("SetSource in. %{private}s", source->GetSourceUri().c_str());
+    MEDIA_LOG_I("SetSource in. %{private}s", source->GetSourceUri().c_str());
     auto err = ParseUriInfo(source->GetSourceUri());
     if (err != Status::OK) {
-        MEDIA_LOG_E_SHORT("Parse file name from uri fail, uri %{private}s", source->GetSourceUri().c_str());
+        MEDIA_LOG_E("Parse file name from uri fail, uri %{private}s", source->GetSourceUri().c_str());
         return err;
     }
     CheckFileType();
     if (isCloudFile_) {
         ringBuffer_ = std::make_shared<RingBuffer>(CACHE_SIZE);
-        if (ringBuffer_ == nullptr || !ringBuffer_->Init()) {
-            MEDIA_LOG_E_SHORT("memory is not enough ringBuffer_");
-            return Status::ERROR_NO_MEMORY;
-        }
+        FALSE_RETURN_V_MSG_E(!(ringBuffer_ == nullptr || !ringBuffer_->Init()),
+            Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
         downloadTask_ = std::make_shared<Task>(std::string("downloadTaskFD"));
         FALSE_RETURN_V_MSG_E(downloadTask_ != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
         downloadTask_->RegisterJob([this] {
@@ -179,19 +175,18 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
-    MEDIA_LOG_D_SHORT("ReadLocal buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_,
-        expectedLen);
+    MEDIA_LOG_D("ReadLocal buffer pos: " PUBLIC_LOG_U64 " , len:" PUBLIC_LOG_ZU, position_.load(), expectedLen);
 
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (size <= 0) {
         HandleReadResult(expectedLen, size);
-        MEDIA_LOG_I_SHORT("ReadLocal END_OF_STREAM");
+        MEDIA_LOG_I("ReadLocal END_OF_STREAM");
         return Status::END_OF_STREAM;
     }
     bufData->UpdateDataSize(size);
     position_ += static_cast<uint64_t>(size);
-    MEDIA_LOG_D_SHORT("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
-        position_, buffer->GetMemory()->GetSize());
+    MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
+        position_.load(), buffer->GetMemory()->GetSize());
     return Status::OK;
 }
 
@@ -200,18 +195,22 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
 {
     if (isBuffering_) {
         if (HandleBuffering()) {
-            MEDIA_LOG_I_SHORT("is buffering, return error again.");
+            FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
+            FALSE_RETURN_V_MSG_E(isReadBlocking_, Status::OK, "please not retry read, isReadBlocking false");
+            MEDIA_LOG_I("is buffering, return error again.");
             return Status::ERROR_AGAIN;
         }
     }
 
-    // ringbuffer 0 after seek in 50ms, don't notify buffering
+    // ringbuffer 0 after seek in 20ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
-    if (isReadFrame_ && ringBufferSize_ < static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT) &&
-        (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
-        MEDIA_LOG_I_SHORT("ringBufferSize_ " PUBLIC_LOG_U64 " curReadTime_ " PUBLIC_LOG_U64
-            " lastReadTime_ " PUBLIC_LOG_U64, ringBufferSize_, curReadTime_, lastReadTime_);
+    if (isReadFrame_ && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
+         (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
+        MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
+            " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
         CheckReadTime();
+        FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
+        FALSE_RETURN_V_MSG_E(isReadBlocking_, Status::OK, "please not retry read, isReadBlocking false");
         return Status::ERROR_AGAIN;
     }
 
@@ -220,29 +219,22 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
 
-    size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, 1);
+    size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, READ_RETRY);
     if (size == 0) {
-        if (GetLastSize(position_) == 0) {
-            MEDIA_LOG_I_SHORT("ReadCloud END_OF_STREAM");
-            return Status::END_OF_STREAM;
-        }
-        MEDIA_LOG_I_SHORT("read size 0, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
-            PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position_);
+        MEDIA_LOG_I("read size 0,fd " PUBLIC_LOG_D32 ",offset " PUBLIC_LOG_D64 ", size:" PUBLIC_LOG_U64 ", pos:"
+            PUBLIC_LOG_U64 ",readBlock:" PUBLIC_LOG_D32, fd_, offset, size_, position_.load(), isReadBlocking_.load());
+        FALSE_RETURN_V_MSG_E(GetLastSize(position_) != 0, Status::END_OF_STREAM, "ReadCloud END_OF_STREAM");
+        bufData->UpdateDataSize(0);
         return Status::OK;
     }
     bufData->UpdateDataSize(size);
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curReadTime_;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I_SHORT("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
-        " costTime: " PUBLIC_LOG_U64, position_, expectedLen, ct);
+        MEDIA_LOG_I("ReadCloud buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU
+        " costTime: " PUBLIC_LOG_U64, position_.load(), expectedLen, ct);
     }
-    position_ += size;
-    {
-        std::unique_lock<std::shared_mutex> lock(mutex_);
-        ringBufferSize_ -= static_cast<int64_t>(size);
-    }
-
-    MEDIA_LOG_D_SHORT("ringBufferSize_ " PUBLIC_LOG_U64, ringBufferSize_);
+    position_ += static_cast<uint64_t>(size);
+    MEDIA_LOG_D("ringBuffer.size() " PUBLIC_LOG_ZU, ringBuffer_->GetSize());
     return Status::OK;
 }
 
@@ -251,7 +243,7 @@ Status FileFdSourcePlugin::SeekTo(uint64_t offset)
     FALSE_RETURN_V_MSG_E(fd_ != -1 && seekable_ == Seekable::SEEKABLE,
         Status::ERROR_WRONG_STATE, "no valid fd or no seekable.");
 
-    MEDIA_LOG_I_SHORT("SeekTo offset: " PUBLIC_LOG_U64, offset);
+    MEDIA_LOG_I("SeekTo offset: " PUBLIC_LOG_U64, offset);
     if (isCloudFile_) {
         return SeekToOnlineFile(offset);
     } else {
@@ -263,22 +255,22 @@ Status FileFdSourcePlugin::SeekToOfflineFile(uint64_t offset)
 {
     int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
     if (ret == -1) {
-        MEDIA_LOG_E_SHORT("SeekLocal failed, fd " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_U64 ", errStr "
+        MEDIA_LOG_E("SeekLocal failed, fd " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_U64 ", errStr "
             PUBLIC_LOG_S, fd_, offset, strerror(errno));
         return Status::ERROR_UNKNOWN;
     }
     position_ = offset + static_cast<uint64_t>(offset_);
-    MEDIA_LOG_D_SHORT("SeekLocal end ret " PUBLIC_LOG_D32 ", position_ " PUBLIC_LOG_U64, ret, position_);
+    MEDIA_LOG_D("SeekLocal end ret " PUBLIC_LOG_D32 ", position_ " PUBLIC_LOG_U64, ret, position_.load());
     return Status::OK;
 }
 
 Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
 {
     FALSE_RETURN_V_MSG_E(ringBuffer_ != nullptr, Status::ERROR_WRONG_STATE, "SeekCloud ringBuffer_ is nullptr");
-    MEDIA_LOG_D_SHORT("SeekCloud, buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(),
-        offset);
+    MEDIA_LOG_D("SeekCloud,ringBuffer.size: " PUBLIC_LOG_ZU ",offset " PUBLIC_LOG_U64, ringBuffer_->GetSize(), offset);
     if (ringBuffer_->Seek(offset)) {
-        MEDIA_LOG_I_SHORT("SeekCloud ringBuffer_ seek hit, offset " PUBLIC_LOG_U64, offset);
+        position_ = offset + static_cast<uint64_t>(offset_);
+        MEDIA_LOG_I("SeekCloud ringBuffer_ seek hit, offset " PUBLIC_LOG_U64, offset);
         return Status::OK;
     }
     // First clear buffer, avoid no available buffer then task pause never exit.
@@ -289,21 +281,20 @@ Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
         inSeek_ = false;
     }
     ringBuffer_->Clear();
-    ringBufferSize_ = 0;
     ringBuffer_->SetMediaOffset(offset);
     ringBuffer_->SetActive(true);
 
     int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
     if (ret == -1) {
-        MEDIA_LOG_E_SHORT("SeekCloud failed, fd_ " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_U64 ", errStr "
+        MEDIA_LOG_E("SeekCloud failed, fd_ " PUBLIC_LOG_D32 ", offset " PUBLIC_LOG_U64 ", errStr "
             PUBLIC_LOG_S, fd_, offset, strerror(errno));
         return Status::ERROR_UNKNOWN;
     }
     position_ = offset + static_cast<uint64_t>(offset_);
-    cachePosition_ = position_;
+    cachePosition_ = position_.load();
 
-    MEDIA_LOG_D_SHORT("SeekCloud end, fd_ " PUBLIC_LOG_D32 ", size_ " PUBLIC_LOG_U64 ", offset_ " PUBLIC_LOG_D64
-        ", position_ " PUBLIC_LOG_U64, fd_, size_, offset_, position_);
+    MEDIA_LOG_D("SeekCloud end, fd_ " PUBLIC_LOG_D32 ", size_ " PUBLIC_LOG_U64 ", offset_ " PUBLIC_LOG_D64
+        ", position_ " PUBLIC_LOG_U64, fd_, size_, offset_, position_.load());
     if (downloadTask_ != nullptr) {
         downloadTask_->Start();
     }
@@ -313,10 +304,10 @@ Status FileFdSourcePlugin::SeekToOnlineFile(uint64_t offset)
 Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
 {
     if (uri.empty()) {
-        MEDIA_LOG_E_SHORT("uri is empty");
+        MEDIA_LOG_E("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_I_SHORT("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_I("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
@@ -346,14 +337,14 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
     if (seekable_ == Seekable::SEEKABLE) {
         NOK_LOG(SeekTo(0));
     }
-    MEDIA_LOG_I_SHORT("Fd: " PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64 ", size: " PUBLIC_LOG_U64, fd_, offset_, size_);
+    MEDIA_LOG_I("Fd: " PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64 ", size: " PUBLIC_LOG_U64, fd_, offset_, size_);
     return Status::OK;
 }
 
 void FileFdSourcePlugin::CacheDataLoop()
 {
     if (isInterrupted_) {
-        MEDIA_LOG_E_SHORT("CacheData break");
+        MEDIA_LOG_E("CacheData break");
         usleep(TEN_MILLISECOUNDS);
         return;
     }
@@ -361,50 +352,48 @@ void FileFdSourcePlugin::CacheDataLoop()
     int64_t curTime = steadyClock_.ElapsedMilliseconds();
     GetCurrentSpeed(curTime);
 
-    size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_)));
+    size_t bufferSize = std::min(PER_CACHE_SIZE, static_cast<size_t>(GetLastSize(cachePosition_.load())));
     if (bufferSize < 0) {
-        MEDIA_LOG_E_SHORT("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
+        MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
         usleep(TEN_MILLISECOUNDS);
         return;
     }
 
     char* cacheBuffer = new char[bufferSize];
     if (cacheBuffer == nullptr) {
-        MEDIA_LOG_E_SHORT("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
+        MEDIA_LOG_E("CacheData memory is not enough bufferSize " PUBLIC_LOG_ZU, bufferSize);
         usleep(TEN_MILLISECOUNDS);
         return;
     }
     int size = read(fd_, cacheBuffer, bufferSize);
     if (size <= 0) {
-        DeleteCacheBuffer(cacheBuffer);
+        DeleteCacheBuffer(cacheBuffer, bufferSize);
         HandleReadResult(bufferSize, size);
         return;
     }
-
+    MEDIA_LOG_D("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBuffer_.size() " PUBLIC_LOG_ZU
+        ", size_ " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_);
     while (!ringBuffer_->WriteBuffer(cacheBuffer, size)) {
-        MEDIA_LOG_I_SHORT("CacheData ringbuffer write failed");
+        MEDIA_LOG_I("CacheData ringbuffer write failed");
         if (inSeek_ || isInterrupted_) {
-            DeleteCacheBuffer(cacheBuffer);
+            DeleteCacheBuffer(cacheBuffer, bufferSize);
             return;
         }
         usleep(TEN_MILLISECOUNDS);
     }
     cachePosition_ += static_cast<uint64_t>(size);
     downloadSize_ += static_cast<uint64_t>(size);
-    {
-        std::unique_lock<std::shared_mutex> lock(mutex_);
-        ringBufferSize_ += size;
-    }
 
     int64_t ct = steadyClock2_.ElapsedMilliseconds() - curTime;
     if (ct > READ_TIME) {
-        MEDIA_LOG_I_SHORT("Cache fd: " PUBLIC_LOG_D32 "cachePos_ " PUBLIC_LOG_U64 " ringBufferSize_ " PUBLIC_LOG_U64
-        ", size_ " PUBLIC_LOG_U64 " costTime: " PUBLIC_LOG_U64, fd_, cachePosition_, ringBufferSize_, size_, ct);
+        MEDIA_LOG_I("Cache fd: " PUBLIC_LOG_D32 "cachePos:" PUBLIC_LOG_U64 ",ringBuffer.size() " PUBLIC_LOG_ZU ", size "
+            PUBLIC_LOG_U64 " cTime: " PUBLIC_LOG_U64, fd_, cachePosition_.load(), ringBuffer_->GetSize(), size_, ct);
     }
     
-    DeleteCacheBuffer(cacheBuffer);
+    DeleteCacheBuffer(cacheBuffer, bufferSize);
 
-    if (isBuffering_ && (ringBufferSize_ > waterLineAbove_ || GetLastSize(cachePosition_) == 0)) {
+    if (isBuffering_ && (static_cast<int64_t>(ringBuffer_->GetSize()) > waterLineAbove_ ||
+        GetLastSize(cachePosition_.load()) == 0)) {
         NotifyBufferingEnd();
     }
 }
@@ -415,45 +404,36 @@ void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
     ioctlData.offset = static_cast<int64_t>(cachePosition_);
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
-    if (ioResult == 0) {
-        // ioctl has cache
-        return;
-    }
+    // ioctl has cache
+    FALSE_RETURN(ioResult != 0);
     // EIO  5
-    if (errno == EIO) {
-        MEDIA_LOG_I_SHORT("ioctl has no cache");
-        return;
-    }
-    MEDIA_LOG_I_SHORT("ioctl errno " PUBLIC_LOG_D32, errno);
+    FALSE_RETURN_MSG(errno != EIO, "ioctl has no cache");
+    MEDIA_LOG_I("ioctl errno " PUBLIC_LOG_D32, errno);
 }
 
 Status FileFdSourcePlugin::Stop()
 {
-    MEDIA_LOG_I_SHORT("Stop enter.");
+    MEDIA_LOG_I("Stop enter.");
     isInterrupted_ = true;
-    MEDIA_LOG_I_SHORT("Stop isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    if (downloadTask_ != nullptr) {
-        downloadTask_->StopAsync();
-    }
+    MEDIA_LOG_I("Stop isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
+    FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
+    downloadTask_->StopAsync();
     return Status::OK;
 }
 
 Status FileFdSourcePlugin::Reset()
 {
-    MEDIA_LOG_I_SHORT("Reset enter.");
+    MEDIA_LOG_I("Reset enter.");
     isInterrupted_ = true;
-    MEDIA_LOG_I_SHORT("Reset isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
-    if (downloadTask_ != nullptr) {
-        downloadTask_->StopAsync();
-    }
+    MEDIA_LOG_I("Reset isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
+    FALSE_RETURN_V(downloadTask_ != nullptr, Status::OK);
+    downloadTask_->StopAsync();
     return Status::OK;
 }
 
 void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
 {
-    if (downloadTask_ == nullptr) {
-        return;
-    }
+    FALSE_RETURN(downloadTask_ != nullptr);
     if (isAsync) {
         downloadTask_->PauseAsync();
     } else {
@@ -463,30 +443,30 @@ void FileFdSourcePlugin::PauseDownloadTask(bool isAsync)
 
 bool FileFdSourcePlugin::HandleBuffering()
 {
-    MEDIA_LOG_I_SHORT("HandleBuffering in.");
+    MEDIA_LOG_I("HandleBuffering in.");
     int32_t sleepTime = 0;
     // return error again 1 time 1s, avoid ffmpeg error
-    while (sleepTime < ONE_SECONDS && !isInterrupted_) {
+    while (sleepTime < ONE_SECONDS && !isInterrupted_ && isReadBlocking_) {
         NotifyBufferingPercent();
         if (!isBuffering_) {
             break;
         }
-        MEDIA_LOG_I_SHORT("isBuffering.");
+        MEDIA_LOG_I("isBuffering.");
         usleep(TEN_MILLISECOUNDS);
         sleepTime += TEN_MILLISECOUNDS;
     }
-    MEDIA_LOG_I_SHORT("HandleBuffering out.");
+    MEDIA_LOG_I("HandleBuffering out.");
     return isBuffering_;
 }
 
 void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 {
-    MEDIA_LOG_I_SHORT("HandleReadResult size " PUBLIC_LOG_D32 ", fd " PUBLIC_LOG_D32 ", cachePosition_" PUBLIC_LOG_U64
+    MEDIA_LOG_I("HandleReadResult size " PUBLIC_LOG_D32 ", fd " PUBLIC_LOG_D32 ", cachePosition_" PUBLIC_LOG_U64
         ", position_ " PUBLIC_LOG_U64 ", bufferSize " PUBLIC_LOG_ZU ", size_ " PUBLIC_LOG_U64 ", offset_ "
-        PUBLIC_LOG_D64, size, fd_, cachePosition_, position_, bufferSize, size_, offset_);
+        PUBLIC_LOG_D64, size, fd_, cachePosition_.load(), position_.load(), bufferSize, size_, offset_);
     if (size < 0) {
         // errno EIO  5
-        MEDIA_LOG_E_SHORT("read fail, errno " PUBLIC_LOG_D32, errno);
+        MEDIA_LOG_E("read fail, errno " PUBLIC_LOG_D32, errno);
 
         // read fail with errno, retry 3 * 10ms
         retryTimes_++;
@@ -503,65 +483,69 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
 
 void FileFdSourcePlugin::NotifyBufferingStart()
 {
-    MEDIA_LOG_I_SHORT("NotifyBufferingStart in.");
+    MEDIA_LOG_I("NotifyBufferingStart, ringBuffer.size() " PUBLIC_LOG_ZU
+        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
     isBuffering_ = true;
     if (callback_ != nullptr && !isInterrupted_) {
-        MEDIA_LOG_I_SHORT("Read OnEvent BUFFERING_START.");
+        MEDIA_LOG_I("Read OnEvent BUFFERING_START.");
         callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
     } else {
-        MEDIA_LOG_E_SHORT("BUFFERING_START callback_ is nullptr or isInterrupted_ is true");
+        MEDIA_LOG_E("BUFFERING_START callback_ is nullptr or isInterrupted_ is true");
     }
 }
 
 void FileFdSourcePlugin::NotifyBufferingPercent()
 {
-    MEDIA_LOG_I_SHORT("NotifyBufferingPercent in.");
     if (waterLineAbove_ != 0) {
-        auto bp = ringBufferSize_ / waterLineAbove_ * PERCENT_100;
+        int64_t bp = static_cast<float>(ringBuffer_->GetSize()) / waterLineAbove_ * PERCENT_100;
+        bp = bp > PERCENT_100 ? PERCENT_100 : bp;
         if (isBuffering_ && callback_ != nullptr && !isInterrupted_) {
-            MEDIA_LOG_I_SHORT("Read OnEvent BUFFERING_PERCENT" PUBLIC_LOG_D64, bp);
-            callback_->OnEvent({PluginEventType::BUFFERING_PERCENT,
+            MEDIA_LOG_I("NotifyBufferingPercent, ringBuffer.size() " PUBLIC_LOG_ZU ", waterLineAbove_ " PUBLIC_LOG_U64
+                ", PERCENT " PUBLIC_LOG_D32, ringBuffer_->GetSize(), waterLineAbove_, static_cast<int32_t>(bp));
+            callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
-            MEDIA_LOG_E_SHORT("BUFFERING_PERCENT callback_ is nullptr or isInterrupted_ is true");
+            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ is true");
         }
     }
 }
 
 void FileFdSourcePlugin::NotifyBufferingEnd()
 {
-    MEDIA_LOG_I_SHORT("NotifyBufferingEnd in.");
-    MEDIA_LOG_I_SHORT("water line above, ringBufferSize_ " PUBLIC_LOG_U64, ringBufferSize_);
+    NotifyBufferingPercent();
+    MEDIA_LOG_I("NotifyBufferingEnd, ringBuffer.size() " PUBLIC_LOG_ZU
+        ", waterLineAbove_ " PUBLIC_LOG_U64, ringBuffer_->GetSize(), waterLineAbove_);
     isBuffering_ = false;
+    lastReadTime_ = 0;
     if (callback_ != nullptr && !isInterrupted_) {
-        MEDIA_LOG_I_SHORT("NotifyBufferingEnd success .");
+        MEDIA_LOG_I("NotifyBufferingEnd success .");
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     } else {
-        MEDIA_LOG_E_SHORT("BUFFERING_END callback_ is nullptr or isInterrupted_ is true");
+        MEDIA_LOG_E("BUFFERING_END callback_ is nullptr or isInterrupted_ is true");
     }
 }
 
 void FileFdSourcePlugin::NotifyReadFail()
 {
-    MEDIA_LOG_I_SHORT("NotifyReadFail in.");
+    MEDIA_LOG_I("NotifyReadFail in.");
     if (callback_ != nullptr && !isInterrupted_) {
-        MEDIA_LOG_I_SHORT("Read OnEvent read fail");
+        MEDIA_LOG_I("Read OnEvent read fail");
         callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
     } else {
-        MEDIA_LOG_E_SHORT("CLIENT_ERROR callback_ is nullptr or isInterrupted_ is true");
+        MEDIA_LOG_E("CLIENT_ERROR callback_ is nullptr or isInterrupted_ is true");
     }
 }
 
-void FileFdSourcePlugin::SetDemuxerState()
+void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
 {
-    MEDIA_LOG_I_SHORT("SetDemuxerState");
+    MEDIA_LOG_I("SetDemuxerState");
     isReadFrame_ = true;
 }
 
 Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate)
 {
     currentBitRate_ = bitRate / TO_BYTE; // 8b
-    MEDIA_LOG_I_SHORT("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);
+    MEDIA_LOG_I("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);
     // default cache 0.3s
     waterLineAbove_ = CACHE_LEVEL_1 * currentBitRate_;
     return Status::OK;
@@ -569,12 +553,22 @@ Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate)
 
 void FileFdSourcePlugin::SetBundleName(const std::string& bundleName)
 {
-    MEDIA_LOG_I_SHORT("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+    MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+}
+
+Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
+{
+    MEDIA_LOG_I("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isAllowed);
+    if (ringBuffer_) {
+        ringBuffer_->SetReadBlocking(isAllowed);
+    }
+    isReadBlocking_ = isAllowed;
+    return Status::OK;
 }
 
 void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I_SHORT("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
+    MEDIA_LOG_I("SetInterruptState isInterrupted_" PUBLIC_LOG_D32, isInterruptNeeded);
     isInterrupted_ = isInterruptNeeded;
     if (ringBuffer_ != nullptr) {
         if (isInterrupted_) {
@@ -589,7 +583,7 @@ void FileFdSourcePlugin::SetInterruptState(bool isInterruptNeeded)
             downloadTask_->StopAsync();
         }
         int ret = ioctl(fd_, HMDFS_IOC_CANCEL_READ);
-        MEDIA_LOG_I_SHORT("ioctl break read, fd %{public}d, ret %{public}d, errno %{public}d", fd_, ret, errno);
+        MEDIA_LOG_I("ioctl break read, fd %{public}d, ret %{public}d, errno %{public}d", fd_, ret, errno);
     }
 }
 
@@ -601,31 +595,31 @@ Status FileFdSourcePlugin::GetSize(uint64_t& size)
 
 Seekable FileFdSourcePlugin::GetSeekable()
 {
-    MEDIA_LOG_D_SHORT("GetSeekable in");
+    MEDIA_LOG_D("GetSeekable in");
     return seekable_;
 }
 
 void FileFdSourcePlugin::CheckFileType()
 {
-    int location; // 1本地，2云端
-    int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &location);
-    MEDIA_LOG_I_SHORT("SetSource ioctl location, ret " PUBLIC_LOG_D32 ", location " PUBLIC_LOG_D32 ", errno"
-        PUBLIC_LOG_D32, ioResult, location, errno);
+    int loc; // 1本地，2云端
+    int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &loc);
+    MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
+        PUBLIC_LOG_D32, ioResult, loc, errno);
 
     if (ioResult == 0) {
-        if (location == IOCTL_CLOUD) {
+        if (loc == IOCTL_CLOUD) {
             isCloudFile_ = true;
-            MEDIA_LOG_I_SHORT("ioctl file is cloud");
+            MEDIA_LOG_I("ioctl file is cloud");
             int ret = ioctl(fd_, HMDFS_IOC_RESTORE_READ);
-            MEDIA_LOG_I_SHORT("ioctl restore fd, fd %{public}d, ret %{public}d, errno %{public}d", fd_, ret, errno);
+            MEDIA_LOG_I("ioctl restore fd, fd %{public}d, ret %{public}d, errno %{public}d", fd_, ret, errno);
             return;
         } else {
             isCloudFile_ = false;
-            MEDIA_LOG_I_SHORT("ioctl file is local");
+            MEDIA_LOG_I("ioctl file is local");
         }
     } else {
         isCloudFile_ = false;
-        MEDIA_LOG_I_SHORT("ioctl get file type");
+        MEDIA_LOG_I("ioctl get file type");
     }
 }
 
@@ -647,7 +641,7 @@ int64_t FileFdSourcePlugin::GetLastSize(uint64_t position)
 {
     int64_t ret = static_cast<int64_t>(size_) + offset_ - static_cast<int64_t>(position);
     if (ret < 0) {
-        MEDIA_LOG_E_SHORT("GetLastSize error, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
+        MEDIA_LOG_E("GetLastSize error, fd_ " PUBLIC_LOG_D32 ", offset_ " PUBLIC_LOG_D64 ", size_ "
             PUBLIC_LOG_U64 ", position " PUBLIC_LOG_U64, fd_, offset_, size_, position);
     }
     return ret;
@@ -656,37 +650,34 @@ int64_t FileFdSourcePlugin::GetLastSize(uint64_t position)
 void FileFdSourcePlugin::GetCurrentSpeed(int64_t curTime)
 {
     if ((curTime - lastCheckTime_) > RECORD_TIME_INTERVAL) {
-        MEDIA_LOG_I_SHORT("CacheDataLoop curTime_: " PUBLIC_LOG_U64 " lastCheckTime_: "
-            PUBLIC_LOG_U64 " downloadSize_: " PUBLIC_LOG_U64, curTime, lastCheckTime_, downloadSize_);
+        MEDIA_LOG_I("CacheDataLoop curTime_: " PUBLIC_LOG_U64 " lastCheckTime_: "
+        PUBLIC_LOG_U64 " downloadSize_: " PUBLIC_LOG_U64, curTime, lastCheckTime_, downloadSize_);
         float duration = static_cast<double>(curTime - lastCheckTime_) / MILLISECOUND_TO_SECOND;
         avgDownloadSpeed_ = downloadSize_ / duration; //b/s
-        MEDIA_LOG_I_SHORT("downloadDuration: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F,
+        MEDIA_LOG_I("downloadDuration: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F,
             duration, avgDownloadSpeed_);
         downloadSize_ = 0;
         lastCheckTime_ = curTime;
-        if (currentBitRate_ > 0) {
-            UpdateWaterLineAbove();
-        }
+        FALSE_RETURN(currentBitRate_ > 0);
+        UpdateWaterLineAbove();
     }
 }
 
 void FileFdSourcePlugin::UpdateWaterLineAbove()
 {
-    MEDIA_LOG_I_SHORT("UpdateWaterLineAbove");
-    if (currentBitRate_ > 0) {
-        float cacheTime = GetCacheTime(avgDownloadSpeed_ / currentBitRate_);
-        MEDIA_LOG_I_SHORT("cacheTime: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F
-            "currentBitRate: " PUBLIC_LOG_D32, cacheTime, avgDownloadSpeed_, currentBitRate_);
-        waterLineAbove_ = cacheTime * currentBitRate_ > GetLastSize(cachePosition_) ?
-            GetLastSize(cachePosition_) : cacheTime * currentBitRate_;
-        MEDIA_LOG_I_SHORT("waterLineAbove_: " PUBLIC_LOG_U64, waterLineAbove_);
-    }
+    FALSE_RETURN_MSG(currentBitRate_ > 0, "currentBitRate_ <= 0");
+    float cacheTime = GetCacheTime(avgDownloadSpeed_ / currentBitRate_);
+    MEDIA_LOG_I("cacheTime: " PUBLIC_LOG_F "avgDownloadSpeed_: " PUBLIC_LOG_F
+        "currentBitRate: " PUBLIC_LOG_D32, cacheTime, avgDownloadSpeed_, currentBitRate_);
+    waterLineAbove_ = cacheTime * currentBitRate_ > GetLastSize(cachePosition_.load()) ?
+        GetLastSize(cachePosition_.load()) : cacheTime * currentBitRate_;
+    MEDIA_LOG_I("waterLineAbove_: " PUBLIC_LOG_U64, waterLineAbove_);
 }
 
 float FileFdSourcePlugin::GetCacheTime(float num)
 {
-    MEDIA_LOG_I_SHORT("GetCacheTime with num: " PUBLIC_LOG_F, num);
-    if (num <= 0) {
+    MEDIA_LOG_I("GetCacheTime with num: " PUBLIC_LOG_F, num);
+    if (num < 0) {
         return CACHE_LEVEL_1;
     }
     if (num > 0 && num < 0.5) { // (0, 0.5)
@@ -699,17 +690,16 @@ float FileFdSourcePlugin::GetCacheTime(float num)
     return CACHE_TIME_DEFAULT;
 }
 
-void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer)
+void FileFdSourcePlugin::DeleteCacheBuffer(char* buffer, size_t bufferSize)
 {
-    if (buffer != nullptr) {
+    if (buffer != nullptr && bufferSize > 0) {
         delete[] buffer;
     }
 }
 
 void FileFdSourcePlugin::CheckReadTime()
 {
-    if (lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
-        curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER) {
+    if (IsValidTime(curReadTime_, lastReadTime_)) {
         NotifyBufferingStart();
         lastReadTime_ = 0;
     } else {
@@ -717,6 +707,12 @@ void FileFdSourcePlugin::CheckReadTime()
             lastReadTime_ = curReadTime_;
         }
     }
+}
+
+bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
+{
+    return lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
+        curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER;
 }
 } // namespace FileFdSource
 } // namespace Plugin

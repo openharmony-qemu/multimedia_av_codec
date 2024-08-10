@@ -50,7 +50,7 @@ public:
     HlsMediaDownloader() noexcept;
     explicit HlsMediaDownloader(int expectBufferDuration);
     explicit HlsMediaDownloader(std::string mimeType);
-    ~HlsMediaDownloader() override = default;
+    ~HlsMediaDownloader() override;
     bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
@@ -78,23 +78,25 @@ public:
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
-    void SetDemuxerState() override;
+    void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
     Status SetCurrentBitRate(int32_t bitRate) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
     uint64_t GetMinBuffer();
-    void DownloadReportLoop();
+    void DownloadReport();
     void ReportDownloadSpeed();
     bool CheckRiseBufferSize();
     bool CheckPulldownBufferSize();
@@ -110,14 +112,15 @@ private:
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckReadTimeOut();
     bool CheckBreakCondition();
-    uint32_t GetLastDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
-    void ResetDecryptBuffer(uint32_t waitLen, uint32_t writeLen, uint32_t realLen, uint8_t* writeDataPoint);
+    uint32_t GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
+    double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
+    bool CheckBufferingOneSeconds();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -155,13 +158,12 @@ private:
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
-    bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
-    uint64_t currentBitrate_ {1*1024*1024};
+    uint64_t currentBitrate_ {1*1024*1024}; // bps
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
@@ -222,12 +224,15 @@ private:
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
-    bool isBufferEnough_ {true};
     std::atomic<bool> isSeekingFlag {false};
     Mutex switchMutex_ {};
     bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
 
+    uint64_t lastReadCheckTime_ = 0;
+    uint64_t readTotalBytes_ = 0;
+    uint64_t readRecordDuringTime_ = 0;
+    uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};

@@ -48,6 +48,18 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
     }
 }
 
+HlsPlayListDownloader::~HlsPlayListDownloader()
+{
+    MEDIA_LOG_I("~HlsPlayListDownloader in");
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
+    }
+    if (updateTask_ != nullptr) {
+        updateTask_->Stop();
+    }
+    MEDIA_LOG_I("~HlsPlayListDownloader out");
+}
+
 void HlsPlayListDownloader::UpdateManifest()
 {
     if (currentVariant_ && currentVariant_->m3u8_ && !currentVariant_->m3u8_->uri_.empty()) {
@@ -95,9 +107,6 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
-    if (master_->bLive_ && !updateTask_->IsTaskRunning()) {
-        updateTask_->Start();
-    }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
@@ -138,6 +147,10 @@ void HlsPlayListDownloader::NotifyListChange()
     callback_->OnPlayListChanged(playList);
     if (isParseFinished_) {
         isNotifyPlayListFinished_ = true;
+        if (master_->bLive_ && !updateTask_->IsTaskRunning() && !isLiveUpdateTaskStarted_) {
+            isLiveUpdateTaskStarted_ = true;
+            updateTask_->Start();
+        }
     }
 }
 
@@ -198,8 +211,8 @@ void HlsPlayListDownloader::PreParseManifest(const std::string& location)
     int lastTsTagIndex = 0;
     std::string tsTag = M3U8_TS_TAG;
     int tsTagSize = static_cast<int>(tsTag.size());
-    while ((tsIndex = static_cast<int>(playList_.find(tsTag, tsIndex)))
-            < static_cast<int>(playList_.length())) {
+    while ((tsIndex = static_cast<int>(playList_.find(tsTag, tsIndex))) <
+            static_cast<int>(playList_.length()) && tsIndex != -1) { // -1
         if (tsNum == 0) {
             firstTsTagIndex = tsIndex;
         }

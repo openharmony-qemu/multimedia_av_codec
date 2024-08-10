@@ -248,7 +248,6 @@ void TEST_SUIT::PrepareSource(int32_t param)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoEnc_->SetOutPath(prefix + fileName);
-    videoEnc_->SetIsHdrVivid(param == HW_HDR);
 }
 
 void TEST_SUIT::SetFormatWithParam(int32_t param)
@@ -311,6 +310,10 @@ bool TEST_SUIT::GetWaterMarkCapability(int32_t param)
                                                             AVCodecCategory::AVCODEC_SOFTWARE);
             break;
         }
+    if (capabilityData == nullptr) {
+        std::cout << "capabilityData is nullptr" << std::endl;
+        return false;
+    }
     if (capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
         std::cout << "Support watermark" << std::endl;
         return true;
@@ -979,7 +982,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_001, TestSize.Level1)
     ASSERT_EQ(ret, true);
     std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
     std::shared_ptr<FormatMock> param = buffer->GetParameter();
-    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
     param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
     param->PutIntValue(Tag::VIDEO_COORDINATE_X, 100);
     param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 100);
@@ -1215,7 +1217,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_009, TestSize.Level1)
     ASSERT_EQ(ret, true);
     std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
     std::shared_ptr<FormatMock> param = buffer->GetParameter();
-    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
     param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
     param->PutIntValue(Tag::VIDEO_COORDINATE_X, 100);
     param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 100);
@@ -1255,7 +1256,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
     ASSERT_EQ(ret, true);
     std::shared_ptr<AVBufferMock> buffer = AVBufferMockFactory::CreateAVBuffer(avbuffer);
     std::shared_ptr<FormatMock> param = buffer->GetParameter();
-    (void)memset_s(buffer->GetAddr(), buffer->GetCapacity(), 0, 10000);
     param->PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
     param->PutIntValue(Tag::VIDEO_COORDINATE_X, 100);
     param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 100);

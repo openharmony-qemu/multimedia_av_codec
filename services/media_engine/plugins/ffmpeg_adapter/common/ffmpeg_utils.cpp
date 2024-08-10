@@ -348,6 +348,118 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((channels & 0x0F) << 0x03);
     return codecConfig;
 }
+
+uint32_t TimeStampUs2FrameId(int64_t timeUs, double fps)
+{
+    uint32_t us2Sec = MS_TO_SEC * MS_TO_SEC;
+    return (timeUs * fps + us2Sec / 2) / us2Sec;  // 2
+}
+
+void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
+{
+    (void)avcl;
+    char buf[500] = {0}; // 500
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    if (ret < 0) {
+        return;
+    }
+    switch (level) {
+        case AV_LOG_WARNING:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_ERROR:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_FATAL:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_INFO:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_DEBUG:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
+            break;
+        default:
+            break;
+    }
+}
+
+int FindNaluSpliter(int size, const uint8_t* data)
+{
+    int naluPos = -1;
+    if (size >= 4 && data[0] == 0x00 && data[1] == 0x00) { // 4: least size
+        if (data[2] == 0x01) { // 2: next index
+            naluPos = 3; // 3: the actual start pos of nal unit
+        } else if (size >= 5 && data[2] == 0x00 && data[3] == 0x01) { // 5: least size, 2, 3: next indecies
+            naluPos = 4; // 4: the actual start pos of nal unit
+        }
+    }
+    return naluPos;
+}
+
+bool CanDropAvcPkt(const AVPacket& pkt)
+{
+    const uint8_t *data = pkt.data;
+    int size = pkt.size;
+    int naluPos = FindNaluSpliter(size, data);
+    if (naluPos < 0) {
+        MEDIA_LOG_D("pkt->data starts with error start code!");
+        return false;
+    }
+    int nalRefIdc = (data[naluPos] >> 5) & 0x03; // 5: get H.264 nal_ref_idc
+    int nalUnitType = data[naluPos] & 0x1f; // get H.264 nal_unit_type
+    bool isCodedSliceData = nalUnitType == 1 || nalUnitType == 2 || // 1: non-IDR, 2: partiton A
+        nalUnitType == 3 || nalUnitType == 4 || nalUnitType == 5; // 3: partiton B, 4: partiton C, 5: IDR
+    return nalRefIdc == 0 && isCodedSliceData;
+}
+
+bool CanDropHevcPkt(const AVPacket& pkt)
+{
+    const uint8_t *data = pkt.data;
+    int size = pkt.size;
+    int naluPos = FindNaluSpliter(size, data);
+    if (naluPos < 0) {
+        MEDIA_LOG_D("pkt->data starts with error start code!");
+        return false;
+    }
+    int nalUnitType = (data[naluPos] >> 1) & 0x3f; // get H.265 nal_unit_type
+    return nalUnitType == 0 || nalUnitType == 2 || nalUnitType == 4 || // 0: TRAIL_N, 2: TSA_N, 4: STSA_N
+        nalUnitType == 6 || nalUnitType == 8; // 6: RADL_N, 8: RASL_N
+}
+
+void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId)
+{
+    sample->meta_->Remove(Media::Tag::VIDEO_BUFFER_CAN_DROP);
+    bool canDrop = false;
+    if (codecId == AV_CODEC_ID_HEVC) {
+        canDrop = CanDropHevcPkt(pkt);
+    } else if (codecId == AV_CODEC_ID_H264) {
+        canDrop = CanDropAvcPkt(pkt);
+    }
+    if (canDrop) {
+        sample->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
+    }
+}
+
+bool IsInputFormatSupported(const char* name)
+{
+    MEDIA_LOG_D("Check support " PUBLIC_LOG_S " or not.", name);
+    if (!strcmp(name, "audio_device") || StartWith(name, "image") ||
+        !strcmp(name, "mjpeg") || !strcmp(name, "redir") || StartWith(name, "u8") ||
+        StartWith(name, "u16") || StartWith(name, "u24") ||
+        StartWith(name, "u32") ||
+        StartWith(name, "s8") || StartWith(name, "s16") ||
+        StartWith(name, "s24") ||
+        StartWith(name, "s32") || StartWith(name, "f32") ||
+        StartWith(name, "f64") ||
+        !strcmp(name, "mulaw") || !strcmp(name, "alaw")) {
+        return false;
+    }
+    if (!strcmp(name, "sdp") || !strcmp(name, "rtsp") || !strcmp(name, "applehttp")) {
+        return false;
+    }
+    return true;
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

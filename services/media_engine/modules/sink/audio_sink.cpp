@@ -64,21 +64,13 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     if (samplePerFrame_ > 0 && sampleRate_ > 0) {
         playingBufferDurationUs_ = samplePerFrame_ * 1000000 / sampleRate_; // 1000000 usec per sec
     }
     MEDIA_LOG_I("Audiosink playingBufferDurationUs_ = " PUBLIC_LOG_D64, playingBufferDurationUs_);
-    int64_t startTime = 0;
-    if (!meta->GetData(Tag::MEDIA_START_TIME, startTime)) {
-        startTime = 0;
-    }
-    MEDIA_LOG_I("Get startTime from track meta, " PUBLIC_LOG_D64, startTime);
-    auto syncCenter = syncCenter_.lock();
-    if (syncCenter) {
-        syncCenter->SetMediaStartPts(Plugins::HstTime2Us(startTime));
-    }
     std::string mime;
     bool mimeGetRes = meta->Get<Tag::MIME_TYPE>(mime);
     if (mimeGetRes && mime == "audio/x-ape") {
@@ -413,26 +405,23 @@ void AudioSink::DrainOutputBuffer()
 
 void AudioSink::ResetSyncInfo()
 {
-    auto syncCenter = syncCenter_.lock();
-    if (syncCenter) {
-        syncCenter->Reset();
-    }
     lastReportedClockTime_ = HST_TIME_NONE;
     forceUpdateTimeAnchorNextTime_ = false;
-    firstPts_ = HST_TIME_NONE;
 }
 
 int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     bool render = true; // audio sink always report time anchor and do not drop
     int64_t nowCt = 0;
-
+    auto syncCenter = syncCenter_.lock();
     if (firstPts_ == HST_TIME_NONE) {
-        firstPts_ = buffer->pts_;
+        if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
+            firstPts_ = syncCenter->GetMediaStartPts();
+        } else {
+            firstPts_ = buffer->pts_;
+        }
         MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
-
-    auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
         nowCt = syncCenter->GetClockTimeNow();
     }
@@ -459,6 +448,9 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         latestBufferDuration_ = playingBufferDurationUs_ / speed_;
     } else {
         latestBufferDuration_ = buffer->duration_ / speed_;
+    }
+    if (syncCenter) {
+        syncCenter->SetLastAudioBufferDuration(latestBufferDuration_);
     }
     return render ? 0 : -1;
 }
@@ -575,6 +567,7 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     if (volume_ >= 0) {
@@ -593,5 +586,11 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     return res;
 }
 
+Status AudioSink::SetMuted(bool isMuted)
+{
+    isMuted_ = isMuted;
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    return plugin_->SetMuted(isMuted);
+}
 } // namespace MEDIA
 } // namespace OHOS

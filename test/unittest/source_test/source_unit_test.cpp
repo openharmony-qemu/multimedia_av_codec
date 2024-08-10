@@ -60,7 +60,7 @@ public:
         (void)flag;
     }
 
-    bool CanDoSelectBitRate() override
+    bool CanAutoSelectBitRate() override
     {
         return true;
     }
@@ -250,6 +250,64 @@ HWTEST_F(SourceUnitTest, Source_GetDuration_0100, TestSize.Level1)
     EXPECT_EQ(Status::OK, source_->Prepare());
     source_->GetDuration();
     EXPECT_EQ(Status::OK, source_->Stop());
+}
+/**
+ * @tc.name: Source_OnEvent_0100
+ * @tc.desc: Source_OnEvent_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(SourceUnitTest, Source_OnEvent_0100, TestSize.Level1)
+{
+    std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
+    source_->mediaDemuxerCallback_ = std::shared_ptr<CallbackImpl>();
+    Plugins::PluginEvent event;
+    event.type = PluginEventType::CLIENT_ERROR;
+    source_->OnEvent(event);
+    event.type = PluginEventType::SOURCE_DRM_INFO_UPDATE;
+    source_->OnEvent(event);
+    event.type = PluginEventType::BUFFERING_END;
+    source_->OnEvent(event);
+    event.type = PluginEventType::SOURCE_BITRATE_START;
+    source_->OnEvent(event);
+    event.type = PluginEventType::CACHED_DURATION;
+    source_->OnEvent(event);
+    event.type = PluginEventType::EVENT_BUFFER_PROGRESS;
+    source_->OnEvent(event);
+    event.type = PluginEventType::EVENT_CHANNEL_CLOSED;
+    source_->OnEvent(event);
+    source_->isPluginReady_ = true;
+    source_->isAboveWaterline_ = true;
+    event.type = PluginEventType::ABOVE_LOW_WATERLINE;
+    source_->OnEvent(event);
+    EXPECT_FALSE(source_->isPluginReady_ && source_->isAboveWaterline_);
+}
+/**
+ * @tc.name: Source_GetUriSuffix_0100
+ * @tc.desc: Source_GetUriSuffix_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(SourceUnitTest, Source_GetUriSuffix_0100, TestSize.Level1)
+{
+    std::string uri = "test.jpg";
+    std::string expectedSuffix = "jpg";
+    std::string actualSuffix = source_->GetUriSuffix(uri);
+    EXPECT_EQ(expectedSuffix, actualSuffix);
+    uri = "test";
+    expectedSuffix = "";
+    actualSuffix = source_->GetUriSuffix(uri);
+    EXPECT_EQ(expectedSuffix, actualSuffix);
+}
+/**
+ * @tc.name: Source_GetProtocolByUri_0100
+ * @tc.desc: Source_GetProtocolByUri_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(SourceUnitTest, Source_GetProtocolByUri_0100, TestSize.Level1)
+{
+    source_->uri_ = "http://www.example.com";
+    EXPECT_TRUE(source_->GetProtocolByUri());
+    source_->uri_ = "example.com";
+    EXPECT_FALSE(source_->GetProtocolByUri());
 }
 } // namespace Media
 } // namespace OHOS

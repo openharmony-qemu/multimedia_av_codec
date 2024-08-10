@@ -198,8 +198,10 @@ int32_t MediaCodec::Prepare()
     MEDIA_LOG_I("Prepare enter");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Prepare");
+    FALSE_RETURN_V_MSG_W(state_ != CodecState::FLUSHED, (int32_t)Status::ERROR_AGAIN,
+        "state is flushed, no need prepare");
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
-    FALSE_RETURN_V(state_ == CodecState::CONFIGURED || state_ == CodecState::FLUSHED,
+    FALSE_RETURN_V(state_ == CodecState::CONFIGURED,
         (int32_t)Status::ERROR_INVALID_STATE);
     if (isBufferMode_ && isSurfaceMode_) {
         MEDIA_LOG_E("state error");
@@ -486,13 +488,22 @@ Status MediaCodec::DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &filledInputBuf
     }
     // 4. decrypt
     drmRes = drmDecryptor_->DrmAudioCencDecrypt(drmInBuf, drmOutBuf, bufSize);
-    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "DrmAudioCencDecrypt return error");
+    FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_DRM_DECRYPT_FAILED, "DrmAudioCencDecrypt return error");
 
     // 5. copy decrypted data from drm output buffer back
     drmRes = memcpy_s(filledInputBuffer->memory_->GetAddr(), bufSize,
         drmOutBuf->memory_->GetAddr(), bufSize);
     FALSE_RETURN_V_MSG_E(drmRes == 0, Status::ERROR_UNKNOWN, "memcpy_s drmOutBuf failed");
     return Status::OK;
+}
+
+void MediaCodec::HandleAudioCencDecryptError()
+{
+    MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+    if (mediaCodecCallback_ != nullptr) {
+        mediaCodecCallback_->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED,
+            static_cast<int32_t>(Status::ERROR_DRM_DECRYPT_FAILED));
+    }
 }
 
 int32_t MediaCodec::PrepareInputBufferQueue()
@@ -601,7 +612,7 @@ void MediaCodec::ProcessInputBuffer()
         if (drmDecryptor_ != nullptr) {
             ret = DrmAudioCencDecrypt(filledInputBuffer);
             if (ret != Status::OK) {
-                MEDIA_LOG_E("MediaCodec DrmAudioCencDecrypt failed.");
+                HandleAudioCencDecryptError();
                 break;
             }
         }
@@ -741,14 +752,14 @@ void MediaCodec::ClearBufferQueue()
 {
     MEDIA_LOG_I("ClearBufferQueue called.");
     if (inputBufferQueueProducer_ != nullptr) {
-        for (auto &buffer : inputBufferVector_) {
+        for (const auto &buffer : inputBufferVector_) {
             inputBufferQueueProducer_->DetachBuffer(buffer);
         }
         inputBufferVector_.clear();
         inputBufferQueueProducer_->SetQueueSize(0);
     }
     if (outputBufferQueueProducer_ != nullptr) {
-        for (auto &buffer : outputBufferVector_) {
+        for (const auto &buffer : outputBufferVector_) {
             outputBufferQueueProducer_->DetachBuffer(buffer);
         }
         outputBufferVector_.clear();

@@ -225,7 +225,7 @@ Status MediaSyncManager::Pause()
     return Status::OK;
 }
 
-Status MediaSyncManager::Seek(int64_t mediaTime)
+Status MediaSyncManager::Seek(int64_t mediaTime, bool isClosest)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || maxRangeEndOfMediaTime_ == HST_TIME_NONE) {
@@ -238,7 +238,11 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
     ResetTimeAnchorNoLock(); // reset the time anchor
     frameAfterSeeked_ = true;
-    firstMediaTimeAfterSeek_ = HST_TIME_NONE;
+    if (isClosest) {
+        firstMediaTimeAfterSeek_ = mediaTime;
+    } else {
+        firstMediaTimeAfterSeek_ = HST_TIME_NONE;
+    }
     return Status::OK;
 }
 
@@ -319,6 +323,17 @@ bool MediaSyncManager::IsSupplierValid(IMediaSynchronizer* supplier)
     return std::find(syncers_.begin(), syncers_.end(), supplier) != syncers_.end();
 }
 
+void MediaSyncManager::UpdateFirstPtsAfterSeek(int64_t mediaTime)
+{
+    if (firstMediaTimeAfterSeek_ == HST_TIME_NONE) {
+        firstMediaTimeAfterSeek_ = mediaTime;
+        return;
+    }
+    if (mediaTime > firstMediaTimeAfterSeek_) {
+        firstMediaTimeAfterSeek_ = mediaTime;
+    }
+}
+
 bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime,
     int64_t mediaAbsTime, int64_t maxMediaTime, IMediaSynchronizer* supplier)
 {
@@ -338,7 +353,7 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, in
         if (isSeeking_) {
             MEDIA_LOG_I_SHORT("leaving seeking_");
             isSeeking_ = false;
-            firstMediaTimeAfterSeek_ = mediaTime;
+            UpdateFirstPtsAfterSeek(mediaTime);
             seekCond_.notify_all();
         }
     }
@@ -371,8 +386,29 @@ int64_t MediaSyncManager::SimpleGetMediaTimeExactly(int64_t anchorClockTime, int
     return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
+void MediaSyncManager::SetLastAudioBufferDuration(int64_t durationUs)
+{
+    if (durationUs > 0) {
+        lastAudioBufferDuration_ = durationUs;
+    } else {
+        lastAudioBufferDuration_ = 0; // If buffer duration is unavailable, treat it as 0.
+    }
+}
+
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 {
+    int64_t maxMediaProgress;
+    if (currentSyncerPriority_ == IMediaSynchronizer::AUDIO_SINK) {
+        maxMediaProgress = currentAnchorMediaTime_ + lastAudioBufferDuration_;
+    } else {
+        maxMediaProgress = currentAnchorMediaTime_;
+    }
+    if (newMediaProgressTime > maxMediaProgress) {
+        lastReportMediaTime_ = maxMediaProgress; // Avoid media progress go too far when data underrun.
+        MEDIA_LOG_W("Data underrun for %{public}" PRId64 " us, currentSyncerPriority_ is %{public}" PRId32,
+            newMediaProgressTime - maxMediaProgress, currentSyncerPriority_);
+        return lastReportMediaTime_;
+    }
     if ((newMediaProgressTime >= lastReportMediaTime_) || frameAfterSeeked_) {
         lastReportMediaTime_ = newMediaProgressTime;
     } else {
@@ -484,7 +520,19 @@ bool MediaSyncManager::InSeeking()
 
 void MediaSyncManager::SetMediaStartPts(int64_t startPts)
 {
-    startPts_ = startPts;
+    if (startPts_ == HST_TIME_NONE || startPts < startPts_) {
+        startPts_ = startPts;
+    }
+}
+
+void MediaSyncManager::ResetMediaStartPts()
+{
+    startPts_ = HST_TIME_NONE;
+}
+
+int64_t MediaSyncManager::GetMediaStartPts()
+{
+    return startPts_;
 }
 
 void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
@@ -495,6 +543,11 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
     OHOS::Media::AutoLock lock(clockMutex_);
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = IMediaSynchronizer::NONE;
+        if (isSeeking_) {
+            MEDIA_LOG_I_SHORT("reportEos leaving seeking_");
+            isSeeking_ = false;
+            seekCond_.notify_all();
+        }
     }
 }
 } // namespace Pipeline

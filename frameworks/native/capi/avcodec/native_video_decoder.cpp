@@ -206,6 +206,20 @@ public:
         codec_ = nullptr;
     }
 
+    void UpdateCallback(const struct OH_AVCodecAsyncCallback &cb, void *userData)
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        userData_ = userData;
+        asyncCallback_ = cb;
+    }
+
+    void UpdateCallback(const struct OH_AVCodecCallback &cb, void *userData)
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        userData_ = userData;
+        callback_ = cb;
+    }
+
 private:
     OH_AVMemory *GetTransData(struct OH_AVCodec *codec, uint32_t &index, std::shared_ptr<AVSharedMemory> &memory,
                               bool isOutput)
@@ -701,7 +715,12 @@ OH_AVErrCode OH_VideoDecoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->callback_ = std::make_shared<NativeVideoDecoderCallback>(codec, callback, userData);
+    if (videoDecObj->callback_ == nullptr) {
+        videoDecObj->callback_ = std::make_shared<NativeVideoDecoderCallback>(codec, callback, userData);
+    } else {
+        std::static_pointer_cast<NativeVideoDecoderCallback>(videoDecObj->callback_)
+            ->UpdateCallback(callback, userData);
+    }
     int32_t ret =
         videoDecObj->videoDecoder_->SetCallback(std::static_pointer_cast<AVCodecCallback>(videoDecObj->callback_));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
@@ -724,7 +743,12 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(struct OH_AVCodec *codec, struct O
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->callback_ = std::make_shared<NativeVideoDecoderCallback>(codec, callback, userData);
+    if (videoDecObj->callback_ == nullptr) {
+        videoDecObj->callback_ = std::make_shared<NativeVideoDecoderCallback>(codec, callback, userData);
+    } else {
+        std::static_pointer_cast<NativeVideoDecoderCallback>(videoDecObj->callback_)
+            ->UpdateCallback(callback, userData);
+    }
     int32_t ret =
         videoDecObj->videoDecoder_->SetCallback(std::static_pointer_cast<MediaCodecCallback>(videoDecObj->callback_));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),

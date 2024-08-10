@@ -945,7 +945,9 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
-    info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
+#ifdef BUILD_ENG_VERSION
+    info.Dump(compUniqueStr_, inTotalCnt_, dumpMode_, isEncoder_);
+#endif
     info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
@@ -1030,7 +1032,9 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
         gotFirstOutput_ = true;
     }
     info.BeginCpuAccess();
-    info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
+#ifdef BUILD_ENG_VERSION
+    info.Dump(compUniqueStr_, outRecord_.totalCnt, dumpMode_, isEncoder_);
+#endif
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
     info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
@@ -1198,7 +1202,10 @@ int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamS
         oper(msg);
     }
     bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply, FIVE_SECONDS_IN_MS);
-    IF_TRUE_RETURN_VAL_WITH_MSG(!ret, AVCS_ERR_UNKNOWN, "wait msg %d time out", msgType);
+    if (!ret) {
+        HLOGE("wait msg %d(%s) time out", msgType, ToString(msgType));
+        return AVCS_ERR_UNKNOWN;
+    }
     int32_t err;
     IF_TRUE_RETURN_VAL_WITH_MSG(reply == nullptr || !reply->GetValue("err", err),
         AVCS_ERR_UNKNOWN, "error code of msg %d not replied", msgType);
@@ -1329,6 +1336,10 @@ int32_t HCodec::OnAllocateComponent()
         return AVCS_ERR_UNKNOWN;
     }
     compUniqueStr_ = "[" + to_string(componentId_) + "][" + shortName_ + "]";
+    inputOwnerStr_ = { compUniqueStr_ + "in_us", compUniqueStr_ + "in_user",
+                       compUniqueStr_ + "in_omx", compUniqueStr_ + "in_surface"};
+    outputOwnerStr_ = { compUniqueStr_ + "out_us", compUniqueStr_ + "out_user",
+                        compUniqueStr_ + "out_omx", compUniqueStr_ + "out_surface"};
     HLOGI("create omx node %s succ", caps_.compName.c_str());
     PrintCaller();
     return AVCS_ERR_OK;

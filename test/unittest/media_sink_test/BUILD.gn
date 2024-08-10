@@ -28,7 +28,7 @@ av_audio_sink_unittest_cflags = [
   "-Wno-unused-but-set-variable",
   "-Wno-format",
   "-Dprivate=public",
-  "-Dprtected=public",
+  "-Dprotected=public",
 ]
 
 ##################################################################################################################
@@ -44,6 +44,7 @@ ohos_unittest("av_audio_sink_unit_test") {
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/sink",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
+    "$av_codec_root_dir/test/unittest/media_sink_test/mock/include",
     "$media_foundation_root_dir/../../graphic/graphic_surface/interfaces/innerkits/surface",
     "$media_foundation_root_dir/../../graphic/graphic_surface/interface/inner_api/surface",
     "$media_foundation_root_dir/../../graphic/graphic_surface/surface/include",
@@ -61,6 +62,7 @@ ohos_unittest("av_audio_sink_unit_test") {
     sources = [
       "./audio_server_sink_plugin_test.cpp",
       "./audio_sink_test.cpp",
+      "./mock/src/media_sync_center_mock.cpp",
       "./subtitle_sink_test.cpp",
       "./sync_manager_test.cpp",
       "./video_sink_test.cpp",

@@ -102,6 +102,7 @@ group("av_codec_module_test") {
       "moduletest/muxer:muxer_native_module_test",
       "moduletest/vcodec/encoder:encoder_native_module_test",
       "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
+      "moduletest/vcodec/hevcswdecoder:hevcswdecoder_native_module_test",
       "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
     ]

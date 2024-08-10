@@ -33,6 +33,10 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
 {
     auto statusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
+        if (isClosed_) {
+            MEDIA_LOG_W("Downloader monitor is already closed.");
+            return;
+        }
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
@@ -60,26 +64,34 @@ int64_t DownloadMonitor::HttpMonitorLoop()
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     isPlaying_ = true;
-    retryTasks_.clear();
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     return downloader_->Open(url, httpHeader);
 }
 
 void DownloadMonitor::Pause()
 {
-    downloader_->Pause();
-    isPlaying_ = false;
-    lastReadTime_ = 0;
+    if (downloader_ != nullptr) {
+        downloader_->Pause();
+    }
 }
 
 void DownloadMonitor::Resume()
 {
-    downloader_->Resume();
-    isPlaying_ = true;
+    if (downloader_ != nullptr) {
+        downloader_->Resume();
+    }
 }
 
 void DownloadMonitor::Close(bool isAsync)
 {
-    retryTasks_.clear();
+    isClosed_ = true;
+    {
+        AutoLock lock(taskMutex_);
+        retryTasks_.clear();
+    }
     downloader_->Close(isAsync);
     task_->Stop();
     isPlaying_ = false;
@@ -89,10 +101,12 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
-    haveReadData_ += readDataInfo.realReadLength_;
-    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U32, haveReadData_);
+    if (ULLONG_MAX - haveReadData_ > readDataInfo.realReadLength_) {
+        haveReadData_ += readDataInfo.realReadLength_;
+    }
+    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
     if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
-        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U32, haveReadData_);
+        MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U64, haveReadData_);
     }
     return ret;
 }
@@ -218,9 +232,9 @@ void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
     downloader_->SetIsTriggerAutoMode(isAuto);
 }
 
-void DownloadMonitor::SetDemuxerState()
+void DownloadMonitor::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState();
+    downloader_->SetDemuxerState(streamId);
 }
 
 void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
@@ -229,7 +243,7 @@ void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
-void DownloadMonitor::SetPlayStrategy(PlayStrategy* playStrategy)
+void DownloadMonitor::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
 {
     if (downloader_ != nullptr) {
         downloader_->SetPlayStrategy(playStrategy);
@@ -248,11 +262,24 @@ Status DownloadMonitor::GetStreamInfo(std::vector<StreamInfo>& streams)
     return downloader_->GetStreamInfo(streams);
 }
 
+Status DownloadMonitor::SelectStream(int32_t streamId)
+{
+    return downloader_->SelectStream(streamId);
+}
+
 void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     if (downloader_ != nullptr) {
         MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
         downloader_->GetDownloadInfo(downloadInfo);
+    }
+}
+
+void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetPlaybackInfo");
+        downloader_->GetPlaybackInfo(playbackInfo);
     }
 }
 

@@ -124,6 +124,7 @@ private:
     void StatusChanged(CodecStatus newStatus);
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     int32_t DrmVideoCencDecrypt(uint32_t index);
+    int32_t CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession, bool svpFlag);
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
     int32_t ReleaseOutputBufferOfCodec(uint32_t index, bool render);
@@ -139,7 +140,6 @@ private:
     std::string lastErrMsg_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;
-    bool isStarted_ = false;
     struct CallerInfo {
         pid_t pid = -1;
         uid_t uid = 0;

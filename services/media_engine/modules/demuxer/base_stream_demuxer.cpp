@@ -27,7 +27,6 @@
 #include "buffer/avallocator.h"
 #include "common/event.h"
 #include "common/log.h"
-#include "frame_detector.h"
 #include "meta/media_types.h"
 #include "meta/meta.h"
 #include "osal/utils/dump_buffer.h"
@@ -75,8 +74,8 @@ std::string BaseStreamDemuxer::SnifferMediaType(int32_t streamID)
 void BaseStreamDemuxer::SetDemuxerState(int32_t streamId, DemuxerState state)
 {
     pluginStateMap_[streamId] = state;
-    if (streamId == 0 && state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
-        source_->SetDemuxerState();
+    if ((IsDash() || streamId == 0) && state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
+        source_->SetDemuxerState(streamId);
     }
 }
 
@@ -118,7 +117,24 @@ void BaseStreamDemuxer::SetIsDash(bool flag)
 Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 {
     MEDIA_LOG_I_SHORT("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
+    SetChangeFlag(false);
     newVideoStreamID_.store(streamID);
+    return Status::OK;
+}
+
+Status BaseStreamDemuxer::SetNewAudioStreamID(int32_t streamID)
+{
+    MEDIA_LOG_I("SetNewAudioStreamID id: " PUBLIC_LOG_D32, streamID);
+    SetChangeFlag(false);
+    newAudioStreamID_.store(streamID);
+    return Status::OK;
+}
+
+Status BaseStreamDemuxer::SetNewSubtitleStreamID(int32_t streamID)
+{
+    MEDIA_LOG_I("SetNewSubtitleStreamID id: " PUBLIC_LOG_D32, streamID);
+    SetChangeFlag(false);
+    newSubtitleStreamID_.store(streamID);
     return Status::OK;
 }
 
@@ -127,5 +143,24 @@ int32_t BaseStreamDemuxer::GetNewVideoStreamID()
     return newVideoStreamID_.load();
 }
 
+int32_t BaseStreamDemuxer::GetNewAudioStreamID()
+{
+    return newAudioStreamID_.load();
+}
+
+int32_t BaseStreamDemuxer::GetNewSubtitleStreamID()
+{
+    return newSubtitleStreamID_.load();
+}
+
+bool BaseStreamDemuxer::CanDoChangeStream()
+{
+    return changeStreamFlag_.load();
+}
+
+void BaseStreamDemuxer::SetChangeFlag(bool flag)
+{
+    return changeStreamFlag_.store(flag);
+}
 } // namespace Media
 } // namespace OHOS

@@ -249,7 +249,7 @@ Status DecoderSurfaceFilter::DoPrepare()
         inputBufferQueueConsumer->SetBufferAvailableListener(listener);
         onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetBufferQueueProducer(), meta_);
     }
-    videoSink_->ResetRenderStarted();
+    isRenderStarted_ = false;
     return Status::OK;
 }
 
@@ -587,6 +587,10 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
                                                  int64_t renderTime)
 {
+    if (render && !isRenderStarted_.load() && !isInSeekContinous_) {
+        isRenderStarted_ = true;
+        eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
+    }
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
         (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
         MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D32,
@@ -679,13 +683,13 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     MEDIA_LOG_D("DrainOutputBuffer pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
     if (isInSeekContinous_) {
+        outputBufferMap_.insert(std::make_pair(index, outputBuffer));
         if (videoFrameReadyCallback_ != nullptr) {
             MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);
             videoFrameReadyCallback_->ConsumeVideoFrame(outputBuffer, index);
         }
-        outputBufferMap_.insert(std::make_pair(index, outputBuffer));
         return;
     }
     if (doPrepareFrame_.load()) {

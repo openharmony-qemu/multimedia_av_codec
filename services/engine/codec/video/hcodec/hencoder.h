@@ -19,6 +19,7 @@
 #include "hcodec.h"
 #include "codec_omx_ext.h"
 #include "sync_fence.h"
+#include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
@@ -66,6 +67,7 @@ private:
     int32_t RequestIDRFrame() override;
     void CheckIfEnableCb(const Format &format);
     int32_t SetLTRParam(const Format &format);
+    int32_t EnableEncoderParamsFeedback(const Format &format);
     int32_t SetQpRange(const Format &format, bool isCfg);
     int32_t SetRepeat(const Format &format);
     int32_t SetConstantQualityMode(int32_t quality);
@@ -102,8 +104,21 @@ private:
                                              const std::shared_ptr<Media::Meta> &meta);
     void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                        const std::shared_ptr<Media::Meta> &meta);
+    void WrapStartQPIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                  const std::shared_ptr<Media::Meta> &meta);
+    void WrapIsSkipFrameIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
+                                      const std::shared_ptr<Media::Meta> &meta);
     void ExtractPerFrameParamFromOmxBuffer(const std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                            std::shared_ptr<Media::Meta> &meta) override;
+    void ExtractPerFrameLTRParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameMadParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameRealBitrateParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameFrameQpParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameIRitioParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameAveQpParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameMSEParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void ExtractPerFrameLayerParam(BinaryReader &reader, std::shared_ptr<Media::Meta> &meta);
+    void DealWithResolutionChange(uint32_t newWidth, uint32_t newHeight);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -119,6 +134,8 @@ private:
     };
 
 private:
+    uint32_t width_ = 0;
+    uint32_t height_ = 0;
     bool enableSurfaceModeInputCb_ = false;
     bool enableLTR_ = false;
     bool enableTSVC_ = false;

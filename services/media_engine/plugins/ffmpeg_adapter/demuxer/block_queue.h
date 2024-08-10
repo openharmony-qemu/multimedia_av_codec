@@ -19,6 +19,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <deque>
+#include "common/log.h"
 
 namespace OHOS {
 namespace Media {

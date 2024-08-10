@@ -68,6 +68,7 @@ string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_drmSm4cPath = TEST_FILE_PATH + string("drm/sm4c.ts");
 string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
+string g_vttPath2 = TEST_FILE_PATH + string("webvtt_test2.vtt");
 string g_ptsConversionPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 } // namespace
@@ -1963,9 +1964,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3000, TestSize.Level1)
     RemoveValue();
 }
 
+#ifndef DEMUXER_CAPI_BUFFER_UNIT_TEST
 /**
  * @tc.name: Demuxer_ReadSample_3002
- * @tc.desc: copy current sample to buffer(vtt)
+ * @tc.desc: copy current sample to buffer(vtt, en)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
@@ -1983,7 +1985,9 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            auto vttStr = reinterpret_cast<char *>(sharedMem_->GetAddr());
+            char *vttStr = static_cast<char *>(malloc(info_.size * sizeof(char) + 1));
+            memcpy_s(vttStr, info_.size, sharedMem_->GetAddr(), info_.size);
+            *(vttStr + info_.size) = '\0';
             switch (vttIndex) {
                 case 0:
                     ASSERT_EQ(strcmp(vttStr, "testA"), 0);
@@ -2009,6 +2013,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
                     break;
             }
             CountFrames(idx);
+            free(vttStr);
         }
         vttIndex++;
     }
@@ -2016,6 +2021,65 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3002, TestSize.Level1)
     ASSERT_EQ(frames_[0], 4);
     RemoveValue();
 }
+
+/**
+ * @tc.name: Demuxer_ReadSample_3003
+ * @tc.desc: copy current sample to buffer(vtt, zh)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3003, TestSize.Level1)
+{
+    InitResource(g_vttPath2, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    int32_t vttIndex = 0;
+    while (!isEOS(eosFlag_)) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+            char *vttStr = static_cast<char *>(malloc(info_.size * sizeof(char) + 1));
+            memcpy_s(vttStr, info_.size, sharedMem_->GetAddr(), info_.size);
+            *(vttStr + info_.size) = '\0';
+            switch (vttIndex) {
+                case 0:
+                    ASSERT_EQ(strcmp(vttStr, "第1帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 30000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 1:
+                    ASSERT_EQ(strcmp(vttStr, "第2帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2030000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 2:
+                    ASSERT_EQ(strcmp(vttStr, "第3帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 2900000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                case 3:
+                    ASSERT_EQ(strcmp(vttStr, "第4帧"), 0);
+                    ASSERT_EQ(info_.presentationTimeUs, 3000000);
+                    ASSERT_EQ(info_.size, 7);
+                    break;
+                default:
+                    break;
+            }
+            CountFrames(idx);
+            free(vttStr);
+        }
+        vttIndex++;
+    }
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+
+    ASSERT_EQ(frames_[0], 10);
+    RemoveValue();
+}
+#endif
 
 /**
  * @tc.name: Demuxer_SeekToTime_3000
@@ -2050,9 +2114,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3000, TestSize.Level1)
     }
 }
 
+#ifndef DEMUXER_CAPI_BUFFER_UNIT_TEST
 /**
  * @tc.name: Demuxer_SeekToTime_3002
- * @tc.desc: seek to the specified time(vtt)
+ * @tc.desc: seek to the specified time(vtt, en)
  * @tc.type: FUNC
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3002, TestSize.Level1)
@@ -2063,7 +2128,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3002, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {500, 1000, 2000, 3000}; // ms
-    vector<int32_t> subVals = {4, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2, 2};
+    vector<int32_t> subVals = {4, 4, 4, 4, 4, 4, 3, 3, 3, 1, 1, 1};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
@@ -2082,6 +2147,40 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3002, TestSize.Level1)
         }
     }
 }
+
+/**
+ * @tc.name: Demuxer_SeekToTime_3003
+ * @tc.desc: seek to the specified time(vtt, zh)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3003, TestSize.Level1)
+{
+    InitResource(TEST_FILE_PATH + string("webvtt_test2.vtt"), LOCAL);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {100, 1000, 1200, 61000, 65000}; // ms
+    vector<int32_t> subVals = {10, 10, 10, 10, 10, 10, 9, 9, 9, 1, 1, 1, 1, 1, 1};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], subVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
+#endif
 
 /**
  * @tc.name: Demuxer_SetMediaKeySystemInfoCallback_4000
@@ -2163,74 +2262,74 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetMediaKeySystemInfo_4004, TestSize.Level1)
 
 #ifndef DEMUXER_CAPI_UNIT_TEST
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1000
- * @tc.desc: Get frameIndex by pts(audio track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1000
+ * @tc.desc: Get index by pts(audio track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 69659;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 69659;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 3);
+    ASSERT_EQ(index, 3);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1001
- * @tc.desc: Get frameIndex by pts(video track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1001
+ * @tc.desc: Get index by pts(video track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 66666;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 66666;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(index, 4);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1002
- * @tc.desc: Get frameIndex by pts(not MP4)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1002
+ * @tc.desc: Get index by pts(not MP4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1002, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 69659;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 69659;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    ASSERT_EQ(frameIndex, 0);
+    ASSERT_EQ(index, 0);
 }
 
 /**
- * @tc.name: Demuxer_GetFrameIndexByPresentationTimeUs_1003
- * @tc.desc: Get frameIndex by pts(non-standard pts & different track)
+ * @tc.name: Demuxer_GetIndexByRelativePresentationTimeUs_1003
+ * @tc.desc: Get index by pts(non-standard pts & different track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1003, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetIndexByRelativePresentationTimeUs_1003, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
@@ -2238,89 +2337,74 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetFrameIndexByPresentationTimeUs_1003, TestSi
 
     // standard pts & video track
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 166666;
-    uint32_t frameIndex = 0;
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    uint64_t relativePresentationTimeUs = 166666;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 10);
-
-    // non-standard pts & video track
-    trackIndex = 1;
-    presentationTimeUs = 166667;
-    frameIndex = 0;
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
-    ASSERT_NE(ret, AV_ERR_OK);
-
-    // standard pts & audio track
-    trackIndex = 0;
-    presentationTimeUs = 232199;
-    frameIndex = 0;
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 10);
+    ASSERT_EQ(index, 10);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1000
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1000
  * @tc.desc: get pts by frameIndex(audio track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1000, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1000, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 2;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 2;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 46439);
+    ASSERT_EQ(relativePresentationTimeUs, 46439);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1001
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1001
  * @tc.desc: get pts by frameIndex(video track)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1001, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1001, TestSize.Level1)
 {
     InitResource(g_ptsConversionPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 1;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 2;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 2;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 33333);
+    ASSERT_EQ(relativePresentationTimeUs, 33333);
 }
 
 /**
- * @tc.name: Demuxer_GetPresentationTimeUsByFrameIndex_1002
+ * @tc.name: Demuxer_GetRelativePresentationTimeUsByIndex_1002
  * @tc.desc: get pts by frameIndex(not MP4)
  * @tc.type: FUNC
  */
-HWTEST_F(DemuxerUnitTest, Demuxer_GetPresentationTimeUsByFrameIndex_1002, TestSize.Level1)
+HWTEST_F(DemuxerUnitTest, Demuxer_GetRelativePresentationTimeUsByIndex_1002, TestSize.Level1)
 {
     InitResource(g_flvPath, LOCAL);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 10;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 10;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_NE(ret, AV_ERR_OK);
 
-    ASSERT_EQ(presentationTimeUs, 0);
+    ASSERT_EQ(relativePresentationTimeUs, 0);
 }
 
 /**
@@ -2335,18 +2419,18 @@ HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1000, TestSize.Leve
     ASSERT_NE(format_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 92879;
-    uint32_t frameIndex = 0;
+    uint64_t relativePresentationTimeUs = 92879;
+    uint32_t index = 0;
 
-    int32_t ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex, 4);
+    ASSERT_EQ(index, 4);
 
-    int64_t presentationTimeUs1 = 0;
+    uint64_t relativePresentationTimeUs1 = 0;
 
-    ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs1);
+    ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(presentationTimeUs1, 92879);
+    ASSERT_EQ(relativePresentationTimeUs1, 92879);
 }
 
 /**
@@ -2361,19 +2445,74 @@ HWTEST_F(DemuxerUnitTest, Demuxer_PtsAndFrameIndexConversion_1001, TestSize.Leve
     ASSERT_NE(format_, nullptr);
 
     uint32_t trackIndex = 0;
-    int64_t presentationTimeUs = 0;
-    uint32_t frameIndex = 4;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 4;
 
-    int32_t ret = demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(presentationTimeUs, 92879);
+    ASSERT_EQ(relativePresentationTimeUs, 92879);
 
-    uint32_t frameIndex1 = 0;
+    uint32_t index1 = 0;
 
-    ret = demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex1);
+    ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index1);
     ASSERT_EQ(ret, AV_ERR_OK);
-    ASSERT_EQ(frameIndex1, 4);
+    ASSERT_EQ(index1, 4);
 }
+
+/**
+ * @tc.name: Demuxer_PTSOutOfRange_1000
+ * @tc.desc: pts out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_PTSOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 999999999;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_IndexOutOfRange_1000
+ * @tc.desc: Index out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_IndexOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+
+    uint32_t trackIndex = 0;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 9999999;
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_TrackOutOfRange_1000
+ * @tc.desc: Track out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_TrackOutOfRange_1000, TestSize.Level1)
+{
+    InitResource(g_ptsConversionPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+
+    uint32_t trackIndex = 99;
+    uint64_t relativePresentationTimeUs = 0;
+    uint32_t index = 0;
+    int32_t ret = demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
+    ASSERT_NE(ret, AV_ERR_OK);
+}
+
 #endif
 
 /**

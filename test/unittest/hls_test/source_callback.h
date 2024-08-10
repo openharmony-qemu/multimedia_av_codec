@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,21 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef HISTREAMER_NETWORK_TYPES_H
-#define HISTREAMER_NETWORK_TYPES_H
-
+ 
+#ifndef SOURCE_CALLBACK
+#define SOURCE_CALLBACK
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-using RxBody = size_t(*)(void* buffer, size_t size, size_t nitems, void* userParam);
-using RxHeader = size_t(*)(void* buffer, size_t size, size_t nitems, void* userParam);
-}
-}
-}
-}
 
+class SourceCallback : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event)
+    {
+        (void)event;
+    }
+
+    void SetSelectBitRateFlag(bool flag)
+    {
+        (void)flag;
+    }
+
+    bool CanDoSelectBitRate()
+    {
+        return true;
+    }
+};
+}
+}
+}
+}
 
 #endif

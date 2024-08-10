@@ -159,6 +159,7 @@ public:
     bool TEMPORAL_ENABLE = false;
     bool TEMPORAL_JUMP_MODE = false;
     bool TEMPORAL_DEFAULT = false;
+    bool TEMPORAL_UNIFORMLY = false;
     bool getQpMse = false;
 private:
     std::atomic<bool> isRunning_ { false };

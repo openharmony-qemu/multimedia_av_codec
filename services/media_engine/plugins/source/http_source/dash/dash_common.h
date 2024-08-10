@@ -37,6 +37,12 @@ using DashSegsState = enum DashSegsState {
     DASH_SEGS_STATE_FINISH
 };
 
+using DashVideoType = enum DashVideoType {
+    DASH_VIDEO_TYPE_SDR,
+    DASH_VIDEO_TYPE_HDR_VIVID,
+    DASH_VIDEO_TYPE_HDR_10
+};
+
 struct DashSegment {
     DashSegment()
     {
@@ -149,8 +155,9 @@ struct DashStreamDescription {
         type_ = desc.type_;
         segsState_ = desc.segsState_;
         inUse_ = desc.inUse_;
-        isHdr_ = desc.isHdr_;
+        videoType_ = desc.videoType_;
         currentNumberSeq_ = desc.currentNumberSeq_;
+        lang_ = desc.lang_;
     }
 
     DashStreamDescription& operator=(const DashStreamDescription& desc)
@@ -168,15 +175,16 @@ struct DashStreamDescription {
             type_ = desc.type_;
             segsState_ = desc.segsState_;
             inUse_ = desc.inUse_;
-            isHdr_ = desc.isHdr_;
+            videoType_ = desc.videoType_;
             currentNumberSeq_ = desc.currentNumberSeq_;
+            lang_ = desc.lang_;
         }
         return *this;
     }
 
     DashSegsState segsState_ = DASH_SEGS_STATE_NONE;
     bool inUse_ = false;
-    bool isHdr_ = false;
+    DashVideoType videoType_ = DASH_VIDEO_TYPE_SDR;
     MediaAVCodec::MediaType type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
     int streamId_ = 0;
     unsigned int periodIndex_ = 0;
@@ -188,6 +196,7 @@ struct DashStreamDescription {
     unsigned int bandwidth_ = 0;
     int64_t startNumberSeq_ = 1;
     int64_t currentNumberSeq_ = -1;
+    std::string lang_;
     std::shared_ptr<DashInitSegment> initSegment_ = nullptr;
     std::shared_ptr<DashIndexSegment> indexSegment_ = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments_;

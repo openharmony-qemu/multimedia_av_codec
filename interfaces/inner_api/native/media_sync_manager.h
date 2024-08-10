@@ -42,7 +42,7 @@ public:
     Status Stop();
     Status Resume();
     Status Pause();
-    Status Seek(int64_t mediaTime);
+    Status Seek(int64_t mediaTime, bool isClosest = false);
     Status Reset() override;
     bool InSeeking();
     std::condition_variable seekCond_;
@@ -102,6 +102,9 @@ public:
     int64_t GetSeekTime() override;
     void ResetTimeAnchorNoLock();
     void SetMediaStartPts(int64_t startPts) override;
+    void ResetMediaStartPts() override;
+    int64_t GetMediaStartPts() override;
+    void SetLastAudioBufferDuration(int64_t durationUs) override;
 private:
     enum class State {
         RESUMED,
@@ -122,6 +125,7 @@ private:
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
     int64_t BoundMediaProgress(int64_t newMediaProgressTime);
+    void UpdateFirstPtsAfterSeek(int64_t mediaTime);
 
     int64_t ClipMediaTime(int64_t inTime);
     OHOS::Media::Mutex clockMutex_ {};
@@ -156,6 +160,7 @@ private:
     std::vector<IMediaSynchronizer*> prerolledSyncers_;
     int64_t delayTime_ {HST_TIME_NONE};
     int64_t startPts_ {HST_TIME_NONE};
+    std::atomic<int64_t> lastAudioBufferDuration_ {0};
     std::atomic<int64_t> lastReportMediaTime_ {HST_TIME_NONE};
     std::atomic<bool> frameAfterSeeked_ {false};
 };

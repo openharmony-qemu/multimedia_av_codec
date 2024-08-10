@@ -1087,6 +1087,15 @@ void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& 
     (void)fwrite(buffer, bytesSingle, 1, sliceDumpFile_);
     (void)fflush(sliceDumpFile_);
 }
+
+Status AudioServerSinkPlugin::SetMuted(bool isMuted)
+{
+    FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
+    MEDIA_LOG_D("SetMuted in");
+    audioRenderer_->SetSilentModeAndMixWithOthers(isMuted);
+    MEDIA_LOG_I("SetMuted out");
+    return Status::OK;
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS

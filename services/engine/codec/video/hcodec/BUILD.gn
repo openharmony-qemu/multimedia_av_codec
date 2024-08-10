@@ -41,6 +41,7 @@ ohos_shared_library("hcodec") {
     "hcodec_dfx.cpp",
     "hcodec_list.cpp",
     "hcodec_state.cpp",
+    "hcodec_utils.cpp",
     "hdecoder.cpp",
     "hencoder.cpp",
     "msg_handle_loop.cpp",

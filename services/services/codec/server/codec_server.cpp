@@ -320,7 +320,6 @@ int32_t CodecServer::Start()
         StatusChanged(ERROR);
     } else {
         StatusChanged(RUNNING);
-        isStarted_ = true;
         isModeConfirmed_ = true;
         CodecDfxInfo codecDfxInfo;
         GetCodecDfxInfo(codecDfxInfo);
@@ -339,13 +338,12 @@ int32_t CodecServer::Stop()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if ((retPostProcessing + retCodec) != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(CONFIGURED);
-    isStarted_ = false;
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     return AVCS_ERR_OK;
 }
 
@@ -358,13 +356,12 @@ int32_t CodecServer::Flush()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t retPostProcessing = FlushPostProcessing();
     int32_t retCodec = codecBase_->Flush();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     if (retPostProcessing + retCodec != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retPostProcessing != AVCS_ERR_OK) ? retPostProcessing : retCodec;
     }
     StatusChanged(FLUSHED);
-    isStarted_ = false;
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     return AVCS_ERR_OK;
 }
 
@@ -378,10 +375,7 @@ int32_t CodecServer::NotifyEos()
     if (ret == AVCS_ERR_OK) {
         CodecStatus newStatus = END_OF_STREAM;
         StatusChanged(newStatus);
-        if (isStarted_) {
-            isStarted_ = false;
-            CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
-        }
+        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -400,19 +394,18 @@ int32_t CodecServer::Reset()
         }
         temporalScalability_ = nullptr;
     }
-    int32_t ret = ReleasePostProcessing();
+    int32_t ret = codecBase_->Reset();
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
+    StatusChanged(newStatus);
+    ret = ReleasePostProcessing();
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
     }
-    ret = codecBase_->Reset();
-    CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
-    StatusChanged(newStatus);
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     lastErrMsg_.clear();
-    if (isStarted_ && ret == AVCS_ERR_OK) {
-        isStarted_ = false;
+    if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
-        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -431,17 +424,16 @@ int32_t CodecServer::Release()
         }
         temporalScalability_ = nullptr;
     }
-    (void)ReleasePostProcessing();
     int32_t ret = codecBase_->Release();
+    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
     if (thread->joinable()) {
         thread->join();
     }
-    if (isStarted_ && ret == AVCS_ERR_OK) {
-        isStarted_ = false;
+    (void)ReleasePostProcessing();
+    if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
-        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -553,8 +545,9 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
-        GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || (isSetParameterCb_ && status_ == END_OF_STREAM),
+                             AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+                             GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (temporalScalability_ != nullptr) {
         temporalScalability_->ConfigureLTR(index);
@@ -595,21 +588,54 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     }
 }
 
+int32_t CodecServer::CheckDrmSvpConsistency(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    bool svpFlag)
+{
+    AVCODEC_LOGI("CheckDrmSvpConsistency");
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_VAL, "keySession is nullptr");
+    std::string tmpName = codecName_;
+    transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
+
+    // check codec name when secure video path is false
+    if (svpFlag == false) {
+        if (tmpName.find(".secure") != std::string::npos) {
+            AVCODEC_LOGE("CheckDrmSvpConsistency failed, svpFlag is false but the decoder is secure!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        return AVCS_ERR_OK;
+    }
+
+    // check codec name when secure video path is true
+    if (tmpName.find(".secure") == std::string::npos) {
+        AVCODEC_LOGE("CheckDrmSvpConsistency failed, svpFlag is true but the decoder is not secure!");
+        return AVCS_ERR_INVALID_VAL;
+    }
+
+    // check session level when secure video path is true
+#ifdef SUPPORT_DRM
+    DrmStandard::IMediaKeySessionService::ContentProtectionLevel sessionLevel;
+    int ret = keySession->GetContentProtectionLevel(&sessionLevel);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_VAL, "GetContentProtectionLevel failed");
+    if (sessionLevel <
+        DrmStandard::IMediaKeySessionService::ContentProtectionLevel::CONTENT_PROTECTION_LEVEL_HW_CRYPTO) {
+        AVCODEC_LOGE("CheckDrmSvpConsistency failed, key session's content protection level is too low!");
+        return AVCS_ERR_INVALID_VAL;
+    }
+#endif
+
+    return AVCS_ERR_OK;
+}
+
 #ifdef SUPPORT_DRM
 int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_LOGI("CodecServer::SetDecryptConfig");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    // Check the consistency of svp and codecname.
-    if (svpFlag == true) {
-        std::string tmpName = codecName_;
-        transform(tmpName.begin(), tmpName.end(), tmpName.begin(), ::tolower);
-        if (tmpName.find(".secure") == std::string::npos) {
-            AVCODEC_LOGE("SetDecryptionConfig failed, svpFlag is true but not create secure decoder!");
-            return AVCS_ERR_INVALID_VAL;
-        }
-    }
+
+    int32_t ret = CheckDrmSvpConsistency(keySession, svpFlag);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "check svp failed");
+
     if (drmDecryptor_ == nullptr) {
         drmDecryptor_ = std::make_shared<CodecDrmDecrypt>();
     }
@@ -1119,6 +1145,9 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
     CHECK_AND_RETURN_RET_LOG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
     postProcessing_ = PostProcessingType::Create(codecBase_, format, ret);
+    if (postProcessing_) {
+        AVCODEC_LOGI("Post processing is configured");
+    }
     return ret;
 }
 
@@ -1170,6 +1199,7 @@ int32_t CodecServer::PreparePostProcessing()
         ret = postProcessing_->Prepare();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare post processing failed");
 
+        AVCODEC_LOGI("Post processing is prepared");
         return AVCS_ERR_OK;
     }
 }
@@ -1182,6 +1212,7 @@ int32_t CodecServer::StartPostProcessing()
             StatusChanged(ERROR);
         } else {
             StartPostProcessingTask();
+            AVCODEC_LOGI("Post processing is started");
         }
         return ret;
     } else {
@@ -1209,6 +1240,7 @@ int32_t CodecServer::StopPostProcessing()
     if (postProcessingOutputBufferInfoQueue_) {
         postProcessingOutputBufferInfoQueue_->Clear();
     }
+    AVCODEC_LOGI("Post processing is stopped");
     return AVCS_ERR_OK;
 }
 
@@ -1217,6 +1249,7 @@ int32_t CodecServer::FlushPostProcessing()
     if (!postProcessing_) {
         return AVCS_ERR_OK;
     }
+    DeactivatePostProcessingQueue();
     if (postProcessingTask_) {
         postProcessingTask_->Pause();
     }
@@ -1231,6 +1264,7 @@ int32_t CodecServer::FlushPostProcessing()
         postProcessingOutputBufferInfoQueue_->Clear();
     }
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Flush post processing failed");
+    AVCODEC_LOGI("Post processing is flushed");
     return AVCS_ERR_OK;
 }
 
@@ -1245,12 +1279,22 @@ int32_t CodecServer::ResetPostProcessing()
         CleanPostProcessingResource();
         postProcessing_.reset();
     }
+    AVCODEC_LOGI("Post processing is reset");
     return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::ReleasePostProcessing()
 {
-    ResetPostProcessing();
+    if (postProcessing_) {
+        DeactivatePostProcessingQueue();
+        if (postProcessingTask_) {
+            postProcessingTask_->Stop();
+        }
+        postProcessing_->Release();
+        CleanPostProcessingResource();
+        postProcessing_.reset();
+    }
+    AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }
 

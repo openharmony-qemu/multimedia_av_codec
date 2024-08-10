@@ -35,6 +35,8 @@ av_codec_unittest_cflags = [
   "-D_FORTIFY_SOURCE=2",
   "-Wformat=2",
   "-Wdate-time",
+  "-Dprivate=public",
+  "-Dprotected=public",
 ]
 
 ##################################################################################################################
