@@ -62,6 +62,7 @@ public:
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
+    float GetMaxAmplitude();
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -88,6 +89,7 @@ private:
     void UpdateAudioWriteTimeMayWait();
     void DrainAndReportEosEvent();
     void HandleEosInner(bool drain);
+    void CheckUpdateState(char *frame, uint64_t replyBytes, AudioSampleFormat format);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -132,6 +134,11 @@ private:
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
     bool isMuted_ = false;
+    float maxAmplitude_ = 0;
+    int64_t lastGetMaxAmplitudeTime_ = 0;
+    int64_t last10FrameStartTime_ = 0;
+    bool startUpdate_ = false;
+    int32_t renderFrameNum_ = 0;
 };
 }
 }
