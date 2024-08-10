@@ -315,6 +315,14 @@ Status AudioSinkFilter::SetMuted(bool isMuted)
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetMuted(isMuted);
 }
+
+float AudioSinkFilter::GetMaxAmplitude()
+{
+    if (audioSink_ != nullptr) {
+        return audioSink_->GetMaxAmplitude();
+    }
+    return 0.0f;
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
