@@ -94,7 +94,7 @@ size_t DownloadRequest::GetFileContentLength() const
 
 size_t DownloadRequest::GetFileContentLengthNoWait() const
 {
-    return headerInfo_->fileContentLen;
+    return headerInfo_.fileContentLen;
 }
 
 void DownloadRequest::SaveHeader(const HeaderInfo* header)
