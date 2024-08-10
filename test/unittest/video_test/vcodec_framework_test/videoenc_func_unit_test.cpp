@@ -347,7 +347,7 @@ bool TEST_SUIT::GetTemporalScalabilityCapability(int32_t param)
         return false;
     }
     if (capabilityData->featuresMap.count(
-            static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY))) {
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY))) {
         std::cout << "Support TemporalScalability" << std::endl;
         return true;
     } else {
