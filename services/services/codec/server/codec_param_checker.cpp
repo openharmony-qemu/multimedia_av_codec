@@ -367,15 +367,17 @@ int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScen
     if (!hasColorSpace) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(
-        scenario == CodecScenario::CODEC_SCENARIO_DEC_NORMAL && capData.mimeType == CodecMimeType::VIDEO_HEVC &&
-            capData.isVendor,
-        AVCS_ERR_INVALID_VAL,
-        "colorspace conversion is not available for the codec.");
+    CHECK_AND_RETURN_RET_LOG((colorSpace >= 0) &&    // 0: OH_COLORSAPCE_NONE
+                                 (colorSpace <= 31), // 31: OH_COLORSPACE_DISPLAY_BT2020_PQ
+                             AVCS_ERR_INVALID_VAL, "The output color space %{public}d is invaild", colorSpace);
+    CHECK_AND_RETURN_RET_LOG(scenario == CodecScenario::CODEC_SCENARIO_DEC_NORMAL &&
+                                 capData.mimeType == CodecMimeType::VIDEO_HEVC && capData.isVendor,
+                             AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
+                             "colorspace conversion is not available for the codec.");
 
     constexpr int32_t colorSpaceBt709Limited = 8; // see OH_COLORSPACE_BT709_LIMITED in native_buffer.h;
-    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited, AVCS_ERR_INVALID_VAL,
-        "The output color space %{public}d is not supported", colorSpace);
+    CHECK_AND_RETURN_RET_LOG(colorSpace == colorSpaceBt709Limited, AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
+                             "The output color space %{public}d is not supported", colorSpace);
     PrintParam(true, MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace);
 
     return AVCS_ERR_OK;
