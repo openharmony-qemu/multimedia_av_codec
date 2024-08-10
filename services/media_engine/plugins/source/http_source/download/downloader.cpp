@@ -92,6 +92,11 @@ size_t DownloadRequest::GetFileContentLength() const
     return headerInfo_.GetFileContentLength();
 }
 
+size_t DownloadRequest::GetFileContentLengthNoWait() const
+{
+    return headerInfo_->fileContentLen;
+}
+
 void DownloadRequest::SaveHeader(const HeaderInfo* header)
 {
     MediaAVCodec::AVCodecTrace trace("DownloadRequest::SaveHeader");
