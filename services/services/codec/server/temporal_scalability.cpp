@@ -58,7 +58,7 @@ bool TemporalScalability::IsLTRSolution()
     return false;
 }
 
-int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize)
+int32_t TemporalScalability::LTRFrameNumCalculate(int32_t tGopSize) const
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         return DEFAULT_VIDEO_LTR_FRAME_NUM;
@@ -194,7 +194,7 @@ void TemporalScalability::LTRDecision()
     }
 }
 
-uint32_t TemporalScalability::DisposableDecision()
+uint32_t TemporalScalability::DisposableDecision() const
 {
     if (tRefMode_ != static_cast<int32_t>(TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE)) {
         if (!isMarkLTR_) {

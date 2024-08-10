@@ -64,10 +64,10 @@ private:
     bool IsLTRSolution();
     int32_t LTRFrameNumCalculate(int32_t tGopSize) const;
     void MarkLTRDecision();
-    int32_t LTRPocDecision(int32_t tPoc);
+    static int32_t LTRPocDecision(int32_t tPoc);
     void AdjacentJumpLTRDecision();
     void UniformlyScaledLTRDecision();
-    static void LTRDecision();
+    void LTRDecision();
     uint32_t DisposableDecision() const;
 };
 
