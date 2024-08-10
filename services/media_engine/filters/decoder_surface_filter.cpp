@@ -685,6 +685,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     if (isInSeekContinous_) {
         outputBufferMap_.insert(std::make_pair(index, outputBuffer));
         if (videoFrameReadyCallback_ != nullptr) {
+            lock.unlock();
             MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);
