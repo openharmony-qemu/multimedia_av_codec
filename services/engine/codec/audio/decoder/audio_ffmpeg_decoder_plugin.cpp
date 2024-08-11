@@ -50,10 +50,6 @@ AudioFfmpegDecoderPlugin::~AudioFfmpegDecoderPlugin()
 {
     AVCODEC_LOGI("AudioFfmpegDecoderPlugin deconstructor running.");
     CloseCtxLocked();
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_.reset();
-        avCodecContext_ = nullptr;
-    }
 }
 
 int32_t AudioFfmpegDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
@@ -246,10 +242,6 @@ int32_t AudioFfmpegDecoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     CloseCtxLocked();
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_.reset();
-        avCodecContext_ = nullptr;
-    }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -257,10 +249,6 @@ int32_t AudioFfmpegDecoderPlugin::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_.reset();
-        avCodecContext_ = nullptr;
-    }
     return ret;
 }
 
@@ -294,7 +282,6 @@ int32_t AudioFfmpegDecoderPlugin::AllocateContext(const std::string &name)
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             if (ptr) {
                 avcodec_free_context(&ptr);
-                avcodec_close(ptr);
                 ptr = nullptr;
             }
         });
@@ -409,11 +396,8 @@ std::shared_ptr<AVFrame> AudioFfmpegDecoderPlugin::GetCodecCacheFrame() const no
 int32_t AudioFfmpegDecoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed, res=%{public}d", res);
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

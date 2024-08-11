@@ -40,7 +40,6 @@ AudioFfmpegEncoderPlugin::AudioFfmpegEncoderPlugin()
 AudioFfmpegEncoderPlugin::~AudioFfmpegEncoderPlugin()
 {
     CloseCtxLocked();
-    avCodecContext_.reset();
 }
 
 int32_t AudioFfmpegEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
@@ -194,7 +193,6 @@ int32_t AudioFfmpegEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -203,7 +201,6 @@ int32_t AudioFfmpegEncoderPlugin::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 
@@ -237,7 +234,6 @@ int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             if (ptr) {
                 avcodec_free_context(&ptr);
-                avcodec_close(ptr);
                 ptr = nullptr;
             }
         });
@@ -297,7 +293,6 @@ int32_t AudioFfmpegEncoderPlugin::ReAllocateContext()
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
         if (ptr) {
             avcodec_free_context(&ptr);
-            avcodec_close(ptr);
             ptr = nullptr;
         }
     });
@@ -345,11 +340,8 @@ int32_t AudioFfmpegEncoderPlugin::GetMaxInputSize() const noexcept
 int32_t AudioFfmpegEncoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", FFMpegConverter::AVStrError(res).c_str());
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

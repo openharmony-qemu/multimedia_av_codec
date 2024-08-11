@@ -259,7 +259,6 @@ int32_t AudioFFMpegAacEncoderPlugin::Reset()
 {
     std::unique_lock lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -268,7 +267,6 @@ int32_t AudioFFMpegAacEncoderPlugin::Release()
 {
     std::unique_lock lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 
@@ -325,7 +323,6 @@ int32_t AudioFFMpegAacEncoderPlugin::AllocateContext(const std::string &name)
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             if (ptr) {
                 avcodec_free_context(&ptr);
-                avcodec_close(ptr);
                 ptr = nullptr;
             }
         });
@@ -560,11 +557,8 @@ int32_t AudioFFMpegAacEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBuff
 int32_t AudioFFMpegAacEncoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", FFMpegConverter::AVStrError(res).c_str());
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -580,7 +574,6 @@ int32_t AudioFFMpegAacEncoderPlugin::ReAllocateContext()
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
         if (ptr) {
             avcodec_free_context(&ptr);
-            avcodec_close(ptr);
             ptr = nullptr;
         }
     });

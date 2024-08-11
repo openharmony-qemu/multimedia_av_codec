@@ -95,7 +95,6 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
 FFmpegAACEncoderPlugin::~FFmpegAACEncoderPlugin()
 {
     CloseCtxLocked();
-    avCodecContext_.reset();
 }
 
 Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize,
@@ -408,7 +407,6 @@ Status FFmpegAACEncoderPlugin::Reset()
     MEDIA_LOG_I("Reset enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -418,7 +416,6 @@ Status FFmpegAACEncoderPlugin::Release()
     MEDIA_LOG_I("Release enter");
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 
@@ -447,7 +444,6 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
         if (ptr) {
             avcodec_free_context(&ptr);
-            avcodec_close(ptr);
             ptr = nullptr;
         }
     });
@@ -491,7 +487,6 @@ Status FFmpegAACEncoderPlugin::AllocateContext(const std::string &name)
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             if (ptr) {
                 avcodec_free_context(&ptr);
-                avcodec_close(ptr);
                 ptr = nullptr;
             }
         });
@@ -816,8 +811,6 @@ Status FFmpegAACEncoderPlugin::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
-    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
         outBuffer_ = nullptr;
@@ -839,11 +832,8 @@ Status FFmpegAACEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBu
 Status FFmpegAACEncoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            MEDIA_LOG_E("avcodec close failed: %{public}s", OSAL::AVStrError(res).c_str());
-            return Status::ERROR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     if (fifo_) {
         av_audio_fifo_free(fifo_);
