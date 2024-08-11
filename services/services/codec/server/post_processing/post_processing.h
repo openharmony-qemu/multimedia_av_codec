@@ -182,6 +182,8 @@ public:
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         AVCODEC_SYNC_TRACE;
+        config_.inputSurface = nullptr;
+        config_.outputSurface = nullptr;
         controller_->Release();
         controller_->Destroy();
         controller_->UnloadInterfaces();
