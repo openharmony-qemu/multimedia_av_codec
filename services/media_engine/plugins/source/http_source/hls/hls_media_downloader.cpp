@@ -319,7 +319,7 @@ bool HlsMediaDownloader::HandleBuffering()
 bool HlsMediaDownloader::HandleCache()
 {
     waterLineAbove_ = static_cast<size_t>(GetWaterLineAbove());
-    if (!isBuffering_) {
+    if (!isBuffering_ && callback_ != nullptr) {
         MEDIA_LOG_I("DownloadTask start.");
         isBuffering_ = true;
         UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
