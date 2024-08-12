@@ -1675,7 +1675,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitAudioTrack_0100, TestSize.Level1
     demuxerPluginManager->InitAudioTrack(info);
     demuxerPluginManager->curAudioStreamID_ = -1;
     demuxerPluginManager->InitAudioTrack(info);
-    EXPECT_EQ(demuxerPluginManager->isDash_ , true);
+    EXPECT_EQ(demuxerPluginManager->isDash_, true);
 }
 /**
  * @tc.name: MediaDemuxer_InitVideoTrack_0100
@@ -1690,7 +1690,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitVideoTrack_0100, TestSize.Level1
     demuxerPluginManager->InitVideoTrack(info);
     demuxerPluginManager->curAudioStreamID_ = -1;
     demuxerPluginManager->InitVideoTrack(info);
-    EXPECT_EQ(demuxerPluginManager->isDash_ , true);
+    EXPECT_EQ(demuxerPluginManager->isDash_, true);
 }
 /**
  * @tc.name: MediaDemuxer_InitSubtitleTrack_0100
@@ -1705,7 +1705,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitSubtitleTrack_0100, TestSize.Lev
     demuxerPluginManager->InitSubtitleTrack(info);
     demuxerPluginManager->curAudioStreamID_ = 0;
     demuxerPluginManager->InitSubtitleTrack(info);
-    EXPECT_EQ(demuxerPluginManager->curAudioStreamID_ , info.streamId);
+    EXPECT_EQ(demuxerPluginManager->curAudioStreamID_, info.streamId);
 }
 /**
  * @tc.name: MediaDemuxer_LoadCurrentSubtitlePlugin_0100
