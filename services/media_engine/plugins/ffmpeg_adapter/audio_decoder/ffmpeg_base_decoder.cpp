@@ -55,10 +55,6 @@ FfmpegBaseDecoder::~FfmpegBaseDecoder()
 {
     AVCODEC_LOGI("FfmpegBaseDecoder deconstructor running.");
     CloseCtxLocked();
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_.reset();
-        avCodecContext_ = nullptr;
-    }
 }
 
 Status FfmpegBaseDecoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
@@ -240,10 +236,6 @@ Status FfmpegBaseDecoder::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     CloseCtxLocked();
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_.reset();
-        avCodecContext_ = nullptr;
-    }
     nextPts_ = 0;
     return Status::OK;
 }
@@ -252,10 +244,6 @@ Status FfmpegBaseDecoder::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    if (avCodecContext_ != nullptr) {
-        avCodecContext_.reset();
-        avCodecContext_ = nullptr;
-    }
     return ret;
 }
 
@@ -288,8 +276,10 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
         context = avcodec_alloc_context3(avCodec_.get());
 
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            avcodec_free_context(&ptr);
-            avcodec_close(ptr);
+            if (ptr) {
+                avcodec_free_context(&ptr);
+                ptr = nullptr;
+            }
         });
         av_log_set_level(AV_LOG_ERROR);
     }
@@ -418,11 +408,8 @@ std::shared_ptr<AVFrame> FfmpegBaseDecoder::GetCodecCacheFrame() const noexcept
 Status FfmpegBaseDecoder::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed, res=%{public}d", res);
-            return Status::ERROR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return Status::OK;
 }

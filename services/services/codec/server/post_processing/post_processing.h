@@ -182,6 +182,8 @@ public:
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         AVCODEC_SYNC_TRACE;
+        config_.inputSurface = nullptr;
+        config_.outputSurface = nullptr;
         controller_->Release();
         controller_->Destroy();
         controller_->UnloadInterfaces();
@@ -203,14 +205,19 @@ public:
 
     void GetOutputFormat(Format& format)
     {
-        format = format_;
+        CHECK_AND_RETURN_LOG(controller_, "Post processing controller is null");
+        AVCODEC_SYNC_TRACE;
+        int32_t ret = controller_->GetOutputFormat(format);
+        CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "GetOutputFormat failed");
+        return;
     }
 private:
     int32_t Init(const Format& format)
     {
         controller_ = std::make_unique<T>();
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_NO_MEMORY, "Create post processing controller failed");
-        CHECK_AND_RETURN_RET_LOG(controller_->LoadInterfaces(), AVCS_ERR_UNSUPPORT, "Initialize interfaces failed.");
+        CHECK_AND_RETURN_RET_LOG(controller_->LoadInterfaces(), AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
+                                 "Initialize interfaces failed.");
 
         CreateConfiguration(format);
 

@@ -582,6 +582,8 @@ int32_t CodecServer::GetOutputFormat(Format &format)
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (postProcessing_) {
+        int32_t ret = codecBase_->GetOutputFormat(format);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "GetOutputFormat failed");
         return GetPostProcessingOutputFormat(format);
     } else {
         return codecBase_->GetOutputFormat(format);
@@ -846,6 +848,9 @@ void CodecServer::OnError(int32_t errorType, int32_t errorCode)
 void CodecServer::OnOutputFormatChanged(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
+    if (postProcessing_) {
+        return;
+    }
     if (videoCb_ != nullptr) {
         videoCb_->OnOutputFormatChanged(format);
     }
@@ -1335,7 +1340,9 @@ void CodecServer::PostProcessingOnError(int32_t errorCode)
     if (!videoCb_) {
         AVCODEC_LOGD("Missing video callback");
     }
-    videoCb_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, errorCode);
+    int32_t ret = VPEErrorToAVCSError(errorCode);
+    AVCODEC_LOGD("PostProcessingOnError, errorCodec:%{public}d -> %{public}d", errorCode, ret);
+    videoCb_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, ret);
 }
 
 void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_unused]] int32_t flag)

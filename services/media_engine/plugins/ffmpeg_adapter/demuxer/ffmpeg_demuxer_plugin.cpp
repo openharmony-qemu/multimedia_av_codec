@@ -366,6 +366,7 @@ void FFmpegDemuxerPlugin::ParserFirstDts()
 {
     AVPacket *pkt = av_packet_alloc();
     bool isEnd = false;
+    bool isFirst = true;
     while (!isEnd) {
         int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
         if (ffmpegRet < 0) {
@@ -373,12 +374,21 @@ void FFmpegDemuxerPlugin::ParserFirstDts()
             av_packet_free(&pkt);
             return;
         }
-        if (pkt->stream_index == parserRefVideoStreamIdx_) {
+        if (pkt->stream_index != parserRefVideoStreamIdx_) {
+            continue;
+        }
+        if (isFirst) {
             firstDts_ = AvTime2Us(
                 ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
             MEDIA_LOG_I("Success to parser first dts: " PUBLIC_LOG_D64, firstDts_);
+            isFirst = false;
+        }
+        if (pkt->dts < 0) {
+            dtsOffset_++;
+        } else {
             isEnd = true;
         }
+        av_packet_unref(pkt);
     }
     av_packet_unref(pkt);
     av_packet_free(&pkt);
@@ -560,7 +570,10 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "reference is null.");
     MEDIA_LOG_D("GetFrameLayerInfo called, dts: " PUBLIC_LOG_D64, videoSample->dts_);
     if (isSdtpExist_) {
-        uint32_t frameId = TimeStampUs2FrameId(videoSample->dts_ - firstDts_, fps_);
+        int64_t ffmpegDts = ConvertTimeToFFmpegByUs(
+            videoSample->dts_, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base);
+        uint32_t frameId = av_index_search_timestamp(parserRefFormatContext_->streams[parserRefVideoStreamIdx_],
+                                                     ffmpegDts, AVSEEK_FLAG_ANY);
         MEDIA_LOG_D("Success get frameId: " PUBLIC_LOG_U32, frameId);
         return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
     }
@@ -590,8 +603,12 @@ Status FFmpegDemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 
 Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset)
 {
-    int64_t tmpDts = offset ? (dts - firstDts_) : dts;
-    frameId = TimeStampUs2FrameId(tmpDts, fps_);
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::OK, "formatContext is nullptr.");
+    int64_t ffmpegDts = ConvertTimeToFFmpegByUs(dts, formatContext_->streams[parserRefVideoStreamIdx_]->time_base);
+    frameId = av_index_search_timestamp(formatContext_->streams[parserRefVideoStreamIdx_], ffmpegDts, AVSEEK_FLAG_ANY);
+    if (!offset) {
+        frameId += dtsOffset_;
+    }
     MEDIA_LOG_D("Success get frameId: " PUBLIC_LOG_D32 ", dts: " PUBLIC_LOG_D64, frameId, dts);
     return Status::OK;
 }
@@ -1240,6 +1257,7 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
     FALSE_RETURN_MSG(videoStreamIdx >= 0, "ParserBoxInfo failed due to can not find video stream.");
     AVStream *videoStream = formatContext_->streams[videoStreamIdx];
     FALSE_RETURN_MSG(videoStream != nullptr, "ParserBoxInfo failed due to video stream is null.");
+    parserRefVideoStreamIdx_ = videoStreamIdx;
     if (videoStream->avg_frame_rate.den == 0 || videoStream->avg_frame_rate.num == 0) {
         fps_ = videoStream->r_frame_rate.num / (double)videoStream->r_frame_rate.den;
     } else {

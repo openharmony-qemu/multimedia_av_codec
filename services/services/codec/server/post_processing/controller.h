@@ -106,6 +106,11 @@ public:
         return This()->FlushImpl();
     }
 
+    int32_t GetOutputFormat(Media::Format& format)
+    {
+        return This()->GetOutputFormatImpl(format);
+    }
+
     int32_t Reset()
     {
         return This()->ResetImpl();
@@ -210,6 +215,12 @@ private:
     }
 
     int32_t FlushImpl()
+    {
+        AVCODEC_LOGE("Not implemented.");
+        return AVCS_ERR_UNKNOWN;
+    }
+
+    int32_t GetOutputFormatImpl([[maybe_unused]] Media::Format &format)
     {
         AVCODEC_LOGE("Not implemented.");
         return AVCS_ERR_UNKNOWN;
