@@ -172,6 +172,11 @@ public:
     {
         return Status::OK;
     }
+    AudioSampleFormat GetSampleFormat() override
+    {
+        return SAMPLE_S16LE;
+    }
+
 };
 
 std::shared_ptr<AudioSink> AudioSinkCreate()
