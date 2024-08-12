@@ -45,10 +45,17 @@ private:
     int32_t CheckTimedMetaFormat(int32_t trackIndex, int32_t srcTrackIndex);
     int32_t CheckTimedMeta(int32_t metaTrack);
     void CheckLoopForSave();
-    void CheckLoopForIndex(int32_t i);
-    void CheckLoopForPts(int32_t i);
-    std::map<uint32_t, int64_t> videoIndexPtsMap;
-    std::map<uint32_t, int64_t> audioIndexPtsMap;
+    void CheckLoopForIndexFromPts(int32_t trackIndex);
+    void CheckLoopForPtsFromIndex(int32_t trackIndex);
+    void GetIndexByPtsForAudio(int32_t trackIndex);
+    void GetIndexByPtsForVideo(int32_t trackIndex);
+    void GetIndexFromPtsForVideo(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair,
+        int division, int value);
+    void GetIndexFromPtsForAudio(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair,
+        int division, int value);
+    int32_t CheckIndex(uint32_t index);
+    std::list<int64_t> videoIndexPtsList;
+    std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;
     Format source_format_;
     Format track_format_;
@@ -61,6 +68,8 @@ private:
     bool isMetaEosFlagForMeta = false;
     uint32_t videoIndexForMeta = 0;
     uint32_t metaIndexForMeta = 0;
+    uint32_t videoIndexForRead = 0;
+    uint32_t audioIndexForRead = 0;
     int32_t retForMeta = 0;
     bool isVideoEosFlagForSave = false;
     bool isAudioEosFlagForSave = false;
@@ -68,6 +77,16 @@ private:
     int32_t retForIndex;
     int32_t retForPts;
     uint32_t indexForPts = 0;
+    int64_t videoPtsOffset = 0;
+    int64_t audioPtsOffset = 0;
+    bool isPtsExist = false;
+    bool isPtsCloseRight = false;
+    bool isPtsCloseCenter = false;
+    bool isPtsCloseLeft = false;
+    uint32_t listIndex = 0;
+    uint64_t previousValue = 0;
+    uint32_t indexVideo = 0;
+    uint32_t indexAudio = 0;
 };
 }
 }
