@@ -25,6 +25,12 @@ constexpr int32_t SAMPLE_S24_BYTE_NUM = 3;
 constexpr int32_t ONE_BYTE_BITS = 8;
 constexpr int32_t MAX_VALUE_OF_SIGNED_24_BIT = 0x7FFFFF;
 constexpr int32_t MAX_VALUE_OF_SIGNED_32_BIT = 0x7FFFFFFF;
+constexpr int32_t SAMPLE_U8_C = 0;
+constexpr int32_t SAMPLE_S16_C = 1;
+constexpr int32_t SAMPLE_S24_C = 2;
+constexpr int32_t SAMPLE_S32_C = 3;
+constexpr int32_t SAMPLE_F32_C = 4;
+constexpr int32_t INVALID_WIDTH_C = -1;
 
 float CalculateMaxAmplitudeForPCM8Bit(int8_t *frame, uint64_t nSamples)
 {
