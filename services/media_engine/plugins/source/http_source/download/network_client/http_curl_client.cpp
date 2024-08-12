@@ -401,7 +401,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
     }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
-    AutoLock lock(mutex_);
+    mutex_.lock();
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CURLcode returnCode = curl_easy_perform(easyHandle_);
     std::set <CURLcode> notRetrySet = {
@@ -431,6 +431,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
         }
         SetIp();
     }
+    mutex_.unlock();
     completedCb(clientCode, serverCode, ret);
     return ret;
 }
