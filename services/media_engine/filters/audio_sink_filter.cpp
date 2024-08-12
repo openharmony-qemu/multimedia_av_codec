@@ -318,10 +318,8 @@ Status AudioSinkFilter::SetMuted(bool isMuted)
 
 float AudioSinkFilter::GetMaxAmplitude()
 {
-    if (audioSink_ != nullptr) {
-        return audioSink_->GetMaxAmplitude();
-    }
-    return 0.0f;
+    FALSE_RETURN_V(audioSink_ != nullptr, 0.0f);
+    return audioSink_->GetMaxAmplitude();
 }
 } // namespace Pipeline
 } // namespace Media
