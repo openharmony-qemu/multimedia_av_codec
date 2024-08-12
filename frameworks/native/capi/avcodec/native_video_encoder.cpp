@@ -223,21 +223,21 @@ public:
         codec_ = nullptr;
     }
 
-    void UpdateCallback(struct OH_AVCodecAsyncCallback cb, void *userData)
+    void UpdateCallback(const struct OH_AVCodecAsyncCallback &cb, void *userData)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         userData_ = userData;
         asyncCallback_ = cb;
     }
 
-    void UpdateCallback(OH_VideoEncoder_OnNeedInputParameter onInputParameter, void *userData)
+    void UpdateCallback(const OH_VideoEncoder_OnNeedInputParameter &onInputParameter, void *userData)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         userData_ = userData;
         onInputParameter_ = onInputParameter;
     }
 
-    void UpdateCallback(struct OH_AVCodecCallback cb, void *userData)
+    void UpdateCallback(const struct OH_AVCodecCallback &cb, void *userData)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         userData_ = userData;
