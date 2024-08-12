@@ -106,11 +106,6 @@ float UpdateMaxAmplitude(char *frame, uint64_t replyBytes, int32_t adapterFormat
             return CalculateMaxAmplitudeForPCM8Bit(reinterpret_cast<int8_t *>(frame), replyBytes);
         }
         case SAMPLE_S16_C: {
-            MEDIA_LOG_I("UpdateMaxAmplitude format " PUBLIC_LOG_U32, adapterFormat);
-            MEDIA_LOG_I("UpdateMaxAmplitude bytes " PUBLIC_LOG_U64, replyBytes);
-            float amp = CalculateMaxAmplitudeForPCM16Bit(reinterpret_cast<int16_t *>(frame),
-                (replyBytes / sizeof(int16_t)));
-            MEDIA_LOG_I("UpdateMaxAmplitude  " PUBLIC_LOG_F, amp);
             return CalculateMaxAmplitudeForPCM16Bit(reinterpret_cast<int16_t *>(frame),
                 (replyBytes / sizeof(int16_t)));
         }
