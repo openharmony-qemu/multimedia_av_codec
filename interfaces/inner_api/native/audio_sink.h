@@ -62,6 +62,7 @@ public:
     Status SetIsTransitent(bool isTransitent);
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
+    float GetMaxAmplitude();
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -88,6 +89,9 @@ private:
     void UpdateAudioWriteTimeMayWait();
     void DrainAndReportEosEvent();
     void HandleEosInner(bool drain);
+    void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
+    void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
+
     class UnderrunDetector {
     public:
         void DetectAudioUnderrun(int64_t clkTime, int64_t latency);
@@ -102,6 +106,7 @@ private:
         int64_t lastLatency_ {HST_TIME_NONE};
         int64_t lastBufferDuration_ {HST_TIME_NONE};
     };
+
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
@@ -146,6 +151,12 @@ private:
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
     bool isMuted_ = false;
+
+    float maxAmplitude_ = 0;
+    int64_t lastGetMaxAmplitudeTime_ = 0;
+    int64_t last10FrameStartTime_ = 0;
+    bool startUpdate_ = false;
+    int32_t renderFrameNum_ = 0;
     UnderrunDetector underrunDetector_;
 };
 }
