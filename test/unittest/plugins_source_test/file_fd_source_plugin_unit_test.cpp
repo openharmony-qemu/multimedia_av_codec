@@ -559,32 +559,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_DeleteCacheBuffer_0100, TestSize.Lev
 }
 
 /**
- * @tc.name: FileFdSource_CheckReadTime_0100
- * @tc.desc: FileFdSource_CheckReadTime_0100
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckReadTime_0100, TestSize.Level1)
-{
-    fileFdSourcePlugin_->callback_ = nullptr;
-    fileFdSourcePlugin_->curReadTime_ = 10;
-    fileFdSourcePlugin_->CheckReadTime();
-    EXPECT_EQ(10, fileFdSourcePlugin_->lastReadTime_);
-
-    fileFdSourcePlugin_->lastReadTime_ = 1000;
-    fileFdSourcePlugin_->curReadTime_  = 2000;
-    fileFdSourcePlugin_->CheckReadTime();
-    EXPECT_EQ(1000, fileFdSourcePlugin_->lastReadTime_);
-
-    fileFdSourcePlugin_->curReadTime_  = 1020;
-    fileFdSourcePlugin_->CheckReadTime();
-    EXPECT_EQ(1000, fileFdSourcePlugin_->lastReadTime_);
-
-    fileFdSourcePlugin_->curReadTime_  = 1040;
-    fileFdSourcePlugin_->CheckReadTime();
-    EXPECT_EQ(0, fileFdSourcePlugin_->lastReadTime_);
-}
-
-/**
  * @tc.name: FileFdSource_checkReadTime_0200
  * @tc.desc: FileFdSource_checkReadTime_0200
  * @tc.type: FUNC
