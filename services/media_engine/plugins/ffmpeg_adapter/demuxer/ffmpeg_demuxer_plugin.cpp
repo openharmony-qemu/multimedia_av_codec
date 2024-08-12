@@ -572,10 +572,11 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
     if (isSdtpExist_) {
         int64_t ffmpegDts = ConvertTimeToFFmpegByUs(
             videoSample->dts_, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base);
-        uint32_t frameId = av_index_search_timestamp(parserRefFormatContext_->streams[parserRefVideoStreamIdx_],
-                                                     ffmpegDts, AVSEEK_FLAG_ANY);
+        int32_t frameId = av_index_search_timestamp(
+            parserRefFormatContext_->streams[parserRefVideoStreamIdx_], ffmpegDts, AVSEEK_FLAG_ANY);
+        FALSE_RETURN_V_MSG_E(frameId >= 0, Status::ERROR_UNKNOWN, "can not find frameId.");
         MEDIA_LOG_D("Success get frameId: " PUBLIC_LOG_U32, frameId);
-        return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
+        return referenceParser_->GetFrameLayerInfo(static_cast<uint32_t>(frameId), frameLayerInfo);
     }
     return referenceParser_->GetFrameLayerInfo(videoSample->dts_, frameLayerInfo);
 }
@@ -605,10 +606,19 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId, bool off
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::OK, "formatContext is nullptr.");
     int64_t ffmpegDts = ConvertTimeToFFmpegByUs(dts, formatContext_->streams[parserRefVideoStreamIdx_]->time_base);
-    frameId = av_index_search_timestamp(formatContext_->streams[parserRefVideoStreamIdx_], ffmpegDts, AVSEEK_FLAG_ANY);
-    if (!offset) {
-        frameId += dtsOffset_;
+    int32_t tmpFrameId = av_index_search_timestamp(
+        formatContext_->streams[parserRefVideoStreamIdx_], ffmpegDts, AVSEEK_FLAG_ANY);
+    if (tmpFrameId >= 0) {
+        frameId = static_cast<uint32_t>(tmpFrameId);
+        if (!offset) {
+            frameId += dtsOffset_;
+        }
+    } else if (dts >= firstDts_) {
+        frameId = static_cast<uint32_t>(formatContext_->streams[parserRefVideoStreamIdx_]->nb_frames) - 1;
+    } else {
+        frameId = 0;
     }
+    
     MEDIA_LOG_D("Success get frameId: " PUBLIC_LOG_D32 ", dts: " PUBLIC_LOG_D64, frameId, dts);
     return Status::OK;
 }
