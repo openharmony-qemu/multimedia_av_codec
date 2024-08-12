@@ -179,7 +179,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
             return false;
         }
     }
-    MEDIA_LOG_I("startTime: " PUBLIC_LOG_D64, startTime);
+    MEDIA_LOG_D("startTime: " PUBLIC_LOG_D64, startTime);
     int64_t fileDuration = formatContext->duration;
     int64_t streamDuration = stream->duration;
     if (fileDuration == AV_NOPTS_VALUE || fileDuration <= 0) {
@@ -188,7 +188,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
         streamDuration = GetStreamDuration(*stream);
     }
-    MEDIA_LOG_I("file duration = " PUBLIC_LOG_D64 "us, stream duration = " PUBLIC_LOG_D64 "(fftime)",
+    MEDIA_LOG_D("file duration = " PUBLIC_LOG_D64 "us, stream duration = " PUBLIC_LOG_D64 "(fftime)",
         fileDuration, streamDuration);
     // when timestemp out of file duration, return error
     if (fileDuration > 0 && seekTime * num > fileDuration) { // fileDuration us
@@ -202,7 +202,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
         timeStamp = streamDuration;
     }
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        MEDIA_LOG_I("Reset timeStamp by start time: " PUBLIC_LOG_D64 " to " PUBLIC_LOG_D64,
+        MEDIA_LOG_D("Reset timeStamp by start time: " PUBLIC_LOG_D64 " to " PUBLIC_LOG_D64,
             timeStamp, timeStamp + startTime);
         timeStamp += startTime;
     }
@@ -1618,7 +1618,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 {
     (void) trackId;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    MEDIA_LOG_I("Seek to " PUBLIC_LOG_D64 ", mode=" PUBLIC_LOG_D32 ".", seekTime, static_cast<int32_t>(mode));
+    MediaAVCodec::AVCodecTrace trace("SeekTo");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
@@ -1637,7 +1637,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
             break;
         }
     }
-    MEDIA_LOG_I("Seek based on track " PUBLIC_LOG_D32 ".", trackIndex);
+    MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32 ".", trackIndex);
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "Seek failed due to avStream is nullptr.");
@@ -1647,10 +1647,10 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         return Status::ERROR_INVALID_OPERATION;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
-    MEDIA_LOG_I("SeekTo " PUBLIC_LOG_U64 " / " PUBLIC_LOG_D64 ".", ffTime, realSeekTime);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode);
-    MEDIA_LOG_I("Convert flag [" PUBLIC_LOG_D32 "]->[" PUBLIC_LOG_D32 "], by track " PUBLIC_LOG_D32 "",
-        static_cast<int32_t>(mode), flag, avStream->index);
+    MEDIA_LOG_I("inputTime=" PUBLIC_LOG_U64 ", ffTime=" PUBLIC_LOG_U64 ", realSeekTime=" PUBLIC_LOG_D64
+                ", flag=" PUBLIC_LOG_D32 ", realFlag=" PUBLIC_LOG_D32,
+                seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
     if (formatContext_->pb->error) {
         formatContext_->pb->error = 0;
