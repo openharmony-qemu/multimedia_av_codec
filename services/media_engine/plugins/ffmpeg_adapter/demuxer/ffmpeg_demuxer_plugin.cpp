@@ -1648,7 +1648,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode);
-    MEDIA_LOG_I("inputTime=" PUBLIC_LOG_U64 ", ffTime=" PUBLIC_LOG_U64 ", realSeekTime=" PUBLIC_LOG_D64
+    MEDIA_LOG_I("SeekTo param: inputTime=" PUBLIC_LOG_U64 ", ffTime=" PUBLIC_LOG_U64 ", realSeekTime=" PUBLIC_LOG_D64
                 ", flag=" PUBLIC_LOG_D32 ", realFlag=" PUBLIC_LOG_D32,
                 seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
