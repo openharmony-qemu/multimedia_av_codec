@@ -189,6 +189,8 @@ void TEST_SUIT::SetAVCFormat()
 void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<FormatMock> format)
 {
     format = videoDec->GetOutputDescription();
+    constexpr int32_t originalVideoWidth = 1280;
+    constexpr int32_t originalVideoHeight = 720;
     int32_t width = 0;
     int32_t height = 0;
     int32_t pictureWidth = 0;
@@ -205,15 +207,12 @@ void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<Fo
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
     EXPECT_TRUE(format->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
 
-    constexpr int32_t originalVideoWidth = 1280;
-    constexpr int32_t originalVideoHeight = 720;
-
-    EXPECT_EQ(width, DEFAULT_WIDTH);
-    EXPECT_EQ(height, DEFAULT_HEIGHT);
-    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-    EXPECT_GE(stride, DEFAULT_WIDTH);
-    EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
+    EXPECT_EQ(width, originalVideoWidth);
+    EXPECT_EQ(height, originalVideoHeight);
+    EXPECT_GE(pictureWidth, originalVideoWidth - 1);
+    EXPECT_GE(pictureHeight, originalVideoHeight - 1);
+    EXPECT_GE(stride, originalVideoWidth);
+    EXPECT_GE(sliceHeight, originalVideoHeight);
     EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 }
 
@@ -427,7 +426,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_009, TestSize.Level1)
     format->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
