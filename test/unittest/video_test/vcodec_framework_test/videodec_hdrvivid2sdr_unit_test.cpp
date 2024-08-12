@@ -186,6 +186,36 @@ void TEST_SUIT::SetAVCFormat()
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
 }
 
+void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<FormatMock> format)
+{
+    format = videoDec->GetOutputDescription();
+    constexpr int32_t originalVideoWidth = 1280;
+    constexpr int32_t originalVideoHeight = 720;
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t pictureWidth = 0;
+    int32_t pictureHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t colorSpace = 0;
+
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
+
+    EXPECT_EQ(width, DEFAULT_WIDTH);
+    EXPECT_EQ(height, DEFAULT_HEIGHT);
+    EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
+    EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
+    EXPECT_GE(stride, DEFAULT_WIDTH);
+    EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
+    EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+}
+
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, SW_AVC, HW_HEVC, HW_HDR));
 
 #ifdef VIDEODEC_HDRVIVID2SDR_CAPI_UNIT_TEST
@@ -401,34 +431,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_009, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-
-        format = videoDec_->GetOutputDescription();
-        int32_t width = 0;
-        int32_t height = 0;
-        int32_t pictureWidth = 0;
-        int32_t pictureHeight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
-        int32_t colorSpace = 0;
-
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
-        EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
-
-        EXPECT_EQ(width, DEFAULT_WIDTH);
-        EXPECT_EQ(height, DEFAULT_HEIGHT);
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-        EXPECT_GE(stride, DEFAULT_WIDTH);
-        EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
-        EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
+        CheckFormatKey(videoDec_, format);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    } else {
+    } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
     }
 }
@@ -450,39 +455,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_010, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-
-        format_ = videoDec_->GetOutputDescription();
-        int32_t width = 0;
-        int32_t height = 0;
-        int32_t pictureWidth = 0;
-        int32_t pictureHeight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
-        int32_t colorSpace = 0;
-
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
-        EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
-
-        EXPECT_EQ(width, DEFAULT_WIDTH);
-        EXPECT_EQ(height, DEFAULT_HEIGHT);
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-        EXPECT_GE(stride, DEFAULT_WIDTH);
-        EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
-        EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
+        CheckFormatKey(videoDec_, format_);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
-    } else {
+    } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
     }
 }
@@ -604,7 +584,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_015, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_016, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -615,32 +595,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_016, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-
-        format_ = videoDec_->GetOutputDescription();
-        int32_t width = 0;
-        int32_t height = 0;
-        int32_t pictureWidth = 0;
-        int32_t pictureHeight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
-        int32_t colorSpace = 0;
-
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
-        EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
-
-        EXPECT_EQ(width, DEFAULT_WIDTH);
-        EXPECT_EQ(height, DEFAULT_HEIGHT);
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-        EXPECT_GE(stride, DEFAULT_WIDTH);
-        EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
-        EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
+        CheckFormatKey(videoDec_, format_);
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     }
 }
@@ -1007,39 +962,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_009, TestSize.Level1)
     format->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
-
-        format = videoDec_->GetOutputDescription();
-        int32_t width = 0;
-        int32_t height = 0;
-        int32_t pictureWidth = 0;
-        int32_t pictureHeight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
-        int32_t colorSpace = 0;
-
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
-        EXPECT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
-
-        EXPECT_EQ(width, DEFAULT_WIDTH);
-        EXPECT_EQ(height, DEFAULT_HEIGHT);
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-        EXPECT_GE(stride, DEFAULT_WIDTH);
-        EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
-        EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
+        CheckFormatKey(videoDec_, format);
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
-    } else {
+    } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, videoDec_->Configure(format));
     }
 }
@@ -1061,39 +991,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_010, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
-
-        format_ = videoDec_->GetOutputDescription();
-        int32_t width = 0;
-        int32_t height = 0;
-        int32_t pictureWidth = 0;
-        int32_t pictureHeight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
-        int32_t colorSpace = 0;
-
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
-        EXPECT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
-
-        EXPECT_EQ(width, DEFAULT_WIDTH);
-        EXPECT_EQ(height, DEFAULT_HEIGHT);
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-        EXPECT_GE(stride, DEFAULT_WIDTH);
-        EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
-        EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
+        CheckFormatKey(videoDec_, format_);
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
-    } else {
+    } else if (testCode == VCodecTestCode::HW_AVC || testCode == VCodecTestCode::SW_AVC) {
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, videoDec_->Configure(format_));
     }
 }
@@ -1215,7 +1120,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_015, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_016, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         CreateByNameWithParam(testCode);
         SetHDRFormat();
         PrepareSource(testCode);
@@ -1226,32 +1131,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_016, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
-
-        format_ = videoDec_->GetOutputDescription();
-        int32_t width = 0;
-        int32_t height = 0;
-        int32_t pictureWidth = 0;
-        int32_t pictureHeight = 0;
-        int32_t stride = 0;
-        int32_t sliceHeight = 0;
-        int32_t colorSpace = 0;
-
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, pictureWidth));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, pictureHeight));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
-        EXPECT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
-        EXPECT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
-
-        EXPECT_EQ(width, DEFAULT_WIDTH);
-        EXPECT_EQ(height, DEFAULT_HEIGHT);
-        EXPECT_GE(pictureWidth, DEFAULT_WIDTH - 1);
-        EXPECT_GE(pictureHeight, DEFAULT_HEIGHT - 1);
-        EXPECT_GE(stride, DEFAULT_WIDTH);
-        EXPECT_GE(sliceHeight, DEFAULT_HEIGHT);
-        EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-
+        CheckFormatKey(videoDec_, format_);
         EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     }
 }
