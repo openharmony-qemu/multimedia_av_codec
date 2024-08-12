@@ -508,6 +508,16 @@ void DashMpdDownloader::SetInitResolution(unsigned int width, unsigned int heigh
     }
 }
 
+void DashMpdDownloader::SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type)
+{
+    MEDIA_LOG_I("SetDefaultLang, lang:" PUBLIC_LOG_S ", type:" PUBLIC_LOG_D32, lang.c_str(), (int)type);
+    if (type == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
+        defaultAudioLang_ = lang;
+    } else if (type == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+        defaultSubtitleLang_ = lang;
+    }
+}
+
 void DashMpdDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
@@ -1201,6 +1211,17 @@ unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned 
     }
 }
 
+bool DashMpdDownloader::IsChoosedVideoStream(const std::shared_ptr<DashStreamDescription> &choosedStream,
+    const std::shared_ptr<DashStreamDescription> &currentStream)
+{
+    if (choosedStream == nullptr ||
+        (initResolution_ == 0 && choosedStream->bandwidth_ > currentStream->bandwidth_) ||
+        IsNearToInitResolution(choosedStream, currentStream)) {
+        return true;
+    }
+    return false;
+}
+
 bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
     const std::shared_ptr<DashStreamDescription> &currentStream)
 {
@@ -1214,6 +1235,26 @@ bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamD
            || (currentDelta == choosedDelta && currentStream->bandwidth_ < choosedStream->bandwidth_);
 }
 
+bool DashMpdDownloader::IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type)
+{
+    if (type == MediaAVCodec::MediaType::MEDIA_TYPE_AUD &&
+        defaultAudioLang_.length() > 0) {
+        if (defaultAudioLang_.compare(lang) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    } else if (type == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE &&
+        defaultSubtitleLang_.length() > 0) {
+        if (defaultSubtitleLang_.compare(lang) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
 {
     if (mpdInfo_ == nullptr || streamDescriptions_.size() == 0) {
@@ -1223,29 +1264,34 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
     std::shared_ptr<DashStreamDescription> choosedStream = nullptr;
     std::shared_ptr<DashStreamDescription> backupStream = nullptr;
     for (const auto &stream : streamDescriptions_) {
-        if (stream->type_ == type && !stream->inUse_) {
-            if (type != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
-                // audio and subtitle choose first stream to play
+        if (stream->type_ != type || stream->inUse_) {
+            continue;
+        }
+        
+        if (type != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+            // audio and subtitle choose first stream to play or get default lang
+            if (choosedStream == nullptr) {
                 choosedStream = stream;
-                break;
             }
-
-            if (backupStream == nullptr ||
-                (initResolution_ == 0 && backupStream->bandwidth_ > stream->bandwidth_) ||
-                IsNearToInitResolution(backupStream, stream)) {
-                backupStream = stream;
-            }
-
-            if ((stream->videoType_ != DASH_VIDEO_TYPE_SDR) != isHdrStart_) {
-                // skip video stream that hdr value not same
+            if (!IsLangMatch(stream->lang_, type)) {
                 continue;
             }
 
-            if (choosedStream == nullptr ||
-                (initResolution_ == 0 && choosedStream->bandwidth_ > stream->bandwidth_) ||
-                IsNearToInitResolution(choosedStream, stream)) {
-                choosedStream = stream;
-            }
+            choosedStream = stream;
+            break;
+        }
+        
+        if (backupStream == nullptr || IsNearToInitResolution(backupStream, stream) ||
+            (initResolution_ == 0 && backupStream->bandwidth_ > stream->bandwidth_)) {
+            backupStream = stream;
+        }
+        
+        if ((stream->videoType_ != DASH_VIDEO_TYPE_SDR) != isHdrStart_) {
+            continue;
+        }
+        
+        if (IsChoosedVideoStream(choosedStream, stream)) {
+            choosedStream = stream;
         }
     }
 
@@ -1264,7 +1310,6 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
         return true;
     }
 
-    MEDIA_LOG_I("ChooseStreamToPlay false type:" PUBLIC_LOG_D32, (int)type);
     return false;
 }
 
@@ -1989,10 +2034,9 @@ static VideoType GetVideoType(DashVideoType videoType)
 Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 {
     MEDIA_LOG_I("GetStreamInfo");
-    // only support one audio Representation in one AdaptationSet
+    // only support one audio/subtitle Representation in one AdaptationSet
     unsigned int audioAdptSetIndex = streamDescriptions_.size();
-    // only support one subtitle Representation in one AdaptationSet
-    unsigned int subtitleAdptSetIndex = streamDescriptions_.size();
+    unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
@@ -2014,8 +2058,8 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         StreamInfo info;
         info.streamId = streamDescriptions_[index]->streamId_;
         info.bitRate = streamDescriptions_[index]->bandwidth_;
-        info.videoWidth = streamDescriptions_[index]->width_;
-        info.videoHeight = streamDescriptions_[index]->height_;
+        info.videoWidth = static_cast<int32_t>(streamDescriptions_[index]->width_);
+        info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
         info.lang = streamDescriptions_[index]->lang_;
         info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {

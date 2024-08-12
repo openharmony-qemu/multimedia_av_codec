@@ -196,7 +196,7 @@ struct DashStreamDescription {
     unsigned int bandwidth_ = 0;
     int64_t startNumberSeq_ = 1;
     int64_t currentNumberSeq_ = -1;
-    std::string lang_;
+    std::string lang_ {};
     std::shared_ptr<DashInitSegment> initSegment_ = nullptr;
     std::shared_ptr<DashIndexSegment> indexSegment_ = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments_;

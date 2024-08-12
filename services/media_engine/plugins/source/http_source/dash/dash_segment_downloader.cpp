@@ -459,14 +459,14 @@ void DashSegmentDownloader::UpdateCachedPercent(BufferingInfoType infoType)
         return;
     }
 
-    int32_t bufferSize = static_cast<int32_t>(buffer_->GetSize());
+    uint32_t bufferSize = static_cast<uint32_t>(buffer_->GetSize());
     if (bufferSize < lastCachedSize_) {
         return;
     }
-    int32_t deltaSize = bufferSize - lastCachedSize_;
+    uint32_t deltaSize = bufferSize - lastCachedSize_;
     if (deltaSize >= UPDATE_CACHE_STEP) {
-        int percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize * BUFFERING_PERCENT_FULL /
-            waterLineAbove_;
+        uint32_t percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize *
+            BUFFERING_PERCENT_FULL / waterLineAbove_;
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
         lastCachedSize_ = bufferSize;
     }
@@ -591,7 +591,7 @@ size_t DashSegmentDownloader::GetRingBufferInitSize(MediaAVCodec::MediaType stre
     }
 }
 
-void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> initSegment)
+void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> initSegment, bool needUpdateState)
 {
     if (initSegment == nullptr) {
         return;
@@ -602,17 +602,22 @@ void DashSegmentDownloader::SetInitSegment(std::shared_ptr<DashInitSegment> init
     if (dashInitSegment == nullptr) {
         initSegments_.push_back(initSegment);
         dashInitSegment = initSegment;
+        needUpdateState = true;
     }
 
     if (!dashInitSegment->isDownloadFinish_) {
         dashInitSegment->writeState_ = INIT_SEGMENT_STATE_UNUSE;
     }
 
-    dashInitSegment->readState_ = INIT_SEGMENT_STATE_UNUSE;
+    // seek or first time to set stream init segment should update to UNUSE
+    // read will update state to UNUSE when stream id is changed
+    if (needUpdateState) {
+        dashInitSegment->readState_ = INIT_SEGMENT_STATE_UNUSE;
+    }
     MEDIA_LOG_I("SetInitSegment:streamId:" PUBLIC_LOG_D32 ", isDownloadFinish_="
-        PUBLIC_LOG_D32 ", readIndex=" PUBLIC_LOG_U32 ", readState_="
+        PUBLIC_LOG_D32 ", readIndex=" PUBLIC_LOG_U32 ", readState_=" PUBLIC_LOG_D32 ", update="
         PUBLIC_LOG_D32 ", writeState_=" PUBLIC_LOG_D32, streamId, dashInitSegment->isDownloadFinish_,
-        dashInitSegment->readIndex_, dashInitSegment->readState_, dashInitSegment->writeState_);
+        dashInitSegment->readIndex_, dashInitSegment->readState_, needUpdateState, dashInitSegment->writeState_);
 }
 
 void DashSegmentDownloader::UpdateStreamId(int streamId)
@@ -677,10 +682,6 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
 
             remainLastNumberSeq = it->numberSeq_;
             break;
-        }
-
-        if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
-            remainLastNumberSeq = mediaSegment_->numberSeq_;
         }
 
         ClearSegmentAll();
@@ -797,13 +798,13 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, si
 
 bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd)
 {
+    Close(true, false);
     std::lock_guard<std::mutex> lock(segmentMutex_);
     remainLastNumberSeq = -1;
     size_t clearTail = 0;
     CleanByTimeInternal(remainLastNumberSeq, clearTail, isEnd);
 
     if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
-        remainLastNumberSeq = mediaSegment_->numberSeq_;
         isEnd = false;
     }
 
@@ -813,7 +814,6 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
 
     if (clearTail > 0) {
         isCleaningBuffer_ = true;
-        Close(true, false);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
@@ -1021,6 +1021,10 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
                                                          realStatusCallback, mediaSouce, requestWholeFile);
+    if (downloadRequest_ == nullptr) {
+        MEDIA_LOG_I("PutRequestIntoDownloader:downloadRequest_ is nullptr");
+        return;
+    }
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (!requestWholeFile && (endPos > startPos)) {
         downloadRequest_->SetRangePos(startPos, endPos);
