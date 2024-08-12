@@ -369,7 +369,9 @@ void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, AudioSampleFo
             last10FrameStartTime_ = time(nullptr);
         }
         renderFrameNum_++;
-        maxAmplitude_ = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(static_cast<CalcMaxAmplitude::ConvertHdiFormat>(format), frame, replyBytes);
+        maxAmplitude_ = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(
+            static_cast<CalcMaxAmplitude::ConvertHdiFormat>(format),
+            frame, replyBytes);
         if (renderFrameNum_ == GET_MAX_AMPLITUDE_FRAMES_THRESHOLD) {
             renderFrameNum_ = 0;
             if (last10FrameStartTime_ > lastGetMaxAmplitudeTime_) {

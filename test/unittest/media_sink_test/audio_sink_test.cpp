@@ -176,7 +176,6 @@ public:
     {
         return SAMPLE_S16LE;
     }
-
 };
 
 std::shared_ptr<AudioSink> AudioSinkCreate()
