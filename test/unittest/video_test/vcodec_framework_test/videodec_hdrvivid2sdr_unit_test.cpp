@@ -186,6 +186,7 @@ void TEST_SUIT::SetAVCFormat()
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
 }
 
+#ifdef HMOS_TEST
 void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<FormatMock> format)
 {
     format = videoDec->GetOutputDescription();
@@ -215,6 +216,7 @@ void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<Fo
     EXPECT_GE(sliceHeight, originalVideoHeight);
     EXPECT_EQ(colorSpace, OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
 }
+#endif
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, SW_AVC, HW_HEVC, HW_HDR));
 
