@@ -724,7 +724,7 @@ HWTEST(TestAudioSink, audio_sink_TestPause, TestSize.Level1)
     ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Pause());
 }
 
-HWTEST(TestAudioSink, audio_sink_TestResume, TestSize.Level1)
+HWTEST(TestAudioSink, audio_sink_TestResume001, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
@@ -747,6 +747,20 @@ HWTEST(TestAudioSink, audio_sink_TestResume, TestSize.Level1)
     std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
     audioSink->plugin_ = plugin;
     ASSERT_EQ(Status::ERROR_UNKNOWN, audioSink->Resume());
+}
+
+HWTEST(TestAudioSink, audio_sink_TestResume002, TestSize.Level1)
+{
+    auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    std::shared_ptr<TestAudioSinkMock> plugin = std::make_shared<TestAudioSinkMock>("test");
+    audioSink->plugin_ = plugin;
+    std::atomic<AudioSink::EosInterruptState> eosInterruptType_ = std::atomic<AudioSink::EosInterruptState>();
+    eosInterruptType_ = AudioSink::EosInterruptState::PAUSE;
+    audioSink->eosDraining_ = false;
+    audioSink->eosTask_= std::unique_ptr<Task>();
+    auto resumeStatus = audioSink->Resume();
+    ASSERT_EQ(resumeStatus, Status::ERROR_UNKNOWN);
 }
 
 HWTEST(TestAudioSink, audio_sink_SetVolume, TestSize.Level1)
