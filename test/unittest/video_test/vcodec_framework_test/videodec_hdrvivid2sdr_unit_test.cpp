@@ -189,8 +189,6 @@ void TEST_SUIT::SetAVCFormat()
 void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<FormatMock> format)
 {
     format = videoDec->GetOutputDescription();
-    constexpr int32_t originalVideoWidth = 1280;
-    constexpr int32_t originalVideoHeight = 720;
     int32_t width = 0;
     int32_t height = 0;
     int32_t pictureWidth = 0;
@@ -206,6 +204,9 @@ void CheckFormatKey(std::shared_ptr<VideoDecSample> videoDec, std::shared_ptr<Fo
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
     EXPECT_TRUE(format->GetIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, colorSpace));
+
+    constexpr int32_t originalVideoWidth = 1280;
+    constexpr int32_t originalVideoHeight = 720;
 
     EXPECT_EQ(width, DEFAULT_WIDTH);
     EXPECT_EQ(height, DEFAULT_HEIGHT);
