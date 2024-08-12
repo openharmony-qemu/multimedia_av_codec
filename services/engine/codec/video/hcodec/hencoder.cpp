@@ -364,8 +364,8 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRat
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
-    width_ = width;
-    height_ = height;
+    width_ = static_cast<uint32_t>(width);
+    height_ = static_cast<uint32_t>(height);
     HLOGI("user set width %d, height %d", width, height);
     if (!GetPixelFmtFromUser(format)) {
         return AVCS_ERR_INVALID_VAL;
@@ -1279,6 +1279,8 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         HLOGI("got input eos");
         inputPortEos_ = true;
         info.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
+        info.omxBuffer->bufferhandle = nullptr;
+        info.omxBuffer->filledLen = 0;
         info.surfaceBuffer = nullptr;
         NotifyOmxToEmptyThisInBuffer(info);
         return;
