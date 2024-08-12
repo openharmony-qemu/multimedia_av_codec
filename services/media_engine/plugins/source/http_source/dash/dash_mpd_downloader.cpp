@@ -2034,10 +2034,9 @@ static VideoType GetVideoType(DashVideoType videoType)
 Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 {
     MEDIA_LOG_I("GetStreamInfo");
-    // only support one audio Representation in one AdaptationSet
+    // only support one audio/subtitle Representation in one AdaptationSet
     unsigned int audioAdptSetIndex = streamDescriptions_.size();
-    // only support one subtitle Representation in one AdaptationSet
-    unsigned int subtitleAdptSetIndex = streamDescriptions_.size();
+    unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
@@ -2059,8 +2058,8 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         StreamInfo info;
         info.streamId = streamDescriptions_[index]->streamId_;
         info.bitRate = streamDescriptions_[index]->bandwidth_;
-        info.videoWidth = streamDescriptions_[index]->width_;
-        info.videoHeight = streamDescriptions_[index]->height_;
+        info.videoWidth = static_cast<int32_t>(streamDescriptions_[index]->width_);
+        info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
         info.lang = streamDescriptions_[index]->lang_;
         info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {

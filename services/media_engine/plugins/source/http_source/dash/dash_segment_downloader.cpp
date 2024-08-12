@@ -459,13 +459,13 @@ void DashSegmentDownloader::UpdateCachedPercent(BufferingInfoType infoType)
         return;
     }
 
-    int32_t bufferSize = static_cast<int32_t>(buffer_->GetSize());
+    uint32_t bufferSize = static_cast<uint32_t>(buffer_->GetSize());
     if (bufferSize < lastCachedSize_) {
         return;
     }
-    int32_t deltaSize = bufferSize - lastCachedSize_;
+    uint32_t deltaSize = bufferSize - lastCachedSize_;
     if (deltaSize >= UPDATE_CACHE_STEP) {
-        int percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize * BUFFERING_PERCENT_FULL /
+        uint32_t percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize * BUFFERING_PERCENT_FULL /
             waterLineAbove_;
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
         lastCachedSize_ = bufferSize;
@@ -1021,6 +1021,10 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
                                                          realStatusCallback, mediaSouce, requestWholeFile);
+    if (downloadRequest_ == nullptr) {
+        MEDIA_LOG_I("PutRequestIntoDownloader:downloadRequest_ is nullptr");
+        return;
+    }
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (!requestWholeFile && (endPos > startPos)) {
         downloadRequest_->SetRangePos(startPos, endPos);

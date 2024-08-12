@@ -240,7 +240,7 @@ private:
     uint32_t downloadBiteRate_{0};
     int64_t realTimeBitBate_{0};
     uint64_t lastDurationRecord_{0};
-    int32_t lastCachedSize_{0};
+    uint32_t lastCachedSize_{0};
     bool isTimeOut_{false};
     bool isFirstFrameArrived_{false};
 };
