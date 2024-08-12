@@ -107,7 +107,7 @@ int32_t InnerDemuxerSample::ReadSampleAndSave()
         CheckLoopForSave();
     }
     videoIndexPtsList.sort();
-    audioIndexPtsList.sort(); 
+    audioIndexPtsList.sort();
     return retForSave;
 }
 
@@ -185,9 +185,8 @@ void InnerDemuxerSample::CheckLoopForPtsFromIndex(int32_t trackIndex)
                 cout << "GetRelativePresentationTimeUsByIndex fail ret:" << retForPts << endl;
                 break;
             }
-            if (!(presentationTimeUs < (pair - videoPtsOffset - 1) <= presentationTimeUs <= (pair - videoPtsOffset + 1))) {
+            if (!((pair - videoPtsOffset - 1) <= presentationTimeUs <= (pair - videoPtsOffset + 1))) {
                 retForPts = num;
-                cout << "video != pair  pts:" << presentationTimeUs << ", pair - videoPtsOffset:" << pair - videoPtsOffset << endl;
                 break;
             }
             indexForPts ++;
@@ -201,7 +200,6 @@ void InnerDemuxerSample::CheckLoopForPtsFromIndex(int32_t trackIndex)
             }
             if (!((pair - audioPtsOffset - 1) <= presentationTimeUs <= (pair - audioPtsOffset + 1))) {
                 retForPts = num;
-                cout << "audio != pair pts:" << presentationTimeUs << ", pair - videoPtsOffset:"<< pair - audioPtsOffset << endl;
                 break;
             }
             indexForPts ++;
@@ -210,7 +208,6 @@ void InnerDemuxerSample::CheckLoopForPtsFromIndex(int32_t trackIndex)
 }
 void InnerDemuxerSample::CheckLoopForIndexFromPts(int32_t trackIndex)
 {
-
     if (trackIndex == videoTrackIdx) {
         GetIndexByPtsForVideo(trackIndex);
     } else {
@@ -222,17 +219,19 @@ void InnerDemuxerSample::GetIndexByPtsForVideo(int32_t trackIndex)
 {
     uint64_t tempValue = 0;
     uint64_t relativePresentationTimeUs = 0;
+    int division = 2;
+    int value = 1;
     for (const auto &pair : videoIndexPtsList) {
         tempValue = pair;
         relativePresentationTimeUs = static_cast<uint64_t>(pair - videoPtsOffset);
-        GetIndexFromPtsForVideo(trackIndex, relativePresentationTimeUs, pair);
+        GetIndexFromPtsForVideo(trackIndex, relativePresentationTimeUs, pair, division, value);
         if (retForIndex != 0) {
             cout << "video GetIndexByRelativePresentationTimeUs fail ret:" << retForIndex << endl;
             break;
         }
         retForIndex = CheckIndex(indexVideo);
         if (retForIndex != 0) {
-           break;
+            break;
         }
         previousValue = tempValue;
         listIndex ++;
@@ -243,10 +242,12 @@ void InnerDemuxerSample::GetIndexByPtsForAudio(int32_t trackIndex)
 {
     uint64_t tempValue = 0;
     uint64_t relativePresentationTimeUs = 0;
+    int division = 2;
+    int value = 1;
     for (const auto &pair : audioIndexPtsList) {
         tempValue = pair;
         relativePresentationTimeUs = static_cast<uint64_t>(pair - audioPtsOffset);
-        GetIndexFromPtsForAudio(trackIndex, relativePresentationTimeUs, pair);
+        GetIndexFromPtsForAudio(trackIndex, relativePresentationTimeUs, pair, division, value);
         if (retForIndex != 0) {
             cout << "audio GetIndexByRelativePresentationTimeUs fail ret:" << retForIndex << endl;
             break;
@@ -261,33 +262,43 @@ void InnerDemuxerSample::GetIndexByPtsForAudio(int32_t trackIndex)
     }
 }
 
-void InnerDemuxerSample::GetIndexFromPtsForVideo(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair)
+void InnerDemuxerSample::GetIndexFromPtsForVideo(int32_t trackIndex, 
+                                        uint64_t relativePresentationTimeUs, int64_t pair, int division, int value)
 {
     if (isPtsExist && listIndex != 0) {
-        if (isPtsCloseLeft){
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs - ((pair - previousValue) / 2 + 1), indexVideo);
+        if (isPtsCloseLeft) {
+            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, 
+                relativePresentationTimeUs - ((pair - previousValue) / division + value), indexVideo);
         } else if (isPtsCloseCenter) {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs - ((pair - previousValue) / 2), indexVideo);
+            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                relativePresentationTimeUs - ((pair - previousValue) / division), indexVideo);
         } else {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs - ((pair - previousValue) / 2 - 1), indexVideo);
-        } 
+            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                relativePresentationTimeUs - ((pair - previousValue) / division - value), indexVideo);
+        }
     } else {
-        retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, indexVideo);
+        retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+            relativePresentationTimeUs, indexVideo);
     }
 }
 
-void InnerDemuxerSample::GetIndexFromPtsForAudio(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair)
+void InnerDemuxerSample::GetIndexFromPtsForAudio(int32_t trackIndex, 
+                                uint64_t relativePresentationTimeUs, int64_t pair, int division, int value)
 {
     if (isPtsExist && listIndex != 0) {
-        if (isPtsCloseLeft){
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs - ((pair - previousValue) / 2 + 1), indexAudio);
+        if (isPtsCloseLeft) {
+            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                relativePresentationTimeUs - ((pair - previousValue) / division + value), indexAudio);
         } else if (isPtsCloseCenter) {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs - ((pair - previousValue) / 2), indexAudio);
+            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                relativePresentationTimeUs - ((pair - previousValue) / division), indexAudio);
         } else {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs - ((pair - previousValue) / 2 - 1), indexAudio);
-        } 
+            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                relativePresentationTimeUs - ((pair - previousValue) / division - value), indexAudio);
+        }
     } else {
-        retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, indexAudio);
+        retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+            relativePresentationTimeUs, indexAudio);
     }
 }
 
@@ -298,13 +309,13 @@ int32_t InnerDemuxerSample::CheckIndex(uint32_t index)
         if (isPtsCloseLeft && listIndex != 0) {
             if (index != (listIndex -1)) {
                 retForIndex = num;
-                cout << "pts != pair  index:" << index << " listIndex - 1 :"<< listIndex - 1 << endl;
+                cout << "pts != pair  index:" << index << " listIndex - 1 :"<< (listIndex - 1) << endl;
             }
         } else if (isPtsCloseCenter && listIndex != 0) {
             if (index != listIndex && index != (listIndex - 1)) {
                 retForIndex = num;
-                cout << "pts != pair  index:" << index << " listIndex:"<< listIndex << " listIndex - 1 :"<< listIndex - 1 << endl;
-            }  
+                cout << "pts != pair index:" << index << " listIndex - 1 :"<< (listIndex - 1) << endl;
+            }
         } else {
             if (index != listIndex) {
                 retForIndex = num;

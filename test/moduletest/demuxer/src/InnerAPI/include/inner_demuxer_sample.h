@@ -49,8 +49,10 @@ private:
     void CheckLoopForPtsFromIndex(int32_t trackIndex);
     void GetIndexByPtsForAudio(int32_t trackIndex);
     void GetIndexByPtsForVideo(int32_t trackIndex);
-    void GetIndexFromPtsForVideo(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair);
-    void GetIndexFromPtsForAudio(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair);
+    void GetIndexFromPtsForVideo(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair,
+                                    int division, int value);
+    void GetIndexFromPtsForAudio(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair,
+                                    int division, int value);
     int32_t CheckIndex(uint32_t index);
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
