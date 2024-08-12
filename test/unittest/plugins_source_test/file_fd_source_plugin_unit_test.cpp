@@ -559,11 +559,11 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_DeleteCacheBuffer_0100, TestSize.Lev
 }
 
 /**
- * @tc.name: FileFdSource_checkReadTime_0200
- * @tc.desc: FileFdSource_checkReadTime_0200
+ * @tc.name: FileFdSource_checkReadTime_0100
+ * @tc.desc: FileFdSource_checkReadTime_0100
  * @tc.type: FUNC
  */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0200, TestSize.Level1)
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0100, TestSize.Level1)
 {
     fileFdSourcePlugin_->callback_ = nullptr;
     int64_t curTime = 0;
