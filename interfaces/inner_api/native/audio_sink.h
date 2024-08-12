@@ -89,7 +89,8 @@ private:
     void UpdateAudioWriteTimeMayWait();
     void DrainAndReportEosEvent();
     void HandleEosInner(bool drain);
-    void CheckUpdateState(char *frame, uint64_t replyBytes, AudioSampleFormat format);
+    void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
+    void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
 
     class UnderrunDetector {
     public:

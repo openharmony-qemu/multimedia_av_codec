@@ -367,16 +367,15 @@ void AudioSink::DrainAndReportEosEvent()
     playerEventReceiver_->OnEvent(event);
 }
 
-void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, AudioSampleFormat format)
+void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format)
 {
+    FALSE_RETURN(frame != nullptr && replyBytes != 0);
     if (startUpdate_) {
         if (renderFrameNum_ == 0) {
             last10FrameStartTime_ = time(nullptr);
         }
         renderFrameNum_++;
-        maxAmplitude_ = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(
-            static_cast<CalcMaxAmplitude::ConvertHdiFormat>(format),
-            frame, replyBytes);
+        maxAmplitude_ = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(frame, replyBytes, format);
         if (renderFrameNum_ == GET_MAX_AMPLITUDE_FRAMES_THRESHOLD) {
             renderFrameNum_ = 0;
             if (last10FrameStartTime_ > lastGetMaxAmplitudeTime_) {
@@ -393,6 +392,20 @@ float AudioSink::GetMaxAmplitude()
     startUpdate_ = true;
     return maxAmplitude_;
 }
+
+void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
+{
+    FALSE_RETURN(filledOutputBuffer != nullptr);
+    auto mem = filledOutputBuffer->memory_;
+    FALSE_RETURN(mem != nullptr);
+    auto srcBuffer = mem->GetAddr();
+    auto destBuffer = const_cast<uint8_t *>(srcBuffer);
+    auto srcLength = mem->GetSize();
+    size_t destLength = static_cast<size_t>(srcLength);
+    int32_t format = plugin_->GetSampleFormat();
+    CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
+}
+
 
 void AudioSink::DrainOutputBuffer()
 {
@@ -431,13 +444,7 @@ void AudioSink::DrainOutputBuffer()
     }
     UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
-    auto mem = filledOutputBuffer->memory_;
-    auto srcBuffer = mem->GetAddr();
-    auto destBuffer = const_cast<uint8_t *>(srcBuffer);
-    auto srcLength = mem->GetSize();
-    size_t destLength = static_cast<size_t>(srcLength);
-    AudioSampleFormat format = plugin_->GetSampleFormat();
-    CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
+    CalcMaxAmplitude(filledOutputBuffer);
     lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
