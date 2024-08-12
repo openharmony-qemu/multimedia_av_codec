@@ -262,19 +262,25 @@ void InnerDemuxerSample::GetIndexByPtsForAudio(int32_t trackIndex)
     }
 }
 
-void InnerDemuxerSample::GetIndexFromPtsForVideo(int32_t trackIndex, 
-                                        uint64_t relativePresentationTimeUs, int64_t pair, int division, int value)
+void InnerDemuxerSample::GetIndexFromPtsForVideo(int32_t trackIndex,
+    uint64_t relativePresentationTimeUs, int64_t pair, int division, int value)
 {
     if (isPtsExist && listIndex != 0) {
         if (isPtsCloseLeft) {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, 
-                relativePresentationTimeUs - ((pair - previousValue) / division + value), indexVideo);
+            if (division != 0) {
+                retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                    relativePresentationTimeUs - ((pair - previousValue) / division + value), indexVideo);
+            }
         } else if (isPtsCloseCenter) {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
-                relativePresentationTimeUs - ((pair - previousValue) / division), indexVideo);
+            if (division != 0) {
+                retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                    relativePresentationTimeUs - ((pair - previousValue) / division), indexVideo);
+            }
         } else {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
-                relativePresentationTimeUs - ((pair - previousValue) / division - value), indexVideo);
+            if (division != 0) {
+                retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                    relativePresentationTimeUs - ((pair - previousValue) / division - value), indexVideo);
+            }
         }
     } else {
         retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
@@ -282,19 +288,25 @@ void InnerDemuxerSample::GetIndexFromPtsForVideo(int32_t trackIndex,
     }
 }
 
-void InnerDemuxerSample::GetIndexFromPtsForAudio(int32_t trackIndex, 
-                                uint64_t relativePresentationTimeUs, int64_t pair, int division, int value)
+void InnerDemuxerSample::GetIndexFromPtsForAudio(int32_t trackIndex,
+    uint64_t relativePresentationTimeUs, int64_t pair, int division, int value)
 {
     if (isPtsExist && listIndex != 0) {
         if (isPtsCloseLeft) {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
-                relativePresentationTimeUs - ((pair - previousValue) / division + value), indexAudio);
+            if (division != 0) {
+                retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                    relativePresentationTimeUs - ((pair - previousValue) / division + value), indexAudio);
+            }
         } else if (isPtsCloseCenter) {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
-                relativePresentationTimeUs - ((pair - previousValue) / division), indexAudio);
+            if (division != 0) {
+                retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                    relativePresentationTimeUs - ((pair - previousValue) / division), indexAudio);
+            }
         } else {
-            retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
-                relativePresentationTimeUs - ((pair - previousValue) / division - value), indexAudio);
+            if (division != 0) {
+                retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,
+                    relativePresentationTimeUs - ((pair - previousValue) / division - value), indexAudio);
+            }
         }
     } else {
         retForIndex = demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex,

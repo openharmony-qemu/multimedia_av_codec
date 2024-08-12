@@ -406,7 +406,8 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0010, TestSize.Le
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0020, TestSize.Level1)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
-    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", true),
+        AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
 }
@@ -484,7 +485,8 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0070, TestSize.Le
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0080, TestSize.Level1)
 {
     auto demuxerSample = make_unique<InnerDemuxerSample>();
-    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", true),
+        AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
 }
