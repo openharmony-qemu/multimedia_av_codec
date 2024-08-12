@@ -93,7 +93,6 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "dash/mpd_parser/dash_mpd_manager.cpp",
     "dash/mpd_parser/dash_mpd_node.cpp",
     "dash/mpd_parser/dash_mpd_parser.cpp",
-    "dash/mpd_parser/dash_mpd_prefer_audio_util.cpp",
     "dash/mpd_parser/dash_mpd_util.cpp",
     "dash/mpd_parser/dash_mult_seg_base_node.cpp",
     "dash/mpd_parser/dash_period_manager.cpp",
