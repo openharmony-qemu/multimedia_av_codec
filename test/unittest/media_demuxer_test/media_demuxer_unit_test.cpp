@@ -1662,4 +1662,94 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDragging_0100, TestSize.Level1
     demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
     EXPECT_EQ(demuxer->ResumeDragging(), Status::OK);
 }
+/**
+ * @tc.name: MediaDemuxer_InitAudioTrack_0100
+ * @tc.desc: test InitAudioTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitAudioTrack_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    StreamInfo info;
+    demuxerPluginManager->curAudioStreamID_ = 1;
+    demuxerPluginManager->InitAudioTrack(info);
+    demuxerPluginManager->curAudioStreamID_ = -1;
+    demuxerPluginManager->InitAudioTrack(info);
+    EXPECT_EQ(demuxerPluginManager->isDash_ , true);
+}
+/**
+ * @tc.name: MediaDemuxer_InitVideoTrack_0100
+ * @tc.desc: test InitVideoTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitVideoTrack_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    StreamInfo info;
+    demuxerPluginManager->curAudioStreamID_ = 1;
+    demuxerPluginManager->InitVideoTrack(info);
+    demuxerPluginManager->curAudioStreamID_ = -1;
+    demuxerPluginManager->InitVideoTrack(info);
+    EXPECT_EQ(demuxerPluginManager->isDash_ , true);
+}
+/**
+ * @tc.name: MediaDemuxer_InitSubtitleTrack_0100
+ * @tc.desc: test InitSubtitleTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitSubtitleTrack_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    StreamInfo info;
+    demuxerPluginManager->curAudioStreamID_ = -1;
+    demuxerPluginManager->InitSubtitleTrack(info);
+    demuxerPluginManager->curAudioStreamID_ = 0;
+    demuxerPluginManager->InitSubtitleTrack(info);
+    EXPECT_EQ(demuxerPluginManager->curAudioStreamID_ , info.streamId);
+}
+/**
+ * @tc.name: MediaDemuxer_LoadCurrentSubtitlePlugin_0100
+ * @tc.desc: test LoadCurrentSubtitlePlugin
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_LoadCurrentSubtitlePlugin_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    demuxerPluginManager->curSubTitleStreamID_ = -1;
+    Plugins::MediaInfo mediaInfo;
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::shared_ptr<BaseStreamDemuxer>();
+    Status ret =  demuxerPluginManager->LoadCurrentSubtitlePlugin(streamDemuxer, mediaInfo);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+/**
+ * @tc.name: MediaDemuxer_UpdateGeneralValue_0100
+ * @tc.desc: test UpdateGeneralValue
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateGeneralValue_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    int32_t trackCount = 0;
+    Meta format;
+    Meta formatNew;
+    format.Set<Tag::MEDIA_HAS_VIDEO>(true);
+    format.Set<Tag::MEDIA_HAS_AUDIO>(true);
+    format.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+    Status ret = demuxerPluginManager->UpdateGeneralValue(trackCount, format, formatNew);
+    EXPECT_EQ(ret, Status::OK);
+}
+/**
+ * @tc.name: MediaDemuxer_GetInnerTrackIDByTrackID_0100
+ * @tc.desc: test GetInnerTrackIDByTrackID
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetInnerTrackIDByTrackID_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    int32_t trackId = 1;
+    int32_t expectedInnerTrackIndex = 2;
+    demuxerPluginManager->trackInfoMap_[trackId].innerTrackIndex = expectedInnerTrackIndex;
+    int32_t actualInnerTrackIndex = demuxerPluginManager->GetInnerTrackIDByTrackID(trackId);
+    ASSERT_EQ(actualInnerTrackIndex, expectedInnerTrackIndex);
+}
 }
