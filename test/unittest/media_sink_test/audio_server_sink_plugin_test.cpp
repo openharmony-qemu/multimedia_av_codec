@@ -535,6 +535,34 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_cache_data, TestSize.Level1)
     ASSERT_EQ(DEFAULT_BUFFER_NUM, audioServerSinkPlugin->cachedBuffers_.size());
 }
 
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_DumpEntireAudioBuffer001, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    uint8_t data[10] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
+    uint8_t* buffer = data;
+    size_t bytesSingle = 10;
+    audioServerSinkPlugin->enableEntireDump_ = false;
+    audioServerSinkPlugin->DumpEntireAudioBuffer(buffer, bytesSingle);
+    audioServerSinkPlugin->enableEntireDump_ = true;
+    audioServerSinkPlugin->DumpEntireAudioBuffer(buffer, bytesSingle);
+}
+
+HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_DumpSliceAudioBuffer001, TestSize.Level1)
+{
+    std::shared_ptr<AudioServerSinkPlugin> audioServerSinkPlugin =
+        CreateAudioServerSinkPlugin("Write");
+    ASSERT_TRUE(audioServerSinkPlugin != nullptr);
+    uint8_t data[10] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
+    uint8_t* buffer = data;
+    size_t bytesSingle = 10;
+    audioServerSinkPlugin->enableDumpSlice_ = false;
+    audioServerSinkPlugin->DumpSliceAudioBuffer(buffer, bytesSingle);
+    audioServerSinkPlugin->enableDumpSlice_ = true;
+    audioServerSinkPlugin->DumpSliceAudioBuffer(buffer, bytesSingle);
+    ASSERT_EQ(audioServerSinkPlugin->curCount_, audioServerSinkPlugin->sliceCount_);
+}
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS
