@@ -248,7 +248,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_001, TestSize.Level1)
         node->GetAttr("id", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_002, TestSize.Level1)
@@ -271,7 +271,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_002, TestSize.Level1)
         node->GetAttr("id", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_003, TestSize.Level1)
@@ -294,7 +294,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_003, TestSize.Level1)
         node->GetAttr("id", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_004, TestSize.Level1)
@@ -317,7 +317,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_004, TestSize.Level1)
         node->GetAttr("id", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_005, TestSize.Level1)
@@ -340,7 +340,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_005, TestSize.Level1)
         node->GetAttr("id", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_006, TestSize.Level1)
@@ -363,7 +363,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_006, TestSize.Level1)
         node->GetAttr("timescale", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_007, TestSize.Level1)
@@ -386,7 +386,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_007, TestSize.Level1)
         node->GetAttr("duration", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_008, TestSize.Level1)
@@ -409,7 +409,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_008, TestSize.Level1)
         node->GetAttr("media", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_009, TestSize.Level1)
@@ -432,7 +432,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_009, TestSize.Level1)
         node->GetAttr("media", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_010, TestSize.Level1)
@@ -455,7 +455,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_010, TestSize.Level1)
         node->GetAttr("sourceURL", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_011, TestSize.Level1)
@@ -478,7 +478,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_011, TestSize.Level1)
         node->GetAttr("t", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_012, TestSize.Level1)
@@ -501,7 +501,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_012, TestSize.Level1)
         node->GetAttr("schemeIdUri", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 
 HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_013, TestSize.Level1)
@@ -524,7 +524,7 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_013, TestSize.Level1)
         node->GetAttr("media", dAttrVal);
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
-    }  
+    }
 }
 }
 }

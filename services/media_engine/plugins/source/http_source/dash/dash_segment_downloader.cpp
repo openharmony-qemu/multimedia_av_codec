@@ -465,8 +465,8 @@ void DashSegmentDownloader::UpdateCachedPercent(BufferingInfoType infoType)
     }
     uint32_t deltaSize = bufferSize - lastCachedSize_;
     if (deltaSize >= UPDATE_CACHE_STEP) {
-        uint32_t percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize * BUFFERING_PERCENT_FULL /
-            waterLineAbove_;
+        uint32_t percent = (bufferSize >= waterLineAbove_) ? BUFFERING_PERCENT_FULL : bufferSize *
+            BUFFERING_PERCENT_FULL / waterLineAbove_;
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {percent}, "buffer percent"});
         lastCachedSize_ = bufferSize;
     }
