@@ -44,11 +44,11 @@ public:
     int32_t StartReferenceParser(int64_t startTimeMs) override;
     int32_t GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
     int32_t GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
+
     int32_t GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
     int32_t GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
-
 private:
     std::shared_ptr<MediaDemuxer> demuxerEngine_ = nullptr;
     std::string sourceUri_;
