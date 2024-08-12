@@ -25,8 +25,10 @@ constexpr int32_t SAMPLE_S24_BYTE_NUM = 3;
 constexpr int32_t ONE_BYTE_BITS = 8;
 constexpr int32_t MAX_VALUE_OF_SIGNED_24_BIT = 0x7FFFFF;
 constexpr int32_t MAX_VALUE_OF_SIGNED_32_BIT = 0x7FFFFFFF;
+
 float CalculateMaxAmplitudeForPCM8Bit(int8_t *frame, uint64_t nSamples)
 {
+    FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
     for (uint32_t i = nSamples; i > 0; --i) {
         int8_t value = *frame++;
@@ -42,6 +44,7 @@ float CalculateMaxAmplitudeForPCM8Bit(int8_t *frame, uint64_t nSamples)
 
 float CalculateMaxAmplitudeForPCM16Bit(int16_t *frame, uint64_t nSamples)
 {
+    FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
     for (uint32_t i = nSamples; i > 0; --i) {
         int16_t value = *frame++;
@@ -57,6 +60,7 @@ float CalculateMaxAmplitudeForPCM16Bit(int16_t *frame, uint64_t nSamples)
 
 float CalculateMaxAmplitudeForPCM24Bit(char *frame, uint64_t nSamples)
 {
+    FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
     for (uint32_t i = 0; i < nSamples; ++i) {
         char *curPos = frame + (i * SAMPLE_S24_BYTE_NUM);
@@ -76,6 +80,7 @@ float CalculateMaxAmplitudeForPCM24Bit(char *frame, uint64_t nSamples)
 
 float CalculateMaxAmplitudeForPCM32Bit(int32_t *frame, uint64_t nSamples)
 {
+    FALSE_RETURN_V(frame != nullptr && nSamples != 0, 0.0f);
     int curMaxAmplitude = 0;
     for (uint32_t i = nSamples; i > 0; --i) {
         int32_t value = *frame++;
@@ -89,13 +94,19 @@ float CalculateMaxAmplitudeForPCM32Bit(int32_t *frame, uint64_t nSamples)
     return float(curMaxAmplitude) / float(MAX_VALUE_OF_SIGNED_32_BIT);
 }
 
-float UpdateMaxAmplitude(ConvertHdiFormat adapterFormat, char *frame, uint64_t replyBytes)
+float UpdateMaxAmplitude(char *frame, uint64_t replyBytes, int32_t adapterFormat)
 {
+    FALSE_RETURN_V(frame != nullptr && replyBytes != 0, 0.0f);
     switch (adapterFormat) {
         case SAMPLE_U8_C: {
             return CalculateMaxAmplitudeForPCM8Bit(reinterpret_cast<int8_t *>(frame), replyBytes);
         }
         case SAMPLE_S16_C: {
+            MEDIA_LOG_I("UpdateMaxAmplitude format " PUBLIC_LOG_U32, adapterFormat);
+            MEDIA_LOG_I("UpdateMaxAmplitude bytes " PUBLIC_LOG_U64, replyBytes);
+            float amp = CalculateMaxAmplitudeForPCM16Bit(reinterpret_cast<int16_t *>(frame),
+                (replyBytes / sizeof(int16_t)));
+            MEDIA_LOG_I("UpdateMaxAmplitude  " PUBLIC_LOG_F, amp);
             return CalculateMaxAmplitudeForPCM16Bit(reinterpret_cast<int16_t *>(frame),
                 (replyBytes / sizeof(int16_t)));
         }

@@ -20,19 +20,11 @@
 namespace OHOS {
 namespace Media {
 namespace CalcMaxAmplitude {
-enum ConvertHdiFormat {
-    SAMPLE_U8_C = 0,
-    SAMPLE_S16_C = 1,
-    SAMPLE_S24_C = 2,
-    SAMPLE_S32_C = 3,
-    SAMPLE_F32_C = 4,
-    INVALID_WIDTH_C = -1
-}; // same with HdiAdapterFormat
 float CalculateMaxAmplitudeForPCM8Bit(int8_t *frame, uint64_t nSamples);
 float CalculateMaxAmplitudeForPCM16Bit(int16_t *frame, uint64_t nSamples);
 float CalculateMaxAmplitudeForPCM24Bit(char *frame, uint64_t nSamples);
 float CalculateMaxAmplitudeForPCM32Bit(int32_t *frame, uint64_t nSamples);
-float UpdateMaxAmplitude(ConvertHdiFormat adapterFormat, char *frame, uint64_t replyBytes);
+float UpdateMaxAmplitude(char *frame, uint64_t replyBytes, int32_t adapterFormat);
 } // namespace CalcMaxAmplitude
 } // namespace Media
 } // namespace OHOS
