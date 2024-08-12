@@ -222,7 +222,8 @@ std::shared_ptr<Plugins::DemuxerPlugin> DemuxerPluginManager::GetPluginByStreamI
 
 void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId)
 {
-    auto iter = std::find_if(trackInfoMap_.begin(), trackInfoMap_.end(), [&](const std::pair<int32_t, MediaTrackMap> &item) {
+    auto iter = std::find_if(trackInfoMap_.begin(), trackInfoMap_.end(),
+        [&](const std::pair<int32_t, MediaTrackMap> &item) {
         return item.second.streamID == streamID;
     });
     if (iter != trackInfoMap_.end()) {
