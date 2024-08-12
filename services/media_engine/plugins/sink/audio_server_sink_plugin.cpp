@@ -291,6 +291,11 @@ Status AudioServerSinkPlugin::Init()
     return Status::OK;
 }
 
+AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
+{
+    return static_cast<AudioSampleFormat>(rendererOptions_.streamInfo.format);
+}
+
 void AudioServerSinkPlugin::ReleaseRender()
 {
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {

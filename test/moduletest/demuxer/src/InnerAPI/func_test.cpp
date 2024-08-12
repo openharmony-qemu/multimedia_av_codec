@@ -384,4 +384,500 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_TIMED_META_INNER_FUNC_0100, TestSize.L
     ASSERT_EQ(demuxerSample->CheckTimedMetaFormat(3, 0), 0);
     ASSERT_EQ(demuxerSample->CheckTimedMeta(3), 0);
 }
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0010
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with ltr h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0010, TestSize.Level0)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ltr_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0020
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with one I frame h264 video track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0020, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", true),
+        AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0030
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with one I frame h264 video and audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0030, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0040
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with all I frame h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0040, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_all_i_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0050
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0050, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0060
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with 2 layer frame h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0060, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0070
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with ltr h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0070, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0080
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with one I frame h265 video track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0080, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", true),
+        AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0090
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with one I frame h265 video and audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0090, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0100
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with all I frame h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0100, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0110
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB frame h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0110, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0120
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with 2 layer frame frame h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0120, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0130
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with ltr h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0130, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ltr_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0140
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with one I frame h264 video track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0140, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_avc.mp4", true),
+        AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0150
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with one I frame h264 video and audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0150, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0160
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with all I frame h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0160, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_all_i_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0170
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with IPB h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0170, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0180
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with 2 layer frame h264 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0180, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0190
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with ltr h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0190, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ltr_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0200
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with one I frame h265 video track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0200, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_no_audio_hevc.mp4", true),
+        AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0210
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with one I frame h265 video and audio track source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0210, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_one_i_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0220
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with all I frame h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0220, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_all_i_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0230
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with IPB h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0230, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0240
+ * @tc.name      : GetPresentationTimeUsByFrameIndex with 2 layer frame h265 source
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0240, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckPtsFromIndex(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0250
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h264 source, pts is a close to left value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0250, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseLeft = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0260
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h264 source, pts is a close to right value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0260, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseRight = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0270
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h264 source, pts is a close to center value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0270, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseCenter = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0280
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h265 source, pts is a close to left value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0280, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseLeft = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0290
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h265 source, pts is a close to right value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0290, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseRight = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0300
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h265 source, pts is a close to center value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0300, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseCenter = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_2_layer_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0310
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB h264 source, pts is a close to left value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0310, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseLeft = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0320
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB h264 source, pts is a close to right value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0320, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseRight = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0330
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB h264 source, pts is a close to center value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0330, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseCenter = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_avc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0340
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB h265 source, pts is a close to left value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0340, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseLeft = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0350
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IP h265 source, pts is a close to right value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0350, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseRight = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : DEMUXER_PTS_INDEX_INNER_FUNC_0360
+ * @tc.name      : GetFrameIndexByPresentationTimeUs with IPB h265 source, pts is a close to center value
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_PTS_INDEX_INNER_FUNC_0360, TestSize.Level1)
+{
+    auto demuxerSample = make_unique<InnerDemuxerSample>();
+    demuxerSample->isPtsCloseCenter = true;
+    demuxerSample->isPtsExist = true;
+    ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/demuxer_parser_ipb_frame_hevc.mp4", true), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->ReadSampleAndSave(), AVCS_ERR_OK);
+    ASSERT_EQ(demuxerSample->CheckIndexFromPts(), AVCS_ERR_OK);
+}
 } // namespace

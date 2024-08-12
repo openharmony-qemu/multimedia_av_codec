@@ -1030,7 +1030,9 @@ bool VEncNdkInnerSample::ReadCustomDataToAVBuffer(const std::string &fileName, s
     const int32_t srcWidthStride = width << 2;
     uint8_t *inStream = in;
     for (uint32_t i = 0; i < height; ++i) {
-        memcpy_s(dstAddr, dstWidthStride, inStream, srcWidthStride);
+        if (memcpy_s(dstAddr, dstWidthStride, inStream, srcWidthStride)) {
+            cout << "memcpy_s failed" <<endl;
+        };
         dstAddr += dstWidthStride;
         inStream += srcWidthStride;
     }

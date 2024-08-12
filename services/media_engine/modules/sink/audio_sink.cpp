@@ -17,6 +17,7 @@
 #include "syspara/parameters.h"
 #include "plugin/plugin_manager_v2.h"
 #include "common/log.h"
+#include "calc_max_amplitude.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -31,6 +32,7 @@ const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
 const int32_t APE_BUFFER_QUEUE_SIZE = 32;
 const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
 const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
+constexpr int32_t GET_MAX_AMPLITUDE_FRAMES_THRESHOLD = 10;
 
 int64_t GetAudioLatencyFixDelay()
 {
@@ -365,6 +367,45 @@ void AudioSink::DrainAndReportEosEvent()
     playerEventReceiver_->OnEvent(event);
 }
 
+void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format)
+{
+    FALSE_RETURN(frame != nullptr && replyBytes != 0);
+    if (startUpdate_) {
+        if (renderFrameNum_ == 0) {
+            last10FrameStartTime_ = time(nullptr);
+        }
+        renderFrameNum_++;
+        maxAmplitude_ = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(frame, replyBytes, format);
+        if (renderFrameNum_ == GET_MAX_AMPLITUDE_FRAMES_THRESHOLD) {
+            renderFrameNum_ = 0;
+            if (last10FrameStartTime_ > lastGetMaxAmplitudeTime_) {
+                startUpdate_ = false;
+                maxAmplitude_ = 0;
+            }
+        }
+    }
+}
+
+float AudioSink::GetMaxAmplitude()
+{
+    lastGetMaxAmplitudeTime_ = time(nullptr);
+    startUpdate_ = true;
+    return maxAmplitude_;
+}
+
+void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
+{
+    FALSE_RETURN(filledOutputBuffer != nullptr);
+    auto mem = filledOutputBuffer->memory_;
+    FALSE_RETURN(mem != nullptr);
+    auto srcBuffer = mem->GetAddr();
+    auto destBuffer = const_cast<uint8_t *>(srcBuffer);
+    auto srcLength = mem->GetSize();
+    size_t destLength = static_cast<size_t>(srcLength);
+    int32_t format = plugin_->GetSampleFormat();
+    CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
+}
+
 void AudioSink::DrainOutputBuffer()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
@@ -402,6 +443,7 @@ void AudioSink::DrainOutputBuffer()
     }
     UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
+    CalcMaxAmplitude(filledOutputBuffer);
     lastBufferWriteSuccess_ = (plugin_->Write(filledOutputBuffer) == Status::OK);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;

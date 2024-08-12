@@ -23,11 +23,12 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
+constexpr int32_t SERVERPORT = 47777;
 // range 0-1065
-static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:46666/test_dash/segment_base/media-audio-und-mp4a.mp4";
-static const std::string VIDEO_MEDIA_SEGMENT_URL_1 = "http://127.0.0.1:46666/test_dash/segment_list/video/1/seg-1.m4s";
-static const std::string VIDEO_MEDIA_SEGMENT_URL_2 = "http://127.0.0.1:46666/test_dash/segment_list/video/1/seg-2.m4s";
-static const std::string VIDEO_INIT_SEGMENT_URL = "http://127.0.0.1:46666/test_dash/segment_list/video/1/init.mp4";
+static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_base/media-audio-und-mp4a.mp4";
+static const std::string VIDEO_MEDIA_SEGMENT_URL_1 = "http://127.0.0.1:47777/test_dash/segment_list/video/1/seg-1.m4s";
+static const std::string VIDEO_MEDIA_SEGMENT_URL_2 = "http://127.0.0.1:47777/test_dash/segment_list/video/1/seg-2.m4s";
+static const std::string VIDEO_INIT_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_list/video/1/init.mp4";
 }
 using namespace testing::ext;
 
@@ -35,7 +36,7 @@ std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void DashSegmentDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer();
+    g_server->StartServer(SERVERPORT);
     std::cout << "start" << std::endl;
 }
 
@@ -77,6 +78,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
     bool result = segmentDownloader->Open(segmentSp);
+    segmentDownloader->Pause();
+    segmentDownloader->Resume();
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
     EXPECT_TRUE(result);
@@ -102,6 +105,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_RANGE, TestSize.Level1)
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
     bool result = segmentDownloader->Open(segmentSp);
+    segmentDownloader->GetRingBufferSize();
+    segmentDownloader->GetRingBufferCapacity();
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
     EXPECT_TRUE(result);
@@ -323,6 +328,42 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_SUCCESS_001
     EXPECT_GE(status, false);
 }
 
+HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_001, TestSize.Level1)
+{
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(nullptr,
+        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10);
+    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
+    segmentSp->url_ = VIDEO_MEDIA_SEGMENT_URL_1;
+    segmentSp->streamId_ = 0;
+    segmentSp->duration_ = 5;
+    segmentSp->bandwidth_ = 1024;
+    segmentSp->startNumberSeq_ = 0;
+    segmentSp->numberSeq_ = 0;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    segmentDownloaderSp->SetStatusCallback(statusCallback);
+    auto doneCallback = [] (int streamId) {};
+    segmentDownloaderSp->SetDownloadDoneCallback(doneCallback);
+    segmentDownloaderSp->SetDemuxerState();
+    segmentDownloaderSp->SetCurrentBitRate(1048576);
+    unsigned char buffer[1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 1;
+    readDataInfo.wantReadLength_ = 1024;
+    readDataInfo.realReadLength_ = 0;
+    readDataInfo.nextStreamId_ = 1;
+    std::atomic<bool> isInterruptNeeded = false;
+    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    EXPECT_EQ(result, DASH_READ_AGAIN);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, true);
+    EXPECT_EQ(result, DASH_READ_AGAIN);
+    segmentDownloaderSp->Open(segmentSp);
+    sleep(2);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, true);
+    segmentDownloaderSp->Close(true, true);
+    bool status = segmentDownloaderSp->GetStartedStatus();
+    EXPECT_GE(status, false);
+}
 }
 }
 }
