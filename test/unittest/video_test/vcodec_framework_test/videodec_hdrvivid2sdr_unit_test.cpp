@@ -632,7 +632,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_017, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_024, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         CreateByNameWithParam(testCode);
         SetFormatWithParam(testCode);
         PrepareSource(testCode);
@@ -1169,7 +1169,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_017, TestSize.Level1)
 HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_024, TestSize.Level1)
 {
     auto testCode = GetParam();
-    if (testCode == VCodecTestCode::HW_HDR || testCode == VCodecTestCode::HW_HEVC) {
+    if (testCode == VCodecTestCode::HW_HDR) {
         CreateByNameWithParam(testCode);
         SetFormatWithParam(testCode);
         PrepareSource(testCode);
