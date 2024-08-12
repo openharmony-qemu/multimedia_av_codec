@@ -406,7 +406,6 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
     CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
 }
 
-
 void AudioSink::DrainOutputBuffer()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
