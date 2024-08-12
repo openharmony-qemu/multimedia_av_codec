@@ -49,6 +49,9 @@ private:
     void CheckLoopForPtsFromIndex(int32_t trackIndex);
     void GetIndexByPtsForAudio(int32_t trackIndex);
     void GetIndexByPtsForVideo(int32_t trackIndex);
+    void GetIndexFromPtsForVideo(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair);
+    void GetIndexFromPtsForAudio(int32_t trackIndex, uint64_t relativePresentationTimeUs, int64_t pair);
+    int32_t CheckIndex(uint32_t index);
     std::list<int64_t> videoIndexPtsList;
     std::list<int64_t> audioIndexPtsList;
     std::shared_ptr<AVSource> avsource_ = nullptr;
@@ -80,6 +83,8 @@ private:
     bool isPtsCloseLeft = false;
     uint32_t listIndex = 0;
     uint64_t previousValue = 0;
+    uint32_t indexVideo = 0;
+    uint32_t indexAudio = 0;
 };
 }
 }
