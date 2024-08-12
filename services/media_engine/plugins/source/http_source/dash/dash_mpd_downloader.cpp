@@ -1211,6 +1211,17 @@ unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned 
     }
 }
 
+bool DashMpdDownloader::IsChoosedVideoStream(const std::shared_ptr<DashStreamDescription> &choosedStream,
+    const std::shared_ptr<DashStreamDescription> &currentStream)
+{
+    if (choosedStream == nullptr ||
+        (initResolution_ == 0 && choosedStream->bandwidth_ > currentStream->bandwidth_) ||
+        IsNearToInitResolution(choosedStream, currentStream)) {
+        return true;
+    }
+    return false;
+}
+
 bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
     const std::shared_ptr<DashStreamDescription> &currentStream)
 {
@@ -1279,9 +1290,7 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
             continue;
         }
         
-        if (choosedStream == nullptr ||
-            (initResolution_ == 0 && choosedStream->bandwidth_ > stream->bandwidth_) ||
-            IsNearToInitResolution(choosedStream, stream)) {
+        if (IsChoosedVideoStream(choosedStream, stream)) {
             choosedStream = stream;
         }
     }

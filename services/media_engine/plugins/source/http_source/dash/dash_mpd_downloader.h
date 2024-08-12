@@ -157,6 +157,8 @@ private:
     void GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, const std::string &periodBaseUrl,
                                  DashStreamDescription &streamDesc);
     unsigned int GetResolutionDelta(unsigned int width, unsigned int height);
+    bool IsChoosedVideoStream(const std::shared_ptr<DashStreamDescription> &choosedStream,
+        const std::shared_ptr<DashStreamDescription> &currentStream);
     bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
         const std::shared_ptr<DashStreamDescription> &currentStream);
     bool IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type);
