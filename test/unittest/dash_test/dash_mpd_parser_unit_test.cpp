@@ -19,6 +19,7 @@
 #include "mpd_parser/dash_mpd_manager.h"
 #include "mpd_parser/dash_period_manager.h"
 #include "mpd_parser/dash_adpt_set_manager.h"
+#include "mpd_parser/i_dash_mpd_node.h"
 #include "dash_segment_downloader.h"
 
 namespace OHOS {
@@ -227,6 +228,304 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentTemplateMpd_001, TestSize.Level
     EXPECT_NE(nullptr, mpdInfo);
 }
 
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_001, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("MPD");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("id", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("id", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("id", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("id", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_002, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("Period");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("id", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("id", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("id", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("id", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_003, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("AdaptationSet");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("id", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("id", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("id", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("id", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_004, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("ContentComponent");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("id", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("id", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("id", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("id", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_005, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("Representation");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("id", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("id", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("id", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("id", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_006, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentBase");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("timescale", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("timescale", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("timescale", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("timescale", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_007, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("MultipleSegmentBase");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("duration", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("duration", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("duration", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("duration", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_008, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentList");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("media", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("media", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("media", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("media", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_009, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentTemplate");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("media", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("media", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("media", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("media", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_010, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("Initialization");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("sourceURL", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("sourceURL", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("sourceURL", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("sourceURL", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_011, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentTimeline");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("t", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("t", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("t", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("t", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_012, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("ContentProtection");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("schemeIdUri", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("schemeIdUri", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("schemeIdUri", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("schemeIdUri", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_013, TestSize.Level1)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentURL");
+    if (node != nullptr) {
+        uint32_t uiAttrVal;
+        node->GetAttr("media", uiAttrVal);
+        node->GetAttr("test", uiAttrVal);
+        EXPECT_EQ(uiAttrVal, 0);
+        int32_t iAttrVal;
+        node->GetAttr("media", iAttrVal);
+        node->GetAttr("test", iAttrVal);
+        EXPECT_EQ(iAttrVal, 0);
+        uint64_t ullAttrVal;
+        node->GetAttr("media", ullAttrVal);
+        node->GetAttr("test", ullAttrVal);
+        EXPECT_EQ(ullAttrVal, 0);
+        double dAttrVal;
+        node->GetAttr("media", dAttrVal);
+        node->GetAttr("test", dAttrVal);
+        EXPECT_EQ(dAttrVal, 0.0);
+    }  
+}
 }
 }
 }
