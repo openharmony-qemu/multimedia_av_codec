@@ -24,6 +24,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "MediaSyncManager" };
+constexpr int64_t US_TO_MS = 1000; // 1000 us per ms
 }
 
 namespace OHOS {
@@ -395,6 +396,13 @@ void MediaSyncManager::SetLastAudioBufferDuration(int64_t durationUs)
     }
 }
 
+void MediaSyncManager::ReportLagEvent(int64_t lagDurationMs)
+{
+    auto eventReceiver = eventReceiver_.lock();
+    FALSE_RETURN(eventReceiver != nullptr);
+    eventReceiver->OnEvent({"SyncManager", EventType::EVENT_STREAM_LAG, lagDurationMs});
+}
+
 int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
 {
     int64_t maxMediaProgress;
@@ -404,6 +412,7 @@ int64_t MediaSyncManager::BoundMediaProgress(int64_t newMediaProgressTime)
         maxMediaProgress = currentAnchorMediaTime_;
     }
     if (newMediaProgressTime > maxMediaProgress) {
+        ReportLagEvent((newMediaProgressTime - maxMediaProgress) / US_TO_MS);
         lastReportMediaTime_ = maxMediaProgress; // Avoid media progress go too far when data underrun.
         MEDIA_LOG_W("Data underrun for %{public}" PRId64 " us, currentSyncerPriority_ is %{public}" PRId32,
             newMediaProgressTime - maxMediaProgress, currentSyncerPriority_);
@@ -549,6 +558,11 @@ void MediaSyncManager::ReportEos(IMediaSynchronizer* supplier)
             seekCond_.notify_all();
         }
     }
+}
+
+void MediaSyncManager::SetEventReceiver(std::weak_ptr<EventReceiver> eventReceiver)
+{
+    eventReceiver_ = eventReceiver;
 }
 } // namespace Pipeline
 } // namespace Media

@@ -159,7 +159,6 @@ Status VideoDecoderAdapter::Start()
         videoCodecFaultInfo.errMsg = "mediaCodec_ start failed";
         FaultVideoCodecEventWrite(videoCodecFaultInfo);
     }
-    currentTime_ = GetCurrentMillisecond();
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
@@ -187,6 +186,7 @@ Status VideoDecoderAdapter::Flush()
         bufferVector_.clear();
         inputBufferQueueConsumer_->SetQueueSize(0);
     }
+    currentTime_ = -1;
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
@@ -204,6 +204,7 @@ Status VideoDecoderAdapter::Reset()
         bufferVector_.clear();
         inputBufferQueueConsumer_->SetQueueSize(0);
     }
+    currentTime_ = -1;
     return Status::OK;
 }
 
@@ -212,6 +213,7 @@ Status VideoDecoderAdapter::Release()
     MEDIA_LOG_I_SHORT("Release enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Release();
+    currentTime_ = -1;
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
@@ -354,13 +356,19 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     MEDIA_LOG_I_SHORT("VideoDecoderAdapter::ReleaseOutputBuffer");
     mediaCodec_->ReleaseOutputBuffer(index, render);
-    if (render && currentTime_ != -1) {
+    FALSE_RETURN_V(render, 0);
+    if (currentTime_ == -1) {
+        currentTime_ = GetCurrentMillisecond();
+    } else {
         int64_t currentTime = GetCurrentMillisecond();
         int64_t diffTime = currentTime - currentTime_;
         if (diffTime > LAG_LIMIT_TIME) {
             lagTimes_++;
             maxLagDuration_ = maxLagDuration_ > diffTime ? maxLagDuration_ : diffTime;
             totalLagDuration_ += diffTime;
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"VideoDecoderAdapter", EventType::EVENT_VIDEO_LAG, diffTime});
+            }
         }
         currentTime_ = currentTime;
     }
