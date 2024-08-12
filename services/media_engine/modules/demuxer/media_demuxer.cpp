@@ -1581,7 +1581,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
     int32_t newStreamID = -1;
-    int32_t oldTrackId = -1;
+    uint32_t oldTrackId = -1;
     if (type == TRACK_AUDIO) {
         newStreamID = streamDemuxer_->GetNewAudioStreamID();
         oldTrackId = audioTrackId_;
@@ -1636,13 +1636,10 @@ bool MediaDemuxer::SelectBitRateChangeStream(uint32_t trackId)
         int32_t newInnerTrackId = -1;
         int32_t newTrackId = -1;
         demuxerPluginManager_->GetTrackInfoByStreamID(newStreamID, newTrackId, newInnerTrackId);
-       
-        if (trackId != -1) {
-            demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
-        }
+        demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, newTrackId, newInnerTrackId);
 
         MEDIA_LOG_I("SelectBitRateChangeStream dash, UpdateTempTrackMapInfo done");
-        InnerSelectTrack(trackId);
+        InnerSelectTrack(static_cast<int32_t>(trackId));
         MEDIA_LOG_I("SelectBitRateChangeStream dash, end");
         return true;
     }

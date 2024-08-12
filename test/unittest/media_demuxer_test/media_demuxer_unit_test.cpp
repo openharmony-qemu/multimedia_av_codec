@@ -754,17 +754,20 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitDefaultPlay_011, TestSiz
     info.bitRate = 0;
     info.type = Plugins::AUDIO;
     streams.push_back(info);
+    streams.push_back(info);
 
     Plugins::StreamInfo info1;
     info1.streamId = 1;
     info1.bitRate = 0;
-    info1.type = Plugins::AUDIO;
+    info1.type = Plugins::VIDEO;
+    streams.push_back(info1);
     streams.push_back(info1);
 
     Plugins::StreamInfo info2;
     info2.streamId = 2;
     info2.bitRate = 0;
     info2.type = Plugins::SUBTITLE;
+    streams.push_back(info2);
     streams.push_back(info2);
 
     EXPECT_EQ(demuxerPluginManager->InitDefaultPlay(streams), Status::OK);
@@ -1054,6 +1057,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_Start_016, TestSize.Level1)
 {
     std::shared_ptr<Plugins::DemuxerPlugin> pluginMock = std::make_shared<DemuxerPluginMock>("StatusErrorUnknown");
     std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    demuxerManager->needResetEosStatus_ = true;
 
     MediaStreamInfo info1;
     info1.plugin = pluginMock;
@@ -1662,4 +1666,19 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDragging_0100, TestSize.Level1
     demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
     EXPECT_EQ(demuxer->ResumeDragging(), Status::OK);
 }
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddGeneral_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    demuxerManager->SetResetEosStatus(true);
+    Meta format;
+    Meta formatNew;
+    format.Set<Tag::MEDIA_HAS_VIDEO>(true);
+    format.Set<Tag::MEDIA_HAS_AUDIO>(true);
+    format.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+    format.Set<Tag::MEDIA_TRACK_COUNT>(3);
+    formatNew.Set<Tag::MEDIA_TRACK_COUNT>(0);
+    EXPECT_EQ(demuxerManager->AddGeneral(format, formatNew), Status::OK);
+}
+
 }
