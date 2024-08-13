@@ -136,7 +136,7 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
  * {@link AV_ERR_UNSUPPORT}, unsupported features.
- * {@link AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION}, video unsupported color space conversion.
+ * {@link AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION}, video unsupported color space conversion.
  * @since 9
  * @version 1.0
  */
