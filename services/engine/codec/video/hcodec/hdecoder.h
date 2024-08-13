@@ -73,7 +73,6 @@ private:
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
     int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
-    int32_t PushBlankBufferToCurrSurface();
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;

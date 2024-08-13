@@ -173,6 +173,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_ok, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
     format.PutIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, 1);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, 0);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }

@@ -968,37 +968,4 @@ int32_t HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface)
     oldSurface.Release();
     return AVCS_ERR_OK;
 }
-
-int32_t HDecoder::PushBlankBufferToCurrSurface()
-{
-    BufferRequestConfig reqCfg {
-        .width = 1,
-        .height = 1,
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
-        .usage = 0,
-        .timeout = 0,
-    };
-
-    sptr<SurfaceBuffer> buffer;
-    int32_t fence = -1;
-    GSError err = currSurface_.surface_->RequestBuffer(buffer, fence, reqCfg);
-    if (err != GSERROR_OK) {
-        HLOGW("surface(%" PRIu64 "), RequestBuffer failed, GSError=%d",
-                currSurface_.surface_->GetUniqueId(), err);
-        return AVCS_ERR_UNKNOWN;
-    }
-    BufferFlushConfig flushCfg {
-        .damage = {},
-        .timestamp = 0,
-    };
-    err = currSurface_.surface_->FlushBuffer(buffer, fence, flushCfg);
-    if (err != GSERROR_OK) {
-        HLOGW("surface(%" PRIu64 "), FlushBuffer failed, GSError=%d",
-                currSurface_.surface_->GetUniqueId(), err);
-        return AVCS_ERR_UNKNOWN;
-    }
-
-    return AVCS_ERR_OK;
-}
 } // namespace OHOS::MediaAVCodec
