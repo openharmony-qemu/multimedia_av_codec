@@ -100,7 +100,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_001, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_FULL));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_FULL));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
@@ -193,7 +194,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_0032, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_004
- * @tc.name      : test h265 hard decode surface, pixel foramt nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, SDR
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, SDR
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_004, TestSize.Level2)
@@ -212,7 +213,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_004, TestSize.Level2)
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->SF_OUTPUT = true;
-        vDecSample->TRANSFER_FLAG = true;   
+        vDecSample->TRANSFER_FLAG = true;
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
@@ -221,7 +222,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_004, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_005
- * @tc.name      : test h265 hard decode surface, pixel foramt nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HDR 10
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, HDR 10
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_005, TestSize.Level2)
@@ -248,7 +249,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_005, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_006
- * @tc.name      : test h265 hard decode surface, pixel foramt nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HLG
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, HLG
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_006, TestSize.Level2)
@@ -275,7 +276,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_006, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_007
- * @tc.name      : test h265 hard decode surface, pixel foramt nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, PQ HDR vivid
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, PQ HDR vivid
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_007, TestSize.Level2)
@@ -306,7 +307,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_007, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_008
- * @tc.name      : test h265 hard decode surface, pixel foramt nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HLG HDR vivid 
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, HLG HDR vivid 
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_008, TestSize.Level2)
@@ -337,7 +338,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_008, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_009
- * @tc.name      : test h265 hard decode surface, pixel foramt nv12, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HLG HDR vivid
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, HLG HDR vivid
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_009, TestSize.Level2)
@@ -364,7 +365,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_009, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_010
- * @tc.name      : test h265 hard decode surface, pixel foramt nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, PQ HDR vivid
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv21, KEY设置为BT_709_LIMIT, PQ HDR vivid
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_010, TestSize.Level2)
@@ -397,7 +398,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_010, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_011
- * @tc.name      : test h265 hard decode surface, pixel foramt nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HLG HDR vivid 
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv21, KEY设置为BT_709_LIMIT, HLG HDR vivid 
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_011, TestSize.Level2)
@@ -430,7 +431,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_011, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_012
- * @tc.name      : test h265 hard decode surface, pixel foramt nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HLG HDR vivid
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv21, KEY设置为BT_709_LIMIT, HLG HDR vivid
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_012, TestSize.Level2)
@@ -459,7 +460,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_012, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_013
- * @tc.name      : test h265 hard decode buffer, pixel foramt nv21, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE设置为BT_709_LIMIT, HLG HDR vivid
+ * @tc.name      : test h265 hard decode buffer, pixel foramt nv21, KEY设置为BT_709_LIMIT, HLG HDR vivid
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_013, TestSize.Level2)
@@ -500,7 +501,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_014, TestSize.Level2)
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
     else{
@@ -512,14 +514,15 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_014, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_015
- * @tc.name      : test h264 software decoder, set OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE to BT_709_LIMIT
+ * @tc.name      : test h264 software decoder, KEY设置为BT_709_LIMIT
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
@@ -531,7 +534,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
     else{
@@ -543,7 +547,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
@@ -562,7 +567,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_016, TestSize.Level2)
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
     else{
@@ -574,7 +580,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_016, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
@@ -593,7 +600,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_017, TestSize.Level2)
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
     else{
@@ -605,7 +613,8 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_017, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, OH_COLORSPACE_BT709_LIMIT));
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
