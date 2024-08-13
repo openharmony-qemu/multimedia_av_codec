@@ -101,7 +101,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_001, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_FULL));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
@@ -521,7 +521,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_014, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
@@ -541,7 +541,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
@@ -554,7 +554,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
@@ -587,7 +587,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_016, TestSize.Level2)
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
@@ -607,7 +607,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_017, TestSize.Level2)
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }

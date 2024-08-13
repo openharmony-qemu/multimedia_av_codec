@@ -55,8 +55,7 @@ void HwdecHdr2SdrStateNdkTest::SetUp(void)
     vDecSample2->SF_OUTPUT = true;
     if (!access("/system/lib64/media/", 0)) {
         vDecSample2->TRANSFER_FLAG = true;
-    }
-    else {
+    } else {
         vDecSample2->TRANSFER_FLAG = false;
     }
     OH_AVCapability *cap_hevc2 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
