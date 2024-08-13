@@ -44,10 +44,14 @@ void FileFdSourceUnitTest::TearDownTestCase(void)
 void FileFdSourceUnitTest::SetUp(void)
 {
     fileFdSourcePlugin_ = std::make_shared<FileFdSourcePlugin>("testPlugin");
+    size_t bufferSize = 1024;
+    std::shared_ptr<RingBuffer> ringBuffer = std::make_shared<RingBuffer>(bufferSize);
+    fileFdSourcePlugin_->ringBuffer_ = ringBuffer;
 }
 
 void FileFdSourceUnitTest::TearDown(void)
 {
+    fileFdSourcePlugin_->ringBuffer_ = nullptr;
     fileFdSourcePlugin_ = nullptr;
 }
 
@@ -135,8 +139,10 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0200, TestSize.Level1)
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
+    fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
+    fileFdSourcePlugin_->isInterrupted_ = true;
     fileFdSourcePlugin_->NotifyBufferingStart();
 
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
