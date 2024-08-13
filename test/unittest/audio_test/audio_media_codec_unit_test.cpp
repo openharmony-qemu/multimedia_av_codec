@@ -372,11 +372,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_Release_01, TestSize.Level1)
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
 }
 
-/*
-if (avCodecContext_ == nullptr) {
-            return Status::ERROR_WRONG_STATE;
-        }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
 {
     // AudioSampleFormat2AVSampleFormat fail branch
@@ -391,11 +386,6 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
     EXPECT_EQ(Status::ERROR_WRONG_STATE, plugin->QueueInputBuffer(inputBuffer));
 }
 
-/*
-if (avCodecContext_ == nullptr) {
-            return Status::ERROR_WRONG_STATE;
-        }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_02, TestSize.Level1)
 {
     // AudioSampleFormat2AVSampleFormat fail branch
@@ -558,13 +548,6 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_10, TestSize.Level1)
     EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(inputBuffer));
 }
 
-/*
-if (!codecContextValid_) {
-        MEDIA_LOG_D("Old avcodec context not valid, no need to reallocate");
-        return Status::OK;
-    }
-
-*/
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_11, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Encoder.Audio.AAC";
@@ -730,12 +713,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_10, TestSize.Level1)
     EXPECT_NE(Status::OK, plugin->Stop());
 }
 
-/*
-if (!CheckFormat()) {
-        AVCODEC_LOGE("Format check failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_11, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
@@ -743,12 +720,7 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_11, TestSize.Level1)
     EXPECT_NE(nullptr, plugin);
     EXPECT_NE(Status::OK, plugin->Start());
 }
-/*
-if (inputSize < 0) {
-        AVCODEC_LOGE("SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
-        return Status::ERROR_UNKNOWN;
-    }
-*/
+
 HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_12, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
@@ -762,12 +734,6 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_12, TestSize.Level1)
     EXPECT_NE(Status::OK, plugin->QueueInputBuffer(outputBuffer));
 }
 
-/*
-if (inputSize < 0) {
-        AVCODEC_LOGE("SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
-        return Status::ERROR_UNKNOWN;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_13, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
@@ -870,12 +836,6 @@ HWTEST_F(AudioMediaCodecUnitTest, FlacDecoderPlugin_01, TestSize.Level1)
     EXPECT_EQ(Status::OK, plugin->Prepare());
 }
 
-/*
-    if (avCodecContext_ == nullptr) {
-        AVCODEC_LOGE("avCodecContext_ is nullptr");
-        return Status::ERROR_INVALID_OPERATION;
-    }
-*/
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_01, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
@@ -888,9 +848,7 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_01, TestSize.Level1)
     inputBuffer->memory_->SetSize(10);
     EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
 }
-/*
 
-*/
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_02, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
