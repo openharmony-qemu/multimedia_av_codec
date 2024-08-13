@@ -119,10 +119,6 @@ Status AudioG711muEncoderPlugin::Init()
 
 Status AudioG711muEncoderPlugin::Start()
 {
-    if (!CheckFormat()) {
-        AVCODEC_LOGE("Format check failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     return Status::OK;
 }
 

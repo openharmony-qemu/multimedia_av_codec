@@ -72,10 +72,6 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
 
 int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
         AVCODEC_LOGE("Frame make writable failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
@@ -124,10 +120,6 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
 
 int32_t AudioFfmpegEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    if (!outBuffer) {
-        AVCODEC_LOGE("outBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     int32_t status;
     {
         std::lock_guard<std::mutex> lock(avMutext_);

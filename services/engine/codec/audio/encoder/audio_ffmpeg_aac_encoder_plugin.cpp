@@ -101,10 +101,6 @@ bool AudioFFMpegAacEncoderPlugin::CheckSampleFormat(const Format &format)
         return false;
     }
     srcFmt_ = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
-    if (srcFmt_ == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("Check format failed, avSampleFormat not support");
-        return false;
-    }
     needResample_ = CheckResample();
     return true;
 }
@@ -122,13 +118,7 @@ bool AudioFFMpegAacEncoderPlugin::CheckChannelLayout(const Format &format, int c
         return true;
     }
 
-    // channel layout not available
-    auto iter = channelLayoutMap.find(channels);
-    if (iter == channelLayoutMap.end()) {
-        AVCODEC_LOGE("channel layout not found, channels: %{public}d", channels);
-        return false;
-    }
-    srcLayout_ = iter->second;
+    srcLayout_ = static_cast<AudioChannelLayout>(channelLayoutMap.at(channels));
     return true;
 }
 
@@ -205,11 +195,8 @@ int32_t AudioFFMpegAacEncoderPlugin::Init(const Format &format)
         AVCODEC_LOGE("Format check failed.");
         return AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_AUD_PARAMS;
     }
-    ret = InitContext(format);
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("Init context failed, ret = %{public}d", ret);
-        return ret;
-    }
+    InitContext(format);
+
     ret = OpenContext();
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         AVCODEC_LOGE("Open context failed, ret = %{public}d", ret);

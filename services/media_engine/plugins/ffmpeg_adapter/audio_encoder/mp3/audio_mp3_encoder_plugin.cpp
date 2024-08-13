@@ -179,12 +179,6 @@ Status AudioMp3EncoderPlugin::Init()
         AVCODEC_LOGE("AudioMp3EncoderPlugin LAME initialization error");
         return Status::ERROR_UNKNOWN;
     }
-
-    if (lameMp3Buffer == nullptr) {
-        AVCODEC_LOGE("AudioMp3EncoderPlugin lameMp3Buffer allocation failed");
-        return Status::ERROR_UNKNOWN;
-    }
-
     return Status::OK;
 }
 
@@ -308,11 +302,8 @@ Status AudioMp3EncoderPlugin::Release()
             AVCODEC_LOGE("AudioMp3EncoderPlugin Release lame_encode_flush error.");
             return Status::ERROR_UNKNOWN;
         }
-        ret = lame_close(lameInfo->gfp);
-        if (ret < 0) {
-            AVCODEC_LOGE("AudioMp3EncoderPlugin lame_close error.");
-            return Status::ERROR_UNKNOWN;
-        }
+        lame_close(lameInfo->gfp);
+
         lameInfo->gfp = nullptr;
         lameInitFlag = 0;
     }

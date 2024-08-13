@@ -251,6 +251,7 @@ Status FFmpegBaseEncoder::AllocateContext(const std::string &name)
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     }
     if (avCodec_ == nullptr) {
+        AVCODEC_LOGE("avcodec_find_encoder_by_name failed %{public}s", name.c_str());
         return Status::ERROR_INVALID_OPERATION;
     }
 
@@ -273,13 +274,7 @@ Status FFmpegBaseEncoder::InitContext(const std::shared_ptr<Meta> &format)
 {
     format_ = format;
     format_->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
-    if (avCodecContext_->channels <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format_->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
-    if (avCodecContext_->sample_rate <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format_->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     format_->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 

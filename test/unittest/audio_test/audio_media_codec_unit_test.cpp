@@ -33,6 +33,9 @@ constexpr uint32_t AUDIO_AAC_IS_ADTS = 1;
 constexpr uint32_t DEFAULT_BUFFER_NUM = 1;
 constexpr int32_t BUFFER_CAPACITY_SAMLL = 100;
 constexpr int32_t BUFFER_CAPACITY_DEFAULT = 5120;
+constexpr uint32_t DEFAULT_FLAC_BITRATE = 261000;
+constexpr uint32_t FLAC_96K_SAMPLE_RATE = 96000;
+constexpr uint32_t MAX_CHANNEL_COUNT = 2;
 const std::string AAC_MIME_TYPE = "audio/mp4a-latm";
 const std::string UNKNOW_MIME_TYPE = "audio/unknow";
 const std::string AAC_DEC_CODEC_NAME = "OH.Media.Codec.Decoder.Audio.AAC";
@@ -369,6 +372,50 @@ HWTEST_F(AudioMediaCodecUnitTest, Test_Release_01, TestSize.Level1)
     EXPECT_EQ((int32_t) Status::OK, mediaCodec->Release());
 }
 
+/*
+if (avCodecContext_ == nullptr) {
+            return Status::ERROR_WRONG_STATE;
+        }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
+{
+    // AudioSampleFormat2AVSampleFormat fail branch
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Flac";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    EXPECT_EQ(Status::ERROR_INVALID_DATA, plugin->QueueInputBuffer(inputBuffer));
+    inputBuffer->memory_->SetSize(10);
+    EXPECT_EQ(Status::ERROR_WRONG_STATE, plugin->QueueInputBuffer(inputBuffer));
+}
+
+/*
+if (avCodecContext_ == nullptr) {
+            return Status::ERROR_WRONG_STATE;
+        }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_02, TestSize.Level1)
+{
+    // AudioSampleFormat2AVSampleFormat fail branch
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Flac";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(MAX_CHANNEL_COUNT);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(FLAC_96K_SAMPLE_RATE);
+    meta->Set<Tag::MEDIA_BITRATE>(DEFAULT_FLAC_BITRATE);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    inputBuffer->memory_->SetSize(10);
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_01, TestSize.Level1)
 {
     // AudioSampleFormat2AVSampleFormat fail branch
@@ -509,6 +556,22 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_10, TestSize.Level1)
     std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
     inputBuffer = nullptr;
     EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(inputBuffer));
+}
+
+/*
+if (!codecContextValid_) {
+        MEDIA_LOG_D("Old avcodec context not valid, no need to reallocate");
+        return Status::OK;
+    }
+
+*/
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_11, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.AAC";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+
+    EXPECT_EQ(Status::OK, plugin->Flush());
 }
 
 HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_01, TestSize.Level1)
@@ -667,6 +730,54 @@ HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_10, TestSize.Level1)
     EXPECT_NE(Status::OK, plugin->Stop());
 }
 
+/*
+if (!CheckFormat()) {
+        AVCODEC_LOGE("Format check failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_11, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_NE(Status::OK, plugin->Start());
+}
+/*
+if (inputSize < 0) {
+        AVCODEC_LOGE("SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
+        return Status::ERROR_UNKNOWN;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_12, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> outputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_DEFAULT);
+    outputBuffer->memory_->SetSize(-1);  // invalid param
+    outputBuffer->flag_ = 0;
+    EXPECT_NE(Status::OK, plugin->QueueInputBuffer(outputBuffer));
+}
+
+/*
+if (inputSize < 0) {
+        AVCODEC_LOGE("SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
+        return Status::ERROR_UNKNOWN;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, Mp3EncoderPlugin_13, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Encoder.Audio.Mp3";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVBuffer> outputBuffer = nullptr;
+
+    EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(outputBuffer));
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, G711EncoderPlugin_01, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Encoder.Audio.G711mu";
@@ -704,12 +815,106 @@ HWTEST_F(AudioMediaCodecUnitTest, AmrwbDecoderPlugin_01, TestSize.Level1)
     EXPECT_EQ(Status::OK, plugin->Prepare());
 }
 
+HWTEST_F(AudioMediaCodecUnitTest, AmrnbDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Amrnb";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, G711DecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.G711mu";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    inputBuffer = nullptr;
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+    EXPECT_NE(Status::OK, plugin->QueueOutputBuffer(inputBuffer));
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, VorbisDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Vorbis";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, APEDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Ape";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, APEDecoderPlugin_02, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Ape";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(16000);
+    EXPECT_NE(Status::OK, plugin->SetParameter(meta));
+}
+
 HWTEST_F(AudioMediaCodecUnitTest, FlacDecoderPlugin_01, TestSize.Level1)
 {
     std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
     auto plugin = CreatePlugin(codecName);
     EXPECT_NE(nullptr, plugin);
     EXPECT_EQ(Status::OK, plugin->Prepare());
+}
+
+/*
+    if (avCodecContext_ == nullptr) {
+        AVCODEC_LOGE("avCodecContext_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+*/
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_01, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    std::shared_ptr<AVAllocator> avAllocator =
+        AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
+    EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
+    inputBuffer->memory_->SetSize(10);
+    EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
+}
+/*
+
+*/
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_02, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT_STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
+}
+
+HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_03, TestSize.Level1)
+{
+    std::string codecName = "OH.Media.Codec.Decoder.Audio.Flac";
+    auto plugin = CreatePlugin(codecName);
+    EXPECT_NE(nullptr, plugin);
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48k);
+    meta->Set<Tag::MEDIA_BITRATE>(64000);  // 64000: valid param
+    EXPECT_EQ(Status::OK, plugin->SetParameter(meta));
 }
 
 }  // namespace MediaAVCodec

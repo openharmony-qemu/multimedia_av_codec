@@ -101,9 +101,6 @@ int32_t AudioFFMpegFlacEncoderPlugin::SetContext(const Format &format)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, complianceLevel);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, bitsPerCodedSample);
     avCodecContext->strict_std_compliance = complianceLevel;
-    if (BITS_PER_RAW_SAMPLE_MAP.find(bitsPerCodedSample) == BITS_PER_RAW_SAMPLE_MAP.end()) {
-        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
-    }
     avCodecContext->bits_per_raw_sample = BITS_PER_RAW_SAMPLE_MAP.at(bitsPerCodedSample);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -115,10 +112,7 @@ bool AudioFFMpegFlacEncoderPlugin::CheckBitRate(const Format &format) const
         return true;
     }
     int64_t bitRate;
-    if (!format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate)) {
-        AVCODEC_LOGE("parameter bit_rate type invalid");
-        return false;
-    }
+    format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
     if (bitRate < 0) {
         AVCODEC_LOGE("parameter bit_rate illegal");
         return false;
@@ -196,11 +190,7 @@ int32_t AudioFFMpegFlacEncoderPlugin::Init(const Format &format)
         return ret;
     }
 
-    ret = basePlugin->InitContext(format);
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because InitContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    basePlugin->InitContext(format);
 
     ret = SetContext(format);
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
@@ -215,12 +205,7 @@ int32_t AudioFFMpegFlacEncoderPlugin::Init(const Format &format)
     }
 
     SetFormat(format);
-
-    ret = basePlugin->InitFrame();
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because InitFrame failed. ret=%{public}d", ret);
-        return ret;
-    }
+    basePlugin->InitFrame();
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

@@ -288,18 +288,8 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
 
 Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 {
-    if (format == nullptr) {
-        AVCODEC_LOGI("format is nullptr");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
-    if (avCodecContext_->channels <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
-    if (avCodecContext_->sample_rate <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     AudioChannelLayout channelLayout = UNKNOWN;
     format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
