@@ -205,7 +205,12 @@ int32_t AudioFFMpegFlacEncoderPlugin::Init(const Format &format)
     }
 
     SetFormat(format);
-    basePlugin->InitFrame();
+    
+    ret = basePlugin->InitFrame();
+    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        AVCODEC_LOGE("init failed, because InitFrame failed. ret=%{public}d", ret);
+        return ret;
+    }
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

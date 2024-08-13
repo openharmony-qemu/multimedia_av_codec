@@ -202,10 +202,6 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
         {AudioSampleFormat::SAMPLE_S16P, AVSampleFormat::AV_SAMPLE_FMT_S16P},
         {AudioSampleFormat::SAMPLE_F32P, AVSampleFormat::AV_SAMPLE_FMT_FLTP},
     };
-    // 使用迭代器遍历 unordered_map
-    for (auto itM = formatTable.begin(); itM != formatTable.end(); ++itM) {
-        MEDIA_LOG_E("formatTable key:%{public}d   Value:%{public}d ", (int32_t)itM->first, (int32_t)itM->second);
-    }
 
     fmt = formatTable.at(audioFmt);
     return true;
@@ -229,7 +225,7 @@ Status FFmpegAACEncoderPlugin::Start()
         MEDIA_LOG_D("Format check failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    InitContext();
+    (void)InitContext();
 
     status = OpenContext();
     if (status != Status::OK) {
@@ -527,9 +523,9 @@ Status FFmpegAACEncoderPlugin::OpenContext()
 
         codecContextValid_ = true;
     }
-    if (avCodecContext_->frame_size <= 0) {
-        MEDIA_LOG_I("frame size invalid");
-    }
+
+    MEDIA_LOG_I("frame size: %{public}d", avCodecContext_->frame_size);
+    
     int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     if (needResample_) {

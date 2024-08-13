@@ -382,7 +382,7 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_01, TestSize.Level1)
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
     EXPECT_EQ(Status::ERROR_INVALID_DATA, plugin->QueueInputBuffer(inputBuffer));
-    inputBuffer->memory_->SetSize(10);
+    inputBuffer->memory_->SetSize(10); //test 10
     EXPECT_EQ(Status::ERROR_WRONG_STATE, plugin->QueueInputBuffer(inputBuffer));
 }
 
@@ -403,7 +403,7 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseEncoderPlugin_02, TestSize.Level1)
     std::shared_ptr<AVAllocator> avAllocator =
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
-    inputBuffer->memory_->SetSize(10);
+    inputBuffer->memory_->SetSize(10); //test 10
 }
 
 HWTEST_F(AudioMediaCodecUnitTest, FFmpegAACEncoderPlugin_01, TestSize.Level1)
@@ -824,7 +824,7 @@ HWTEST_F(AudioMediaCodecUnitTest, APEDecoderPlugin_02, TestSize.Level1)
     auto plugin = CreatePlugin(codecName);
     EXPECT_NE(nullptr, plugin);
     auto meta = std::make_shared<Meta>();
-    meta->Set<Tag::AUDIO_SAMPLE_RATE>(16000);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(16000); //16000 samplerate
     EXPECT_NE(Status::OK, plugin->SetParameter(meta));
 }
 
@@ -845,7 +845,7 @@ HWTEST_F(AudioMediaCodecUnitTest, FFmpegBaseDecoderPlugin_01, TestSize.Level1)
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, BUFFER_CAPACITY_SAMLL);
     EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
-    inputBuffer->memory_->SetSize(10);
+    inputBuffer->memory_->SetSize(10); //test 10
     EXPECT_NE(Status::OK, plugin->QueueInputBuffer(inputBuffer));
 }
 
