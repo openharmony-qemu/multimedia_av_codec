@@ -128,6 +128,24 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0200, TestSize.Level1)
 }
 
 /**
+ * @tc.name: FileFdSource_NotifyBufferingStart_0100
+ * @tc.desc: FileFdSource_NotifyBufferingStart_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.Level1)
+{
+    Plugins::Callback* sourceCallback = new SourceCallback();
+    fileFdSourcePlugin_->NotifyBufferingStart();
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
+    fileFdSourcePlugin_->NotifyBufferingStart();
+
+    fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
+    fileFdSourcePlugin_->NotifyBufferingStart();
+    EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
+    delete sourceCallback;
+    sourceCallback = nullptr;
+}
+/**
  * @tc.name: FileFdSource_NotifyBufferingPercent_0100
  * @tc.desc: FileFdSource_NotifyBufferingPercent_0100
  * @tc.type: FUNC
@@ -187,7 +205,17 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyReadFail_0100, TestSize.Level1
     delete sourceCallback;
     sourceCallback = nullptr;
 }
-
+/**
+ * @tc.name: FileFdSource_read_0100
+ * @tc.desc: FileFdSource_read_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->NotifyBufferingStart();
+    std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
+    EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
+}
 /**
  * @tc.name: FileFdSource_read_0200
  * @tc.desc: FileFdSource_read_0200
@@ -205,6 +233,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0200, TestSize.Level1)
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_read_0300, TestSize.Level1)
 {
+    fileFdSourcePlugin_->NotifyBufferingStart();
     std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
     fileFdSourcePlugin_->isCloudFile_ = true;
     EXPECT_NE(Status::OK, fileFdSourcePlugin_->Read(buffer, 0, 1024));
@@ -278,6 +307,19 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
     fileFdSourcePlugin_->GetCacheTime(1.0);
     fileFdSourcePlugin_->GetCacheTime(2.0);
     fileFdSourcePlugin_->HasCacheData(0);
+}
+
+/**
+ * @tc.name: FileFdSource_ReadOnlineFile_0100
+ * @tc.desc: FileFdSource_ReadOnlineFile_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_ReadOnlineFile_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->GetCacheTime(0.0);
+    fileFdSourcePlugin_->isBuffering_ = true;
+    std::shared_ptr<Buffer> buffer;
+    EXPECT_EQ(Status::ERROR_AGAIN, fileFdSourcePlugin_->ReadOnlineFile(0, buffer, 0, 0));
 }
 
 /**
@@ -559,11 +601,36 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_DeleteCacheBuffer_0100, TestSize.Lev
 }
 
 /**
- * @tc.name: FileFdSource_checkReadTime_0100
- * @tc.desc: FileFdSource_checkReadTime_0100
+ * @tc.name: FileFdSource_CheckReadTime_0100
+ * @tc.desc: FileFdSource_CheckReadTime_0100
  * @tc.type: FUNC
  */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0100, TestSize.Level1)
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckReadTime_0100, TestSize.Level1)
+{
+    fileFdSourcePlugin_->curReadTime_ = 10;
+    fileFdSourcePlugin_->CheckReadTime();
+    EXPECT_EQ(10, fileFdSourcePlugin_->lastReadTime_);
+
+    fileFdSourcePlugin_->lastReadTime_ = 1000;
+    fileFdSourcePlugin_->curReadTime_  = 2000;
+    fileFdSourcePlugin_->CheckReadTime();
+    EXPECT_EQ(1000, fileFdSourcePlugin_->lastReadTime_);
+
+    fileFdSourcePlugin_->curReadTime_  = 1020;
+    fileFdSourcePlugin_->CheckReadTime();
+    EXPECT_EQ(1000, fileFdSourcePlugin_->lastReadTime_);
+
+    fileFdSourcePlugin_->curReadTime_  = 1040;
+    fileFdSourcePlugin_->CheckReadTime();
+    EXPECT_EQ(0, fileFdSourcePlugin_->lastReadTime_);
+}
+
+/**
+ * @tc.name: FileFdSource_checkReadTime_0200
+ * @tc.desc: FileFdSource_checkReadTime_0200
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0200, TestSize.Level1)
 {
     fileFdSourcePlugin_->callback_ = nullptr;
     int64_t curTime = 0;
