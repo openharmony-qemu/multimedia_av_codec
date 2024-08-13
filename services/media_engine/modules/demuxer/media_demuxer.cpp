@@ -1047,7 +1047,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     Status ret;
     isSeekError_.store(false);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
-        MEDIA_LOG_I("SeekTo source SeekToTime start");
+        MEDIA_LOG_D("SeekTo source SeekToTime start");
         SeekToTimePre();
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
             ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
@@ -1060,7 +1060,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         SeekToTimeAfter();
         Plugins::Ms2HstTime(seekTime, realSeekTime);
     } else {
-        MEDIA_LOG_I("SeekTo start");
+        MEDIA_LOG_D("SeekTo start");
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
             ret = demuxerPluginManager_->SeekTo(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
         } else {
@@ -1078,7 +1078,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         isSeekError_.store(true);
     }
     isFirstFrameAfterSeek_.store(true);
-    MEDIA_LOG_I("SeekTo done");
+    MEDIA_LOG_D("SeekTo done");
     return ret;
 }
 
