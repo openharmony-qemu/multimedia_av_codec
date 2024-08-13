@@ -386,6 +386,13 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_type));
     }
+
+    if (avStream.start_time != AV_NOPTS_VALUE) {
+        format.SetData(Tag::MEDIA_START_TIME,
+            ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
+    } else {
+        MEDIA_LOG_D("Parse track start time info failed.");
+    }
 }
 
 FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatContext)
@@ -436,12 +443,6 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
         format.SetData(Tag::MEDIA_LANGUAGE, std::string(valPtr->value));
     } else {
         MEDIA_LOG_D("Parse track language info failed.");
-    }
-    if (avStream.start_time != AV_NOPTS_VALUE) {
-        format.SetData(Tag::MEDIA_START_TIME,
-            ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
-    } else {
-        MEDIA_LOG_D("Parse track start time info failed.");
     }
 }
 
