@@ -239,7 +239,7 @@ void HttpMediaDownloader::OnClientErrorEvent()
 
 bool HttpMediaDownloader::HandleBuffering()
 {
-    if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
+    if (!isBuffering_ || downloadRequest_->IsChunkedVod() || callback_ == nullptr) {
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
@@ -273,19 +273,18 @@ bool HttpMediaDownloader::HandleBuffering()
     return isBuffering_;
 }
 
-bool HttpMediaDownloader::StartBuffering()
+bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
 {
-    if (!canWrite_ || downloadRequest_->IsChunkedVod()) {
+    if (!canWrite_ || downloadRequest_->IsChunkedVod() || wantReadLength <= 0 || callback_ == nullptr) {
         return false;
     }
     size_t cacheWaterLine = 0;
     size_t fileRemain = 0;
     size_t fileContenLen = downloadRequest_->GetFileContentLength();
+    cacheWaterLine = std::max(static_cast<size_t>(wantReadLength), PLAY_WATER_LINE);
     if (fileContenLen > readOffset_) {
         fileRemain = fileContenLen - readOffset_;
-        cacheWaterLine = std::min(fileRemain, PLAY_WATER_LINE);
-    } else {
-        cacheWaterLine = PLAY_WATER_LINE;
+        cacheWaterLine = std::min(fileRemain, cacheWaterLine);
     }
 
     bool isEos = false;
@@ -417,7 +416,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             MEDIA_LOG_I("Return error again.");
             return Status::ERROR_AGAIN;
         }
-        if (StartBuffering()) {
+        if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
         return ReadRingBuffer(buff, readDataInfo);
@@ -429,7 +428,7 @@ Status HttpMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& read
             MEDIA_LOG_I("Return error again.");
             return Status::ERROR_AGAIN;
         }
-        if (StartBuffering()) {
+        if (StartBuffering(readDataInfo.wantReadLength_)) {
             return Status::ERROR_AGAIN;
         }
         return ReadCacheBuffer(buff, readDataInfo);
