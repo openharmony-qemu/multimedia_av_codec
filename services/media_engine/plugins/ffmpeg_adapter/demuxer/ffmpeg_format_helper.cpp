@@ -437,8 +437,12 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     } else {
         MEDIA_LOG_D("Parse track language info failed.");
     }
-    format.SetData(Tag::MEDIA_START_TIME,
-        ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
+    if (avStream.start_time != AV_NOPTS_VALUE) {
+        format.SetData(Tag::MEDIA_START_TIME,
+            ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
+    } else {
+        MEDIA_LOG_D("Parse track start time info failed.");
+    }
 }
 
 void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format)
