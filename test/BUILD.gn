@@ -75,6 +75,7 @@ group("av_codec_unit_test") {
         "unittest/video_test/fcodec_test:av_video_capi_unit_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
+        "unittest/decoder_filter_test:decoder_filter_unit_test",
       ]
       if (av_codec_support_hcodec) {
         deps += [ "unittest/hcodec_test:hcodec_unit_test" ]
