@@ -1051,7 +1051,7 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     if (sInfo_.surface) {
         surfaceInfo.surfaceFence = frameBuffer->sMemory->GetFence();
         ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
-    }else {
+    } else {
         Format bufferFormat;
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
