@@ -221,7 +221,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE, TestSize.Level1)
     playStrategy->audioLanguage = "eng";
     playStrategy->subtitleLanguage = "en_GB";
     mediaDownloader->SetPlayStrategy(playStrategy);
-
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
 
