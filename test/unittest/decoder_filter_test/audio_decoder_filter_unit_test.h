@@ -59,7 +59,8 @@ public:
         std::cout << "filter back constructor" << std::endl;
     }
 
-    Status OnCallback(const std::shared_ptr<Pipeline::Filter>& filter, Pipeline::FilterCallBackCommand cmd, Pipeline::StreamType outType)
+    Status OnCallback(const std::shared_ptr<Pipeline::Filter>& filter,
+        Pipeline::FilterCallBackCommand cmd, Pipeline::StreamType outType)
     {
         return Status::OK;
     }
