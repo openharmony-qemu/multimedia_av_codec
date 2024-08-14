@@ -87,6 +87,7 @@ private:
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     void UpdateAudioWriteTimeMayWait();
+    bool UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void DrainAndReportEosEvent();
     void HandleEosInner(bool drain);
     void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
@@ -114,10 +115,11 @@ private:
     int64_t numFramesWritten_ {0};
     int64_t firstAudioAnchorTimeMediaUs_ {HST_TIME_NONE};
     int64_t nextAudioClockUpdateTimeUs_ {HST_TIME_NONE};
-    int64_t lastReportedClockTime_ {HST_TIME_NONE};
+    int64_t lastAnchorClockTime_  {HST_TIME_NONE};
     int64_t latestBufferPts_ {HST_TIME_NONE};
     int64_t latestBufferDuration_ {0};
-    bool forceUpdateTimeAnchorNextTime_ {false};
+    int64_t bufferDurationSinceLastAnchor_ {0};
+    std::atomic<bool> forceUpdateTimeAnchorNextTime_ {true};
     const std::string INPUT_BUFFER_QUEUE_NAME = "AudioSinkInputBufferQueue";
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;

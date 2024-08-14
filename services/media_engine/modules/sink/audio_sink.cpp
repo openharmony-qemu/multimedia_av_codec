@@ -23,6 +23,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr int64_t MAX_BUFFER_DURATION_US = 200000; // Max buffer duration is 200 ms
 constexpr int64_t US_TO_MS = 1000; // 1000 us per ms
+constexpr int64_t ANCHOR_UPDATE_PERIOD_US = 200000; // Update time anchor every 200 ms
 }
 
 namespace OHOS {
@@ -152,6 +153,7 @@ Status AudioSink::Stop()
     playRangeEndTime_ = DEFAULT_PLAY_RANGE_VALUE;
     Status ret = plugin_->Stop();
     underrunDetector_.Reset();
+    forceUpdateTimeAnchorNextTime_ = true;
     if (ret != Status::OK) {
         return ret;
     }
@@ -172,6 +174,7 @@ Status AudioSink::Pause()
     } else {
         ret = plugin_->Pause();
     }
+    forceUpdateTimeAnchorNextTime_ = true;
     if (ret != Status::OK) {
         return ret;
     }
@@ -213,6 +216,7 @@ Status AudioSink::Flush()
         eosInterruptType_ = EosInterruptState::NONE;
         eosDraining_ = false;
     }
+    forceUpdateTimeAnchorNextTime_ = true;
     return ret;
 }
 
@@ -452,8 +456,8 @@ void AudioSink::DrainOutputBuffer()
 
 void AudioSink::ResetSyncInfo()
 {
-    lastReportedClockTime_ = HST_TIME_NONE;
-    forceUpdateTimeAnchorNextTime_ = false;
+    lastAnchorClockTime_ = HST_TIME_NONE;
+    forceUpdateTimeAnchorNextTime_ = true;
 }
 
 void AudioSink::UnderrunDetector::Reset()
@@ -503,10 +507,37 @@ void AudioSink::UnderrunDetector::DetectAudioUnderrun(int64_t clkTime, int64_t l
     }
 }
 
+bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    auto syncCenter = syncCenter_.lock();
+    FALSE_RETURN_V(syncCenter != nullptr, false);
+    int64_t nowCt = syncCenter->GetClockTimeNow();
+    bool needUpdate = forceUpdateTimeAnchorNextTime_ ||
+        (lastAnchorClockTime_ == HST_TIME_NONE) ||
+        (nowCt - lastAnchorClockTime_ >= ANCHOR_UPDATE_PERIOD_US);
+    if (!needUpdate) {
+        MEDIA_LOG_D("No need to update time anchor this time.");
+        return false;
+    }
+    uint64_t latency = 0;
+    FALSE_LOG_MSG(plugin_->GetLatency(latency) == Status::OK, "failed to get latency");
+    underrunDetector_.DetectAudioUnderrun(nowCt, latency);
+    syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
+        buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
+    MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
+        " us, latency: " PUBLIC_LOG_D64
+        " us, pts-f: " PUBLIC_LOG_D64
+        " us, pts: " PUBLIC_LOG_D64
+        " us, nowCt: " PUBLIC_LOG_D64 " us",
+        fixDelay_, latency, buffer->pts_ - firstPts_, buffer->pts_, nowCt);
+    forceUpdateTimeAnchorNextTime_ = false;
+    lastAnchorClockTime_ = nowCt;
+    return true;
+}
+
 int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     bool render = true; // audio sink always report time anchor and do not drop
-    int64_t nowCt = 0;
     auto syncCenter = syncCenter_.lock();
     if (firstPts_ == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
@@ -516,37 +547,16 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         }
         MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
-    if (syncCenter) {
-        nowCt = syncCenter->GetClockTimeNow();
-    }
-    if (lastReportedClockTime_ == HST_TIME_NONE || forceUpdateTimeAnchorNextTime_) {
-        uint64_t latency = 0;
-        if (plugin_->GetLatency(latency) != Status::OK) {
-            MEDIA_LOG_W("failed to get latency");
-        }
-        underrunDetector_.DetectAudioUnderrun(nowCt, latency);
-        if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
-                buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
-            MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
-                " us, latency: " PUBLIC_LOG_D64
-                " us, pts-f: " PUBLIC_LOG_D64
-                " us, pts: " PUBLIC_LOG_D64
-                " us, nowCt: " PUBLIC_LOG_D64 " us",
-                fixDelay_, latency, buffer->pts_ - firstPts_, buffer->pts_, nowCt);
-        }
-        lastReportedClockTime_ = nowCt;
-        forceUpdateTimeAnchorNextTime_ = true;
-    }
-    latestBufferPts_ = buffer->pts_ - firstPts_;
-    if (playingBufferDurationUs_ > 0) {
-        latestBufferDuration_ = playingBufferDurationUs_ / speed_;
+    bool anchorUpdated = UpdateTimeAnchorIfNeeded(buffer);
+    latestBufferDuration_ = (playingBufferDurationUs_ > 0 ? playingBufferDurationUs_ : buffer->duration_) / speed_;
+    if (anchorUpdated) {
+        bufferDurationSinceLastAnchor_ = latestBufferDuration_;
     } else {
-        latestBufferDuration_ = buffer->duration_ / speed_;
+        bufferDurationSinceLastAnchor_ += latestBufferDuration_;
     }
-    underrunDetector_.SetLastAudioBufferDuration(latestBufferDuration_);
+    underrunDetector_.SetLastAudioBufferDuration(bufferDurationSinceLastAnchor_);
     if (syncCenter) {
-        syncCenter->SetLastAudioBufferDuration(latestBufferDuration_);
+        syncCenter->SetLastAudioBufferDuration(bufferDurationSinceLastAnchor_);
     }
     return render ? 0 : -1;
 }
@@ -563,6 +573,7 @@ Status AudioSink::SetSpeed(float speed)
     if (ret == Status::OK) {
         speed_ = speed;
     }
+    forceUpdateTimeAnchorNextTime_ = true;
     return ret;
 }
 
@@ -678,7 +689,7 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     if (state_ == Pipeline::FilterState::RUNNING) {
         res = plugin_->Start();
     }
-
+    forceUpdateTimeAnchorNextTime_ = true;
     return res;
 }
 
