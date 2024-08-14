@@ -202,9 +202,14 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         }
     }
 
+    std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
+    FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
+    expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
+    expectedLen = std::min(bufData->GetCapacity(), expectedLen);
+
     // ringbuffer 0 after seek in 20ms, don't notify buffering
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
-    if (isReadFrame_ && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
+    if (isReadFrame_ && !HasCacheData(expectedLen, offset) && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
          (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
         MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
@@ -213,11 +218,6 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
         FALSE_RETURN_V_MSG_E(isReadBlocking_, Status::OK, "please not retry read, isReadBlocking false");
         return Status::ERROR_AGAIN;
     }
-
-    std::shared_ptr<Memory> bufData = GetBufferPtr(buffer, expectedLen);
-    FALSE_RETURN_V_MSG_E(bufData != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
-    expectedLen = std::min(static_cast<size_t>(GetLastSize(position_)), expectedLen);
-    expectedLen = std::min(bufData->GetCapacity(), expectedLen);
 
     size_t size = ringBuffer_->ReadBuffer(bufData->GetWritableAddr(expectedLen), expectedLen, READ_RETRY);
     if (size == 0) {
@@ -398,17 +398,19 @@ void FileFdSourcePlugin::CacheDataLoop()
     }
 }
 
-void FileFdSourcePlugin::HasCacheData(size_t bufferSize)
+bool FileFdSourcePlugin::HasCacheData(size_t bufferSize, uint64_t offset)
 {
     HmdfsHasCache ioctlData;
-    ioctlData.offset = static_cast<int64_t>(cachePosition_);
+    ioctlData.offset = static_cast<int64_t>(offset);
     ioctlData.readSize = static_cast<int64_t>(bufferSize);
     int32_t ioResult = ioctl(fd_, HMDFS_IOC_HAS_CACHE, &ioctlData); // 0在 -1不在
     // ioctl has cache
-    FALSE_RETURN(ioResult != 0);
-    // EIO  5
-    FALSE_RETURN_MSG(errno != EIO, "ioctl has no cache");
-    MEDIA_LOG_I("ioctl errno " PUBLIC_LOG_D32, errno);
+    if (ioResult == 0) {
+        return true;
+    } else {
+        MEDIA_LOG_I("ioctl has no cache with errno " PUBLIC_LOG_D32, errno);
+    }
+    return false;
 }
 
 Status FileFdSourcePlugin::Stop()
