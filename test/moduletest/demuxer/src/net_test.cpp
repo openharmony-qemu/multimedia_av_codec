@@ -235,7 +235,6 @@ namespace {
             }
         }
     }
-    
     static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
     {
         int akeyCount = 0;
@@ -308,8 +307,8 @@ namespace {
         ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormatV, OH_MD_KEY_TRACK_TYPE, &tarckTypeV));
         ASSERT_EQ(tarckTypeV, OH_MediaType::MEDIA_TYPE_SUBTITLE);
         if (attrPts > 0) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxerV, attrPts / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxerV, attrPts / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         }
         while (true) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxerV, 0, memoryV, &attrV));
@@ -745,8 +744,8 @@ namespace {
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_NE(memory, nullptr);
             ASSERT_NE(demuxer, nullptr);
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
@@ -786,18 +785,18 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEDUALMP4, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -933,8 +932,8 @@ namespace {
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_NE(memory, nullptr);
             ASSERT_NE(demuxer, nullptr);
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
@@ -974,18 +973,18 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEDUAL14, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -1046,7 +1045,6 @@ namespace {
         int vttSubtitle = 0;
         uint8_t *data = nullptr;
         const char *uri = "http://192.168.3.11:8080/share/audio/webvtt_test.vtt";
-        cout << uri << "------" << endl;
         source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
         ASSERT_NE(source, nullptr);
         demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -1065,15 +1063,15 @@ namespace {
         for (int index = 0; index < 8; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKBACK,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKBACK, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         vttSubtitle = atoi(reinterpret_cast<const char*>(data));
         vttIndex = 4;
         ASSERT_EQ(vttSubtitle, vttIndex);
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKFORWARD,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKFORWARD, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         vttSubtitle = atoi(reinterpret_cast<const char*>(data));
@@ -1123,8 +1121,8 @@ namespace {
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_NE(memory, nullptr);
             ASSERT_NE(demuxer, nullptr);
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
@@ -1169,8 +1167,8 @@ namespace {
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_NE(memory, nullptr);
             ASSERT_NE(demuxer, nullptr);
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
@@ -1213,18 +1211,18 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEDUALMP4, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -1266,18 +1264,18 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEDUAL14, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -1319,15 +1317,15 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEMONOMP4, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -1368,15 +1366,15 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEMONO14, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -1417,15 +1415,15 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEDUALMP4, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
@@ -1467,15 +1465,15 @@ namespace {
         for (int index = 0; index < 10; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS,
-         OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS, 
+        OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         MyMapVtt(BITRATEDUAL14, fileV);
         std::map<int64_t, int32_t>::iterator pair;
         for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
             std::cout << pair->first << " => " << pair->second << '\n';
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
-             OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS, 
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 break;
