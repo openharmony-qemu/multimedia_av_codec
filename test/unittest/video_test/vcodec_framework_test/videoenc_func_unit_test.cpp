@@ -2231,6 +2231,23 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_04, TestSize.Leve
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
+
+/**
+ * @tc.name: VideoEncoder_HRDVivid2SDR_001
+ * @tc.desc: set key output_color_space
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 } // namespace
 
 int main(int argc, char **argv)
