@@ -214,13 +214,13 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_SELECT_SUBTITLE, TestSize.Level1)
         std::shared_ptr<DownloadRequest>& request) {
     };
     mediaDownloader->SetStatusCallback(statusCallback);
-    PlayStrategy playStrategy;
-    playStrategy.width = DEFAULT_WIDTH;
-    playStrategy.height = DEFAULT_HEIGHT;
-    playStrategy.duration = DEFAULT_DURATION;
-    playStrategy.audioLanguage = "eng";
-    playStrategy.subtitleLanguage = "en_GB";
-    mediaDownloader->SetPlayStrategy(&playStrategy);
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = DEFAULT_WIDTH;
+    playStrategy->height = DEFAULT_HEIGHT;
+    playStrategy->duration = DEFAULT_DURATION;
+    playStrategy->audioLanguage = "eng";
+    playStrategy->subtitleLanguage = "en_GB";
+    mediaDownloader->SetPlayStrategy(playStrategy);
 
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
