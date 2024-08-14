@@ -719,10 +719,6 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         }
     }
 
-    if (remainLastNumberSeq == -1 && mediaSegment_ != nullptr) {
-        remainLastNumberSeq = mediaSegment_->numberSeq_;
-    }
-
     MEDIA_LOG_I("CleanSegmentBuffer:streamId:" PUBLIC_LOG_D32 ", remain numberSeq:"
         PUBLIC_LOG_D64, streamId_, remainLastNumberSeq);
 
@@ -1033,8 +1029,10 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
         PUBLIC_LOG_S, startPos, endPos, url.c_str());
 
     isCleaningBuffer_ = false;
-    downloader_->Download(downloadRequest_, -1); // -1
-    downloader_->Start();
+    if (downloader_ != nullptr) {
+        downloader_->Download(downloadRequest_, -1); // -1
+        downloader_->Start();
+    }
 }
 
 void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)

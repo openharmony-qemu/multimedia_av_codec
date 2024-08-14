@@ -391,6 +391,7 @@
             <option name="push" value="video_res/test_dash/segment_template/video/1/init.mp4 -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/index.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/index_adpt.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/index_timeline.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0004.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0003.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0002.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
@@ -412,6 +413,8 @@
             <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -438,6 +441,7 @@
             <option name="push" value="video_res/test_dash/segment_template/video/1/init.mp4 -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/index.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/index_adpt.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/index_timeline.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0004.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0003.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0002.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
@@ -459,6 +463,8 @@
             <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -485,6 +491,7 @@
             <option name="push" value="video_res/test_dash/segment_template/video/1/init.mp4 -> /data/test/media/test_dash/segment_template/video/1" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/index.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/index_adpt.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_template/index_timeline.mpd -> /data/test/media/test_dash/segment_template" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0004.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0003.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
             <option name="push" value="video_res/test_dash/segment_template/audio/und/mp4a/seg-0002.m4s -> /data/test/media/test_dash/segment_template/audio/und/mp4a" src="res"/>
@@ -506,6 +513,8 @@
             <option name="push" value="video_res/test_dash/segment_base/media-video-1.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/media-audio-und-mp4a.mp4 -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="push" value="video_res/test_dash/segment_base/index.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_audio_subtitle.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
+            <option name="push" value="video_res/test_dash/segment_base/index_period.mpd -> /data/test/media/test_dash/segment_base" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

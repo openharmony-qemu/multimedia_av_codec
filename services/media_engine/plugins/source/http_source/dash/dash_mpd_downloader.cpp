@@ -189,6 +189,16 @@ void DashMpdDownloader::Open(const std::string &url)
     DoOpen(url);
 }
 
+void DashMpdDownloader::Close(bool isAsync)
+{
+    downloader_->Cancel();
+    downloader_->Stop(isAsync);
+
+    if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+        downloadRequest_->Close();
+    }
+}
+
 void DashMpdDownloader::SetStatusCallback(StatusCallbackFunc cb)
 {
     statusCallback_ = cb;
