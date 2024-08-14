@@ -29,7 +29,8 @@ enum StreamType {
     HEVC = 0,
     VVC  = 1,
 };
-
+using CreateFunc = StreamParser *(*)();
+using DestroyFunc = void (*)(StreamParser *);
 class StreamParserManager {
 public:
     static std::shared_ptr<StreamParserManager> Create(StreamType streamType);
@@ -60,15 +61,13 @@ public:
 private:
     StreamParser *streamParser_ {nullptr};
     // .so initialize
-    static void *handler_;
     static void *LoadPluginFile(const std::string &path);
-    static bool CheckSymbol(void *handler);
-    using CreateFunc = StreamParser *(*)();
-    using DestroyFunc = void (*)(StreamParser *);
-    static CreateFunc createFunc_;
-    static DestroyFunc destroyFunc_;
+    static bool CheckSymbol(void *handler, StreamType streamType);
+    StreamType streamType_;
     static std::mutex mtx_;
     static std::map<StreamType, void *> handlerMap_;
+    static std::map<StreamType, CreateFunc> createFuncMap_;
+    static std::map<StreamType, DestroyFunc> destroyFuncMap_;
 };
 } // namespace Plugins
 } // namespace Media
