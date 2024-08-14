@@ -172,6 +172,7 @@ private:
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
     bool isInSeekContinous_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
+    std::mutex draggingMutex_ {};
 };
 } // namespace Pipeline
 } // namespace Media
