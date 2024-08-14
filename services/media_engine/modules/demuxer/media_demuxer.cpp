@@ -261,12 +261,14 @@ Status MediaDemuxer::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 
 void MediaDemuxer::RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback)
 {
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     MEDIA_LOG_I("RegisterVideoStreamReadyCallback step into");
     VideoStreamReadyCallback_ = callback;
 }
 
 void MediaDemuxer::DeregisterVideoStreamReadyCallback()
 {
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     MEDIA_LOG_I("DeregisterVideoStreamReadyCallback step into");
     VideoStreamReadyCallback_ = nullptr;
 }
@@ -1671,9 +1673,12 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
     InnerFixAbsolutePtsForPlayer(bufferMap_[trackId]);
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
         MEDIA_LOG_D("step into HandleRead");
-        bool isDiscardable = VideoStreamReadyCallback_->IsVideoStreamDiscardable(bufferMap_[trackId]);
+        std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
+        draggingLock.unlock();
+        bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
         bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDiscardable);
         return Status::OK;
     }

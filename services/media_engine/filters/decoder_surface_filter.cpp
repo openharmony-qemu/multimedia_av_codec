@@ -684,12 +684,15 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         outputBuffer->pts_, outputBuffers_.size());
     if (isInSeekContinous_) {
         outputBufferMap_.insert(std::make_pair(index, outputBuffer));
+        std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (videoFrameReadyCallback_ != nullptr) {
             lock.unlock(); // unlock for videoFrameReadyCallback_->ConsumeVideoFrame may block
             MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);
-            videoFrameReadyCallback_->ConsumeVideoFrame(outputBuffer, index);
+            std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback = videoFrameReadyCallback_;
+            draggingLock.unlock();
+            videoFrameReadyCallback->ConsumeVideoFrame(outputBuffer, index);
         }
         return;
     }
@@ -875,6 +878,7 @@ void DecoderSurfaceFilter::OnOutputFormatChanged(const MediaAVCodec::Format &for
 
 void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<VideoFrameReadyCallback> &callback)
 {
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     isInSeekContinous_ = true;
     if (callback != nullptr) {
         videoFrameReadyCallback_ = callback;
@@ -883,6 +887,7 @@ void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<Video
 
 void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
 {
+    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     isInSeekContinous_ = false;
     videoFrameReadyCallback_ = nullptr;
 }
