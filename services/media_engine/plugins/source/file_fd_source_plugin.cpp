@@ -211,7 +211,7 @@ Status FileFdSourcePlugin::ReadOnlineFile(int32_t streamId, std::shared_ptr<Buff
     curReadTime_ = steadyClock2_.ElapsedMilliseconds();
     if (isReadFrame_ && !HasCacheData(expectedLen, offset) && ringBuffer_->GetSize() < WATER_LINE_BELOW_DEFAULT &&
          (GetLastSize(position_) > static_cast<int64_t>(WATER_LINE_BELOW_DEFAULT))) {
-        MEDIA_LOG_I("ringBuffer_->GetSize() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
+        MEDIA_LOG_I("ringBuffer.size() " PUBLIC_LOG_ZU " curReadTime_ " PUBLIC_LOG_D64
             " lastReadTime_ " PUBLIC_LOG_D64, ringBuffer_->GetSize(), curReadTime_, lastReadTime_);
         CheckReadTime();
         FALSE_RETURN_V_MSG_E(!isInterrupted_, Status::OK, "please not retry read, isInterrupted true");
