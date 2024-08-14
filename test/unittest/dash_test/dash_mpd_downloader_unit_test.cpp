@@ -30,6 +30,8 @@ static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:47777/test_dash/se
 static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:47777/test_dash/segment_template/index.mpd";
 static const std::string MPD_SEGMENT_LIST_TIMELINE = "http://127.0.0.1:47777/test_dash/segment_list/index_timeline.mpd";
 static const std::string MPD_SEGMENT_TEMPLATE_ADPT = "http://127.0.0.1:47777/test_dash/segment_template/index_adpt.mpd";
+static const std::string URL_TEMPLATE_TIMELINE = "http://127.0.0.1:47777/test_dash/segment_template/index_timeline.mpd";
+static const std::string URL_SEGMENT_BASE_IN_PERIOD = "http://127.0.0.1:47777/test_dash/segment_base/index_period.mpd";
 constexpr unsigned int INIT_WIDTH = 1280;
 constexpr unsigned int INIT_HEIGHT = 720;
 }
@@ -56,12 +58,20 @@ void DashMpdDownloaderUnitTest::SetUpTestCase(void)
 void DashMpdDownloaderUnitTest::TearDownTestCase(void)
 {
     g_mpdDownloader->SetInterruptState(true);
+    g_mpdDownloader->Close(true);
     g_mpdDownloader = nullptr;
     g_server->StopServer();
     g_server = nullptr;
 }
 
-void DashMpdDownloaderUnitTest::SetUp(void) {}
+void DashMpdDownloaderUnitTest::SetUp(void)
+{
+    if (g_server == nullptr) {
+        g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+        g_server->StartServer(SERVERPORT);
+        std::cout << "start server" << std::endl;
+    }
+}
 
 void DashMpdDownloaderUnitTest::TearDown(void) {}
 
@@ -218,6 +228,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_SET_HDR_START, TestSize.Level1)
     std::shared_ptr<DashStreamDescription> stream = downloader.GetStreamByStreamId(usingStreamId);
     EXPECT_NE(stream, nullptr);
     EXPECT_FALSE(stream->videoType_ == DASH_VIDEO_TYPE_HDR_VIVID);
+    downloader.Close(true);
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_TIMELINE_MPD, TestSize.Level1)
@@ -228,6 +239,18 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_TIMELINE_MPD, TestSize.Level1)
     downloader.GetSeekable();
     int64_t duration = downloader.GetDuration();
     EXPECT_GE(duration, 0);
+    downloader.Close(true);
+}
+
+HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_TEMPLATE_TIMELINE_MPD, TestSize.Level1)
+{
+    DashMpdDownloader downloader;
+    std::string testUrl = URL_TEMPLATE_TIMELINE;
+    downloader.Open(testUrl);
+    downloader.GetSeekable();
+    int64_t duration = downloader.GetDuration();
+    EXPECT_GE(duration, 0);
+    downloader.Close(true);
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_ADPT_MPD, TestSize.Level1)
@@ -238,6 +261,18 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_ADPT_MPD, TestSize.Level1)
     downloader.GetSeekable();
     int64_t duration = downloader.GetDuration();
     EXPECT_GE(duration, 0);
+    downloader.Close(true);
+}
+
+HWTEST_F(DashMpdDownloaderUnitTest, TEST_OPEN_PERIOD_MPD, TestSize.Level1)
+{
+    DashMpdDownloader downloader;
+    std::string testUrl = URL_SEGMENT_BASE_IN_PERIOD;
+    downloader.Open(testUrl);
+    downloader.GetSeekable();
+    int64_t duration = downloader.GetDuration();
+    EXPECT_GE(duration, 0);
+    downloader.Close(true);
 }
 
 }

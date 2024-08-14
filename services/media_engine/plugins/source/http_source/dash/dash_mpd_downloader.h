@@ -115,6 +115,7 @@ public:
     virtual ~DashMpdDownloader();
 
     void Open(const std::string &url);
+    void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);
     void SetMpdCallback(DashMpdCallback *callback);
     int64_t GetDuration() const;
