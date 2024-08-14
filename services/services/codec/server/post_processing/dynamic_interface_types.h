@@ -43,6 +43,7 @@ using DynamicResetFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
 using DynamicReleaseFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
 using DynamicReleaseOutputBufferFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, uint32_t, bool);
 using DynamicGetOutputFormatFunc = int32_t(*)(DynamicColorSpaceConverterHandle*, void*);
+using DynamicOnProducerBufferReleasedFunc = int32_t(*)(DynamicColorSpaceConverterHandle*);
 
 // function pointer types array
 using DynamicInterfaceFuncTypes = TypeArray<
@@ -62,7 +63,8 @@ using DynamicInterfaceFuncTypes = TypeArray<
     DynamicResetFunc,
     DynamicReleaseFunc,
     DynamicReleaseOutputBufferFunc,
-    DynamicGetOutputFormatFunc
+    DynamicGetOutputFormatFunc,
+    DynamicOnProducerBufferReleasedFunc
 >;
 
 // function symbols
@@ -83,7 +85,8 @@ constexpr const char* DYNAMIC_INTERFACE_SYMBOLS[]{
     "ColorSpaceConvertVideoReset",
     "ColorSpaceConvertVideoRelease",
     "ColorSpaceConvertVideoReleaseOutputBuffer",
-    "ColorSpaceConvertVideoGetOutputFormat"
+    "ColorSpaceConvertVideoGetOutputFormat",
+    "ColorSpaceConvertVideoOnProducerBufferReleased",
 };
 
 // function name enumeration
@@ -105,6 +108,7 @@ enum class DynamicInterfaceName : size_t {
     RELEASE,
     RELEASE_OUPUT_BUFFER,
     GET_OUTPUT_FORMAT,
+    ON_PRODUCER_BUFFER_RELEASED,
 };
 
 // dynamic interface helper types
