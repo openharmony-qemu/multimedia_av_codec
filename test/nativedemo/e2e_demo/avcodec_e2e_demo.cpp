@@ -159,20 +159,9 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
             OH_AVMuxer_SetRotation(muxer, rotation);
             videoTrackID = index;
             OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-            OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, 8);
             OH_VideoDecoder_Configure(dec, trackFormat);
-
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_RANGE_FLAG, false);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_BT709);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_BT709);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_MATRIX_COEFFICIENTS, MATRIX_COEFFICIENT_BT709);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_VIDEO_IS_HDR_VIVID, false);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, 0);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
-            OH_AVFormat_SetIntValue(trackFormatEnc, OH_MD_KEY_FRAME_RATE, frameRate);
-
             OH_VideoEncoder_Configure(enc, trackFormatEnc);
-        } else if (trackType == MEDIA_TYPE_AUD){
+        } else if (trackType == MEDIA_TYPE_AUD) {
             audioTrackID = index;
         }
         OH_AVMuxer_AddTrack(muxer, &muxTrack, trackFormatEnc);
