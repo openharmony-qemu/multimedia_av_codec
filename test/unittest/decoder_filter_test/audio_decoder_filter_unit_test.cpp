@@ -65,7 +65,8 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_001, TestSize.Level1)
     EXPECT_EQ(audioDecoder->DoStop(), Status::OK);
     EXPECT_EQ(audioDecoder->DoRelease(), Status::OK);
 
-    std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback = std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
+    std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
+        std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
     audioDecoderCallback->OnOutputBufferDone(nullptr);
     audioDecoderCallback->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, 111);
 
@@ -75,7 +76,8 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_001, TestSize.Level1)
 
 HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_002, TestSize.Level1)
 {
-    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder = std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
     std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
     std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
     audioDecoder->Init(eventReceive, filterCallback);

@@ -46,7 +46,8 @@ void VideoResizeFilterUnitTest::TearDown()
 
 HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_001, TestSize.Level1)
 {
-    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize = std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
     std::shared_ptr<Meta> format;
     EXPECT_EQ(videoResize->SetCodecFormat(format), Status::OK);
 
@@ -93,7 +94,8 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_001, TestSize.Level1)
 
 HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_002, TestSize.Level1)
 {
-    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize = std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
     std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
     std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
     videoResize->Init(eventReceive, filterCallback);
