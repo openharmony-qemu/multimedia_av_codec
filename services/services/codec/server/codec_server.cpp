@@ -1339,6 +1339,7 @@ void CodecServer::PostProcessingOnError(int32_t errorCode)
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     if (!videoCb_) {
         AVCODEC_LOGD("Missing video callback");
+        return;
     }
     int32_t ret = VPEErrorToAVCSError(errorCode);
     AVCODEC_LOGD("PostProcessingOnError, errorCodec:%{public}d -> %{public}d", errorCode, ret);
@@ -1350,6 +1351,7 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     if (!videoCb_) {
         AVCODEC_LOGD("Missing video callback");
+        return;
     }
     CHECK_AND_RETURN_LOG(postProcessingInputBufferInfoQueue_ && postProcessingOutputBufferInfoQueue_, "Queue is null");
     std::shared_ptr<DecodedBufferInfo> info{nullptr};
