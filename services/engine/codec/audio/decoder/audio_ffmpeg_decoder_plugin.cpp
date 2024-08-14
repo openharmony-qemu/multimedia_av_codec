@@ -81,10 +81,6 @@ bool AudioFfmpegDecoderPlugin::HasExtraData() const noexcept
 
 int32_t AudioFfmpegDecoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     auto attr = inputBuffer->GetBufferAttr();
     if (!inputBuffer->CheckIsEos()) {
         auto memory = inputBuffer->GetBuffer();
@@ -129,10 +125,6 @@ int32_t AudioFfmpegDecoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
 int32_t AudioFfmpegDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
     std::lock_guard<std::mutex> l(avMutext_);
-    if (!outBuffer) {
-        AVCODEC_LOGE("outBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     if (avCodecContext_ == nullptr) {
         AVCODEC_LOGE("avCodecContext_ is nullptr");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION;
@@ -294,13 +286,7 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
 {
     format_ = format;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->channels);
-    if (avCodecContext_->channels <= 0) {
-        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
-    }
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
-    if (avCodecContext_->sample_rate <= 0) {
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
-    }
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
     int64_t channelLayout = 0;

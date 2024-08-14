@@ -103,9 +103,6 @@ Status FFmpegFlacEncoderPlugin::SetContext(const std::shared_ptr<Meta> &format)
     format->GetData(Tag::AUDIO_FLAC_COMPLIANCE_LEVEL, complianceLevel);
     format->GetData(Tag::AUDIO_BITS_PER_CODED_SAMPLE, bitsPerCodedSample);
     avCodecContext->strict_std_compliance = complianceLevel;
-    if (BITS_PER_RAW_SAMPLE_MAP.find(bitsPerCodedSample) == BITS_PER_RAW_SAMPLE_MAP.end()) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     avCodecContext->bits_per_raw_sample = BITS_PER_RAW_SAMPLE_MAP.at(bitsPerCodedSample);
     return Status::OK;
 }
@@ -197,17 +194,9 @@ Status FFmpegFlacEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
         return ret;
     }
 
-    ret = basePlugin->InitContext(parameter);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because InitContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    basePlugin->InitContext(parameter);
 
-    ret = SetContext(parameter);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because SetContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    SetContext(parameter);
 
     ret = basePlugin->OpenContext();
     if (ret != Status::OK) {

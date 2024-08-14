@@ -202,20 +202,9 @@ bool FFmpegAACEncoderPlugin::AudioSampleFormat2AVSampleFormat(const AudioSampleF
         {AudioSampleFormat::SAMPLE_S16P, AVSampleFormat::AV_SAMPLE_FMT_S16P},
         {AudioSampleFormat::SAMPLE_F32P, AVSampleFormat::AV_SAMPLE_FMT_FLTP},
     };
-    // 使用迭代器遍历 unordered_map
-    for (auto itM = formatTable.begin(); itM != formatTable.end(); ++itM) {
-        MEDIA_LOG_E("formatTable key:%{public}d   Value:%{public}d ", (int32_t)itM->first, (int32_t)itM->second);
-    }
 
-    auto it = formatTable.find(audioFmt);
-    if (it != formatTable.end()) {
-        fmt = it->second;
-        return true;
-    }
-    MEDIA_LOG_E("AudioSampleFormat2AVSampleFormat fail, from fmt:%{public}d to "
-                "fmt:%{public}d",
-                (int32_t)audioFmt, (int32_t)fmt);
-    return false;
+    fmt = formatTable.at(audioFmt);
+    return true;
 }
 
 Status FFmpegAACEncoderPlugin::Init()
@@ -236,11 +225,8 @@ Status FFmpegAACEncoderPlugin::Start()
         MEDIA_LOG_D("Format check failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    status = InitContext();
-    if (status != Status::OK) {
-        MEDIA_LOG_D("Init context failed, status = %{public}d", status);
-        return status;
-    }
+    (void)InitContext();
+
     status = OpenContext();
     if (status != Status::OK) {
         MEDIA_LOG_D("Open context failed, status = %{public}d", status);
@@ -469,28 +455,25 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
 
 Status FFmpegAACEncoderPlugin::AllocateContext(const std::string &name)
 {
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_encoder_by_name(name.c_str())),
-                                            [](AVCodec *ptr) {});
-        cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
-        avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
-    }
+    std::lock_guard<std::mutex> lock(avMutex_);
+    avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_encoder_by_name(name.c_str())),
+                                        [](AVCodec *ptr) {});
+    cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
+    avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
+
     if (avCodec_ == nullptr) {
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
 
     AVCodecContext *context = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(avMutex_);
-        context = avcodec_alloc_context3(avCodec_.get());
-        avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            if (ptr) {
-                avcodec_free_context(&ptr);
-                ptr = nullptr;
-            }
-        });
-    }
+    context = avcodec_alloc_context3(avCodec_.get());
+    avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
+        if (ptr) {
+            avcodec_free_context(&ptr);
+            ptr = nullptr;
+        }
+    });
+
     return Status::OK;
 }
 
@@ -540,9 +523,9 @@ Status FFmpegAACEncoderPlugin::OpenContext()
 
         codecContextValid_ = true;
     }
-    if (avCodecContext_->frame_size <= 0) {
-        MEDIA_LOG_E("frame size invalid");
-    }
+
+    MEDIA_LOG_I("frame size: %{public}d", avCodecContext_->frame_size);
+    
     int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     if (needResample_) {
@@ -614,13 +597,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_)) {
         MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
     } else {
-        auto iter = channelLayoutMap.find(channels_);
-        if (iter == channelLayoutMap.end()) {
-            MEDIA_LOG_E("channel layout not found, channels: %{public}d", channels_);
-            return Status::ERROR_UNKNOWN;
-        } else {
-            srcLayout_ = static_cast<AudioChannelLayout>(iter->second);
-        }
+        srcLayout_ = static_cast<AudioChannelLayout>(channelLayoutMap.at(channels_));
     }
     return Status::OK;
 }

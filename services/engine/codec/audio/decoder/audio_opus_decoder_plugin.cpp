@@ -123,10 +123,6 @@ int32_t AudioOpusDecoderPlugin::Init(const Format &format)
 
 int32_t AudioOpusDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("AudioOpusDecoderPlugin inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     if (!PluginCodecPtr) {
         AVCODEC_LOGE("AudioOpusDecoderPlugin ProcessSendData dlopen or dlsym error");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
@@ -159,10 +155,6 @@ int32_t AudioOpusDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferIn
 {
     if (!PluginCodecPtr) {
         AVCODEC_LOGE("AudioOpusDecoderPlugin ProcessRecieveData dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
-    if (!outBuffer) {
-        AVCODEC_LOGE("AudioOpusDecoderPlugin outBuffer is nullptr");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
     }
     {
