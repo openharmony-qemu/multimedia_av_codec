@@ -67,7 +67,7 @@ void HwdecHdr2SdrStateNdkTest::SetUp(void)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample2->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample2->INP_DIR = "/data/test/media/hlgHdrVivid.h265";
+    vDecSample2->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
 }
 
 void HwdecHdr2SdrStateNdkTest::TearDown()
