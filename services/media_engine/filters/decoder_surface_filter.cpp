@@ -578,7 +578,7 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
     }
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
         (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
-        MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D32,
+        MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D64,
                     playRangeStartTime_, playRangeEndTime_);
         FALSE_RETURN_V(eventReceiver_ != nullptr, Status::OK);
         Event event {
