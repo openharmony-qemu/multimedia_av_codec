@@ -1756,7 +1756,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6200, TestSize.Level2)
 HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_6400, TestSize.Level2)
 {
     int audioFrame = 0;
-    const char *file = "/data/test/media/audio/7FBD5E21-503C-41A8-83B4-34548FC01562.wav";
+    const char *file = "/data/test/media/audio/wav_audio_test_1562.wav";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
