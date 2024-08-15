@@ -57,7 +57,7 @@ bool DynamicInterface::OpenLibrary()
     std::error_code error;
     auto canonicalPath = std::filesystem::canonical(LIBRARY_PATH, error);
     if (error) {
-        AVCODEC_LOGE("Missing library. %{public}s", error.message.c_str());
+        AVCODEC_LOGE("Missing library. %{public}s", error.message().c_str());
         error.clear();
         return false;
     }
