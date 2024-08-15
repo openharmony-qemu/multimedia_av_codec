@@ -773,7 +773,7 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 int32_t DemuxerPluginManager::AddExternalSubtitle()
 {
     if (curSubTitleStreamID_ == -1) {
-        int32_t streamIndex = streamInfoMap_.size();
+        int32_t streamIndex = static_cast<int32_t>(streamInfoMap_.size());
         curSubTitleStreamID_ = streamIndex;
         streamInfoMap_[streamIndex].activated = true;
         streamInfoMap_[streamIndex].type = SUBTITLE;
