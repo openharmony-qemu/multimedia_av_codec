@@ -54,7 +54,7 @@ constexpr int32_t DEFAULT_ANGLE = 90;
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
 constexpr int32_t NUM_VALUE = 16;
 SHA512_CTX c;
-uint8_t md[SHA512_DIGEST_LENGTH];
+uint8_t g_md[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
@@ -242,14 +242,14 @@ std::vector<uint8_t> VDecNdkSample::LoadHashFile()
         std::string item;
         while (getline(ss, item, ',')) {
             if (!item.empty()) {
-                ret.push_back(stol(item, nullptr, 16));
+                ret.push_back(stol(item, nullptr, NUM_VALUE));
             }
         }
     }
     return ret;
 }
 
-static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVal[]) 
+static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVal[])
 {
     printf("---------output hash value----------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
@@ -775,9 +775,9 @@ void VDecNdkSample::OutputFuncTest()
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             AutoSwitchSurface();
-            SHA512_Final(md, &c);
+            SHA512_Final(g_md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
-            MdCompare(md);
+            MdCompare(g_md);
             break;
         }
         ProcessOutputData(buffer, index);
@@ -792,7 +792,7 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
 {
     if (!SF_OUTPUT) {
         uint8_t *bufferAddr = OH_AVMemory_GetAddr(buffer);
-        uint32_t cropSize = picWidth_ * picHeight_ * THREE >> 1;
+        uint32_t cropSize = (picWidth_ * picHeight_) * THREE >> 1;
         uint8_t *cropBuffer = new uint8_t[cropSize];
         uint8_t *copyPos = cropBuffer;
         //copy_y
@@ -804,7 +804,7 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
         bufferAddr += (sliceHeight_ - picHeight_) * stride_;
         //copy uv
         for (int32_t i = 0; i < picHeight_ >> 1; i++) {
-            memcpy_s(copyPos,picWidth_,bufferAddr, picWidth_);
+            memcpy_s(copyPos, picWidth_, bufferAddr, picWidth_);
             bufferAddr += stride_;
             copyPos += picWidth_;
         }
