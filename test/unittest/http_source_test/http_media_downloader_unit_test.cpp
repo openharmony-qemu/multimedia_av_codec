@@ -164,7 +164,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4_default, TestSize.
         ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 10 * 1024;
-        readDataInfo.isEos_ = true;
+        readDataInfo.isEos_ = false;
         httpMediaDownloader->Read(buff, readDataInfo);
         if (i == 3) {
             httpMediaDownloader->SetDemuxerState(0);
@@ -190,7 +190,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_mp4_read_all, TestSize.Level1)
         ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 100 * 1024;
-        readDataInfo.isEos_ = true;
+        readDataInfo.isEos_ = false;
         httpMediaDownloader->Read(buff, readDataInfo);
         if (i == 3) {
             httpMediaDownloader->SetDemuxerState(0);

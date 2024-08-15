@@ -470,7 +470,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
         ReadDataInfo readDataInfo;
         readDataInfo.streamId_ = 0;
         readDataInfo.wantReadLength_ = 100 * 1024;
-        readDataInfo.isEos_ = true;
+        readDataInfo.isEos_ = false;
         downloader->Read(buff, readDataInfo);
     }
     downloader->CheckBufferingOneSeconds();
@@ -507,7 +507,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>();
     std::string testUrl = TEST_URI_PATH + "test_cbr/1080_3M/video_1080.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -538,7 +538,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_DownloadReport_5M_default, TestSize.Le
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_read_all, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10);
+    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>();
     std::string testUrl = TEST_URI_PATH + "test_cbr/720_1M/video_720.m3u8";
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
@@ -659,7 +659,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
 int64_t GetFileSize(const string &fileName)
 {
     int64_t fileSize = 0;
-    if (fileName.empty()) {
+    if (!fileName.empty()) {
         struct stat fileStatus {};
         if (stat(fileName.c_str(), &fileStatus) == 0) {
             fileSize = static_cast<int64_t>(fileStatus.st_size);
