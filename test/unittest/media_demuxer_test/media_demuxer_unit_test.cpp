@@ -1671,14 +1671,17 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddGeneral_0100, TestSize.Level1)
 {
     std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
     demuxerManager->SetResetEosStatus(true);
-    Meta format;
+    MediaStreamInfo info;
     Meta formatNew;
-    format.Set<Tag::MEDIA_HAS_VIDEO>(true);
-    format.Set<Tag::MEDIA_HAS_AUDIO>(true);
-    format.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
-    format.Set<Tag::MEDIA_TRACK_COUNT>(3);
+    info.mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
+    info.mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
+    info.mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+    info.mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(3);
+    info.mediaInfo.general.Set<Tag::MEDIA_FILE_TYPE>(FileType::UNKNOW);
+    info.activated = true;
+
     formatNew.Set<Tag::MEDIA_TRACK_COUNT>(0);
-    EXPECT_EQ(demuxerManager->AddGeneral(format, formatNew), Status::OK);
+    EXPECT_EQ(demuxerManager->AddGeneral(info, formatNew), Status::OK);
 }
 
 /**

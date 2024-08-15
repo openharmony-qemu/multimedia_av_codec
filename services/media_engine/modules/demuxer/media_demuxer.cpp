@@ -956,7 +956,7 @@ Status MediaDemuxer::UnselectTrack(int32_t trackId)
 
 void MediaDemuxer::HandleStopPlugin(int32_t trackId)
 {
-    FALSE_RETURN(!subStreamDemuxer_ || trackId != subtitleTrackId_);
+    FALSE_RETURN(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_));
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         MEDIA_LOG_I("HandleStopPlugin, id = " PUBLIC_LOG_D32, streamID);
@@ -966,7 +966,7 @@ void MediaDemuxer::HandleStopPlugin(int32_t trackId)
 
 void MediaDemuxer::HandleStartPlugin(int32_t trackId)
 {
-    FALSE_RETURN(!subStreamDemuxer_ || trackId != subtitleTrackId_);
+    FALSE_RETURN(!subStreamDemuxer_ || trackId != static_cast<int32_t>(subtitleTrackId_));
     if (static_cast<uint32_t>(trackId) != TRACK_ID_DUMMY) {
         int32_t streamID = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
         demuxerPluginManager_->StartPlugin(streamID, streamDemuxer_);
@@ -982,6 +982,7 @@ Status MediaDemuxer::SeekToTimePre()
 
     if (isSelectBitRate_ == true) {
         HandleStopPlugin(audioTrackId_);
+        HandleStopPlugin(subtitleTrackId_);
     } else if (isSelectTrack_ == true) {
         TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
         if (type == TrackType::TRACK_AUDIO) {
@@ -1014,6 +1015,7 @@ Status MediaDemuxer::SeekToTimeAfter()
 
     if (isSelectBitRate_ == true) {
         HandleStartPlugin(audioTrackId_);
+        HandleStartPlugin(subtitleTrackId_);
     } else if (isSelectTrack_ == true) {
         TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
         if (type == TrackType::TRACK_AUDIO) {
