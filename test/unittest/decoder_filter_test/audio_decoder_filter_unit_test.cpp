@@ -91,4 +91,41 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_002, TestSize.Level1)
     EXPECT_EQ(audioDecoder->GetFilterType(), Pipeline::FilterType::FILTERTYPE_AENC);
 }
 
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_003, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
+    audioDecoder->Init(eventReceive, filterCallback);
+    audioDecoder->OnOutputBufferDone(nullptr);
+    audioDecoder->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, 111);
+    audioDecoder->eventReceiver_ = nullptr;
+    audioDecoder->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+    
+    std::shared_ptr<AVBufferQueue> inputBufferQueue =
+	    AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
+    audioDecoder->inputBufferQueueProducer_ = inputBufferQueue->GetProducer();
+    std::shared_ptr<AVBuffer> inputBuffer;
+    audioDecoder->OnBufferFilled(inputBuffer);
+
+    audioDecoder->GetInputBufferQueue();
+    EXPECT_EQ(audioDecoder->SetDecryptionConfig(nullptr, true), Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_004, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
+    audioDecoder->Init(eventReceive, filterCallback);
+
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
+    EXPECT_EQ(audioDecoder->ChangePlugin(meta), Status::ERROR_UNSUPPORTED_FORMAT);
+    EXPECT_EQ(audioDecoder->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, meta, nullptr),
+        Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
 }

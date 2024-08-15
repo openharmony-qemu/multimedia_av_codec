@@ -42,6 +42,151 @@ public:
     void TearDown(void);
 };
 
+class TestEventReceiver : public Pipeline::EventReceiver {
+public:
+    explicit TestEventReceiver()
+    {
+        std::cout << "event receiver constructor" << std::endl;
+    }
+
+    void OnEvent(const Event &event)
+    {
+        std::cout << event.srcFilter << std::endl;
+    }
+};
+
+class TestMediaCodecCallback : public MediaAVCodec::MediaCodecCallback {
+public:
+    explicit TestMediaCodecCallback()
+    {
+        std::cout << "TestMediaCodecCallback constructor" << std::endl;
+    }
+    virtual void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+    {
+        return;
+    }
+
+    virtual void OnOutputFormatChanged(const Format &format)
+    {
+        return;
+    }
+
+    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    {
+        return;
+    }
+
+    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    {
+        return;
+    }
+};
+
+class TestAVCodecVideoDecoder : public MediaAVCodec::AVCodecVideoDecoder {
+public:
+    explicit TestAVCodecVideoDecoder()
+    {
+    }
+    ~TestAVCodecVideoDecoder()
+    {
+    }
+    void Init(int32_t status)
+    {
+        status_ = status;
+    }
+
+    virtual int32_t Configure(const Format &format)
+    {
+        return status_;
+    }
+
+    virtual int32_t Prepare()
+    {
+        return status_;
+    }
+
+    virtual int32_t Start()
+    {
+        return status_;
+    }
+
+    virtual int32_t Stop()
+    {
+        return status_;
+    }
+
+    virtual int32_t Flush()
+    {
+        return status_;
+    }
+
+    virtual int32_t Reset()
+    {
+        return status_;
+    }
+
+    virtual int32_t Release()
+    {
+        return status_;
+    }
+
+    virtual int32_t SetOutputSurface(sptr<Surface> surface)
+    {
+        return status_;
+    }
+
+    virtual int32_t QueueInputBuffer(uint32_t index, MediaAVCodec::AVCodecBufferInfo info,
+        MediaAVCodec::AVCodecBufferFlag flag)
+    {
+        return status_;
+    }
+
+    virtual int32_t QueueInputBuffer(uint32_t index)
+    {
+        return status_;
+    }
+
+    virtual int32_t GetOutputFormat(Format &format)
+    {
+        return status_;
+    }
+
+    virtual int32_t ReleaseOutputBuffer(uint32_t index, bool render)
+    {
+        return status_;
+    }
+
+    virtual int32_t RenderOutputBufferAtTime(uint32_t index, int64_t renderTimestampNs)
+    {
+        return status_;
+    }
+
+    virtual int32_t SetParameter(const Format &format)
+    {
+        return status_;
+    }
+
+    virtual int32_t SetCallback(const std::shared_ptr<MediaAVCodec::AVCodecCallback> &callback)
+    {
+        return status_;
+    }
+
+    virtual int32_t SetCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback)
+    {
+        return status_;
+    }
+
+    virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag)
+    {
+        (void)keySession;
+        (void)svpFlag;
+        return status_;
+    }
+private:
+    int32_t status_ = 0;
+};
+
 }
 }
 
