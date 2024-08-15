@@ -52,6 +52,7 @@ constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
+constexpr int32_t NUM_VALUE = 16;
 SHA512_CTX c;
 uint8_t md[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
@@ -230,17 +231,17 @@ std::vector<uint8_t> VDecNdkSample::LoadHashFile()
         filesystem::path filePath = INP_DIR;
         std::string pixFmt = defaultPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
         std::string fileName = filePath.filename();
-        if(data.find(fileName.c_str()) == data.end()) {
+        if (data.find(fileName.c_str()) == data.end()) {
             return ret;
         }
-        if(data[fileName.c_str()].find(pixFmt) == data.end()) {
+        if (data[fileName.c_str()].find(pixFmt) == data.end()) {
             return ret;
         }
         std::string hashValue = data[fileName.c_str()][pixFmt];
         std::stringstream ss(hashValue);
         std::string item;
         while (getline(ss, item, ',')) {
-            if(!item.empty()){
+            if (!item.empty()) {
                 ret.push_back(stol(item, nullptr, 16));
             }
         }
@@ -253,14 +254,14 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
     printf("---------output hash value----------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
         printf("%02x,", outputHashVal[i - 1]);
-        if(i % 16 == 0) {
+        if (i % NUM_VALUE == 0) {
             printf("\n");
         }
     }
     printf("------standard hash value------\n");
     for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
         printf("%02x,", srcHashVal[i - 1]);
-        if(i % 16 == 0) {
+        if (i % NUM_VALUE == 0) {
             printf("\n");
         }
     }
@@ -268,12 +269,12 @@ static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVa
 bool VDecNdkSample::MdCompare(uint8_t source[])
 {
     std::vector<uint8_t> srcHashVal = LoadHashFile();
-    if(srcHashVal.size() != SHA512_DIGEST_LENGTH) {
+    if (srcHashVal.size() != SHA512_DIGEST_LENGTH) {
         cout << "get hash value failed, size " << srcHashVal.size() << endl;
         return false;
     }
     for (int i = 1; i < SHA512_DIGEST_LENGTH; i++) {
-        if(source[i] != srcHashVal[i]) {
+        if (source[i] != srcHashVal[i]) {
             DumpHashValue(srcHashVal, source);
             cout << "decoded hash value mismatch" << endl;
             return false;
