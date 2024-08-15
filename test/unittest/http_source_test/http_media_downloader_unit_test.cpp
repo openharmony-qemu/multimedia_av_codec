@@ -440,7 +440,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
         std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 4);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {};
-     httpMediaDownloader->SetStatusCallback(statusCallback);
+    httpMediaDownloader->SetStatusCallback(statusCallback);
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
