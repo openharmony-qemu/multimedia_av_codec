@@ -71,6 +71,7 @@ void HttpSourcePluginUnitTest::TearDown(void)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
 {
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
     PlayStrategy* playStrategy = new PlayStrategy();
     playStrategy->width = 1920;
     playStrategy->height = 1080;
@@ -88,7 +89,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_SetPlayStrategy, TestSize.Level1)
 {
-    PlayStrategy* playStrategy = new PlayStrategy();
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
     playStrategy->width = 1920;
     playStrategy->height = 1080;
     playStrategy->duration = 100;
@@ -105,7 +106,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_SetPlayStrategy, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
 {
-    PlayStrategy* playStrategy = new PlayStrategy();
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
     playStrategy->width = 1920;
     playStrategy->height = 1080;
     playStrategy->duration = 100;
