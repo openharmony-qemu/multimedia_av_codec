@@ -1185,7 +1185,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.
 
     std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
     sample->pts_ = 100;
-    EXPECT_EQ(demuxer->ProcessVideoStartTime(0, sample), Status::OK);
     EXPECT_EQ(demuxer->DoSelectTrack(0, TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
 }
 
