@@ -63,6 +63,7 @@ public:
     Status ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status SetMuted(bool isMuted);
     float GetMaxAmplitude();
+    int32_t SetMaxAmplitudeCbStatus(bool status);
 
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -155,10 +156,7 @@ private:
     bool isMuted_ = false;
 
     float maxAmplitude_ = 0;
-    int64_t lastGetMaxAmplitudeTime_ = 0;
-    int64_t last10FrameStartTime_ = 0;
-    bool startUpdate_ = false;
-    int32_t renderFrameNum_ = 0;
+    bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
 };
 }

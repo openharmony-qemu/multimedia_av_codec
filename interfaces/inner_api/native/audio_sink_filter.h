@@ -79,6 +79,7 @@ public:
 
     Status SetMuted(bool isMuted) override;
     float GetMaxAmplitude();
+    int32_t SetMaxAmplitudeCbStatus(bool status);
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;

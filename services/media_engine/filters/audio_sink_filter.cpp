@@ -321,6 +321,12 @@ float AudioSinkFilter::GetMaxAmplitude()
     FALSE_RETURN_V(audioSink_ != nullptr, 0.0f);
     return audioSink_->GetMaxAmplitude();
 }
+ 
+int32_t AudioSinkFilter::SetMaxAmplitudeCbStatus(bool status)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, MSERR_INVALID_VAL);
+    return audioSink_->SetMaxAmplitudeCbStatus(status);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
