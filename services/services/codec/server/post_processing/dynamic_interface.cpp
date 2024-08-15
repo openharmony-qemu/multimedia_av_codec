@@ -15,10 +15,11 @@
 
 #include "dynamic_interface.h"
 #include <dlfcn.h>
+#include <filesystem>
 #include "utils.h"
 
 namespace {
-static constexpr const char* LIBRARY_PATH{"/system/lib64/libvideoprocessingengine.z.so"};
+static constexpr const char* LIBRARY_PATH{"libvideoprocessingengine.z.so"};
 }
 
 namespace OHOS {
@@ -53,7 +54,15 @@ bool DynamicInterface::OpenLibrary()
         AVCODEC_LOGI("VPE lib is already loaded.");
         return true;
     }
-    lib_ = dlopen(LIBRARY_PATH, RTLD_LAZY);
+    std::error_code error;
+    auto canonicalPath = std::filesystem::canonical(LIBRARY_PATH, error);
+    if (error) {
+        AVCODEC_LOGE("Missing library. %{public}s", error.message.c_str());
+        error.clear();
+        return false;
+    }
+    AVCODEC_LOGD("Library path %{public}s", canonicalPath.c_str());
+    lib_ = dlopen(canonicalPath.c_str(), RTLD_LAZY);
     CHECK_AND_RETURN_RET_LOG(lib_ != nullptr, false, "Load VPE lib failed.");
     return true;
 }
@@ -79,9 +88,7 @@ bool DynamicInterface::ReadSymbols()
 
 void DynamicInterface::ClearSymbols()
 {
-    for (auto& i : interfaces_) {
-        i = nullptr;
-    }
+    interfaces_.fill(nullptr);
 }
 
 } // namespace PostProcessing
