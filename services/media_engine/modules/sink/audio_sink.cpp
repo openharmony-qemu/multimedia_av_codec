@@ -33,7 +33,6 @@ const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
 const int32_t APE_BUFFER_QUEUE_SIZE = 32;
 const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
 const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
-constexpr int32_t GET_MAX_AMPLITUDE_FRAMES_THRESHOLD = 10;
 
 int64_t GetAudioLatencyFixDelay()
 {
