@@ -501,18 +501,6 @@ Status MediaDemuxer::ProcessDrmInfos()
     return Status::OK;
 }
 
-Status MediaDemuxer::ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
-{
-    MEDIA_LOG_D("ProcessVideoStartTime,  trackId: %{public}u", trackId);
-    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported() &&
-        demuxerPluginManager_ != nullptr && !(demuxerPluginManager_->IsDash())) {
-        MEDIA_LOG_D("add start time, videoStartTime_: %{public}" PRId64 ", sample->pts_: %{public}" PRId64,
-         videoStartTime_, sample->pts_);
-        sample->pts_ += Plugins::HstTime2Us(videoStartTime_);
-    }
-    return Status::OK;
-}
-
 Status MediaDemuxer::AddDemuxerCopyTask(uint32_t trackId, TaskType type)
 {
     std::string taskName = "Demux";
@@ -1665,16 +1653,9 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
     }
 }
 
-void MediaDemuxer::InnerFixAbsolutePtsForPlayer(std::shared_ptr<AVBuffer> sample)
-{
-    FALSE_RETURN(sample != nullptr);
-    sample->pts_ = sample->absPts_;
-}
-
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
-    InnerFixAbsolutePtsForPlayer(bufferMap_[trackId]);
     std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
         MEDIA_LOG_D("step into HandleRead");
@@ -1799,7 +1780,6 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
     // to get DrmInfo
     ProcessDrmInfos();
-    ProcessVideoStartTime(trackId, sample);
     return ret;
 }
 
