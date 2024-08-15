@@ -72,7 +72,6 @@ void HttpSourcePluginUnitTest::TearDown(void)
 HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
 {
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    PlayStrategy* playStrategy = new PlayStrategy();
     playStrategy->width = 1920;
     playStrategy->height = 1080;
     playStrategy->duration = 100;
