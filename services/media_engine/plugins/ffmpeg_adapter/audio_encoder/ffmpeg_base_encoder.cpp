@@ -42,7 +42,6 @@ FFmpegBaseEncoder::FFmpegBaseEncoder()
 FFmpegBaseEncoder::~FFmpegBaseEncoder()
 {
     CloseCtxLocked();
-    avCodecContext_.reset();
 }
 
 Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
@@ -210,8 +209,6 @@ Status FFmpegBaseEncoder::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
-    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
         outBuffer_ = nullptr;
@@ -223,7 +220,6 @@ Status FFmpegBaseEncoder::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -232,7 +228,6 @@ Status FFmpegBaseEncoder::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 
@@ -264,8 +259,10 @@ Status FFmpegBaseEncoder::AllocateContext(const std::string &name)
         std::lock_guard<std::mutex> lock(avMutext_);
         context = avcodec_alloc_context3(avCodec_.get());
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            avcodec_free_context(&ptr);
-            avcodec_close(ptr);
+            if (ptr) {
+                avcodec_free_context(&ptr);
+                ptr = nullptr;
+            }
         });
         av_log_set_level(AV_LOG_ERROR);
     }
@@ -328,8 +325,10 @@ Status FFmpegBaseEncoder::ReAllocateContext()
 
     AVCodecContext *context = avcodec_alloc_context3(avCodec_.get());
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-        avcodec_free_context(&ptr);
-        avcodec_close(ptr);
+        if (ptr) {
+            avcodec_free_context(&ptr);
+            ptr = nullptr;
+        }
     });
 
     tmpContext->channels = avCodecContext_->channels;
@@ -380,11 +379,8 @@ void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 Status FFmpegBaseEncoder::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", OSAL::AVStrError(res).c_str());
-            return Status::ERROR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return Status::OK;
 }
