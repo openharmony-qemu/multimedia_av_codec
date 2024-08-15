@@ -60,6 +60,9 @@ public:
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
     const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     bool SF_OUTPUT = false;
+    bool TRANSFER_FLAG = false;
+    bool NV21_FLAG = false;
+    bool PREPARE_FLAG = true;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
     uint32_t originalWidth = 0;
@@ -93,10 +96,12 @@ public:
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
+    int32_t Prepare();
     int32_t state_EOS();
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
+    int32_t StartDecoder();
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
@@ -138,6 +143,7 @@ public:
     int32_t maxInputSize = 0;
     int64_t end_time = 0;
     bool autoSwitchSurface = false;
+    std::atomic<bool> isFlushing_ { false };
     int32_t switchSurfaceFlag = 0;
     std::atomic<bool> isRunning_ { false };
     bool inputCallbackFlush = false;
@@ -147,6 +153,7 @@ public:
     bool useHDRSource = false;
     bool isAPI = false;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+    int32_t DecodeSetSurface();
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
