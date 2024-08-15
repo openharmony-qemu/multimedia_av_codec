@@ -245,7 +245,7 @@ void HttpMediaDownloader::OnClientErrorEvent()
 
 bool HttpMediaDownloader::HandleBuffering()
 {
-    if (!isBuffering_ || downloadRequest_->IsChunkedVod() || callback_ == nullptr) {
+    if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
@@ -901,24 +901,20 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 bool HttpMediaDownloader::HandleBreak()
 {
-    bool isEos = false;
-    if (downloadRequest_ != nullptr) {
-        isEos = downloadRequest_->IsEos();
-    }
-    if (isEos && GetCurrentBufferSize() == 0) {
-        MEDIA_LOG_I("CacheData over, isEos: " PUBLIC_LOG_D32, isEos);
-        return true;
-    }
     if (downloadErrorState_) {
         MEDIA_LOG_I("downloadErrorState_ break");
         return true;
     }
-    bool isClosed = false;
-    if (downloadRequest_ != nullptr) {
-        isClosed = downloadRequest_->IsClosed();
+    if (downloadRequest_ == nullptr) {
+        MEDIA_LOG_I("downloadRequest is nullptr");
+        return true;
     }
-    if (isClosed && GetCurrentBufferSize() == 0) {
-        MEDIA_LOG_I("isClosed break");
+    if (downloadRequest_->IsEos()) {
+        MEDIA_LOG_I("CacheData over, isEos");
+        return true;
+    }
+    if (downloadRequest_->IsClosed()) {
+        MEDIA_LOG_I("CacheData over, IsClosed");
         return true;
     }
     return false;
