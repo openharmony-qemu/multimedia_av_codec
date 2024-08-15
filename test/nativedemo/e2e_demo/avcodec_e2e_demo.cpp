@@ -34,19 +34,9 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::E2EDemo;
 using namespace std;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
-constexpr float FRAME_INTERVAL_TIMES = 1.5;
 constexpr int32_t AUDIO_BUFFER_SIZE = 1024 * 1024;
 constexpr double DEFAULT_FRAME_RATE = 25.0;
-typedef struct FrameInfo {
-    uint32_t index;
-    int32_t pts;
-}FrameInfo;
-static list<FrameInfo> frameList;
-
-static bool FrameCompare(const FrameInfo &f1, const FrameInfo &f2)
-{
-    return f1.pts < f2.pts;
-}
+FILE *demuxerOutFp = nullptr;
 
 static int64_t GetFileSize(const char *fileName)
 {
@@ -78,23 +68,14 @@ static void OnDecInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBu
 {
     AVCodecE2EDemo *demo = static_cast<AVCodecE2EDemo*>(userData);
     OH_AVDemuxer_ReadSampleBuffer(demo->demuxer, demo->videoTrackID, buffer);
-    OH_VideoDecoder_PushInputBuffer(codec, index);
-}
-
-static void sortFrame(OH_AVCodec *codec, uint32_t index, int32_t pts, uint32_t duration)
-{
-    FrameInfo info = {index, pts};
-    frameList.emplace_back(info);
-    if (frameList.size() > 1) {
-        frameList.sort(FrameCompare);
-        FrameInfo first = frameList.front();
-        auto it = frameList.begin();
-        FrameInfo second = *(++it);
-        if (second.pts - first.pts <= (duration * FRAME_INTERVAL_TIMES)) {
-            OH_VideoDecoder_RenderOutputBuffer(codec, first.index);
-            frameList.pop_front();
-        }
+    uint8_t *data = OH_AVBuffer_GetAddr(buffer);
+    OH_AVCodecBufferAttr attr;
+    OH_AVBuffer_GetBufferAttr(buffer, &attr);
+    if (attr.size > 0) {
+        fwrite(data, attr.size, 1, demuxerOutFp);
     }
+
+    OH_VideoDecoder_PushInputBuffer(codec, index);
 }
 
 static void OnDecOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
@@ -103,16 +84,10 @@ static void OnDecOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        frameList.sort(FrameCompare);
-        while (frameList.size() > 0) {
-            FrameInfo first = frameList.front();
-            OH_VideoDecoder_RenderOutputBuffer(codec, first.index);
-            frameList.pop_front();
-        }
         OH_VideoEncoder_NotifyEndOfStream(demo->enc);
         return;
     }
-    sortFrame(codec, index, attr.pts, demo->frameDuration);
+    OH_VideoDecoder_RenderOutputBuffer(codec, index);
 }
 
 static void OnEncStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
@@ -138,13 +113,14 @@ static void OnEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
         demo->waitCond.notify_all();
         return;
     }
-    OH_AVMuxer_WriteSampleBuffer(demo->muxer, 0, buffer);
+    OH_AVMuxer_WriteSampleBuffer(demo->muxer, demo->videoTrackID, buffer);
     OH_VideoEncoder_FreeOutputBuffer(codec, index);
 }
 
 AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
 {
     fd = open(file, O_RDONLY);
+    demuxerOutFp = fopen("out.h265", "wb");
     outFd = open("./output.mp4", O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     int64_t size = GetFileSize(file);
     inSource = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -166,9 +142,10 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
     for (int32_t index = 0; index < trackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
         OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(inSource, index);
+        OH_AVFormat *trackFormatEnc = OH_AVSource_GetTrackFormat(inSource, index);
         int32_t muxTrack = 0;
-        OH_AVMuxer_AddTrack(muxer, &muxTrack, trackFormat);
-        int32_t trackType = 0;
+        
+        int32_t trackType = -1;
         OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType);
         if (trackType == MEDIA_TYPE_VID) {
             int32_t rotation = 0;
@@ -183,10 +160,11 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
             videoTrackID = index;
             OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
             OH_VideoDecoder_Configure(dec, trackFormat);
-            OH_VideoEncoder_Configure(enc, trackFormat);
-        } else {
+            OH_VideoEncoder_Configure(enc, trackFormatEnc);
+        } else if (trackType == MEDIA_TYPE_AUD) {
             audioTrackID = index;
         }
+        OH_AVMuxer_AddTrack(muxer, &muxTrack, trackFormatEnc);
         OH_AVFormat_Destroy(trackFormat);
     }
     OH_AVFormat_Destroy(sourceFormat);
@@ -211,6 +189,7 @@ AVCodecE2EDemo::~AVCodecE2EDemo()
     }
     close(fd);
     close(outFd);
+    fclose(demuxerOutFp);
 }
 
 void AVCodecE2EDemo::Configure()
@@ -260,6 +239,7 @@ void AVCodecE2EDemo::Start()
     OH_AVMuxer_Start(muxer);
     OH_VideoEncoder_Start(enc);
     OH_VideoDecoder_Start(dec);
+    cout<<"e2e demo start" <<endl;
     if (audioTrackID != -1) {
         audioThread = make_unique<thread>(&AVCodecE2EDemo::WriteAudioTrack, this);
     }
