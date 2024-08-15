@@ -854,19 +854,9 @@ void FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample
 
 void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
-    // pts
-    int64_t pts = 0;
     AVStream *avStream = formatContext_->streams[samplePacket->pkts[0]->stream_index];
-    if (avStream->start_time == AV_NOPTS_VALUE || ioContext_.dataSource->IsDash()) {
-        avStream->start_time = 0;
-    }
-    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        int64_t inputPts = ConvertPts(samplePacket->pkts[0]->pts, avStream->start_time);
-        pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
-    } else {
-        pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
-    }
     if (samplePacket->pkts[0]->pts != AV_NOPTS_VALUE) {
+        sample->pts_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
         sample->absPts_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkts[0]->pts, avStream->time_base));
     }
     // durantion dts
@@ -880,7 +870,6 @@ void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std:
         sample->dts_ = dts;
         sample->meta_->SetData(Media::Tag::BUFFER_DECODING_TIMESTAMP, dts);
     }
-    sample->pts_ = pts;
 }
 
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(

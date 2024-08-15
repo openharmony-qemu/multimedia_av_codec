@@ -627,6 +627,13 @@ extern const char *OH_MD_KEY_VIDEO_SAR;
  */
 extern const char *OH_MD_KEY_START_TIME;
 /**
+ * @brief Key for start time of track, value type is int64_t.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_MD_KEY_TRACK_START_TIME;
+/**
  * @brief Key for setting the output color space of video decoder. The value type is int32_t.
  * The supported value is {@link OH_COLORSPACE_BT709_LIMIT}, see {@link OH_NativeBuffer_ColorSpace}. It is used in
  * {@link OH_VideoDecoder_Configure}. If the color space conversion capability is supported and this key is configured,
