@@ -92,8 +92,8 @@ void DownloadMonitor::Close(bool isAsync)
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    downloader_->Close(isAsync);
     task_->Stop();
+    downloader_->Close(isAsync);
     isPlaying_ = false;
 }
 
