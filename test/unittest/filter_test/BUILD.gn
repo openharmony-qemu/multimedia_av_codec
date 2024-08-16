@@ -69,8 +69,10 @@ ohos_unittest("filter_unit_test") {
   if (av_codec_support_test) {
     sources = [
       "$av_codec_root_dir/services/media_engine/filters/decoder_surface_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/demuxer_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
       "./decoder_surface_filter_unit_test.cpp",
+      "./demuxer_filter_unit_test.cpp",
     ]
   }
 
