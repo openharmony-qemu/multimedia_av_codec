@@ -453,7 +453,7 @@ int32_t VDecAPI11Sample::StartVideoDecoder()
         Release();
         return ret;
     }
-
+    StartDecoder();
     return AV_ERR_OK;
 }
 
