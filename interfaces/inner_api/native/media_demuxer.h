@@ -153,7 +153,6 @@ private:
     bool GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
         std::multimap<std::string, std::vector<uint8_t>> &result);
     Status ProcessDrmInfos();
-    Status ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
@@ -186,7 +185,6 @@ private:
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
-    void InnerFixAbsolutePtsForPlayer(std::shared_ptr<AVBuffer> sample);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
