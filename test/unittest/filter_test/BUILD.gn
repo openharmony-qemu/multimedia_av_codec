@@ -55,6 +55,7 @@ ohos_unittest("filter_unit_test") {
     "$av_codec_root_dir/services/media_engine/plugins/source",
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/media_engine/filters",
   ]
 
   cflags = av_codec_unittest_cflags
@@ -70,9 +71,11 @@ ohos_unittest("filter_unit_test") {
     sources = [
       "$av_codec_root_dir/services/media_engine/filters/decoder_surface_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/demuxer_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/surface_decoder_adapter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
       "./decoder_surface_filter_unit_test.cpp",
       "./demuxer_filter_unit_test.cpp",
+      "./surface_decoder_unit_test.cpp",
     ]
   }
 
