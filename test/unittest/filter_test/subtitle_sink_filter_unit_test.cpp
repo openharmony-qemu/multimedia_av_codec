@@ -52,19 +52,15 @@ public:
     {
         (void)meta;
     }
-}
+};
 void SubtitleSinkFilterUnitTest::SetUpTestCase(void) {}
 
 void SubtitleSinkFilterUnitTest::TearDownTestCase(void) {}
 
 void SubtitleSinkFilterUnitTest::SetUp(void)
 {
-    subtitleSinkFilter_
-        = std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
-    auto receiver = std::make_shared<FilterEventReceiverMock>();
-    subtitleSinkFilter_->receiver_ = receiver;
-    auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
-    subtitleSinkFilter_->SetDataSource(mediaSource);
+    subtitleSinkFilter_ =
+        std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
 }
 
 void SubtitleSinkFilterUnitTest::TearDown(void)
@@ -73,15 +69,16 @@ void SubtitleSinkFilterUnitTest::TearDown(void)
 }
 
 /**
- * @tc.name: DoPrepare
- * @tc.desc: DoPrepare
+ * @tc.name: SetDataSource
+ * @tc.desc: SetDataSource
  * @tc.type: FUNC
  */
 HWTEST_F(SubtitleSinkFilterUnitTest, DoPrepare, TestSize.Level1)
 { 
     auto callback = std::make_shared<FilterLinkCallbackMock>();
     subtitleSinkFilter_->onLinkedResultCallback_ = callback;
-    res = subtitleSinkFilter_->DoPrepare();
+    auto res = subtitleSinkFilter_->DoPrepare();
+    std::cout << "DoPrepare " << static_cast<int32_t>(res) << std::endl;
 }
 
 /**
@@ -92,20 +89,33 @@ HWTEST_F(SubtitleSinkFilterUnitTest, DoPrepare, TestSize.Level1)
 HWTEST_F(SubtitleSinkFilterUnitTest, DoStart, TestSize.Level1)
 {
     subtitleSinkFilter_->state_ = FilterState::RUNNING;
-    res = subtitleSinkFilter_->DoStart();
+    auto res = subtitleSinkFilter_->DoStart();
+    std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
 
+    subtitleSinkFilter_ =
+        std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
     subtitleSinkFilter_->state_ = FilterState::READY;
     res = subtitleSinkFilter_->DoStart();
+    std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
 
+    subtitleSinkFilter_ =
+        std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
     subtitleSinkFilter_->state_ = FilterState::PAUSED;
     res = subtitleSinkFilter_->DoStart();
+    std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
 
+    subtitleSinkFilter_ =
+        std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
     subtitleSinkFilter_->state_ = FilterState::ERROR;
     res = subtitleSinkFilter_->DoStart();
+    std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
     
+    subtitleSinkFilter_ =
+        std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
     auto callback = std::make_shared<FilterLinkCallbackMock>();
     subtitleSinkFilter_->onLinkedResultCallback_ = callback;
     res = subtitleSinkFilter_->DoStart();
+    std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
 }
 
 /**
@@ -116,23 +126,29 @@ HWTEST_F(SubtitleSinkFilterUnitTest, DoStart, TestSize.Level1)
 HWTEST_F(SubtitleSinkFilterUnitTest, DoPause, TestSize.Level1)
 {
     subtitleSinkFilter_->state_ = FilterState::PAUSED;
-    res = subtitleSinkFilter_->DoPause();
+    auto res = subtitleSinkFilter_->DoPause();
+    std::cout << "DoPause " << static_cast<int32_t>(res) << std::endl;
 
     subtitleSinkFilter_->state_ = FilterState::STOPPED;
     res = subtitleSinkFilter_->DoPause();
+    std::cout << "DoPause " << static_cast<int32_t>(res) << std::endl;
 
     subtitleSinkFilter_->state_ = FilterState::READY;
     res = subtitleSinkFilter_->DoPause();
+    std::cout << "DoPause " << static_cast<int32_t>(res) << std::endl;
 
     subtitleSinkFilter_->state_ = FilterState::RUNNING;
     res = subtitleSinkFilter_->DoPause();
+    std::cout << "DoPause " << static_cast<int32_t>(res) << std::endl;
 
     subtitleSinkFilter_->state_ = FilterState::ERROR;
     res = subtitleSinkFilter_->DoPause();
+    std::cout << "DoPause " << static_cast<int32_t>(res) << std::endl;
     
     auto callback = std::make_shared<FilterLinkCallbackMock>();
     subtitleSinkFilter_->onLinkedResultCallback_ = callback;
     res = subtitleSinkFilter_->DoPause();
+    std::cout << "DoPause " << static_cast<int32_t>(res) << std::endl;
 }
 
 /**
@@ -143,13 +159,16 @@ HWTEST_F(SubtitleSinkFilterUnitTest, DoPause, TestSize.Level1)
 HWTEST_F(SubtitleSinkFilterUnitTest, DoResume, TestSize.Level1)
 {
     subtitleSinkFilter_->state_ = FilterState::PAUSED;
-    res = subtitleSinkFilter_->DoResume();
+    auto res = subtitleSinkFilter_->DoResume();
+    std::cout << "DoResume " << static_cast<int32_t>(res) << std::endl;
 
     subtitleSinkFilter_->frameCnt_ = 1;
     res = subtitleSinkFilter_->DoResume();
+    std::cout << "DoResume " << static_cast<int32_t>(res) << std::endl;
 
     subtitleSinkFilter_->state_ = FilterState::STOPPED;
     res = subtitleSinkFilter_->DoResume();
+    std::cout << "DoResume " << static_cast<int32_t>(res) << std::endl;
 }
 
 /**
@@ -160,9 +179,11 @@ HWTEST_F(SubtitleSinkFilterUnitTest, DoResume, TestSize.Level1)
 HWTEST_F(SubtitleSinkFilterUnitTest, DoFlush, TestSize.Level1)
 {
     auto res = subtitleSinkFilter_->DoFlush();
+    std::cout << "DoFlush " << static_cast<int32_t>(res) << std::endl;
 
-    subtitleSinkFilter_subtitleSink_ = nullptr;
+    subtitleSinkFilter_->subtitleSink_ = nullptr;
     res = subtitleSinkFilter_->DoFlush();
+    std::cout << "DoFlush " << static_cast<int32_t>(res) << std::endl;
 }
 
 /**
@@ -173,9 +194,11 @@ HWTEST_F(SubtitleSinkFilterUnitTest, DoFlush, TestSize.Level1)
 HWTEST_F(SubtitleSinkFilterUnitTest, DoStop, TestSize.Level1)
 {
     auto res = subtitleSinkFilter_->DoStop();
+    std::cout << "DoStop " << static_cast<int32_t>(res) << std::endl;
 
-    subtitleSinkFilter_subtitleSink_ = nullptr;
+    subtitleSinkFilter_->subtitleSink_ = nullptr;
     res = subtitleSinkFilter_->DoStop();
+    std::cout << "DoStop " << static_cast<int32_t>(res) << std::endl;
 }
 }  // namespace Pipeline
 }  // namespace Media
