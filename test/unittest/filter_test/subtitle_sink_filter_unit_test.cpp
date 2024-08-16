@@ -74,7 +74,7 @@ void SubtitleSinkFilterUnitTest::TearDown(void)
  * @tc.type: FUNC
  */
 HWTEST_F(SubtitleSinkFilterUnitTest, DoPrepare, TestSize.Level1)
-{ 
+{
     auto callback = std::make_shared<FilterLinkCallbackMock>();
     subtitleSinkFilter_->onLinkedResultCallback_ = callback;
     auto res = subtitleSinkFilter_->DoPrepare();
