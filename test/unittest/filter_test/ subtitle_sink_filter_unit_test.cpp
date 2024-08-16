@@ -59,7 +59,8 @@ void SubtitleSinkFilterUnitTest::TearDownTestCase(void) {}
 
 void SubtitleSinkFilterUnitTest::SetUp(void)
 {
-    subtitleSinkFilter_ = std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
+    subtitleSinkFilter_
+        = std::make_shared<SubtitleSinkFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_DEMUXER);
     auto receiver = std::make_shared<FilterEventReceiverMock>();
     subtitleSinkFilter_->receiver_ = receiver;
     auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
