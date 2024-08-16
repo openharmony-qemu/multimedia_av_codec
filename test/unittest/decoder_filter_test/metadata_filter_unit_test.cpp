@@ -80,7 +80,7 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_001, TestSize.Level1)
     metaData->GetFilterType();
 
     std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
-    buffer->pts_ = 0;    
+    buffer->pts_ = 0;
     metaData->refreshTotalPauseTime_ = true;
     metaData->latestPausedTime_ = 70;
 

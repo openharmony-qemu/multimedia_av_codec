@@ -339,7 +339,7 @@ void MetaDataFilter::OnBufferAvailable()
         extraData->ExtraGet("timeStamp", timestamp);
         extraData->ExtraGet("dataSize", bufferSize);
     }
-    MEDIA_LOG_D("timestamp:%{public}ld, dataSize:%{public}d", timestamp, bufferSize);
+    MEDIA_LOG_D("timestamp:%{public}lld, dataSize:%{public}d", timestamp, bufferSize);
     if (timestamp == 0) {
         MEDIA_LOG_E("timestamp invalid.");
         inputSurface_->ReleaseBuffer(buffer, -1);
