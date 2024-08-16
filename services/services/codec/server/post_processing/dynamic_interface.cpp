@@ -15,7 +15,6 @@
 
 #include "dynamic_interface.h"
 #include <dlfcn.h>
-#include <filesystem>
 #include "utils.h"
 
 namespace {
@@ -54,15 +53,7 @@ bool DynamicInterface::OpenLibrary()
         AVCODEC_LOGI("VPE lib is already loaded.");
         return true;
     }
-    std::error_code error;
-    auto canonicalPath = std::filesystem::canonical(LIBRARY_PATH, error);
-    if (error) {
-        AVCODEC_LOGE("Missing library. %{public}s", error.message().c_str());
-        error.clear();
-        return false;
-    }
-    AVCODEC_LOGD("Library path %{public}s", canonicalPath.c_str());
-    lib_ = dlopen(canonicalPath.c_str(), RTLD_LAZY);
+    lib_ = dlopen(LIBRARY_PATH, RTLD_LAZY);
     CHECK_AND_RETURN_RET_LOG(lib_ != nullptr, false, "Load VPE lib failed.");
     return true;
 }
