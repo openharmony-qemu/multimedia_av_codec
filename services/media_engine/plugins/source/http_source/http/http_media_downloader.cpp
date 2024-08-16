@@ -245,7 +245,7 @@ void HttpMediaDownloader::OnClientErrorEvent()
 
 bool HttpMediaDownloader::HandleBuffering()
 {
-    if (!isBuffering_ || downloadRequest_->IsChunkedVod() || callback_ == nullptr) {
+    if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
