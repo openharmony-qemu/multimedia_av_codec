@@ -54,7 +54,7 @@ const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
 const int32_t VIDEO_ROTATION_360 = 360;
-namespace {
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -62,7 +62,7 @@ static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_TIMEDMETA, MediaType::TIMEDMETA}
 };
 
-static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
+std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_MP1, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_MP2, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_MP3, MimeType::AUDIO_MPEG},
@@ -230,7 +230,6 @@ bool IsPCMStream(AVCodecID codecID)
         static_cast<int32_t>(codecID), avcodec_get_name(codecID));
     return StartWith(avcodec_get_name(codecID), "pcm_");
 }
-} // namespace
 
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
 {

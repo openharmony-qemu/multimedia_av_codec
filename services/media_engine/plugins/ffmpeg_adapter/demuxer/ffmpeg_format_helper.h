@@ -91,6 +91,9 @@ private:
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
 };
+
+extern std::map<AVCodecID, std::string_view> g_codecIdToMime;
+bool IsPCMStream(AVCodecID codecID);
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
