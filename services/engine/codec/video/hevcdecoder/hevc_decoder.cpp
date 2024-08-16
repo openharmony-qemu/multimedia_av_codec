@@ -1347,13 +1347,14 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED ||
-                             state_ == State::FLUSHED || state_ == State::RUNNING), AVCS_ERR_INVALID_STATE,
+                             state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS),
+                             AVCS_ERR_INVALID_STATE,
                              "set output surface fail:  not in Initialized or Configured state");
     if (surface == nullptr || surface->IsConsumer()) {
         AVCODEC_LOGE("Set surface fail");
         return AVCS_ERR_INVALID_VAL;
     }
-    if (state_ == State::FLUSHED || state_ == State::RUNNING) {
+    if (state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS) {
         return ReplaceOutputSurfaceWhenRunning(surface);
     }
     sInfo_.surface = surface;
