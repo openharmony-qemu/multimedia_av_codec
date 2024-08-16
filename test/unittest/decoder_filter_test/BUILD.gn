@@ -18,6 +18,7 @@ module_output_path = "av_codec/unittest"
 decoder_filter_test_sources = [
   "$av_codec_root_dir/services/drm_decryptor/codec_drm_decrypt.cpp",
   "$av_codec_root_dir/services/media_engine/filters/audio_decoder_filter.cpp",
+  "$av_codec_root_dir/services/media_engine/filters/metadata_filter.cpp",
   "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
   "$av_codec_root_dir/services/media_engine/filters/video_resize_filter.cpp",
   "$av_codec_root_dir/services/media_engine/modules/media_codec/media_codec.cpp",
@@ -78,6 +79,7 @@ ohos_unittest("decoder_filter_unit_test") {
               "video_resize_filter_unit_test.cpp",
               "audio_decoder_filter_unit_test.cpp",
               "video_decoder_adapter_unit_test.cpp",
+              "metadata_filter_unit_test.cpp",
             ]
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
@@ -88,6 +90,7 @@ ohos_unittest("decoder_filter_unit_test") {
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
