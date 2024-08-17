@@ -164,7 +164,8 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
-        if (downloadRequest_->IsEos()) {
+        if (downloadRequest_ != nullptr && downloadRequest_->IsEos()
+            && (totalBits_ / 8) >= downloadRequest_->GetFileContentLengthNoWait()) {
             isDownloadFinish_= true;
             int64_t nowTime = steadyClock_.ElapsedMilliseconds();
             double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) /
@@ -893,7 +894,14 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     playbackInfo.isDownloading = isDownloadFinish_ ? false : true;
     if (recordData_ != nullptr) {
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
-        playbackInfo.bufferDuration = static_cast<int64_t>(recordData_->bufferDuring);
+        size_t remainingBuffer = GetCurrentBufferSize();
+        uint64_t bufferDuration = 0;
+        if (currentBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+        } else {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
+        }
+        playbackInfo.bufferDuration = static_cast<int64_t>(bufferDuration);
     } else {
         playbackInfo.downloadRate = 0;
         playbackInfo.bufferDuration = 0;

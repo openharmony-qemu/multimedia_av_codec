@@ -533,9 +533,7 @@ bool HlsMediaDownloader::GetStartedStatus()
 
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
-    if (autoBufferSize_ && !userDefinedBufferDuration_) {
-        OnWriteRingBuffer(len);
-    }
+    OnWriteRingBuffer(len);
     startedPlayStatus_ = true;
     bool ret = false;
     if (keyLen_ == 0) {
@@ -666,10 +664,12 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
             delete tmpRecord;
             tmpRecord = next;
         }
-        if (CheckRiseBufferSize()) {
-            RiseBufferSize();
-        } else if (CheckPulldownBufferSize()) {
-            DownBufferSize();
+        if (autoBufferSize_ && !userDefinedBufferDuration_) {
+            if (CheckRiseBufferSize()) {
+                RiseBufferSize();
+            } else if (CheckPulldownBufferSize()) {
+                DownBufferSize();
+            }
         }
     }
     DownloadReport();
@@ -1111,7 +1111,17 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     playbackInfo.isDownloading = isDownloadFinish_ ? false : true;
     if (recordData_ != nullptr) {
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
-        playbackInfo.bufferDuration = static_cast<int64_t>(recordData_->bufferDuring);
+        size_t remainingBuffer = 0;
+        if (buffer_ != nullptr) {
+            remainingBuffer = buffer_->GetSize();
+        }
+        uint64_t bufferDuration = 0;
+        if (currentBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer) / currentBitrate_;
+        } else {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer) / CURRENT_BIT_RATE;
+        }
+        playbackInfo.bufferDuration = static_cast<int64_t>(bufferDuration);
     } else {
         playbackInfo.downloadRate = 0;
         playbackInfo.bufferDuration = 0;
