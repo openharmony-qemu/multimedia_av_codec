@@ -1353,9 +1353,9 @@ int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED ||
-                             state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS),
-                             AVCS_ERR_INVALID_STATE,
-                             "set output surface fail:  not in Initialized or Configured state");
+        state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
+        "set output surface fail: state %{public}d not support set output surface",
+        static_cast<int32_t>(state_.load()));
     if (surface == nullptr || surface->IsConsumer()) {
         AVCODEC_LOGE("Set surface fail");
         return AVCS_ERR_INVALID_VAL;
