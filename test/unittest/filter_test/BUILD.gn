@@ -71,10 +71,13 @@ ohos_unittest("filter_unit_test") {
     sources = [
       "$av_codec_root_dir/services/media_engine/filters/decoder_surface_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/demuxer_filter.cpp",
+      "$av_codec_root_dir/services/media_engine/filters/subtitle_sink_filter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/surface_decoder_adapter.cpp",
       "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
+      "$av_codec_root_dir/services/media_engine/modules/sink/subtitle_sink.cpp",
       "./decoder_surface_filter_unit_test.cpp",
       "./demuxer_filter_unit_test.cpp",
+      "./subtitle_sink_filter_unit_test.cpp",
       "./surface_decoder_unit_test.cpp",
     ]
   }
