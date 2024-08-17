@@ -83,6 +83,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_pause_resume, TestSize.Level1)
     httpSourcePlugin->SelectStream(0);
     httpSourcePlugin->Pause();
     httpSourcePlugin->Resume();
+    
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
