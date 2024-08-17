@@ -617,25 +617,8 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     return true;
 }
 
-void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
+void HlsMediaDownloader::DownloadRecordHistory(int64_t nowTime)
 {
-    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-    if (startDownloadTime_ == 0) {
-        startDownloadTime_ = nowTime;
-        lastReportUsageTime_ = nowTime;
-    }
-    uint32_t writeBits = len * 8;   // bit
-    bufferedDuration_ += writeBits;
-    totalBits_ += writeBits;
-    lastWriteBit_ += writeBits;
-    dataUsage_ += writeBits;
-
-    if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
-        auto startPlayTime = steadyClock_.ElapsedMilliseconds();
-        playDelayTime_ = startPlayTime - openTime_;
-        MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
-    }
-
     if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
         MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
         " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
@@ -646,7 +629,6 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         bufferDownRecord_ = record;
         lastWriteBit_ = 0;
         lastWriteTime_ = static_cast<uint64_t>(nowTime);
-
         BufferDownRecord* tmpRecord = bufferDownRecord_;
         for (int i = 0; i < MAX_RECORD_COUNT; i++) {
             if (tmpRecord->next) {
@@ -658,7 +640,6 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         BufferDownRecord* next = tmpRecord->next;
         tmpRecord->next = nullptr;
         tmpRecord = next;
-
         while (tmpRecord) {
             next = tmpRecord->next;
             delete tmpRecord;
@@ -672,6 +653,26 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
             }
         }
     }
+}
+
+void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
+{
+    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+    if (startDownloadTime_ == 0) {
+        startDownloadTime_ = nowTime;
+        lastReportUsageTime_ = nowTime;
+    }
+    uint32_t writeBits = len * 8;   // bit
+    bufferedDuration_ += writeBits;
+    totalBits_ += writeBits;
+    lastWriteBit_ += writeBits;
+    dataUsage_ += writeBits;
+    if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
+        auto startPlayTime = steadyClock_.ElapsedMilliseconds();
+        playDelayTime_ = startPlayTime - openTime_;
+        MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
+    }
+    DownloadRecordHistory(nowTime);
     DownloadReport();
 }
 
