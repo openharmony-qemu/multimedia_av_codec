@@ -676,7 +676,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
 {
     if (isCleanAll) {
         MEDIA_LOG_I("CleanAllSegmentBuffer clean all");
-        isCleaningBuffer_ = true;
+        isCleaningBuffer_.store(true);
         Close(true, true);
         std::lock_guard<std::mutex> lock(segmentMutex_);
         for (const auto &it: segmentList_) {
@@ -732,7 +732,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     }
 
     if (clearTail > 0) {
-        isCleaningBuffer_ = true;
+        isCleaningBuffer_.store(true);
         Close(true, false);
         std::lock_guard<std::mutex> lock(segmentMutex_);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
@@ -819,7 +819,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         remainLastNumberSeq, isEnd, segmentList_.size());
 
     if (clearTail > 0) {
-        isCleaningBuffer_ = true;
+        isCleaningBuffer_.store(true);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
@@ -1023,7 +1023,7 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     MEDIA_LOG_I("PutRequestIntoDownloader:range=" PUBLIC_LOG_D64 "-" PUBLIC_LOG_D64 " url:"
         PUBLIC_LOG_S, startPos, endPos, url.c_str());
 
-    isCleaningBuffer_ = false;
+    isCleaningBuffer_.store(false);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
         downloader_->Start();
@@ -1070,8 +1070,8 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
 
     MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
         ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_,
-        isCleaningBuffer_);
-    if (downloadDoneCbFunc_ && !isCleaningBuffer_) {
+        isCleaningBuffer_.load());
+    if (downloadDoneCbFunc_ && !isCleaningBuffer_.load()) {
         downloadDoneCbFunc_(streamId_);
     }
 }
