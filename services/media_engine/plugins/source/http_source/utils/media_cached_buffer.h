@@ -88,7 +88,7 @@ public:
     bool Check();
 
 protected:
-    CacheChunk* GetFreeCacheChunk(int64_t offset);
+    CacheChunk* GetFreeCacheChunk(int64_t offset, bool checkAllowFailContinue = false);
     FragmentIterator EraseFragmentCache(const FragmentIterator& iter);
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, int64_t offset);
     ChunkIterator GetOffsetChunkCache(CacheChunkList& fragmentCacheBuffer, int64_t offset);
