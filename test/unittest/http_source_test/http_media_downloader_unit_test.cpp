@@ -534,7 +534,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     EXPECT_EQ(playbackInfo.averageDownloadRate, 1000);
     EXPECT_EQ(playbackInfo.isDownloading, false);
     EXPECT_EQ(playbackInfo.downloadRate, 1000);
-    EXPECT_EQ(playbackInfo.bufferDuration, 1);
+    EXPECT_EQ(playbackInfo.bufferDuration, 0);
 }
 
 }

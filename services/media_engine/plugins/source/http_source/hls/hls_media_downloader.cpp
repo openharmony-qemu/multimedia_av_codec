@@ -411,6 +411,8 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
             }
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
+            MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::Read, read speed: " +
+                std::to_string(readSpeed) + " bit/s, bufferSize: " + std::to_string(curBufferSize) + " Byte");
             readTotalBytes_ = 0;
         }
         lastReadCheckTime_ = now;
@@ -531,9 +533,7 @@ bool HlsMediaDownloader::GetStartedStatus()
 
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
-    if (autoBufferSize_ && !userDefinedBufferDuration_) {
-        OnWriteRingBuffer(len);
-    }
+    OnWriteRingBuffer(len);
     startedPlayStatus_ = true;
     bool ret = false;
     if (keyLen_ == 0) {
@@ -617,6 +617,44 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     return true;
 }
 
+void HlsMediaDownloader::DownloadRecordHistory(int64_t nowTime)
+{
+    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
+        MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
+        " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
+        BufferDownRecord* record = new BufferDownRecord();
+        record->dataBits = lastWriteBit_;
+        record->timeoff = static_cast<uint64_t>(nowTime) - lastWriteTime_;
+        record->next = bufferDownRecord_;
+        bufferDownRecord_ = record;
+        lastWriteBit_ = 0;
+        lastWriteTime_ = static_cast<uint64_t>(nowTime);
+        BufferDownRecord* tmpRecord = bufferDownRecord_;
+        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
+            if (tmpRecord->next) {
+                tmpRecord = tmpRecord->next;
+            } else {
+                break;
+            }
+        }
+        BufferDownRecord* next = tmpRecord->next;
+        tmpRecord->next = nullptr;
+        tmpRecord = next;
+        while (tmpRecord) {
+            next = tmpRecord->next;
+            delete tmpRecord;
+            tmpRecord = next;
+        }
+        if (autoBufferSize_ && !userDefinedBufferDuration_) {
+            if (CheckRiseBufferSize()) {
+                RiseBufferSize();
+            } else if (CheckPulldownBufferSize()) {
+                DownBufferSize();
+            }
+        }
+    }
+}
+
 void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
 {
     int64_t nowTime = steadyClock_.ElapsedMilliseconds();
@@ -629,47 +667,12 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
     totalBits_ += writeBits;
     lastWriteBit_ += writeBits;
     dataUsage_ += writeBits;
-
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
         auto startPlayTime = steadyClock_.ElapsedMilliseconds();
         playDelayTime_ = startPlayTime - openTime_;
         MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64, playDelayTime_);
     }
-
-    if ((static_cast<uint64_t>(nowTime) - lastWriteTime_) >= SAMPLE_INTERVAL) {
-        MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
-        " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
-        BufferDownRecord* record = new BufferDownRecord();
-        record->dataBits = lastWriteBit_;
-        record->timeoff = static_cast<uint64_t>(nowTime) - lastWriteTime_;
-        record->next = bufferDownRecord_;
-        bufferDownRecord_ = record;
-        lastWriteBit_ = 0;
-        lastWriteTime_ = static_cast<uint64_t>(nowTime);
-
-        BufferDownRecord* tmpRecord = bufferDownRecord_;
-        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
-            if (tmpRecord->next) {
-                tmpRecord = tmpRecord->next;
-            } else {
-                break;
-            }
-        }
-        BufferDownRecord* next = tmpRecord->next;
-        tmpRecord->next = nullptr;
-        tmpRecord = next;
-
-        while (tmpRecord) {
-            next = tmpRecord->next;
-            delete tmpRecord;
-            tmpRecord = next;
-        }
-        if (CheckRiseBufferSize()) {
-            RiseBufferSize();
-        } else if (CheckPulldownBufferSize()) {
-            DownBufferSize();
-        }
-    }
+    DownloadRecordHistory(nowTime);
     DownloadReport();
 }
 
@@ -707,6 +710,8 @@ void HlsMediaDownloader::DownloadReport()
             }
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
                 " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            MediaAVCodec::AVCodecTrace trace("HlsMediaDownloader::DownloadReport, download speed: " +
+                std::to_string(downloadRate) + " bit/s, bufferSize: " + std::to_string(remainingBuffer) + " Byte");
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (currentBitrate_ > 0) {
@@ -1107,7 +1112,17 @@ void HlsMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     playbackInfo.isDownloading = isDownloadFinish_ ? false : true;
     if (recordData_ != nullptr) {
         playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
-        playbackInfo.bufferDuration = static_cast<int64_t>(recordData_->bufferDuring);
+        size_t remainingBuffer = 0;
+        if (buffer_ != nullptr) {
+            remainingBuffer = buffer_->GetSize();
+        }
+        uint64_t bufferDuration = 0;
+        if (currentBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer) / currentBitrate_;
+        } else {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer) / CURRENT_BIT_RATE;
+        }
+        playbackInfo.bufferDuration = static_cast<int64_t>(bufferDuration);
     } else {
         playbackInfo.downloadRate = 0;
         playbackInfo.bufferDuration = 0;

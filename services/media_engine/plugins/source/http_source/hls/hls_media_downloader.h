@@ -92,6 +92,7 @@ private:
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
+    void DownloadRecordHistory(int64_t nowTime);
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();

@@ -263,6 +263,9 @@ Status HttpCurlClient::Close()
         easyHandle_ = nullptr;
     }
     ipFlag_ = false;
+    if (!ip_.empty()) {
+        ip_.clear();
+    }
     return Status::OK;
 }
 
@@ -278,6 +281,9 @@ Status HttpCurlClient::Deinit()
         easyHandle_ = nullptr;
     }
     ipFlag_ = false;
+    if (!ip_.empty()) {
+        ip_.clear();
+    }
     curl_global_cleanup();
     MEDIA_LOG_I("Deinit out");
     return Status::OK;
