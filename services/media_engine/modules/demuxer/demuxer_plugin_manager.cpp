@@ -389,16 +389,25 @@ Status DemuxerPluginManager::UpdateGeneralValue(int32_t trackCount, const Meta& 
 Status DemuxerPluginManager::AddGeneral(const MediaStreamInfo& info, Meta& formatNew)
 {
     FileType fileType = FileType::UNKNOW;
-    if (formatNew.Get<Tag::MEDIA_FILE_TYPE>(fileType) == false && info.activated == true) {
-        info.mediaInfo.general.Get<Tag::MEDIA_FILE_TYPE>(fileType);
-        formatNew.Set<Tag::MEDIA_FILE_TYPE>(fileType);
-        int64_t durationMs = 0;
-        info.mediaInfo.general.Get<Tag::MEDIA_DURATION>(durationMs);
-        formatNew.Set<Tag::MEDIA_DURATION>(durationMs);
-    }
-
     int32_t curTrackCount = 0;
     formatNew.Get<Tag::MEDIA_TRACK_COUNT>(curTrackCount);
+
+    bool hasVideo = false;
+    formatNew.Get<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+
+    bool hasAudio = false;
+    formatNew.Get<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+
+    bool hasSubtitle = false;
+    formatNew.Get<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+
+    if (formatNew.Get<Tag::MEDIA_FILE_TYPE>(fileType) == false && info.activated == true) {
+        formatNew = info.mediaInfo.general;
+    }
+
+    formatNew.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+    formatNew.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+    formatNew.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
 
     int32_t newTrackCount = 0;
     if (info.mediaInfo.general.Get<Tag::MEDIA_TRACK_COUNT>(newTrackCount) == false) {
