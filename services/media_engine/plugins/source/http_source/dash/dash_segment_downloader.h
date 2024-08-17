@@ -170,7 +170,6 @@ private:
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
     bool CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     void CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd);
-    void ClearSegmentAll();
     void ClearReadSegmentList();
     void UpdateInitSegmentState(int32_t currentStreamId);
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
