@@ -810,7 +810,7 @@ void HttpMediaDownloader::DownloadReport()
         MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
         dataUsage_ = 0;
         lastReportUsageTime_ = static_cast<int64_t>(now);
-    }   
+    }
 }
 
 void HttpMediaDownloader::SetDemuxerState(int32_t streamId)
