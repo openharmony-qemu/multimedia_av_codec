@@ -196,6 +196,7 @@ private:
     int32_t noTaskLoopTimes_ {0};
     std::shared_ptr<Task> task_;
     std::atomic<bool> isDestructor_ {false};
+    std::atomic<bool> isClientClose_ {false};
 };
 }
 }
