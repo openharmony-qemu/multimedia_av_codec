@@ -170,6 +170,7 @@ public:
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
+    void GetIp(std::string &ip);
 private:
     bool BeginDownload();
 

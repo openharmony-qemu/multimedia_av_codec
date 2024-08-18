@@ -100,4 +100,46 @@ HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering1, TestSize.Level1)
     MP4httpMediaDownloader->isBuffering_ = false;
     EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
 }
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    std::map<std::string, std::string> httpHeader;
+    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
+    PlaybackInfo playbackInfo;
+    httpMediaDownloader->GetPlaybackInfo(playbackInfo);
+    EXPECT_EQ(playbackInfo.serverIpAddress, "");
+    EXPECT_EQ(playbackInfo.averageDownloadRate, 0);
+    EXPECT_EQ(playbackInfo.isDownloading, true);
+    EXPECT_EQ(playbackInfo.downloadRate, 0);
+    EXPECT_EQ(playbackInfo.bufferDuration, 0);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
+{
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
+        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5);
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+        std::shared_ptr<DownloadRequest>& request) {};
+    httpMediaDownloader->SetStatusCallback(statusCallback);
+    std::map<std::string, std::string> httpHeader;
+    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
+    httpMediaDownloader->totalDownloadDuringTime_ = 1000;
+    httpMediaDownloader->totalBits_ = 1000;
+    httpMediaDownloader->isDownloadFinish_ = true;
+    httpMediaDownloader->recordData_->downloadRate = 1000;
+    httpMediaDownloader->recordData_->bufferDuring = 1;
+    PlaybackInfo playbackInfo;
+    httpMediaDownloader->GetPlaybackInfo(playbackInfo);
+    EXPECT_EQ(playbackInfo.serverIpAddress, "");
+    EXPECT_EQ(playbackInfo.averageDownloadRate, 1000);
+    EXPECT_EQ(playbackInfo.isDownloading, false);
+    EXPECT_EQ(playbackInfo.downloadRate, 1000);
+    EXPECT_EQ(playbackInfo.bufferDuration, 0);
+}
+
 }

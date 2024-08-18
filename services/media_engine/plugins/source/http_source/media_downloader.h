@@ -58,6 +58,10 @@ public:
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
     }
+    virtual void GetPlaybackInfo(PlaybackInfo& playbackInfo)
+    {
+        MEDIA_LOG_E("GetPlaybackInfo is unimplemented.");
+    }
     virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");

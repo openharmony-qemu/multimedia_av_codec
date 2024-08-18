@@ -76,6 +76,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url)
     downloader_ = std::make_shared<Downloader>("http");
     steadyClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
+    recordData_ = std::make_shared<RecordData>();
 }
 
 void HttpMediaDownloader::InitRingBuffer(uint32_t expectBufferDuration)
@@ -139,6 +140,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     downloader_ = std::make_shared<Downloader>("http");
     steadyClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
+    recordData_ = std::make_shared<RecordData>();
 }
 
 HttpMediaDownloader::~HttpMediaDownloader()
@@ -150,6 +152,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
+    isDownloadFinish_= false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -160,17 +163,20 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
-        isDownloadFinish_= true;
-        int64_t nowTime = steadyClock_.ElapsedMilliseconds();
-        double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) /
-            SECOND_TO_MILLIONSECOND;
-        if (downloadTime > ZERO_THRESHOLD) {
-            avgDownloadSpeed_ = totalBits_ / downloadTime;
+        if (downloadRequest_ != nullptr && downloadRequest_->IsEos()
+            && (totalBits_ / 8) >= downloadRequest_->GetFileContentLengthNoWait()) {
+            isDownloadFinish_= true;
+            int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+            double downloadTime = (static_cast<double>(nowTime) - static_cast<double>(startDownloadTime_)) /
+                SECOND_TO_MILLIONSECOND;
+            if (downloadTime > ZERO_THRESHOLD) {
+                avgDownloadSpeed_ = totalBits_ / downloadTime;
+            }
+            MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
+                static_cast<int32_t>(avgDownloadSpeed_));
+            MEDIA_LOG_I("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
+                totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         }
-        MEDIA_LOG_D("Download done, average download speed: " PUBLIC_LOG_D32 " bit/s",
-            static_cast<int32_t>(avgDownloadSpeed_));
-        MEDIA_LOG_I("Download done, data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D64 "ms",
-            totalBits_, static_cast<int64_t>(downloadTime * SECOND_TO_MILLIONSECOND));
         HandleBuffering();
     };
     MediaSouce mediaSouce;
@@ -439,18 +445,19 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
-    readTotalBits_ += readDataInfo.realReadLength_;
-    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
-        readRecordDuringTime_ = now - lastReadCheckTime_;
-        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
+    readTotalBytes_ += readDataInfo.realReadLength_;
+    if ((now - lastReadRecordTime_) > SAMPLE_INTERVAL) {
+        readRecordDuringTime_ = now - lastReadRecordTime_;   // ms
+        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND; // s
         if (readDuration > ZERO_THRESHOLD) {
-            double readSpeed = readTotalBits_ * BYTES_TO_BIT / readDuration;
+            double readSpeed = static_cast<double>(readTotalBytes_ * BYTES_TO_BIT) / readDuration; // bps
+            currentBitrate_ = static_cast<uint64_t>(readSpeed);     // bps
             size_t curBufferSize = GetCurrentBufferSize();
             MEDIA_LOG_D("Current read speed: " PUBLIC_LOG_D32 " Kbit/s,Current buffer size: " PUBLIC_LOG_U64
             " KByte", static_cast<int32_t>(readSpeed / 1024), static_cast<uint64_t>(curBufferSize / 1024));
-            readTotalBits_ = 0;
+            readTotalBytes_ = 0;
         }
-        lastReadCheckTime_ = now;
+        lastReadRecordTime_ = now;
         readRecordDuringTime_ = 0;
     }
     
@@ -749,7 +756,7 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
 double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 {
     double downloadRate = 0;
-    double tmpNumerator = static_cast<double>(downloadBits_) * BYTES_TO_BIT;
+    double tmpNumerator = static_cast<double>(downloadBits_);
     double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLIONSECOND;
     totalDownloadDuringTime_ += downloadDuringTime_;
     if (tmpDenominator > ZERO_THRESHOLD) {
@@ -771,9 +778,20 @@ void HttpMediaDownloader::DownloadReport()
             downloadBits_ = curDownloadBits;
             double downloadRate = CalculateCurrentDownloadSpeed();
             // remaining buffer size
-            size_t remainingBuffer = GetCurrentBufferSize();
+            size_t remainingBuffer = GetCurrentBufferSize();    // Byte
             MEDIA_LOG_D("Current download speed : " PUBLIC_LOG_D32 " Kbit/s,Current buffer size : " PUBLIC_LOG_U64
-                " Byte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+                " KByte", static_cast<int32_t>(downloadRate / 1024), static_cast<uint64_t>(remainingBuffer / 1024));
+            // Remaining playable time: s
+            uint64_t bufferDuration = 0;
+            if (currentBitrate_ > 0) {
+                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+            } else {
+                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
+            }
+            if (recordData_ != nullptr) {
+                recordData_->downloadRate = downloadRate;
+                recordData_->bufferDuring = bufferDuration;
+            }
         }
         lastBits_ = totalBits_;
         lastCheckTime_ = now;
@@ -851,6 +869,34 @@ void HttpMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
     downloadInfo.isTimeOut = isTimeOut_;
+}
+
+void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (downloader_ != nullptr) {
+        downloader_->GetIp(playbackInfo.serverIpAddress);
+    }
+    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLIONSECOND;
+    if (tmpDownloadTime > ZERO_THRESHOLD) {
+        playbackInfo.averageDownloadRate = static_cast<int64_t>(totalBits_ / tmpDownloadTime);
+    } else {
+        playbackInfo.averageDownloadRate = 0;
+    }
+    playbackInfo.isDownloading = isDownloadFinish_ ? false : true;
+    if (recordData_ != nullptr) {
+        playbackInfo.downloadRate = static_cast<int64_t>(recordData_->downloadRate);
+        size_t remainingBuffer = GetCurrentBufferSize();
+        uint64_t bufferDuration = 0;
+        if (currentBitrate_ > 0) {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
+        } else {
+            bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / CURRENT_BIT_RATE;
+        }
+        playbackInfo.bufferDuration = static_cast<int64_t>(bufferDuration);
+    } else {
+        playbackInfo.downloadRate = 0;
+        playbackInfo.bufferDuration = 0;
+    }
 }
 
 bool HttpMediaDownloader::HandleBreak()

@@ -354,6 +354,15 @@ Status MediaDemuxer::GetDownloadInfo(DownloadInfo& downloadInfo)
     return source_->GetDownloadInfo(downloadInfo);
 }
 
+Status MediaDemuxer::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("GetPlaybackInfo  failed, source_ is null");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->GetPlaybackInfo(playbackInfo);
+}
+
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
 {
     MEDIA_LOG_I("SetDrmCallback called");

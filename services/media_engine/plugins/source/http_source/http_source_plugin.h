@@ -57,6 +57,8 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+
 private:
     void CloseUri();
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
