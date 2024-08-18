@@ -778,10 +778,10 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 void HttpMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
+    if ((static_cast<int64_t>(now) - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = now - lastCheckTime_;
+            downloadDuringTime_ = static_cast<int64_t>(now) - lastCheckTime_;
             downloadBits_ = curDownloadBits;
             double downloadRate = CalculateCurrentDownloadSpeed();
             // remaining buffer size
@@ -803,14 +803,14 @@ void HttpMediaDownloader::DownloadReport()
             }
         }
         lastBits_ = totalBits_;
-        lastCheckTime_ = now;
+        lastCheckTime_ = static_cast<int64_t>(now);
     }
 
-    if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
+    if (!isDownloadFinish_ && (static_cast<int64_t>(now) - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
         MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
         dataUsage_ = 0;
-        lastReportUsageTime_ = now;
-    }
+        lastReportUsageTime_ = static_cast<int64_t>(now);
+    }   
 }
 
 void HttpMediaDownloader::SetDemuxerState(int32_t streamId)
