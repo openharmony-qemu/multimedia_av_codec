@@ -675,6 +675,10 @@ bool DashSegmentDownloader::IsSegmentFinish() const
 bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
 {
     if (isCleanAll) {
+        MEDIA_LOG_I("CleanAllSegmentBuffer clean all");
+        isCleaningBuffer_.store(true);
+        Close(true, true);
+        std::lock_guard<std::mutex> lock(segmentMutex_);
         for (const auto &it: segmentList_) {
             if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
                 continue;
@@ -684,7 +688,10 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
             break;
         }
 
-        ClearSegmentAll();
+        downloader_ = std::make_shared<Downloader>("dashSegment");
+        buffer_->Clear();
+        segmentList_.clear();
+        buffer_->SetActive(true);
         return true;
     }
 
@@ -693,38 +700,41 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
 
 bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq)
 {
-    std::lock_guard<std::mutex> lock(segmentMutex_);
     if (CleanAllSegmentBuffer(isCleanAll, remainLastNumberSeq)) {
         return true;
     }
 
-    remainLastNumberSeq = -1;
     size_t clearTail = 0;
-    uint32_t remainDuration = 0;
-    for (const auto &it: segmentList_) {
-        if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
-            continue;
+    {
+        std::lock_guard<std::mutex> lock(segmentMutex_);
+        remainLastNumberSeq = -1;
+        uint32_t remainDuration = 0;
+        for (const auto &it: segmentList_) {
+            if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
+                continue;
+            }
+
+            remainLastNumberSeq = it->numberSeq_;
+
+            if (!it->isEos_) {
+                break;
+            }
+
+            remainDuration += GetSegmentRemainDuration(it);
+            if (remainDuration >= MIN_RETENTION_DURATION_MS) {
+                clearTail = it->bufferPosTail_;
+                break;
+            }
         }
 
-        remainLastNumberSeq = it->numberSeq_;
-
-        if (!it->isEos_) {
-            break;
-        }
-
-        remainDuration += GetSegmentRemainDuration(it);
-        if (remainDuration >= MIN_RETENTION_DURATION_MS) {
-            clearTail = it->bufferPosTail_;
-            break;
-        }
+        MEDIA_LOG_I("CleanSegmentBuffer:streamId:" PUBLIC_LOG_D32 ", remain numberSeq:"
+            PUBLIC_LOG_D64, streamId_, remainLastNumberSeq);
     }
 
-    MEDIA_LOG_I("CleanSegmentBuffer:streamId:" PUBLIC_LOG_D32 ", remain numberSeq:"
-        PUBLIC_LOG_D64, streamId_, remainLastNumberSeq);
-
     if (clearTail > 0) {
-        isCleaningBuffer_ = true;
+        isCleaningBuffer_.store(true);
         Close(true, false);
+        std::lock_guard<std::mutex> lock(segmentMutex_);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
@@ -809,7 +819,7 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         remainLastNumberSeq, isEnd, segmentList_.size());
 
     if (clearTail > 0) {
-        isCleaningBuffer_ = true;
+        isCleaningBuffer_.store(true);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
@@ -823,17 +833,6 @@ bool DashSegmentDownloader::CleanBufferByTime(int64_t& remainLastNumberSeq, bool
         return true;
     }
     return false;
-}
-
-void DashSegmentDownloader::ClearSegmentAll()
-{
-    MEDIA_LOG_I("CleanSegmentBuffer clean all");
-    isCleaningBuffer_ = true;
-    Close(true, true);
-    downloader_ = std::make_shared<Downloader>("dashSegment");
-    buffer_->Clear();
-    segmentList_.clear();
-    buffer_->SetActive(true);
 }
 
 bool DashSegmentDownloader::SeekToTime(const std::shared_ptr<DashSegment> &segment)
@@ -1017,10 +1016,6 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     mediaSouce.timeoutMs = HTTP_TIME_OUT_MS;
     downloadRequest_ = std::make_shared<DownloadRequest>(duration, dataSave_,
                                                          realStatusCallback, mediaSouce, requestWholeFile);
-    if (downloadRequest_ == nullptr) {
-        MEDIA_LOG_I("PutRequestIntoDownloader:downloadRequest_ is nullptr");
-        return;
-    }
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (!requestWholeFile && (endPos > startPos)) {
         downloadRequest_->SetRangePos(startPos, endPos);
@@ -1028,7 +1023,7 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
     MEDIA_LOG_I("PutRequestIntoDownloader:range=" PUBLIC_LOG_D64 "-" PUBLIC_LOG_D64 " url:"
         PUBLIC_LOG_S, startPos, endPos, url.c_str());
 
-    isCleaningBuffer_ = false;
+    isCleaningBuffer_.store(false);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
         downloader_->Start();
@@ -1066,17 +1061,17 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
         }
     }
 
-    if (mediaSegment_->contentLength_ == 0) {
-        mediaSegment_->contentLength_ = downloadRequest_->GetFileContentLength();
-    }
-
-    if (!mediaSegment_->isEos_) {
+    if (mediaSegment_ != nullptr) {
+        if (mediaSegment_->contentLength_ == 0 && downloadRequest_ != nullptr) {
+            mediaSegment_->contentLength_ = downloadRequest_->GetFileContentLength();
+        }
         mediaSegment_->isEos_ = true;
     }
+
     MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
         ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_,
-        isCleaningBuffer_);
-    if (downloadDoneCbFunc_ && !isCleaningBuffer_) {
+        isCleaningBuffer_.load());
+    if (downloadDoneCbFunc_ && !isCleaningBuffer_.load()) {
         downloadDoneCbFunc_(streamId_);
     }
 }
