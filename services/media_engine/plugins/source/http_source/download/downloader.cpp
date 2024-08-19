@@ -847,6 +847,11 @@ void Downloader::PauseLoop(bool isAsync)
         task_->Pause();
     }
 }
+
+const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
+{
+    return currentRequest_;
+}
 }
 }
 }
