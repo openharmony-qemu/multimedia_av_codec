@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef DRM_IMEDIA_KEY_SESSION_SERVICE_H
-#define DRM_IMEDIA_KEY_SESSION_SERVICE_H
+#ifndef DRM_I_KEY_SESSION_SERVICE_H
+#define DRM_I_KEY_SESSION_SERVICE_H
 namespace OHOS {
 namespace DrmStandard {
 class IMediaKeySessionService;
 }
 }
-#endif // DRM_IMEDIA_KEY_SESSION_SERVICE_H
+#endif // DRM_I_KEY_SESSION_SERVICE_H
