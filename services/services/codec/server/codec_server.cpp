@@ -30,6 +30,9 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};

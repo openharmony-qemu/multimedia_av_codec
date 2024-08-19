@@ -17,6 +17,9 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "securec.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecDrmDecrypt"};
@@ -672,12 +675,18 @@ void CodecDrmDecrypt::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessi
         svpFlag_ = SVP_FALSE;
     }
     mode_ = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
+#ifdef SUPPORT_DRM
     keySessionServiceProxy_ = keySession;
     CHECK_AND_RETURN_LOG((keySessionServiceProxy_ != nullptr), "SetDecryptConfig keySessionServiceProxy nullptr");
     keySessionServiceProxy_->GetMediaDecryptModule(decryptModuleProxy_);
     CHECK_AND_RETURN_LOG((decryptModuleProxy_ != nullptr), "SetDecryptConfig decryptModuleProxy_ nullptr");
+#else
+    (void)keySession;
+    (void)svpFlag;
+#endif
 }
 
+#ifdef SUPPORT_DRM
 int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     const std::shared_ptr<AVBuffer> &outBuf, DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer)
 {
@@ -705,6 +714,7 @@ int32_t CodecDrmDecrypt::SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf,
     outDrmBuffer.sharedMemType = static_cast<uint32_t>(outBuf->memory_->GetMemoryFlag());
     return AVCS_ERR_OK;
 }
+#endif
 
 int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
     std::shared_ptr<AVBuffer> &outBuf)
