@@ -189,6 +189,7 @@ private:
     std::shared_ptr<DecodedBufferInfoQueue> postProcessingInputBufferInfoQueue_;
     std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_;
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
+    Format outputFormatChanged_;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {
