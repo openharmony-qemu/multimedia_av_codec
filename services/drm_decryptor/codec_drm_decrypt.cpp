@@ -17,9 +17,6 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "securec.h"
-#ifdef SUPPORT_DRM
-#include "i_keysession_service.h"
-#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecDrmDecrypt"};
