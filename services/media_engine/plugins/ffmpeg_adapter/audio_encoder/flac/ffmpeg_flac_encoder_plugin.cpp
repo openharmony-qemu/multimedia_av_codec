@@ -136,10 +136,8 @@ Status FFmpegFlacEncoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
     format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
-    if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
-        AVCODEC_LOGE("InitContext failed, because ffChannelLayout is AV_CH_LAYOUT_NATIVE");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(ffChannelLayout != AV_CH_LAYOUT_NATIVE, Status::ERROR_INVALID_PARAMETER,
+        "InitContext failed, because ffChannelLayout is AV_CH_LAYOUT_NATIVE");
 
     AudioSampleFormat sampleFormat;
     format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
@@ -183,34 +181,24 @@ Status FFmpegFlacEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 Status FFmpegFlacEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     Status ret = basePlugin->AllocateContext("flac");
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because AllocateContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
+        "init failed, because AllocateContext failed. ret=%{public}d", ret);
 
     ret = CheckFormat(parameter);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because CheckFormat failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
+        "init failed, because CheckFormat failed. ret=%{public}d", ret);
 
     basePlugin->InitContext(parameter);
 
     SetContext(parameter);
 
     ret = basePlugin->OpenContext();
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because OpenContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "init failed, because OpenContext failed. ret=%{public}d", ret);
     
     audioParameter_ = *parameter;
 
     ret = basePlugin->InitFrame();
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because InitFrame failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "init failed, because InitFrame failed. ret=%{public}d", ret);
 
     return Status::OK;
 }

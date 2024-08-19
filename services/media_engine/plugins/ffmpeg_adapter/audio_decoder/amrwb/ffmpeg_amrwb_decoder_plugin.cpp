@@ -150,9 +150,8 @@ Status FFmpegAmrWbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
-    if (!basePlugin->CheckSampleFormat(format, channels)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(basePlugin->CheckSampleFormat(format, channels),
+        Status::ERROR_INVALID_PARAMETER, "CheckSampleFormat error");
     return Status::OK;
 }
 

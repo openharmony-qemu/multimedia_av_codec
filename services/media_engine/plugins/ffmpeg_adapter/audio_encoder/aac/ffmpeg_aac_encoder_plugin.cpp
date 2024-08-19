@@ -144,10 +144,8 @@ bool FFmpegAACEncoderPlugin::CheckChannelLayout()
     uint64_t ffmpegChlayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
         static_cast<AudioChannelLayout>(srcLayout_));
     // channel layout not available
-    if (av_get_channel_layout_nb_channels(ffmpegChlayout) != channels_) {
-        MEDIA_LOG_E("channel layout channels mismatch");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(av_get_channel_layout_nb_channels(ffmpegChlayout) == channels_, false,
+        "channel layout channels mismatch");
     return true;
 }
 
@@ -217,27 +215,17 @@ Status FFmpegAACEncoderPlugin::Start()
 {
     MEDIA_LOG_I("Start enter");
     Status status = AllocateContext("aac");
-    if (status != Status::OK) {
-        MEDIA_LOG_D("Allocat aac context failed, status = %{public}d", status);
-        return status;
-    }
-    if (!CheckFormat()) {
-        MEDIA_LOG_D("Format check failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Allocat aac context failed, status = %{public}d", status);
+
+    CHECK_AND_RETURN_RET_LOG(CheckFormat(), Status::ERROR_INVALID_PARAMETER, "Format check failed.");
     (void)InitContext();
 
     status = OpenContext();
-    if (status != Status::OK) {
-        MEDIA_LOG_D("Open context failed, status = %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Open context failed, status = %{public}d", status);
 
     status = InitFrame();
-    if (status != Status::OK) {
-        MEDIA_LOG_D("Init frame failed, status = %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "Init frame failed, status = %{public}d", status);
+
     return Status::OK;
 }
 
@@ -305,10 +293,8 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     }
 
     int32_t outputSize = avPacket_->size + headerSize;
-    if (memory->GetCapacity() < outputSize) {
-        MEDIA_LOG_E("Output buffer capacity is not enough");
-        return Status::ERROR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(memory->GetCapacity() >= outputSize, Status::ERROR_NO_MEMORY,
+        "Output buffer capacity is not enough");
 
     auto len = memory->Write(avPacket_->data, avPacket_->size, headerSize);
     if (len < avPacket_->size) {
@@ -444,10 +430,8 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
     MEDIA_LOG_I("flags:%{public}d global_quality:%{public}d", tmpContext->flags, tmpContext->global_quality);
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
-    if (res != 0) {
-        MEDIA_LOG_E("avcodec reopen error %{public}s", OSAL::AVStrError(res).c_str());
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(res == 0, Status::ERROR_UNKNOWN,
+        "avcodec reopen error %{public}s", OSAL::AVStrError(res).c_str());
     avCodecContext_ = tmpContext;
 
     return Status::OK;
@@ -523,9 +507,8 @@ Status FFmpegAACEncoderPlugin::OpenContext()
 
         codecContextValid_ = true;
     }
-
     MEDIA_LOG_I("frame size: %{public}d", avCodecContext_->frame_size);
-    
+
     int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     if (needResample_) {
@@ -639,11 +622,8 @@ Status FFmpegAACEncoderPlugin::InitFrame()
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
-    if (ret < 0) {
-        MEDIA_LOG_E("Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
-        return Status::ERROR_NO_MEMORY;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_NO_MEMORY,
+        "Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
     if (!(fifo_ =
               av_audio_fifo_alloc(avCodecContext_->sample_fmt, avCodecContext_->channels, cachedFrame_->nb_samples))) {
         MEDIA_LOG_E("Could not allocate FIFO");
@@ -654,10 +634,8 @@ Status FFmpegAACEncoderPlugin::InitFrame()
 Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     auto memory = inputBuffer->memory_;
-    if (memory->GetSize() < 0) {
-        MEDIA_LOG_E("SendEncoder buffer size is less than 0. size : %{public}d", memory->GetSize());
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(memory->GetSize() >= 0, Status::ERROR_UNKNOWN,
+        "SendEncoder buffer size is less than 0. size : %{public}d", memory->GetSize());
     if (memory->GetSize() > memory->GetCapacity()) {
         MEDIA_LOG_E("send input buffer is > allocate size. size : "
                     "%{public}d, allocate size : %{public}d",
@@ -674,10 +652,6 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
 
 Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    if (!inputBuffer) {
-        MEDIA_LOG_D("inputBuffer is nullptr");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
         MEDIA_LOG_D("Frame make writable failed: %{public}s", OSAL::AVStrError(ret).c_str());

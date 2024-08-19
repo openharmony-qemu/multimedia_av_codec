@@ -187,29 +187,23 @@ void AudioFFMpegAacEncoderPlugin::SetFormat(const Format &format) noexcept
 int32_t AudioFFMpegAacEncoderPlugin::Init(const Format &format)
 {
     int32_t ret = AllocateContext("aac");
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("Allocat aac context failed, ret = %{public}d", ret);
-        return ret;
-    }
-    if (!CheckFormat(format)) {
-        AVCODEC_LOGE("Format check failed.");
-        return AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_AUD_PARAMS;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "Allocat aac context failed, ret = %{public}d", ret);
+
+    CHECK_AND_RETURN_RET_LOG(CheckFormat(format), AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_AUD_PARAMS,
+        "Format check failed.");
+
     InitContext(format);
 
     ret = OpenContext();
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("Open context failed, ret = %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "Open context failed, ret = %{public}d", ret);
 
     SetFormat(format);
 
     ret = InitFrame();
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("Init frame failed, ret = %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "Init frame failed, ret = %{public}d", ret);
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -388,10 +382,8 @@ int32_t AudioFFMpegAacEncoderPlugin::InitFrame()
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
-    if (ret < 0) {
-        AVCODEC_LOGE("Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
-        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
