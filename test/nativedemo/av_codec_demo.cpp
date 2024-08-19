@@ -303,10 +303,11 @@ static int RunVideoDecoder()
     cout << "0: buffer" << endl;
     cout << "1: surface file" << endl;
     cout << "2: surface render" << endl;
+    cout << "3: switch surface" << endl;
 
     string mode;
     (void)getline(cin, mode);
-    if (mode != "0" && mode != "1" && mode != "2") {
+    if (mode != "0" && mode != "1" && mode != "2" && mode != "3") {
         cout << "parameter invalid" << endl;
         return 0;
     }
