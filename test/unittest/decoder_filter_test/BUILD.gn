@@ -19,10 +19,10 @@ decoder_filter_test_sources = [
   "$av_codec_root_dir/services/drm_decryptor/codec_drm_decrypt.cpp",
   "$av_codec_root_dir/services/media_engine/filters/audio_decoder_filter.cpp",
   "$av_codec_root_dir/services/media_engine/filters/metadata_filter.cpp",
+  "$av_codec_root_dir/services/media_engine/filters/surface_encoder_adapter.cpp",
+  "$av_codec_root_dir/services/media_engine/filters/surface_encoder_filter.cpp",
   "$av_codec_root_dir/services/media_engine/filters/video_decoder_adapter.cpp",
   "$av_codec_root_dir/services/media_engine/filters/video_resize_filter.cpp",
-  "$av_codec_root_dir/services/media_engine/filters/surface_encoder_filter.cpp",
-  "$av_codec_root_dir/services/media_engine/filters/surface_encoder_adapter.cpp",
   "$av_codec_root_dir/services/media_engine/modules/media_codec/media_codec.cpp",
 ]
 config("decoder_filter_unittest_cfg") {
