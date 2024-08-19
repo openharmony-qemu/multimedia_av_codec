@@ -83,10 +83,8 @@ public:
     }
     int32_t SetOutputSurface(sptr<Surface> surface)
     {
-        if (surface == nullptr)
-            return 0;
-        else
-            return ret;
+
+        return 0;
     }
     int32_t QueueInputBuffer(uint32_t index, MediaAVCodec::AVCodecBufferInfo info, MediaAVCodec::AVCodecBufferFlag flag)
     {
