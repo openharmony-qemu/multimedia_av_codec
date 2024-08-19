@@ -694,6 +694,7 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 
 bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
 {
+    OnWriteBuffer(len);
     if (isNeedClean_) {
         return true;
     }
@@ -731,7 +732,6 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
         MEDIA_LOG_D("isInterruptNeeded true, return false.");
         return false;
     }
-    OnWriteBuffer(len);
     return true;
 }
 

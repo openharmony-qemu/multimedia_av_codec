@@ -440,7 +440,7 @@ Status HttpCurlClient::RequestData(long startPos, int len, const std::string& ur
         }
         SetIp();
     }
-	mutex_.unlock();
+    mutex_.unlock();
     completedCb(clientCode, serverCode, ret);
     return ret;
 }
