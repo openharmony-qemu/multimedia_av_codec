@@ -46,9 +46,8 @@ void SurfaceEncoderFilterUnitTest::TearDown()
 
 HWTEST_F(SurfaceEncoderFilterUnitTest, SurfaceEncoderFilter_001, TestSize.Level1)
 {
-    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder =
-        std::make_shared<Pipeline::SurfaceEncoderFilter>("SurfaceEncoderFilter",
-            Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
 
     std::shared_ptr<Meta> format = std::make_shared<Meta>();
     format->Set<Tag::MIME_TYPE>("test");
