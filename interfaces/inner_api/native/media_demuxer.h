@@ -116,8 +116,10 @@ public:
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
 
-    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex, int64_t presentationTimeUs, uint32_t &frameIndex);
-    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex, uint32_t frameIndex, int64_t &presentationTimeUs);
+    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index);
+    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs);
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);

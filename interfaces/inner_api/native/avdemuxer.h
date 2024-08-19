@@ -106,10 +106,27 @@ public:
     virtual int32_t GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) = 0;
     virtual int32_t GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) = 0;
 
-    virtual int32_t GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-        int64_t presentationTimeUs, uint32_t &frameIndex) = 0;
-    virtual int32_t GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-        uint32_t frameIndex, int64_t &presentationTimeUs) = 0;
+    /**
+     * @brief Obtian index by relative pts.
+     * @param trackIndex Get the index from this track.
+     * @param relativePresentationTimeUs Relative pts which obtian index by.
+     * @param index Frame index of obtian result.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
+    virtual int32_t GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) = 0;
+
+    /**
+     * @brief Obtian relative pts by index.
+     * @param trackIndex Get the relative pts from this track.
+     * @param index Frame index which obtian relative pts by.
+     * @param relativePresentationTimeUs Pts of obtian reuslt.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
+    virtual int32_t GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) = 0;
 };
 
 class __attribute__((visibility("default"))) AVDemuxerFactory {
