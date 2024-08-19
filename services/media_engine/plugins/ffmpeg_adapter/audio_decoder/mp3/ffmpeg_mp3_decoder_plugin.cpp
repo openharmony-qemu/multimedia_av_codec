@@ -152,7 +152,7 @@ Status FFmpegMp3DecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
         }
     }
     CHECK_AND_RETURN_RET_LOG(basePlugin->CheckSampleFormat(format, channels), Status::ERROR_INVALID_PARAMETER,
-            "check init failed, because CheckSampleFormat failed");
+        "check init failed, because CheckSampleFormat failed");
     return Status::OK;
 }
 

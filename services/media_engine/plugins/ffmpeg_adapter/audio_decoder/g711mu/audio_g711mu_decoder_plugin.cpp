@@ -128,7 +128,7 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 {
     auto memory = inputBuffer->memory_;
     CHECK_AND_RETURN_RET_LOG(memory->GetSize() >= 0, Status::ERROR_UNKNOWN,
-            "SendBuffer buffer size < 0. size : %{public}d", memory->GetSize());
+        "SendBuffer buffer size < 0. size : %{public}d", memory->GetSize());
     if (memory->GetSize() > memory->GetCapacity()) {
         AVCODEC_LOGE("send input buffer > allocate size. size : %{public}d, allocate size : %{public}d",
             memory->GetSize(), memory->GetCapacity());

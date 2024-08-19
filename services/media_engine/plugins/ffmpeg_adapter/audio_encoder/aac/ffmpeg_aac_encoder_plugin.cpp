@@ -144,7 +144,8 @@ bool FFmpegAACEncoderPlugin::CheckChannelLayout()
     uint64_t ffmpegChlayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
         static_cast<AudioChannelLayout>(srcLayout_));
     // channel layout not available
-    CHECK_AND_RETURN_RET_LOG(av_get_channel_layout_nb_channels(ffmpegChlayout) == channels_, false, "channel layout channels mismatch");
+    CHECK_AND_RETURN_RET_LOG(av_get_channel_layout_nb_channels(ffmpegChlayout) == channels_, false,
+        "channel layout channels mismatch");
     return true;
 }
 
