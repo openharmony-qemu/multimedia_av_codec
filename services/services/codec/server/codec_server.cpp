@@ -858,6 +858,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     if (postProcessing_) {
+        outputFormatChanged_ = format;
         return;
     }
     if (videoCb_ != nullptr) {
@@ -1383,7 +1384,29 @@ void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
         AVCODEC_LOGD("Missing video callback");
         return;
     }
-    videoCb_->OnOutputFormatChanged(format);
+    int32_t width = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_WIDTH, width);
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_PIC_WIDTH, width);
+    }
+    int32_t height = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_HEIGHT, height);
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height);
+    }
+    int32_t stride = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_STRIDE, stride)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    }
+    int32_t sliceHeight = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
+    }
+    int32_t outputColorSpace = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_DECODER_OUTPUT_COLOR_SPACE, outputColorSpace)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_DECODER_OUTPUT_COLOR_SPACE, outputColorSpace);
+    }
+    videoCb_->OnOutputFormatChanged(outputFormatChanged_);
 }
 
 void CodecServer::StartPostProcessingTask()
