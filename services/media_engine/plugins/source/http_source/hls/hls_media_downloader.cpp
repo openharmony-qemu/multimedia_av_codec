@@ -50,7 +50,7 @@ constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr int32_t BYTES_TO_BIT = 8;
-constexpr int32_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
+constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
 constexpr float DEFAULT_CACHE_TIME = 0.3;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
 constexpr int SECOND_TO_MILLIONSECOND = 1000;
@@ -60,6 +60,10 @@ constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
+constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
+constexpr float CACHE_LEVEL_1 = 1;
+constexpr float CACHE_LEVEL_2 = 5;
+constexpr float CACHE_LEVEL_3 = 10;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -298,6 +302,7 @@ bool HlsMediaDownloader::HandleBuffering()
     }
     
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
+    UpdateWaterLineAbove();
     if (buffer_->GetSize() >= waterLineAbove_ || CheckBreakCondition()) {
         isBuffering_ = false;
     }
@@ -312,7 +317,6 @@ bool HlsMediaDownloader::HandleBuffering()
 
 bool HlsMediaDownloader::HandleCache()
 {
-    waterLineAbove_ = static_cast<size_t>(GetWaterLineAbove());
     if (!isBuffering_ && callback_ != nullptr) {
         MEDIA_LOG_I("DownloadTask start.");
         isBuffering_ = true;
@@ -359,7 +363,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         return Status::ERROR_AGAIN;
     }
     size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
-        std::min(PLAY_WATER_LINE, static_cast<int>(readDataInfo.wantReadLength_)) : 0;
+        std::max(PLAY_WATER_LINE, static_cast<int>(readDataInfo.wantReadLength_)) : 0;
     if (isFirstFrameArrived_ && buffer_->GetSize() < waterLine && !CheckBreakCondition()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
@@ -1159,16 +1163,24 @@ void HlsMediaDownloader::CaculateBitRate(size_t fragmentSize, double duration)
     MEDIA_LOG_I("CaculateBitRate: " PUBLIC_LOG_D32, currentBitRate_);
 }
 
-int32_t HlsMediaDownloader::GetWaterLineAbove()
+void HlsMediaDownloader::UpdateWaterLineAbove()
 {
-    int32_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
+    size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
-        waterLineAbove = static_cast<int32_t>(DEFAULT_CACHE_TIME * currentBitRate_ / BYTES_TO_BIT);
-        MEDIA_LOG_I("GetWaterLineAbove: " PUBLIC_LOG_D32, waterLineAbove);
+        float cacheTime = 0;
+        if (avgDownloadSpeed_ > 0) {
+            float ratio = avgDownloadSpeed_ / currentBitRate_;
+            cacheTime = GetCacheDuration(ratio);
+        } else {
+            cacheTime = DEFAULT_CACHE_TIME;
+        }
+        waterLineAbove = static_cast<size_t>(cacheTime * currentBitRate_ / BYTES_TO_BIT);
+        waterLineAbove = std::max(MIN_WATER_LINE_ABOVE, waterLineAbove);
     } else {
-        MEDIA_LOG_I("GetWaterLineAbove default: " PUBLIC_LOG_D32, waterLineAbove);
+        MEDIA_LOG_D("UpdateWaterLineAbove default: " PUBLIC_LOG_ZU, waterLineAbove);
     }
-    return waterLineAbove;
+    waterLineAbove_ = std::min(waterLineAbove, static_cast<size_t>(RING_BUFFER_SIZE));
+    MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
 }
 
 void HlsMediaDownloader::HandleCachedDuration()
@@ -1239,6 +1251,18 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
     }
     MEDIA_LOG_I("CheckBufferingOneSeconds out");
     return isBuffering_;
+}
+
+float HlsMediaDownloader::GetCacheDuration(float ratio)
+{
+    if (0 < ratio && ratio < 0.5) { // (0, 0.5)
+        return CACHE_LEVEL_3;
+    } else if (0.5 <= ratio && ratio < 1) { // [0.5, 1)
+        return CACHE_LEVEL_2;
+    } else if (1 <= ratio && ratio < 2) { // [1, 2)
+        return CACHE_LEVEL_1;
+    }
+    return DEFAULT_CACHE_TIME; // (, 0] || [2, )
 }
 }
 }

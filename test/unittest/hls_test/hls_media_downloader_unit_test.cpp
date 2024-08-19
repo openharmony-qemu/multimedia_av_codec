@@ -407,9 +407,9 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
 
     downloader->SetCurrentBitRate(-1);
-    downloader->GetWaterLineAbove();
+    downloader->UpdateWaterLineAbove();
     downloader->SetCurrentBitRate(10);
-    downloader->GetWaterLineAbove();
+    downloader->UpdateWaterLineAbove();
     downloader->HandleCachedDuration();
     downloader->SetInterruptState(true);
     downloader->SetInterruptState(false);

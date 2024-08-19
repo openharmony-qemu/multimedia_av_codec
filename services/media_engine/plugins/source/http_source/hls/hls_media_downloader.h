@@ -117,11 +117,12 @@ private:
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
-    int32_t GetWaterLineAbove();
+    void UpdateWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
     bool CheckBufferingOneSeconds();
+    float GetCacheDuration(float ratio);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
