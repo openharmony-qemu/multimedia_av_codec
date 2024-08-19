@@ -1427,7 +1427,7 @@ Status MediaDemuxer::PrepareFrame(bool renderFirstFrame)
         MEDIA_LOG_D("Stop was executed before and PrepareFrame.");
         firstFrameCount_ = 0;
         ret = Start();
-    } else if ((firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
+    } else if (!isThreadExit_ || (firstFrameCount_ >= DEFAULT_PREPARE_FRAME_COUNT) || waitForDataFail_) {
         waitForDataFail_ = false;
         firstFrameCount_ = 0;
         ret = Resume();
