@@ -43,6 +43,7 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::VideoDemo;
 using namespace std;
 namespace {
+constexpr uint32_t SWITCH_CNT = 100;
 constexpr uint32_t DEFAULT_WIDTH = 320;
 constexpr uint32_t DEFAULT_HEIGHT = 240;
 constexpr uint32_t FRAME_DURATION_US = 33000;
@@ -51,7 +52,7 @@ constexpr string_view inputFilePath = "/data/test/media/out_320_240_10s.h264";
 constexpr string_view outputFilePath = "/data/test/media/out_320_240_10s.yuv";
 constexpr string_view outputSurfacePath = "/data/test/media/out_320_240_10s.rgba";
 constexpr uint32_t SLEEP_TIME = 1;
-uint32_t outFrameCount = 0;
+uint32_t g_outFrameCount = 0;
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -92,7 +93,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemo
         signal_->outQueue_.push(index);
         signal_->outBufferQueue_.push(data);
         signal_->attrQueue_.push(*attr);
-        outFrameCount += attr->size > 0 ? 1 : 0;
+        g_outFrameCount += 1;
         signal_->outCond_.notify_all();
     } else {
         cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
@@ -108,7 +109,7 @@ void VDecDemo::RunCase(std::string &mode)
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_WIDTH.data(), DEFAULT_WIDTH);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_HEIGHT.data(), DEFAULT_HEIGHT);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data(),
-                            static_cast<int32_t>(VideoPixelFormat::YUV420P));
+                            static_cast<int32_t>(VideoPixelFormat::NV12));
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
 
     if (mode_ != "0") {
@@ -214,13 +215,13 @@ VDecDemo::~VDecDemo()
 sptr<Surface> VDecDemo::GetSurface(std::string &mode)
 {
     sptr<Surface> ps = nullptr;
-    if (mode == "1") {
+    if (mode == "1" || (mode == "3" && !isRunning_.load())) {
         sptr<Surface> cs = Surface::CreateSurfaceAsConsumer();
         sptr<IBufferConsumerListener> listener = new InnerVideoDemo::TestConsumerListener(cs, outputSurfacePath);
         cs->RegisterConsumerListener(listener);
         auto p = cs->GetProducer();
         ps = Surface::CreateSurfaceAsProducer(p);
-    } else if (mode == "2") {
+    } else if (mode == "2" || (mode == "3" && isRunning_.load())) {
         sptr<Rosen::Window> window = nullptr;
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowRect({0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT});
@@ -437,13 +438,19 @@ void VDecDemo::OutputFunc()
         }
 
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "decode eos, write frame:" << outFrameCount << endl;
+            cout << "decode eos, write frame:" << g_outFrameCount << endl;
             isRunning_.store(false);
         }
 
         if (mode_ == "0" && OH_VideoDecoder_FreeOutputData(videoDec_, index) != AV_ERR_OK) {
             cout << "Fatal: FreeOutputData fail" << endl;
             break;
+        }
+
+        if (mode_ == "3" && g_outFrameCount == SWITCH_CNT) {
+            sptr<Surface> ps = GetSurface(mode_);
+            OHNativeWindow *nativeWindow = CreateNativeWindowFromSurface(&ps);
+            DEMO_CHECK_AND_RETURN_LOG(SetSurface(nativeWindow) == AVCS_ERR_OK, "Fatal: SetSurface fail");
         }
 
         if (mode_ != "0" && OH_VideoDecoder_RenderOutputData(videoDec_, index) != AV_ERR_OK) {
