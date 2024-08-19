@@ -839,6 +839,12 @@ void Downloader::PauseLoop(bool isAsync)
         task_->Pause();
     }
 }
+
+void Downloader::SetAppUid(int32_t appUid)
+{
+    client_->SetAppUid(appUid);
+}
+
 }
 }
 }

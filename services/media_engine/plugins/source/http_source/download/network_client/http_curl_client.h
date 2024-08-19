@@ -55,6 +55,7 @@ public:
 
     Status Deinit() override;
     Status GetIp(std::string &ip) override;
+    void SetAppUid(int32_t appUid) override;
 
 private:
     void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
@@ -78,6 +79,7 @@ private:
     bool ipFlag_ {false};
     bool isFirstRequest_ {true};
     bool isFirstOpen_ {true};
+    volatile int32_t appUid_ {-1};
 };
 }
 }

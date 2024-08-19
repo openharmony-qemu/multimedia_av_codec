@@ -1035,6 +1035,12 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
     MEDIA_LOG_I("CheckBufferingOneSeconds out");
     return isBuffering_;
 }
+
+void HttpMediaDownloader::SetAppUid(int32_t appUid)
+{
+    downloader_->SetAppUid(appUid);
+}
+
 }
 }
 }

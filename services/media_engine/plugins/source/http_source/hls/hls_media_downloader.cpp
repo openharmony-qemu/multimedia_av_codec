@@ -1240,6 +1240,13 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
     MEDIA_LOG_I("CheckBufferingOneSeconds out");
     return isBuffering_;
 }
+
+void HlsMediaDownloader::SetAppUid(int32_t appUid)
+{
+    downloader_->SetAppUid(appUid);
+    playlistDownloader_->SetAppUid(appUid);
+}
+
 }
 }
 }

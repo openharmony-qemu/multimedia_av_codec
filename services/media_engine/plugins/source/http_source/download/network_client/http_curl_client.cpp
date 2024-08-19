@@ -459,6 +459,11 @@ Status HttpCurlClient::SetIp()
     }
     return retSetIp;
 }
+
+void HttpCurlClient::SetAppUid(int32_t appUid)
+{
+    appUid_ = appUid;
+}
 }
 }
 }

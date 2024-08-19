@@ -238,6 +238,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
     }
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded_);
+        downloader_->SetAppUid(source->GetAppUid());
     }
 }
 

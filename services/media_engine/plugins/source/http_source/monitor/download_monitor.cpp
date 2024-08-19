@@ -292,6 +292,12 @@ Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate)
     }
     return downloader_->SetCurrentBitRate(bitRate);
 }
+
+void DownloadMonitor::SetAppUid(int32_t appUid)
+{
+    downloader_->SetAppUid(appUid);
+}
+
 }
 }
 }
