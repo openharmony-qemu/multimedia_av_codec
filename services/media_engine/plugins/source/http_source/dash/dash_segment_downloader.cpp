@@ -935,7 +935,8 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (realTimeBitBate_ > 0) {
-                bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / realTimeBitBate_;
+                bufferDuration =
+                    remainingBuffer * static_cast<uint64_t>(BYTES_TO_BIT) / static_cast<uint64_t>(realTimeBitBate_);
             } else {
                 bufferDuration = static_cast<uint64_t>(remainingBuffer * BYTES_TO_BIT) / currentBitrate_;
             }
