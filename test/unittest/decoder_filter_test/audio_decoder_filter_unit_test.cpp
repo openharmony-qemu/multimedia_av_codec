@@ -69,6 +69,7 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_001, TestSize.Level1)
         std::make_shared<Pipeline::AudioDecoderCallback>(audioDecoder);
     audioDecoderCallback->OnOutputBufferDone(nullptr);
     audioDecoderCallback->OnError(CodecErrorType::CODEC_DRM_DECRYTION_FAILED, 111);
+    audioDecoderCallback->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
 
     EXPECT_EQ(audioDecoder->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(audioDecoder->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
@@ -126,6 +127,38 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_004, TestSize.Level1)
     EXPECT_EQ(audioDecoder->ChangePlugin(meta), Status::ERROR_UNSUPPORTED_FORMAT);
     EXPECT_EQ(audioDecoder->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, meta, nullptr),
         Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_005, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::AudioDecoderCallback> audioDecoderCallback =
+        std::make_shared<Pipeline::AudioDecoderCallback>(nullptr);
+    audioDecoderCallback->OnError(CodecErrorType::CODEC_ERROR_EXTEND_START, 111);
+
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_SOURCE);
+    audioDecoder->filterType_ = Pipeline::FilterType::FILTERTYPE_SOURCE;
+    std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
+    audioDecoder->Init(eventReceive, filterCallback);
+
+    EXPECT_EQ(audioDecoder->DoPrepare(), Status::OK);
+}
+
+HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_006, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    std::shared_ptr<TestEventReceiver> eventReceive = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> filterCallback = std::make_shared<TestFilterCallback>();
+    audioDecoder->Init(nullptr, filterCallback);
+
+    std::shared_ptr<Pipeline::AudioDecoderFilter> audioDecoder1 =
+        std::make_shared<Pipeline::AudioDecoderFilter>("AudioDecoderFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    audioDecoder1->Init(nullptr, filterCallback);
+
+    audioDecoder->meta_ = std::make_shared<Meta>();
+    EXPECT_EQ(audioDecoder->LinkNext(audioDecoder1, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
 }
 
 }
