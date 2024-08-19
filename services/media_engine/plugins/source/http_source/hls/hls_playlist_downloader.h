@@ -64,6 +64,7 @@ private:
     std::string mimeType_;
     std::atomic<bool> isParseFinished_ {false};
     std::atomic<bool> isNotifyPlayListFinished_ {false};
+    std::atomic<bool> isLiveUpdateTaskStarted_ {false};
 };
 }
 }
