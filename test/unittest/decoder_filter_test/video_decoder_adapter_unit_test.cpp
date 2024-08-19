@@ -140,4 +140,29 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_004, TestSize.Level1)
     EXPECT_EQ(videoDecoder->Reset(), Status::OK);
 }
 
+HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_005, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
+    std::shared_ptr<TestAVCodecVideoDecoder> mediaCodecTest = std::make_shared<TestAVCodecVideoDecoder>();
+    videoDecoder->mediaCodec_ = mediaCodecTest;
+    EXPECT_EQ(videoDecoder->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, "name"), Status::OK);
+
+    std::shared_ptr<VideoDecoderCallback> videoDecoderCallback = std::make_shared<VideoDecoderCallback>(videoDecoder);
+    videoDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED, 11);
+    Format format;
+    videoDecoderCallback->OnOutputFormatChanged(format);
+    std::shared_ptr<AVBuffer> buffer;
+    videoDecoderCallback->OnInputBufferAvailable(100, buffer);
+}
+
+HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_006, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderCallback> videoDecoderCallback = std::make_shared<VideoDecoderCallback>(nullptr);
+    videoDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_DECRYTION_FAILED, 11);
+    Format format;
+    videoDecoderCallback->OnOutputFormatChanged(format);
+    std::shared_ptr<AVBuffer> buffer;
+    videoDecoderCallback->OnInputBufferAvailable(100, buffer);
+}
+
 }
