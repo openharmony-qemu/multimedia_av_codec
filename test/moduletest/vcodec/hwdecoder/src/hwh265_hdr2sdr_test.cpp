@@ -51,10 +51,12 @@ static OH_AVCapability *cap_hevc = nullptr;
 static OH_AVCapability *cap_hevc_1 = nullptr;
 static OH_AVCapability *cap_hevc_2 = nullptr;
 static OH_AVCapability *cap_hevc_3 = nullptr;
+static OH_AVCapability *cap_hevc_4 = nullptr;
 static string g_codecNameHEVC = "";
 static string g_codecNameHEVC_1 = "";
 static string g_codecNameHEVC_2 = "";
 static string g_codecNameHEVC_3 = "";
+static string g_codecNameHEVC_4 = "";
 OH_AVCodec *vdec_ = NULL;
 OH_AVFormat *format;
 constexpr int32_t DEFAULT_WIDTH = 1920;
@@ -66,6 +68,9 @@ void HwdecHdr2SdrNdkTest::SetUpTestCase()
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecNameHEVC: " << g_codecNameHEVC << endl;
+
+    cap_hevc_4 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
+    g_codecNameHEVC_4 = OH_AVCapability_GetName(cap_hevc_4);
 
     cap_hevc_1 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     g_codecNameHEVC_1 = OH_AVCapability_GetName(cap_hevc_1);
@@ -529,30 +534,19 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_014, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_015
- * @tc.name      : test h264 software decoder, KEY设置为BT_709_LIMIT
+ * @tc.name      : test h265 software decoder, KEY设置为BT_709_LIMIT
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC_2.c_str());
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC_4.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
-    }
-    else {
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC_2.c_str());
-        ASSERT_NE(NULL, vdec_);
-        format = OH_AVFormat_Create();
-        ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_COLORSPACE_BT709_LIMIT));
-        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
