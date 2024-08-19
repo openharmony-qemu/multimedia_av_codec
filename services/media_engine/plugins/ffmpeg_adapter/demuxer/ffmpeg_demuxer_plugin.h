@@ -198,6 +198,8 @@ private:
     bool updatePosIsForward_ = true;
     bool isInit_ = false;
     uint32_t cachelimitSize_ = 0;
+    bool outOfLimit_ = false;
+
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track

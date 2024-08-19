@@ -67,6 +67,7 @@ const uint32_t RANK_MAX = 100;
 const uint32_t NAL_START_CODE_SIZE = 4;
 const uint32_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 const int64_t LIVE_FLV_PROBE_SIZE = 100 * 1024 * 2;
+const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 namespace {
 std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 std::mutex g_mtx;
@@ -1279,7 +1280,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         "DataSource has been inited, need reset first.");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set datasource failed due to source is nullptr.");
-
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
@@ -1290,7 +1290,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     } else {
         ioContext_.fileSize = -1;
     }
-
     MEDIA_LOG_I("fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
@@ -1298,7 +1297,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");
-
     formatContext_ = InitAVFormatContext(&ioContext_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN,
         "Set datasource failed due to can not init formatContext for source.");
@@ -1319,9 +1317,9 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
             break;
         }
     }
-
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Set data source for demuxer successfully.");
+    cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     return Status::OK;
 }
 
@@ -1998,13 +1996,13 @@ void FFmpegDemuxerPlugin::RelativePTSToIndexProcess(int64_t pts, int64_t absolut
 
 Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
-    if (cachelimitSize_ == 0) {
-        return Status::OK;
-    }
-    auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
-    if (cacheDataSize > cachelimitSize_) {
-        MEDIA_LOG_E("Data cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32, cacheDataSize, cachelimitSize_);
-        return Status::ERROR_NO_MEMORY;
+    if (!outOfLimit_) {
+        auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
+        if (cacheDataSize > cachelimitSize_) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32,
+                trackId, cacheDataSize, cachelimitSize_);
+            outOfLimit_ = true;
+        }
     }
     return Status::OK;
 }
