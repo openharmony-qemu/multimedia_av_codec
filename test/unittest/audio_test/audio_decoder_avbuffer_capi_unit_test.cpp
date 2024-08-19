@@ -80,7 +80,7 @@ constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/opus_decode.pcm";
 constexpr string_view INPUT_APE_FILE_PATH = "/data/test/media/voice_ape.dat";
 constexpr string_view OUTPUT_APE_PCM_FILE_PATH = "/data/test/media/ape_decode.pcm";
-constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+constexpr string_view OPUS_SO_FILE_PATH = "libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
