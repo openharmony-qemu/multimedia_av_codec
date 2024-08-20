@@ -200,7 +200,7 @@ const std::map<int32_t, AVCodecServiceErrCode> VPEERROR_TO_AVCSERRCODE = {
     {63635972, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},           // 63635972: extension process failed
     {63635973,
      AVCodecServiceErrCode::AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION}, // 63635973: extension is not implemented
-    {63635974, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION},            // 63635974: not supported operation
+    {63635974, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT},                    // 63635974: not supported operation
     {63635975, AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE}}; // 63635975: the state is not support this operation
 
 std::string ErrorMessageOk(const std::string &param1, const std::string &param2)
