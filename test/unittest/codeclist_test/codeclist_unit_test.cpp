@@ -132,6 +132,12 @@ HWTEST_F(CodecListUnitTest, CodecList_IsHardware_001, TestSize.Level1)
     ASSERT_NE(nullptr, capability_);
     EXPECT_FALSE(capability_->IsHardware());
 
+    // unsupported mime
+    category = AVCodecCategory::AVCODEC_SOFTWARE;
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_UNSUPPORTED_MIME, false, category);
+    ASSERT_NE(nullptr, capability_);
+    EXPECT_FALSE(capability_->IsHardware());
+
     if (isHardIncluded_) {
         category = AVCodecCategory::AVCODEC_HARDWARE;
         capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);

@@ -369,7 +369,9 @@ void FFmpegDemuxerPlugin::ParserFirstDts()
     bool isEnd = false;
     bool isFirst = true;
     while (!isEnd) {
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
+        sLock.unlock();
         if (ffmpegRet < 0) {
             av_packet_unref(pkt);
             av_packet_free(&pkt);
@@ -421,7 +423,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
-            parserRefVideoStreamIdx_ = trackIndex;
+            parserRefVideoStreamIdx_ = static_cast<uint32_t>(trackIndex);
         }
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");
