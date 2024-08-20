@@ -35,8 +35,6 @@ constexpr int32_t RECORD_DOWNLOAD_MIN_BIT = 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
 constexpr int PLAY_WATER_LINE = 5 * 1024;
-constexpr uint32_t READ_SLEEP_INTERVAL_MS = 5;
-constexpr uint32_t READ_SLEEP_TIME_OUT_MS = 30 * 1000;
 constexpr int64_t BYTES_TO_BIT = 8;
 constexpr int32_t DEFAULT_VIDEO_WATER_LINE = 512 * 1024;
 constexpr int32_t DEFAULT_AUDIO_WATER_LINE = 96 * 1024;
@@ -135,7 +133,6 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
         PutRequestIntoDownloader(mediaSegment_->duration_, mediaSegment_->startRangeValue_,
                                  mediaSegment_->endRangeValue_, mediaSegment_->url_);
     }
-    
     return true;
 }
 
@@ -204,7 +201,7 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
         MEDIA_LOG_W("After read: streamId:" PUBLIC_LOG_D32 " ,bufferHead:" PUBLIC_LOG_ZU ", bufferTail:" PUBLIC_LOG_ZU
             ", realReadLength:" PUBLIC_LOG_U32, currentStreamId, buffer_->GetHead(), buffer_->GetTail(),
             realReadLength);
-        return readRet;
+        return DASH_READ_AGAIN;
     }
 
     MEDIA_LOG_D("After read: streamId:" PUBLIC_LOG_D32 " ,bufferHead:" PUBLIC_LOG_ZU ", bufferTail:" PUBLIC_LOG_ZU
@@ -276,36 +273,10 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
         }
     }
 
-    readTime_ = 0;
-    while (buffer_->GetSize() < wantReadLength && !isInterruptNeeded.load()) {
-        if (CheckAllSegmentFinish(isLastSegment)) {
-            return false;
-        }
-
-        if (CheckReadTimeOut()) {
-            realReadLength = 0;
-            Close(true, true);
-            readRet = DASH_READ_TIMEOUT;
-            return true;
-        }
-        OSAL::SleepFor(READ_SLEEP_INTERVAL_MS);  // 5
-        readTime_ += READ_SLEEP_INTERVAL_MS;
-    }
     if (isInterruptNeeded.load()) {
         realReadLength = 0;
         readRet = DASH_READ_INTERRUPT;
         MEDIA_LOG_I("DashSegmentDownloader interruptNeeded streamId: " PUBLIC_LOG_D32, streamId_);
-        return true;
-    }
-    return false;
-}
-
-bool DashSegmentDownloader::CheckReadTimeOut()
-{
-    MEDIA_LOG_D("CheckReadTimeOut streamId: " PUBLIC_LOG_D32 " readTime: " PUBLIC_LOG_U64 " isTimeout:"
-        PUBLIC_LOG_D32, streamId_, readTime_, isTimeOut_);
-    if (readTime_ >= READ_SLEEP_TIME_OUT_MS || isTimeOut_) {
-        isTimeOut_ = true;
         return true;
     }
     return false;

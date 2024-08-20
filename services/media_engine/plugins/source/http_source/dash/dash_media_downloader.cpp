@@ -108,12 +108,6 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
             callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
         }
         return Status::END_OF_STREAM;
-    } else if (ret == DASH_READ_TIMEOUT) {
-        if (callback_ != nullptr) {
-            MEDIA_LOG_E("Read time out, OnEvent");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-        }
-        return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_AGAIN) {
         return Status::ERROR_AGAIN;
     } else if (ret == DASH_READ_FAILED || ret == DASH_READ_INTERRUPT) {
