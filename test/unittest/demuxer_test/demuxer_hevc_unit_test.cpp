@@ -103,11 +103,13 @@ void DemuxerUnitTest::InitResource(const std::string &path, bool local)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
+    InitStatus_ = true;
 }
 
 void DemuxerUnitTest::ReadSample(const std::string &path, bool local, bool checkBufferInfo)
 {
     InitResource(path, local);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -452,6 +454,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1170, TestSize.Level1)
         return;
     }
     InitResource(g_mp4HevcPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -488,6 +491,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1171, TestSize.Level1)
         return;
     }
     InitResource(g_mp4HevcUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -524,6 +528,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1180, TestSize.Level1)
         return;
     }
     InitResource(g_mkvHevcAccPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -558,6 +563,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1180, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1181, TestSize.Level1)
 {
     InitResource(g_mkvAvcOpusPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -592,6 +598,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1181, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1182, TestSize.Level1)
 {
     InitResource(g_mkvAvcMp3Path, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -629,6 +636,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1183, TestSize.Level1)
         return;
     }
     InitResource(g_mkvHevcAccUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -663,6 +671,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1183, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1184, TestSize.Level1)
 {
     InitResource(g_mkvAvcOpusUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -697,6 +706,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1184, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1185, TestSize.Level1)
 {
     InitResource(g_mkvAvcMp3Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -734,6 +744,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1190, TestSize.Level1)
         return;
     }
     InitResource(g_hdrVividPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -770,6 +781,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1191, TestSize.Level1)
         return;
     }
     InitResource(g_hdrVividUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -806,6 +818,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1192, TestSize.Level1)
         return;
     }
     InitResource(g_tsHevcAacPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -844,6 +857,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1193, TestSize.Level1)
         return;
     }
     InitResource(g_tsHevcAacUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -882,6 +896,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1198, TestSize.Level1)
         return;
     }
     InitResource(g_fmp4HevcPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -923,6 +938,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1199, TestSize.Level1)
         return;
     }
     InitResource(g_fmp4HevcUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -964,6 +980,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1207, TestSize.Level1)
         return;
     }
     InitResource(g_doubleVividPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1005,6 +1022,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1208, TestSize.Level1)
         return;
     }
     InitResource(g_doubleVividUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1046,6 +1064,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1401, TestSize.Level1)
         return;
     }
     InitResource(g_flvPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1080,6 +1099,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1402, TestSize.Level1)
         return;
     }
     InitResource(g_flvUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1114,6 +1134,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1203, TestSize.Level1)
         return;
     }
     InitResource(g_flvUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1152,6 +1173,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1204, TestSize.Level1)
         return;
     }
     InitResource(g_flvPath, LOCAL);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1190,6 +1212,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1412, TestSize.Level1)
         return;
     }
     InitResource(g_hls, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1224,6 +1247,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1413, TestSize.Level1)
         return;
     }
     InitResource(g_hls, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);

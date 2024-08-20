@@ -144,6 +144,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_UnselectTrackByID_2000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2000, TestSize.Level1)
 {
     InitResource(g_mp4Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -215,6 +216,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2020, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2030, TestSize.Level1)
 {
     InitResource(g_mp4Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -249,6 +251,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2030, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2040, TestSize.Level1)
 {
     InitResource(g_mp4Uri2, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -280,6 +283,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2040, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2060, TestSize.Level1)
 {
     InitResource(g_mkvUri2, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -311,6 +315,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2060, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2070, TestSize.Level1)
 {
     InitResource(g_tsUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -342,6 +347,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2070, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2080, TestSize.Level1)
 {
     InitResource(g_aacUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -368,6 +374,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2080, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2090, TestSize.Level1)
 {
     InitResource(g_flacUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -394,6 +401,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2090, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2100, TestSize.Level1)
 {
     InitResource(g_m4aUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -420,6 +428,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2100, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2110, TestSize.Level1)
 {
     InitResource(g_mp3Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -446,6 +455,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2110, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2120, TestSize.Level1)
 {
     InitResource(g_oggUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -472,6 +482,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2120, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2130, TestSize.Level1)
 {
     InitResource(g_wavUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -498,6 +509,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2130, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2140, TestSize.Level1)
 {
     InitResource(g_amrUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -524,6 +536,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2140, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1233, TestSize.Level1)
 {
     InitResource(g_fmp4AvcUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -555,6 +568,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1233, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1235, TestSize.Level1)
 {
     InitResource(g_fmp4m4vUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -582,6 +596,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1235, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1237, TestSize.Level1)
 {
     InitResource(g_fmp4m4aUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -609,6 +624,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1237, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2000, TestSize.Level1)
 {
     InitResource(g_mp4Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -648,6 +664,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2000, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2001, TestSize.Level1)
 {
     InitResource(g_mp4Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -678,6 +695,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2001, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2002, TestSize.Level1)
 {
     InitResource(g_mp4Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -702,6 +720,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2002, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2010, TestSize.Level1)
 {
     InitResource(g_mp4Uri2, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -741,6 +760,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2010, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2040, TestSize.Level1)
 {
     InitResource(g_mkvUri2, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -780,6 +800,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2040, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2060, TestSize.Level1)
 {
     InitResource(g_tsUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -814,6 +835,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2060, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2070, TestSize.Level1)
 {
     InitResource(g_aacUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -847,6 +869,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2070, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2080, TestSize.Level1)
 {
     InitResource(g_flacUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -880,6 +903,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2080, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2090, TestSize.Level1)
 {
     InitResource(g_m4aUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -913,6 +937,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2090, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2100, TestSize.Level1)
 {
     InitResource(g_mp3Uri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -946,6 +971,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2100, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2110, TestSize.Level1)
 {
     InitResource(g_oggUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -980,6 +1006,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2110, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2120, TestSize.Level1)
 {
     InitResource(g_wavUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1013,6 +1040,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2120, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2130, TestSize.Level1)
 {
     InitResource(g_amrUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1047,6 +1075,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2130, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2140, TestSize.Level1)
 {
     InitResource(g_amrUri2, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1081,6 +1110,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2140, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
 {
     InitResource(g_audioVividUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1120,6 +1150,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_21501, TestSize.Level1)
 {
     InitResource(g_audioVividUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1151,6 +1182,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1195, TestSize.Level1)
 {
     string path = TEST_URI_PATH + string("avcc_aac_mp3.mp4");
     InitResource(path, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1210,6 +1242,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1223, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1225, TestSize.Level1)
 {
     InitResource(g_apeUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1246,6 +1279,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1225, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1205, TestSize.Level1)
 {
     InitResource(g_flvUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1284,6 +1318,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1205, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1230, TestSize.Level1)
 {
     InitResource(g_fmp4AvcUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1322,6 +1357,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1230, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1240, TestSize.Level1)
 {
     InitResource(g_fmp4m4vUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1357,6 +1393,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1240, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1241, TestSize.Level1)
 {
     InitResource(g_fmp4m4aUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1395,6 +1432,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1410, TestSize.Level1)
         return;
     }
     InitResource(g_hls, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1429,6 +1467,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1411, TestSize.Level1)
         return;
     }
     InitResource(g_hls, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1468,6 +1507,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1411, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3001, TestSize.Level1)
 {
     InitResource(g_srt, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1495,6 +1535,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_3001, TestSize.Level1)
 HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_3001, TestSize.Level1)
 {
     InitResource(g_srt, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
@@ -1531,6 +1572,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1611, TestSize.Level1)
         return;
     }
     InitResource(g_mp4VvcUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(format_, nullptr);
     ASSERT_NE(demuxer_, nullptr);
@@ -1560,6 +1602,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1611, TestSize.Level1)
         return;
     }
     InitResource(g_mp4VvcUri, URI);
+    ASSERT_TRUE(InitStatus_);
     SetInitValue();
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);

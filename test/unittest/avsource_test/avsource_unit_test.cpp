@@ -110,6 +110,7 @@ void AVSourceUnitTest::TearDown(void)
     size_ = 0;
     addr_ = nullptr;
     buffSize_ = 0;
+    InitStatus_ = false;
     ResetFormatValue();
 }
 
@@ -1609,6 +1610,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
 {
     InitResource(g_apeUri, URI);
+    ASSERT_TRUE(InitStatus_);
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
