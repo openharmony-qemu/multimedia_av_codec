@@ -156,11 +156,12 @@ int32_t HDecoder::UpdateOutPortFormat()
     uint32_t h = def.format.video.nFrameHeight;
 
     // save into member variable
-    GetCropFromOmx(w, h);
+    OHOS::Rect damage{};
+    GetCropFromOmx(w, h, damage);
     outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.timeout = 0;
-    requestCfg_.width = flushCfg_.damage.w;
-    requestCfg_.height = flushCfg_.damage.h;
+    requestCfg_.width = damage.w;
+    requestCfg_.height = damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetProducerUsage();
@@ -175,10 +176,10 @@ int32_t HDecoder::UpdateOutPortFormat()
     if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_HEIGHT)) {
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h); // deprecated
     }
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, flushCfg_.damage.w);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, flushCfg_.damage.h);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, flushCfg_.damage.w);
-    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, flushCfg_.damage.h);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, damage.w);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, damage.h);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_WIDTH, damage.w);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_PIC_HEIGHT, damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     HLOGI("output format: %s", outputFormat_->Stringify().c_str());
@@ -205,12 +206,12 @@ void HDecoder::UpdateColorAspects()
     }
 }
 
-void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
+void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage)
 {
-    flushCfg_.damage.x = 0;
-    flushCfg_.damage.y = 0;
-    flushCfg_.damage.w = static_cast<int32_t>(w);
-    flushCfg_.damage.h = static_cast<int32_t>(h);
+    damage.x = 0;
+    damage.y = 0;
+    damage.w = static_cast<int32_t>(w);
+    damage.h = static_cast<int32_t>(h);
 
     OMX_CONFIG_RECTTYPE rect;
     InitOMXParam(rect);
@@ -229,10 +230,10 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
     }
     HLOGI("crop rect (%d, %d, %u, %u)",
           rect.nLeft, rect.nTop, rect.nWidth, rect.nHeight);
-    flushCfg_.damage.x = rect.nLeft;
-    flushCfg_.damage.y = rect.nTop;
-    flushCfg_.damage.w = static_cast<int32_t>(rect.nWidth);
-    flushCfg_.damage.h = static_cast<int32_t>(rect.nHeight);
+    damage.x = rect.nLeft;
+    damage.y = rect.nTop;
+    damage.w = static_cast<int32_t>(rect.nWidth);
+    damage.h = static_cast<int32_t>(rect.nHeight);
     if (outputFormat_) {
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
         outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
@@ -777,7 +778,6 @@ void HDecoder::SubmitDynamicBufferIfPossible()
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
 {
     SCOPED_TRACE_WITH_ID(info.bufferId);
-    flushCfg_.timestamp = info.omxBuffer->pts;
     info.lastFlushTime = chrono::steady_clock::now();
     if (std::abs(lastFlushRate_ - codecRate_) > std::numeric_limits<float>::epsilon()) {
         sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
@@ -786,7 +786,11 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
         lastFlushRate_ = codecRate_;
         HLOGI("flush video rate(%d)", static_cast<int32_t>(codecRate_));
     }
-    GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, flushCfg_);
+    BufferFlushConfig cfg {
+        .damage = {.x = 0, .y = 0, .w = info.surfaceBuffer->GetWidth(), .h = info.surfaceBuffer->GetHeight() },
+        .timestamp = info.omxBuffer->pts,
+    };
+    GSError ret = currSurface_.surface_->FlushBuffer(info.surfaceBuffer, -1, cfg);
     if (ret != GSERROR_OK) {
         HLOGW("surface(%" PRIu64 "), FlushBuffer(seq=%u) failed, GSError=%d",
               currSurface_.surface_->GetUniqueId(), info.surfaceBuffer->GetSeqNum(), ret);
