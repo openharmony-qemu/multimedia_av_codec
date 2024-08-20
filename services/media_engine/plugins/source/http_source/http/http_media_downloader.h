@@ -88,10 +88,11 @@ private:
     size_t GetCurrentBufferSize();
     bool HandleBreak();
     void ChangeDownloadPos();
-    int32_t GetWaterLineAbove();
+    void UpdateWaterLineAbove();
     void HandleCachedDuration();
     double CalculateCurrentDownloadSpeed();
     bool CheckBufferingOneSeconds();
+    float GetCacheDuration(float ratio);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;

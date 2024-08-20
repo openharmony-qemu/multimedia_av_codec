@@ -118,11 +118,12 @@ private:
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
-    int32_t GetWaterLineAbove();
+    void UpdateWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
     bool CheckBufferingOneSeconds();
+    float GetCacheDuration(float ratio);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -137,7 +138,7 @@ private:
     StatusCallbackFunc statusCallback_;
     bool startedPlayStatus_ {false};
 
-    std::shared_ptr<PlayListDownloader> playListDownloader_;
+    std::shared_ptr<PlayListDownloader> playlistDownloader_;
 
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;
     std::map<std::string, bool> fragmentDownloadStart;

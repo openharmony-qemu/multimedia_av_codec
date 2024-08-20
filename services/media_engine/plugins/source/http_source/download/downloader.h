@@ -167,6 +167,7 @@ public:
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
     void SetAppUid(int32_t appUid);
+    const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
 private:
     bool BeginDownload();
 
@@ -197,6 +198,7 @@ private:
     int32_t noTaskLoopTimes_ {0};
     std::shared_ptr<Task> task_;
     std::atomic<bool> isDestructor_ {false};
+    std::atomic<bool> isClientClose_ {false};
 };
 }
 }

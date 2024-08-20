@@ -72,10 +72,9 @@ Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
         AVCODEC_LOGE("init failed, because channelCount=%{public}d not support.", channelCount);
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (!basePlugin->CheckSampleFormat(format, channelCount)) {
-        AVCODEC_LOGE("init failed, because CheckSampleFormat failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(basePlugin->CheckSampleFormat(format, channelCount), Status::ERROR_INVALID_PARAMETER,
+        "init failed, because CheckSampleFormat failed.");
+
     channels = channelCount;
     return Status::OK;
 }
@@ -108,10 +107,9 @@ Status FFmpegFlacDecoderPlugin::Stop()
 Status FFmpegFlacDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     Status ret = basePlugin->AllocateContext("flac");
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because AllocateContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
+        "init failed, because AllocateContext failed. ret=%{public}d", ret);
+
     Status checkresult = CheckFormat(parameter);
     if (checkresult != Status::OK) {
         AVCODEC_LOGE("init failed, because CheckFormat failed. ret=%{public}d", ret);
@@ -119,15 +117,13 @@ Status FFmpegFlacDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
     }
 
     ret = basePlugin->InitContext(parameter);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because InitContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
+        "init failed, because InitContext failed. ret=%{public}d", ret);
+
     ret = basePlugin->OpenContext();
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("init failed, because OpenContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret,
+        "init failed, because OpenContext failed. ret=%{public}d", ret);
+
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());

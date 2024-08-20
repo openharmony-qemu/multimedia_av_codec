@@ -200,10 +200,8 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
 {
     auto memory = inputBuffer->memory_;
     auto inputSize = memory->GetSize();
-    if (inputSize < 0) {
-        AVCODEC_LOGE("SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(inputSize >= 0, Status::ERROR_UNKNOWN,
+        "SendBuffer buffer is less than zero.  size: %{public}d", inputSize);
     if (inputSize == 0 && !(inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
         AVCODEC_LOGE("size is 0, but eos flag is not 1");
         return Status::ERROR_INVALID_DATA;
@@ -252,10 +250,6 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
 
 Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioMp3EncoderPlugin Queue out buffer is null.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         auto memory = outputBuffer->memory_;
@@ -307,7 +301,7 @@ Status AudioMp3EncoderPlugin::Release()
             AVCODEC_LOGE("AudioMp3EncoderPlugin Release lame_encode_flush error.");
             return Status::ERROR_UNKNOWN;
         }
-        lame_close(lameInfo->gfp);
+        (void)lame_close(lameInfo->gfp);
 
         lameInfo->gfp = nullptr;
         lameInitFlag = 0;

@@ -280,6 +280,10 @@ void Downloader::Pause(bool isAsync)
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     MEDIA_LOG_I("pause Begin");
     requestQue_->SetActive(false, false);
+    if (client_ != nullptr) {
+        isClientClose_ = true;
+        client_->Close();
+    }
     PauseLoop(isAsync);
     MEDIA_LOG_I("pause End");
 }
@@ -304,6 +308,10 @@ void Downloader::Resume()
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
+        if (client_ != nullptr && currentRequest_ != nullptr) {
+            isClientClose_ = false;
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
+        }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
             currentRequest_->isEos_ = false;
@@ -845,6 +853,10 @@ void Downloader::SetAppUid(int32_t appUid)
     client_->SetAppUid(appUid);
 }
 
+const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
+{
+    return currentRequest_;
+}
 }
 }
 }

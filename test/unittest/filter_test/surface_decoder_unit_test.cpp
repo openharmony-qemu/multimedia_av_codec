@@ -140,9 +140,11 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_Start_0100, TestSize.Leve
 HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_Stop_0100, TestSize.Level1)
 {
     surfaceDecoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
-    EXPECT_EQ(surfaceDecoderAdapter_->Start(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderAdapter_->Stop(), Status::OK);
+    surfaceDecoderAdapter_->codecServer_ = nullptr;
+    EXPECT_EQ(surfaceDecoderAdapter_->Stop(), Status::OK);
     surfaceDecoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoDecoder>();
-    EXPECT_EQ(surfaceDecoderAdapter_->Start(), Status::OK);
+    EXPECT_EQ(surfaceDecoderAdapter_->Stop(), Status::OK);
 }
 /**
  * @tc.name: SurfaceDecoderAdapter_Flush_0100
@@ -192,6 +194,13 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_OnInputBufferAvailable_01
     surfaceDecoderAdapter_->OnInputBufferAvailable(index, buffer);
     surfaceDecoderAdapter_->inputBufferQueueConsumer_ = sptr<Media::AVBufferQueueConsumer>();
     surfaceDecoderAdapter_->OnInputBufferAvailable(index, buffer);
+    surfaceDecoderAdapter_->inputBufferQueue_ = AVBufferQueue::Create(0, MemoryType::UNKNOWN_MEMORY,
+                                                    "inputBufferQueue", true);
+    surfaceDecoderAdapter_->inputBufferQueueConsumer_ =
+                            surfaceDecoderAdapter_->inputBufferQueue_->GetConsumer();
+    surfaceDecoderAdapter_->OnInputBufferAvailable(index, buffer);
+    EXPECT_NE(surfaceDecoderAdapter_->inputBufferQueueConsumer_->ReleaseBuffer(buffer),
+                    Status::OK);
 }
 /**
  * @tc.name: SurfaceDecoderAdapter_OnOutputBufferAvailable_0100
@@ -212,6 +221,24 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_OnOutputBufferAvailable_0
     surfaceDecoderAdapter_->lastBufferPts_ = 0;
     surfaceDecoderAdapter_->OnOutputBufferAvailable(index, buffer);
     EXPECT_EQ(buffer->pts_, surfaceDecoderAdapter_->lastBufferPts_);
+}
+/**
+ * @tc.name: SurfaceDecoderAdapter_AcquireAvailableInputBuffer_0100
+ * @tc.desc: AcquireAvailableInputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_AcquireAvailableInputBuffer_0100,
+                TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    surfaceDecoderAdapter_->inputBufferQueue_ = AVBufferQueue::Create(0, MemoryType::UNKNOWN_MEMORY,
+                                                    "inputBufferQueue", true);
+    surfaceDecoderAdapter_->inputBufferQueueConsumer_ =
+                            surfaceDecoderAdapter_->inputBufferQueue_->GetConsumer();
+    buffer->meta_ = std::make_shared<Meta>();
+    surfaceDecoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoDecoder>();
+    surfaceDecoderAdapter_->AcquireAvailableInputBuffer();
+    EXPECT_NE(surfaceDecoderAdapter_->inputBufferQueueConsumer_->AcquireBuffer(buffer), Status::OK);
 }
 /**
  * @tc.name: SurfaceDecoderAdapter_ReleaseBuffer_0100

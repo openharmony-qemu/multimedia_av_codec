@@ -107,6 +107,7 @@ public:
     // post processing callback
     void PostProcessingOnError(int32_t errorCode);
     void PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_unused]] int32_t flag);
+    void PostProcessingOnOutputFormatChanged(const Format &format);
 
 #ifdef SUPPORT_DRM
     int32_t SetAudioDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
@@ -189,6 +190,7 @@ private:
     std::shared_ptr<DecodedBufferInfoQueue> postProcessingInputBufferInfoQueue_;
     std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_;
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
+    Format outputFormatChanged_;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

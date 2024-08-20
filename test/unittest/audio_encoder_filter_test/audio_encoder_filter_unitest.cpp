@@ -23,6 +23,7 @@
 #include "audio_encoder_filter_unitest.h"
 #include "common/log.h"
 #include "parameters.h"
+#include "filter/filter.h"
  
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -70,10 +71,67 @@ public:
         (void)meta;
         return configure_;
     }
+    int32_t Start()
+    {
+        return start_;
+    }
+    int32_t Stop()
+    {
+        return stop_;
+    }
+    int32_t Flush()
+    {
+        return flush_;
+    }
+    int32_t Release()
+    {
+        return release_;
+    }
+    int32_t NotifyEos()
+    {
+        return notifyEos_;
+    }
+    int32_t SetParameter(const std::shared_ptr<Meta> &parameter)
+    {
+        (void)parameter;
+        return 0;
+    }
+    int32_t GetOutputFormat(std::shared_ptr<Meta> &parameter)
+    {
+        int32_t ret = 0;
+        if (getOutputFormat_) {
+            int32_t frameSize = 1024;
+            parameter->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize);
+        } else {
+            ret = -1;
+        }
+        return ret;
+    }
 protected:
     int32_t configure_ = 0;
+    int32_t start_ = 0;
+    int32_t stop_ = 0;
+    int32_t flush_ = 0;
+    int32_t release_ = 0;
+    int32_t notifyEos_ = 0;
+    bool getOutputFormat_ = false;
 };
 
+class FilterMock : public Filter {
+public:
+    FilterMock():Filter("filterMock", FilterType::FILTERTYPE_SOURCE) {}
+    ~FilterMock() = default;
+    Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
+                            const std::shared_ptr<FilterLinkCallback>& callback)
+    {
+        (void)inType;
+        (void)meta;
+        (void)callback;
+        return onLinked_;
+    }
+protected:
+    Status onLinked_;
+};
 
 void AudioEncoderFilterUnitest::SetUpTestCase(void) {}
  
@@ -129,6 +187,167 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Configure_0100, TestSize.
     //ret != 0
     mediaCodecMock->configure_ = 1;
     EXPECT_NE(audioEncoderFilter_->Configure(parameter), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoPrepare_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    auto filterCallback = std::make_shared<FilterCallbackTest>();
+
+    // filterType_ == FilterType::FILTERTYPE_AENC
+    audioEncoderFilter_->filterType_ = FilterType::FILTERTYPE_AENC;
+    audioEncoderFilter_->filterCallback_ = filterCallback;
+    EXPECT_EQ(audioEncoderFilter_->DoPrepare(), Status::OK);
+
+    // filterType_ != FilterType::FILTERTYPE_AENC
+    audioEncoderFilter_->filterType_ = FilterType::FILTERTYPE_ADEC;
+    EXPECT_EQ(audioEncoderFilter_->DoPrepare(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoStart_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+
+    // ret != 0
+    mediaCodecMock->start_ = 1;
+    EXPECT_NE(audioEncoderFilter_->DoStart(), Status::OK);
+
+    // ret == 0
+    mediaCodecMock->start_ = 0;
+    EXPECT_NE(audioEncoderFilter_->DoStart(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoPause_0100, TestSize.Level1)
+{
+    EXPECT_EQ(audioEncoderFilter_->DoPause(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoResume_0100, TestSize.Level1)
+{
+    EXPECT_EQ(audioEncoderFilter_->DoResume(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoStop_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+
+    // ret != 0
+    mediaCodecMock->stop_ = 1;
+    EXPECT_EQ(audioEncoderFilter_->DoStop(), Status::OK);
+
+    // ret == 0
+    mediaCodecMock->stop_ = 0;
+    EXPECT_EQ(audioEncoderFilter_->DoStop(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoFlush_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+
+    // ret != 0
+    mediaCodecMock->flush_ = 1;
+    EXPECT_NE(audioEncoderFilter_->DoFlush(), Status::OK);
+
+    // ret == 0
+    mediaCodecMock->flush_ = 0;
+    EXPECT_NE(audioEncoderFilter_->DoFlush(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoRelease_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+
+    // ret != 0
+    mediaCodecMock->release_ = 1;
+    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::OK);
+
+    // ret == 0
+    mediaCodecMock->release_ = 0;
+    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_NotifyEos_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+
+    // ret != 0
+    mediaCodecMock->notifyEos_ = 1;
+    EXPECT_NE(audioEncoderFilter_->NotifyEos(), Status::OK);
+
+    // ret == 0
+    mediaCodecMock->notifyEos_ = 0;
+    EXPECT_NE(audioEncoderFilter_->NotifyEos(), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetParameter_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    audioEncoderFilter_->SetParameter(parameter);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetParameter_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    audioEncoderFilter_->GetParameter(parameter);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_LinkNext_0100, TestSize.Level1)
+{
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    auto filterMock = std::make_shared<FilterMock>();
+    std::shared_ptr<Filter> nextFilter = filterMock;
+
+    // mediaCodec_ == nullptr && ret != Status::OK
+    audioEncoderFilter_->mediaCodec_ = nullptr;
+    filterMock->onLinked_ = Status::ERROR_INVALID_PARAMETER;
+    EXPECT_NE(audioEncoderFilter_->LinkNext(nextFilter, StreamType::STREAMTYPE_ENCODED_VIDEO), Status::OK);
+
+    // mediaCodec_ == nullptr && ret == Status::OK
+    audioEncoderFilter_->mediaCodec_ = nullptr;
+    filterMock->onLinked_ = Status::OK;
+    EXPECT_EQ(audioEncoderFilter_->LinkNext(nextFilter, StreamType::STREAMTYPE_ENCODED_VIDEO), Status::OK);
+
+    // mediaCodec_ != nullptr && parameter->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != parameter->end() &&
+    // parameter->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize) && ret != Status::OK
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    mediaCodecMock->getOutputFormat_ = true;
+    filterMock->onLinked_ = Status::ERROR_INVALID_PARAMETER;
+    EXPECT_NE(audioEncoderFilter_->LinkNext(nextFilter, StreamType::STREAMTYPE_ENCODED_VIDEO), Status::OK);
+
+    // mediaCodec_ != nullptr && parameter->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != parameter->end() &&
+    // parameter->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize) && ret != Status::OK
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    mediaCodecMock->getOutputFormat_ = false;
+    filterMock->onLinked_ = Status::ERROR_INVALID_PARAMETER;
+    EXPECT_NE(audioEncoderFilter_->LinkNext(nextFilter, StreamType::STREAMTYPE_ENCODED_VIDEO), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_UpdateNext_0100, TestSize.Level1)
+{
+    auto filterMock = std::make_shared<FilterMock>();
+    std::shared_ptr<Filter> nextFilter = filterMock;
+    EXPECT_EQ(audioEncoderFilter_->UpdateNext(nextFilter, StreamType::STREAMTYPE_ENCODED_VIDEO), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_UnLinkNext_0100, TestSize.Level1)
+{
+    auto filterMock = std::make_shared<FilterMock>();
+    std::shared_ptr<Filter> nextFilter = filterMock;
+    EXPECT_EQ(audioEncoderFilter_->UnLinkNext(nextFilter, StreamType::STREAMTYPE_ENCODED_VIDEO), Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetFilterType_0100, TestSize.Level1)
+{
+    audioEncoderFilter_->filterType_ = FilterType::FILTERTYPE_AENC;
+    EXPECT_EQ(audioEncoderFilter_->GetFilterType(), FilterType::FILTERTYPE_AENC);
 }
 
 }

@@ -37,6 +37,7 @@ using namespace MediaAVCodec;
 using MediaType = OHOS::Media::Plugins::MediaType;
 namespace {
     const std::string MIME_IMAGE = "image";
+    const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 }
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
@@ -138,6 +139,7 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     }
     mediaSource_ = source;
     Status ret = demuxer_->SetDataSource(mediaSource_);
+    demuxer_->SetCacheLimit(DEFAULT_CACHE_LIMIT);
     return ret;
 }
 
