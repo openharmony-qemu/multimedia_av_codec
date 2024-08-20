@@ -112,7 +112,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
 
     EXPECT_EQ(surfaceDecoderFilter_->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
-    std::shared_ptr<FilterCallback> filterLinkCallback = std::make_shared<TestFilterCallback>();
+    std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<TestFilterLinkCallback>();
     EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),

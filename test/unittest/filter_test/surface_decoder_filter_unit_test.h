@@ -60,7 +60,7 @@ public:
         std::cout << "filter back constructor" << std::endl;
     }
 
-    Status OnCallback(const std::shared_ptr<Pipeline::Filter>& filter, 
+    Status OnCallback(const std::shared_ptr<Pipeline::Filter>& filter,
         Pipeline::FilterCallBackCommand cmd, Pipeline::StreamType outType)
         
     {
@@ -74,7 +74,7 @@ public:
     {
         std::cout << "filter back constructor" << std::endl;
     }
-    void OnLinkedResult(const sptr<AvBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
+    void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
     {
         std::cout << "call OnLinkedResult" << std::endl;
     }
