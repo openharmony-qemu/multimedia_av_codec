@@ -1306,7 +1306,9 @@ Status MediaDemuxer::ResumeDragging()
         source_->Resume();
     }
     if (taskMap_[videoTrackId_] != nullptr) {
-        streamDemuxer_->SetIsIgnoreParse(false);
+        if (streamDemuxer_) {
+            streamDemuxer_->SetIsIgnoreParse(false);
+        }
         taskMap_[videoTrackId_]->Start();
     }
     isPaused_ = false;
