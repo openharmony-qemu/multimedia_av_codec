@@ -715,11 +715,11 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
             HandleCachedDuration();
             continue;
         }
-        MEDIA_LOG_W("CacheMediaBuffer write fail.");
+        MEDIA_LOG_W("CacheMediaBuffer full.");
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_ && !isNeedClean_ && !canWrite_ && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer can not write, drop data.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer full, waiting seek or read.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;

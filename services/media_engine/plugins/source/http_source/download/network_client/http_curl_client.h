@@ -21,7 +21,6 @@
 #include "network/network_client.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
-#include "syspara/parameter.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,7 +61,6 @@ private:
     void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
-    void HandleUserAgent();
     Status SetIp();
 
 private:
@@ -71,7 +69,6 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
-    bool isSetUA_ {false};
     struct curl_slist* headerList_ {nullptr};
     std::string ip_ {};
     bool ipFlag_ {false};
