@@ -255,10 +255,6 @@ bool IsSupportedTrack(const AVStream& avStream)
             return false;
         }
     }
-    if (g_codecIdToMime.count(avStream.codecpar->codec_id) == 0 && !IsPCMStream(avStream.codecpar->codec_id)) {
-        MEDIA_LOG_E("Unsupport mime type: " PUBLIC_LOG_D32 ".", static_cast<int32_t>(avStream.codecpar->codec_id));
-        return false;
-    }
     return true;
 }
 } // namespace
