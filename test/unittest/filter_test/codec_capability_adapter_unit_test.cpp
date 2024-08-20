@@ -67,7 +67,7 @@ HWTEST_F(CodecCapabilityAdapterUnitTest, CodecCapabilityAdapter_GetAvailableEnco
 {
     ASSERT_NE(codecCapabilityAdapter_, nullptr);
     codecCapabilityAdapter_->Init();
-    std::vectorMediaAVCodec::CapabilityData* encoderCapData;
+    std::vector<MediaAVCodec::CapabilityData*> encoderCapData;
     EXPECT_EQ(codecCapabilityAdapter_->GetAvailableEncoder(encoderCapData), Status::OK);
 }
 }  // namespace Pipeline
