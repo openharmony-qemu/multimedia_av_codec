@@ -1066,11 +1066,11 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
             mediaSegment_->contentLength_ = downloadRequest_->GetFileContentLength();
         }
         mediaSegment_->isEos_ = true;
+        MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
+            ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_,
+            isCleaningBuffer_.load());
     }
 
-    MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
-        ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_,
-        isCleaningBuffer_.load());
     if (downloadDoneCbFunc_ && !isCleaningBuffer_.load()) {
         downloadDoneCbFunc_(streamId_);
     }
