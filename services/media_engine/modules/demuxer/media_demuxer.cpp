@@ -1157,10 +1157,6 @@ Status MediaDemuxer::StopAllTask()
     if (streamDemuxer_ != nullptr) {
         streamDemuxer_->SetIsIgnoreParse(true);
     }
-    if (source_ != nullptr) {
-        source_->Stop();
-    }
-
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -1393,18 +1389,25 @@ Status MediaDemuxer::Start()
 
 Status MediaDemuxer::Stop()
 {
-    FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Stop");
     MEDIA_LOG_I("MediaDemuxer Stop.");
-    {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Stop");
+    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
+    if (useBufferQueue_) {
         AutoLock lock(mapMutex_);
         FALSE_RETURN_V_MSG_E(!isStopped_, Status::OK, "Process has been stopped already, ignore.");
         isStopped_ = true;
         StopAllTask();
     }
-    streamDemuxer_->Stop();
-    return demuxerPluginManager_->Stop();
+    if (source_ != nullptr) {
+        source_->Stop();
+    }
+    if (streamDemuxer_) {
+        streamDemuxer_->Stop();
+    }
+    if (demuxerPluginManager_) {
+        demuxerPluginManager_->Stop();
+    }
+    return Status::OK;
 }
 
 bool MediaDemuxer::HasVideo()
