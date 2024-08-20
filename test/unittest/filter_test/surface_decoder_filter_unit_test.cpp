@@ -117,7 +117,8 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
         Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
-    EXPECT_EQ(surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback),
+        Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
