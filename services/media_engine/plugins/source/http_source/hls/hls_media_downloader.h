@@ -84,6 +84,7 @@ public:
     size_t GetRingBufferSize();
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
     Status SetCurrentBitRate(int32_t bitRate) override;
 private:
@@ -91,6 +92,7 @@ private:
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
+    void DownloadRecordHistory(int64_t nowTime);
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
@@ -162,7 +164,7 @@ private:
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
-    uint64_t currentBitrate_ {1*1024*1024};
+    uint64_t currentBitrate_ {1*1024*1024}; // bps
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
@@ -228,8 +230,8 @@ private:
     bool isLastDecryptWriteError_ {false};
     uint32_t lastRealLen_ {0};
 
-    uint64_t lastReadCheckTime_ = 0;
-    uint64_t readTotalBits_ = 0;
+    uint64_t lastReadRecordTime_ = 0;
+    uint64_t readTotalBytes_ = 0;
     uint64_t readRecordDuringTime_ = 0;
     uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};

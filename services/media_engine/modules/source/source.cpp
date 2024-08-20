@@ -211,6 +211,16 @@ Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
     return plugin_->GetDownloadInfo(downloadInfo);
 }
 
+Status Source::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    MEDIA_LOG_I("GetPlaybackInfo");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetPlaybackInfo  failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetPlaybackInfo(playbackInfo);
+}
+
 bool Source::IsNeedPreDownload()
 {
     if (plugin_ == nullptr) {

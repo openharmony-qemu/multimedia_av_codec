@@ -270,6 +270,14 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
 }
 
+void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetPlaybackInfo");
+        downloader_->GetPlaybackInfo(playbackInfo);
+    }
+}
+
 Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
