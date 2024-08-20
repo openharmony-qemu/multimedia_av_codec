@@ -49,6 +49,7 @@ protected:
     int32_t aTrackIdx_ = 0;
     uint8_t *addr_ = nullptr;
     size_t buffSize_ = 0;
+    bool InitStatus_ = false;
 
     struct FormatValue {
         // source format
