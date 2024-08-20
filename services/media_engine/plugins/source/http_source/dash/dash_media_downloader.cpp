@@ -415,8 +415,8 @@ void DashMediaDownloader::OpenInitSegment(
         downloader->SetInitSegment(initSeg);
     }
     downloader->Open(seg);
-    MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32 ", url:"
-        PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->type_, seg->url_.c_str());
+    MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
+        PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
 }
 
 void DashMediaDownloader::ReceiveMpdParseOkEvent()

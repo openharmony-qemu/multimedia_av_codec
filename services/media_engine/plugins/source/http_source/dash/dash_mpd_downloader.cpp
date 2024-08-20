@@ -206,7 +206,7 @@ void DashMpdDownloader::SetStatusCallback(StatusCallbackFunc cb)
 
 void DashMpdDownloader::UpdateDownloadFinished(const std::string &url)
 {
-    MEDIA_LOG_I("UpdateDownloadFinished:ondemandSegBase_=%{public}u url=%{public}s", ondemandSegBase_, url.c_str());
+    MEDIA_LOG_I("UpdateDownloadFinished:ondemandSegBase_=%{public}u", ondemandSegBase_);
     if (ondemandSegBase_) {
         ParseSidx();
     } else {
@@ -791,8 +791,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
         requestWholeFile = false;
     }
 
-    MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld url=%{public}s", (long long) startRange,
-        (long long) endRange, url.c_str());
+    MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld", (long long) startRange, (long long) endRange);
     RequestInfo mediaSource;
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
@@ -1565,14 +1564,14 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
         std::string tempUrl = mediaUrl;
 
         if (DashSubstituteTmpltStr(tempUrl, "$Time", std::to_string(startTime)) == -1) {
-            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static duration",
-                tempUrl.c_str(), std::to_string(startTime).c_str());
+            MEDIA_LOG_I("GetSegmentsWithTmpltDuration substitute $Time " PUBLIC_LOG_S " error in static duration",
+                std::to_string(startTime).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
         if (DashSubstituteTmpltStr(tempUrl, "$Number", std::to_string(segmentSeq)) == -1) {
-            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static duration",
-                tempUrl.c_str(), std::to_string(segmentSeq).c_str());
+            MEDIA_LOG_I("GetSegmentsWithTmpltDuration substitute $Number " PUBLIC_LOG_S " error in static duration",
+                std::to_string(segmentSeq).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
@@ -1646,14 +1645,14 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
 
         std::string tempUrl = sampleInfo.mediaUrl_;
         if (DashSubstituteTmpltStr(tempUrl, "$Time", std::to_string(startTime)) == -1) {
-            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static timeline",
-                tempUrl.c_str(), std::to_string(startTime).c_str());
+            MEDIA_LOG_E("GetSegmentsInOneTimeline substitute $Time " PUBLIC_LOG_S " error in static timeline",
+                std::to_string(startTime).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
         if (DashSubstituteTmpltStr(tempUrl, "$Number", std::to_string(segmentSeq)) == -1) {
-            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static timeline",
-                tempUrl.c_str(), std::to_string(segmentSeq).c_str());
+            MEDIA_LOG_E("GetSegmentsInOneTimeline substitute $Number " PUBLIC_LOG_S " error in static timeline",
+                std::to_string(segmentSeq).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
@@ -1922,8 +1921,7 @@ bool DashMpdDownloader::GetInitSegFromPeriod(const std::string &periodBaseUrl, c
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, periodBaseUrl);
-        MEDIA_LOG_D("GetInitSegFromPeriod:streamId:" PUBLIC_LOG_D32 ", init seg url "
-            PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
+        MEDIA_LOG_D("GetInitSegFromPeriod:streamId:" PUBLIC_LOG_D32, streamDesc->streamId_);
         return true;
     }
 
@@ -1940,9 +1938,7 @@ bool DashMpdDownloader::GetInitSegFromAdptSet(const std::string &adptSetBaseUrl,
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, adptSetBaseUrl);
-        MEDIA_LOG_D("GetInitSegFromAdptSet:streamId:"
-            PUBLIC_LOG_D32 ", init seg url "
-            PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
+        MEDIA_LOG_D("GetInitSegFromAdptSet:streamId:" PUBLIC_LOG_D32, streamDesc->streamId_);
         return true;
     }
 
@@ -1959,8 +1955,7 @@ bool DashMpdDownloader::GetInitSegFromRepresentation(const std::string &repBaseU
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, repBaseUrl);
-        MEDIA_LOG_D("GetInitSegFromRepresentation:streamId:" PUBLIC_LOG_D32 ", init seg url "
-            PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
+        MEDIA_LOG_D("GetInitSegFromRepresentation:streamId:" PUBLIC_LOG_D32, streamDesc->streamId_);
         return true;
     }
 
@@ -2017,14 +2012,14 @@ void DashMpdDownloader::UpdateInitSegUrl(std::shared_ptr<DashStreamDescription> 
             }
 
             if (DashSubstituteTmpltStr(streamDesc->initSegment_->url_, "$RepresentationID", representationID) == -1) {
-                MEDIA_LOG_E("init seg url " PUBLIC_LOG_S " subtitute $RepresentationID error "
-                    PUBLIC_LOG_S, streamDesc->initSegment_->url_.c_str(), representationID.c_str());
+                MEDIA_LOG_E("UpdateInitSegUrl subtitute $RepresentationID error "
+                    PUBLIC_LOG_S, representationID.c_str());
             }
 
             if (DashSubstituteTmpltStr(streamDesc->initSegment_->url_, "$Bandwidth",
                                        std::to_string(streamDesc->bandwidth_)) == -1) {
-                MEDIA_LOG_E("init seg url " PUBLIC_LOG_S " subtitute $Bandwidth error "
-                    PUBLIC_LOG_U32, streamDesc->initSegment_->url_.c_str(), streamDesc->bandwidth_);
+                MEDIA_LOG_E("UpdateInitSegUrl subtitute $Bandwidth error "
+                    PUBLIC_LOG_U32, streamDesc->bandwidth_);
             }
         }
     }
