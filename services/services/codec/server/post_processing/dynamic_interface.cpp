@@ -18,7 +18,7 @@
 #include "utils.h"
 
 namespace {
-static constexpr const char* LIBRARY_PATH{"/system/lib64/libvideoprocessingengine.z.so"};
+static constexpr const char* LIBRARY_PATH{"libvideoprocessingengine.z.so"};
 }
 
 namespace OHOS {
@@ -79,9 +79,7 @@ bool DynamicInterface::ReadSymbols()
 
 void DynamicInterface::ClearSymbols()
 {
-    for (auto& i : interfaces_) {
-        i = nullptr;
-    }
+    interfaces_.fill(nullptr);
 }
 
 } // namespace PostProcessing
