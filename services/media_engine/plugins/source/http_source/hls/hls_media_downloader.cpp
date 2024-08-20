@@ -61,6 +61,7 @@ constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
+constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
 constexpr float CACHE_LEVEL_1 = 1;
 constexpr float CACHE_LEVEL_2 = 5;
 constexpr float CACHE_LEVEL_3 = 10;
@@ -1179,7 +1180,8 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
     } else {
         MEDIA_LOG_D("UpdateWaterLineAbove default: " PUBLIC_LOG_ZU, waterLineAbove);
     }
-    waterLineAbove_ = std::min(waterLineAbove, static_cast<size_t>(RING_BUFFER_SIZE));
+    waterLineAbove_ = std::min(waterLineAbove, static_cast<size_t>(RING_BUFFER_SIZE *
+        WATER_LINE_ABOVE_LIMIT_RATIO));
     MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
 }
 

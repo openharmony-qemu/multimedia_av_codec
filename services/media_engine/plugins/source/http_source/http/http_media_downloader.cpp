@@ -57,6 +57,7 @@ constexpr int32_t SAVE_DATA_LOG_FEQUENCE = 10;
 constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
+constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
 constexpr float CACHE_LEVEL_1 = 1;
 constexpr float CACHE_LEVEL_2 = 5;
 constexpr float CACHE_LEVEL_3 = 10;
@@ -718,11 +719,11 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
             HandleCachedDuration();
             continue;
         }
-        MEDIA_LOG_W("CacheMediaBuffer write fail.");
+        MEDIA_LOG_W("CacheMediaBuffer full.");
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_ && !isNeedClean_ && !canWrite_ && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer can not write, drop data.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer full, waiting seek or read.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;
@@ -1059,7 +1060,8 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
         }
     }
 
-    waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE));
+    waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE *
+        WATER_LINE_ABOVE_LIMIT_RATIO));
     MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
 }
 }
