@@ -107,7 +107,7 @@ public:
         }
         return ret;
     }
-    int32_t SetOutputBufferQueue(const sptr<AVBufferQueueProducer>& bufferQueueProducer)
+    int32_t SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
     {
         (void)bufferQueueProducer;
         return 0;
@@ -131,7 +131,7 @@ protected:
     int32_t release_ = 0;
     int32_t notifyEos_ = 0;
     bool getOutputFormat_ = false;
-    std::shared_ptr<AVBufferQueue> = inputBufferQueue_ = nullptr;
+    std::shared_ptr<AVBufferQueue> inputBufferQueue_ = nullptr;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_ = nullptr;
 };
 
@@ -151,7 +151,7 @@ protected:
     Status onLinked_;
 };
 
-class FilterLinkCallbackTest : public FilterLinkCallback{
+class FilterLinkCallbackTest : public FilterLinkCallback {
 public:
     FilterLinkCallbackTest() = default;
     ~FilterLinkCallbackTest() = default;
@@ -160,11 +160,11 @@ public:
         (void)queue;
         (void)meta;
     }
-    void OnUnlinkedResult(std:shared_ptr<Meta>& meta) override
+    void OnUnlinkedResult(std::shared_ptr<Meta>& meta) override
     {
         (void)meta;
     }
-    void OnUpdatedResult(std:shared_ptr<Meta>& meta) override
+    void OnUpdatedResult(std::shared_ptr<Meta>& meta) override
     {
         (void)meta;
     }
@@ -398,13 +398,13 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUpdated_0100, TestSize.
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     std::shared_ptr<FilterLinkCallback> callback = std::make_shared<FilterLinkCallbackTest>();
-    EXPECT_EQ(audioEncoderFilter_->OnUpdated(StreamType::STREAMTYPE_ENCODED_VIDEO, meta, callback), FilterType::FILTERTYPE_AENC);
+    EXPECT_EQ(audioEncoderFilter_->OnUpdated(StreamType::STREAMTYPE_ENCODED_VIDEO, meta, callback), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUnLinked_0100, TestSize.Level1)
 {
     std::shared_ptr<FilterLinkCallback> callback = std::make_shared<FilterLinkCallbackTest>();
-    EXPECT_EQ(audioEncoderFilter_->OnUnLinked(StreamType::STREAMTYPE_ENCODED_VIDEO, callback), FilterType::FILTERTYPE_AENC);
+    EXPECT_EQ(audioEncoderFilter_->OnUnLinked(StreamType::STREAMTYPE_ENCODED_VIDEO, callback), Status::OK);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_0100, TestSize.Level1)
@@ -413,9 +413,15 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_0100, Test
     audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
     audioEncoderFilter_->onLinkedResultCallback_ = std::make_shared<FilterLinkCallbackTest>();
     
-    sptr<AVBufferQueueProducer> outputBufferQueuePorducer = nullptr;
+    sptr<AVBufferQueueProducer> outputBufferQueue = nullptr;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    audioEncoderFilter_->OnLinkedResult(outputBufferQueuePorducer, meta);
+    audioEncoderFilter_->OnLinkedResult(outputBufferQueue, meta);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUpdatedResult_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    audioEncoderFilter_->OnUpdatedResult(meta);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUnlinkedResult_0100, TestSize.Level1)
@@ -428,9 +434,9 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetCallingInfo_0100, Test
 {
     int32_t appUid = 1000;
     int32_t appPid = 1001;
-    uint64_t instanceld = 1002;
+    uint64_t instanceId = 1002;
     std::string bundleName = "bundleName";
-    audioEncoderFilter_->SetCallingInfo(appUid, appPid, bundleName, instanceld);
+    audioEncoderFilter_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
 }
 
 }
