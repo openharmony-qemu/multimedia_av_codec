@@ -38,7 +38,8 @@ constexpr int PLAY_WATER_LINE = 5 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL_MS = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT_MS = 30 * 1000;
 constexpr int64_t BYTES_TO_BIT = 8;
-constexpr int32_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
+constexpr int32_t DEFAULT_VIDEO_WATER_LINE = 512 * 1024;
+constexpr int32_t DEFAULT_AUDIO_WATER_LINE = 96 * 1024;
 constexpr float DEFAULT_MIN_CACHE_TIME = 0.3;
 constexpr float DEFAULT_MAX_CACHE_TIME = 10.0;
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
@@ -264,7 +265,11 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
         readRet = DASH_READ_AGAIN;
         return true;
     }
-    if (isFirstFrameArrived_ && buffer_->GetSize() < PLAY_WATER_LINE && !CheckAllSegmentFinish(isLastSegment)) {
+
+    int waterLine = wantReadLength > 0 ? std::min(PLAY_WATER_LINE, static_cast<int>(wantReadLength)) : 0;
+    bool arrivedBuffering = streamType_ != MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE && isFirstFrameArrived_ &&
+        buffer_->GetSize() < static_cast<size_t>(waterLine);
+    if (arrivedBuffering && !CheckAllSegmentFinish(isLastSegment)) {
         if (HandleCache()) {
             readRet = DASH_READ_AGAIN;
             return true;
@@ -384,16 +389,11 @@ bool DashSegmentDownloader::HandleCache()
 
 int32_t DashSegmentDownloader::GetWaterLineAbove()
 {
-    int32_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
+    int32_t waterLineAbove = streamType_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID ? DEFAULT_VIDEO_WATER_LINE :
+        DEFAULT_AUDIO_WATER_LINE;
     if (downloadRequest_ != nullptr && realTimeBitBate_ > 0) {
-        MEDIA_LOG_D("GetWaterLineAbove streamId: " PUBLIC_LOG_D32 " realTimeBitBate: "
+        MEDIA_LOG_I("GetWaterLineAbove streamId: " PUBLIC_LOG_D32 " realTimeBitBate: "
             PUBLIC_LOG_D64 " downloadBiteRate: " PUBLIC_LOG_U32, streamId_, realTimeBitBate_, downloadBiteRate_);
-        if (downloadBiteRate_ == 0) {
-            MEDIA_LOG_I("GetWaterLineAbove streamId: " PUBLIC_LOG_D32 " use default waterLineAbove: "
-                PUBLIC_LOG_D32, streamId_, waterLineAbove);
-            return waterLineAbove;
-        }
-
         if (realTimeBitBate_ > static_cast<int64_t>(downloadBiteRate_)) {
             waterLineAbove = static_cast<int32_t>(DEFAULT_MAX_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
         } else {
