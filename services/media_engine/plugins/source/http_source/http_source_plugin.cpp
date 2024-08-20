@@ -190,7 +190,6 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     if (callback_ != nullptr) {
         downloader_->SetCallback(callback_);
     }
-    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
     FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     return Status::OK;
 }

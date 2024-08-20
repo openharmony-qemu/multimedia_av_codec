@@ -454,7 +454,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     playList_ = playList;
     uri_ = uri;
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
-        MEDIA_LOG_I("playlist doesn't start with #EXTM3U " PUBLIC_LOG_S, uri.c_str());
+        MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
     }
     if (playList_.find("\n#EXTINF:") != std::string::npos) {
         UpdateMediaPlaylist();
@@ -465,7 +465,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 
 void M3U8MasterPlaylist::UpdateMediaPlaylist()
 {
-    MEDIA_LOG_I("This is a simple media playlist, not a master playlist " PUBLIC_LOG_S, uri_.c_str());
+    MEDIA_LOG_I("This is a simple media playlist, not a master playlist ");
     auto m3u8 = std::make_shared<M3U8>(uri_, "");
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
     variants_.emplace_back(stream);
