@@ -39,13 +39,22 @@ void CodecCapabilityAdapterUnitTest::TearDown(void)
 }
 
 /**
- * @tc.name: First
- * @tc.desc: First
+ * @tc.name: CodecCapabilityAdapter_IsWatermarkSupported_0100
+ * @tc.desc: CodecCapabilityAdapter_IsWatermarkSupported_0100
  * @tc.type: FUNC
  */
-HWTEST_F(CodecCapabilityAdapterUnitTest, First, TestSize.Level1)
+HWTEST_F(CodecCapabilityAdapterUnitTest, CodecCapabilityAdapter_IsWatermarkSupported_0100, TestSize.Level1)
 {
     ASSERT_NE(codecCapabilityAdapter_, nullptr);
+    codecCapabilityAdapter_->Init();
+    std::string codecMimeType = std::string("audio/test");
+    bool isWatermarkSupported = true;
+    EXPECT_EQ(codecCapabilityAdapter_->IsWatermarkSupported(codecMimeType, isWatermarkSupported), Status::ERROR_UNKNOWN);
+    codecMimeType = std::string(MediaAVCodec::CodecMimeType::VIDEO_AVC);
+    isWatermarkSupported = true;
+    EXPECT_EQ(codecCapabilityAdapter_->IsWatermarkSupported(codecMimeType, isWatermarkSupported), Status::OK);
+    isWatermarkSupported = false;
+    EXPECT_EQ(codecCapabilityAdapter_->IsWatermarkSupported(codecMimeType, isWatermarkSupported), Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
