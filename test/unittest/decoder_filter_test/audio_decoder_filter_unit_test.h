@@ -22,7 +22,7 @@
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "drm_i_keysession_service.h"
 #include "buffer/avbuffer_queue.h"
 
 namespace OHOS {
