@@ -19,6 +19,9 @@
 #include "common/log.h"
 #include "common/media_core.h"
 #include "avcodec_sysevent.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioDecoderFilter" };
@@ -278,7 +281,9 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     }
     if (isDrmProtected_) {
         MEDIA_LOG_D_SHORT("AudioDecoderFilter::isDrmProtected_ true.");
+#ifdef SUPPORT_DRM
         mediaCodec_->SetAudioDecryptionConfig(keySessionServiceProxy_, svpFlag_);
+#endif
     }
     return Status::OK;
 }
@@ -313,10 +318,12 @@ Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKey
         return Status::ERROR_INVALID_PARAMETER;
     }
     isDrmProtected_ = true;
-    keySessionServiceProxy_ = keySessionProxy;
     (void)svp;
     // audio svp: false
     svpFlag_ = false;
+#ifdef SUPPORT_DRM
+    keySessionServiceProxy_ = keySessionProxy;
+#endif
     return Status::OK;
 }
 

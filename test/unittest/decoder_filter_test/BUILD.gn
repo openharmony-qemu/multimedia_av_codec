@@ -101,6 +101,11 @@ ohos_unittest("decoder_filter_unit_test") {
     "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }

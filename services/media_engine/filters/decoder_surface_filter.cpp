@@ -223,7 +223,9 @@ Status DecoderSurfaceFilter::DoInitAfterLink()
     ParseDecodeRateLimit();
     videoDecoder_->SetOutputSurface(videoSurface_);
     if (isDrmProtected_) {
+#ifdef SUPPORT_DRM
         videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
+#endif
     }
     videoSink_->SetParameter(meta_);
     return Status::OK;
@@ -436,7 +438,9 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         videoDecoder_->Configure(configFormat_);
         videoDecoder_->SetOutputSurface(videoSurface_);
         if (isDrmProtected_) {
+#ifdef SUPPORT_DRM
             videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
+#endif
         }
     }
     videoDecoder_->SetParameter(format);
@@ -763,8 +767,10 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
         return Status::ERROR_INVALID_PARAMETER;
     }
     isDrmProtected_ = true;
-    keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
+#ifdef SUPPORT_DRM
+    keySessionServiceProxy_ = keySessionProxy;
+#endif
     return Status::OK;
 }
 

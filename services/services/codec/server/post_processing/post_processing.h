@@ -376,18 +376,18 @@ private:
     }
 
     struct Configuration {
-        int32_t width;
-        int32_t height;
-        int32_t inputColorSpaceType;
-        int32_t inputMetadataType;
-        int32_t inputPixelFormat;
-        sptr<Surface> inputSurface;
-        int32_t outputColorSpaceType;
-        int32_t outputMetadataType;
-        int32_t outputPixelFormat;
-        sptr<Surface> outputSurface;
-        int32_t rotation;
-        int32_t scalingMode;
+        int32_t width{0};
+        int32_t height{0};
+        int32_t inputColorSpaceType{0};
+        int32_t inputMetadataType{0};
+        int32_t inputPixelFormat{0};
+        sptr<Surface> inputSurface{nullptr};
+        int32_t outputColorSpaceType{0};
+        int32_t outputMetadataType{0};
+        int32_t outputPixelFormat{0};
+        sptr<Surface> outputSurface{nullptr};
+        int32_t rotation{0};
+        int32_t scalingMode{0};
     };
 
     StateMachine state_;
