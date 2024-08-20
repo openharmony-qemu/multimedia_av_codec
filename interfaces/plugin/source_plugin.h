@@ -216,6 +216,16 @@ public:
     {
         return Status::OK;
     }
+
+    virtual Status Pause()
+    {
+        return Status::OK;
+    }
+
+    virtual Status Resume()
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.

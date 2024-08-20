@@ -69,15 +69,16 @@ bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, s
 
 void DownloadMonitor::Pause()
 {
-    downloader_->Pause();
-    isPlaying_ = false;
-    lastReadTime_ = 0;
+    if (downloader_ != nullptr) {
+        downloader_->Pause();
+    }
 }
 
 void DownloadMonitor::Resume()
 {
-    downloader_->Resume();
-    isPlaying_ = true;
+    if (downloader_ != nullptr) {
+        downloader_->Resume();
+    }
 }
 
 void DownloadMonitor::Close(bool isAsync)

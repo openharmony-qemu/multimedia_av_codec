@@ -232,12 +232,18 @@ Status Source::Stop()
 Status Source::Pause()
 {
     MEDIA_LOG_I("Pause entered.");
+    if (plugin_ != nullptr) {
+        plugin_->Pause();
+    }
     return Status::OK;
 }
 
 Status Source::Resume()
 {
     MEDIA_LOG_I("Resume entered.");
+    if (plugin_ != nullptr) {
+        plugin_->Resume();
+    }
     return Status::OK;
 }
 

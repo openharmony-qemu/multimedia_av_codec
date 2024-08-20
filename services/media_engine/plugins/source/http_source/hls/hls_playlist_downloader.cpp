@@ -107,9 +107,6 @@ Seekable HlsPlayListDownloader::GetSeekable() const
     if (times >= RETRY_TIMES || isInterruptNeeded_) {
         return Seekable::INVALID;
     }
-    if (master_->bLive_ && !updateTask_->IsTaskRunning()) {
-        updateTask_->Start();
-    }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
@@ -150,6 +147,10 @@ void HlsPlayListDownloader::NotifyListChange()
     callback_->OnPlayListChanged(playList);
     if (isParseFinished_) {
         isNotifyPlayListFinished_ = true;
+        if (master_->bLive_ && !updateTask_->IsTaskRunning() && !isLiveUpdateTaskStarted_) {
+            isLiveUpdateTaskStarted_ = true;
+            updateTask_->Start();
+        }
     }
 }
 
