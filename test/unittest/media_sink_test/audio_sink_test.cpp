@@ -168,10 +168,6 @@ public:
         (void)duration;
         return 0;
     }
-    Status SetMuted(bool isMuted) override
-    {
-        return Status::OK;
-    }
 };
 
 std::shared_ptr<AudioSink> AudioSinkCreate()
