@@ -342,7 +342,6 @@ void VideoCaps::UpdateBlockParams(const int32_t &blockWidth, const int32_t &bloc
 
 void VideoCaps::InitParams()
 {
-
     if (data_->blockPerSecond.minVal == 0 || data_->blockPerSecond.maxVal == 0) {
         data_->blockPerSecond = Range(1, INT32_MAX);
     }
