@@ -165,12 +165,6 @@ CodecServer::~CodecServer()
     }
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
-    if (postProcessingUserData_ != nullptr) {
-        auto p = static_cast<PostProcessingCallbackUserData*>(postProcessingUserData_);
-        delete p;
-        p = nullptr;
-    }
-
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -1177,6 +1171,8 @@ int32_t CodecServer::SetCallbackForPostProcessing()
         std::bind(PostProcessingCallbackOnOutputBufferAvailable, _1, _2, _3);
     postProcessingCallback_.onOutputFormatChanged = std::bind(PostProcessingCallbackOnOutputFormatChanged, _1, _2);
     auto userData = new PostProcessingCallbackUserData;
+    CHECK_AND_RETURN_RET_LOG(userData, AVCS_ERR_NO_MEMORY, "Failed to create post processing callback userdata");
+    postProcessingUserData_ = userData;
     userData->codecServer = shared_from_this();
     return postProcessing_->SetCallback(postProcessingCallback_, static_cast<void*>(userData));
 }
@@ -1313,6 +1309,12 @@ int32_t CodecServer::ReleasePostProcessing()
         CleanPostProcessingResource();
         postProcessing_.reset();
     }
+    if (postProcessingUserData_ != nullptr) {
+        auto p = static_cast<PostProcessingCallbackUserData*>(postProcessingUserData_);
+        delete p;
+        p = nullptr;
+    }
+    
     AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }
