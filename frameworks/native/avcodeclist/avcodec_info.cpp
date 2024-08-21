@@ -66,6 +66,7 @@ const std::map<int32_t, LevelParams> MPEG4_SIMPLE_PARAMS_MAP = {
 
 VideoCaps::VideoCaps(CapabilityData *capabilityData) : data_(capabilityData)
 {
+    CHECK_AND_RETURN_LOG(capabilityData != nullptr, "capabilityData is null");
     InitParams();
     LoadLevelParams();
     AVCODEC_LOGD("VideoCaps:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
@@ -78,6 +79,7 @@ VideoCaps::~VideoCaps()
 
 std::shared_ptr<AVCodecInfo> VideoCaps::GetCodecInfo()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, nullptr, "data is null");
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(data_);
     CHECK_AND_RETURN_RET_LOG(codecInfo != nullptr, nullptr, "create codecInfo failed");
 
@@ -86,11 +88,13 @@ std::shared_ptr<AVCodecInfo> VideoCaps::GetCodecInfo()
 
 Range VideoCaps::GetSupportedBitrate()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->bitrate;
 }
 
 std::vector<int32_t> VideoCaps::GetSupportedFormats()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> pixFormat = data_->pixFormat;
     CHECK_AND_RETURN_RET_LOG(pixFormat.size() != 0, pixFormat, "GetSupportedFormats failed: format is null");
     return pixFormat;
@@ -98,26 +102,31 @@ std::vector<int32_t> VideoCaps::GetSupportedFormats()
 
 int32_t VideoCaps::GetSupportedHeightAlignment()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, 1, "data is null");
     return data_->alignment.height;
 }
 
 int32_t VideoCaps::GetSupportedWidthAlignment()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, 1, "data is null");
     return data_->alignment.width;
 }
 
 Range VideoCaps::GetSupportedWidth()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->width;
 }
 
 Range VideoCaps::GetSupportedHeight()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->height;
 }
 
 std::vector<int32_t> VideoCaps::GetSupportedProfiles()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> profiles = data_->profiles;
     CHECK_AND_RETURN_RET_LOG(profiles.size() != 0, profiles, "GetSupportedProfiles failed: profiles is null");
     return profiles;
@@ -125,17 +134,20 @@ std::vector<int32_t> VideoCaps::GetSupportedProfiles()
 
 std::vector<int32_t> VideoCaps::GetSupportedLevels()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> levels;
     return levels;
 }
 
 Range VideoCaps::GetSupportedEncodeQuality()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->encodeQuality;
 }
 
 bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     UpdateParams();
     if (width <= 0 || height <= 0) {
         return false;
@@ -160,6 +172,7 @@ bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 
 Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     if (height < data_->height.minVal || height > data_->height.maxVal) {
         return Range(0, 0);
     }
@@ -181,6 +194,7 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
 
 Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     if (width < data_->width.minVal || width > data_->width.maxVal) {
         return Range(0, 0);
     }
@@ -202,11 +216,13 @@ Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
 
 Range VideoCaps::GetSupportedFrameRate()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->frameRate;
 }
 
 Range VideoCaps::GetSupportedFrameRatesFor(int32_t width, int32_t height)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     if (!IsSizeSupported(width, height)) {
         AVCODEC_LOGD("The %{public}s can not support of:%{public}d * %{public}d", data_->codecName.c_str(), width,
                      height);
@@ -326,6 +342,7 @@ void VideoCaps::UpdateBlockParams(const int32_t &blockWidth, const int32_t &bloc
 
 void VideoCaps::InitParams()
 {
+
     if (data_->blockPerSecond.minVal == 0 || data_->blockPerSecond.maxVal == 0) {
         data_->blockPerSecond = Range(1, INT32_MAX);
     }
@@ -423,6 +440,7 @@ int32_t VideoCaps::DivCeil(const int32_t &dividend, const int32_t &divisor)
 
 bool VideoCaps::IsSizeAndRateSupported(int32_t width, int32_t height, double frameRate)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     if (!IsSizeSupported(width, height)) {
         AVCODEC_LOGD("The %{public}s can not support of:%{public}d * %{public}d", data_->codecName.c_str(), width,
                      height);
@@ -438,6 +456,7 @@ bool VideoCaps::IsSizeAndRateSupported(int32_t width, int32_t height, double fra
 
 Range VideoCaps::GetPreferredFrameRate(int32_t width, int32_t height)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     Range range;
     if (!IsSizeSupported(width, height)) {
         AVCODEC_LOGD("The %{public}s can not support of:%{public}d * %{public}d", data_->codecName.c_str(), width,
@@ -486,6 +505,7 @@ ImgSize VideoCaps::MatchClosestSize(const ImgSize &imgSize)
 
 std::vector<int32_t> VideoCaps::GetSupportedBitrateMode()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> bitrateMode = data_->bitrateMode;
     CHECK_AND_RETURN_RET_LOG(bitrateMode.size() != 0, bitrateMode, "GetSupportedBitrateMode failed: get null");
     return bitrateMode;
@@ -493,17 +513,20 @@ std::vector<int32_t> VideoCaps::GetSupportedBitrateMode()
 
 Range VideoCaps::GetSupportedQuality()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     Range quality;
     return quality;
 }
 
 Range VideoCaps::GetSupportedComplexity()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->complexity;
 }
 
 bool VideoCaps::IsSupportDynamicIframe()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     return false;
 }
 
@@ -519,6 +542,7 @@ AudioCaps::~AudioCaps()
 
 std::shared_ptr<AVCodecInfo> AudioCaps::GetCodecInfo()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, nullptr, "data is null");
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(data_);
     CHECK_AND_RETURN_RET_LOG(codecInfo != nullptr, nullptr, "create codecInfo failed");
     return codecInfo;
@@ -526,16 +550,19 @@ std::shared_ptr<AVCodecInfo> AudioCaps::GetCodecInfo()
 
 Range AudioCaps::GetSupportedBitrate()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->bitrate;
 }
 
 Range AudioCaps::GetSupportedChannel()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->channels;
 }
 
 std::vector<int32_t> AudioCaps::GetSupportedFormats()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> bitDepth = data_->bitDepth;
     CHECK_AND_RETURN_RET_LOG(bitDepth.size() != 0, bitDepth, "GetSupportedFormats failed: format is null");
     return bitDepth;
@@ -543,6 +570,7 @@ std::vector<int32_t> AudioCaps::GetSupportedFormats()
 
 std::vector<int32_t> AudioCaps::GetSupportedSampleRates()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> sampleRate = data_->sampleRate;
     CHECK_AND_RETURN_RET_LOG(sampleRate.size() != 0, sampleRate, "GetSupportedSampleRates failed: sampleRate is null");
     return sampleRate;
@@ -550,6 +578,7 @@ std::vector<int32_t> AudioCaps::GetSupportedSampleRates()
 
 std::vector<int32_t> AudioCaps::GetSupportedProfiles()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> profiles = data_->profiles;
     CHECK_AND_RETURN_RET_LOG(profiles.size() != 0, profiles, "GetSupportedProfiles failed: profiles is null");
     return profiles;
@@ -557,12 +586,14 @@ std::vector<int32_t> AudioCaps::GetSupportedProfiles()
 
 std::vector<int32_t> AudioCaps::GetSupportedLevels()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> empty;
     return empty;
 }
 
 Range AudioCaps::GetSupportedComplexity()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, Range(), "data is null");
     return data_->complexity;
 }
 
@@ -578,6 +609,7 @@ AVCodecInfo::~AVCodecInfo()
 
 std::string AVCodecInfo::GetName()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, "", "data is null");
     std::string name = data_->codecName;
     CHECK_AND_RETURN_RET_LOG(name != "", "", "get codec name is null");
     return name;
@@ -585,6 +617,7 @@ std::string AVCodecInfo::GetName()
 
 AVCodecType AVCodecInfo::GetType()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, AVCODEC_TYPE_NONE, "data is null");
     AVCodecType codecType = AVCodecType(data_->codecType);
     CHECK_AND_RETURN_RET_LOG(codecType != AVCODEC_TYPE_NONE, AVCODEC_TYPE_NONE, "can not find codec type");
     return codecType;
@@ -592,6 +625,7 @@ AVCodecType AVCodecInfo::GetType()
 
 std::string AVCodecInfo::GetMimeType()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, "", "data is null");
     std::string mimeType = data_->mimeType;
     CHECK_AND_RETURN_RET_LOG(mimeType != "", "", "get mimeType is null");
     return mimeType;
@@ -599,26 +633,32 @@ std::string AVCodecInfo::GetMimeType()
 
 bool AVCodecInfo::IsHardwareAccelerated()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     return data_->isVendor;
 }
 
 int32_t AVCodecInfo::GetMaxSupportedInstances()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, 0, "data is null");
     return data_->maxInstance;
 }
 
 bool AVCodecInfo::IsSoftwareOnly()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     return !data_->isVendor;
 }
 
 bool AVCodecInfo::IsVendor()
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     return data_->isVendor;
 }
 
 std::map<int32_t, std::vector<int32_t>> AVCodecInfo::GetSupportedLevelsForProfile()
 {
+    std::map<int32_t, std::vector<int32_t>> empty = std::map<int32_t, std::vector<int32_t>>();
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, empty, "data is null");
     return data_->profileLevelsMap;
 }
 
@@ -630,6 +670,7 @@ bool AVCodecInfo::IsFeatureValid(AVCapabilityFeature feature)
 
 bool AVCodecInfo::IsFeatureSupported(AVCapabilityFeature feature)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     CHECK_AND_RETURN_RET_LOG(IsFeatureValid(feature), false,
         "Varified feature failed: feature %{public}d is invalid", feature);
     return data_->featuresMap.count(static_cast<int32_t>(feature)) != 0;
@@ -637,6 +678,7 @@ bool AVCodecInfo::IsFeatureSupported(AVCapabilityFeature feature)
 
 int32_t AVCodecInfo::GetFeatureProperties(AVCapabilityFeature feature, Format &format)
 {
+    CHECK_AND_RETURN_RET_LOG(data_ != nullptr, AVCS_ERR_INVALID_VAL, "data is null");
     CHECK_AND_RETURN_RET_LOG(IsFeatureValid(feature), AVCS_ERR_INVALID_VAL,
         "Get feature properties failed: invalid feature %{public}d", feature);
     auto itr = data_->featuresMap.find(static_cast<int32_t>(feature));
