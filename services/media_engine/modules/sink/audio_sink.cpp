@@ -64,6 +64,7 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     if (samplePerFrame_ > 0 && sampleRate_ > 0) {
@@ -575,6 +576,7 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    plugin_->SetMuted(isMuted_);
     meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
     meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     if (volume_ >= 0) {
@@ -593,5 +595,11 @@ Status AudioSink::ChangeTrack(std::shared_ptr<Meta>& meta, const std::shared_ptr
     return res;
 }
 
+Status AudioSink::SetMuted(bool isMuted)
+{
+    isMuted_ = isMuted;
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    return plugin_->SetMuted(isMuted);
+}
 } // namespace MEDIA
 } // namespace OHOS
