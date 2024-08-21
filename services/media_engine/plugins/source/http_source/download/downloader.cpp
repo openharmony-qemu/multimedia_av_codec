@@ -198,8 +198,11 @@ uint32_t DownloadRequest::GetBitRate() const
         return 0;
     }
     int64_t timeGap = downloadDoneTime_ - downloadStartTime_;
+    if (timeGap == 0) {
+        return 0;
+    }
     uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ * 1000 *
-                       1 * 8 / timeGap); // 1000:ms to sec 1:weight 8:byte to bit
+                        1 * 8 / timeGap); // 1000:ms to sec 1:weight 8:byte to bit
     return bitRate;
 }
 
