@@ -137,10 +137,11 @@ public:
     }
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     {
-        if (nullptr == buffer)
+        if (nullptr == buffer) {
             return 0;
-        else
+        } else {
             return ret;
+        }
     }
     int32_t ret = 1;
 };
