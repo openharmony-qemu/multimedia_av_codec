@@ -103,7 +103,7 @@ int32_t InnerDemuxerSample::ReadSampleAndSave()
     uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
-    while (!isAudioEosFlagForSave && !isAudioEosFlagForSave) {
+    while (!isAudioEosFlagForSave && !isVideoEosFlagForSave) {
         CheckLoopForSave();
     }
     videoIndexPtsList.sort();
@@ -123,7 +123,7 @@ void InnerDemuxerSample::CheckLoopForSave()
         }
         if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             if (i == videoTrackIdx) {
-                isAudioEosFlagForSave = true;
+                isVideoEosFlagForSave = true;
             } else {
                 isAudioEosFlagForSave = true;
             }
