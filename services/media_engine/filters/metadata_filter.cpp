@@ -212,6 +212,7 @@ Status MetaDataFilter::DoStop()
     MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("MetaDataFilter::Stop");
     isStop_ = true;
+    startBufferTime_ = TIME_NONE;
     latestBufferTime_ = TIME_NONE;
     latestPausedTime_ = TIME_NONE;
     totalPausedTime_ = 0;
@@ -340,7 +341,7 @@ void MetaDataFilter::OnBufferAvailable()
         extraData->ExtraGet("dataSize", bufferSize);
     }
     MEDIA_LOG_D("timestamp: " PUBLIC_LOG_D64 ", dataSize: " PUBLIC_LOG_D32, timestamp, bufferSize);
-    if (timestamp == 0) {
+    if (timestamp == 0 || timestamp <= latestBufferTime_) {
         MEDIA_LOG_E("timestamp invalid.");
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
