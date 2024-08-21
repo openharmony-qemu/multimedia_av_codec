@@ -308,6 +308,13 @@ Status AudioSinkFilter::OnUnLinked(StreamType inType, const std::shared_ptr<Filt
 {
     return Filter::OnUnLinked(inType, callback);
 }
+
+Status AudioSinkFilter::SetMuted(bool isMuted)
+{
+    MEDIA_LOG_D("SetMuted");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetMuted(isMuted);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
