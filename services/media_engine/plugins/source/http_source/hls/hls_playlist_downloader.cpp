@@ -254,7 +254,7 @@ bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
             newVariant_ = item;
         }
     }
-    if (newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
+    if (currentVariant_ != nullptr && newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
         return true;
     }
     return false;
