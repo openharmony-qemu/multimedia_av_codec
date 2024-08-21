@@ -519,6 +519,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                     auto name = uriAttribute->QuotedString();
                     auto uri = UriJoin(uri_, name);
                     auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name));
+                    FALSE_RETURN_MSG(stream != nullptr, "UpdateMasterPlaylist memory not enough");
                     if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
                         stream->iframe_ = true;
                     }
