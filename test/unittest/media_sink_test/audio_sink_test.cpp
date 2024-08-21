@@ -171,7 +171,7 @@ public:
     Status SetMuted(bool isMuted) override
     {
         (void)isMuted;
-        return Status:OK;
+        return Status::OK;
     }
 };
 
