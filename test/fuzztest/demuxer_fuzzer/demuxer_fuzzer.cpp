@@ -60,10 +60,12 @@ void RunNormalDemuxer()
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
+        close(fd);
         return;
     }
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
+        close(fd);
         return;
     }
 
@@ -103,10 +105,12 @@ void RunNormalDemuxerApi11()
     int64_t size = GetFileSize(file);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!source) {
+        close(fd);
         return;
     }
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
     if (!demuxer) {
+        close(fd);
         return;
     }
 
