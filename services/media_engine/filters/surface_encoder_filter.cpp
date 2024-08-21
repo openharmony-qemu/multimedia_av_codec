@@ -191,7 +191,9 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
     if (surface_) {
         return surface_;
     }
-    surface_ = mediaCodec_->GetInputSurface();
+    if (mediaCodec_ != nullptr) {
+        surface_ = mediaCodec_->GetInputSurface();
+    }
     return surface_;
 }
 
