@@ -959,6 +959,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 #endif // HMOS_TEST
+
 /**
  * @tc.name: VideoEncoder_SetCustomBuffer_001
  * @tc.desc: encoder with water mark, buffer mode
