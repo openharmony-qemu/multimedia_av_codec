@@ -120,6 +120,9 @@ public:
     {
         uint32_t size = 8;
         inputBufferQueue_ = AVBufferQueue::Create(size);
+        if (inputBufferQueue_ == nullptr) {
+            return nullptr;
+        }
         inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
         return inputBufferQueueProducer_;
     }
@@ -209,6 +212,7 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Init_0100, TestSize.Level
 {
     auto mediaCodecMock = std::make_shared<MediaCodecMock>();
     audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
+    ASSERT_NE(audioEncoderFilter_->mediaCodec_, nullptr);
     std::shared_ptr<EventReceiver> receiver = std::make_shared<EventReceiverTest>();
     std::shared_ptr<FilterCallback> callback = std::make_shared<FilterCallbackTest>();
     audioEncoderFilter_->Init(receiver, callback);
@@ -327,12 +331,14 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetParameter_0100, TestSi
     auto mediaCodecMock = std::make_shared<MediaCodecMock>();
     audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    ASSERT_NE(parameter, nullptr);
     audioEncoderFilter_->SetParameter(parameter);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetParameter_0100, TestSize.Level1)
 {
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    ASSERT_NE(parameter, nullptr);
     audioEncoderFilter_->GetParameter(parameter);
 }
 
@@ -410,23 +416,29 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUnLinked_0100, TestSize
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_0100, TestSize.Level1)
 {
     auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    ASSERT_NE(mediaCodecMock, nullptr);
     audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
-    audioEncoderFilter_->onLinkedResultCallback_ = std::make_shared<FilterLinkCallbackTest>();
     
-    sptr<AVBufferQueueProducer> outputBufferQueue = nullptr;
+    audioEncoderFilter_->onLinkedResultCallback_ = std::make_shared<FilterLinkCallbackTest>();
+    ASSERT_NE(audioEncoderFilter_->onLinkedResultCallback_, nullptr);
+    
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
+    sptr<AVBufferQueueProducer> outputBufferQueue = nullptr;
     audioEncoderFilter_->OnLinkedResult(outputBufferQueue, meta);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUpdatedResult_0100, TestSize.Level1)
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
     audioEncoderFilter_->OnUpdatedResult(meta);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUnlinkedResult_0100, TestSize.Level1)
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
     audioEncoderFilter_->OnUnlinkedResult(meta);
 }
 
