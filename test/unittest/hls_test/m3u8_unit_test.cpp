@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 #include "m3u8_unit_test.h"
+#include "http_server_demo.h"
+
 #include <new>
 #define LOCAL true
 
@@ -22,14 +24,22 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace testing::ext;
 using namespace std;
 constexpr uint32_t MAX_LOOP = 16;
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void M3u8UnitTest::SetUpTestCase(void) {}
 
 void M3u8UnitTest::TearDownTestCase(void) {}
 
-void M3u8UnitTest::SetUp(void) {}
+void M3u8UnitTest::SetUp(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+}
 
-void M3u8UnitTest::TearDown(void) {}
+void M3u8UnitTest::TearDown(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {

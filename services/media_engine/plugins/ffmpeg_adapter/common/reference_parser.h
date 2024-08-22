@@ -58,8 +58,9 @@ struct PicRefInfo {
 
 class RefParser {
 public:
-    explicit RefParser(std::vector<uint32_t> IFramePos);
+    explicit RefParser(std::vector<uint32_t> &IFramePos);
     virtual ~RefParser();
+    virtual Status RefParserInit();
     virtual Status ParserNalUnits(uint8_t *nalData, int32_t nalDataSize, uint32_t frameId, int64_t dts);
     virtual Status ParserExtraData(uint8_t *extraData, int32_t extraDataSize);
     virtual Status ParserSdtpData(uint8_t *sdtpData, int32_t sdtpDataSize);
@@ -73,8 +74,7 @@ protected:
     void ClearInfo();
     void SaveSdtpInfo(uint8_t sampleFlags, uint32_t preIStreamId, uint32_t &disposableNum, uint32_t &disposableExtNum,
                       PicRefInfo &curPicRefInfo);
-    void FillGopLayerInfo(uint32_t gopSize, uint32_t disposableNum, uint32_t disposableExtNum,
-                          GopLayerInfo &gopLayerInfo);
+    void FillGopLayerInfo(uint32_t gopId, uint32_t gopSize, GopLayerInfo &gopLayerInfo);
     void DumpGopInfo(uint32_t gopId, uint32_t gopSize);
     uint8_t nalLenSize_ = DEFAULT_NAL_LEN_SIZE; // nalu长度所占字节数
     std::map<uint32_t, PicRefInfo> picRefInfo_;

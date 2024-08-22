@@ -92,6 +92,24 @@ sptr<Surface> HEncoderPreparingUnitTest::CreateConsumerSurface()
     return consumerSurface;
 }
 
+int32_t HEncoderPreparingUnitTest::GetEncoderCapabilityForMime(CapabilityData &cap,
+                                                               const std::string &targetMimeType)
+{
+    vector<CapabilityData> caps;
+    int32_t ret = GetHCodecCapabilityList(caps);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+
+    auto it = std::find_if(caps.begin(), caps.end(), [&](const CapabilityData& one) {
+        return one.codecType == AVCODEC_TYPE_VIDEO_ENCODER && one.mimeType == targetMimeType;
+    });
+    if (it != caps.end()) {
+        cap = *it;
+    }
+    return AVCS_ERR_OK;
+}
+
 /* ============== CREATION ============== */
 HWTEST_F(HEncoderPreparingUnitTest, create_by_avc_name, TestSize.Level1)
 {
@@ -587,6 +605,166 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_no_bitrate_mode, TestSize.Lev
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_LTR_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto ltrCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    if (ltrCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2); // 2: ltr frame count
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+    }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_LTR_count, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto ltrCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    if (ltrCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 11); // 11: ltr frame count
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_temporal_scale_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+    
+    auto TSVCCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    if (TSVCCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2); // 2: gop mode
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4); // 4: temporal gop size
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+    }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_GOP_mode, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto TSVCCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    if (TSVCCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1); // 1: gop mode
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4); // 4: temporal gop size
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_GOP_size, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto TSVCCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    if (TSVCCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2); // 2: gop mode
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 8); // 8: invalid temporal gop size
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    }
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_temporal_scale_and_LTR, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
+    ASSERT_TRUE(testObj);
+    CapabilityData cap;
+    int32_t ret = GetEncoderCapabilityForMime(cap, "video/hevc");
+    ASSERT_TRUE(ret == AVCS_ERR_OK);
+
+    auto TSVCCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
+    auto LTRCap = cap.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
+    if (TSVCCap != cap.featuresMap.end() && LTRCap != cap.featuresMap.end()) {
+        Media::Meta meta{};
+        int32_t err = testObj->Init(meta);
+        ASSERT_TRUE(err == AVCS_ERR_OK);
+        Format format;
+        format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2); // 2: gop mode
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4); // 4: invalid temporal gop size
+        format.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, 2); // 2: ltr frame count
+        ret = testObj->Configure(format);
+        ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    }
 }
 
 /* ============== GET_OUTPUT_FORMAT ============== */

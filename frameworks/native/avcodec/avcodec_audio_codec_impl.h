@@ -26,7 +26,6 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "buffer/avbuffer_queue_producer.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -92,8 +91,8 @@ private:
     std::mutex outputMutex_;
     std::mutex outputMutex_2;
     std::atomic<int32_t> bufferConsumerAvailableCount_ = 0;
-    std::atomic<int32_t> indexInput_ = 0;
-    std::atomic<int32_t> indexOutput_ = 0;
+    std::atomic<uint32_t> indexInput_ = 0;
+    std::atomic<uint32_t> indexOutput_ = 0;
     int32_t inputBufferSize_ = 0;
     std::queue<std::shared_ptr<AVBuffer>> inputIndexQueue;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inputBufferObjMap_;

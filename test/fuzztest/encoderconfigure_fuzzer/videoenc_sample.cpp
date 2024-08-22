@@ -216,7 +216,7 @@ int32_t VEncFuzzSample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    ret = OH_VideoEncoder_Start(venc_);
+    OH_VideoEncoder_Start(venc_);
     OH_VideoEncoder_Stop(venc_);
     Flush();
     ret = OH_VideoEncoder_Start(venc_);

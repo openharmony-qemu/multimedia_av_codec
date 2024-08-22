@@ -1088,4 +1088,260 @@ HWTEST_F(HwEncTemporalNdkTest, LTR_FUNC_016, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncApi11Sample->errCount);
     }
 }
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0100
+ * @tc.name      : uniformly temporal buffer 264 encode,tgop 2
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0100, TestSize.Level0)
+{
+    auto vEncSample = make_unique<VEncAPI11Sample>();
+    vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0100.h264";
+    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->DEFAULT_WIDTH = 1280;
+    vEncSample->DEFAULT_HEIGHT = 720;
+    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->SURF_INPUT = false;
+    vEncSample->TEMPORAL_ENABLE = true;
+    vEncSample->TEMPORAL_UNIFORMLY = true;
+    int32_t temporalGopSize = 2;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0200
+ * @tc.name      : uniformly temporal buffer 264 encode,tgop 3
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0200, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0200.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = false;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 3;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0300
+ * @tc.name      : uniformly temporal buffer 265 encode,tgop 2
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0300, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0300.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = false;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0400
+ * @tc.name      : uniformly temporal buffer 265 encode,tgop 4
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0400, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0400.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = false;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 4;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0500
+ * @tc.name      : uniformly temporal buffer 265 encode,tgop 5
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0500, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0500.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = false;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0600
+ * @tc.name      : uniformly temporal surface 264 encode,tgop 2
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0600, TestSize.Level0)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0600.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0700
+ * @tc.name      : uniformly temporal surface 264 encode,tgop 3
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0700, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0700.h264";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 3;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0800
+ * @tc.name      : uniformly temporal surface 265 encode,tgop 2
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0800, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0800.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_0900
+ * @tc.name      : uniformly temporal surface 265 encode,tgop 4
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_0900, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_0900.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 4;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1000
+ * @tc.name      : uniformly temporal buffer 265 encode,tgop 5
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1000, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1000.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        int32_t temporalGopSize = 5;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+    }
+}
 } // namespace

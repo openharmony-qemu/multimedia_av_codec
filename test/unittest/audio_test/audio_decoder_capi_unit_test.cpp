@@ -83,7 +83,7 @@ constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/voice_opus.pcm";
 constexpr string_view INPUT_G711MU_FILE_PATH = "/data/test/media/g711mu_8kHz.dat";
 constexpr string_view OUTPUT_G711MU_PCM_FILE_PATH = "/data/test/media/g711mu_8kHz_decode.pcm";
-constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+constexpr string_view OPUS_SO_FILE_PATH = "libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
@@ -1896,6 +1896,39 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Configure_01, TestSize
     Release();
 }
 
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Configure_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), DEFAULT_AMRWB_BITRATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Configure_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), -1); // set -1 for error test
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), DEFAULT_AMRWB_BITRATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Configure_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), -1); // set -1 for error test
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), DEFAULT_AMRWB_BITRATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_SetParameter_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
@@ -2107,6 +2140,39 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Configure_01, TestSize
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Configure_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), DEFAULT_AMRNB_BITRATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Configure_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), -1); // set -1 for error test
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), DEFAULT_AMRNB_BITRATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Configure_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    format_ = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), -1); // set -1 for error test
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), DEFAULT_AMRNB_BITRATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
     Release();
 }
 

@@ -44,12 +44,12 @@ protected:
     void PostReply(MsgId id, const ParamSP &reply);
     void Stop();
     static constexpr MsgId ASYNC_MSG_ID = 0;
+    using TimeUs = int64_t;
+    static TimeUs GetNowUs();
 
 private:
     void MainLoop();
     MsgId GenerateMsgId();
-    using TimeUs = int64_t;
-    static TimeUs GetNowUs();
 
 private:
     std::thread m_thread;

@@ -60,6 +60,7 @@ struct DashMpdBitrateParam {
         bitrate_ = 0;
         type_ = DASH_MPD_SWITCH_TYPE_NONE;
         position_ = -1;
+        nextSegTime_ = 0;
     }
 
     bool waitSegmentFinish_;
@@ -68,6 +69,26 @@ struct DashMpdBitrateParam {
     unsigned int bitrate_;
     DashMpdSwitchType type_;
     int64_t position_;
+    unsigned int nextSegTime_;
+};
+
+struct DashMpdTrackParam {
+    DashMpdTrackParam()
+    {
+        waitSidxFinish_ = false;
+        isEnd_ = false;
+        type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
+        streamId_ = -1;
+        position_ = -1;
+        nextSegTime_ = 0;
+    }
+
+    bool waitSidxFinish_;
+    bool isEnd_;
+    MediaAVCodec::MediaType type_;
+    int streamId_;
+    int64_t position_;
+    unsigned int nextSegTime_;
 };
 
 struct MediaSegSampleInfo {
@@ -94,6 +115,7 @@ public:
     virtual ~DashMpdDownloader();
 
     void Open(const std::string &url);
+    void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);
     void SetMpdCallback(DashMpdCallback *callback);
     int64_t GetDuration() const;
@@ -107,13 +129,17 @@ public:
     DashMpdGetRet GetNextSegmentByStreamId(int streamId, std::shared_ptr<DashSegment> &seg);
     DashMpdGetRet GetBreakPointSegment(int streamId, int64_t breakpoint, std::shared_ptr<DashSegment> &seg);
     bool IsAllSegmentFinishedByStreamId(int streamId);
-    DashMpdGetRet GetNextVideoStream(const DashMpdBitrateParam &param, int &streamId);
+    DashMpdGetRet GetNextVideoStream(DashMpdBitrateParam &param, int &streamId);
+    DashMpdGetRet GetNextTrackStream(DashMpdTrackParam &param);
     Status GetStreamInfo(std::vector<StreamInfo> &streams);
     std::shared_ptr<DashStreamDescription> GetStreamByStreamId(int streamId);
     std::shared_ptr<DashStreamDescription> GetUsingStreamByType(MediaAVCodec::MediaType type);
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
+    void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint32_t nextSegTime);
     void SetHdrStart(bool isHdrStart);
+    void SetInitResolution(unsigned int width, unsigned int height);
+    void SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type);
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
 
@@ -131,7 +157,14 @@ private:
     void GetStreamsInfoInPeriod(DashPeriodInfo *periodInfo, unsigned int periodIndex, const std::string &mpdBaseUrl);
     void GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, const std::string &periodBaseUrl,
                                  DashStreamDescription &streamDesc);
+    unsigned int GetResolutionDelta(unsigned int width, unsigned int height);
+    bool IsChoosedVideoStream(const std::shared_ptr<DashStreamDescription> &choosedStream,
+        const std::shared_ptr<DashStreamDescription> &currentStream);
+    bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
+        const std::shared_ptr<DashStreamDescription> &currentStream);
+    bool IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
+    unsigned int GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsInPeriod(DashPeriodInfo *periodInfo, const std::string &mpdBaseUrl,
                                              std::shared_ptr<DashStreamDescription> streamDesc);
@@ -199,6 +232,8 @@ private:
 private:
     std::string url_ {};
     std::string downloadContent_ {}; // mpd content or sidx content
+    std::string defaultAudioLang_ {};
+    std::string defaultSubtitleLang_ {};
     DashMpdCallback* callback_ {nullptr};
     std::shared_ptr<Downloader> downloader_ {nullptr};
     std::shared_ptr<DownloadRequest> downloadRequest_ {nullptr};
@@ -216,6 +251,7 @@ private:
     bool ondemandSegBase_ {false};
     bool notifyOpenOk_ {false};
     bool isHdrStart_ {false};
+    unsigned int initResolution_ {0};
     int selectVideoStreamId_ {-1};
     std::atomic<bool> isInterruptNeeded_{false};
     std::vector<DashDrmInfo> localDrmInfos_;

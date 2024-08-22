@@ -42,7 +42,6 @@ FFmpegBaseEncoder::FFmpegBaseEncoder()
 FFmpegBaseEncoder::~FFmpegBaseEncoder()
 {
     CloseCtxLocked();
-    avCodecContext_.reset();
 }
 
 Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
@@ -210,8 +209,6 @@ Status FFmpegBaseEncoder::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
-    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
         outBuffer_ = nullptr;
@@ -223,7 +220,6 @@ Status FFmpegBaseEncoder::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     prevPts_ = 0;
     return ret;
 }
@@ -232,7 +228,6 @@ Status FFmpegBaseEncoder::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
-    avCodecContext_.reset();
     return ret;
 }
 
@@ -255,17 +250,18 @@ Status FFmpegBaseEncoder::AllocateContext(const std::string &name)
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     }
-    if (avCodec_ == nullptr) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr,
+        Status::ERROR_INVALID_OPERATION, "AllocateContext failed %{public}s", name.c_str());
 
     AVCodecContext *context = nullptr;
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         context = avcodec_alloc_context3(avCodec_.get());
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            avcodec_free_context(&ptr);
-            avcodec_close(ptr);
+            if (ptr) {
+                avcodec_free_context(&ptr);
+                ptr = nullptr;
+            }
         });
         av_log_set_level(AV_LOG_ERROR);
     }
@@ -276,13 +272,7 @@ Status FFmpegBaseEncoder::InitContext(const std::shared_ptr<Meta> &format)
 {
     format_ = format;
     format_->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
-    if (avCodecContext_->channels <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format_->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
-    if (avCodecContext_->sample_rate <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format_->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     format_->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 
@@ -328,8 +318,10 @@ Status FFmpegBaseEncoder::ReAllocateContext()
 
     AVCodecContext *context = avcodec_alloc_context3(avCodec_.get());
     auto tmpContext = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-        avcodec_free_context(&ptr);
-        avcodec_close(ptr);
+        if (ptr) {
+            avcodec_free_context(&ptr);
+            ptr = nullptr;
+        }
     });
 
     tmpContext->channels = avCodecContext_->channels;
@@ -355,10 +347,8 @@ Status FFmpegBaseEncoder::InitFrame()
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
-    if (ret < 0) {
-        AVCODEC_LOGE("Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
-        return Status::ERROR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_NO_MEMORY,
+        "Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
     return Status::OK;
 }
 
@@ -380,11 +370,8 @@ void FFmpegBaseEncoder::SetCallback(DataCallback *callback)
 Status FFmpegBaseEncoder::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
-        auto res = avcodec_close(avCodecContext_.get());
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", OSAL::AVStrError(res).c_str());
-            return Status::ERROR_UNKNOWN;
-        }
+        avCodecContext_.reset();
+        avCodecContext_ = nullptr;
     }
     return Status::OK;
 }

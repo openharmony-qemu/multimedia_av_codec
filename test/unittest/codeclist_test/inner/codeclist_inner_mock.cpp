@@ -223,7 +223,7 @@ std::vector<int32_t> CodecListInnerMock::GetVideoSupportedPixelFormats()
 
 std::vector<int32_t> CodecListInnerMock::GetSupportedProfiles()
 {
-    if (codeclist_ != nullptr) {
+    if (codeclist_ != nullptr && capabilityData_ != nullptr) {
         std::vector<int32_t> ret;
         if (capabilityData_->codecType == AVCODEC_TYPE_VIDEO_ENCODER ||
             capabilityData_->codecType == AVCODEC_TYPE_VIDEO_DECODER) {
@@ -237,7 +237,7 @@ std::vector<int32_t> CodecListInnerMock::GetSupportedProfiles()
         std::sort(ret.begin(), ret.end());
         return ret;
     }
-    std::cout << "codeclist_ is nullptr" << std::endl;
+    std::cout << "codeclist_ or capabilityData_ is nullptr" << std::endl;
     return std::vector<int32_t>();
 }
 

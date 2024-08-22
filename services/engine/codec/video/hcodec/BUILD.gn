@@ -41,6 +41,7 @@ ohos_shared_library("hcodec") {
     "hcodec_dfx.cpp",
     "hcodec_list.cpp",
     "hcodec_state.cpp",
+    "hcodec_utils.cpp",
     "hdecoder.cpp",
     "hencoder.cpp",
     "msg_handle_loop.cpp",
@@ -79,4 +80,8 @@ ohos_shared_library("hcodec") {
     "media_foundation:media_foundation",
     "qos_manager:qos",
   ]
+
+  if (build_variant != "user") {
+    defines = [ "BUILD_ENG_VERSION" ]
+  }
 }

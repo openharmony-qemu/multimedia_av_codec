@@ -25,7 +25,7 @@
 #include "source.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -103,14 +103,13 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
-        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
         plugin_->SetBundleName(bundleName);
     }
 }
 
-void Source::SetDemuxerState()
+void Source::SetDemuxerState(int32_t streamId)
 {
-    plugin_->SetDemuxerState();
+    plugin_->SetDemuxerState(streamId);
 }
 
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
@@ -191,6 +190,9 @@ Status Source::SetCurrentBitRate(int32_t bitRate)
 
 Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
+    if (seekable_ != Seekable::SEEKABLE) {
+        GetSeekable();
+    }
     int64_t timeNs;
     if (Plugins::Ms2HstTime(seekTime, timeNs)) {
         return plugin_->SeekToTime(timeNs, mode);
@@ -207,6 +209,16 @@ Status Source::GetDownloadInfo(DownloadInfo& downloadInfo)
         return Status::ERROR_INVALID_OPERATION;
     }
     return plugin_->GetDownloadInfo(downloadInfo);
+}
+
+Status Source::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    MEDIA_LOG_I("GetPlaybackInfo");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetPlaybackInfo  failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetPlaybackInfo(playbackInfo);
 }
 
 bool Source::IsNeedPreDownload()
@@ -230,12 +242,18 @@ Status Source::Stop()
 Status Source::Pause()
 {
     MEDIA_LOG_I("Pause entered.");
+    if (plugin_ != nullptr) {
+        plugin_->Pause();
+    }
     return Status::OK;
 }
 
 Status Source::Resume()
 {
     MEDIA_LOG_I("Resume entered.");
+    if (plugin_ != nullptr) {
+        plugin_->Resume();
+    }
     return Status::OK;
 }
 
@@ -265,7 +283,7 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
             mediaDemuxerCallback_->OnEvent(event);
         }
     } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
-        MEDIA_LOG_I("Gallery read freeze.");
+        MEDIA_LOG_I("Buffering start or end.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
@@ -274,8 +292,18 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
+    } else if (event.type == PluginEventType::CACHED_DURATION) {
+        MEDIA_LOG_I("Onevent cached duration.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::EVENT_BUFFER_PROGRESS) {
+        MEDIA_LOG_I("buffer percent update.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     } else {
-        MEDIA_LOG_E("on event error.");
+        MEDIA_LOG_I("on event type undefined.");
     }
 }
 
@@ -284,9 +312,9 @@ void Source::SetSelectBitRateFlag(bool flag)
     mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
 }
 
-bool Source::CanDoSelectBitRate()
+bool Source::CanAutoSelectBitRate()
 {
-    return mediaDemuxerCallback_->CanDoSelectBitRate();
+    return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
 void Source::SetInterruptState(bool isInterruptNeeded)
@@ -398,7 +426,7 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
         protocol_.append("stream");
         uri_.append("stream://");
     }
-    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S ", uri: %{private}s", protocol_.c_str(), uri_.c_str());
+    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S, protocol_.c_str());
     return ret;
 }
 
@@ -436,6 +464,12 @@ Status Source::GetSize(uint64_t &fileSize)
 {
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "GetSize Source plugin is nullptr!");
     return plugin_->GetSize(fileSize);
+}
+
+Status Source::SelectStream(int32_t streamID)
+{
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SelectStream Source plugin is nullptr!");
+    return plugin_->SelectStream(streamID);
 }
 } // namespace Media
 } // namespace OHOS

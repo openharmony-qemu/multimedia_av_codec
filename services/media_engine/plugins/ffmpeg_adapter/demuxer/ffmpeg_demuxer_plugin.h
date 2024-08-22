@@ -20,6 +20,7 @@
 #include <vector>
 #include <thread>
 #include <map>
+#include <queue>
 #include <shared_mutex>
 #include <list>
 #include "buffer/avbuffer.h"
@@ -65,7 +66,6 @@ public:
     Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override;
-    Status ParserRefInit(int64_t timeStampMs) override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo) override;
@@ -73,10 +73,11 @@ public:
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
     Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override;
-    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-        int64_t presentationTimeUs, uint32_t &frameIndex) override;
-    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-        uint32_t frameIndex, int64_t &presentationTimeUs) override;
+    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) override;
+    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) override;
+    void SetCacheLimit(uint32_t limitSize) override;
 
 private:
     enum DumpMode : unsigned long {
@@ -84,6 +85,11 @@ private:
         DUMP_READAT_INPUT = 0b001,
         DUMP_AVPACKET_OUTPUT = 0b010,
         DUMP_AVBUFFER_OUTPUT = 0b100,
+    };
+    enum IndexAndPTSConvertMode : unsigned int {
+        GET_FIRST_PTS,
+        INDEX_TO_RELATIVEPTS,
+        RELATIVEPTS_TO_INDEX,
     };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -93,7 +99,7 @@ private:
         std::atomic<bool> retry {false};
         uint32_t initDownloadDataSize {0};
         std::atomic<bool> initCompleted {false};
-        DumpMode dumpMode;
+        DumpMode dumpMode {DUMP_NONE};
     };
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
     int64_t GetFileDuration(const AVFormatContext& avFormatContext);
@@ -108,16 +114,16 @@ private:
     void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);
-    void ConvertAvcToAnnexb(AVPacket& pkt);
-    void PushEOSToAllCache();
+    Status ConvertAvcToAnnexb(AVPacket& pkt);
+    Status PushEOSToAllCache();
     void ShowSelectedTracks();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    void AddPacketToCacheQueue(AVPacket *pkt);
+    Status AddPacketToCacheQueue(AVPacket *pkt);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
@@ -126,17 +132,36 @@ private:
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
-    int FindNaluSpliter(int size, const uint8_t *data);
-    bool CanDropAvcPkt(const AVPacket& pkt);
-    bool CanDropHevcPkt(const AVPacket& pkt);
-    void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
+    void ParserFirstDts();
+    Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
-    Status ParserBoxInfo();
-    Status ParserFirstDts();
+    Status SelectProGopId();
+    void ParserBoxInfo();
+    bool WebvttPktProcess(AVPacket *pkt);
+    bool IsWebvttMP4(const AVStream *avStream);
+    void WebvttMP4EOSProcess(const AVPacket *pkt);
+    Status CheckCacheDataLimit(uint32_t trackId);
+
+    Status GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
+        uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
+    void InitPTSandIndexConvert();
+    void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
+    void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
+    void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
+        int64_t pts, int64_t absolutePTS, uint32_t index);
+    int64_t absolutePTSIndexZero_ = INT64_MAX;
+    std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
+    uint32_t indexToRelativePTSFrameCount_ = 0;
+    uint32_t relativePTSToIndexPosition_ = 0;
+    int64_t relativePTSToIndexPTSMin_ = INT64_MAX;
+    int64_t relativePTSToIndexPTSMax_ = INT64_MIN;
+    int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
@@ -152,7 +177,7 @@ private:
     std::shared_ptr<StreamParserManager> streamParser_ {nullptr};
     bool streamParserInited_ {false};
 
-    void GetVideoFirstKeyFrame(uint32_t trackIndex);
+    Status GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
     AVPacket *firstFrame_ = nullptr;
 
@@ -167,9 +192,13 @@ private:
     std::vector<uint32_t> IFramePos_;
     double fps_{0};
     int64_t firstDts_ = 0;
+    uint32_t dtsOffset_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
     bool updatePosIsForward_ = true;
+    bool isInit_ = false;
+    uint32_t cachelimitSize_ = 0;
+    bool outOfLimit_ = false;
 
     // dfx
     struct TrackDfxInfo {

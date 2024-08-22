@@ -40,7 +40,7 @@ class PlayListDownloader {
 public:
     PlayListDownloader();
     explicit PlayListDownloader(std::shared_ptr<Downloader> downloader);
-    virtual ~PlayListDownloader();
+    virtual ~PlayListDownloader() = default;
 
     virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
@@ -62,7 +62,7 @@ public:
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
     void Resume();
-    void Pause();
+    void Pause(bool isAsync = false);
     void Close();
     void Stop();
     void Start();

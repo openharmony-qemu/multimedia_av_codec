@@ -28,8 +28,7 @@
 #include "plugin/plugin_event.h"
 #include "plugin/codec_plugin.h"
 #include "osal/task/mutex.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
-#include "foundation/multimedia/av_codec/services/drm_decryptor/codec_drm_decrypt.h"
+#include "codec_drm_decrypt.h"
 
 namespace OHOS {
 namespace Media {
@@ -54,6 +53,7 @@ enum class CodecState : int32_t {
 
 enum class CodecErrorType : int32_t {
     CODEC_ERROR_INTERNAL,
+    CODEC_DRM_DECRYTION_FAILED,
     CODEC_ERROR_EXTEND_START = 0X10000,
 };
 
@@ -153,6 +153,8 @@ private:
 
     void ClearInputBuffer();
 
+    void HandleAudioCencDecryptError();
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
@@ -170,10 +172,10 @@ private:
     int32_t outputBufferCapacity_;
     std::string codecPluginName_;
 
+    std::atomic<CodecState> state_;
     std::shared_ptr<MediaAVCodec::CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
     std::vector<std::shared_ptr<AVBuffer>> outputBufferVector_;
-    std::atomic<CodecState> state_ ;
     Mutex stateMutex_;
 };
 } // namespace Media

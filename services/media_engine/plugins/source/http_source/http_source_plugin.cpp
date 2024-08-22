@@ -16,7 +16,6 @@
 
 #include "avcodec_trace.h"
 #include "http_source_plugin.h"
-#include "download/http_curl_client.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
 #include "dash/dash_media_downloader.h"
@@ -113,6 +112,14 @@ Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams)
     return Status::OK;
 }
 
+Status HttpSourcePlugin::SelectStream(int32_t streamID)
+{
+    MEDIA_LOG_D("SelectStream entered");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->SelectStream(streamID);
+    return Status::OK;
+}
+
 Status HttpSourcePlugin::Start()
 {
     MEDIA_LOG_D("Start enter.");
@@ -123,6 +130,24 @@ Status HttpSourcePlugin::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
     CloseUri();
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::Pause()
+{
+    MEDIA_LOG_I("Pause enter.");
+    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+        downloader_->Pause();
+    }
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::Resume()
+{
+    MEDIA_LOG_I("Resume enter.");
+    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+        downloader_->Resume();
+    }
     return Status::OK;
 }
 
@@ -165,19 +190,16 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     if (callback_ != nullptr) {
         downloader_->SetCallback(callback_);
     }
-    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
     FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
-    PlayStrategy* playStrategy = nullptr;
+    std::shared_ptr<PlayStrategy> playStrategy;
     if (source != nullptr) {
         uri_ = source->GetSourceUri();
         httpHeader_ = source->GetSourceHeader();
-        MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
-                    httpHeader_["Referer"].c_str());
         playStrategy = source->GetPlayStrategy();
         mimeType_ = source->GetMimeType();
     }
@@ -234,6 +256,8 @@ Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, 
 
 Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::Read, offset: "
+        + std::to_string(offset) + ", expectedLen: " + std::to_string(expectedLen));
     MEDIA_LOG_D("Read enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
@@ -266,7 +290,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     PUBLIC_LOG_ZU
     ", nextStreamId = "
     PUBLIC_LOG_D32
-    ", isEos "
+    ", isDownloadDone "
     PUBLIC_LOG_D32, bufData->GetSize(), readDataInfo.nextStreamId_, readDataInfo.isEos_);
     return result;
 }
@@ -374,13 +398,31 @@ Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
     return Status::OK;
 }
 
-void HttpSourcePlugin::SetDemuxerState()
+Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 {
-    downloader_->SetDemuxerState();
+    MEDIA_LOG_I("HttpSourcePlugin::GetPlaybackInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->GetPlaybackInfo(playbackInfo);
+    return Status::OK;
+}
+
+void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
+{
+    downloader_->SetDemuxerState(streamId);
 }
 
 void HttpSourcePlugin::SetDownloadErrorState()
 {
+}
+
+Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+{
+    MEDIA_LOG_I("SetCurrentBitRate");
+    if (downloader_ == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return downloader_->SetCurrentBitRate(bitRate);
 }
 }
 }

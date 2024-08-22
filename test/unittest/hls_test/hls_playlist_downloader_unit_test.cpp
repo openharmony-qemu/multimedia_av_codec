@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "hls_playlist_downloader_unit_test.h"
+#include "http_server_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -25,14 +26,22 @@ const static std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "userAgent"},
     {"Referer", "DEF"},
 };
-
+std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
 
-void HlsPlayListDownloaderUnitTest::SetUp(void) {}
+void HlsPlayListDownloaderUnitTest::SetUp(void)
+{
+    g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
+    g_server->StartServer();
+}
 
-void HlsPlayListDownloaderUnitTest::TearDown(void) {}
+void HlsPlayListDownloaderUnitTest::TearDown(void)
+{
+    g_server->StopServer();
+    g_server = nullptr;
+}
 
 HWTEST_F(HlsPlayListDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
 {

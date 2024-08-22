@@ -105,10 +105,6 @@ Status SubtitleSinkFilter::DoStart()
         return Status::ERROR_INVALID_OPERATION;
     }
     auto err = subtitleSink_->Start();
-    if (err != Status::OK) {
-        MEDIA_LOG_E("subtitleSink_ start failed");
-        return err;
-    }
     state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return err;

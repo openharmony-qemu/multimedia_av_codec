@@ -58,6 +58,7 @@ codec_server_coverage_include_dirs = [
   "$av_codec_root_dir/services/engine/common/include/",
   "$av_codec_root_dir/services/include",
   "$av_codec_root_dir/services/services/codec/server",
+  "$av_codec_root_dir/services/services/codec/server/post_processing",
   "$av_codec_root_dir/services/utils/include",
 
   # av_codec_engine_codeclist_mock
@@ -85,6 +86,9 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
+    "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_controller.cpp",
+    "$av_codec_root_dir/services/services/codec/server/post_processing/dynamic_interface.cpp",
+    "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
     "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
     "./codec_server_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
@@ -115,6 +119,13 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"

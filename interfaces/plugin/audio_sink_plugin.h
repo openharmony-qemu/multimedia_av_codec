@@ -234,6 +234,12 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver) = 0;
 
     virtual int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) = 0;
+
+    virtual Status SetMuted(bool isMuted) = 0;
+    virtual AudioSampleFormat GetSampleFormat()
+    {
+        return INVALID_WIDTH;
+    }
 };
 
 /// Audio sink plugin api major number.

@@ -19,6 +19,7 @@
 #include <string>
 
 #include "common/log.h"
+#include "common/media_core.h"
 #include "filter/filter_factory.h"
 #include "surface_encoder_adapter.h"
 
@@ -71,17 +72,26 @@ private:
 
 class SurfaceEncoderAdapterCallback : public EncoderAdapterCallback {
 public:
-    SurfaceEncoderAdapterCallback()
+    explicit SurfaceEncoderAdapterCallback(std::shared_ptr<SurfaceEncoderFilter> surfaceEncoderFilter)
+        : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
 
     void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode)
     {
+        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
+            surfaceEncoderFilter->OnError(type, errorCode);
+        } else {
+            MEDIA_LOG_D("invalid surfaceEncoderFilter");
+        }
     }
 
     void OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
     {
     }
+
+private:
+    std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
 };
 
 SurfaceEncoderFilter::SurfaceEncoderFilter(std::string name, FilterType type): Filter(name, type)
@@ -92,6 +102,15 @@ SurfaceEncoderFilter::SurfaceEncoderFilter(std::string name, FilterType type): F
 SurfaceEncoderFilter::~SurfaceEncoderFilter()
 {
     MEDIA_LOG_I("encoder filter destroy");
+}
+
+void SurfaceEncoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
+        static_cast<int32_t>(errorType), errorCode);
+    if (eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_VID_ENC_FAILED});
+    }
 }
 
 Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
@@ -121,7 +140,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
         Status ret = mediaCodec_->Init(codecMimeType_, true);
         if (ret == Status::OK) {
             std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
-                std::make_shared<SurfaceEncoderAdapterCallback>();
+                std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
             mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
@@ -140,6 +159,16 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     }
     configureParameter_ = parameter;
     return mediaCodec_->Configure(parameter);
+}
+
+Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer)
+{
+    MEDIA_LOG_I("SetWatermark");
+    if (mediaCodec_ == nullptr) {
+        MEDIA_LOG_E("mediaCodec_ is nullptr");
+        return Status::ERROR_UNKNOWN;
+    }
+    return mediaCodec_->SetWatermark(waterMarkBuffer);
 }
 
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
@@ -162,7 +191,9 @@ sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
     if (surface_) {
         return surface_;
     }
-    surface_ = mediaCodec_->GetInputSurface();
+    if (mediaCodec_ != nullptr) {
+        surface_ = mediaCodec_->GetInputSurface();
+    }
     return surface_;
 }
 

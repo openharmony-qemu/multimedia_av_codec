@@ -30,8 +30,8 @@ using namespace G711mu;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioG711MuDecoderPlugin"};
 constexpr int SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
-constexpr int INPUT_BUFFER_SIZE_DEFAULT = 640; // 20ms:160
-constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 1280; // 20ms:320
+constexpr int INPUT_BUFFER_SIZE_DEFAULT = 4096; // 20ms:160
+constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 8192; // 20ms:320
 constexpr int AUDIO_G711MU_SIGN_BIT = 0x80;
 constexpr int AVCODEC_G711MU_QUANT_MASK = 0xf;
 constexpr int AVCODEC_G711MU_SHIFT = 4;
@@ -77,6 +77,7 @@ AudioG711muDecoderPlugin::AudioG711muDecoderPlugin(const std::string& name)
     : CodecPlugin(std::move(name)),
       channels_(SUPPORT_CHANNELS),
       sampleRate_(SUPPORT_SAMPLE_RATE),
+      pts_(0),
       maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),
       maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT)
 {
@@ -109,10 +110,6 @@ Status AudioG711muDecoderPlugin::Init()
 
 Status AudioG711muDecoderPlugin::Start()
 {
-    if (!CheckFormat()) {
-        AVCODEC_LOGE("Format check failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     return Status::OK;
 }
 
@@ -130,10 +127,8 @@ int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
 Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputBuffer)
 {
     auto memory = inputBuffer->memory_;
-    if (memory->GetSize() < 0) {
-        AVCODEC_LOGE("SendBuffer buffer size < 0. size : %{public}d", memory->GetSize());
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(memory->GetSize() >= 0, Status::ERROR_UNKNOWN,
+        "SendBuffer buffer size < 0. size : %{public}d", memory->GetSize());
     if (memory->GetSize() > memory->GetCapacity()) {
         AVCODEC_LOGE("send input buffer > allocate size. size : %{public}d, allocate size : %{public}d",
             memory->GetSize(), memory->GetCapacity());
@@ -147,7 +142,7 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         for (int32_t i = 0; i < decodeNum ; ++i) {
             decodeResult_.push_back(G711MuLawDecode(muValueToDecode[i]));
         }
-
+        pts_ = inputBuffer->pts_;
         dataCallback_->OnInputBufferDone(inputBuffer);
     }
     return Status::OK;
@@ -155,10 +150,6 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 
 Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioG711muDecoderPlugin Queue out buffer is null.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         auto memory = outputBuffer->memory_;
@@ -166,7 +157,7 @@ Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
 
         memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
-
+        outputBuffer->pts_ = pts_;
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
     return Status::OK;

@@ -32,7 +32,7 @@ private:
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;
     void UpdateColorAspects() override;
-    void GetCropFromOmx(uint32_t w, uint32_t h);
+    void GetCropFromOmx(uint32_t w, uint32_t h, OHOS::Rect& damage);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
     int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) override;
     int32_t OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface);
@@ -72,8 +72,7 @@ private:
 
     // switch surface
     int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
-    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
-    int32_t PushBlankBufferToCurrSurface();
+    int32_t SwitchBetweenSurface(const sptr<Surface> &newSurface);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -97,7 +96,6 @@ private:
 
     bool isDynamic_ = false;
     uint32_t outBufferCnt_ = 0;
-    BufferFlushConfig flushCfg_;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
     double lastFlushRate_ = 0.0;

@@ -68,7 +68,9 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_CONFIGURE_ERROR,                       "compression level incorrect in flac encoder"},
     {AVCS_ERR_DECRYPT_FAILED,                        "decrypt protected content failed"},
     {AVCS_ERR_CODEC_PARAM_INCORRECT,                 "video codec param check failed"},
-    {AVCS_ERR_EXTEND_START,                          "extend start error code"}};
+    {AVCS_ERR_EXTEND_START,                          "extend start error code"},
+    {AVCS_ERR_INPUT_DATA_ERROR,                      "there is somthing wrong for input data"},
+    {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"}};
 
 const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRCODE = {
     {AVCS_ERR_OK,                                  AV_ERR_OK},
@@ -119,21 +121,27 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_EXTEND_START,                        AV_ERR_EXTEND_START},
     {AVCS_ERR_DECRYPT_FAILED,                      AV_ERR_DRM_DECRYPT_FAILED},
     {AVCS_ERR_CODEC_PARAM_INCORRECT,               AV_ERR_INVALID_VAL},
+    {AVCS_ERR_INPUT_DATA_ERROR,                    AV_ERR_INPUT_DATA_ERROR},
+    {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION},
     };
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
-    {AV_ERR_OK,                    "success"},
-    {AV_ERR_NO_MEMORY,             "no memory"},
-    {AV_ERR_OPERATE_NOT_PERMIT,    "operation not be permitted"},
-    {AV_ERR_INVALID_VAL,           "invalid argument"},
-    {AV_ERR_IO,                    "IO error"},
-    {AV_ERR_TIMEOUT,               "network timeout"},
-    {AV_ERR_UNKNOWN,               "unkown error"},
-    {AV_ERR_SERVICE_DIED,          "avcodec service died"},
-    {AV_ERR_INVALID_STATE,         "the state is not support this operation"},
-    {AV_ERR_UNSUPPORT,             "unsupport interface"},
-    {AV_ERR_EXTEND_START,          "extend err start"},
-    {AV_ERR_DRM_DECRYPT_FAILED,    "decrypt failed"},
+    {AV_ERR_OK,                                       "success"},
+    {AV_ERR_NO_MEMORY,                                "no memory"},
+    {AV_ERR_OPERATE_NOT_PERMIT,                       "operation not be permitted"},
+    {AV_ERR_INVALID_VAL,                              "invalid argument"},
+    {AV_ERR_IO,                                       "IO error"},
+    {AV_ERR_TIMEOUT,                                  "network timeout"},
+    {AV_ERR_UNKNOWN,                                  "unkown error"},
+    {AV_ERR_SERVICE_DIED,                             "avcodec service died"},
+    {AV_ERR_INVALID_STATE,                            "the state is not support this operation"},
+    {AV_ERR_UNSUPPORT,                                "unsupport interface"},
+    {AV_ERR_INPUT_DATA_ERROR,                         "input data error"},
+    {AV_ERR_EXTEND_START,                             "extend err start"},
+    {AV_ERR_DRM_BASE,                                 "drm error base"},
+    {AV_ERR_DRM_DECRYPT_FAILED,                       "decrypt failed"},
+    {AV_ERR_VIDEO_BASE,                               "video error base"},
+    {AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},
 };
 
 const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
@@ -177,7 +185,23 @@ const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
     {Status::ERROR_SURFACE_INNER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
     {Status::ERROR_NULL_SURFACE_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
     {Status::ERROR_IPC_WRITE_INTERFACE_TOKEN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
-    {Status::ERROR_IPC_SEND_REQUEST, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN}};
+    {Status::ERROR_IPC_SEND_REQUEST, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_DRM_DECRYPT_FAILED, AVCodecServiceErrCode::AVCS_ERR_DECRYPT_FAILED}};
+
+const std::map<int32_t, AVCodecServiceErrCode> VPEERROR_TO_AVCSERRCODE = {
+    {0, AVCodecServiceErrCode::AVCS_ERR_OK},
+    {63635468, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY},         // 63635468: no memory
+    {63635494, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION}, // 63635494: opertation not be permitted
+    {63635478, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},       // 63635478: invalid argument
+    {63635968, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},           // 63635968: unknow error
+    {63635969, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},           // 63635969: video processing engine init failed
+    {63635970, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},           // 63635970: extension not found
+    {63635971, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},           // 63635971: extension init failed
+    {63635972, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},           // 63635972: extension process failed
+    {63635973,
+     AVCodecServiceErrCode::AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION}, // 63635973: extension is not implemented
+    {63635974, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT},                    // 63635974: not supported operation
+    {63635975, AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE}}; // 63635975: the state is not support this operation
 
 std::string ErrorMessageOk(const std::string &param1, const std::string &param2)
 {
@@ -291,6 +315,15 @@ AVCodecServiceErrCode StatusToAVCodecServiceErrCode(Status code)
 {
     if (STATUS_TO_AVCSERRCODE.count(code) != 0) {
         return STATUS_TO_AVCSERRCODE.at(code);
+    }
+
+    return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+}
+
+AVCodecServiceErrCode VPEErrorToAVCSError(int32_t code)
+{
+    if (VPEERROR_TO_AVCSERRCODE.count(code) != 0) {
+        return VPEERROR_TO_AVCSERRCODE.at(code);
     }
 
     return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;

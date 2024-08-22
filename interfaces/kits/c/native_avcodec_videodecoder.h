@@ -135,6 +135,8 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state, must be called before Prepare.
+ * {@link AV_ERR_UNSUPPORT}, unsupported features.
+ * {@link AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION}, video unsupported color space conversion.
  * @since 9
  * @version 1.0
  */
@@ -343,6 +345,8 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
  * {@link AV_ERR_UNKNOWN}, unknown error.
  * {@link AV_ERR_SERVICE_DIED}, avcodec service is died.
  * {@link AV_ERR_INVALID_STATE}, this interface was called in invalid state.
+ * {@link AV_ERR_DRM_DECRYPT_FAILED}, the drm-protected video buffer is decrypted failed,
+ * it is recommended to check the logs.
  * @since 11
  */
 OH_AVErrCode OH_VideoDecoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
@@ -442,6 +446,7 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @return {@link AV_ERR_OK} 0 - Success
  *         {@link AV_ERR_OPERATE_NOT_PERMIT} 2 - If the codec service or the media key session
  *         service is in wrong status.
+ *         {@link AV_ERR_NO_MEMORY}, instance has already released or no memory.
  *         {@link AV_ERR_INVALID_VAL} 3 - If the codec instance is nullptr or invalid,
  *         the mediaKeySession is nullptr or invalid.
  * @since 11

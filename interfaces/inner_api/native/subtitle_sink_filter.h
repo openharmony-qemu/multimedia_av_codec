@@ -83,8 +83,8 @@ protected:
 private:
     std::shared_ptr<SubtitleSink> subtitleSink_;
     std::string name_;
-    FilterType filterType_;
-    FilterState state_;
+    FilterType filterType_ = FilterType::FILTERTYPE_SSINK;
+    FilterState state_ = FilterState::CREATED;
     std::shared_ptr<Meta> trackMeta_;
     std::shared_ptr<Meta> globalMeta_;
 

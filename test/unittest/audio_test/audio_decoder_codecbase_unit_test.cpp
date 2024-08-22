@@ -18,7 +18,10 @@
 #include <mutex>
 #include <gtest/gtest.h>
 #include <fstream>
-#include "native_avcodec_audiodecoder.h"
+#include "decoder/audio_ffmpeg_aac_decoder_plugin.h"
+#include "decoder/audio_ffmpeg_flac_decoder_plugin.h"
+#include "decoder/audio_ffmpeg_mp3_decoder_plugin.h"
+#include "decoder/audio_opus_decoder_plugin.h"
 #include "audio_codec_adapter.h"
 #include "meta/format.h"
 #include "avcodec_codec_name.h"
@@ -43,7 +46,7 @@ constexpr uint32_t DEFAULT_BITRATE = 128000;
 constexpr uint32_t DEFAULT_WIDTH = 0;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
 constexpr uint32_t DEFAULT_AAC_LATM_TYPE = 0;
-constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+constexpr string_view OPUS_SO_FILE_PATH = "libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
@@ -161,6 +164,7 @@ void AudioCodeDecoderUnitTest::TearDown(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateMp3CodecFunc(void)
 {
+    AudioFFMpegMp3DecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_MP3_NAME);
 
     signal_ = new ADecSignal();
@@ -171,6 +175,7 @@ int32_t AudioCodeDecoderUnitTest::CreateMp3CodecFunc(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
 {
+    AudioFFMpegFlacDecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_FLAC_NAME);
 
     signal_ = new ADecSignal();
@@ -181,6 +186,7 @@ int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
 {
+    AudioFFMpegAacDecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_AAC_NAME);
 
     signal_ = new ADecSignal();
@@ -191,6 +197,7 @@ int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateOpusCodecFunc(void)
 {
+    AudioOpusDecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_OPUS_NAME);
 
     signal_ = new ADecSignal();

@@ -24,6 +24,7 @@ static constexpr int32_t TIME_OUT = 300;
 
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 {
+    std::system("hilog -b D -T HCODEC");
     OHOS::system::SetParameter("hcodec.dump", "0000");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
@@ -39,6 +40,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
     };
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
+    std::system("hilog -b I -T HCODEC");
 }
 
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_new, TestSize.Level1)

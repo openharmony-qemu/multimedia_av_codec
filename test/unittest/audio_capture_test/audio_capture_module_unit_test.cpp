@@ -340,8 +340,10 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureGetMaxAmplitude_0100, TestSize.
     uint64_t bufferSize = 0;
     ret = audioCaptureModule_->GetSize(bufferSize);
     ASSERT_TRUE(ret == Status::OK);
+    audioCaptureModule_->isTrackMaxAmplitude = false;
     audioCaptureModule_->GetMaxAmplitude();
-    audioCaptureModule_->GetMaxAmplitude();
+    audioCaptureModule_->isTrackMaxAmplitude = true;
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, audioCaptureModule_->GetMaxAmplitude());
     std::shared_ptr<AVAllocator> avAllocator =
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     int32_t capacity = 1024;
@@ -572,5 +574,29 @@ HWTEST_F(AudioCaptureModuleUnitTest, Audioinit_0200, TestSize.Level1)
     EXPECT_NE(Status::OK, audioCaptureModule_->Init());
     Status ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
+}
+/**
+ * @tc.name: AudioTrackMaxAmplitude_0200
+ * @tc.desc: test TrackMaxAmplitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureModuleUnitTest, AudioTrackMaxAmplitude_0200, TestSize.Level1)
+{
+    int16_t data[5] = {1, 2, 3, 4, 5};
+    audioCaptureModule_->TrackMaxAmplitude(data, 5);
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, 5);
+    int16_t number[5] = {1, -2, 3, -4, 5};
+    audioCaptureModule_->TrackMaxAmplitude(number, 5);
+    EXPECT_EQ(audioCaptureModule_->maxAmplitude_, 5);
+}
+/**
+ * @tc.name: AudioGetMaxAmplitude_0200
+ * @tc.desc: test GetMaxAmplitude
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureModuleUnitTest, AudioGetMaxAmplitude_0200, TestSize.Level1)
+{
+    audioCaptureModule_->isTrackMaxAmplitude = true;
+    EXPECT_EQ(audioCaptureModule_->GetMaxAmplitude(), 0);
 }
 } // namespace OHOS

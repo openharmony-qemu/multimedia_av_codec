@@ -155,6 +155,28 @@ int32_t CodecClient::Configure(const Format &format)
     return ret;
 }
 
+int32_t CodecClient::Prepare()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+
+    int32_t ret = codecProxy_->Prepare();
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+
+    return ret;
+}
+
+int32_t CodecClient::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "buffer is nullptr");
+
+    int32_t ret = codecProxy_->SetCustomBuffer(buffer);
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    return ret;
+}
+
 int32_t CodecClient::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -225,6 +247,7 @@ int32_t CodecClient::Reset()
         SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
+        hasOnceConfigured_ = false;
         if (converter_ != nullptr) {
             converter_->NeedToResetFormatOnce();
         }

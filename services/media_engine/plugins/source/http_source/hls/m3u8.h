@@ -146,7 +146,6 @@ struct M3U8MasterPlaylist {
     void DownloadSessionKey(std::shared_ptr<Tag>& tag);
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
     std::shared_ptr<M3U8VariantStream> defaultVariant_;
-    std::shared_ptr<M3U8VariantStream> minimumVariant_;
     std::string uri_;
     std::string playList_;
     double duration_ {0};

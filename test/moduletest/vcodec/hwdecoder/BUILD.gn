@@ -20,6 +20,7 @@ module_output_path = "av_codec/moduletest"
 hwdecoder_moduletest_native_include_dirs = [
   "./include",
   "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
+  "$MEDIA_ROOT_DIR/../../graphic/graphic_surface/interfaces/inner_api",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
   "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
@@ -63,12 +64,15 @@ ohos_unittest("hwdecoder_native_module_test") {
       "./src/api_test.cpp",
       "./src/configure_test.cpp",
       "./src/func_test.cpp",
+      "./src/hwh265_hdr2sdr_state_test.cpp",
+      "./src/hwh265_hdr2sdr_test.cpp",
 
       #"./src/perf_test.cpp",
       #"./src/reli_test.cpp",
       "./src/state_test.cpp",
 
       #"./src/compatibility_test.cpp",
+      "./src/videodec_api11_sample.cpp",
       "./src/videodec_ndk_sample.cpp",
     ]
   }
@@ -77,6 +81,7 @@ ohos_unittest("hwdecoder_native_module_test") {
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
   ]
   external_deps = [
     "c_utils:utils",

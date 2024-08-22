@@ -60,6 +60,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/ipc",
     "$av_codec_root_dir/services/services/codec/server",
+    "$av_codec_root_dir/services/services/codec/server/post_processing",
     "$av_codec_root_dir/services/services/codeclist/ipc",
     "$av_codec_root_dir/services/services/codeclist/server",
     "$av_codec_root_dir/services/services/common",
@@ -133,6 +134,9 @@ ohos_shared_library("av_codec_service") {
       "codec/server/codec_factory.cpp",
       "codec/server/codec_param_checker.cpp",
       "codec/server/codec_server.cpp",
+      "codec/server/post_processing/dynamic_controller.cpp",
+      "codec/server/post_processing/dynamic_interface.cpp",
+      "codec/server/post_processing/state_machine.cpp",
       "codec/server/temporal_scalability.cpp",
     ]
   }
@@ -169,6 +173,8 @@ ohos_shared_library("av_codec_service") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  public_external_deps = [ "json:nlohmann_json_static" ]
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]

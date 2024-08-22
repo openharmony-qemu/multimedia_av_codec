@@ -73,8 +73,9 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
 int32_t VideoSampleBase::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto &videoCodec = context_->videoCodec_;
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    
+    auto &videoCodec = context_->videoCodec_;
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
     int32_t ret = videoCodec->Start();

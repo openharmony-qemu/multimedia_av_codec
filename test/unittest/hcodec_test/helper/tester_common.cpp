@@ -240,6 +240,8 @@ bool TesterCommon::RunEncoder()
     optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(opt_.pixFmt);
     IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
     displayFmt_ = displayFmt.value();
+    w_ = opt_.dispW;
+    h_ = opt_.dispH;
 
     bool ret = Create();
     IF_TRUE_RETURN_VAL(!ret, false);
@@ -269,9 +271,27 @@ bool TesterCommon::RunEncoder()
     return true;
 }
 
+bool TesterCommon::UpdateMemberFromResourceParam(const ResourceParams& param)
+{
+    ifstream ifs = ifstream(param.inputFile, ios::binary);
+    IF_TRUE_RETURN_VAL_WITH_MSG(!ifs, false, "Failed to open file %s", param.inputFile.c_str());
+    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(param.pixFmt);
+    IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
+    ifs_ = std::move(ifs);
+    displayFmt_ = displayFmt.value();
+    w_ = param.dispW;
+    h_ = param.dispH;
+    return true;
+}
+
 void TesterCommon::EncoderInputLoop()
 {
     while (true) {
+        if (!opt_.isBufferMode && !opt_.resourceParamsMap.empty() &&
+            opt_.resourceParamsMap.begin()->first == currInputCnt_) {
+            UpdateMemberFromResourceParam(opt_.resourceParamsMap.begin()->second);
+            opt_.resourceParamsMap.erase(opt_.resourceParamsMap.begin());
+        }
         BufInfo buf {};
         bool ret = opt_.isBufferMode ? WaitForInput(buf) : WaitForInputSurfaceBuffer(buf);
         if (!ret) {
@@ -323,6 +343,42 @@ void TesterCommon::EncoderInputLoop()
     }
 }
 
+std::shared_ptr<AVBuffer> TesterCommon::CreateWaterMarkBuffer()
+{
+    ifstream ifs = ifstream(opt_.waterMark.waterMarkFile.inputFile, ios::binary);
+    if (!ifs) {
+        TLOGE("Failed to open file %s", opt_.waterMark.waterMarkFile.inputFile.c_str());
+        return nullptr;
+    }
+    BufferRequestConfig cfg = {opt_.waterMark.waterMarkFile.dispW, opt_.waterMark.waterMarkFile.dispH,
+                               32, GRAPHIC_PIXEL_FMT_RGBA_8888,
+                               BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA, 0, };
+    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSurfaceAllocator(cfg);
+    if (avAllocator == nullptr) {
+        TLOGE("CreateSurfaceAllocator failed");
+        return nullptr;
+    }
+    std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator, 0);
+    if (avBuffer == nullptr) {
+        TLOGE("CreateAVBuffer failed");
+        return nullptr;
+    }
+    sptr<SurfaceBuffer> surfaceBuffer = avBuffer->memory_->GetSurfaceBuffer();
+    if (surfaceBuffer == nullptr) {
+        TLOGE("Create SurfaceBuffer failed");
+        return nullptr;
+    }
+    BufInfo buf;
+    SurfaceBufferToBufferInfo(buf, surfaceBuffer);
+    ReadOneFrameRGBA(ifs, buf);
+    avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_WATERMARK, true);
+    avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_COORDINATE_X, opt_.waterMark.dstX);
+    avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_COORDINATE_Y, opt_.waterMark.dstY);
+    avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_COORDINATE_W, opt_.waterMark.dstW);
+    avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_COORDINATE_H, opt_.waterMark.dstH);
+    return avBuffer;
+}
+
 bool TesterCommon::SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer)
 {
     if (surfaceBuffer == nullptr) {
@@ -356,7 +412,7 @@ bool TesterCommon::NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativ
 
 bool TesterCommon::WaitForInputSurfaceBuffer(BufInfo& buf)
 {
-    BufferRequestConfig cfg = {opt_.dispW, opt_.dispH, 32, displayFmt_,
+    BufferRequestConfig cfg = {w_, h_, 32, displayFmt_,
                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA, 0, };
     sptr<SurfaceBuffer> surfaceBuffer;
     int32_t fence;
@@ -372,8 +428,8 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
 {
     BufferFlushConfig flushConfig = {
         .damage = {
-            .w = opt_.dispW,
-            .h = opt_.dispH,
+            .w = w_,
+            .h = h_,
         },
         .timestamp = buf.attr.pts,
     };
@@ -387,62 +443,62 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
 
 #define RETURN_ZERO_IF_EOS(expectedSize) \
     do { \
-        if (ifs_.gcount() != (expectedSize)) { \
+        if (src.gcount() != (expectedSize)) { \
             TLOGI("no more data"); \
             return 0; \
         } \
     } while (0)
 
-uint32_t TesterCommon::ReadOneFrameYUV420P(ImgBuf& dstImg)
+uint32_t TesterCommon::ReadOneFrameYUV420P(std::ifstream& src, ImgBuf& dstImg)
 {
     char* dst = reinterpret_cast<char*>(dstImg.va);
     char* start = dst;
     // copy Y
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
-        ifs_.read(dst, dstImg.dispW);
+        src.read(dst, dstImg.dispW);
         RETURN_ZERO_IF_EOS(dstImg.dispW);
         dst += dstImg.byteStride;
     }
     // copy U
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
-        ifs_.read(dst, dstImg.dispW / SAMPLE_RATIO);
+        src.read(dst, dstImg.dispW / SAMPLE_RATIO);
         RETURN_ZERO_IF_EOS(dstImg.dispW / SAMPLE_RATIO);
         dst += dstImg.byteStride / SAMPLE_RATIO;
     }
     // copy V
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
-        ifs_.read(dst, dstImg.dispW / SAMPLE_RATIO);
+        src.read(dst, dstImg.dispW / SAMPLE_RATIO);
         RETURN_ZERO_IF_EOS(dstImg.dispW / SAMPLE_RATIO);
         dst += dstImg.byteStride / SAMPLE_RATIO;
     }
     return dst - start;
 }
 
-uint32_t TesterCommon::ReadOneFrameYUV420SP(ImgBuf& dstImg)
+uint32_t TesterCommon::ReadOneFrameYUV420SP(std::ifstream& src, ImgBuf& dstImg)
 {
     char* dst = reinterpret_cast<char*>(dstImg.va);
     char* start = dst;
     // copy Y
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
-        ifs_.read(dst, dstImg.dispW);
+        src.read(dst, dstImg.dispW);
         RETURN_ZERO_IF_EOS(dstImg.dispW);
         dst += dstImg.byteStride;
     }
     // copy UV
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
-        ifs_.read(dst, dstImg.dispW);
+        src.read(dst, dstImg.dispW);
         RETURN_ZERO_IF_EOS(dstImg.dispW);
         dst += dstImg.byteStride;
     }
     return dst - start;
 }
 
-uint32_t TesterCommon::ReadOneFrameRGBA(ImgBuf& dstImg)
+uint32_t TesterCommon::ReadOneFrameRGBA(std::ifstream& src, ImgBuf& dstImg)
 {
     char* dst = reinterpret_cast<char*>(dstImg.va);
     char* start = dst;
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
-        ifs_.read(dst, dstImg.dispW * BYTES_PER_PIXEL_RBGA);
+        src.read(dst, dstImg.dispW * BYTES_PER_PIXEL_RBGA);
         RETURN_ZERO_IF_EOS(dstImg.dispW * BYTES_PER_PIXEL_RBGA);
         dst += dstImg.byteStride;
     }
@@ -486,14 +542,14 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
     }
     switch (dstImg.fmt) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
-            return ReadOneFrameYUV420P(dstImg);
+            return ReadOneFrameYUV420P(ifs_, dstImg);
         }
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
-            return ReadOneFrameYUV420SP(dstImg);
+            return ReadOneFrameYUV420SP(ifs_, dstImg);
         }
         case GRAPHIC_PIXEL_FMT_RGBA_8888: {
-            return ReadOneFrameRGBA(dstImg);
+            return ReadOneFrameRGBA(ifs_, dstImg);
         }
         default:
             return 0;
@@ -744,6 +800,8 @@ std::string TesterCommon::GetCodecMime(const CodeType& type)
             return "video/avc";
         case H265:
             return "video/hevc";
+        case H266:
+            return "video/vvc";
         default:
             return "";
     }

@@ -136,28 +136,32 @@ private:
     int32_t FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
+    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
     int32_t DecodeFrameOnce();
     void HevcFuncMatch();
     void ReleaseHandle();
+    void InitHevcParams();
     void ConvertDecOutToAVFrame(int32_t bitDepth);
     static int32_t CheckHevcDecLibStatus();
 
     std::string codecName_;
     std::atomic<State> state_ = State::UNINITIALIZED;
 
-    void* handle_;
+    void* handle_ = nullptr;
     uint32_t decInstanceID_;
     HEVC_DEC_INIT_PARAM initParams_;
     HEVC_DEC_INARGS hevcDecoderInputArgs_;
     HEVC_DEC_OUTARGS hevcDecoderOutpusArgs_;
-    HEVC_DEC_HANDLE hevcSDecoder_;
-    CreateHevcDecoderFuncType hevcDecoderCreateFunc_;
-    DecodeFuncType hevcDecoderDecodecFrameFunc_;
-    FlushFuncType hevcDecoderFlushFrameFunc_;
-    DeleteFuncType hevcDecoderDeleteFunc_;
+    HEVC_DEC_HANDLE hevcSDecoder_ = nullptr;
+    CreateHevcDecoderFuncType hevcDecoderCreateFunc_ = nullptr;
+    DecodeFuncType hevcDecoderDecodecFrameFunc_ = nullptr;
+    FlushFuncType hevcDecoderFlushFrameFunc_ = nullptr;
+    DeleteFuncType hevcDecoderDeleteFunc_ = nullptr;
 
     static std::mutex decoderCountMutex_;
     static std::vector<uint32_t> decInstanceIDSet_;

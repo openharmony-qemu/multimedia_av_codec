@@ -29,9 +29,9 @@
 #include "avcodec_audio_flac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_flac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_g711mu_encoder_demo.h"
+#include "avcodec_audio_avbuffer_mp3_encoder_demo.h"
 #include "avcodec_audio_avbuffer_lbvc_decoder_inner_demo.h"
 #include "avcodec_audio_avbuffer_lbvc_encoder_inner_demo.h"
-#include "avcodec_audio_avbuffer_mp3_encoder_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
 #include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
@@ -303,10 +303,11 @@ static int RunVideoDecoder()
     cout << "0: buffer" << endl;
     cout << "1: surface file" << endl;
     cout << "2: surface render" << endl;
+    cout << "3: switch surface" << endl;
 
     string mode;
     (void)getline(cin, mode);
-    if (mode != "0" && mode != "1" && mode != "2") {
+    if (mode != "0" && mode != "1" && mode != "2" && mode != "3") {
         cout << "parameter invalid" << endl;
         return 0;
     }

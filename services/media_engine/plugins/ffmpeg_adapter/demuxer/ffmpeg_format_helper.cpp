@@ -54,7 +54,7 @@ const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
 const uint32_t VALID_LOCATION_LEN = 2;
 const int32_t VIDEO_ROTATION_360 = 360;
-namespace {
+
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
     {AVMEDIA_TYPE_AUDIO, MediaType::AUDIO},
@@ -85,9 +85,10 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
-    {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_APE, MimeType::AUDIO_APE},
+    {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
     {AV_CODEC_ID_SUBRIP, MimeType::TEXT_SUBRIP},
+    {AV_CODEC_ID_WEBVTT, MimeType::TEXT_WEBVTT},
     {AV_CODEC_ID_FFMETADATA, MimeType::TIMED_METADATA}
 };
 
@@ -105,6 +106,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"flv", FileType::FLV},
     {"ape", FileType::APE},
     {"srt", FileType::SRT},
+    {"webvtt", FileType::VTT},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
@@ -124,7 +126,7 @@ static std::map<TagType, std::string> g_formatToString = {
     {Tag::MEDIA_CREATION_TIME, "creation_time"}
 };
 
-static std::vector<TagType> g_supportSourceFormat = {
+std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_TITLE,
     Tag::MEDIA_ARTIST,
     Tag::MEDIA_ALBUM,
@@ -228,7 +230,6 @@ bool IsPCMStream(AVCodecID codecID)
         static_cast<int32_t>(codecID), avcodec_get_name(codecID));
     return StartWith(avcodec_get_name(codecID), "pcm_");
 }
-} // namespace
 
 void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, Meta& format)
 {
@@ -372,6 +373,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
+        format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_id));
     }
@@ -382,6 +384,13 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else {
         MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_type));
+    }
+
+    if (avStream.start_time != AV_NOPTS_VALUE) {
+        format.SetData(Tag::MEDIA_START_TIME,
+            ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
+    } else {
+        MEDIA_LOG_D("Parse track start time info failed.");
     }
 }
 
@@ -434,8 +443,6 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     } else {
         MEDIA_LOG_D("Parse track language info failed.");
     }
-    format.SetData(Tag::MEDIA_START_TIME,
-        ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
 }
 
 void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format)
@@ -685,7 +692,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         parseFromMoov = true;
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_D("Parse failed");
+        MEDIA_LOG_D("Parse failed.");
         return;
     }
     if (parseFromMoov) {

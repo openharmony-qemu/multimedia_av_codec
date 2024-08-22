@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
 
 namespace OHOS {
@@ -63,11 +64,6 @@ PlayListDownloader::PlayListDownloader(std::shared_ptr<Downloader> downloader)
     PlayListDownloaderInit();
 }
 
-PlayListDownloader::~PlayListDownloader()
-{
-    updateTask_->Stop();
-}
-
 void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
 {
     httpHeader_ = httpHeader;
@@ -75,22 +71,27 @@ void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>
 
 void PlayListDownloader::DoOpen(const std::string& url)
 {
-    playList_.clear();
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                       std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
-    MediaSouce mediaSouce;
+    RequestInfo mediaSouce;
     mediaSouce.url = url;
     mediaSouce.httpHeader = httpHeader_;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
+    if (downloadRequest_ == nullptr) {
+        MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
+        return;
+    }
     auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
         UpdateDownloadFinished(url, location);
     };
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
-    downloader_->Download(downloadRequest_, -1); // -1
-    downloader_->Start();
+    if (downloader_ != nullptr) {
+        downloader_->Download(downloadRequest_, -1); // -1
+        downloader_->Start();
+    }
 }
 
 void PlayListDownloader::DoOpenNative(const std::string& url)
@@ -117,13 +118,13 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         MEDIA_LOG_E("uri is empty");
         return false;
     }
-    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_D("uri: ");
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        false, "Invalid fd uri format: %{private}s", uri.c_str());
+        false, "Invalid fd uri format");
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
-        false, "Invalid fd uri format: %{private}s", uri.c_str());
+        false, "Invalid fd uri format");
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
@@ -184,11 +185,15 @@ bool PlayListDownloader::GetPlayListDownloadStatus()
 
 bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 {
+    if (data == nullptr || len == 0) {
+        return false;
+    }
+    playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
-    int32_t contentlen = downloadRequest_->GetFileContentLength();
+    int32_t contentlen = static_cast<int32_t>(downloader_->GetCurrentRequest()->GetFileContentLengthNoWait());
     std::string location;
-    downloadRequest_->GetLocation(location);
+    downloader_->GetCurrentRequest()->GetLocation(location);
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
         PreParseManifest(location);
     }
@@ -198,6 +203,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
     ParseManifest(location);
+    playList_.clear();
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -223,20 +229,27 @@ void PlayListDownloader::ParseManifest(const std::string& location, bool isPrePa
 
 void PlayListDownloader::Resume()
 {
-    downloader_->Resume();
-    if (IsLive()) {
+    MEDIA_LOG_I("PlayListDownloader::Resume.");
+    if (IsLive() && updateTask_ != nullptr) {
         MEDIA_LOG_I("updateTask_ Start.");
         updateTask_->Start();
     }
 }
 
-void PlayListDownloader::Pause()
+void PlayListDownloader::Pause(bool isAsync)
 {
+    MEDIA_LOG_I("PlayListDownloader::Pause.");
+    if (updateTask_ == nullptr) {
+        return;
+    }
     if (IsLive()) {
         MEDIA_LOG_I("updateTask_ Pause.");
-        updateTask_->Pause();
+        if (isAsync) {
+            updateTask_->PauseAsync();
+        } else {
+            updateTask_->Pause();
+        }
     }
-    downloader_->Pause();
 }
 
 void PlayListDownloader::Close()
@@ -245,20 +258,31 @@ void PlayListDownloader::Close()
         MEDIA_LOG_I("updateTask_ Close.");
         updateTask_->StopAsync();
     }
+    Stop();
 }
 
 void PlayListDownloader::Stop()
 {
-    downloader_->Stop();
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("PlayListDownloader::Stop.");
+        downloader_->Stop(true);
+    }
 }
 
 void PlayListDownloader::Start()
 {
-    downloader_->Start();
+    MEDIA_LOG_I("PlayListDownloader::Start.");
+    if (downloader_ != nullptr) {
+        downloader_->Start();
+    }
 }
 
 void PlayListDownloader::Cancel()
 {
+    MEDIA_LOG_I("PlayListDownloader::Cancel.");
+    if (downloader_ != nullptr) {
+        downloader_->Cancel();
+    }
     playList_.clear();
 }
 

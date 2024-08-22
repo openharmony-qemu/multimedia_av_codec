@@ -40,10 +40,10 @@ public:
     int32_t SetMediaKeySystemInfoCallback(bool isNull) override;
     int32_t SetDemuxerMediaKeySystemInfoCallback(bool isNull) override;
     int32_t GetMediaKeySystemInfo() override;
-    int32_t GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-        int64_t presentationTimeUs, uint32_t &frameIndex) override;
-    int32_t GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-        uint32_t frameIndex, int64_t &presentationTimeUs) override;
+    int32_t GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) override;
+    int32_t GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) override;
 private:
     OH_AVDemuxer *demuxer_ = nullptr;
 };

@@ -20,6 +20,8 @@
 #include <list>
 #include <map>
 #include <shared_mutex>
+#include <functional>
+#include <fstream>
 #include <tuple>
 #include <vector>
 #include <optional>
@@ -95,6 +97,8 @@ private:
         EOS,
         ERROR,
     };
+    void OpenDumpFile();
+    void DumpOutputBuffer();
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
     void CalculateBufferSize();
@@ -120,6 +124,9 @@ private:
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
+    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
 
@@ -167,6 +174,9 @@ private:
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    uint32_t decNum_ = 0;
+    std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
+    std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
 };
 } // namespace Codec
 } // namespace MediaAVCodec

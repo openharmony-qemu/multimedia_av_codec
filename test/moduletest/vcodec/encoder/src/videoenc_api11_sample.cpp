@@ -175,7 +175,6 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_KEY_FRAME_INTERVAL);
     if (isAVCEncoder) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, avcProfile);
     } else {
@@ -235,6 +234,11 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_siz
     }
     if (enableLTR && (ltrParam.ltrCount > 0)) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT, ltrParam.ltrCount);
+    }
+    if (TEMPORAL_UNIFORMLY) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+            UNIFORMLY_SCALED_REFERENCE);
     }
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);

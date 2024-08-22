@@ -24,7 +24,7 @@
 #include "parameters.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_ONLY_PRERELEASE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 }
 
 namespace OHOS {
@@ -58,12 +58,12 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
 {
     filterType_ = filterType;
     audioSink_ = std::make_shared<AudioSink>();
-    MEDIA_LOG_I("audio sink ctor called");
+    MEDIA_LOG_D("audio sink ctor called");
 }
 
 AudioSinkFilter::~AudioSinkFilter()
 {
-    MEDIA_LOG_I("dtor called");
+    MEDIA_LOG_D("dtor called");
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -72,7 +72,7 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    MEDIA_LOG_I("audio sink Init called");
+    MEDIA_LOG_D("audio sink Init called");
 }
 
 Status AudioSinkFilter::DoInitAfterLink()
@@ -256,20 +256,20 @@ void AudioSinkFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter
 
 Status AudioSinkFilter::SetSpeed(float speed)
 {
-    MEDIA_LOG_I("AudioSinkFilter::SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
+    MEDIA_LOG_I("SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     if (speed < 0) {
-        MEDIA_LOG_E("AudioSinkFilter::SetSpeed speed is less than 0.");
+        MEDIA_LOG_E("SetSpeed speed is less than 0.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     Status res = audioSink_->SetSpeed(speed);
-    MEDIA_LOG_I("AudioSinkFilter::SetSpeed out");
+    MEDIA_LOG_I("SetSpeed out");
     return res;
 }
 
 Status AudioSinkFilter::SetAudioEffectMode(int32_t effectMode)
 {
-    MEDIA_LOG_I("AudioSinkFilter::SetAudioEffectMode in");
+    MEDIA_LOG_I("SetAudioEffectMode in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
 
     Status res = audioSink_->SetAudioEffectMode(effectMode);
@@ -278,7 +278,7 @@ Status AudioSinkFilter::SetAudioEffectMode(int32_t effectMode)
 
 Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
 {
-    MEDIA_LOG_I("AudioSinkFilter::GetAudioEffectMode in");
+    MEDIA_LOG_I("GetAudioEffectMode in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     Status res = audioSink_->GetAudioEffectMode(effectMode);
     return res;
@@ -286,7 +286,7 @@ Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
 
 Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
 {
-    MEDIA_LOG_I("AudioSinkFilter::SetIsTransitent in");
+    MEDIA_LOG_D("SetIsTransitent in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
     return audioSink_->SetIsTransitent(isTransitent);
 }
@@ -307,6 +307,25 @@ Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>
 Status AudioSinkFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
 {
     return Filter::OnUnLinked(inType, callback);
+}
+
+Status AudioSinkFilter::SetMuted(bool isMuted)
+{
+    MEDIA_LOG_D("SetMuted");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetMuted(isMuted);
+}
+
+float AudioSinkFilter::GetMaxAmplitude()
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, 0.0f);
+    return audioSink_->GetMaxAmplitude();
+}
+ 
+int32_t AudioSinkFilter::SetMaxAmplitudeCbStatus(bool status)
+{
+    FALSE_RETURN_V(audioSink_ != nullptr, MSERR_INVALID_VAL);
+    return audioSink_->SetMaxAmplitudeCbStatus(status);
 }
 } // namespace Pipeline
 } // namespace Media

@@ -74,6 +74,7 @@ public:
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) = 0;
     virtual int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;
@@ -100,6 +101,7 @@ public:
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb) = 0;
     virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterWithAttrCallbackMock> cb) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;
@@ -115,6 +117,7 @@ public:
     virtual int32_t FreeOutputBuffer(uint32_t index) = 0;
     virtual std::shared_ptr<SurfaceMock> CreateInputSurface() = 0;
     virtual bool IsValid() = 0;
+    virtual int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer) = 0;
 };
 
 class __attribute__((visibility("default"))) VCodecMockFactory {
@@ -145,6 +148,14 @@ constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
 constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
 
 constexpr uint32_t SAMPLE_TIMEOUT = 100;
+constexpr BufferRequestConfig DEFAULT_CONFIG = {
+    .width = 100,
+    .height = 100,
+    .strideAlignment = 0x8,
+    .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+    .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+    .timeout = 0,
+};
 } // namespace VCodecTestParam
 } // namespace MediaAVCodec
 } // namespace OHOS

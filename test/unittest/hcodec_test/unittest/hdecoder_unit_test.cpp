@@ -20,6 +20,7 @@
 #include "hcodec_log.h"
 #include "media_description.h" // foundation/multimedia/player_framework/interfaces/inner_api/native
 #include "tester_common.h"
+#include "meta/meta_key.h" // foundation/multimedia/histreamer/interface/inner_api/
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -171,6 +172,8 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_ok, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
+    format.PutIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, 1);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, 0);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -234,6 +237,24 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_no_color_format, TestSize.Level1)
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HDecoderPreparingUnitTest, configure_with_invalid_maxInputSize, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Media::Meta meta{};
+    int32_t err = testObj->Init(meta);
+    ASSERT_TRUE(err == AVCS_ERR_OK);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60); // 60 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, -1);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -463,6 +484,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_when_codec_is_running, Test
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     Format format;
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60); // 60 frame rate
     ret = testObj->SetParameter(format);
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
@@ -488,6 +510,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_ok, TestSize.Level1)
 
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, VIDEO_ROTATION_90);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, SCALING_MODE_SCALE_CROP);
     ret = testObj->SetParameter(format);
     EXPECT_EQ(AVCS_ERR_OK, ret);
 

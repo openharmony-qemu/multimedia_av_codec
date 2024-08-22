@@ -81,6 +81,7 @@ AudioG711muEncoderPlugin::AudioG711muEncoderPlugin(const std::string& name)
       audioSampleFormat_(AudioSampleFormat::SAMPLE_S16LE),
       channels_(SUPPORT_CHANNELS),
       sampleRate_(SUPPORT_SAMPLE_RATE),
+      pts_(0),
       maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),
       maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT)
 {
@@ -118,10 +119,6 @@ Status AudioG711muEncoderPlugin::Init()
 
 Status AudioG711muEncoderPlugin::Start()
 {
-    if (!CheckFormat()) {
-        AVCODEC_LOGE("Format check failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     return Status::OK;
 }
 
@@ -165,10 +162,8 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
 Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputBuffer)
 {
     auto memory = inputBuffer->memory_;
-    if (memory->GetSize() < 0) {
-        AVCODEC_LOGE("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());
-        return Status::ERROR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(memory->GetSize() >= 0, Status::ERROR_UNKNOWN,
+        "SendEncoder buffer size is less than 0. size : %{public}d", memory->GetSize());
     if (memory->GetSize() > memory->GetCapacity()) {
         AVCODEC_LOGE("send input buffer is > allocate size. size : %{public}d, allocate size : %{public}d",
                      memory->GetSize(), memory->GetCapacity());
@@ -185,6 +180,7 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
         if (memory->GetSize() % sizeof(int16_t) == 1) {
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
         }
+        pts_ = inputBuffer->pts_;
         dataCallback_->OnInputBufferDone(inputBuffer);
     }
     return Status::OK;
@@ -192,16 +188,13 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 
 Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioG711muEncoderPlugin Queue out buffer is null.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         auto memory = outputBuffer->memory_;
         auto outSize = sizeof(uint8_t) * encodeResult_.size();
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
+        outputBuffer->pts_ = pts_;
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
     return Status::OK;

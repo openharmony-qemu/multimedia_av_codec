@@ -63,9 +63,13 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/func_test.cpp",
       "./src/InnerAPI/inner_demuxer_parser_sample.cpp",
+      "./src/InnerAPI/inner_demuxer_sample.cpp",
       "./src/InnerAPI/parser_test.cpp",
       "./src/api_test.cpp",
+      "./src/func2_test.cpp",
       "./src/func_test.cpp",
+
+      #"./src/net_test.cpp",
       "./src/proc_test.cpp",
     ]
   }
