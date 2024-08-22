@@ -647,6 +647,7 @@ int32_t CodecServiceStub::SetCustomBuffer(MessageParcel &data, MessageParcel &re
 {
     AVCODEC_SYNC_TRACE;
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_NO_MEMORY, "Create buffer failed");
     bool ret = buffer->ReadFromMessageParcel(data);
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Read From MessageParcel failed");
     ret = reply.WriteInt32(SetCustomBuffer(buffer));
