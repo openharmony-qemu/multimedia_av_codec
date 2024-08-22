@@ -112,7 +112,7 @@ int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSyste
         AVCodecServerManager::GetInstance().DestroyStubObject(*stubType, stubObject);
         stubObject = nullptr;
         AVCODEC_LOGE("SetDeathListener failed");
-        return AVCE_ERR_IPC_SET_DEATH_LISTENER_FAILED;
+        return AVCS_ERR_IPC_SET_DEATH_LISTENER_FAILED;
     }
 
     return AVCS_ERR_OK;

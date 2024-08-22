@@ -82,6 +82,10 @@ int32_t DynamicController::SetOutputSurfaceImpl(sptr<Surface> surface)
     auto ret = interface_.Invoke<DynamicInterfaceName::SET_OUTPUT_SURFACE>(instance_, sf);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
         "Set output surface for video processing failed.");
+    surface->UnRegisterReleaseListener();
+    surface->RegisterReleaseListener([this](sptr<SurfaceBuffer> &buffer) -> GSError {
+        return OnProducerBufferReleased(buffer);
+    });
     return AVCS_ERR_OK;
 }
 
@@ -89,7 +93,7 @@ int32_t DynamicController::CreateInputSurfaceImpl(sptr<Surface>& surface)
 {
     void* sf = static_cast<void*>(&surface);
     auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, sf);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && surface != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Create input surface for video processing failed.");
     return AVCS_ERR_OK;
 }
@@ -142,7 +146,16 @@ int32_t DynamicController::StopImpl()
 int32_t DynamicController::FlushImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::FLUSH>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Stop video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Flush video processing failed.");
+    return AVCS_ERR_OK;
+}
+
+int32_t DynamicController::GetOutputFormatImpl(Media::Format &format)
+{
+    void *formatPtr = static_cast<void *>(&format);
+    auto ret = interface_.Invoke<DynamicInterfaceName::GET_OUTPUT_FORMAT>(instance_, formatPtr);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+                             "GetOutputFormat video processing failed.");
     return AVCS_ERR_OK;
 }
 
@@ -166,6 +179,12 @@ int32_t DynamicController::ReleaseOutputBufferImpl(uint32_t index, bool render)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
         "Release output buffer of video processing failed.");
     return AVCS_ERR_OK;
+}
+
+GSError DynamicController::OnProducerBufferReleased([[maybe_unused]] sptr<SurfaceBuffer> &buffer)
+{
+    auto ret = interface_.Invoke<DynamicInterfaceName::ON_PRODUCER_BUFFER_RELEASED>(instance_);
+    return static_cast<GSError>(ret);
 }
 
 } // namespace PostProcessing
