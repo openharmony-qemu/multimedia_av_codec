@@ -725,6 +725,7 @@ void VEncNdkInnerSample::InputParamLoopFunc()
 {
     if (signal_ == nullptr || venc_ == nullptr) {
         cout << "signal or venc is null" << endl;
+        return;
     }
     cout<< "InputParamLoopFunc" <<endl;
     while (isRunning_.load()) {
@@ -1003,9 +1004,6 @@ int32_t VEncNdkInnerSample::SetCustomBuffer(BufferRequestConfig bufferConfig)
 bool VEncNdkInnerSample::ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer)
 {
     std::unique_ptr<std::ifstream> inFile = std::make_unique<std::ifstream>();
-    if (inFile == nullptr) {
-        cout << "inFile is nullptr" << endl;
-    }
     inFile->open(fileName.c_str(), std::ios::in | std::ios::binary);
     if (!inFile->is_open()) {
         cout << "open file filed,filename:" << fileName.c_str() << endl;
@@ -1013,6 +1011,7 @@ bool VEncNdkInnerSample::ReadCustomDataToAVBuffer(const std::string &fileName, s
     sptr<SurfaceBuffer> surfaceBuffer = buffer->memory_->GetSurfaceBuffer();
     if (surfaceBuffer == nullptr) {
         cout << "in is nullptr" << endl;
+        return false;
     }
     int32_t width = surfaceBuffer->GetWidth();
     int32_t height = surfaceBuffer->GetHeight();
