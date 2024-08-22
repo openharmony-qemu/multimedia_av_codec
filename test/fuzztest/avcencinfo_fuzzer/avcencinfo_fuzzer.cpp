@@ -31,6 +31,13 @@ using namespace OHOS::Media;
         }                                                                   \
     } while (0)
 
+#define AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(cond, label)                       \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            goto label;                                                     \
+        }                                                                   \
+    } while (0)
+
 namespace OHOS {
 namespace AvCencInfoFuzzer {
 
@@ -38,8 +45,11 @@ bool CencInfoCreateFuzzTest(const uint8_t *data, size_t size)
 {
     (void)data;
     (void)size;
+    OH_AVErrCode errNo = AV_ERR_OK;
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
+    errNo = OH_AVCencInfo_Destroy(cencInfo);
+    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
 }
 
@@ -62,26 +72,26 @@ bool CencInfoSetAlgorithm(void)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_UNENCRYPTED);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_AES_CTR);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_AES_WV);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_AES_CBC);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_SM4_CBC);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_SM4_CTR);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, static_cast<enum DrmCencAlgorithm>(DRM_ALG_CENC_SM4_CTR + 1));
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -101,8 +111,8 @@ bool CencInfoSetAlgorithmFuzzTest(const uint8_t *data, size_t size)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, algo);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -123,7 +133,8 @@ bool CencInfoSetKeyIdAndIv(void)
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
     errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, keyId, keyIdLen, iv, ivLen);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -142,8 +153,8 @@ bool CencInfoSetKeyIdAndIvFuzzTest(const uint8_t *data, size_t size)
 
     errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, const_cast<uint8_t *>(data), static_cast<uint32_t>(size),
         const_cast<uint8_t *>(data), static_cast<uint32_t>(size));
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -162,7 +173,8 @@ bool CencInfoSetSubsampleInfo(void)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
     errNo = OH_AVCencInfo_SetSubsampleInfo(cencInfo, encryptedBlockCount, skippedBlockCount, firstEncryptedOffset,
         subsampleCount, subsamples);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -192,8 +204,8 @@ bool CencInfoSetSubsampleInfoFuzzTest(const uint8_t *data, size_t size)
 
     errNo = OH_AVCencInfo_SetSubsampleInfo(cencInfo, encryptedBlockCount, skippedBlockCount, firstEncryptedOffset,
         subsampleCount, subsamples);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -207,15 +219,15 @@ bool CencInfoSetMode(void)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
 
     errNo = OH_AVCencInfo_SetMode(cencInfo, DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetMode(cencInfo, DRM_CENC_INFO_KEY_IV_SUBSAMPLES_NOT_SET);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetMode(cencInfo,
         static_cast<enum DrmCencInfoMode>(DRM_CENC_INFO_KEY_IV_SUBSAMPLES_NOT_SET + 1));
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -235,8 +247,8 @@ bool CencInfoSetModeFuzzTest(const uint8_t *data, size_t size)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
 
     errNo = OH_AVCencInfo_SetMode(cencInfo, mode);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
     errNo = OH_AVCencInfo_Destroy(cencInfo);
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
     return true;
@@ -272,26 +284,26 @@ bool CencInfoSetAVBuffer(void)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(buffer != nullptr, false);
 
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(cencInfo != nullptr, _EXIT1);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, DRM_ALG_CENC_AES_CTR);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, keyId, keyIdLen, iv, ivLen);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetSubsampleInfo(cencInfo, encryptedBlockCount, skippedBlockCount, firstEncryptedOffset,
         subsampleCount, subsamples);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetMode(cencInfo, DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAVBuffer(cencInfo, buffer);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
-    errNo = OH_AVCencInfo_Destroy(cencInfo);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
+    (void)OH_AVCencInfo_Destroy(cencInfo);
+_EXIT1:
     delete buffer;
     return true;
 }
@@ -330,27 +342,27 @@ bool CencInfoSetAVBufferFuzzTest(const uint8_t *data, size_t size)
     AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(buffer != nullptr, false);
 
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(cencInfo != nullptr, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(cencInfo != nullptr, _EXIT1);
 
     errNo = OH_AVCencInfo_SetAlgorithm(cencInfo, algo);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetKeyIdAndIv(cencInfo, const_cast<uint8_t *>(data), static_cast<uint32_t>(size),
         const_cast<uint8_t *>(data), static_cast<uint32_t>(size));
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetSubsampleInfo(cencInfo, encryptedBlockCount, skippedBlockCount, firstEncryptedOffset,
         subsampleCount, subsamples);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetMode(cencInfo, mode);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
 
     errNo = OH_AVCencInfo_SetAVBuffer(cencInfo, buffer);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
-
-    errNo = OH_AVCencInfo_Destroy(cencInfo);
-    AV_CENC_INFO_FUZZ_CHECK_AND_RETURN_RET(errNo == AV_ERR_OK, false);
+    AV_CENC_INFO_FUZZ_CHECK_AND_GOTO(errNo == AV_ERR_OK, _EXIT);
+_EXIT:
+    (void)OH_AVCencInfo_Destroy(cencInfo);
+_EXIT1:
     delete buffer;
     return true;
 }
