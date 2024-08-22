@@ -120,7 +120,7 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STREAM_INFO, TestSize.Level1)
 
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SET_BITRATE, TestSize.Level1)
 {
-    Status status = g_mediaDownloader->SetCurrentBitRate(1);
+    Status status = g_mediaDownloader->SetCurrentBitRate(1, 0);
     EXPECT_EQ(status, Status::OK);
 }
 

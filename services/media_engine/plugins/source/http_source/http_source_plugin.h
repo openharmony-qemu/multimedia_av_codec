@@ -58,7 +58,7 @@ public:
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
