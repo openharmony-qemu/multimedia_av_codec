@@ -231,7 +231,7 @@ uint32_t DashSegmentDownloader::GetMaxReadLength(uint32_t wantReadLength,
 
 bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashReadRet &readRet)
 {
-    if (CheckAllSegmentFinish()) {
+    if (isAllSegmentFinished_.load()) {
         readRet = DASH_READ_SEGMENT_DOWNLOAD_FINISH;
         if (buffer_->GetSize() == 0) {
             readRet = DASH_READ_END;
@@ -244,14 +244,6 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashRead
         }
     }
     return false;
-}
-
-bool DashSegmentDownloader::CheckAllSegmentFinish()
-{
-    if (isAllSegmentFinished_.load()) {
-        MEDIA_LOG_I("CheckAllSegmentFinish streamId: " PUBLIC_LOG_D32 " download complete break", streamId_);
-    }
-    return isAllSegmentFinished_.load();
 }
 
 bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_t wantReadLength, DashReadRet &readRet,
@@ -269,7 +261,7 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
 
     bool arrivedBuffering = streamType_ != MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE && isFirstFrameArrived_ &&
         buffer_->GetSize() < static_cast<size_t>(PLAY_WATER_LINE);
-    if (arrivedBuffering && !CheckAllSegmentFinish()) {
+    if (arrivedBuffering && !isAllSegmentFinished_.load()) {
         if (HandleCache()) {
             readRet = DASH_READ_AGAIN;
             return true;
@@ -298,7 +290,7 @@ bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterrupt
             break;
         }
 
-        if (CheckAllSegmentFinish()) {
+        if (isAllSegmentFinished_.load()) {
             isBuffering_.store(false);
             break;
         }
@@ -319,7 +311,7 @@ void DashSegmentDownloader::SaveDataHandleBuffering()
         return;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
-    if (buffer_->GetSize() >= waterLineAbove_ || CheckAllSegmentFinish()) {
+    if (buffer_->GetSize() >= waterLineAbove_ || isAllSegmentFinished_.load()) {
         isBuffering_.store(false);
     }
 
@@ -606,6 +598,7 @@ void DashSegmentDownloader::SetDemuxerState()
 
 void DashSegmentDownloader::SetAllSegmentFinished()
 {
+    MEDIA_LOG_I("SetAllSegmentFinished streamId: " PUBLIC_LOG_D32 " download complete", streamId_);
     isAllSegmentFinished_.store(true);
 }
 
@@ -868,6 +861,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
             mediaSegment->bufferPosTail_ >= (mediaSegment->bufferPosHead_ + mediaSegment->contentLength_))) {
             mediaSegment->isEos_ = true;
             if (mediaSegment->isLast_) {
+                MEDIA_LOG_I("AllSegmentFinish streamId: " PUBLIC_LOG_D32 " download complete", streamId_);
                 isAllSegmentFinished_.store(true);
             }
             if (mediaSegment->contentLength_ == 0) {
@@ -1042,6 +1036,7 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
         }
         mediaSegment_->isEos_ = true;
         if (mediaSegment_->isLast_) {
+            MEDIA_LOG_I("AllSegmentFinish streamId: " PUBLIC_LOG_D32 " download complete", streamId_);
             isAllSegmentFinished_.store(true);
         }
         MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU

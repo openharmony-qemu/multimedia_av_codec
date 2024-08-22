@@ -192,7 +192,6 @@ private:
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
     void CalculateBitRate(size_t fragmentSize, double duration);
-    bool CheckAllSegmentFinish();
     void UpdateCachedPercent(BufferingInfoType infoType);
 
 private:
