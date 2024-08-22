@@ -97,10 +97,8 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
 
-    bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_);
-    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_, isLastSegment);
-    MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32 " isLastSegment:" PUBLIC_LOG_D32,
-        readDataInfo.streamId_, ret, isLastSegment);
+    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_);
+    MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32, readDataInfo.streamId_, ret);
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
@@ -165,8 +163,9 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
     DashMpdGetRet getRet = mpdDownloader_->GetNextSegmentByStreamId(streamId, seg);
     MEDIA_LOG_I("GetNextSegmentByStreamId " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, streamId, getRet);
     if (seg != nullptr) {
-        bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(streamId);
-        segmentDownloader->Open(seg, isLastSegment);
+        segmentDownloader->Open(seg);
+    } else if(getRet == DASH_MPD_GET_FINISH) {
+        segmentDownloader->SetAllSegmentFinished();
     }
 }
 
@@ -409,8 +408,7 @@ void DashMediaDownloader::OpenInitSegment(
     if (initSeg != nullptr) {
         downloader->SetInitSegment(initSeg);
     }
-    bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(streamDesc->streamId_);
-    downloader->Open(seg, isLastSegment);
+    downloader->Open(seg);
     MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
         PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
 }
@@ -514,8 +512,9 @@ void DashMediaDownloader::GetSegmentToDownload(int downloadStreamId, bool stream
     }
     
     if (segment != nullptr) {
-        bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(downloadStreamId);
-        segmentDownloader->Open(segment, isLastSegment);
+        segmentDownloader->Open(segment);
+    } else if(ret == DASH_MPD_GET_FINISH) {
+        segmentDownloader->SetAllSegmentFinished();
     }
 }
 
@@ -727,8 +726,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
             mpdDownloader_->SetCurrentNumberSeqByStreamId(segmentDownloader->GetStreamId(), segment->numberSeq_);
             segmentDownloader->SetInitSegment(initSeg, true);
-            bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(segmentDownloader->GetStreamId());
-            segmentDownloader->Open(segment, isLastSegment);
+            segmentDownloader->Open(segment);
         }
     }
 }

@@ -84,7 +84,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    bool result = segmentDownloader->Open(segmentSp, false);
+    bool result = segmentDownloader->Open(segmentSp);
     segmentDownloader->Pause();
     segmentDownloader->Resume();
     segmentDownloader->Close(true, true);
@@ -111,7 +111,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_RANGE, TestSize.Level1)
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    bool result = segmentDownloader->Open(segmentSp, false);
+    bool result = segmentDownloader->Open(segmentSp);
     segmentDownloader->GetRingBufferSize();
     segmentDownloader->GetRingBufferCapacity();
     segmentDownloader->Close(true, true);
@@ -141,7 +141,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_OPEN_WITH_INIT_SEGMENT, TestSize.Le
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    bool result = segmentDownloader->Open(segmentSp, false);
+    bool result = segmentDownloader->Open(segmentSp);
     segmentDownloader->Close(true, true);
     segmentDownloader = nullptr;
 
@@ -165,7 +165,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    segmentDownloader->Open(segmentSp, false);
+    segmentDownloader->Open(segmentSp);
     int repeat = 0;
     bool status = false;
     while (repeat++ < 1000) {
@@ -183,13 +183,15 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_READ, TestSize.Level1)
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
     std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded, false);
-    segmentDownloader->Close(true, true);
-    segmentDownloader = nullptr;
-
+    DashReadRet result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_OK);
     EXPECT_EQ(readDataInfo.nextStreamId_, 1);
     EXPECT_GE(readDataInfo.realReadLength_, 0);
+    readDataInfo.streamId_ = 2;
+    result = segmentDownloader->Read(buffer, readDataInfo, isInterruptNeeded);
+    segmentDownloader->Close(true, true);
+    segmentDownloader = nullptr;
+    EXPECT_EQ(result, DASH_READ_OK);
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER, TestSize.Level1)
@@ -209,7 +211,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER, TestSize.Leve
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    segmentDownloader->Open(segmentSp, false);
+    segmentDownloader->Open(segmentSp);
     int repeat = 0;
     bool status = false;
     while (repeat++ < 1000) {
@@ -245,7 +247,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_CLEAN_SEGMENT_BUFFER_ALL, TestSize.
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    segmentDownloader->Open(segmentSp, false);
+    segmentDownloader->Open(segmentSp);
 
     int64_t remainLastNumberSeq = -1;
     bool result = segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
@@ -295,7 +297,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_SEEK_TO_TIME, TestSize.Level1)
     segmentDownloader->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloader->SetDownloadDoneCallback(doneCallback);
-    segmentDownloader->Open(segmentSp, false);
+    segmentDownloader->Open(segmentSp);
 
     std::shared_ptr<DashSegment> seekSegment = std::make_shared<DashSegment>();
     segmentSp->url_ = VIDEO_MEDIA_SEGMENT_URL_2;
@@ -328,7 +330,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_SUCCESS_001
     segmentDownloaderSp->SetStatusCallback(statusCallback);
     auto doneCallback = [] (int streamId) {};
     segmentDownloaderSp->SetDownloadDoneCallback(doneCallback);
-    segmentDownloaderSp->Open(segmentSp, false);
+    segmentDownloaderSp->Open(segmentSp);
     OSAL::SleepFor(1000);
     segmentDownloaderSp->Close(true, true);
     bool status = segmentDownloaderSp->GetStartedStatus();
@@ -360,13 +362,13 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
     std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, true);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    segmentDownloaderSp->Open(segmentSp, false);
+    segmentDownloaderSp->Open(segmentSp);
     OSAL::SleepFor(1000);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, true);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_GE(result, DASH_READ_SEGMENT_DOWNLOAD_FINISH);
 }
@@ -415,14 +417,15 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
     std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    segmentDownloaderSp->Open(segmentSp, false);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, true);
+    segmentDownloaderSp->Open(segmentSp);
+    segmentDownloaderSp->SetAllSegmentFinished();
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
-    EXPECT_EQ(result, DASH_READ_OK);
+    EXPECT_EQ(result, DASH_READ_END);
     delete sourceCallback;
     sourceCallback = nullptr;
 }
@@ -453,12 +456,12 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
     std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    segmentDownloaderSp->Open(segmentSp, false);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    segmentDownloaderSp->Open(segmentSp);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_AGAIN);
     delete sourceCallback;
@@ -491,13 +494,13 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     readDataInfo.realReadLength_ = 0;
     readDataInfo.nextStreamId_ = 1;
     std::atomic<bool> isInterruptNeeded = false;
-    segmentDownloaderSp->Open(segmentSp, false);
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    segmentDownloaderSp->Open(segmentSp);
+    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     EXPECT_EQ(result, DASH_READ_AGAIN);
     isInterruptNeeded.store(true);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded, false);
+    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_INTERRUPT);
     delete sourceCallback;

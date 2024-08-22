@@ -91,7 +91,7 @@ DashSegmentDownloader::~DashSegmentDownloader() noexcept
     segmentList_.clear();
 }
 
-bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment, bool isLastSegment)
+bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment)
 {
     std::lock_guard<std::mutex> lock(segmentMutex_);
     steadyClock_.Reset();
@@ -102,7 +102,6 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
     totalBits_ = 0;
     lastBits_ = 0;
     mediaSegment_ = std::make_shared<DashBufferSegment>(dashSegment);
-    isLastSegment_ = isLastSegment;
     if (mediaSegment_->byteRange_.length() > 0) {
         DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
     }
@@ -165,7 +164,7 @@ void DashSegmentDownloader::Resume()
 }
 
 DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInfo,
-                                        const std::atomic<bool> &isInterruptNeeded, bool isLastSegment)
+                                        const std::atomic<bool> &isInterruptNeeded)
 {
     FALSE_RETURN_V_MSG(buffer_ != nullptr, DASH_READ_FAILED, "buffer is null");
     FALSE_RETURN_V_MSG(!isInterruptNeeded.load(), DASH_READ_INTERRUPT, "isInterruptNeeded");
@@ -176,7 +175,7 @@ DashReadRet DashSegmentDownloader::Read(uint8_t *buff, ReadDataInfo &readDataInf
     FALSE_RETURN_V_MSG(readDataInfo.wantReadLength_ > 0, DASH_READ_FAILED, "wantReadLength_ <= 0");
 
     DashReadRet readRet = DASH_READ_OK;
-    if (CheckReadInterrupt(realReadLength, wantReadLength, readRet, isInterruptNeeded, isLastSegment)) {
+    if (CheckReadInterrupt(realReadLength, wantReadLength, readRet, isInterruptNeeded)) {
         return readRet;
     }
 
@@ -230,9 +229,9 @@ uint32_t DashSegmentDownloader::GetMaxReadLength(uint32_t wantReadLength,
     return maxReadLength;
 }
 
-bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, bool isLastSegment, DashReadRet &readRet)
+bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, DashReadRet &readRet)
 {
-    if (CheckAllSegmentFinish(isLastSegment)) {
+    if (CheckAllSegmentFinish()) {
         readRet = DASH_READ_SEGMENT_DOWNLOAD_FINISH;
         if (buffer_->GetSize() == 0) {
             readRet = DASH_READ_END;
@@ -247,19 +246,22 @@ bool DashSegmentDownloader::IsSegmentFinished(uint32_t &realReadLength, bool isL
     return false;
 }
 
-bool DashSegmentDownloader::CheckAllSegmentFinish(bool isLastSegment)
+bool DashSegmentDownloader::CheckAllSegmentFinish()
 {
-    return (downloadRequest_ != nullptr) && downloadRequest_->IsEos() && isLastSegment;
+    if (isAllSegmentFinished_.load()) {
+        MEDIA_LOG_I("CheckAllSegmentFinish streamId: " PUBLIC_LOG_D32 " download complete break", streamId_);
+    }
+    return isAllSegmentFinished_.load();
 }
 
 bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_t wantReadLength, DashReadRet &readRet,
-                                               const std::atomic<bool> &isInterruptNeeded, bool isLastSegment)
+                                               const std::atomic<bool> &isInterruptNeeded)
 {
-    if (IsSegmentFinished(realReadLength, isLastSegment, readRet)) {
+    if (IsSegmentFinished(realReadLength, readRet)) {
         return true;
     }
 
-    if (HandleBuffering(isInterruptNeeded, isLastSegment)) {
+    if (HandleBuffering(isInterruptNeeded)) {
         MEDIA_LOG_E("DashSegmentDownloader read return error again streamId: " PUBLIC_LOG_D32, streamId_);
         readRet = DASH_READ_AGAIN;
         return true;
@@ -267,7 +269,7 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
 
     bool arrivedBuffering = streamType_ != MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE && isFirstFrameArrived_ &&
         buffer_->GetSize() < static_cast<size_t>(PLAY_WATER_LINE);
-    if (arrivedBuffering && !CheckAllSegmentFinish(isLastSegment)) {
+    if (arrivedBuffering && !CheckAllSegmentFinish()) {
         if (HandleCache()) {
             readRet = DASH_READ_AGAIN;
             return true;
@@ -283,7 +285,7 @@ bool DashSegmentDownloader::CheckReadInterrupt(uint32_t &realReadLength, uint32_
     return false;
 }
 
-bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterruptNeeded, bool isLastSegment)
+bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterruptNeeded)
 {
     if (!isBuffering_.load()) {
         return false;
@@ -296,7 +298,7 @@ bool DashSegmentDownloader::HandleBuffering(const std::atomic<bool> &isInterrupt
             break;
         }
 
-        if (CheckBreakCondition(isLastSegment)) {
+        if (CheckAllSegmentFinish()) {
             isBuffering_.store(false);
             break;
         }
@@ -317,7 +319,7 @@ void DashSegmentDownloader::SaveDataHandleBuffering()
         return;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
-    if (buffer_->GetSize() >= waterLineAbove_ || CheckBreakCondition(isLastSegment_)) {
+    if (buffer_->GetSize() >= waterLineAbove_ || CheckAllSegmentFinish()) {
         isBuffering_.store(false);
     }
 
@@ -326,15 +328,6 @@ void DashSegmentDownloader::SaveDataHandleBuffering()
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
-}
-
-bool DashSegmentDownloader::CheckBreakCondition(bool isLastSegment)
-{
-    if (CheckAllSegmentFinish(isLastSegment)) {
-        MEDIA_LOG_I("CheckBreakCondition streamId: " PUBLIC_LOG_D32 " download complete break", streamId_);
-        return true;
-    }
-    return false;
 }
 
 bool DashSegmentDownloader::HandleCache()
@@ -611,6 +604,11 @@ void DashSegmentDownloader::SetDemuxerState()
     isFirstFrameArrived_ = true;
 }
 
+void DashSegmentDownloader::SetAllSegmentFinished()
+{
+    isAllSegmentFinished_.store(true);
+}
+
 int DashSegmentDownloader::GetStreamId() const
 {
     return streamId_;
@@ -650,6 +648,7 @@ bool DashSegmentDownloader::CleanAllSegmentBuffer(bool isCleanAll, int64_t& rema
         isCleaningBuffer_.store(true);
         Close(true, true);
         std::lock_guard<std::mutex> lock(segmentMutex_);
+        isAllSegmentFinished_.store(false);
         for (const auto &it: segmentList_) {
             if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_) {
                 continue;
@@ -706,6 +705,7 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
         isCleaningBuffer_.store(true);
         Close(true, false);
         std::lock_guard<std::mutex> lock(segmentMutex_);
+        isAllSegmentFinished_.store(false);
         segmentList_.remove_if([&remainLastNumberSeq](std::shared_ptr<DashBufferSegment> bufferSegment) {
             return (bufferSegment->numberSeq_ > remainLastNumberSeq);
         });
@@ -867,6 +867,9 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
         if (len == 0 || (mediaSegment->contentLength_ > 0 &&
             mediaSegment->bufferPosTail_ >= (mediaSegment->bufferPosHead_ + mediaSegment->contentLength_))) {
             mediaSegment->isEos_ = true;
+            if (mediaSegment->isLast_) {
+                isAllSegmentFinished_.store(true);
+            }
             if (mediaSegment->contentLength_ == 0) {
                 mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
             }
@@ -1038,6 +1041,9 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
             mediaSegment_->contentLength_ = downloadRequest_->GetFileContentLength();
         }
         mediaSegment_->isEos_ = true;
+        if (mediaSegment_->isLast_) {
+            isAllSegmentFinished_.store(true);
+        }
         MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
             ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_,
             isCleaningBuffer_.load());

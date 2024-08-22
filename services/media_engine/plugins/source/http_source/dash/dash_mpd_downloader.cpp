@@ -297,26 +297,6 @@ DashMpdGetRet DashMpdDownloader::GetBreakPointSegment(int streamId, int64_t brea
     return ret;
 }
 
-bool DashMpdDownloader::IsAllSegmentFinishedByStreamId(int streamId)
-{
-    for (auto &streamDescription : streamDescriptions_) {
-        if (streamDescription->streamId_ != streamId) {
-            continue;
-        }
-
-        if (streamDescription->segsState_ == DASH_SEGS_STATE_FINISH &&
-            streamDescription->mediaSegments_.size() > 0) {
-            int64_t segmentIndex = (streamDescription->currentNumberSeq_ == -1) ? 0 :
-                streamDescription->currentNumberSeq_ - streamDescription->startNumberSeq_ + 1;
-            if (segmentIndex >= (int64_t)streamDescription->mediaSegments_.size()) {
-                return true;
-            }
-        }
-        break;
-    }
-    return false;
-}
-
 DashMpdGetRet DashMpdDownloader::GetNextVideoStream(DashMpdBitrateParam &param, int &streamId)
 {
     std::shared_ptr<DashStreamDescription> currentStream = nullptr;
@@ -1372,6 +1352,10 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInMpd(std::shared_ptr<DashStr
         return DASH_SEGMENT_INIT_FAILED;
     }
 
+    std::shared_ptr<DashSegment> lastSegment = streamDesc->mediaSegments_[streamDesc->mediaSegments_.size() - 1];
+    if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
+        lastSegment->isLast_ = true;
+    }
     return DASH_SEGMENT_INIT_SUCCESS;
 }
 

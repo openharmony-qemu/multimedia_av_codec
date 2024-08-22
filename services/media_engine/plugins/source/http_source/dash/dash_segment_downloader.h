@@ -55,6 +55,7 @@ struct DashBufferSegment {
         bufferPosTail_ = 0;
         contentLength_ = 0;
         isEos_ = false;
+        isLast_ = false;
     }
 
     DashBufferSegment(const DashBufferSegment& srcSegment)
@@ -72,6 +73,7 @@ struct DashBufferSegment {
         bufferPosTail_ = srcSegment.bufferPosTail_;
         contentLength_ = srcSegment.contentLength_;
         isEos_ = srcSegment.isEos_;
+        isLast_ = srcSegment.isLast_;
     }
 
     DashBufferSegment& operator=(const DashBufferSegment& srcSegment)
@@ -90,6 +92,7 @@ struct DashBufferSegment {
             bufferPosTail_ = srcSegment.bufferPosTail_;
             contentLength_ = srcSegment.contentLength_;
             isEos_ = srcSegment.isEos_;
+            isLast_ = srcSegment.isLast_;
         }
         return *this;
     }
@@ -109,6 +112,7 @@ struct DashBufferSegment {
         bufferPosTail_ = 0;
         contentLength_ = 0;
         isEos_ = false;
+        isLast_ = dashSegment->isLast_;
     }
 
     int32_t streamId_;
@@ -124,6 +128,7 @@ struct DashBufferSegment {
     size_t bufferPosTail_;
     size_t contentLength_;
     bool isEos_;
+    bool isLast_;
 };
 
 using SegmentDownloadDoneCbFunc = std::function<void(int streamId)>;
@@ -134,12 +139,11 @@ public:
                           uint64_t expectDuration);
     virtual ~DashSegmentDownloader();
 
-    bool Open(const std::shared_ptr<DashSegment> &dashSegment, bool isLastSegment);
+    bool Open(const std::shared_ptr<DashSegment> &dashSegment);
     void Close(bool isAsync, bool isClean);
     void Pause();
     void Resume();
-    DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded,
-                     bool isLastSegment);
+    DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded);
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
@@ -149,6 +153,7 @@ public:
     void UpdateStreamId(int streamId);
     void SetCurrentBitRate(int32_t bitRate);
     void SetDemuxerState();
+    void SetAllSegmentFinished();
     int GetStreamId() const;
     MediaAVCodec::MediaType GetStreamType() const;
     size_t GetContentLength();
@@ -174,21 +179,20 @@ private:
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
                          int32_t currentStreamId);
     std::shared_ptr<DashBufferSegment> GetCurrentSegment();
-    bool IsSegmentFinished(uint32_t &realReadLength, bool isLastSegment, DashReadRet &readRet);
+    bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &readRet);
     bool CheckReadInterrupt(uint32_t &realReadLength, uint32_t wantReadLength, DashReadRet &readRet,
-                            const std::atomic<bool> &isInterruptNeeded, bool isLastSegment);
+                            const std::atomic<bool> &isInterruptNeeded);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
     void OnWriteRingBuffer(uint32_t len);
-    bool HandleBuffering(const std::atomic<bool> &isInterruptNeeded, bool isLastSegment);
+    bool HandleBuffering(const std::atomic<bool> &isInterruptNeeded);
     void SaveDataHandleBuffering();
     bool HandleCache();
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
     void CalculateBitRate(size_t fragmentSize, double duration);
-    bool CheckAllSegmentFinish(bool isLastSegment);
-    bool CheckBreakCondition(bool isLastSegment);
+    bool CheckAllSegmentFinish();
     void UpdateCachedPercent(BufferingInfoType infoType);
 
 private:
@@ -237,7 +241,7 @@ private:
     uint64_t lastDurationRecord_{0};
     uint32_t lastCachedSize_{0};
     bool isFirstFrameArrived_{false};
-    bool isLastSegment_{false};
+    std::atomic<bool> isAllSegmentFinished_{false};
 };
 }
 }
