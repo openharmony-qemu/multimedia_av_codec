@@ -851,30 +851,34 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
             mediaSegment->bufferPosHead_ = bufferTail;
         }
         mediaSegment->bufferPosTail_ = buffer_->GetTail();
-
-        if (mediaSegment->contentLength_ == 0) {
-            mediaSegment->contentLength_ = downloadRequest_->GetFileContentLength();
-        }
-
-        // last packet len is 0 of chunk
-        if (len == 0 || (mediaSegment->contentLength_ > 0 &&
-            mediaSegment->bufferPosTail_ >= (mediaSegment->bufferPosHead_ + mediaSegment->contentLength_))) {
-            mediaSegment->isEos_ = true;
-            if (mediaSegment->isLast_) {
-                MEDIA_LOG_I("AllSegmentFinish streamId: " PUBLIC_LOG_D32 " download complete", streamId_);
-                isAllSegmentFinished_.store(true);
-            }
-            if (mediaSegment->contentLength_ == 0) {
-                mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
-            }
-            MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
-                PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
-                streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
-                mediaSegment->bufferPosTail_);
-        }
+        UpdateBufferSegment(mediaSegment, len);
         break;
     }
     return writeRet;
+}
+
+void DashSegmentDownloader::UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len)
+{
+    if (mediaSegment->contentLength_ == 0 && downloadRequest_ != nullptr) {
+        mediaSegment->contentLength_ = downloadRequest_->GetFileContentLength();
+    }
+
+    // last packet len is 0 of chunk
+    if (len == 0 || (mediaSegment->contentLength_ > 0 &&
+                     mediaSegment->bufferPosTail_ >= (mediaSegment->bufferPosHead_ + mediaSegment->contentLength_))) {
+        mediaSegment->isEos_ = true;
+        if (mediaSegment->isLast_) {
+            MEDIA_LOG_I("AllSegmentFinish streamId: " PUBLIC_LOG_D32 " download complete", streamId_);
+            isAllSegmentFinished_.store(true);
+        }
+        if (mediaSegment->contentLength_ == 0) {
+            mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
+        }
+        MEDIA_LOG_I("SaveData eos:streamId:" PUBLIC_LOG_D32 ", segmentNum:" PUBLIC_LOG_D64 ", contentLength:"
+            PUBLIC_LOG_ZU ", bufferPosHead:" PUBLIC_LOG_ZU  " ,bufferPosEnd:" PUBLIC_LOG_ZU,
+            streamId_, mediaSegment->numberSeq_, mediaSegment->contentLength_, mediaSegment->bufferPosHead_,
+            mediaSegment->bufferPosTail_);
+    }
 }
 
 void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)

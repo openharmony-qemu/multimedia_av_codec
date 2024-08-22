@@ -164,7 +164,7 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
     MEDIA_LOG_I("GetNextSegmentByStreamId " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, streamId, getRet);
     if (seg != nullptr) {
         segmentDownloader->Open(seg);
-    } else if(getRet == DASH_MPD_GET_FINISH) {
+    } else if (getRet == DASH_MPD_GET_FINISH) {
         segmentDownloader->SetAllSegmentFinished();
     }
 }
@@ -513,7 +513,7 @@ void DashMediaDownloader::GetSegmentToDownload(int downloadStreamId, bool stream
     
     if (segment != nullptr) {
         segmentDownloader->Open(segment);
-    } else if(ret == DASH_MPD_GET_FINISH) {
+    } else if (ret == DASH_MPD_GET_FINISH) {
         segmentDownloader->SetAllSegmentFinished();
     }
 }
