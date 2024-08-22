@@ -551,8 +551,10 @@ Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
     FALSE_RETURN_V_MSG_E(curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr,
                          Status::ERROR_NO_MEMORY, "subtitle seek failed, no subtitle");
     int64_t realSeekTime = 0;
-    return streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_CLOSEST_SYNC,
-                                                               realSeekTime);
+    auto plugin = streamInfoMap_[curSubTitleStreamID_].plugin;
+    auto preSeekRes = plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    FALSE_RETURN_V(preSeekRes != Status::OK, Status::OK);
+    return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
 }
 
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
