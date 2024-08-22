@@ -42,8 +42,11 @@ void CencInfoCapiUnitTest::TearDown() {}
  */
 HWTEST_F(CencInfoCapiUnitTest, CencInfo_Create_001, TestSize.Level0)
 {
+    OH_AVErrCode errNo = AV_ERR_OK;
     OH_AVCencInfo *cencInfo = OH_AVCencInfo_Create();
     EXPECT_NE(cencInfo, nullptr);
+    errNo = OH_AVCencInfo_Destroy(cencInfo);
+    EXPECT_EQ(errNo, AV_ERR_OK);
 }
 
 /**
