@@ -28,7 +28,6 @@
 #include "buffer/avallocator.h"
 #include "common/event.h"
 #include "common/log.h"
-#include "frame_detector.h"
 #include "meta/media_types.h"
 #include "meta/meta.h"
 #include "osal/utils/dump_buffer.h"
@@ -1059,6 +1058,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         isSeekError_.store(true);
     }
     MEDIA_LOG_I("SeekTo done");
+    isFirstFrameAfterSeek_.store(true);
     return ret;
 }
 
@@ -1655,19 +1655,12 @@ if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
     }
 
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
-        if (trackId != videoTrackId_ || ret != Status::OK ||
-            !IsContainIdrFrame(bufferMap_[trackId]->memory_->GetAddr(), bufferMap_[trackId]->memory_->GetSize())) {
-            if (firstAudio_ && trackId == audioTrackId_) {
-                bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
-                firstAudio_ = false;
-                return Status::ERROR_INVALID_PARAMETER;
+        if (trackId == videoTrackId_ && isFirstFrameAfterSeek_.load()) {
+            bool isSyncFrame = (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::SYNC_FRAME)) != 0;
+            if (!isSyncFrame) {
+                MEDIA_LOG_E("The first frame after seeking is not a sync frame.");
             }
-            bool isEos = (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) != 0;
-            bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], isEos);
-            eosMap_[trackId] = isEos;
-            MEDIA_LOG_I("CopyFrameToUserQueue is seeking, not found idr frame. trackId: " PUBLIC_LOG_U32
-                ", isEos: %{public}i", trackId, isEos);
-            return Status::ERROR_INVALID_PARAMETER;
+            isFirstFrameAfterSeek_.store(false);
         }
         MEDIA_LOG_I("CopyFrameToUserQueue is seeking, found idr frame. trackId: " PUBLIC_LOG_U32, trackId);
         isSeeked_ = false;
@@ -1822,25 +1815,6 @@ int64_t MediaDemuxer::ReadLoop(uint32_t trackId)
             return RETRY_DELAY_TIME_US; // delay to retry if no frame
         }
     }
-}
-
-bool MediaDemuxer::IsContainIdrFrame(const uint8_t* buff, size_t bufSize)
-{
-    if (buff == nullptr) {
-        return false;
-    }
-    std::shared_ptr<FrameDetector> frameDetector;
-    if (videoMime_ == std::string(MimeType::VIDEO_AVC)) {
-        frameDetector = FrameDetector::GetFrameDetector(CodeType::H264);
-    } else if (videoMime_ == std::string(MimeType::VIDEO_HEVC)) {
-        frameDetector = FrameDetector::GetFrameDetector(CodeType::H265);
-    } else {
-        return true;
-    }
-    if (frameDetector == nullptr) {
-        return true;
-    }
-    return frameDetector->IsContainIdrFrame(buff, bufSize);
 }
 
 Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
