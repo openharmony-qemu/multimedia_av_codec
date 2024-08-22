@@ -31,10 +31,7 @@ namespace MediaAVCodec {
 namespace Sample {
 VideoSampleBase::~VideoSampleBase()
 {
-    StartRelease();
-    if (releaseThread_ && releaseThread_->joinable()) {
-        releaseThread_->join();
-    }
+    InnerRelease();
 }
 
 int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
@@ -65,7 +62,6 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = videoCodec->Config(info, reinterpret_cast<uintptr_t *>(context_.get()));
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Video codec config failed");
 
-    releaseThread_ = nullptr;
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -114,15 +110,11 @@ void VideoSampleBase::Release()
     outputFile_ = nullptr;
 
     AVCODEC_LOGI("Succeed");
-    doneCond_.notify_all();
 }
 
-void VideoSampleBase::StartRelease()
+void VideoSampleBase::InnerRelease()
 {
-    if (releaseThread_ == nullptr) {
-        AVCODEC_LOGI("Start to release");
-        releaseThread_ = std::make_unique<std::thread>(&VideoSampleBase::Release, this);
-    }
+    Release();
 }
 
 void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)

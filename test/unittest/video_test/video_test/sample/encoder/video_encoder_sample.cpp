@@ -44,7 +44,6 @@ int32_t VideoEncoderSample::StartThread()
     outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
         AVCODEC_LOGE("Create thread failed");
-        StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
     return AVCODEC_SAMPLE_ERR_OK;
@@ -73,7 +72,6 @@ void VideoEncoderSample::BufferInputThread()
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     PushEosFrame();
-    StartRelease();
 }
 
 void VideoEncoderSample::SurfaceInputThread()
@@ -114,7 +112,6 @@ void VideoEncoderSample::SurfaceInputThread()
     OH_NativeWindow_DestroyNativeWindowBuffer(buffer);
     context_->videoCodec_->PushInput(eosBufferInfo);
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
-    StartRelease();
 }
 
 void VideoEncoderSample::OutputThread()
@@ -137,6 +134,7 @@ void VideoEncoderSample::OutputThread()
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
+    NotifySampleDone();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
 }
 } // Sample

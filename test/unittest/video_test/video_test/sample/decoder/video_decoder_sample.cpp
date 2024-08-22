@@ -35,6 +35,9 @@ namespace MediaAVCodec {
 namespace Sample {
 VideoDecoderSample::~VideoDecoderSample()
 {
+    if (context_) {
+        context_->videoCodec_ = nullptr;
+    }
     if (rosenWindow_) {
         rosenWindow_->Destroy();
         rosenWindow_ = nullptr;
@@ -57,7 +60,6 @@ int32_t VideoDecoderSample::StartThread()
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
         AVCODEC_LOGE("Create thread failed");
-        StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
     return AVCODEC_SAMPLE_ERR_OK;
@@ -86,7 +88,6 @@ void VideoDecoderSample::InputThread()
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputBufferQueue.GetFrameCount());
     PushEosFrame();
-    StartRelease();
 }
 
 void VideoDecoderSample::OutputThread()
@@ -109,6 +110,7 @@ void VideoDecoderSample::OutputThread()
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputBufferQueue.GetFrameCount());
+    NotifySampleDone();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputBufferQueue.GetFrameCount());
 }
 
