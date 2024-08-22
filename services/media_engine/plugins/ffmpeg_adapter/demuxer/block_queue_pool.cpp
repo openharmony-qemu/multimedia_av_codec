@@ -204,7 +204,15 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
         }
         if (quePool_[queIndex].blockQue->Size() > 0) {
             auto block = quePool_[queIndex].blockQue->Pop();
+            if (block == nullptr) {
+                MEDIA_LOG_D("block is nullptr");
+                return nullptr;
+            }
             for (auto pkt : block->pkts) {
+                if (pkt == nullptr) {
+                    MEDIA_LOG_D("pkt is nullptr, will find next");
+                    continue;
+                }
                 uint32_t pktSize = static_cast<uint32_t>(pkt->size);
                 quePool_[queIndex].dataSize =
                     quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
