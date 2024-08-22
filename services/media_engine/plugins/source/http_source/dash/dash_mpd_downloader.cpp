@@ -739,6 +739,14 @@ void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentInd
             MEDIA_LOG_E("ParseSidx AddOneSegment is failed");
         }
     }
+
+    if (currentDownloadStream_->mediaSegments_.size() > 0) {
+        std::shared_ptr<DashSegment> lastSegment = currentDownloadStream_->mediaSegments_[
+            currentDownloadStream_->mediaSegments_.size() - 1];
+        if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
+            lastSegment->isLast_ = true;
+        }
+    }
 }
 
 void DashMpdDownloader::OpenStream(std::shared_ptr<DashStreamDescription> stream)

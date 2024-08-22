@@ -388,7 +388,7 @@ void DashSegmentDownloader::HandleCachedDuration()
         (lastDurationRecord_ > cachedDuration &&
          lastDurationRecord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
         if (callback_ != nullptr) {
-            MEDIA_LOG_I("HandleCachedDuration OnEvent streamId: " PUBLIC_LOG_D32 " cachedDuration: "
+            MEDIA_LOG_D("HandleCachedDuration OnEvent streamId: " PUBLIC_LOG_D32 " cachedDuration: "
                 PUBLIC_LOG_U64, streamId_, cachedDuration);
             callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         }
@@ -1040,8 +1040,8 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
             isAllSegmentFinished_.store(true);
         }
         MEDIA_LOG_I("UpdateDownloadFinished: segmentNum:" PUBLIC_LOG_D64 ", contentLength:" PUBLIC_LOG_ZU
-            ", isCleaningBuffer:" PUBLIC_LOG_D32, mediaSegment_->numberSeq_, mediaSegment_->contentLength_,
-            isCleaningBuffer_.load());
+            ", isCleaningBuffer:" PUBLIC_LOG_D32 " isLast: " PUBLIC_LOG_D32, mediaSegment_->numberSeq_,
+            mediaSegment_->contentLength_, isCleaningBuffer_.load(), mediaSegment_->isLast_);
     }
 
     SaveDataHandleBuffering();
