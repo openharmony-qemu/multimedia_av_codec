@@ -1173,7 +1173,7 @@ int32_t HlsMediaDownloader::GetWaterLineAbove()
 
 void HlsMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ <= 0) {
+    if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
 
