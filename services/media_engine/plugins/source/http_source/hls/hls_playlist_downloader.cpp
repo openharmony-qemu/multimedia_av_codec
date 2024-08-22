@@ -157,7 +157,6 @@ void HlsPlayListDownloader::NotifyListChange()
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     if (!location.empty()) {
-        MEDIA_LOG_I("old url " PUBLIC_LOG_S " new url " PUBLIC_LOG_S, url_.c_str(), location.c_str());
         url_ = location;
     }
     if (!master_) {
