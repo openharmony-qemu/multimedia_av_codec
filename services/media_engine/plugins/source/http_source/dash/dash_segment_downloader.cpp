@@ -134,6 +134,7 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
         PutRequestIntoDownloader(mediaSegment_->duration_, mediaSegment_->startRangeValue_,
                                  mediaSegment_->endRangeValue_, mediaSegment_->url_);
     }
+    
     return true;
 }
 
@@ -864,7 +865,7 @@ bool DashSegmentDownloader::SaveData(uint8_t* data, uint32_t len)
 
         // last packet len is 0 of chunk
         if (len == 0 || (mediaSegment->contentLength_ > 0 &&
-            (mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_) >= mediaSegment->contentLength_)) {
+            mediaSegment->bufferPosTail_ >= (mediaSegment->bufferPosHead_ + mediaSegment->contentLength_))) {
             mediaSegment->isEos_ = true;
             if (mediaSegment->contentLength_ == 0) {
                 mediaSegment->contentLength_ = mediaSegment->bufferPosTail_ - mediaSegment->bufferPosHead_;
