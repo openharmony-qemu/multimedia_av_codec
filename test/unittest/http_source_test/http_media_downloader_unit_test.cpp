@@ -349,8 +349,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->SetDownloadErrorState();
-    httpMediaDownloader->SetCurrentBitRate(-1);
-    httpMediaDownloader->SetCurrentBitRate(1000);
+    httpMediaDownloader->SetCurrentBitRate(-1, 0);
+    httpMediaDownloader->SetCurrentBitRate(1000, 0);
     httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->ChangeDownloadPos();
     httpMediaDownloader->Close(true);
@@ -426,8 +426,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_NULL, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->SetDownloadErrorState();
-    httpMediaDownloader->SetCurrentBitRate(-1);
-    httpMediaDownloader->SetCurrentBitRate(1000);
+    httpMediaDownloader->SetCurrentBitRate(-1, 0);
+    httpMediaDownloader->SetCurrentBitRate(1000, 0);
     httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->HandleCachedDuration();
     httpMediaDownloader->Close(true);

@@ -165,7 +165,8 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
     DashMpdGetRet getRet = mpdDownloader_->GetNextSegmentByStreamId(streamId, seg);
     MEDIA_LOG_I("GetNextSegmentByStreamId " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, streamId, getRet);
     if (seg != nullptr) {
-        segmentDownloader->Open(seg);
+        bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(streamId);
+        segmentDownloader->Open(seg, isLastSegment);
     }
 }
 
@@ -408,7 +409,8 @@ void DashMediaDownloader::OpenInitSegment(
     if (initSeg != nullptr) {
         downloader->SetInitSegment(initSeg);
     }
-    downloader->Open(seg);
+    bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(streamDesc->streamId_);
+    downloader->Open(seg, isLastSegment);
     MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
         PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
 }
@@ -512,7 +514,8 @@ void DashMediaDownloader::GetSegmentToDownload(int downloadStreamId, bool stream
     }
     
     if (segment != nullptr) {
-        segmentDownloader->Open(segment);
+        bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(downloadStreamId);
+        segmentDownloader->Open(segment, isLastSegment);
     }
 }
 
@@ -724,7 +727,8 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
             segmentDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
             mpdDownloader_->SetCurrentNumberSeqByStreamId(segmentDownloader->GetStreamId(), segment->numberSeq_);
             segmentDownloader->SetInitSegment(initSeg, true);
-            segmentDownloader->Open(segment);
+            bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(segmentDownloader->GetStreamId());
+            segmentDownloader->Open(segment, isLastSegment);
         }
     }
 }
@@ -1011,11 +1015,10 @@ void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     mpdDownloader_->SetInterruptState(isInterruptNeeded);
 }
 
-Status DashMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status DashMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    MEDIA_LOG_I("SetCurrentBitRate stream: " PUBLIC_LOG_D32 " biteRate: " PUBLIC_LOG_D32, streamID, bitRate);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(streamID);
     if (segmentDownloader != nullptr) {
         segmentDownloader->SetCurrentBitRate(bitRate);
     }

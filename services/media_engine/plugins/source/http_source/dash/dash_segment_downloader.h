@@ -134,7 +134,7 @@ public:
                           uint64_t expectDuration);
     virtual ~DashSegmentDownloader();
 
-    bool Open(const std::shared_ptr<DashSegment> &dashSegment);
+    bool Open(const std::shared_ptr<DashSegment> &dashSegment, bool isLastSegment);
     void Close(bool isAsync, bool isClean);
     void Pause();
     void Resume();
@@ -182,6 +182,7 @@ private:
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
     void OnWriteRingBuffer(uint32_t len);
     bool HandleBuffering(const std::atomic<bool> &isInterruptNeeded, bool isLastSegment);
+    void SaveDataHandleBuffering();
     bool HandleCache();
     void HandleCachedDuration();
     int32_t GetWaterLineAbove();
@@ -230,14 +231,13 @@ private:
     // play water line
     Callback* callback_{nullptr};
     uint32_t waterLineAbove_{0};
-    bool isBuffering_{false};
-    bool isReadFrame_{false};
-    bool isBufferEnough_{true};
+    std::atomic<bool> isBuffering_{false};
     uint32_t downloadBiteRate_{0};
     int64_t realTimeBitBate_{0};
     uint64_t lastDurationRecord_{0};
     uint32_t lastCachedSize_{0};
     bool isFirstFrameArrived_{false};
+    bool isLastSegment_{false};
 };
 }
 }

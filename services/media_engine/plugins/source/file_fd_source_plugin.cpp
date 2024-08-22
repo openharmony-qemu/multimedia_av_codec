@@ -544,7 +544,7 @@ void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
     isReadFrame_ = true;
 }
 
-Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     currentBitRate_ = bitRate / TO_BYTE; // 8b
     MEDIA_LOG_I("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);

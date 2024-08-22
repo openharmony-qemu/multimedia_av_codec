@@ -86,7 +86,7 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
