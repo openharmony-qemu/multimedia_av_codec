@@ -395,7 +395,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I(PUBLIC_LOG_S " Retry Begin, url : " PUBLIC_LOG_S, name_.c_str(), request->url_.c_str());
+        MEDIA_LOG_I("Retry Begin");
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
         requestQue_->SetActive(false, false);
     }

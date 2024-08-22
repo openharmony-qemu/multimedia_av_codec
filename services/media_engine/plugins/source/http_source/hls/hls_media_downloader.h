@@ -222,7 +222,7 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
-    unsigned int waterLineAbove_ {0};
+    size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};
