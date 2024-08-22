@@ -571,9 +571,9 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     }
     if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
-        if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_CLOSEST_SYNC) {
+        if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_NEXT_SYNC) {
             ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
-                -1, seekTime, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realSeekTime);
+                -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
         }
     }
     return Status::OK;
