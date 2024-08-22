@@ -676,7 +676,6 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         outputBufferMap_.insert(std::make_pair(index, outputBuffer));
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (videoFrameReadyCallback_ != nullptr) {
-            lock.unlock(); // unlock for videoFrameReadyCallback_->ConsumeVideoFrame may block
             MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);
