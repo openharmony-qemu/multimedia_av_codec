@@ -81,6 +81,7 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
@@ -133,7 +134,6 @@ private:
 
     bool isHttpSource_ = false;
     std::string videoMime_{};
-    bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
     Status InnerPrepare();
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
@@ -263,6 +263,7 @@ private:
     int64_t lastSubtitlePts_ = 0;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
+    std::atomic<bool> isFirstFrameAfterSeek_ {false};
 };
 } // namespace Media
 } // namespace OHOS

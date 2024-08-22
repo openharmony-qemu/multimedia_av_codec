@@ -164,6 +164,11 @@ public:
         return Status::OK;
     }
 
+    virtual Status GetPlaybackInfo(PlaybackInfo& playbackInfo)
+    {
+        return Status::OK;
+    }
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;
@@ -213,6 +218,16 @@ public:
     }
 
     virtual Status SelectStream(int32_t streamID)
+    {
+        return Status::OK;
+    }
+
+    virtual Status Pause()
+    {
+        return Status::OK;
+    }
+
+    virtual Status Resume()
     {
         return Status::OK;
     }

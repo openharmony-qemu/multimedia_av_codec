@@ -133,6 +133,24 @@ Status HttpSourcePlugin::Stop()
     return Status::OK;
 }
 
+Status HttpSourcePlugin::Pause()
+{
+    MEDIA_LOG_I("Pause enter.");
+    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+        downloader_->Pause();
+    }
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::Resume()
+{
+    MEDIA_LOG_I("Resume enter.");
+    if (downloader_ != nullptr && uri_.find(".m3u8") != std::string::npos) {
+        downloader_->Resume();
+    }
+    return Status::OK;
+}
+
 #undef ERROR_INVALID_PARAMETER
 
 Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
@@ -376,6 +394,14 @@ Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
     MEDIA_LOG_I("HttpSourcePlugin::GetDownloadInfo");
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     downloader_->GetDownloadInfo(downloadInfo);
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    MEDIA_LOG_I("HttpSourcePlugin::GetPlaybackInfo");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    downloader_->GetPlaybackInfo(playbackInfo);
     return Status::OK;
 }
 

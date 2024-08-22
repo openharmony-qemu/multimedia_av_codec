@@ -262,6 +262,10 @@ Status HttpCurlClient::Close()
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
     }
+    ipFlag_ = false;
+    if (!ip_.empty()) {
+        ip_.clear();
+    }
     return Status::OK;
 }
 
@@ -276,8 +280,23 @@ Status HttpCurlClient::Deinit()
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
     }
+    ipFlag_ = false;
+    if (!ip_.empty()) {
+        ip_.clear();
+    }
     curl_global_cleanup();
     MEDIA_LOG_I("Deinit out");
+    return Status::OK;
+}
+
+Status HttpCurlClient::GetIp(std::string &ip)
+{
+    if (!ip_.empty()) {
+        std::string obj(ip_);
+        ip = obj;
+    } else {
+        MEDIA_LOG_E("Get ip failed, ip is null.");
+    }
     return Status::OK;
 }
 
@@ -391,8 +410,8 @@ Status HttpCurlClient::RequestData(long startPos, int len, const std::string& ur
     }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
-    AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    mutex_.lock();
     CURLcode returnCode = curl_easy_perform(easyHandle_);
     std::set <CURLcode> notRetrySet = {
         CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
@@ -419,9 +438,29 @@ Status HttpCurlClient::RequestData(long startPos, int len, const std::string& ur
             serverCode = httpCode;
             ret = Status::ERROR_SERVER;
         }
+        SetIp();
     }
+    mutex_.unlock();
     completedCb(clientCode, serverCode, ret);
     return ret;
+}
+
+Status HttpCurlClient::SetIp()
+{
+    FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    Status retSetIp = Status::OK;
+    if (!ipFlag_) {
+        char* ip = nullptr;
+        if (!curl_easy_getinfo(easyHandle_, CURLINFO_PRIMARY_IP, &ip) && ip) {
+            ip_ = ip;
+            ipFlag_ = true;
+        } else {
+            ip_ = "";
+            MEDIA_LOG_E("Set sever ip failed.");
+            retSetIp = Status::ERROR_UNKNOWN;
+        }
+    }
+    return retSetIp;
 }
 }
 }

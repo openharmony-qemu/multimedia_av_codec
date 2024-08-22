@@ -69,15 +69,16 @@ bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, s
 
 void DownloadMonitor::Pause()
 {
-    downloader_->Pause();
-    isPlaying_ = false;
-    lastReadTime_ = 0;
+    if (downloader_ != nullptr) {
+        downloader_->Pause();
+    }
 }
 
 void DownloadMonitor::Resume()
 {
-    downloader_->Resume();
-    isPlaying_ = true;
+    if (downloader_ != nullptr) {
+        downloader_->Resume();
+    }
 }
 
 void DownloadMonitor::Close(bool isAsync)
@@ -266,6 +267,14 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
     if (downloader_ != nullptr) {
         MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
         downloader_->GetDownloadInfo(downloadInfo);
+    }
+}
+
+void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
+{
+    if (downloader_ != nullptr) {
+        MEDIA_LOG_I("DownloadMonitor GetPlaybackInfo");
+        downloader_->GetPlaybackInfo(playbackInfo);
     }
 }
 

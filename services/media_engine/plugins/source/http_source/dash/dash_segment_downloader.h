@@ -158,6 +158,9 @@ public:
     uint64_t GetDownloadSpeed() const;
     uint32_t GetRingBufferSize() const;
     uint32_t GetRingBufferCapacity() const;
+    void GetIp(std::string& ip);
+    bool GetDownloadFinishState();
+    std::pair<int64_t, int64_t> GetDownloadRecordData();
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -220,6 +223,12 @@ private:
     double downloadSpeed_ {0};
     uint64_t downloadDuringTime_ {0};
     uint64_t downloadBits_ {0};
+    uint64_t totalDownloadDuringTime_ {0};
+    struct RecordData {
+        double downloadRate {0};
+        uint64_t bufferDuring {0};
+    };
+    std::shared_ptr<RecordData> recordData_;
     SteadyClock steadyClock_;
 
     // play water line

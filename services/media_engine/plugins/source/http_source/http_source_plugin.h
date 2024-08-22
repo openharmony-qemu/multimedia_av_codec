@@ -35,6 +35,8 @@ public:
     Status Reset() override;
     Status Start() override;
     Status Stop() override;
+    Status Pause() override;
+    Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
     Status SetCallback(Callback* cb) override;
@@ -57,6 +59,8 @@ public:
     void SetInterruptState(bool isInterruptNeeded) override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate) override;
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+
 private:
     void CloseUri();
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);

@@ -74,6 +74,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
+    Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
 
     FilterType GetFilterType();
 
