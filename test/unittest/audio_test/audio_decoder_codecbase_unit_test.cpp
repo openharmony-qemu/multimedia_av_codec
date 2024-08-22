@@ -141,6 +141,10 @@ protected:
 
 void AudioCodeDecoderUnitTest::SetUpTestCase(void)
 {
+    AudioFFMpegMp3DecoderPlugin::avRegister();
+    AudioFFMpegFlacDecoderPlugin::avRegister();
+    AudioFFMpegAacDecoderPlugin::avRegister();
+    AudioOpusDecoderPlugin::avRegister();
     cout << "[SetUpTestCase]: " << endl;
 }
 
@@ -157,6 +161,7 @@ void AudioCodeDecoderUnitTest::SetUp(void)
 void AudioCodeDecoderUnitTest::TearDown(void)
 {
     if (adec_) {
+        adec_->Stop();
         adec_->Release();
     }
     cout << "[TearDown]: over!!!" << endl;
@@ -164,7 +169,6 @@ void AudioCodeDecoderUnitTest::TearDown(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateMp3CodecFunc(void)
 {
-    AudioFFMpegMp3DecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_MP3_NAME);
 
     signal_ = new ADecSignal();
@@ -175,7 +179,6 @@ int32_t AudioCodeDecoderUnitTest::CreateMp3CodecFunc(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
 {
-    AudioFFMpegFlacDecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_FLAC_NAME);
 
     signal_ = new ADecSignal();
@@ -186,7 +189,6 @@ int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
 {
-    AudioFFMpegAacDecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_AAC_NAME);
 
     signal_ = new ADecSignal();
@@ -197,7 +199,6 @@ int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
 
 int32_t AudioCodeDecoderUnitTest::CreateOpusCodecFunc(void)
 {
-    AudioOpusDecoderPlugin::avRegister();
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_OPUS_NAME);
 
     signal_ = new ADecSignal();
@@ -397,6 +398,7 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Flush_02, TestSize.Level1)
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Flush());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Release());
+    adec_ = nullptr;
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Reset_01, TestSize.Level1)
@@ -431,6 +433,7 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Release_01, TestSize.Level1)
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceMp3Func());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Release());
+    adec_ = nullptr;
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Release_02, TestSize.Level1)
@@ -442,6 +445,7 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Release_02, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Release());
+    adec_ = nullptr;
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Release_03, TestSize.Level1)
@@ -449,6 +453,7 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Release_03, TestSize.Level1)
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateMp3CodecFunc());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceMp3Func());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Release());
+    adec_ = nullptr;
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_NotifyEos_01, TestSize.Level1)
