@@ -150,7 +150,8 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());
         FALSE_RETURN_V_MSG_E(mergedBuffer != nullptr, Status::ERROR_UNKNOWN, "mergedBuffer invalid");
-        FALSE_RETURN_V_MSG_E(mergedBuffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "mergedBuffer->GetMemory invalid");
+        FALSE_RETURN_V_MSG_E(mergedBuffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN,
+            "mergedBuffer->GetMemory invalid");
         mergedBuffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
         mergedBuffer->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
             tempBuffer->GetMemory()->GetSize(), memory->GetSize());
