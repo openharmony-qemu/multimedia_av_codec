@@ -40,7 +40,7 @@ protected:
     virtual void Release();
     void InnerRelease();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
-    void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size);
+    void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr);
     void PushEosFrame();
 
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;

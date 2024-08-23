@@ -153,13 +153,13 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
 
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     if (!(info.codecType & 0b10)) {   // 0b10: Video encoder mask
-        WriteOutputFileWithStrideYUV420(bufferAddr, bufferInfo.attr.size);
+        WriteOutputFileWithStrideYUV420(bufferAddr);
     } else {
         outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
     }
 }
 
-void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size)
+void VideoSampleBase::WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr)
 {
     CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     auto &info = *context_->sampleInfo;
