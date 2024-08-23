@@ -36,7 +36,7 @@ public:
 
 protected:
     virtual int32_t Init();
-    virtual int32_t StartThread();
+    virtual int32_t Prepare();
     virtual void Release();
     void InnerRelease();
     void DumpOutput(const CodecBufferInfo &bufferInfo);

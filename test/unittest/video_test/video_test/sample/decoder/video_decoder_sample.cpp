@@ -36,7 +36,7 @@ namespace Sample {
 VideoDecoderSample::~VideoDecoderSample()
 {
     if (context_) {
-        context_->videoCodec_ = nullptr;
+        context_->videoCodec = nullptr;
     }
     if (rosenWindow_) {
         rosenWindow_->Destroy();
@@ -54,7 +54,7 @@ int32_t VideoDecoderSample::Init()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoderSample::StartThread()
+int32_t VideoDecoderSample::Prepare()
 {
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
@@ -82,7 +82,7 @@ void VideoDecoderSample::InputThread()
 
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP, info.frameInterval);
 
-        ret = context_->videoCodec_->PushInput(bufferInfo);
+        ret = context_->videoCodec->PushInput(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
@@ -105,7 +105,7 @@ void VideoDecoderSample::OutputThread()
         DumpOutput(bufferInfo);
         ThreadSleep(info.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP, info.frameInterval);
 
-        int32_t ret = context_->videoCodec_->FreeOutput(bufferInfo.bufferIndex);
+        int32_t ret = context_->videoCodec->FreeOutput(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
