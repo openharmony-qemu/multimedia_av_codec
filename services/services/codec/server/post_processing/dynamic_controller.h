@@ -44,10 +44,14 @@ public:
     int32_t StartImpl();
     int32_t StopImpl();
     int32_t FlushImpl();
+    int32_t GetOutputFormatImpl(Media::Format& format);
     int32_t ResetImpl();
     int32_t ReleaseImpl();
     int32_t ReleaseOutputBufferImpl(uint32_t index, bool render);
+
 private:
+    GSError OnProducerBufferReleased(sptr<SurfaceBuffer> &buffer);
+
     bool ready_{false};
     DynamicInterface interface_;
     DynamicColorSpaceConverterHandle* instance_{nullptr};

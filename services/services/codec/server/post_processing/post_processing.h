@@ -81,6 +81,8 @@ public:
                 [[fallthrough]];
             case State::RUNNING:
                 [[fallthrough]];
+            case State::FLUSHED:
+                [[fallthrough]];
             case State::STOPPED:
                 {
                     int32_t ret = controller_->SetOutputSurface(surface);
@@ -131,8 +133,9 @@ public:
     int32_t Start()
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
-        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::PREPARED || state_.Get() == State::STOPPED,
-            AVCS_ERR_INVALID_OPERATION, "Post processing is not prepared");
+        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::PREPARED || state_.Get() == State::STOPPED ||
+                                 state_.Get() == State::FLUSHED,
+                                 AVCS_ERR_INVALID_OPERATION, "Post processing is not prepared");
         AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Start();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start failed");
@@ -143,8 +146,8 @@ public:
     int32_t Stop()
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
-        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::RUNNING, AVCS_ERR_INVALID_STATE,
-            "Invalid post processing state: %{public}s", state_.Name());
+        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::RUNNING || state_.Get() == State::FLUSHED,
+                                 AVCS_ERR_INVALID_STATE, "Invalid post processing state: %{public}s", state_.Name());
         AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Stop();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start failed");
@@ -160,6 +163,7 @@ public:
         AVCODEC_SYNC_TRACE;
         int32_t ret = controller_->Flush();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Flush failed");
+        state_.Set(State::FLUSHED);
         return AVCS_ERR_OK;
     }
 
@@ -178,7 +182,10 @@ public:
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
         AVCODEC_SYNC_TRACE;
+        config_.inputSurface = nullptr;
+        config_.outputSurface = nullptr;
         controller_->Release();
+        controller_->Destroy();
         controller_->UnloadInterfaces();
         codec_.reset();
         state_.Set(State::DISABLED);
@@ -198,14 +205,19 @@ public:
 
     void GetOutputFormat(Format& format)
     {
-        format = format_;
+        CHECK_AND_RETURN_LOG(controller_, "Post processing controller is null");
+        AVCODEC_SYNC_TRACE;
+        int32_t ret = controller_->GetOutputFormat(format);
+        CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "GetOutputFormat failed");
+        return;
     }
 private:
     int32_t Init(const Format& format)
     {
         controller_ = std::make_unique<T>();
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_NO_MEMORY, "Create post processing controller failed");
-        CHECK_AND_RETURN_RET_LOG(controller_->LoadInterfaces(), AVCS_ERR_UNSUPPORT, "Initialize interfaces failed.");
+        CHECK_AND_RETURN_RET_LOG(controller_->LoadInterfaces(), AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION,
+                                 "Initialize interfaces failed.");
 
         CreateConfiguration(format);
 
@@ -364,18 +376,18 @@ private:
     }
 
     struct Configuration {
-        int32_t width;
-        int32_t height;
-        int32_t inputColorSpaceType;
-        int32_t inputMetadataType;
-        int32_t inputPixelFormat;
-        sptr<Surface> inputSurface;
-        int32_t outputColorSpaceType;
-        int32_t outputMetadataType;
-        int32_t outputPixelFormat;
-        sptr<Surface> outputSurface;
-        int32_t rotation;
-        int32_t scalingMode;
+        int32_t width{0};
+        int32_t height{0};
+        int32_t inputColorSpaceType{0};
+        int32_t inputMetadataType{0};
+        int32_t inputPixelFormat{0};
+        sptr<Surface> inputSurface{nullptr};
+        int32_t outputColorSpaceType{0};
+        int32_t outputMetadataType{0};
+        int32_t outputPixelFormat{0};
+        sptr<Surface> outputSurface{nullptr};
+        int32_t rotation{0};
+        int32_t scalingMode{0};
     };
 
     StateMachine state_;

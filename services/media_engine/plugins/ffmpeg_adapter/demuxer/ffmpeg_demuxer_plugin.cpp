@@ -122,6 +122,35 @@ static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_SVG,
 };
 
+void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
+{
+    (void)avcl;
+    char buf[500] = {0}; // 500
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    if (ret < 0) {
+        return;
+    }
+    switch (level) {
+        case AV_LOG_WARNING:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_ERROR:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_FATAL:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_INFO:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
+            break;
+        case AV_LOG_DEBUG:
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
+            break;
+        default:
+            break;
+    }
+}
+
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -1331,10 +1360,8 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     Status ret = GetSeiInfo();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
-    OHOS::Media::Format format;
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
-    format.SetMeta(std::make_shared<Meta>(mediaInfo.general));
-    MEDIA_LOG_I("general meta: " PUBLIC_LOG_S, format.Stringify().c_str());
+    StringifyMeta(mediaInfo.general);
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         MEDIA_LOG_I("Parse info for track " PUBLIC_LOG_D32, trackIndex);
         Meta meta;
@@ -1363,8 +1390,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
-        format.SetMeta(std::make_shared<Meta>(meta));
-        MEDIA_LOG_I("track meta: " PUBLIC_LOG_S, format.Stringify().c_str());
+        StringifyMeta(meta);
     }
     return Status::OK;
 }
