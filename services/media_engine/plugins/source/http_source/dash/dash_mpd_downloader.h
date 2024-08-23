@@ -115,6 +115,7 @@ public:
     virtual ~DashMpdDownloader();
 
     void Open(const std::string &url);
+    void Close(bool isAsync);
     void SetStatusCallback(StatusCallbackFunc cb);
     void SetMpdCallback(DashMpdCallback *callback);
     int64_t GetDuration() const;
@@ -127,7 +128,6 @@ public:
     int GetInUseVideoStreamId() const;
     DashMpdGetRet GetNextSegmentByStreamId(int streamId, std::shared_ptr<DashSegment> &seg);
     DashMpdGetRet GetBreakPointSegment(int streamId, int64_t breakpoint, std::shared_ptr<DashSegment> &seg);
-    bool IsAllSegmentFinishedByStreamId(int streamId);
     DashMpdGetRet GetNextVideoStream(DashMpdBitrateParam &param, int &streamId);
     DashMpdGetRet GetNextTrackStream(DashMpdTrackParam &param);
     Status GetStreamInfo(std::vector<StreamInfo> &streams);
@@ -138,6 +138,7 @@ public:
     void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint32_t nextSegTime);
     void SetHdrStart(bool isHdrStart);
     void SetInitResolution(unsigned int width, unsigned int height);
+    void SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type);
     void SetInterruptState(bool isInterruptNeeded);
     std::string GetUrl() const;
 
@@ -156,8 +157,11 @@ private:
     void GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, const std::string &periodBaseUrl,
                                  DashStreamDescription &streamDesc);
     unsigned int GetResolutionDelta(unsigned int width, unsigned int height);
+    bool IsChoosedVideoStream(const std::shared_ptr<DashStreamDescription> &choosedStream,
+        const std::shared_ptr<DashStreamDescription> &currentStream);
     bool IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
         const std::shared_ptr<DashStreamDescription> &currentStream);
+    bool IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
     unsigned int GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
@@ -227,6 +231,8 @@ private:
 private:
     std::string url_ {};
     std::string downloadContent_ {}; // mpd content or sidx content
+    std::string defaultAudioLang_ {};
+    std::string defaultSubtitleLang_ {};
     DashMpdCallback* callback_ {nullptr};
     std::shared_ptr<Downloader> downloader_ {nullptr};
     std::shared_ptr<DownloadRequest> downloadRequest_ {nullptr};

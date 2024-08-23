@@ -29,7 +29,6 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_manager.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_prefer_audio_util.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_util.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mult_seg_base_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_manager.cpp",

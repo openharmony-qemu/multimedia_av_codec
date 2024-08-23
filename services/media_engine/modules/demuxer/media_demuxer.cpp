@@ -561,7 +561,7 @@ Status MediaDemuxer::InnerPrepare()
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
             int64_t bitRate = 0;
             mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
-            source_->SetCurrentBitRate(bitRate);
+            source_->SetCurrentBitRate(bitRate, streamId);
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
@@ -570,6 +570,9 @@ Status MediaDemuxer::InnerPrepare()
             streamDemuxer_->SetNewAudioStreamID(streamId);
             streamDemuxer_->SetChangeFlag(true);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+            int64_t bitRate = 0;
+            mediaMetaData_.trackMetas[audioTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
+            source_->SetCurrentBitRate(bitRate, streamId);
         }
         if (subtitleTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(subtitleTrackId_, TaskType::SUBTITLE);

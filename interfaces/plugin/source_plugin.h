@@ -207,7 +207,7 @@ public:
 
     virtual void SetInterruptState(bool isInterruptNeeded) {}
 
-    virtual Status SetCurrentBitRate(int32_t bitRate)
+    virtual Status SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     {
         return Status::OK;
     }

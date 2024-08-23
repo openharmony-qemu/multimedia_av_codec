@@ -939,7 +939,7 @@ size_t HttpMediaDownloader::GetCurrentBufferSize()
     return bufferSize;
 }
 
-Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {
