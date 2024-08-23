@@ -34,7 +34,7 @@ using DestroyFunc = void (*)(StreamParser *);
 class StreamParserManager {
 public:
     static std::shared_ptr<StreamParserManager> Create(StreamType streamType);
-    StreamParserManager() {};
+    StreamParserManager();
     StreamParserManager(const StreamParserManager &) = delete;
     StreamParserManager operator=(const StreamParserManager &) = delete;
     ~StreamParserManager();
