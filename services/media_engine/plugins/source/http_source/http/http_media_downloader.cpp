@@ -778,7 +778,7 @@ void HttpMediaDownloader::DownloadReport()
     if ((static_cast<int64_t>(now) - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = static_cast<int64_t>(now) - lastCheckTime_;
+            downloadDuringTime_ = now - static_cast<uint64_t>(lastCheckTime_);
             downloadBits_ = curDownloadBits;
             double downloadRate = CalculateCurrentDownloadSpeed();
             // remaining buffer size
