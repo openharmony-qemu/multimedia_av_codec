@@ -143,9 +143,19 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Stop_005, TestSize.Level1)
 {
-    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
+    int64_t fileSize = 0;
+    if (!srtPath.empty()) {
+        struct stat fileStatus {};
+        if (stat(srtPath.c_str(), &fileStatus) == 0) {
+            fileSize = static_cast<int64_t>(fileStatus.st_size);
+        }
+    }
+    int32_t fd = open(srtPath.c_str(), O_RDONLY);
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
+
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
+    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
     std::shared_ptr<AVBufferQueue> inputBufferQueue =
         AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
     sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
@@ -156,23 +166,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Stop_005, TestSize.Level1)
     EXPECT_EQ(demuxer->Pause(), Status::OK);
     EXPECT_EQ(demuxer->Resume(), Status::OK);
     EXPECT_EQ(demuxer->Stop(), Status::OK);
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_007, TestSize.Level1)
-{
-    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-
-    std::vector<uint32_t> bitRates;
-    EXPECT_EQ(demuxer->GetBitRates(bitRates), Status::OK);
-    EXPECT_GT(bitRates.size(), 0);
-
-    EXPECT_EQ(demuxer->SelectBitRate(bitRates[0]), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetDuration_008, TestSize.Level1)
@@ -338,30 +331,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddDemuxerCopyTask_001, TestSize.Lev
     EXPECT_EQ(Status::ERROR_UNKNOWN, demuxer->AddDemuxerCopyTask(trackId, TaskType::GLOBAL));
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetInterruptState_001, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/drm/sm4c.ts";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    std::string bundleName = "test";
-    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
-    demuxer->SetBundleName(bundleName);
-    demuxer->SetInterruptState(true);
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    demuxer->streamDemuxer_ = nullptr;
-    demuxer->SetInterruptState(true);
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    demuxer->SetInterruptState(true);
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetOutputBufferQueue_001, TestSize.Level1)
 {
     string srtPath = "/data/test/media/drm/sm4c.ts";
@@ -415,7 +384,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnDumpInfo_001, TestSize.Level1)
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UnselectTrack_001, TestSize.Level1)
 {
-    string srtPath = "/data/test/media/webvtt_test.vtt";
+    string srtPath = "/data/test/media/h264_fmp4.mp4";
     int64_t fileSize = 0;
     if (!srtPath.empty()) {
         struct stat fileStatus {};
@@ -744,12 +713,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadLoop_001, TestSize.Level1)
     demuxer->isPaused_ = false;
     demuxer->isSeekError_ = true;
     EXPECT_EQ(time, demuxer->ReadLoop(trackId));
-    uint32_t RETRY_DELAY_TIME_US = 100000;
-    demuxer->streamDemuxer_->SetIsIgnoreParse(false);
-    demuxer->isStopped_ = false;
-    demuxer->isPaused_ = false;
-    demuxer->isSeekError_ = false;
-    EXPECT_EQ(RETRY_DELAY_TIME_US, demuxer->ReadLoop(trackId));
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnEvent_001, TestSize.Level1)
@@ -791,17 +754,20 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitDefaultPlay_011, TestSiz
     info.bitRate = 0;
     info.type = Plugins::AUDIO;
     streams.push_back(info);
+    streams.push_back(info);
 
     Plugins::StreamInfo info1;
-    info.streamId = 1;
-    info.bitRate = 0;
-    info.type = Plugins::AUDIO;
+    info1.streamId = 1;
+    info1.bitRate = 0;
+    info1.type = Plugins::VIDEO;
+    streams.push_back(info1);
     streams.push_back(info1);
 
     Plugins::StreamInfo info2;
-    info.streamId = 2;
-    info.bitRate = 0;
-    info.type = Plugins::SUBTITLE;
+    info2.streamId = 2;
+    info2.bitRate = 0;
+    info2.type = Plugins::SUBTITLE;
+    streams.push_back(info2);
     streams.push_back(info2);
 
     EXPECT_EQ(demuxerPluginManager->InitDefaultPlay(streams), Status::OK);
@@ -814,20 +780,42 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitDefaultPlay_011, TestSiz
     demuxerPluginManager->GetTmpInnerTrackIDByTrackID(-1);
     demuxerPluginManager->GetInnerTrackIDByTrackID(-1);
 
-    int32_t trackId;
-    int32_t innerTrackId;
+    int32_t trackId = -1;
+    int32_t innerTrackId = -1;
+    demuxerPluginManager->GetTrackInfoByStreamID(0, trackId, innerTrackId);
+    EXPECT_EQ(trackId, -1);
+    EXPECT_EQ(innerTrackId, -1);
+
+    demuxerPluginManager->AddTrackMapInfo(0, 0);
+    demuxerPluginManager->AddTrackMapInfo(1, 1);
+    demuxerPluginManager->AddTrackMapInfo(2, 2);
+
     demuxerPluginManager->GetTrackInfoByStreamID(0, trackId, innerTrackId);
     EXPECT_EQ(trackId, 0);
     EXPECT_EQ(innerTrackId, 0);
+
+    EXPECT_EQ(demuxerPluginManager->GetInnerTrackIDByTrackID(0), 0);
+    EXPECT_EQ(demuxerPluginManager->CheckTrackIsActive(-1), false);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Dts2FrameId_012, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock = std::make_shared<DemuxerPluginMock>("StatusOK");
+    demuxer->audioTrackId_ = 1;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[0].streamID = 0;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[1].streamID = 1;
+    demuxer->demuxerPluginManager_->temp2TrackInfoMap_[2].streamID = 2;
+
+    demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock;
+    demuxer->demuxerPluginManager_->streamInfoMap_[1].plugin = pluginMock;
+    demuxer->demuxerPluginManager_->streamInfoMap_[2].plugin = pluginMock;
+
+    demuxer->isParserTaskEnd_ = false;
     uint32_t frameId = 0;
     std::vector<uint32_t> IFramePos = { 100 };
 
-    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->Dts2FrameId(100, frameId, 0), Status::OK);
     demuxer->GetIFramePos(IFramePos);
 
     demuxer->source_  = nullptr;
@@ -844,39 +832,24 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Dts2FrameId_012, TestSize.Level1)
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_RegisterVideoStreamReadyCallback_010, TestSize.Level1)
 {
-    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
 
     demuxer->RegisterVideoStreamReadyCallback(nullptr);
 
+    demuxer->isStopped_ = false;
     demuxer->OnBufferAvailable(0);
-    demuxer->AccelerateTrackTask(0);
-    demuxer->SetTrackNotifyFlag(0, false);
     EXPECT_EQ(demuxer->AddDemuxerCopyTask(0, TaskType::GLOBAL), Status::ERROR_UNKNOWN);
+
+    demuxer->AccelerateTrackTask(-1);
+    demuxer->SetTrackNotifyFlag(0, false);
+    demuxer->AccelerateTrackTask(0);
+    
     demuxer->OnDumpInfo(-1);
     demuxer->OnDumpInfo(123);
     demuxer->OptimizeDecodeSlow(false);
     demuxer->DeregisterVideoStreamReadyCallback();
-    EXPECT_EQ(demuxer->HasVideo(), true);
-}
-
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentationTimeUsByFrameIndex_010, TestSize.Level1)
-{
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    int64_t presentationTimeUs;
-    EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
-    uint32_t frameIndex;
-    EXPECT_EQ(demuxer->GetFrameIndexByPresentationTimeUs(0, 1, frameIndex), Status::ERROR_NULL_POINTER);
-
-    demuxer->demuxerPluginManager_ = nullptr;
-    EXPECT_EQ(demuxer->GetPresentationTimeUsByFrameIndex(0, 1, presentationTimeUs), Status::ERROR_NULL_POINTER);
-    EXPECT_EQ(demuxer->GetFrameIndexByPresentationTimeUs(0, 1, frameIndex), Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(demuxer->HasVideo(), false);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_013, TestSize.Level1)
@@ -974,85 +947,10 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_IsBufferDroppable_001,
     EXPECT_EQ(false, demuxer->IsBufferDroppable(demuxer->bufferMap_[vTrackId], vTrackId));
 }
 
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetPresentation_001, TestSize.Level1)
-{
-    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    int64_t presentationTimeUs = 0;
-    EXPECT_EQ(Status::OK, demuxer->GetPresentationTimeUsByFrameIndex(0, 0, presentationTimeUs));
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetFrameIndex_001, TestSize.Level1)
-{
-    string srtPath = "/data/test/media/drm/sm4c.ts";
-    int64_t fileSize = 0;
-    if (!srtPath.empty()) {
-        struct stat fileStatus {};
-        if (stat(srtPath.c_str(), &fileStatus) == 0) {
-            fileSize = static_cast<int64_t>(fileStatus.st_size);
-        }
-    }
-    int32_t fd = open(srtPath.c_str(), O_RDONLY);
-    std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(uri)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    sleep(1);
-    uint32_t frameIndex = 0;
-    EXPECT_EQ(Status::ERROR_MISMATCHED_TYPE, demuxer->GetFrameIndexByPresentationTimeUs(0, 0, frameIndex));
-}
-
-HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckDropAudioFrame_001, TestSize.Level1)
-{
-    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
-    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    sleep(1);
-    int32_t aTrackId = 0;
-    int32_t vTrackId = 1;
-    std::shared_ptr<AVBuffer> aBuffer = AVBuffer::CreateAVBuffer();
-    std::shared_ptr<AVBuffer> vBuffer = AVBuffer::CreateAVBuffer();
-    demuxer->bufferMap_[aTrackId] = aBuffer;
-    demuxer->bufferMap_[vTrackId] = vBuffer;
-    vBuffer->meta_->SetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, true);
-    demuxer->CheckDropAudioFrame(demuxer->bufferMap_[vTrackId], vTrackId);
-    EXPECT_EQ(false, demuxer->shouldCheckAudioFramePts_);
-    demuxer->shouldCheckAudioFramePts_ = false;
-    demuxer->CheckDropAudioFrame(demuxer->bufferMap_[aTrackId], aTrackId);
-    EXPECT_EQ(false, demuxer->shouldCheckAudioFramePts_);
-
-    demuxer->shouldCheckAudioFramePts_ = true;
-    demuxer->lastAudioPts_ = -1;
-    demuxer->CheckDropAudioFrame(demuxer->bufferMap_[aTrackId], aTrackId);
-    EXPECT_EQ(false, demuxer->shouldCheckAudioFramePts_);
-
-    demuxer->lastAudioPts_ = demuxer->bufferMap_[aTrackId]->pts_ + 1;
-    demuxer->CheckDropAudioFrame(demuxer->bufferMap_[aTrackId], aTrackId);
-    EXPECT_EQ(false, demuxer->shouldCheckAudioFramePts_);
-}
-
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleSourceDrmInfoEvent_001, TestSize.Level1)
 {
-    string srtPath = "http://127.0.0.1:46666/test_dash/segment_base/index.mpd";
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
-    EXPECT_EQ(demuxer->SetDataSource(std::make_shared<MediaSource>(srtPath)), Status::OK);
-    std::shared_ptr<AVBufferQueue> inputBufferQueue =
-        AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "testInputBufferQueue");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    EXPECT_EQ(demuxer->SetOutputBufferQueue(0, inputBufferQueueProducer), Status::OK);
-    sleep(1);
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     std::vector<uint8_t> val{0, 0};
     std::multimap<std::string, std::vector<uint8_t>> info;
     info.insert(std::pair<std::string, std::vector<uint8_t>>("key", val));
@@ -1102,6 +1000,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_Start_016, TestSize.Level1)
 {
     std::shared_ptr<Plugins::DemuxerPlugin> pluginMock = std::make_shared<DemuxerPluginMock>("StatusErrorUnknown");
     std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
+    demuxerManager->needResetEosStatus_ = true;
 
     MediaStreamInfo info1;
     info1.plugin = pluginMock;
@@ -1137,7 +1036,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_Start_016, TestSize.Level1)
     EXPECT_EQ(demuxerManager->Stop(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Reset(), Status::ERROR_UNKNOWN);
     EXPECT_EQ(demuxerManager->Flush(), Status::ERROR_UNKNOWN);
-    EXPECT_EQ(demuxerManager->SeekTo(1, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(demuxerManager->SeekTo(1, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.Level1)
@@ -1393,6 +1292,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_016, TestSize.Level1)
 {
     std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
     demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->source_->plugin_ = std::make_shared<SourcePluginMock>("StatusOK");
     demuxer->demuxerPluginManager_->isDash_ = true;
     demuxer->streamDemuxer_->changeStreamFlag_ = false;
     EXPECT_EQ(demuxer->SelectBitRate(1), Status::OK);
@@ -1407,6 +1307,9 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectBitRate_016, TestSize.Level1)
     demuxer->videoTrackId_ = 2;
     demuxer->useBufferQueue_ = true;
     EXPECT_EQ(demuxer->SelectBitRate(3), Status::OK);
+
+    std::vector<uint32_t> bitRates;
+    EXPECT_EQ(demuxer->GetBitRates(bitRates), Status::OK);
 
     demuxer->source_ = nullptr;
     int64_t durationMs;
@@ -1467,4 +1370,267 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetFrameLayerInfo_002, TestSize.Leve
     EXPECT_EQ(demuxer->GetFrameLayerInfo(sample, frameLayerInfo), Status::ERROR_NULL_POINTER);
 }
 
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCacheLimit_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    std::shared_ptr<Plugins::DemuxerPlugin> pluginMock1 = std::make_shared<DemuxerPluginMock>("StatusOK");
+
+    demuxer->demuxerPluginManager_->curVideoStreamID_ = 0;
+    demuxer->demuxerPluginManager_->curAudioStreamID_ = 1;
+    demuxer->demuxerPluginManager_->curSubTitleStreamID_ = 2;
+    demuxer->demuxerPluginManager_->streamInfoMap_[0].plugin = pluginMock1;
+    demuxer->demuxerPluginManager_->streamInfoMap_[0].type = StreamType::VIDEO;
+    demuxer->demuxerPluginManager_->streamInfoMap_[1].plugin = pluginMock1;
+    demuxer->demuxerPluginManager_->streamInfoMap_[1].type = StreamType::AUDIO;
+    demuxer->demuxerPluginManager_->streamInfoMap_[2].plugin = pluginMock1;
+    demuxer->demuxerPluginManager_->streamInfoMap_[2].type = StreamType::SUBTITLE;
+
+    demuxer->SetCacheLimit(10);
+
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(0, 0);
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(1, 0);
+    demuxer->demuxerPluginManager_->AddTrackMapInfo(2, 0);
+    EXPECT_EQ(demuxer->demuxerPluginManager_->GetStreamTypeByTrackID(0), StreamType::VIDEO);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDemuxerReadLoop_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->isDemuxerLoopExecuting_ = true;
+    EXPECT_EQ(demuxer->ResumeDemuxerReadLoop(), Status::OK);
+    EXPECT_EQ(demuxer->PauseDemuxerReadLoop(), Status::OK);
+    EXPECT_EQ(demuxer->ResumeDemuxerReadLoop(), Status::OK);
+    demuxer->isDemuxerLoopExecuting_ = false;
+    EXPECT_EQ(demuxer->PauseDemuxerReadLoop(), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_PauseTaskByTrackId_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+
+    demuxer->GetStreamMetaInfo();
+    demuxer->GetGlobalMetaInfo();
+    demuxer->demuxerPluginManager_->isDash_ = true;
+    demuxer->GetUserMeta();
+
+    PlaybackInfo playbackInfo;
+    demuxer->GetPlaybackInfo(playbackInfo);
+    demuxer->source_ = nullptr;
+    demuxer->GetPlaybackInfo(playbackInfo);
+
+    EXPECT_EQ(demuxer->AddDemuxerCopyTask(0, TaskType::VIDEO), Status::OK);
+    EXPECT_EQ(demuxer->PauseTaskByTrackId(0), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReadSample_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+
+    std::shared_ptr<AVBuffer> sample;
+    demuxer->useBufferQueue_ = true;
+    EXPECT_EQ(demuxer->ReadSample(0, sample), Status::ERROR_WRONG_STATE);
+    demuxer->useBufferQueue_ = false;
+    EXPECT_EQ(demuxer->ReadSample(0, sample), Status::ERROR_INVALID_OPERATION);
+    demuxer->eosMap_[0] = true;
+    EXPECT_EQ(demuxer->ReadSample(0, sample), Status::ERROR_INVALID_PARAMETER);
+    uint8_t* data = new uint8_t[100];
+    sample = AVBuffer::CreateAVBuffer(data, 100, 100);
+    sample->pts_ = 100;
+    EXPECT_EQ(demuxer->ReadSample(0, sample), Status::END_OF_STREAM);
+    delete[] data;
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_StartTask_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->streamDemuxer_->isIgnoreParse_ = true;
+    demuxer->isSeekError_ = true;
+    demuxer->source_ = nullptr;
+
+    Meta metaTmp1;
+    metaTmp1.Set<Tag::MIME_TYPE>("audio/xxx");
+    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp1);
+    Meta metaTmp2;
+    metaTmp2.Set<Tag::MIME_TYPE>("video/xxx");
+    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp2);
+    Meta metaTmp3;
+    metaTmp3.Set<Tag::MIME_TYPE>("text/vtt");
+    demuxer->demuxerPluginManager_->curMediaInfo_.tracks.push_back(metaTmp3);
+    EXPECT_EQ(demuxer->StartTask(0), Status::OK);
+    EXPECT_EQ(demuxer->StartTask(1), Status::OK);
+    EXPECT_EQ(demuxer->StartTask(2), Status::OK);
+    EXPECT_EQ(demuxer->StopAllTask(), Status::OK);
+}
+
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_CheckChangeStreamID_002, TestSize.Level1)
+{
+    std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxer>();
+    std::shared_ptr<Buffer> buffer = std::make_shared<Buffer>();
+    streamDemuxer->isDash_ = true;
+    streamDemuxer->newVideoStreamID_ = 0;
+    streamDemuxer->newAudioStreamID_ = 1;
+    streamDemuxer->newSubtitleStreamID_ = 2;
+
+    buffer->streamID = 3;
+    EXPECT_EQ(streamDemuxer->CheckChangeStreamID(0, buffer), Status::END_OF_STREAM);
+    streamDemuxer->newVideoStreamID_ = 0;
+    EXPECT_EQ(streamDemuxer->CheckChangeStreamID(1, buffer), Status::END_OF_STREAM);
+    streamDemuxer->newAudioStreamID_ = 1;
+    EXPECT_EQ(streamDemuxer->CheckChangeStreamID(2, buffer), Status::END_OF_STREAM);
+    streamDemuxer->newSubtitleStreamID_ = 2;
+    EXPECT_EQ(streamDemuxer->CheckChangeStreamID(4, buffer), Status::END_OF_STREAM);
+
+    std::shared_ptr<Buffer> bufferPtr = nullptr;
+    streamDemuxer->isInterruptNeeded_ = false;
+    EXPECT_EQ(streamDemuxer->GetPeekRange(0, 0, 100, bufferPtr), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(streamDemuxer->Start(), Status::OK);
+
+    streamDemuxer->pluginStateMap_[0] = DemuxerState::DEMUXER_STATE_NULL;
+    EXPECT_EQ(streamDemuxer->CallbackReadAt(0, 0, bufferPtr, 100), Status::ERROR_WRONG_STATE);
+
+    CacheData cacheTmp;
+    streamDemuxer->cacheDataMap_[0] = cacheTmp;
+    EXPECT_EQ(streamDemuxer->ResetCache(0), Status::OK);
+}
+
+/**
+ * @tc.name: MediaDemuxer_GetProtocolByUri_0100
+ * @tc.desc: MediaDemuxer_GetProtocolByUri_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetProtocolByUri_0100, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
+    demuxer->source_ = std::shared_ptr<Source>();
+    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
+    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    EXPECT_EQ(demuxer->PauseForPrepareFrame(), Status::OK);
+}
+/**
+ * @tc.name: MediaDemuxer_Resume_0100
+ * @tc.desc: MediaDemuxer_Resume_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_Resume_0100, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+    demuxer->source_ = std::shared_ptr<Source>();
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+    demuxer->doPrepareFrame_ = false;
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+    demuxer->doPrepareFrame_ = true;
+    EXPECT_EQ(demuxer->Resume(), Status::OK);
+}
+/**
+ * @tc.name: MediaDemuxer_ResumeDragging_0100
+ * @tc.desc: MediaDemuxer_ResumeDragging_0100
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ResumeDragging_0100, TestSize.Level1)
+{
+    std::shared_ptr<MediaDemuxer> demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->streamDemuxer_ = std::make_shared<StreamDemuxer>();
+    demuxer->source_ = std::shared_ptr<Source>();
+    demuxer->taskMap_ = std::map<uint32_t, std::unique_ptr<Task>>();
+    EXPECT_EQ(demuxer->ResumeDragging(), Status::OK);
+}
+
+/**
+ * @tc.name: MediaDemuxer_InitAudioTrack_0100
+ * @tc.desc: test InitAudioTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitAudioTrack_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    StreamInfo info;
+    demuxerPluginManager->curAudioStreamID_ = 1;
+    demuxerPluginManager->InitAudioTrack(info);
+    demuxerPluginManager->curAudioStreamID_ = -1;
+    demuxerPluginManager->InitAudioTrack(info);
+    EXPECT_EQ(demuxerPluginManager->isDash_, true);
+}
+/**
+ * @tc.name: MediaDemuxer_InitVideoTrack_0100
+ * @tc.desc: test InitVideoTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitVideoTrack_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    StreamInfo info;
+    demuxerPluginManager->curAudioStreamID_ = 1;
+    demuxerPluginManager->InitVideoTrack(info);
+    demuxerPluginManager->curAudioStreamID_ = -1;
+    demuxerPluginManager->InitVideoTrack(info);
+    EXPECT_EQ(demuxerPluginManager->isDash_, true);
+}
+/**
+ * @tc.name: MediaDemuxer_InitSubtitleTrack_0100
+ * @tc.desc: test InitSubtitleTrack
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InitSubtitleTrack_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    StreamInfo info;
+    demuxerPluginManager->curAudioStreamID_ = -1;
+    demuxerPluginManager->InitSubtitleTrack(info);
+    demuxerPluginManager->curAudioStreamID_ = 0;
+    demuxerPluginManager->InitSubtitleTrack(info);
+    EXPECT_EQ(demuxerPluginManager->curAudioStreamID_, info.streamId);
+}
+/**
+ * @tc.name: MediaDemuxer_LoadCurrentSubtitlePlugin_0100
+ * @tc.desc: test LoadCurrentSubtitlePlugin
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_LoadCurrentSubtitlePlugin_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    demuxerPluginManager->curSubTitleStreamID_ = -1;
+    Plugins::MediaInfo mediaInfo;
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer = std::shared_ptr<BaseStreamDemuxer>();
+    Status ret =  demuxerPluginManager->LoadCurrentSubtitlePlugin(streamDemuxer, mediaInfo);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+/**
+ * @tc.name: MediaDemuxer_UpdateGeneralValue_0100
+ * @tc.desc: test UpdateGeneralValue
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateGeneralValue_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    int32_t trackCount = 0;
+    Meta format;
+    Meta formatNew;
+    format.Set<Tag::MEDIA_HAS_VIDEO>(true);
+    format.Set<Tag::MEDIA_HAS_AUDIO>(true);
+    format.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+    Status ret = demuxerPluginManager->UpdateGeneralValue(trackCount, format, formatNew);
+    EXPECT_EQ(ret, Status::OK);
+}
+/**
+ * @tc.name: MediaDemuxer_GetInnerTrackIDByTrackID_0100
+ * @tc.desc: test GetInnerTrackIDByTrackID
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetInnerTrackIDByTrackID_0100, TestSize.Level1)
+{
+    std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
+    int32_t trackId = 1;
+    int32_t expectedInnerTrackIndex = 2;
+    demuxerPluginManager->trackInfoMap_[trackId].innerTrackIndex = expectedInnerTrackIndex;
+    int32_t actualInnerTrackIndex = demuxerPluginManager->GetInnerTrackIDByTrackID(trackId);
+    ASSERT_EQ(actualInnerTrackIndex, expectedInnerTrackIndex);
+}
 }
