@@ -113,6 +113,8 @@ class AudioCodeDecoderUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
+    AudioCodeDecoderUnitTest() = default;
+    ~AudioCodeDecoderUnitTest();
     void SetUp();
     void TearDown();
     int32_t ProceMp3Func();
@@ -138,6 +140,16 @@ protected:
     OHOS::MediaAVCodec::Format format_;
     std::shared_ptr<OHOS::MediaAVCodec::CodecBase> adec_ { nullptr };
 };
+
+AudioCodeDecoderUnitTest::~AudioCodeDecoderUnitTest()
+{
+    cout << "destroyed.";
+    if (adec_ != nullptr) {
+        adec_->Stop();
+        adec_->Release();
+        adec_ = nullptr;
+    }
+}
 
 void AudioCodeDecoderUnitTest::SetUpTestCase(void)
 {
