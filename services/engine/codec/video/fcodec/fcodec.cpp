@@ -1212,7 +1212,7 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
 
 int32_t FCodec::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AV_ERR_OPERATE_NOT_PERMIT,
                              "Not support convert from AVBuffer Mode to Surface Mode");
     sptr<Surface> curSurface = sInfo_.surface;
     uint64_t oldId = curSurface->GetUniqueId();
@@ -1284,10 +1284,12 @@ int32_t FCodec::AttachToNewSurface(const sptr<Surface> &newSurface)
 int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED || state_ == State::FLUSHED ||
-                              state_ == State::RUNNING || state_ == State::EOS),
-                             AVCS_ERR_INVALID_STATE,
-                             "set output surface fail:  not in Initialized or Configured state");
+    CHECK_AND_RETURN_RET_LOG(state_ != State::UNINITIALIZED, AV_ERR_INVALID_VAL,
+                             "set output surface fail: not initialized or configured");
+    CHECK_AND_RETURN_RET_LOG((state_ == State::CONFIGURED || state_ == State::FLUSHED ||
+        state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
+        "set output surface fail: state %{public}d not support set output surface",
+        static_cast<int32_t>(state_.load()));
     if (surface == nullptr || surface->IsConsumer()) {
         AVCODEC_LOGE("Set surface fail");
         return AVCS_ERR_INVALID_VAL;
