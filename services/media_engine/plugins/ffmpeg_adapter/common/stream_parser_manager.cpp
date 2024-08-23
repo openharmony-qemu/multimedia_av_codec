@@ -33,6 +33,11 @@ std::map<StreamType, void *> StreamParserManager::handlerMap_ {};
 std::map<StreamType, CreateFunc> StreamParserManager::createFuncMap_ {};
 std::map<StreamType, DestroyFunc> StreamParserManager::destroyFuncMap_ {};
 
+StreamParserManager::StreamParserManager()
+{
+    streamType_ = StreamType::HEVC;
+}
+
 StreamParserManager::~StreamParserManager()
 {
     if (streamParser_) {
