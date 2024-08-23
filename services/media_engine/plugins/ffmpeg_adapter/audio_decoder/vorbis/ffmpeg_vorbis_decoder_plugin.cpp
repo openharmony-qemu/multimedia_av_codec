@@ -93,6 +93,9 @@ Status FFmpegVorbisDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &para
         AVCODEC_LOGE("AllocateContext failed, ret=%{public}d", ret);
         return ret;
     }
+    if (!CheckSampleFormat(parameter)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     ret = basePlugin->InitContext(parameter);
     if (ret != Status::OK) {
         AVCODEC_LOGE("InitContext failed, ret=%{public}d", ret);
@@ -156,7 +159,7 @@ bool FFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &f
 
 bool FFmpegVorbisDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
-    if (!CheckChannelCount(format) || !CheckSampleFormat(format) || !CheckSampleRate(format)) {
+    if (!CheckChannelCount(format) || !CheckSampleRate(format)) {
         return false;
     }
     return true;
