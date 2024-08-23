@@ -70,6 +70,6 @@ ohos_shared_library("hevc_decoder") {
   part_name = "av_codec"
 
   if (build_variant != "user") {
-    defines = [ "BUILD_ENG_VERSION" ]
+    defines += [ "BUILD_ENG_VERSION" ]
   }
 }
