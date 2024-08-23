@@ -136,6 +136,36 @@ static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_SVG,
 };
 
+void StringifyMeta(Meta meta)
+{
+    OHOS::Media::Format format;
+    for (TagType key: g_supportSourceFormat) {
+        if (meta.Find(std::string(key)) != meta.end()) {
+            meta.SetData(std::string(key), "***");
+        }
+    }
+    if (meta.Find(std::string(Tag::MEDIA_CONTAINER_START_TIME)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_CONTAINER_START_TIME), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_START_TIME)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_START_TIME), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_LATITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_LATITUDE), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_LONGITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_LONGITUDE), "***");
+    }
+    if (meta.Find(std::string(Tag::TIMED_METADATA_KEY)) != meta.end()) {
+        meta.SetData(std::string(Tag::TIMED_METADATA_KEY), "***");
+    }
+    if (meta.Find(std::string(Tag::TIMED_METADATA_SRC_TRACK)) != meta.end()) {
+        meta.SetData(std::string(Tag::TIMED_METADATA_SRC_TRACK), "***");
+    }
+    format.SetMeta(std::make_shared<Meta>(meta));
+    MEDIA_LOG_I("meta info: " PUBLIC_LOG_S, format.Stringify().c_str());
+}
+
 void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
     (void)avcl;
@@ -1374,10 +1404,8 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     Status ret = GetSeiInfo();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
-    OHOS::Media::Format format;
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
-    format.SetMeta(std::make_shared<Meta>(mediaInfo.general));
-    MEDIA_LOG_I("general meta: " PUBLIC_LOG_S, format.Stringify().c_str());
+    StringifyMeta(mediaInfo.general);
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         MEDIA_LOG_I("Parse info for track " PUBLIC_LOG_D32, trackIndex);
         Meta meta;
@@ -1406,8 +1434,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
-        format.SetMeta(std::make_shared<Meta>(meta));
-        MEDIA_LOG_I("track meta: " PUBLIC_LOG_S, format.Stringify().c_str());
+        StringifyMeta(meta);
     }
     return Status::OK;
 }
