@@ -73,7 +73,7 @@ private:
     static constexpr uint32_t ENCODE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
                                              BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
     std::string name_;
-    FilterType filterType_;
+    FilterType filterType_ = FilterType::VIDEO_CAPTURE;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;
