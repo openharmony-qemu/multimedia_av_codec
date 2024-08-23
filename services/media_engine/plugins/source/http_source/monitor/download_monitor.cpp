@@ -214,7 +214,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
                                        std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_MSG(downloader != nullptr, "downloader is null, url is " PUBLIC_LOG_S, request->GetUrl().c_str());
+    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr.");
     if (NeedRetry(request)) {
         AutoLock lock(taskMutex_);
         bool exists = CppExt::AnyOf(retryTasks_.begin(), retryTasks_.end(), [&](const RetryRequest& item) {
