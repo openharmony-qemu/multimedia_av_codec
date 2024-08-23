@@ -313,6 +313,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
     fileFdSourcePlugin_->GetCacheTime(1.0);
     fileFdSourcePlugin_->GetCacheTime(2.0);
     fileFdSourcePlugin_->HasCacheData(0, 0);
+    ASSERT_NE(fileFdSourcePlugin_->HasCacheData(0, 0), true);
 }
 
 /**
@@ -657,6 +658,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_PauseDownloadTask_0100, TestSize.Lev
     fileFdSourcePlugin_->downloadTask_ = std::shared_ptr<Task>();
     fileFdSourcePlugin_->PauseDownloadTask(true);
     fileFdSourcePlugin_->PauseDownloadTask(false);
+    ASSERT_TRUE(fileFdSourcePlugin_->downloadSize_ == 0);
 }
 } // namespace FileSource
 } // namespace Plugins
