@@ -547,6 +547,7 @@ HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_DumpEntireAudioBuffer001, Te
     audioServerSinkPlugin->DumpEntireAudioBuffer(buffer, bytesSingle);
     audioServerSinkPlugin->enableEntireDump_ = true;
     audioServerSinkPlugin->DumpEntireAudioBuffer(buffer, bytesSingle);
+    ASSERT_TRUE(audioServerSinkPlugin->entireDumpFile_ == nullptr);
 }
 
 HWTEST(TestAudioServerSinkPlugin, audio_sink_plugin_DumpSliceAudioBuffer001, TestSize.Level1)
