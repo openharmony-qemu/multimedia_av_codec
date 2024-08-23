@@ -67,6 +67,12 @@ static OH_AVDemuxer *demuxer = nullptr;
 static int32_t g_trackCount = 0;
 static OH_AVBuffer *avBuffer = nullptr;
 
+static OH_AVSource *sourceV = nullptr;
+static OH_AVDemuxer *demuxerV = nullptr;
+static OH_AVFormat *sourceFormatV = nullptr;
+static OH_AVFormat *trackFormatV = nullptr;
+static OH_AVMemory *memoryV = nullptr;
+std::map<int64_t, int32_t> myMap;
 static int32_t g_maxThread = 16;
 OH_AVSource *source_list[16] = {};
 OH_AVMemory *memory_list[16] = {};
@@ -85,44 +91,21 @@ constexpr int32_t BITRATEMONO = 64000;
 constexpr int32_t BITRATEDUAL = 705600;
 constexpr int32_t VTTSEEKFORWARD = 5100;
 constexpr int32_t VTTSEEKBACK = 2100;
-
+constexpr int64_t BITRATEDUALMP4 = 8594194000;
+constexpr int32_t BITRATEMONOMP4 = 135105000;
+constexpr int64_t BITRATEDUAL14 = 8222430000;
+constexpr int32_t BITRATEMONO14 = 156150000;
+constexpr int32_t ATTRPTS = 1000;
 void DemuxerNetNdkTest::SetUpTestCase() {}
 void DemuxerNetNdkTest::TearDownTestCase() {}
 void DemuxerNetNdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
+    memoryV = OH_AVMemory_Create(g_width * g_height);
     g_trackCount = 0;
 }
-void DemuxerNetNdkTest::TearDown()
+void DemuxMoreTearDown()
 {
-    if (fd_ > 0) {
-        close(fd_);
-        fd_ = -1;
-    }
-    if (demuxer != nullptr) {
-        OH_AVDemuxer_Destroy(demuxer);
-        demuxer = nullptr;
-    }
-    if (source != nullptr) {
-        OH_AVSource_Destroy(source);
-        source = nullptr;
-    }
-    if (avBuffer != nullptr) {
-        OH_AVBuffer_Destroy(avBuffer);
-        avBuffer = nullptr;
-    }
-    if (trackFormat != nullptr) {
-        OH_AVFormat_Destroy(trackFormat);
-        trackFormat = nullptr;
-    }
-    if (sourceFormat != nullptr) {
-        OH_AVFormat_Destroy(sourceFormat);
-        sourceFormat = nullptr;
-    }
-    if (memory != nullptr) {
-        OH_AVMemory_Destroy(memory);
-        memory = nullptr;
-    }
     for (int i = 0; i < g_maxThread; i++) {
         if (demuxer_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
@@ -143,6 +126,61 @@ void DemuxerNetNdkTest::TearDown()
         std::cout << i << "            finish Destroy!!!!" << std::endl;
         close(g_fdList[i]);
     }
+    if (trackFormatV != nullptr) {
+        OH_AVFormat_Destroy(trackFormatV);
+        trackFormatV = nullptr;
+    }
+    if (sourceFormatV != nullptr) {
+        OH_AVFormat_Destroy(sourceFormatV);
+        sourceFormatV = nullptr;
+    }
+    if (memoryV != nullptr) {
+        OH_AVMemory_Destroy(memoryV);
+        memoryV = nullptr;
+    }
+    if (sourceV != nullptr) {
+        OH_AVSource_Destroy(sourceV);
+        sourceV = nullptr;
+    }
+    if (demuxerV != nullptr) {
+        OH_AVDemuxer_Destroy(demuxerV);
+        demuxerV = nullptr;
+    }
+    if (!myMap.empty()) {
+        myMap.clear();
+    }
+}
+void DemuxerNetNdkTest::TearDown()
+{
+    if (fd_ > 0) {
+        close(fd_);
+        fd_ = -1;
+    }
+    if (demuxer != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer);
+        demuxer = nullptr;
+    }
+    if (memory != nullptr) {
+        OH_AVMemory_Destroy(memory);
+        memory = nullptr;
+    }
+    if (source != nullptr) {
+        OH_AVSource_Destroy(source);
+        source = nullptr;
+    }
+    if (avBuffer != nullptr) {
+        OH_AVBuffer_Destroy(avBuffer);
+        avBuffer = nullptr;
+    }
+    if (trackFormat != nullptr) {
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    if (sourceFormat != nullptr) {
+        OH_AVFormat_Destroy(sourceFormat);
+        sourceFormat = nullptr;
+    }
+    DemuxMoreTearDown();
 }
 } // namespace
 
@@ -197,7 +235,6 @@ namespace {
             }
         }
     }
-    
     static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
     {
         int akeyCount = 0;
@@ -248,6 +285,39 @@ namespace {
             ASSERT_EQ(bitrate, BITRATEDUAL);
         }
         cout << akeyCount << "---akeyCount---" << endl;
+    }
+
+    static void MyMapVtt(const int64_t attrPts, const char *fileV)
+    {
+        OH_AVCodecBufferAttr attrV;
+        sourceV = OH_AVSource_CreateWithURI(const_cast<char *>(fileV));
+        ASSERT_NE(sourceV, nullptr);
+        demuxerV = OH_AVDemuxer_CreateWithSource(sourceV);
+        ASSERT_NE(demuxerV, nullptr);
+        const char* mimeTypeV = nullptr;
+        sourceFormatV = OH_AVSource_GetSourceFormat(sourceV);
+        trackFormatV = OH_AVSource_GetTrackFormat(sourceV, 0);
+        ASSERT_NE(trackFormatV, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormatV, OH_MD_KEY_CODEC_MIME, &mimeTypeV));
+        ASSERT_EQ(0, strcmp(mimeTypeV, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormatV, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxerV, 0));
+        int tarckTypeV = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormatV, OH_MD_KEY_TRACK_TYPE, &tarckTypeV));
+        ASSERT_EQ(tarckTypeV, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        if (attrPts > 0) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxerV, attrPts / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        }
+        bool islast = true;
+        while (islast) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxerV, 0, memoryV, &attrV));
+            if (attrV.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                islast = false;
+            }
+            myMap.insert(pair<int64_t, int32_t>(attrV.pts, attrV.size));
+        }
     }
     /**
      * @tc.number    : DEMUXER_TIMED_META_INNER_FUNC_0110
@@ -426,7 +496,6 @@ namespace {
         }
         CheckAudioParam(source, audioFrame);
         ASSERT_EQ(103, audioFrame);
-        cout << "-----------audioFrame-----------" << audioFrame << endl;
     }
     /**
      * @tc.number    : DEMUXER_FUNC_NET_004
@@ -452,7 +521,6 @@ namespace {
         }
         CheckAudioParam(source, audioFrame);
         ASSERT_EQ(7, audioFrame);
-        cout << "-----------audioFrame-----------" << audioFrame << endl;
     }
     /**
      * @tc.number    : DEMUXER_FUNC_VTT_001
@@ -550,7 +618,381 @@ namespace {
             cout << "num: " << num << endl;
         }
     }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_003
+     * @tc.name      : create 16 instances repeat create-destory with vtt MP4 file
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_003, TestSize.Level3)
+    {
+        int num = 0;
+        int len = 256;
+        while (num < 10) {
+            num++;
+            vector<std::thread> vecThread;
+            for (int i = 0; i < g_maxThread; i++) {
+                memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+                char file[256] = {};
+                sprintf_s(file, len, "/data/test/media/16/%d_subtitle_webvtt_en_GB_15.mp4", i);
+                g_fdList[i] = open(file, O_RDONLY);
+                int64_t size = GetFileSize(file);
+                cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
 
+                source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+                ASSERT_NE(source_list[i], nullptr);
+
+                demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+                ASSERT_NE(demuxer_list[i], nullptr);
+                vecThread.emplace_back(DemuxFuncVtt, i, num);
+            }
+            for (auto &val : vecThread) {
+                val.join();
+            }
+
+            for (int i = 0; i < g_maxThread; i++) {
+                if (demuxer_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                    demuxer_list[i] = nullptr;
+                }
+
+                if (source_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                    source_list[i] = nullptr;
+                }
+                if (memory_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                    memory_list[i] = nullptr;
+                }
+                std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+                close(g_fdList[i]);
+            }
+            cout << "num: " << num << endl;
+        }
+    }
+
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_004
+     * @tc.name      : create 16 instances repeat create-destory with vtt MP4 uri
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_004, TestSize.Level3)
+    {
+        int num = 0;
+        while (num < 10) {
+            num++;
+            vector<std::thread> vecThread;
+            const char *uri = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_en_GB_15.mp4";
+            for (int i = 0; i < g_maxThread; i++) {
+                memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+                cout << i << "  uri:  " << uri << endl;
+                source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+                ASSERT_NE(source_list[i], nullptr);
+                demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+                ASSERT_NE(demuxer_list[i], nullptr);
+                vecThread.emplace_back(DemuxFuncVtt, i, num);
+            }
+            for (auto &val : vecThread) {
+                val.join();
+            }
+            for (int i = 0; i < g_maxThread; i++) {
+                if (demuxer_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                    demuxer_list[i] = nullptr;
+                }
+
+                if (source_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                    source_list[i] = nullptr;
+                }
+                if (memory_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                    memory_list[i] = nullptr;
+                }
+                std::cout << i << "            finish Destroy!!!!" << std::endl;
+            }
+            cout << "num: " << num << endl;
+        }
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_005
+     * @tc.name      : create vtt Mp4 demuxer with uri file and read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_005, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char* mimeType = nullptr;
+        const char *uri = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_en_GB_15.mp4";
+        const char *fileV = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_en_GB_15.vtt";
+        cout << uri << "------" << endl;
+        source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        MyMapVtt(0, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_NE(memory, nullptr);
+            ASSERT_NE(demuxer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_006
+     * @tc.name      : create vtt Mp4 demuxer with uri file and forward back seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_006, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char* mimeType = nullptr;
+        const char *uri = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_en_GB_15.mp4";
+        const char *fileV = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_en_GB_15.vtt";
+        cout << uri << "------" << endl;
+        source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEDUALMP4, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+    }
+    
+        /**
+     * @tc.number    : DEMUXER_FUNC_VTT_007
+     * @tc.name      : create 16 instances repeat create-destory with vtt MP4 file
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_007, TestSize.Level3)
+    {
+        int num = 0;
+        int len = 256;
+        while (num < 10) {
+            num++;
+            vector<std::thread> vecThread;
+            for (int i = 0; i < g_maxThread; i++) {
+                memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+                char file[256] = {};
+                sprintf_s(file, len, "/data/test/media/16/%d_subtitle_webvtt_zh_CN_14.mp4", i);
+                g_fdList[i] = open(file, O_RDONLY);
+                int64_t size = GetFileSize(file);
+                cout << file << "----------------------" << g_fdList[i] << "---------" << size << endl;
+
+                source_list[i] = OH_AVSource_CreateWithFD(g_fdList[i], 0, size);
+                ASSERT_NE(source_list[i], nullptr);
+
+                demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+                ASSERT_NE(demuxer_list[i], nullptr);
+                vecThread.emplace_back(DemuxFuncVtt, i, num);
+            }
+            for (auto &val : vecThread) {
+                val.join();
+            }
+
+            for (int i = 0; i < g_maxThread; i++) {
+                if (demuxer_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                    demuxer_list[i] = nullptr;
+                }
+
+                if (source_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                    source_list[i] = nullptr;
+                }
+                if (memory_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                    memory_list[i] = nullptr;
+                }
+                std::cout << i << "            finish Destroy!!!!" << std::endl;
+
+                close(g_fdList[i]);
+            }
+            cout << "num: " << num << endl;
+        }
+    }
+
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_008
+     * @tc.name      : create 16 instances repeat create-destory with vtt MP4 uri
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_008, TestSize.Level3)
+    {
+        int num = 0;
+        while (num < 10) {
+            num++;
+            vector<std::thread> vecThread;
+            const char *uri = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_zh_CN_14.mp4";
+            for (int i = 0; i < g_maxThread; i++) {
+                memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+                cout << i << "  uri:  " << uri << endl;
+                source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+                ASSERT_NE(source_list[i], nullptr);
+                demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+                ASSERT_NE(demuxer_list[i], nullptr);
+                vecThread.emplace_back(DemuxFuncVtt, i, num);
+            }
+            for (auto &val : vecThread) {
+                val.join();
+            }
+            for (int i = 0; i < g_maxThread; i++) {
+                if (demuxer_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                    demuxer_list[i] = nullptr;
+                }
+
+                if (source_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                    source_list[i] = nullptr;
+                }
+                if (memory_list[i] != nullptr) {
+                    ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                    memory_list[i] = nullptr;
+                }
+                std::cout << i << "            finish Destroy!!!!" << std::endl;
+            }
+            cout << "num: " << num << endl;
+        }
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_009
+     * @tc.name      : create vtt Mp4 demuxer with uri file and read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_009, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char* mimeType = nullptr;
+        const char *uri = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_zh_CN_14.mp4";
+        const char *fileV = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_zh_CN_14.vtt";
+        cout << uri << "------" << endl;
+        source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        MyMapVtt(0, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_NE(memory, nullptr);
+            ASSERT_NE(demuxer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0010
+     * @tc.name      : create vtt Mp4 demuxer with uri file and forward back seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0010, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char* mimeType = nullptr;
+        const char *uri = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_zh_CN_14.mp4";
+        const char *fileV = "http://192.168.3.11:8080/share/audio/subtitle_webvtt_zh_CN_14.vtt";
+        cout << uri << "------" << endl;
+        source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEDUAL14, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+    }
     /**
      * @tc.number    : DEMUXER_FUNC_VTT_0011
      * @tc.name      : create vtt demuxer with uri file and read
@@ -604,7 +1046,6 @@ namespace {
         int vttSubtitle = 0;
         uint8_t *data = nullptr;
         const char *uri = "http://192.168.3.11:8080/share/audio/webvtt_test.vtt";
-        cout << uri << "------" << endl;
         source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
         ASSERT_NE(source, nullptr);
         demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -623,13 +1064,15 @@ namespace {
         for (int index = 0; index < 8; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         }
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKBACK, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKBACK,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         vttSubtitle = atoi(reinterpret_cast<const char*>(data));
         vttIndex = 4;
         ASSERT_EQ(vttSubtitle, vttIndex);
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKFORWARD, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, VTTSEEKFORWARD,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
         data = OH_AVMemory_GetAddr(memory);
         vttSubtitle = atoi(reinterpret_cast<const char*>(data));
@@ -646,5 +1089,398 @@ namespace {
             ASSERT_EQ(vttSubtitle, vttIndex);
         }
     }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0013
+     * @tc.name      : create vtt demuxer with Mp4 file and read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0013, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_en_GB_15.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_en_GB_15.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        MyMapVtt(0, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_NE(memory, nullptr);
+            ASSERT_NE(demuxer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
 
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0014
+     * @tc.name      : create vtt demuxer with Mp4 file and read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0014, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_zh_CN_14.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_zh_CN_14.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        MyMapVtt(0, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_NE(memory, nullptr);
+            ASSERT_NE(demuxer, nullptr);
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0015
+     * @tc.name      : create vtt Mp4 demuxer with file and forward back seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0015, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_en_GB_15.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_en_GB_15.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEDUALMP4, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
+
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0016
+     * @tc.name      : create vtt Mp4 demuxer with file and forward back seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0016, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_zh_CN_14.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_zh_CN_14.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEDUAL14, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
+
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0017
+     * @tc.name      : create vtt Mp4 demuxer with file and back seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0017, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_en_GB_15.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_en_GB_15.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONOMP4 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEMONOMP4, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0018
+     * @tc.name      : create vtt Mp4 demuxer with file and back seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0018, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_zh_CN_14.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_zh_CN_14.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEMONO14 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEMONO14, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0019
+     * @tc.name      : create vtt Mp4 demuxer with file and forward seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0019, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_en_GB_15.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_en_GB_15.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUALMP4 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEDUALMP4, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
+
+    /**
+     * @tc.number    : DEMUXER_FUNC_VTT_0020
+     * @tc.name      : create vtt Mp4 demuxer with file and forward seek+read
+     * @tc.desc      : function test
+     */
+    HWTEST_F(DemuxerNetNdkTest, DEMUXER_FUNC_VTT_0020, TestSize.Level0)
+    {
+        OH_AVCodecBufferAttr attr;
+        const char *file = "/data/test/media/subtitle_webvtt_zh_CN_14.mp4";
+        const char *fileV = "/data/test/media/subtitle_webvtt_zh_CN_14.vtt";
+        int fd = open(file, O_RDONLY);
+        int64_t size = GetFileSize(file);
+        cout << file << "----------------------" << fd << "---------" << size << endl;
+        source = OH_AVSource_CreateWithFD(fd, 0, size);
+        ASSERT_NE(source, nullptr);
+        demuxer = OH_AVDemuxer_CreateWithSource(source);
+        ASSERT_NE(demuxer, nullptr);
+        const char* mimeType = nullptr;
+        sourceFormat = OH_AVSource_GetSourceFormat(source);
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
+        ASSERT_EQ(0, strcmp(mimeType, "text/vtt"));
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+        ASSERT_EQ(1, g_trackCount);
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+        int tarckType = 0;
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        ASSERT_EQ(tarckType, OH_MediaType::MEDIA_TYPE_SUBTITLE);
+        for (int index = 0; index < 10; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, BITRATEDUAL14 / ATTRPTS,
+            OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        MyMapVtt(BITRATEDUAL14, fileV);
+        std::map<int64_t, int32_t>::iterator pair;
+        for (pair = myMap.begin(); pair != myMap.end(); ++pair) {
+            std::cout << pair->first << " => " << pair->second << '\n';
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, pair->first / ATTRPTS,
+                OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC));
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                break;
+            }
+            ASSERT_EQ(pair->second, attr.size);
+        }
+        close(fd);
+    }
 } // namespace

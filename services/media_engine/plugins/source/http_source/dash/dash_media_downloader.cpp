@@ -52,6 +52,7 @@ bool DashMediaDownloader::Open(const std::string& url, const std::map<std::strin
 
 void DashMediaDownloader::Close(bool isAsync)
 {
+    mpdDownloader_->Close(isAsync);
     for (unsigned int index = 0; index < segmentDownloaders_.size(); index++) {
         segmentDownloaders_[index]->Close(isAsync, true);
     }
@@ -96,21 +97,13 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
 
-    bool isLastSegment = mpdDownloader_->IsAllSegmentFinishedByStreamId(readDataInfo.streamId_);
-    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_, isLastSegment);
-    MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32 " isLastSegment:" PUBLIC_LOG_D32,
-        readDataInfo.streamId_, ret, isLastSegment);
+    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_);
+    MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32, readDataInfo.streamId_, ret);
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end", readDataInfo.streamId_);
         readDataInfo.isEos_ = true;
         if (callback_ != nullptr) {
             callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
-        return Status::END_OF_STREAM;
-    } else if (ret == DASH_READ_TIMEOUT) {
-        if (callback_ != nullptr) {
-            MEDIA_LOG_E("Read time out, OnEvent");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
         return Status::END_OF_STREAM;
     } else if (ret == DASH_READ_AGAIN) {
@@ -171,6 +164,8 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
     MEDIA_LOG_I("GetNextSegmentByStreamId " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, streamId, getRet);
     if (seg != nullptr) {
         segmentDownloader->Open(seg);
+    } else if (getRet == DASH_MPD_GET_FINISH) {
+        segmentDownloader->SetAllSegmentFinished();
     }
 }
 
@@ -414,8 +409,8 @@ void DashMediaDownloader::OpenInitSegment(
         downloader->SetInitSegment(initSeg);
     }
     downloader->Open(seg);
-    MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32 ", url:"
-        PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->type_, seg->url_.c_str());
+    MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
+        PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
 }
 
 void DashMediaDownloader::ReceiveMpdParseOkEvent()
@@ -518,6 +513,8 @@ void DashMediaDownloader::GetSegmentToDownload(int downloadStreamId, bool stream
     
     if (segment != nullptr) {
         segmentDownloader->Open(segment);
+    } else if (ret == DASH_MPD_GET_FINISH) {
+        segmentDownloader->SetAllSegmentFinished();
     }
 }
 
@@ -1016,11 +1013,10 @@ void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     mpdDownloader_->SetInterruptState(isInterruptNeeded);
 }
 
-Status DashMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status DashMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    MEDIA_LOG_I("SetCurrentBitRate stream: " PUBLIC_LOG_D32 " biteRate: " PUBLIC_LOG_D32, streamID, bitRate);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(streamID);
     if (segmentDownloader != nullptr) {
         segmentDownloader->SetCurrentBitRate(bitRate);
     }
@@ -1046,7 +1042,7 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
     bool DownloadFinishStateTmp = true;
     playbackInfo.averageDownloadRate = 0;
-    for (int i = 0; i < segmentDownloaders_.size(); i++) {
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
         if (playbackInfo.averageDownloadRate < static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed())) {
             playbackInfo.averageDownloadRate = static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed());
             std::pair<int64_t, int64_t> recordData = segmentDownloaders_[i]->GetDownloadRecordData();

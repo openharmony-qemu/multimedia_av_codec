@@ -48,7 +48,10 @@ public:
     int32_t ResetImpl();
     int32_t ReleaseImpl();
     int32_t ReleaseOutputBufferImpl(uint32_t index, bool render);
+
 private:
+    GSError OnProducerBufferReleased(sptr<SurfaceBuffer> &buffer);
+
     bool ready_{false};
     DynamicInterface interface_;
     DynamicColorSpaceConverterHandle* instance_{nullptr};

@@ -244,6 +244,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnBufferAvailable_001, TestSize.Leve
     demuxer->SetTrackNotifyFlag(invalidTrackId, true);
     demuxer->SetTrackNotifyFlag(trackId, true);
     demuxer->OnBufferAvailable(trackId);
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDrmCallback_001, TestSize.Level1)
@@ -267,6 +268,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetDrmCallback_001, TestSize.Level1)
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
     std::shared_ptr<MediaDemuxerTestCallback> callback = std::make_shared<MediaDemuxerTestCallback>();
     demuxer->SetDrmCallback(callback);
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_GetDuration_001, TestSize.Level1)
@@ -380,6 +382,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_OnDumpInfo_001, TestSize.Level1)
     EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
     demuxer->OnDumpInfo(-1);
     demuxer->OnDumpInfo(fd);
+    EXPECT_EQ(demuxer->SetOutputBufferQueue(trackId, inputBufferQueueProducer), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UnselectTrack_001, TestSize.Level1)
@@ -404,6 +407,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UnselectTrack_001, TestSize.Level1)
     demuxer->useBufferQueue_ = true;
     demuxer->SelectTrack(trackId);
     demuxer->UnselectTrack(trackId);
+    EXPECT_EQ(demuxer->UnselectTrack(trackId), Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SeekTo_001, TestSize.Level1)
@@ -1106,7 +1110,6 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ProcessVideoStartTime_016, TestSize.
 
     std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
     sample->pts_ = 100;
-    EXPECT_EQ(demuxer->ProcessVideoStartTime(0, sample), Status::OK);
     EXPECT_EQ(demuxer->DoSelectTrack(0, TRACK_ID_DUMMY), Status::ERROR_UNKNOWN);
 }
 
@@ -1671,14 +1674,17 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_AddGeneral_0100, TestSize.Level1)
 {
     std::shared_ptr<DemuxerPluginManager> demuxerManager = std::make_shared<DemuxerPluginManager>();
     demuxerManager->SetResetEosStatus(true);
-    Meta format;
+    MediaStreamInfo info;
     Meta formatNew;
-    format.Set<Tag::MEDIA_HAS_VIDEO>(true);
-    format.Set<Tag::MEDIA_HAS_AUDIO>(true);
-    format.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
-    format.Set<Tag::MEDIA_TRACK_COUNT>(3);
+    info.mediaInfo.general.Set<Tag::MEDIA_HAS_VIDEO>(true);
+    info.mediaInfo.general.Set<Tag::MEDIA_HAS_AUDIO>(true);
+    info.mediaInfo.general.Set<Tag::MEDIA_HAS_SUBTITLE>(true);
+    info.mediaInfo.general.Set<Tag::MEDIA_TRACK_COUNT>(3);
+    info.mediaInfo.general.Set<Tag::MEDIA_FILE_TYPE>(FileType::UNKNOW);
+    info.activated = true;
+
     formatNew.Set<Tag::MEDIA_TRACK_COUNT>(0);
-    EXPECT_EQ(demuxerManager->AddGeneral(format, formatNew), Status::OK);
+    EXPECT_EQ(demuxerManager->AddGeneral(info, formatNew), Status::OK);
 }
 
 /**

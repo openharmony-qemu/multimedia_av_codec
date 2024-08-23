@@ -114,7 +114,7 @@ private:
     void NotifyInitializationCompleted();
 
     void InitBitStreamContext(const AVStream& avStream);
-    void ConvertAvcToAnnexb(AVPacket& pkt);
+    Status ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
     void ShowSelectedTracks();
     bool TrackIsSelected(const uint32_t trackId);
@@ -123,7 +123,7 @@ private:
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
+    Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* avpacket,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, const uint8_t *writeData, int32_t writeSize);
@@ -132,8 +132,8 @@ private:
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
-    void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
+    Status ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
     void ParserFirstDts();
@@ -198,6 +198,8 @@ private:
     bool updatePosIsForward_ = true;
     bool isInit_ = false;
     uint32_t cachelimitSize_ = 0;
+    bool outOfLimit_ = false;
+
     // dfx
     struct TrackDfxInfo {
         int frameIndex = 0; // for each track

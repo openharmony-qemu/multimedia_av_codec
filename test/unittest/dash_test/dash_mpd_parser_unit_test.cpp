@@ -20,6 +20,7 @@
 #include "mpd_parser/dash_period_manager.h"
 #include "mpd_parser/dash_adpt_set_manager.h"
 #include "mpd_parser/i_dash_mpd_node.h"
+#include "base64_utils.h"
 #include "dash_segment_downloader.h"
 
 namespace OHOS {
@@ -36,11 +37,10 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "profiles=\"urn:mpeg:dash:profile:isoff-on-demand:2011\" >\n"
     "    <Period>\n"
     "        <AdaptationSet id=\"1\" group=\"1\" contentType=\"video\" par=\"4:3\" "
-    "segmentAlignment=\"true\" subsegmentAlignment=\"true\" subsegmentStartsWithSAP=\"1\" "
-    "mimeType=\"video/mp4\" startWithSAP=\"1\">\n"
+    "segmentAlignment=\"true\" subsegmentAlignment=\"true\" subsegmentStartsWithSAP=\"1\" startWithSAP=\"1\">\n"
     "            <Representation id=\"5\" bandwidth=\"7342976\" width=\"1920\" "
     "height=\"1080\" codecs=\"avc1.640028\">\n"
-    "                <BaseURL>2_video_1_1920X1080_6000_0_0.mp4</BaseURL>\n"
+    "               <BaseURL>http://127.0.0.1:47777/test_dash/segment_base/2_video_1_1920X1080_6000_0_0.mp4</BaseURL>\n"
     "                <SegmentBase timescale=\"90000\" indexRangeExact=\"true\" "
     "indexRange=\"851-1166\">\n"
     "                    <Initialization range=\"0-850\"/>\n"
@@ -54,12 +54,16 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "codecs=\"mp4a.40.5\">\n"
     "                <AudioChannelConfiguration "
     "schemeIdUri=\"urn:dolby:dash:audio_channel_configuration:2011\" value=\"0\"/>\n"
-    "                <BaseURL>2_audio_6.mp4</BaseURL>\n"
+    "                <BaseURL>http://127.0.0.1:47777/test_dash/segment_base/2_audio_6.mp4</BaseURL>\n"
     "                <SegmentBase timescale=\"44100\" indexRangeExact=\"true\" "
     "indexRange=\"756-1167\">\n"
     "                    <Initialization range=\"0-755\"/>\n"
     "                </SegmentBase>\n"
     "            </Representation>\n"
+    "        </AdaptationSet>\n"
+    "        <AdaptationSet id=\"3\" contentType=\"audio\" lang=\"und\" group=\"2\" "
+    "segmentAlignment=\"true\" subsegmentAlignment=\"true\" subsegmentStartsWithSAP=\"1\" "
+    "mimeType=\"audio/mp4\">\n"
     "        </AdaptationSet>\n"
     "    </Period>\n"
     "</MPD>";
@@ -99,6 +103,12 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentBaseMpd_001, TestSize.Level1)
             std::list<std::string> periodBaseUrlList;
             periodMr->GetBaseUrlList(periodBaseUrlList);
             EXPECT_EQ(periodBaseUrlList.empty(), true);
+            int32_t flag;
+            periodMr->GetInitSegment(flag);
+            periodMr->GetPeriod();
+            periodMr->GetPreviousPeriod();
+            bool isEmpty = periodMr->Empty();
+            EXPECT_EQ(isEmpty, false);
         }
     }
     EXPECT_NE(nullptr, mpdInfo);
@@ -154,6 +164,12 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentListMpd_001, TestSize.Level1)
                       "height=\"720\" scanType=\"progressive\" frameRate=\"30\" bandwidth=\"1955284\">\n"
                       "        <SegmentList timescale=\"1000\" duration=\"2000\">\n"
                       "          <Initialization sourceURL=\"video/1/init.mp4\"/>\n"
+                      "          <SegmentTimeline>\n"
+                      "              <S t=\"0\" d=\"2000\" />\n"
+                      "              <S d=\"2000\" />\n"
+                      "              <S d=\"2000\" />\n"
+                      "              <S d=\"2000\" />\n"
+                      "          </SegmentTimeline>\n"
                       "          <SegmentURL media=\"video/1/seg-1.m4s\" TI=\"6.84\" SI=\"35.15\"/>\n"
                       "          <SegmentURL media=\"video/1/seg-2.m4s\" TI=\"15.14\" SI=\"38.64\"/>\n"
                       "        </SegmentList>\n"
@@ -200,7 +216,14 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParseSegmentTemplateMpd_001, TestSize.Level
                       "minWidth=\"1280\" maxWidth=\"2560\" minHeight=\"720\" maxHeight=\"1440\">\n"
                       "      <SegmentTemplate timescale=\"1000\" duration=\"2000\" "
                       "initialization=\"$RepresentationID$/init.mp4\" media=\"$RepresentationID$/seg-$Number%04d$.m4s\""
-                      " startNumber=\"1\"/>\n"
+                      " startNumber=\"1\">\n"
+                      "          <SegmentTimeline>\n"
+                      "              <S t=\"0\" d=\"2000\" />\n"
+                      "              <S d=\"2000\" />\n"
+                      "              <S d=\"2000\" />\n"
+                      "              <S d=\"2000\" />\n"
+                      "          </SegmentTimeline>"
+                      "      </SegmentTemplate>\n"
                       "      <Representation id=\"video/1\" codecs=\"hev1.2.4.H120.90\" width=\"1280\" height=\"720\" "
                       "scanType=\"progressive\" frameRate=\"30\" bandwidth=\"1955284\"/>\n"
                       "      <Representation id=\"video/2\" codecs=\"hev1.2.4.H120.90\" width=\"1920\" height=\"1080\""
@@ -525,6 +548,28 @@ HWTEST_F(DashMpdParserUnitTest, Test_ParserNode_013, TestSize.Level1)
         node->GetAttr("test", dAttrVal);
         EXPECT_EQ(dAttrVal, 0.0);
     }
+}
+
+HWTEST_F(DashMpdParserUnitTest, Test_Base64, TestSize.Level1)
+{
+    uint8_t src[2048];
+    uint32_t srcSize = 0;
+    uint8_t dest[2048]; // 2048: pssh len
+    uint32_t destSize = 2048; // 2048: pssh len
+    bool ret = Base64Utils::Base64Decode(src, srcSize, dest, &destSize);
+    EXPECT_FALSE(ret);
+    uint8_t *src1 = nullptr; // 2048: pssh len
+    ret = Base64Utils::Base64Decode(src1, srcSize, dest, &destSize);
+    EXPECT_FALSE(ret);
+    uint8_t *dest1 = nullptr;
+    ret = Base64Utils::Base64Decode(src, srcSize, dest1, &destSize);
+    EXPECT_FALSE(ret);
+    uint32_t *destSize1 = nullptr;
+    ret = Base64Utils::Base64Decode(src, srcSize, dest, destSize1);
+    EXPECT_FALSE(ret);
+    srcSize = 2049;
+    ret = Base64Utils::Base64Decode(src, srcSize, dest, &destSize);
+    EXPECT_FALSE(ret);
 }
 }
 }

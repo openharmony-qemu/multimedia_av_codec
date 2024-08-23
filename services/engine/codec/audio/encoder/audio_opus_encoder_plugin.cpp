@@ -49,7 +49,7 @@ AudioOpusEncoderPlugin::AudioOpusEncoderPlugin()
       channels(-1), sampleRate(-1), bitRate(-1), complexity(-1)
 {
     ret = 0;
-    void* handle = dlopen("/system/lib64/libav_codec_ext_base.z.so", 1);
+    void* handle = dlopen("libav_codec_ext_base.z.so", 1);
     if (!handle) {
         ret = -1;
         AVCODEC_LOGE("AudioOpusEncoderPlugin dlopen error, check .so file exist");
@@ -108,10 +108,8 @@ int32_t AudioOpusEncoderPlugin::CheckSampleFormat()
 
 int32_t AudioOpusEncoderPlugin::Init(const Format &format)
 {
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin Init dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin Init dlopen or dlsym error");
     channels = INITVAL;
     sampleRate = INITVAL;
     sampleFmt = INITVAL;
@@ -149,14 +147,8 @@ int32_t AudioOpusEncoderPlugin::Init(const Format &format)
 
 int32_t AudioOpusEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin inputBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin ProcessSendData dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin ProcessSendData dlopen or dlsym error");
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         auto attr = inputBuffer->GetBufferAttr();
@@ -182,14 +174,8 @@ int32_t AudioOpusEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuffe
 
 int32_t AudioOpusEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin ProcessRecieveData dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
-    if (!outBuffer) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin outBuffer is nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin ProcessRecieveData dlopen or dlsym error");
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         if (len > 0) {
@@ -212,10 +198,8 @@ int32_t AudioOpusEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferIn
 int32_t AudioOpusEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin Reset dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin Reset dlopen or dlsym error");
     ret = PluginCodecPtr->Reset();
     if (ret != 0) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -225,11 +209,9 @@ int32_t AudioOpusEncoderPlugin::Reset()
 
 int32_t AudioOpusEncoderPlugin::Release()
 {
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_OK,
+        "AudioOpusEncoderPlugin Release dlopen or dlsym error");
     std::lock_guard<std::mutex> lock(avMutext_);
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGD("AudioOpusEncoderPlugin Release dlopen or dlsym error. release");
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
-    }
     ret = PluginCodecPtr->Release();
     if (ret != 0) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -242,10 +224,8 @@ int32_t AudioOpusEncoderPlugin::Release()
 int32_t AudioOpusEncoderPlugin::Flush()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin Flush dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin Flush dlopen or dlsym error");
     ret = PluginCodecPtr->Flush();
     if (ret != 0) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -255,19 +235,15 @@ int32_t AudioOpusEncoderPlugin::Flush()
 
 int32_t AudioOpusEncoderPlugin::GetInputBufferSize() const
 {
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin GetInputBufferSize dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin GetInputBufferSize dlopen or dlsym error");
     return PluginCodecPtr->GetInputBufferSize();
 }
 
 int32_t AudioOpusEncoderPlugin::GetOutputBufferSize() const
 {
-    if (!PluginCodecPtr) {
-        AVCODEC_LOGE("AudioOpusEncoderPlugin GetOutputBufferSize dlopen or dlsym error");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "AudioOpusEncoderPlugin GetOutputBufferSize dlopen or dlsym error");
     return PluginCodecPtr->GetOutputBufferSize();
 }
 

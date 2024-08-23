@@ -300,7 +300,7 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
 void DemuxerPluginManager::AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo)
 {
     MEDIA_LOG_I("AddMediaInfo enter");
-    AddGeneral(streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
+    AddGeneral(streamInfoMap_[streamID], mediaInfo.general);
     for (uint32_t index = 0; index < streamInfoMap_[streamID].mediaInfo.tracks.size(); index++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[index];
         mediaInfo.tracks.push_back(trackMeta);
@@ -386,19 +386,35 @@ Status DemuxerPluginManager::UpdateGeneralValue(int32_t trackCount, const Meta& 
     return Status::OK;
 }
 
-Status DemuxerPluginManager::AddGeneral(const Meta& format, Meta& formatNew)
+Status DemuxerPluginManager::AddGeneral(const MediaStreamInfo& info, Meta& formatNew)
 {
-    if (formatNew.Empty()) {
-        formatNew = format;
-        return Status::OK;
-    }
-    // 合并
+    FileType fileType = FileType::UNKNOW;
     int32_t curTrackCount = 0;
-    int32_t newTrackCount = 0;
     formatNew.Get<Tag::MEDIA_TRACK_COUNT>(curTrackCount);
-    format.Get<Tag::MEDIA_TRACK_COUNT>(newTrackCount);
+
+    bool hasVideo = false;
+    formatNew.Get<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+
+    bool hasAudio = false;
+    formatNew.Get<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+
+    bool hasSubtitle = false;
+    formatNew.Get<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+
+    if (formatNew.Get<Tag::MEDIA_FILE_TYPE>(fileType) == false && info.activated == true) {
+        formatNew = info.mediaInfo.general;
+    }
+
+    formatNew.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+    formatNew.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+    formatNew.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+
+    int32_t newTrackCount = 0;
+    if (info.mediaInfo.general.Get<Tag::MEDIA_TRACK_COUNT>(newTrackCount) == false) {
+        newTrackCount = 1;
+    }
     int32_t totalTrackCount = newTrackCount + curTrackCount;
-    UpdateGeneralValue(totalTrackCount, format, formatNew);
+    UpdateGeneralValue(totalTrackCount, info.mediaInfo.general, formatNew);
 
     return Status::OK;
 }
@@ -766,7 +782,7 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 int32_t DemuxerPluginManager::AddExternalSubtitle()
 {
     if (curSubTitleStreamID_ == -1) {
-        int32_t streamIndex = streamInfoMap_.size();
+        int32_t streamIndex = static_cast<int32_t>(streamInfoMap_.size());
         curSubTitleStreamID_ = streamIndex;
         streamInfoMap_[streamIndex].activated = true;
         streamInfoMap_[streamIndex].type = SUBTITLE;

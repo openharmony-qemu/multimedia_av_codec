@@ -151,10 +151,6 @@ bool AudioFFMpegAmrnbDecoderPlugin::CheckSampleFormat(const Format &format)
         return true;
     }
     auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
-    if (destFmt == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
-        return false;
-    }
     basePlugin->EnableResample(destFmt);
     return true;
 }

@@ -17,6 +17,7 @@
 #define POST_PROCESSING_CALLBACK_H
 
 #include <functional>
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -24,10 +25,12 @@ namespace PostProcessing {
 
 using OnErrorCallback = std::function<void(int32_t, void*)>; // errorCode, userData
 using OnOutputBufferAvailableCallback = std::function<void(uint32_t, int32_t, void*)>; // index, flag, userData
+using OnOutputFormatChangedCallback = std::function<void(const OHOS::Media::Format&, void*)>; // format, userData
 
 struct Callback {
     OnErrorCallback onError;
     OnOutputBufferAvailableCallback onOutputBufferAvailable;
+    OnOutputFormatChangedCallback onOutputFormatChanged;
 };
 
 } // namespace PostProcessing

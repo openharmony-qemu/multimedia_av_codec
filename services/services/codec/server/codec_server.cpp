@@ -30,6 +30,9 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -126,6 +129,15 @@ void PostProcessingCallbackOnOutputBufferAvailable(uint32_t index, int32_t flag,
     CHECK_AND_RETURN_LOG(codecServer != nullptr, "Codec server dose not exit");
     codecServer->PostProcessingOnOutputBufferAvailable(index, flag);
 }
+
+void PostProcessingCallbackOnOutputFormatChanged(const OHOS::Media::Format& format, void* userData)
+{
+    CHECK_AND_RETURN_LOG(userData != nullptr, "Post processing callback's userData is nullptr");
+    auto callbackUserData = static_cast<PostProcessingCallbackUserData*>(userData);
+    auto codecServer = callbackUserData->codecServer;
+    CHECK_AND_RETURN_LOG(codecServer != nullptr, "Codec server dose not exit");
+    codecServer->PostProcessingOnOutputFormatChanged(format);
+}
 } // namespace
 
 namespace OHOS {
@@ -152,12 +164,6 @@ CodecServer::~CodecServer()
         thread->join();
     }
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
-
-    if (postProcessingUserData_ != nullptr) {
-        auto p = static_cast<PostProcessingCallbackUserData*>(postProcessingUserData_);
-        delete p;
-        p = nullptr;
-    }
 
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
@@ -849,6 +855,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     if (postProcessing_) {
+        outputFormatChanged_ = format;
         return;
     }
     if (videoCb_ != nullptr) {
@@ -1162,7 +1169,10 @@ int32_t CodecServer::SetCallbackForPostProcessing()
     postProcessingCallback_.onError = std::bind(PostProcessingCallbackOnError, _1, _2);
     postProcessingCallback_.onOutputBufferAvailable =
         std::bind(PostProcessingCallbackOnOutputBufferAvailable, _1, _2, _3);
+    postProcessingCallback_.onOutputFormatChanged = std::bind(PostProcessingCallbackOnOutputFormatChanged, _1, _2);
     auto userData = new PostProcessingCallbackUserData;
+    CHECK_AND_RETURN_RET_LOG(userData, AVCS_ERR_NO_MEMORY, "Failed to create post processing callback userdata");
+    postProcessingUserData_ = userData;
     userData->codecServer = shared_from_this();
     return postProcessing_->SetCallback(postProcessingCallback_, static_cast<void*>(userData));
 }
@@ -1299,6 +1309,12 @@ int32_t CodecServer::ReleasePostProcessing()
         CleanPostProcessingResource();
         postProcessing_.reset();
     }
+    if (postProcessingUserData_ != nullptr) {
+        auto p = static_cast<PostProcessingCallbackUserData*>(postProcessingUserData_);
+        delete p;
+        p = nullptr;
+    }
+    
     AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }
@@ -1337,8 +1353,9 @@ int32_t CodecServer::PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuf
 void CodecServer::PostProcessingOnError(int32_t errorCode)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
-    if (!videoCb_) {
+    if (videoCb_ == nullptr) {
         AVCODEC_LOGD("Missing video callback");
+        return;
     }
     int32_t ret = VPEErrorToAVCSError(errorCode);
     AVCODEC_LOGD("PostProcessingOnError, errorCodec:%{public}d -> %{public}d", errorCode, ret);
@@ -1348,8 +1365,9 @@ void CodecServer::PostProcessingOnError(int32_t errorCode)
 void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_unused]] int32_t flag)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
-    if (!videoCb_) {
+    if (videoCb_ == nullptr) {
         AVCODEC_LOGD("Missing video callback");
+        return;
     }
     CHECK_AND_RETURN_LOG(postProcessingInputBufferInfoQueue_ && postProcessingOutputBufferInfoQueue_, "Queue is null");
     std::shared_ptr<DecodedBufferInfo> info{nullptr};
@@ -1362,6 +1380,38 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
     videoCb_->OnOutputBufferAvailable(index, info->buffer);
+}
+
+void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
+{
+    std::lock_guard<std::shared_mutex> lock(cbMutex_);
+    if (videoCb_ == nullptr) {
+        AVCODEC_LOGD("Missing video callback");
+        return;
+    }
+    int32_t width = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_WIDTH, width)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_WIDTH, width);
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_PIC_WIDTH, width);
+    }
+    int32_t height = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_HEIGHT, height)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_HEIGHT, height);
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_PIC_HEIGHT, height);
+    }
+    int32_t stride = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_STRIDE, stride)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    }
+    int32_t sliceHeight = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
+    }
+    int32_t outputColorSpace = 0;
+    if (format.GetIntValue(Media::Tag::VIDEO_DECODER_OUTPUT_COLOR_SPACE, outputColorSpace)) {
+        outputFormatChanged_.PutIntValue(Media::Tag::VIDEO_DECODER_OUTPUT_COLOR_SPACE, outputColorSpace);
+    }
+    videoCb_->OnOutputFormatChanged(outputFormatChanged_);
 }
 
 void CodecServer::StartPostProcessingTask()

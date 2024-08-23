@@ -145,6 +145,7 @@ void AVSourceUnitTest::InitResource(const std::string &path, bool local)
             aTrackIdx_ = i;
         }
     }
+    initStatus_ = true;
 }
 
 void AVSourceUnitTest::CheckHevcInfo(const std::string resName)
@@ -198,7 +199,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1190, TestSize.Level1)
         return;
     }
     InitResource(g_hdrVividPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     CheckHevcInfo("hdrVivid");
 }
 
@@ -213,7 +214,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1120, TestSize.Level1)
         return;
     }
     InitResource(g_hdrVividUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     CheckHevcInfo("hdrVivid");
 }
 
@@ -228,7 +229,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1200, TestSize.Level1)
         return;
     }
     InitResource(g_mp4HevcPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     CheckHevcInfo("mp4Hevc");
 }
 
@@ -243,7 +244,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1201, TestSize.Level1)
         return;
     }
     InitResource(g_mp4HevcdUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     CheckHevcInfo("mp4Hevc");
 }
 
@@ -258,7 +259,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1300, TestSize.Level1)
         return;
     }
     InitResource(g_mkvHevcAccPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     CheckHevcInfo("mkvHevcAcc");
 }
 
@@ -273,7 +274,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1303, TestSize.Level1)
         return;
     }
     InitResource(g_mkvHevcAccUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     CheckHevcInfo("mkvHevcAcc");
 }
 
@@ -285,6 +286,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1303, TestSize.Level1)
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1301, TestSize.Level1)
 {
     InitResource(g_mkvAvcOpusPath, LOCAL);
+    ASSERT_TRUE(initStatus_);
     trackIndex_ = vTrackIdx_;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -325,6 +327,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1301, TestSize.Level1)
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1302, TestSize.Level1)
 {
     InitResource(g_mkvAvcMp3Path, LOCAL);
+    ASSERT_TRUE(initStatus_);
     trackIndex_ = vTrackIdx_;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -365,6 +368,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1302, TestSize.Level1)
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1304, TestSize.Level1)
 {
     InitResource(g_mkvAvcOpusUri, URI);
+    ASSERT_TRUE(initStatus_);
     trackIndex_ = vTrackIdx_;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -405,6 +409,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1304, TestSize.Level1)
 HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1305, TestSize.Level1)
 {
     InitResource(g_mkvAvcMp3Uri, URI);
+    ASSERT_TRUE(initStatus_);
     trackIndex_ = vTrackIdx_;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
@@ -448,7 +453,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1306, TestSize.Level1)
         return;
     }
     InitResource(g_tsHevcAacPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
     format_->DumpInfo();
@@ -470,7 +475,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1307, TestSize.Level1)
         return;
     }
     InitResource(g_tsHevcAacUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
     format_->DumpInfo();
@@ -492,7 +497,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1312, TestSize.Level1)
         return;
     }
     InitResource(g_fmp4HevcPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
     format_->DumpInfo();
@@ -553,7 +558,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1313, TestSize.Level1)
         return;
     }
     InitResource(g_fmp4HevcUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
     format_->DumpInfo();
@@ -614,7 +619,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1314, TestSize.Level1)
         return;
     }
     InitResource(g_doubleVividPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
     format_->DumpInfo();
@@ -675,7 +680,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1315, TestSize.Level1)
         return;
     }
     InitResource(g_doubleVividUri, URI);
-    ASSERT_NE(source_, nullptr);
+    ASSERT_TRUE(initStatus_);
     format_ = source_->GetSourceFormat(); // source
     ASSERT_NE(format_, nullptr);
     format_->DumpInfo();

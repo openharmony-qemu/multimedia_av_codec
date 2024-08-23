@@ -20,7 +20,9 @@
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
 #include "plugin/plugin_time.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -109,7 +111,9 @@ private:
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
 
     bool isDrmProtected_ = false;
-    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+#ifdef SUPPORT_DRM
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_ = nullptr;
+#endif
     bool svpFlag_ = false;
     bool isDump_ = false;
     bool refreshTotalPauseTime_{false};

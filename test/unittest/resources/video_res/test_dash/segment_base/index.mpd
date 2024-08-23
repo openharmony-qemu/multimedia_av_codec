@@ -2,13 +2,32 @@
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" minBufferTime="PT2.00S" mediaPresentationDuration="PT0H1M1S" type="static">
   <!-- Created with Bento4 mp4-dash.py, VERSION=1.7.0-613 -->
   <Period>
+    <SegmentBase timescale="1000"/>
     <!-- Video -->
-    <AdaptationSet mimeType="video/mp4" maxPlayoutRate="1.0" segmentAlignment="true" startWithSAP="1" minWidth="854" maxWidth="2560" minHeight="480" maxHeight="1440">
+    <AdaptationSet maxPlayoutRate="1.0" segmentAlignment="true" startWithSAP="1" minWidth="854" maxWidth="2560" minHeight="480" maxHeight="1440">
       <ContentComponent id="0" contentType="video" myContentComponentAttriubute="contentcomponent">
         <Accessibility>
           <NestedDescriptorElement>### Nested DescriptorTestText ###</NestedDescriptorElement>
         </Accessibility>
-        <Role></Role>
+        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"></Role>
+        <Rating></Rating>
+        <Viewpoint></Viewpoint>
+        <ContentComponentElement>### ContentComponentTestText ###</ContentComponentElement>
+      </ContentComponent>
+      <ContentComponent id="1" contentType="audio" myContentComponentAttriubute="contentcomponent">
+        <Accessibility>
+          <NestedDescriptorElement>### Nested DescriptorTestText ###</NestedDescriptorElement>
+        </Accessibility>
+        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"></Role>
+        <Rating></Rating>
+        <Viewpoint></Viewpoint>
+        <ContentComponentElement>### ContentComponentTestText ###</ContentComponentElement>
+      </ContentComponent>
+      <ContentComponent id="2" contentType="text" myContentComponentAttriubute="contentcomponent">
+        <Accessibility>
+          <NestedDescriptorElement>### Nested DescriptorTestText ###</NestedDescriptorElement>
+        </Accessibility>
+        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"></Role>
         <Rating></Rating>
         <Viewpoint></Viewpoint>
         <ContentComponentElement>### ContentComponentTestText ###</ContentComponentElement>
@@ -61,15 +80,15 @@
       <EssentialProperty schemeIdUri="urn:mpeg:mpegB:cicp:TransferCharacteristics" value="16"/>
     </AdaptationSet>
     <!-- Audio -->
-    <AdaptationSet mimeType="audio/mp4" startWithSAP="1" segmentAlignment="true">
-      <Representation id="audio-und-mp4a-1" codecs="mp4a.40.5" bandwidth="294135" audioSamplingRate="48000" volumeAdjust="original">
+    <AdaptationSet startWithSAP="1" segmentAlignment="true">
+      <Representation mimeType="audio/mp4" id="audio-und-mp4a-1" codecs="mp4a.40.5" bandwidth="294135" audioSamplingRate="48000" volumeAdjust="original">
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         <BaseURL>media-audio-und-mp4a.mp4</BaseURL>
         <SegmentBase indexRange="662-1065">
           <Initialization range="0-661"/>
         </SegmentBase>
       </Representation>
-      <Representation id="audio-und-mp4a-2" codecs="mp4a.40.5" bandwidth="294135" audioSamplingRate="48000" volumeAdjust="up">
+      <Representation mimeType="audio/mp4" id="audio-und-mp4a-2" codecs="mp4a.40.5" bandwidth="294135" audioSamplingRate="48000" volumeAdjust="up">
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         <BaseURL>media-audio-und-mp4a.mp4</BaseURL>
         <SegmentBase indexRange="662-1065">

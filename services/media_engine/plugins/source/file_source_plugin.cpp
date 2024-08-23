@@ -245,15 +245,14 @@ Status FileSourcePlugin::ParseFileName(const std::string& uri)
         MEDIA_LOG_E("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_D("uri: %{private}s", uri.c_str());
     if (uri.find("file:/") != std::string::npos) {
         if (uri.find('#') != std::string::npos) {
-            MEDIA_LOG_E("Invalid file uri format: %{private}s", uri.c_str());
+            MEDIA_LOG_E("Invalid file uri format");
             return Status::ERROR_INVALID_PARAMETER;
         }
         auto pos = uri.find("file:");
         if (pos == std::string::npos) {
-            MEDIA_LOG_E("Invalid file uri format: %{private}s", uri.c_str());
+            MEDIA_LOG_E("Invalid file uri format");
             return Status::ERROR_INVALID_PARAMETER;
         }
         pos += 5; // 5: offset
@@ -263,7 +262,7 @@ Status FileSourcePlugin::ParseFileName(const std::string& uri)
             pos += 2;                 // 2: offset
             pos = uri.find('/', pos); // skip host name
             if (pos == std::string::npos) {
-                MEDIA_LOG_E("Invalid file uri format: %{private}s", uri.c_str());
+                MEDIA_LOG_E("Invalid file uri format");
                 return Status::ERROR_INVALID_PARAMETER;
             }
             pos++;

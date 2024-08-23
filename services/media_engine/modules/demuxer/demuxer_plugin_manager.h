@@ -139,7 +139,7 @@ private:
     void InitSubtitleTrack(const StreamInfo& info);
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo);
     static Status UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew);
-    static Status AddGeneral(const Meta& format, Meta& formatNew);
+    static Status AddGeneral(const MediaStreamInfo& info, Meta& formatNew);
 
     Status AddTrackMapInfo(int32_t streamID, int32_t trackIndex);
     Status UpdateMediaInfo(int32_t streamID);

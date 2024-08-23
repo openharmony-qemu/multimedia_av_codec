@@ -72,10 +72,6 @@ int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
 
 int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    if (!inputBuffer) {
-        AVCODEC_LOGE("AudioG711muDecoder inputBuffer is null.");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     auto attr = inputBuffer->GetBufferAttr();
     if (attr.size < 0) {
         AVCODEC_LOGE("AudioG711muDecoder inputBuffer size invalid, size: %{public}d", attr.size);
@@ -102,10 +98,6 @@ int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
 
 int32_t AudioG711muDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    if (!outBuffer) {
-        AVCODEC_LOGE("AudioG711muDecoder outBuffer is null.");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         auto memory = outBuffer->GetBuffer();

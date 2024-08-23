@@ -93,6 +93,7 @@ const std::map<std::string, std::string> CAPABILITY_ENCODER_HARD_NAME = {
 
 const std::string DEFAULT_AUDIO_MIME = std::string(CodecMimeType::AUDIO_AAC);
 const std::string DEFAULT_VIDEO_MIME = std::string(CodecMimeType::VIDEO_AVC);
+const std::string DEFAULT_UNSUPPORTED_MIME = std::string(CodecMimeType::IMAGE_PNG);
 constexpr int32_t MAX_SURPPORT_ACODEC = 16;
 constexpr int32_t MAX_SURPPORT_VCODEC = 64;
 

@@ -21,6 +21,7 @@
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
+#include "syspara/parameter.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,9 @@ constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
 constexpr int32_t LOOP_TIMES = 5;
+constexpr int32_t MAX_LEN = 128;
+const std::string USER_AGENT = "User-Agent";
+const std::string DISPLAYVERSION = "const.product.software.version";
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -198,8 +202,11 @@ uint32_t DownloadRequest::GetBitRate() const
         return 0;
     }
     int64_t timeGap = downloadDoneTime_ - downloadStartTime_;
-    uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ / timeGap * 1000 *
-                       1 * 8); // 1000:ms to sec 1:weight 8:byte to bit
+    if (timeGap == 0) {
+        return 0;
+    }
+    uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ * 1000 *
+                        1 * 8 / timeGap); // 1000:ms to sec 1:weight 8:byte to bit
     return bitRate;
 }
 
@@ -280,6 +287,10 @@ void Downloader::Pause(bool isAsync)
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     MEDIA_LOG_I("pause Begin");
     requestQue_->SetActive(false, false);
+    if (client_ != nullptr) {
+        isClientClose_ = true;
+        client_->Close();
+    }
     PauseLoop(isAsync);
     MEDIA_LOG_I("pause End");
 }
@@ -304,6 +315,10 @@ void Downloader::Resume()
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
+        if (client_ != nullptr && currentRequest_ != nullptr) {
+            isClientClose_ = false;
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
+        }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
             currentRequest_->isEos_ = false;
@@ -380,7 +395,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I(PUBLIC_LOG_S " Retry Begin, url : " PUBLIC_LOG_S, name_.c_str(), request->url_.c_str());
+        MEDIA_LOG_I("Retry Begin");
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
         requestQue_->SetActive(false, false);
     }
@@ -405,11 +420,41 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     return true;
 }
 
+std::string GetSystemParam(const std::string &key)
+{
+    char value[MAX_LEN] = {0};
+    int32_t ret = GetParameter(key.c_str(), "", value, MAX_LEN);
+    if (ret < 0) {
+        return "";
+    }
+    return std::string(value);
+}
+
+std::string GetUserAgent()
+{
+    std::string displayVersion = GetSystemParam(DISPLAYVERSION);
+    std::string userAgent = " AVPlayerLib " + displayVersion;
+    return userAgent;
+}
+
 bool Downloader::BeginDownload()
 {
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
+
+    bool isSetUA = false;
+    for (auto iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
+        std::string setKey = iter->first;
+        if (setKey == USER_AGENT) {
+            isSetUA = true;
+        }
+    }
+    if (!isSetUA) {
+        httpHeader[USER_AGENT] = GetUserAgent();
+        MEDIA_LOG_I("Set default UA.");
+    }
+    
     int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
@@ -838,6 +883,11 @@ void Downloader::PauseLoop(bool isAsync)
     } else {
         task_->Pause();
     }
+}
+
+const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
+{
+    return currentRequest_;
 }
 }
 }

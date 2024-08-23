@@ -28,7 +28,7 @@
 namespace OHOS {
 namespace Media {
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
-constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
@@ -88,7 +88,7 @@ public:
     bool Check();
 
 protected:
-    CacheChunk* GetFreeCacheChunk(int64_t offset);
+    CacheChunk* GetFreeCacheChunk(int64_t offset, bool checkAllowFailContinue = false);
     FragmentIterator EraseFragmentCache(const FragmentIterator& iter);
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, int64_t offset);
     ChunkIterator GetOffsetChunkCache(CacheChunkList& fragmentCacheBuffer, int64_t offset);

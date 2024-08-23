@@ -265,10 +265,8 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
                                             [](AVCodec *ptr) { (void)ptr; });
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
     }
-    if (avCodec_ == nullptr) {
-        AVCODEC_LOGE("AllocateContext fail,parameter avcodec is nullptr.");
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr,
+        Status::ERROR_INVALID_OPERATION, "AllocateContext failed %{public}s", name.c_str());
     name_ = name;
     AVCodecContext *context = nullptr;
     {
@@ -288,18 +286,8 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
 
 Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 {
-    if (format == nullptr) {
-        AVCODEC_LOGI("format is nullptr");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
-    if (avCodecContext_->channels <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
-    if (avCodecContext_->sample_rate <= 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     AudioChannelLayout channelLayout = UNKNOWN;
     format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
@@ -344,10 +332,8 @@ Status FfmpegBaseDecoder::OpenContext()
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
-        if (res != 0) {
-            AVCODEC_LOGE("avcodec open error %{public}s", AVStrError(res).c_str());
-            return Status::ERROR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(res == 0, Status::ERROR_UNKNOWN,
+            "avcodec open error %{public}s", AVStrError(res).c_str());
     }
     return Status::OK;
 }
@@ -376,10 +362,8 @@ Status FfmpegBaseDecoder::InitResample()
             return Status::ERROR_UNKNOWN;
         }
         convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
-        if (convertedFrame_ == nullptr) {
-            AVCODEC_LOGE("av_frame_alloc failed");
-            return Status::ERROR_NO_MEMORY;
-        }
+        CHECK_AND_RETURN_RET_LOG(convertedFrame_ != nullptr, Status::ERROR_NO_MEMORY, "av_frame_alloc failed");
+
         needResample_ = true;
     }
     return Status::OK;

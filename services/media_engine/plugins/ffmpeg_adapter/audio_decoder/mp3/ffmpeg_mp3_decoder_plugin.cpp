@@ -89,10 +89,7 @@ Status FFmpegMp3DecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         return ret;
     }
     ret = basePlugin->InitContext(parameter);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("mp3 init error.");
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "mp3 init error.");
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
     format->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, GetOutputBufferSize());
@@ -154,10 +151,8 @@ Status FFmpegMp3DecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
-    if (!basePlugin->CheckSampleFormat(format, channels)) {
-        AVCODEC_LOGE("check init failed, because CheckSampleFormat failed.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(basePlugin->CheckSampleFormat(format, channels), Status::ERROR_INVALID_PARAMETER,
+        "check init failed, because CheckSampleFormat failed");
     return Status::OK;
 }
 

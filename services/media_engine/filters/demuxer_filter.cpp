@@ -37,6 +37,7 @@ using namespace MediaAVCodec;
 using MediaType = OHOS::Media::Plugins::MediaType;
 namespace {
     const std::string MIME_IMAGE = "image";
+    const uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024; // 50M
 }
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
@@ -138,6 +139,7 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     }
     mediaSource_ = source;
     Status ret = demuxer_->SetDataSource(mediaSource_);
+    demuxer_->SetCacheLimit(DEFAULT_CACHE_LIMIT);
     return ret;
 }
 
@@ -184,7 +186,7 @@ Status DemuxerFilter::DoPrepare()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     FALSE_RETURN_V_MSG_E(mediaSource_ != nullptr, Status::ERROR_INVALID_PARAMETER, "No valid media source");
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
-    MEDIA_LOG_I_SHORT("trackCount: %{public}d", trackInfos.size());
+    MEDIA_LOG_I_SHORT("trackCount: %{public}zu", trackInfos.size());
     if (trackInfos.size() == 0) {
         MEDIA_LOG_E_SHORT("Doprepare: trackCount is invalid.");
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_FAILED});
@@ -382,7 +384,7 @@ Status DemuxerFilter::DoResumeDragging()
 Status DemuxerFilter::ResumeForSeek()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
-    MEDIA_LOG_I_SHORT("ResumeForSeek in size: %{public}d", nextFiltersMap_.size());
+    MEDIA_LOG_I_SHORT("ResumeForSeek in size: %{public}zu", nextFiltersMap_.size());
     auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
     if (it != nextFiltersMap_.end() && it->second.size() == 1) {
         auto filter = it->second.back();

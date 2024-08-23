@@ -30,9 +30,12 @@
 #include "meta/format.h"
 #include "filter/filter.h"
 #include "media_sync_manager.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 #include "common/media_core.h"
 #include "common/seek_callback.h"
+#include "drm_i_keysession_service.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -141,7 +144,9 @@ private:
     int64_t stopTime_{0};
     sptr<Surface> videoSurface_;
     bool isDrmProtected_ = false;
-    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+#ifdef SUPPORT_DRM
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_ = nullptr;
+#endif
     bool svpFlag_ = false;
     std::atomic<bool> isPaused_{false};
     std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
@@ -172,6 +177,7 @@ private:
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
     bool isInSeekContinous_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
+    std::mutex draggingMutex_ {};
 };
 } // namespace Pipeline
 } // namespace Media

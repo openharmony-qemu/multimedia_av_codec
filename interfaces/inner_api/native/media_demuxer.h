@@ -153,7 +153,6 @@ private:
     bool GetDrmInfosUpdated(const std::multimap<std::string, std::vector<uint8_t>> &newInfos,
         std::multimap<std::string, std::vector<uint8_t>> &result);
     Status ProcessDrmInfos();
-    Status ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
@@ -186,7 +185,6 @@ private:
     int64_t ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
-    void InnerFixAbsolutePtsForPlayer(std::shared_ptr<AVBuffer> sample);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
     Status HandleRead(uint32_t trackId);
@@ -265,6 +263,7 @@ private:
     std::atomic<bool> shouldCheckSubtitleFramePts_ = false;
     int64_t lastSubtitlePts_ = 0;
     std::shared_ptr<VideoStreamReadyCallback> VideoStreamReadyCallback_ = nullptr;
+    std::mutex draggingMutex_ {};
     std::atomic<bool> isDemuxerLoopExecuting_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {false};
     std::atomic<bool> isInterruptNeeded_ {false};

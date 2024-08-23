@@ -32,9 +32,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 4096;
-const std::string USER_AGENT = "User-Agent";
-const int32_t MAX_LEN = 128;
-const std::string DISPLAYVERSION = "const.product.software.version";
 constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
@@ -49,16 +46,6 @@ std::string ToString(const std::list<std::string> &lists, char tab)
         str.append(*it);
     }
     return str;
-}
-
-std::string GetSystemParam(const std::string &key)
-{
-    char value[MAX_LEN] = {0};
-    int32_t ret = GetParameter(key.c_str(), "", value, MAX_LEN);
-    if (ret < 0) {
-        return "";
-    }
-    return std::string(value);
 }
 
 std::string InsertCharBefore(std::string input, char from, char preChar, char nextChar)
@@ -224,9 +211,6 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
             std::string headerStr = setKey + ":" + setValue;
             const char* str = headerStr.c_str();
             headerList_ = curl_slist_append(headerList_, str);
-            if (setKey == USER_AGENT) {
-                isSetUA_ = true;
-            }
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
             MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
@@ -263,6 +247,9 @@ Status HttpCurlClient::Close()
         easyHandle_ = nullptr;
     }
     ipFlag_ = false;
+    if (!ip_.empty()) {
+        ip_.clear();
+    }
     return Status::OK;
 }
 
@@ -278,6 +265,9 @@ Status HttpCurlClient::Deinit()
         easyHandle_ = nullptr;
     }
     ipFlag_ = false;
+    if (!ip_.empty()) {
+        ip_.clear();
+    }
     curl_global_cleanup();
     MEDIA_LOG_I("Deinit out");
     return Status::OK;
@@ -365,24 +355,6 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
     }
 }
 
-void HttpCurlClient::HandleUserAgent()
-{
-    if (!isSetUA_) {
-        std::string displayVersion = GetSystemParam(DISPLAYVERSION);
-        std::string userAgent_ = "User-Agent: AVPlayerLib " + displayVersion;
-        char *userAgent = new char[userAgent_.size() + 1];
-        int ret = memcpy_s(userAgent, userAgent_.size(), userAgent_.c_str(), userAgent_.size());
-        userAgent[userAgent_.size()] = '\0';
-        if (ret != EOK) {
-            MEDIA_LOG_E("failed to memcpy userAgent_");
-            delete[] userAgent;
-            return;
-        }
-        headerList_ = curl_slist_append(headerList_, userAgent);
-        delete[] userAgent;
-    }
-}
-
 // RequestData run in HttpDownload thread,
 // Open, Close, Deinit run in other thread.
 // Should call Open before start HttpDownload thread.
@@ -396,13 +368,12 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
         headerList_ = curl_slist_append(headerList_, "Accept: */*");
         headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
         headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-        HandleUserAgent();
         isFirstRequest_ = false;
     }
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPHEADER, headerList_);
     MEDIA_LOG_D("RequestData: startPos " PUBLIC_LOG_D32 ", len " PUBLIC_LOG_D32, static_cast<int>(startPos), len);
-    mutex_.lock();
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    mutex_.lock();
     CURLcode returnCode = curl_easy_perform(easyHandle_);
     std::set <CURLcode> notRetrySet = {
         CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,

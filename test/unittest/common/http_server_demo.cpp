@@ -207,8 +207,10 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     int32_t keepAlive = 1;
     int32_t keepIdle = 10;
     std::string recvStr = std::string(recvBuff);
+    std::cout << "recv recvStr=" << recvStr << std::endl;
     std::string path = "";
     if (ret <= 0) {
+        std::cout << "recv error, ret=" << ret << std::endl;
         CloseFd(connFd, fileFd, true, false);
         return;
     }
@@ -234,7 +236,8 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
         UNITTEST_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
         size -= ret;
         ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
-        if (ret <= 0) { // send file buffer failed
+        if (ret <= 0) {
+            std::cout << "send file buffer failed, ret=" << ret << std::endl;
             break;
         }
     }

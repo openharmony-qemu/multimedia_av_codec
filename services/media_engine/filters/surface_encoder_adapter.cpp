@@ -554,7 +554,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
             startBufferTime_ = buffer->pts_;
         }
     } else {
-        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_D64, buffer->flag_);
+        MEDIA_LOG_D("OnOutputBufferAvailable buffer->flag_" PUBLIC_LOG_U32, buffer->flag_);
         mappingTime = startBufferTime_ + buffer->pts_;
     }
     int32_t size = buffer->memory_->GetSize();

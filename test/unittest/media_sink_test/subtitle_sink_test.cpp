@@ -115,6 +115,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case1, TestSize.Level1)
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case2, TestSize.Level1)
@@ -156,6 +157,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case2, TestSize.Level1
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case3, TestSize.Level1)
@@ -192,6 +194,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case3, TestSize.Level1
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case4, TestSize.Level1)
@@ -228,6 +231,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case4, TestSize.Level1
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case5, TestSize.Level1)
@@ -264,6 +268,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case5, TestSize.Level1
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case6, TestSize.Level1)
@@ -298,6 +303,7 @@ HWTEST(TestSubtitleSink, do_sync_write_prepare_two_frames_case6, TestSize.Level1
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_two_frames_case7, TestSize.Level1)
@@ -331,6 +337,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case7, TestSize.Level1)
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_two_frames_case8, TestSize.Level1)
@@ -365,6 +372,7 @@ HWTEST(TestSubtitleSink, do_sync_write_two_frames_case8, TestSize.Level1)
     sink->Resume();
     sink->Stop();
     sink->Release();
+    EXPECT_EQ(sink->Release(), Status::OK);
 }
  
 HWTEST(TestSubtitleSink, do_sync_write_eos, TestSize.Level1)
@@ -382,6 +390,7 @@ HWTEST(TestSubtitleSink, do_sync_write_eos, TestSize.Level1)
     sink->DoSyncWrite(buffer);
     buffer->flag_ = BUFFER_FLAG_EOS;
     sink->DoSyncWrite(buffer);
+    ASSERT_TRUE(sink->DoSyncWrite(buffer) != -1);
 }
 }  // namespace Test
 }  // namespace Media

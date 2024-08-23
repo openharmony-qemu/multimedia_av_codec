@@ -375,7 +375,7 @@ bool CacheMediaChunkBufferImpl::Seek(int64_t offset)
         auto chunkPos = GetOffsetChunkCache(readPos->chunks, offset, LeftBoundedRightOpenComp);
         if (chunkPos != readPos->chunks.end()) {
             auto readOffset = offset - readPos->offsetBegin;
-            if ((readOffset - readPos->accessLength) >=  ACCESS_OFFSET_MAX_LENGTH) {
+            if ((readOffset - readPos->accessLength) >= ACCESS_OFFSET_MAX_LENGTH) {
                 chunkPos = SplitFragmentCacheBuffer(readPos, offset, chunkPos);
             }
 
@@ -533,7 +533,7 @@ CacheChunk* UpdateFragmentCacheForDelTail(FragmentCacheBuffer& fragment)
 
     auto cacheChunk = fragment.chunks.back();
     fragment.chunks.pop_back();
-    
+
     auto dataLength = cacheChunk->dataLength;
     if (fragment.accessLength > fragment.dataLength - static_cast<int64_t>(dataLength)) {
         fragment.accessLength = fragment.dataLength - static_cast<int64_t>(dataLength);
@@ -627,7 +627,7 @@ void CacheMediaChunkBufferImpl::DeleteUnreadFragmentCacheBuffer(FragmentIterator
     }
 }
 
-CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
+CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset, bool checkAllowFailContinue)
 {
     if (writePos_ == fragmentCacheBuffer_.end()) {
         return nullptr;
@@ -637,7 +637,7 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(int64_t offset)
     if (currWritePos != fragmentCacheBuffer_.end()) {
         allowChunkNum = CalcAllowMaxChunkNum(currWritePos->totalReadSize, currWritePos->offsetBegin);
         DeleteHasReadFragmentCacheBuffer(currWritePos, allowChunkNum);
-        if (currWritePos->chunks.size() >= allowChunkNum) {
+        if (currWritePos->chunks.size() >= allowChunkNum && !checkAllowFailContinue) {
             return nullptr;
         }
     } else {
@@ -683,12 +683,12 @@ ChunkIterator CacheMediaChunkBufferImpl::SplitFragmentCacheBuffer(FragmentIterat
 {
     ResetReadSizeAlloc();
 
-    auto& chunkInfo = * chunkPos;
+    auto& chunkInfo = *chunkPos;
     CacheChunk* splitHead = nullptr;
     if (offset != chunkInfo->offset) {
-        splitHead = freeChunks_.empty() ? GetFreeCacheChunk(-1) : PopFreeCacheChunk(freeChunks_, offset);
+        splitHead = freeChunks_.empty() ? GetFreeCacheChunk(offset, true) : PopFreeCacheChunk(freeChunks_, offset);
         if (splitHead == nullptr) {
-            return currFragmentIter->chunks.end();
+            return chunkPos;
         }
     }
 

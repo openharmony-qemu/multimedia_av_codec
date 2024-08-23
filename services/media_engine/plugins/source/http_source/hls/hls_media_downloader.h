@@ -86,12 +86,13 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
+    void DownloadRecordHistory(int64_t nowTime);
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
@@ -116,11 +117,12 @@ private:
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
-    int32_t GetWaterLineAbove();
+    void UpdateWaterLineAbove();
     void CaculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
     void UpdateCachedPercent(BufferingInfoType infoType);
     bool CheckBufferingOneSeconds();
+    float GetCacheDuration(float ratio);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -220,7 +222,7 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
-    unsigned int waterLineAbove_ {0};
+    size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};

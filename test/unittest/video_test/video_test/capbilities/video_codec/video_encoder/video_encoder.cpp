@@ -51,7 +51,7 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleCon
     // Configure video encoder
     int32_t ret = Configure(sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Configure failed");
-    
+
     // GetSurface from video encoder
     ret = GetSurface(sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get surface failed");
