@@ -382,7 +382,7 @@ void AudioCodecWorker::Dispose()
 bool AudioCodecWorker::Begin()
 {
     AVCODEC_LOGD("Worker begin enter");
-    for (uint32_t i = 0; i < bufferCount; i++) {
+    for (int16_t i = 0; i < bufferCount; i++) {
         inBufAvaIndexQue_.push(i);
     }
     isRunning = true;
