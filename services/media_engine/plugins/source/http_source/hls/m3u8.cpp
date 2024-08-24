@@ -111,17 +111,17 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
         return true;
     }
     if (!StrHasPrefix(playList, "#EXTM3U")) {
-        MEDIA_LOG_I("playlist doesn't start with #EXTM3U " PUBLIC_LOG_S, playList.c_str());
+        MEDIA_LOG_I("playlist doesn't start with #EXTM3U");
         return false;
     }
     if (playList.find("\n#EXT-X-STREAM-INF:") != std::string::npos) {
-        MEDIA_LOG_I("Not a media playlist, but a master playlist! " PUBLIC_LOG_S, playList.c_str());
+        MEDIA_LOG_I("Not a media playlist, but a master playlist!");
         return false;
     }
     if (isNeedCleanFiles) {
         files_.clear();
     }
-    MEDIA_LOG_I("media playlist " PUBLIC_LOG_S, playList.c_str());
+    MEDIA_LOG_I("media playlist");
     auto tags = ParseEntries(playList);
     UpdateFromTags(tags);
     tags.clear();
@@ -504,7 +504,7 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 
 void M3U8MasterPlaylist::UpdateMasterPlaylist()
 {
-    MEDIA_LOG_I("master playlist " PUBLIC_LOG_S, playList_.c_str());
+    MEDIA_LOG_I("master playlist");
     auto tags = ParseEntries(playList_);
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
