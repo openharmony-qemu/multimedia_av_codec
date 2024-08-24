@@ -312,8 +312,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
     fileFdSourcePlugin_->GetCacheTime(0.5);
     fileFdSourcePlugin_->GetCacheTime(1.0);
     fileFdSourcePlugin_->GetCacheTime(2.0);
-    fileFdSourcePlugin_->HasCacheData(0, 0);
-    ASSERT_NE(fileFdSourcePlugin_->HasCacheData(0, 0), true);
+    fileFdSourcePlugin_->HasCacheData(0);
+    ASSERT_NE(fileFdSourcePlugin_->HasCacheData(0), true);
 }
 
 /**
