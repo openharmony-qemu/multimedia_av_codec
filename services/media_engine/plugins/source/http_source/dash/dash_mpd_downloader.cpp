@@ -188,6 +188,16 @@ void DashMpdDownloader::Open(const std::string &url)
     DoOpen(url);
 }
 
+void DashMpdDownloader::Close(bool isAsync)
+{
+    downloader_->Cancel();
+    downloader_->Stop(isAsync);
+
+    if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+        downloadRequest_->Close();
+    }
+}
+
 void DashMpdDownloader::SetStatusCallback(StatusCallbackFunc cb)
 {
     statusCallback_ = cb;
@@ -195,7 +205,7 @@ void DashMpdDownloader::SetStatusCallback(StatusCallbackFunc cb)
 
 void DashMpdDownloader::UpdateDownloadFinished(const std::string &url)
 {
-    MEDIA_LOG_I("UpdateDownloadFinished:ondemandSegBase_=%{public}u url=%{public}s", ondemandSegBase_, url.c_str());
+    MEDIA_LOG_I("UpdateDownloadFinished:ondemandSegBase_=%{public}u", ondemandSegBase_);
     if (ondemandSegBase_) {
         ParseSidx();
     } else {
@@ -284,26 +294,6 @@ DashMpdGetRet DashMpdDownloader::GetBreakPointSegment(int streamId, int64_t brea
     }
 
     return ret;
-}
-
-bool DashMpdDownloader::IsAllSegmentFinishedByStreamId(int streamId)
-{
-    for (auto &streamDescription : streamDescriptions_) {
-        if (streamDescription->streamId_ != streamId) {
-            continue;
-        }
-
-        if (streamDescription->segsState_ == DASH_SEGS_STATE_FINISH &&
-            streamDescription->mediaSegments_.size() > 0) {
-            int64_t segmentIndex = (streamDescription->currentNumberSeq_ == -1) ? 0 :
-                streamDescription->currentNumberSeq_ - streamDescription->startNumberSeq_ + 1;
-            if (segmentIndex >= (int64_t)streamDescription->mediaSegments_.size()) {
-                return true;
-            }
-        }
-        break;
-    }
-    return false;
 }
 
 DashMpdGetRet DashMpdDownloader::GetNextVideoStream(DashMpdBitrateParam &param, int &streamId)
@@ -504,6 +494,16 @@ void DashMpdDownloader::SetInitResolution(unsigned int width, unsigned int heigh
     MEDIA_LOG_I("SetInitResolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32, width, height);
     if (width > 0 && height > 0) {
         initResolution_ = width * height;
+    }
+}
+
+void DashMpdDownloader::SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type)
+{
+    MEDIA_LOG_I("SetDefaultLang, lang:" PUBLIC_LOG_S ", type:" PUBLIC_LOG_D32, lang.c_str(), (int)type);
+    if (type == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
+        defaultAudioLang_ = lang;
+    } else if (type == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+        defaultSubtitleLang_ = lang;
     }
 }
 
@@ -738,6 +738,14 @@ void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentInd
             MEDIA_LOG_E("ParseSidx AddOneSegment is failed");
         }
     }
+
+    if (currentDownloadStream_->mediaSegments_.size() > 0) {
+        std::shared_ptr<DashSegment> lastSegment = currentDownloadStream_->mediaSegments_[
+            currentDownloadStream_->mediaSegments_.size() - 1];
+        if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
+            lastSegment->isLast_ = true;
+        }
+    }
 }
 
 void DashMpdDownloader::OpenStream(std::shared_ptr<DashStreamDescription> stream)
@@ -770,8 +778,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
         requestWholeFile = false;
     }
 
-    MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld url=%{public}s", (long long) startRange,
-        (long long) endRange, url.c_str());
+    MEDIA_LOG_I("DoOpen:start=%{public}lld end=%{public}lld", (long long) startRange, (long long) endRange);
     MediaSouce mediaSource;
     mediaSource.url = url;
     mediaSource.timeoutMs = MPD_HTTP_TIME_OUT_MS;
@@ -1200,6 +1207,17 @@ unsigned int DashMpdDownloader::GetResolutionDelta(unsigned int width, unsigned 
     }
 }
 
+bool DashMpdDownloader::IsChoosedVideoStream(const std::shared_ptr<DashStreamDescription> &choosedStream,
+    const std::shared_ptr<DashStreamDescription> &currentStream)
+{
+    if (choosedStream == nullptr ||
+        (initResolution_ == 0 && choosedStream->bandwidth_ > currentStream->bandwidth_) ||
+        IsNearToInitResolution(choosedStream, currentStream)) {
+        return true;
+    }
+    return false;
+}
+
 bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamDescription> &choosedStream,
     const std::shared_ptr<DashStreamDescription> &currentStream)
 {
@@ -1213,6 +1231,26 @@ bool DashMpdDownloader::IsNearToInitResolution(const std::shared_ptr<DashStreamD
            || (currentDelta == choosedDelta && currentStream->bandwidth_ < choosedStream->bandwidth_);
 }
 
+bool DashMpdDownloader::IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type)
+{
+    if (type == MediaAVCodec::MediaType::MEDIA_TYPE_AUD &&
+        defaultAudioLang_.length() > 0) {
+        if (defaultAudioLang_.compare(lang) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    } else if (type == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE &&
+        defaultSubtitleLang_.length() > 0) {
+        if (defaultSubtitleLang_.compare(lang) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
 {
     if (mpdInfo_ == nullptr || streamDescriptions_.size() == 0) {
@@ -1222,29 +1260,34 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
     std::shared_ptr<DashStreamDescription> choosedStream = nullptr;
     std::shared_ptr<DashStreamDescription> backupStream = nullptr;
     for (const auto &stream : streamDescriptions_) {
-        if (stream->type_ == type && !stream->inUse_) {
-            if (type != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
-                // audio and subtitle choose first stream to play
+        if (stream->type_ != type || stream->inUse_) {
+            continue;
+        }
+        
+        if (type != MediaAVCodec::MediaType::MEDIA_TYPE_VID) {
+            // audio and subtitle choose first stream to play or get default lang
+            if (choosedStream == nullptr) {
                 choosedStream = stream;
-                break;
             }
-
-            if (backupStream == nullptr ||
-                (initResolution_ == 0 && backupStream->bandwidth_ > stream->bandwidth_) ||
-                IsNearToInitResolution(backupStream, stream)) {
-                backupStream = stream;
-            }
-
-            if ((stream->videoType_ != DASH_VIDEO_TYPE_SDR) != isHdrStart_) {
-                // skip video stream that hdr value not same
+            if (!IsLangMatch(stream->lang_, type)) {
                 continue;
             }
 
-            if (choosedStream == nullptr ||
-                (initResolution_ == 0 && choosedStream->bandwidth_ > stream->bandwidth_) ||
-                IsNearToInitResolution(choosedStream, stream)) {
-                choosedStream = stream;
-            }
+            choosedStream = stream;
+            break;
+        }
+        
+        if (backupStream == nullptr || IsNearToInitResolution(backupStream, stream) ||
+            (initResolution_ == 0 && backupStream->bandwidth_ > stream->bandwidth_)) {
+            backupStream = stream;
+        }
+        
+        if ((stream->videoType_ != DASH_VIDEO_TYPE_SDR) != isHdrStart_) {
+            continue;
+        }
+        
+        if (IsChoosedVideoStream(choosedStream, stream)) {
+            choosedStream = stream;
         }
     }
 
@@ -1263,7 +1306,6 @@ bool DashMpdDownloader::ChooseStreamToPlay(MediaAVCodec::MediaType type)
         return true;
     }
 
-    MEDIA_LOG_I("ChooseStreamToPlay false type:" PUBLIC_LOG_D32, (int)type);
     return false;
 }
 
@@ -1317,6 +1359,10 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInMpd(std::shared_ptr<DashStr
         return DASH_SEGMENT_INIT_FAILED;
     }
 
+    std::shared_ptr<DashSegment> lastSegment = streamDesc->mediaSegments_[streamDesc->mediaSegments_.size() - 1];
+    if (lastSegment != nullptr && mpdInfo_ != nullptr && mpdInfo_->type_ == DashType::DASH_TYPE_STATIC) {
+        lastSegment->isLast_ = true;
+    }
     return DASH_SEGMENT_INIT_SUCCESS;
 }
 
@@ -1509,14 +1555,14 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
         std::string tempUrl = mediaUrl;
 
         if (DashSubstituteTmpltStr(tempUrl, "$Time", std::to_string(startTime)) == -1) {
-            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static duration",
-                tempUrl.c_str(), std::to_string(startTime).c_str());
+            MEDIA_LOG_I("GetSegmentsWithTmpltDuration substitute $Time " PUBLIC_LOG_S " error in static duration",
+                std::to_string(startTime).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
         if (DashSubstituteTmpltStr(tempUrl, "$Number", std::to_string(segmentSeq)) == -1) {
-            MEDIA_LOG_I("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static duration",
-                tempUrl.c_str(), std::to_string(segmentSeq).c_str());
+            MEDIA_LOG_I("GetSegmentsWithTmpltDuration substitute $Number " PUBLIC_LOG_S " error in static duration",
+                std::to_string(segmentSeq).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
@@ -1590,14 +1636,14 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
 
         std::string tempUrl = sampleInfo.mediaUrl_;
         if (DashSubstituteTmpltStr(tempUrl, "$Time", std::to_string(startTime)) == -1) {
-            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Time " PUBLIC_LOG_S " error in static timeline",
-                tempUrl.c_str(), std::to_string(startTime).c_str());
+            MEDIA_LOG_E("GetSegmentsInOneTimeline substitute $Time " PUBLIC_LOG_S " error in static timeline",
+                std::to_string(startTime).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
         if (DashSubstituteTmpltStr(tempUrl, "$Number", std::to_string(segmentSeq)) == -1) {
-            MEDIA_LOG_E("" PUBLIC_LOG_S " substitute $Number " PUBLIC_LOG_S " error in static timeline",
-                tempUrl.c_str(), std::to_string(segmentSeq).c_str());
+            MEDIA_LOG_E("GetSegmentsInOneTimeline substitute $Number " PUBLIC_LOG_S " error in static timeline",
+                std::to_string(segmentSeq).c_str());
             return DASH_SEGMENT_INIT_FAILED;
         }
 
@@ -1866,8 +1912,7 @@ bool DashMpdDownloader::GetInitSegFromPeriod(const std::string &periodBaseUrl, c
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, periodBaseUrl);
-        MEDIA_LOG_D("GetInitSegFromPeriod:streamId:" PUBLIC_LOG_D32 ", init seg url "
-            PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
+        MEDIA_LOG_D("GetInitSegFromPeriod:streamId:" PUBLIC_LOG_D32, streamDesc->streamId_);
         return true;
     }
 
@@ -1884,9 +1929,7 @@ bool DashMpdDownloader::GetInitSegFromAdptSet(const std::string &adptSetBaseUrl,
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, adptSetBaseUrl);
-        MEDIA_LOG_D("GetInitSegFromAdptSet:streamId:"
-            PUBLIC_LOG_D32 ", init seg url "
-            PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
+        MEDIA_LOG_D("GetInitSegFromAdptSet:streamId:" PUBLIC_LOG_D32, streamDesc->streamId_);
         return true;
     }
 
@@ -1903,8 +1946,7 @@ bool DashMpdDownloader::GetInitSegFromRepresentation(const std::string &repBaseU
         streamDesc->initSegment_ = std::make_shared<DashInitSegment>();
         UpdateInitSegUrl(streamDesc, initSegment, segTmpltFlag, repId);
         MakeAbsoluteWithBaseUrl(streamDesc->initSegment_, repBaseUrl);
-        MEDIA_LOG_D("GetInitSegFromRepresentation:streamId:" PUBLIC_LOG_D32 ", init seg url "
-            PUBLIC_LOG_S, streamDesc->streamId_, streamDesc->initSegment_->url_.c_str());
+        MEDIA_LOG_D("GetInitSegFromRepresentation:streamId:" PUBLIC_LOG_D32, streamDesc->streamId_);
         return true;
     }
 
@@ -1961,14 +2003,14 @@ void DashMpdDownloader::UpdateInitSegUrl(std::shared_ptr<DashStreamDescription> 
             }
 
             if (DashSubstituteTmpltStr(streamDesc->initSegment_->url_, "$RepresentationID", representationID) == -1) {
-                MEDIA_LOG_E("init seg url " PUBLIC_LOG_S " subtitute $RepresentationID error "
-                    PUBLIC_LOG_S, streamDesc->initSegment_->url_.c_str(), representationID.c_str());
+                MEDIA_LOG_E("UpdateInitSegUrl subtitute $RepresentationID error "
+                    PUBLIC_LOG_S, representationID.c_str());
             }
 
             if (DashSubstituteTmpltStr(streamDesc->initSegment_->url_, "$Bandwidth",
                                        std::to_string(streamDesc->bandwidth_)) == -1) {
-                MEDIA_LOG_E("init seg url " PUBLIC_LOG_S " subtitute $Bandwidth error "
-                    PUBLIC_LOG_U32, streamDesc->initSegment_->url_.c_str(), streamDesc->bandwidth_);
+                MEDIA_LOG_E("UpdateInitSegUrl subtitute $Bandwidth error "
+                    PUBLIC_LOG_U32, streamDesc->bandwidth_);
             }
         }
     }
@@ -1988,10 +2030,9 @@ static VideoType GetVideoType(DashVideoType videoType)
 Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
 {
     MEDIA_LOG_I("GetStreamInfo");
-    // only support one audio Representation in one AdaptationSet
+    // only support one audio/subtitle Representation in one AdaptationSet
     unsigned int audioAdptSetIndex = streamDescriptions_.size();
-    // only support one subtitle Representation in one AdaptationSet
-    unsigned int subtitleAdptSetIndex = streamDescriptions_.size();
+    unsigned int subtitleAdptSetIndex = audioAdptSetIndex;
     for (unsigned int index = 0; index < streamDescriptions_.size(); index++) {
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
             if (streamDescriptions_[index]->adptSetIndex_ == audioAdptSetIndex) {
@@ -2013,8 +2054,8 @@ Status DashMpdDownloader::GetStreamInfo(std::vector<StreamInfo> &streams)
         StreamInfo info;
         info.streamId = streamDescriptions_[index]->streamId_;
         info.bitRate = streamDescriptions_[index]->bandwidth_;
-        info.videoWidth = streamDescriptions_[index]->width_;
-        info.videoHeight = streamDescriptions_[index]->height_;
+        info.videoWidth = static_cast<int32_t>(streamDescriptions_[index]->width_);
+        info.videoHeight = static_cast<int32_t>(streamDescriptions_[index]->height_);
         info.lang = streamDescriptions_[index]->lang_;
         info.videoType = GetVideoType(streamDescriptions_[index]->videoType_);
         if (streamDescriptions_[index]->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {

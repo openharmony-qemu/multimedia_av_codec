@@ -1130,7 +1130,7 @@ void HlsMediaDownloader::ReportBitrateStart(uint32_t bitRate)
     callback_->OnEvent({PluginEventType::SOURCE_BITRATE_START, {bitRate}, "source_bitrate_start"});
 }
 
-Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {

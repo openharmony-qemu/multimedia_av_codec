@@ -82,7 +82,8 @@ void DashRepresentationManager::ParseInitSegment()
             CloneUrlType(representationInfo_->representationSegList_->multSegBaseInfo_.segBaseInfo_.initialization_);
     } else if (representationInfo_->representationSegTmplt_) {
         ParseInitSegmentBySegTmplt();
-    } else {
+    } else if (initSegment_ != nullptr) {
+        delete initSegment_;
         initSegment_ = nullptr;
     }
 
@@ -100,7 +101,8 @@ void DashRepresentationManager::ParseInitSegmentBySegTmplt()
             initSegment_->sourceUrl_ = representationInfo_->representationSegTmplt_->segTmpltInitialization_;
             this->segTmpltFlag_ = 1;
         }
-    } else {
+    } else if (initSegment_ != nullptr) {
+        delete initSegment_;
         initSegment_ = nullptr;
     }
 }
