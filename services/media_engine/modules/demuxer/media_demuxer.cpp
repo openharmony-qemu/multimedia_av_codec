@@ -1888,8 +1888,8 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_IO_ERROR});
+            MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
         case PluginEventType::BUFFERING_END: {

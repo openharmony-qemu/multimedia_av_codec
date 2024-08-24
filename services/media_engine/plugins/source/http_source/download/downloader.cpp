@@ -133,12 +133,12 @@ int DownloadRequest::GetRetryTimes() const
     return retryTimes_;
 }
 
-NetworkClientErrorCode DownloadRequest::GetClientError() const
+int32_t DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetworkServerErrorCode DownloadRequest::GetServerError() const
+int32_t DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -510,7 +510,7 @@ void Downloader::RequestData()
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
     sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
 
-    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
+    auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
         if (isDestructor_) {
