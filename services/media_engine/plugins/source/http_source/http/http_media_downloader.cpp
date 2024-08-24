@@ -151,7 +151,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
+    MEDIA_LOG_I("Open download");
     isDownloadFinish_= false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
