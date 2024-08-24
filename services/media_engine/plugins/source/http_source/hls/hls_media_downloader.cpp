@@ -404,7 +404,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
     readTotalBytes_ += readDataInfo.realReadLength_;
-    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
+    if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
         if (readDuration > ZERO_THRESHOLD) {
@@ -699,7 +699,7 @@ double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
 void HlsMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
+    if (now > lastCheckTime_ && now - lastCheckTime_ > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = now - lastCheckTime_;
