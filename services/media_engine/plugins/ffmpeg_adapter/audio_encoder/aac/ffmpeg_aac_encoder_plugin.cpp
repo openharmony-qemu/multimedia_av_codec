@@ -652,6 +652,10 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
 
 Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
+    if (!inputBuffer) {
+        MEDIA_LOG_D("inputBuffer is nullptr");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
         MEDIA_LOG_D("Frame make writable failed: %{public}s", OSAL::AVStrError(ret).c_str());
