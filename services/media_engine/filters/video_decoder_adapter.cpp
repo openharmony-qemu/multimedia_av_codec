@@ -437,7 +437,9 @@ void VideoDecoderAdapter::OnDumpInfo(int32_t fd)
     MEDIA_LOG_D_SHORT("VideoDecoderAdapter::OnDumpInfo called.");
     std::string dumpString;
     dumpString += "VideoDecoderAdapter media codec name is:" + mediaCodecName_ + "\n";
-    dumpString += "VideoDecoderAdapter buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
+    if (inputBufferQueue_ != nullptr) {
+        dumpString += "VideoDecoderAdapter buffer size is:" + std::to_string(inputBufferQueue_->GetQueueSize()) + "\n";
+    }
     if (fd < 0) {
         MEDIA_LOG_E_SHORT("VideoDecoderAdapter::OnDumpInfo fd is invalid.");
         return;

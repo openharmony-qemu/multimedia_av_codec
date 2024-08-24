@@ -102,7 +102,7 @@ public:
     StreamType GetStreamTypeByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackID(int32_t trackId);
     
-    TrackType GetTrackTypeByTrackID(int32_t trackID);
+    TrackType GetTrackTypeByTrackID(int32_t trackId);
 
     Status LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, MediaInfo& mediaInfo);
     Status LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
