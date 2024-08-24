@@ -122,33 +122,34 @@ static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_SVG,
 };
 
-void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
+void StringifyMeta(Meta meta)
 {
-    (void)avcl;
-    char buf[500] = {0}; // 500
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
-    if (ret < 0) {
-        return;
+    OHOS::Media::Format format;
+    for (TagType key: g_supportSourceFormat) {
+        if (meta.Find(std::string(key)) != meta.end()) {
+            meta.SetData(std::string(key), "***");
+        }
     }
-    switch (level) {
-        case AV_LOG_WARNING:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " WARN] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_ERROR:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " ERROR] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_FATAL:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " FATAL] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_INFO:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " INFO] " PUBLIC_LOG_S, level, buf);
-            break;
-        case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 " DEBUG] " PUBLIC_LOG_S, level, buf);
-            break;
-        default:
-            break;
+    if (meta.Find(std::string(Tag::MEDIA_CONTAINER_START_TIME)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_CONTAINER_START_TIME), "***");
     }
+    if (meta.Find(std::string(Tag::MEDIA_START_TIME)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_START_TIME), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_LATITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_LATITUDE), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_LONGITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_LONGITUDE), "***");
+    }
+    if (meta.Find(std::string(Tag::TIMED_METADATA_KEY)) != meta.end()) {
+        meta.SetData(std::string(Tag::TIMED_METADATA_KEY), "***");
+    }
+    if (meta.Find(std::string(Tag::TIMED_METADATA_SRC_TRACK)) != meta.end()) {
+        meta.SetData(std::string(Tag::TIMED_METADATA_SRC_TRACK), "***");
+    }
+    format.SetMeta(std::make_shared<Meta>(meta));
+    MEDIA_LOG_I("meta info: " PUBLIC_LOG_S, format.Stringify().c_str());
 }
 
 bool HaveValidParser(const AVCodecID codecId)
