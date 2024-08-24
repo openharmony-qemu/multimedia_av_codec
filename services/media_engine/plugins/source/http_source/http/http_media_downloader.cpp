@@ -446,7 +446,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
     readTotalBytes_ += readDataInfo.realReadLength_;
-    if ((now - lastReadRecordTime_) > SAMPLE_INTERVAL) {
+    if (now > lastReadRecordTime_ && now - lastReadRecordTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadRecordTime_;   // ms
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND; // s
         if (readDuration > ZERO_THRESHOLD) {
