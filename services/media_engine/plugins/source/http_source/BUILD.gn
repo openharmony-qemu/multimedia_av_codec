@@ -107,7 +107,6 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "dash/mpd_parser/dash_url_type_node.cpp",
     "dash/mpd_parser/i_dash_mpd_node.cpp",
     "dash/mpd_parser/sidx_box_parser.cpp",
-    "dash/utils/time_utils.cpp",
     "download/downloader.cpp",
     "hls/hls_media_downloader.cpp",
     "hls/hls_playlist_downloader.cpp",
