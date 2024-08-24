@@ -108,28 +108,16 @@ AudioMp3EncoderPlugin::AudioMp3EncoderPlugin(const std::string& name)
 {
     std::lock_guard<std::mutex> lock(avMutex_);
 
-    unsigned char* tmp = new unsigned char[LAME_BUFFER_SIZE_DEFAULT];
-    lameInfo = new LameInfo();
+    lameMp3Buffer = std::make_unique<unsigned char []>(LAME_BUFFER_SIZE_DEFAULT);
+    lameInfo = std::make_unique<LameInfo>();
 
-    if (tmp == nullptr || lameInfo == nullptr) {
+    if (!lameMp3Buffer || !lameInfo) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin new LAME buffer or lameInfo failed");
     }
-    lameMp3Buffer = tmp;
     lameInfo->gfp = nullptr;
 }
 
-AudioMp3EncoderPlugin::~AudioMp3EncoderPlugin()
-{
-    if (lameMp3Buffer) {
-    delete[] lameMp3Buffer;
-        lameMp3Buffer = nullptr;
-    }
-
-    if (lameInfo) {
-        delete lameInfo;
-        lameInfo = nullptr;
-    }
-}
+AudioMp3EncoderPlugin::~AudioMp3EncoderPlugin() {}
 
 bool AudioMp3EncoderPlugin::CheckFormat()
 {
@@ -180,7 +168,7 @@ Status AudioMp3EncoderPlugin::Init()
         return Status::ERROR_UNKNOWN;
     }
 
-    if (lameMp3Buffer == nullptr) {
+    if (!lameMp3Buffer) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin lameMp3Buffer allocation failed");
         return Status::ERROR_UNKNOWN;
     }
