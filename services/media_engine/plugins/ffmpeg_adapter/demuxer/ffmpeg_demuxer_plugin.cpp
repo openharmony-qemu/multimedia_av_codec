@@ -697,6 +697,12 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         FALSE_RETURN_MSG((ret >= 0 && avbsfContext != nullptr),
             "Init BitStreamContext failed due to av_bsf_alloc failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
 
+        avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
+            if (ptr) {
+                av_bsf_free(&ptr);
+            }
+        });
+        
         ret = avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
         FALSE_RETURN_MSG((ret >= 0),
             "Init BitStreamContext failed due to avcodec_parameters_copy failed, err:" PUBLIC_LOG_S ".",
@@ -705,12 +711,6 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         ret = av_bsf_init(avbsfContext);
         FALSE_RETURN_MSG((ret >= 0),
             "Init BitStreamContext failed due to av_bsf_init failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
-
-        avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
-            if (ptr) {
-                av_bsf_free(&ptr);
-            }
-        });
     }
     FALSE_RETURN_MSG(avbsfContext_ != nullptr,
         "Init BitStreamContext failed, name:" PUBLIC_LOG_S ", stream will not be converted to annexb",
@@ -924,10 +924,11 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
         trackDfxInfoMap_[tempPkt->stream_index].lastPos = tempPkt->pos;
     }
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), tempPkt->data + samplePacket->offset,
         tempPkt->stream_index, -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
     Dump(dumpParam);
-
+#endif
     if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
         av_packet_free(&tempPkt);
         av_free(tempPkt);
@@ -1124,9 +1125,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     MEDIA_LOG_D("Want data size:" PUBLIC_LOG_D32 ", Get data size:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64
         ", readatIndex:" PUBLIC_LOG_D32, bufSize, dataSize, ioContext->offset, readatIndex_.load());
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & ioContext->dumpMode), buf, -1, ioContext->offset,
         dataSize, readatIndex_++, -1, -1};
     Dump(dumpParam);
+#endif
     switch (result) {
         case Status::OK:
             ioContext->offset += dataSize;
@@ -1228,7 +1231,20 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     AVFormatContext* formatContext = avformat_alloc_context();
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr,
         "Init AVFormatContext failed due to avformat_alloc_context failed.");
-
+    std::shared_ptr<AVFormatContext> retFormatContext =
+        std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
+            if (ptr) {
+                auto ctx = ptr->pb;
+                avformat_close_input(&ptr);
+                if (ctx) {
+                    ctx->opaque = nullptr;
+                    av_freep(&(ctx->buffer));
+                    av_opt_free(ctx);
+                    avio_context_free(&ctx);
+                    ctx = nullptr;
+                }
+            }
+        });
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
     FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
@@ -1258,20 +1274,6 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     FALSE_RETURN_V_MSG_E((ret >= 0), nullptr,
         "Init AVFormatContext failed due to avformat_find_stream_info failed by " PUBLIC_LOG_S
         ", err:" PUBLIC_LOG_S ".", pluginImpl_->name, AVStrError(ret).c_str());
-    std::shared_ptr<AVFormatContext> retFormatContext =
-        std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
-            if (ptr) {
-                auto ctx = ptr->pb;
-                avformat_close_input(&ptr);
-                if (ctx) {
-                    ctx->opaque = nullptr;
-                    av_freep(&(ctx->buffer));
-                    av_opt_free(ctx);
-                    avio_context_free(&ctx);
-                    ctx = nullptr;
-                }
-            }
-        });
     return retFormatContext;
 }
 
@@ -1525,6 +1527,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
         }
     }
+#ifdef BUILD_ENG_VERSION
     if (pkt == nullptr) {
         MEDIA_LOG_D("Dump failed due to pkt is nullptr.");
     } else {
@@ -1532,6 +1535,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             avpacketIndex_++, pkt->pts, pkt->pos};
         Dump(dumpParam);
     }
+#endif
     return ret;
 }
 
@@ -1554,10 +1558,11 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             av_packet_unref(pkt);
             break;
         }
+#ifdef BUILD_ENG_VERSION
         DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
             avpacketIndex_++, pkt->pts, pkt->pos};
         Dump(dumpParam);
-
+#endif
         cacheQueue_.AddTrackQueue(pkt->stream_index);
         ret = AddPacketToCacheQueue(pkt);
         if (ret != Status::OK) {
