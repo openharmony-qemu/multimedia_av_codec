@@ -705,13 +705,13 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         ret = av_bsf_init(avbsfContext);
         FALSE_RETURN_MSG((ret >= 0),
             "Init BitStreamContext failed due to av_bsf_init failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
+
         avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
             if (ptr) {
                 av_bsf_free(&ptr);
             }
         });
     }
-
     FALSE_RETURN_MSG(avbsfContext_ != nullptr,
         "Init BitStreamContext failed, name:" PUBLIC_LOG_S ", stream will not be converted to annexb",
             g_bitstreamFilterMap.at(codecID).c_str());
