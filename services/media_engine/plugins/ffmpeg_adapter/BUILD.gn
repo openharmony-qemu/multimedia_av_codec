@@ -89,6 +89,10 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
 
   defines += [ "OHOS_EXPAND_MP4_INFO" ]
 
+  if (build_variant != "user") {
+    defines += [ "BUILD_ENG_VERSION" ]
+  }
+
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
