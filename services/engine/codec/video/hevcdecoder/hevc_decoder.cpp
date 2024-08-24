@@ -59,8 +59,10 @@ constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+#ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
+#endif
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
