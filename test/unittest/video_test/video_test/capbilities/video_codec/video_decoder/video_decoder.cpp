@@ -120,7 +120,8 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
 
     if (sampleInfo.videoDecoderOutputColorspace >= 0) {
-        OH_AVFormat_SetIntValue(format.get(), "video_decoder_output_colorspace", sampleInfo.videoDecoderOutputColorspace);
+        OH_AVFormat_SetIntValue(format.get(),
+            OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, sampleInfo.videoDecoderOutputColorspace);
     }
 
     if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
