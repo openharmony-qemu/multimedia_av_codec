@@ -160,6 +160,7 @@ CodecServer::CodecServer()
 CodecServer::~CodecServer()
 {
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
+    CHECK_AND_RETURN_LOG(thread != nullptr, "0x%{public}06" PRIXPTR " create exit thread failed", FAKE_POINTER(this));
     if (thread->joinable()) {
         thread->join();
     }
