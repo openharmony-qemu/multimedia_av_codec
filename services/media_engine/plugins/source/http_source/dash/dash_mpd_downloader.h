@@ -128,7 +128,6 @@ public:
     int GetInUseVideoStreamId() const;
     DashMpdGetRet GetNextSegmentByStreamId(int streamId, std::shared_ptr<DashSegment> &seg);
     DashMpdGetRet GetBreakPointSegment(int streamId, int64_t breakpoint, std::shared_ptr<DashSegment> &seg);
-    bool IsAllSegmentFinishedByStreamId(int streamId);
     DashMpdGetRet GetNextVideoStream(DashMpdBitrateParam &param, int &streamId);
     DashMpdGetRet GetNextTrackStream(DashMpdTrackParam &param);
     Status GetStreamInfo(std::vector<StreamInfo> &streams);

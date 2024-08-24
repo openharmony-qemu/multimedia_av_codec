@@ -250,10 +250,8 @@ Status FFmpegBaseEncoder::AllocateContext(const std::string &name)
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     }
-    if (avCodec_ == nullptr) {
-        AVCODEC_LOGE("avcodec_find_encoder_by_name failed %{public}s", name.c_str());
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    CHECK_AND_RETURN_RET_LOG(avCodec_ != nullptr,
+        Status::ERROR_INVALID_OPERATION, "AllocateContext failed %{public}s", name.c_str());
 
     AVCodecContext *context = nullptr;
     {
@@ -349,10 +347,8 @@ Status FFmpegBaseEncoder::InitFrame()
     cachedFrame_->channel_layout = avCodecContext_->channel_layout;
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
-    if (ret < 0) {
-        AVCODEC_LOGE("Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
-        return Status::ERROR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, Status::ERROR_NO_MEMORY,
+        "Get frame buffer failed: %{public}s", OSAL::AVStrError(ret).c_str());
     return Status::OK;
 }
 

@@ -30,6 +30,7 @@ group("av_codec_unit_test") {
     if (av_codec_support_test) {
       deps += [
         "unittest/audio_capture_test:audio_capture_module_unit_test",
+        "unittest/audio_encoder_filter_test:audio_encoder_filter_unitest",
         "unittest/audio_test:av_audio_capi_unit_test",
         "unittest/audio_test:av_audio_codecbase_unit_test",
         "unittest/audio_test:av_audio_decode_ability_unit_test",
@@ -126,6 +127,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/audioencoderflush_fuzzer:AudioEncoderFlushFuzzTest",
       "fuzztest/audioencoderpreapi_fuzzer:AudioencoderpreapiFuzzTest",
       "fuzztest/audioencoderreset_fuzzer:AudioEncoderResetFuzzTest",
+      "fuzztest/audiomuxer_fuzzer:AudioMuxerFuzzTest",
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/drmdecryptor_fuzzer:DrmDecryptorFuzzTest",

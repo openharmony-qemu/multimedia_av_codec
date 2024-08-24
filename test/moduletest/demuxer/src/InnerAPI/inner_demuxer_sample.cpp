@@ -103,7 +103,7 @@ int32_t InnerDemuxerSample::ReadSampleAndSave()
     uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     avBuffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, buffersize);
-    while (!isAudioEosFlagForSave && !isAudioEosFlagForSave) {
+    while (!isAudioEosFlagForSave && !isVideoEosFlagForSave) {
         CheckLoopForSave();
     }
     videoIndexPtsList.sort();
@@ -123,7 +123,7 @@ void InnerDemuxerSample::CheckLoopForSave()
         }
         if (avBuffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             if (i == videoTrackIdx) {
-                isAudioEosFlagForSave = true;
+                isVideoEosFlagForSave = true;
             } else {
                 isAudioEosFlagForSave = true;
             }
@@ -217,13 +217,11 @@ void InnerDemuxerSample::CheckLoopForIndexFromPts(int32_t trackIndex)
 
 void InnerDemuxerSample::GetIndexByPtsForVideo(int32_t trackIndex)
 {
-    uint64_t tempValue = 0;
-    uint64_t relativePresentationTimeUs = 0;
     int division = 2;
     int value = 1;
     for (const auto &pair : videoIndexPtsList) {
-        tempValue = pair;
-        relativePresentationTimeUs = static_cast<uint64_t>(pair - videoPtsOffset);
+        uint64_t tempValue = pair;
+        uint64_t relativePresentationTimeUs = static_cast<uint64_t>(pair - videoPtsOffset);
         GetIndexFromPtsForVideo(trackIndex, relativePresentationTimeUs, pair, division, value);
         if (retForIndex != 0) {
             cout << "video GetIndexByRelativePresentationTimeUs fail ret:" << retForIndex << endl;
@@ -240,13 +238,11 @@ void InnerDemuxerSample::GetIndexByPtsForVideo(int32_t trackIndex)
 
 void InnerDemuxerSample::GetIndexByPtsForAudio(int32_t trackIndex)
 {
-    uint64_t tempValue = 0;
-    uint64_t relativePresentationTimeUs = 0;
     int division = 2;
     int value = 1;
     for (const auto &pair : audioIndexPtsList) {
-        tempValue = pair;
-        relativePresentationTimeUs = static_cast<uint64_t>(pair - audioPtsOffset);
+        uint64_t tempValue = pair;
+        uint64_t relativePresentationTimeUs = static_cast<uint64_t>(pair - audioPtsOffset);
         GetIndexFromPtsForAudio(trackIndex, relativePresentationTimeUs, pair, division, value);
         if (retForIndex != 0) {
             cout << "audio GetIndexByRelativePresentationTimeUs fail ret:" << retForIndex << endl;

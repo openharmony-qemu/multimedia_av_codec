@@ -274,7 +274,7 @@ static void ConvertPtsFrameIndexDemo(std::shared_ptr<InnerDemuxerDemo> innerDemu
         }
         end = clock::now();
         elapsed = end - start;
-        printf("GetIndexByRelativePresentationTimeUs, index = %d\n", index);
+        printf("GetIndexByRelativePresentationTimeUs, index = %u\n", index);
         printf("Function took %f seconds to run.\n", elapsed.count());
     }
 }

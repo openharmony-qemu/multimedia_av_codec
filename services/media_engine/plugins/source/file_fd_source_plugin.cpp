@@ -185,8 +185,10 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     }
     bufData->UpdateDataSize(size);
     position_ += static_cast<uint64_t>(size);
-    MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
-        position_.load(), buffer->GetMemory()->GetSize());
+    if (buffer->GetMemory() != nullptr) {
+        MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
+            position_.load(), buffer->GetMemory()->GetSize());
+    }
     return Status::OK;
 }
 
@@ -307,13 +309,12 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         MEDIA_LOG_E("uri is empty");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    MEDIA_LOG_I("ParseUriInfo uri: " PUBLIC_LOG_S, uri.c_str());
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format");
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
-        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format: %{private}s", uri.c_str());
+        Status::ERROR_INVALID_PARAMETER, "Invalid fd uri format");
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         Status::ERROR_INVALID_PARAMETER, "Invalid fd: " PUBLIC_LOG_D32, fd_);
@@ -544,7 +545,7 @@ void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
     isReadFrame_ = true;
 }
 
-Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     currentBitRate_ = bitRate / TO_BYTE; // 8b
     MEDIA_LOG_I("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);

@@ -39,7 +39,7 @@ TaskThread::~TaskThread()
     runningState_ = RunningState::STOPPED;
     syncCond_.notify_all();
 
-    if (loop_) {
+    if (loop_ != nullptr) {
         if (loop_->joinable()) {
             loop_->join();
         }
@@ -54,7 +54,7 @@ void TaskThread::Start()
         syncCond_.wait(lock, [this] { return runningState_.load() == RunningState::STOPPED; });
     }
     if (runningState_.load() == RunningState::STOPPED) {
-        if (loop_) {
+        if (loop_ != nullptr) {
             if (loop_->joinable()) {
                 loop_->join();
             }
@@ -79,7 +79,7 @@ void TaskThread::Stop()
         runningState_ = RunningState::STOPPING;
         syncCond_.notify_all();
         syncCond_.wait(lock, [this] { return runningState_.load() == RunningState::STOPPED; });
-        if (loop_) {
+        if (loop_ != nullptr) {
             if (loop_->joinable()) {
                 loop_->join();
             }

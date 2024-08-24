@@ -62,7 +62,7 @@ public:
     StatusCallbackFunc GetStatusCallbackFunc();
     void OnWriteBuffer(uint32_t len);
     void DownloadReport();
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -86,10 +86,11 @@ private:
     size_t GetCurrentBufferSize();
     bool HandleBreak();
     void ChangeDownloadPos();
-    int32_t GetWaterLineAbove();
+    void UpdateWaterLineAbove();
     void HandleCachedDuration();
     double CalculateCurrentDownloadSpeed();
     bool CheckBufferingOneSeconds();
+    float GetCacheDuration(float ratio);
 
 private:
     std::shared_ptr<RingBuffer> buffer_;

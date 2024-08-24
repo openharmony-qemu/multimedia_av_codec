@@ -92,8 +92,8 @@ void DownloadMonitor::Close(bool isAsync)
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    downloader_->Close(isAsync);
     task_->Stop();
+    downloader_->Close(isAsync);
     isPlaying_ = false;
 }
 
@@ -214,7 +214,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
                                        std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_MSG(downloader != nullptr, "downloader is null, url is " PUBLIC_LOG_S, request->GetUrl().c_str());
+    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr.");
     if (NeedRetry(request)) {
         AutoLock lock(taskMutex_);
         bool exists = CppExt::AnyOf(retryTasks_.begin(), retryTasks_.end(), [&](const RetryRequest& item) {
@@ -283,14 +283,14 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
 }
 
-Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate)
+Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
     if (downloader_ == nullptr) {
         MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return downloader_->SetCurrentBitRate(bitRate);
+    return downloader_->SetCurrentBitRate(bitRate, streamID);
 }
 }
 }

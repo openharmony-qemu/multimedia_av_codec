@@ -179,38 +179,28 @@ void AudioFFMpegFlacEncoderPlugin::SetFormat(const Format &format) noexcept
 int32_t AudioFFMpegFlacEncoderPlugin::Init(const Format &format)
 {
     int32_t ret = basePlugin->AllocateContext("flac");
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because AllocateContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "init failed, because AllocateContext failed. ret=%{public}d", ret);
 
     ret = CheckFormat(format);
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because CheckFormat failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "init failed, because CheckFormat failed. ret=%{public}d", ret);
 
     basePlugin->InitContext(format);
 
     ret = SetContext(format);
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because SetContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "init failed, because SetContext failed. ret=%{public}d", ret);
 
     ret = basePlugin->OpenContext();
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because OpenContext failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "init failed, because OpenContext failed. ret=%{public}d", ret);
 
     SetFormat(format);
     
     ret = basePlugin->InitFrame();
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("init failed, because InitFrame failed. ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret,
+        "init failed, because InitFrame failed. ret=%{public}d", ret);
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

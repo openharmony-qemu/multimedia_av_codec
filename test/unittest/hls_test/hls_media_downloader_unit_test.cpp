@@ -406,10 +406,10 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_CALLBACK, TestSize.Level1)
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
 
-    downloader->SetCurrentBitRate(-1);
-    downloader->GetWaterLineAbove();
-    downloader->SetCurrentBitRate(10);
-    downloader->GetWaterLineAbove();
+    downloader->SetCurrentBitRate(-1, 0);
+    downloader->UpdateWaterLineAbove();
+    downloader->SetCurrentBitRate(10, 0);
+    downloader->UpdateWaterLineAbove();
     downloader->HandleCachedDuration();
     downloader->SetInterruptState(true);
     downloader->SetInterruptState(false);
@@ -842,7 +842,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     EXPECT_EQ(playbackInfo.averageDownloadRate, 1000);
     EXPECT_EQ(playbackInfo.isDownloading, false);
     EXPECT_EQ(playbackInfo.downloadRate, 1000);
-    EXPECT_EQ(playbackInfo.bufferDuration, 1);
+    EXPECT_EQ(playbackInfo.bufferDuration, 0);
     delete downloader;
     downloader = nullptr;
 }

@@ -347,11 +347,11 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4, TestSize.Level1)
     readDataInfo.isEos_ = true;
     httpMediaDownloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
-    httpMediaDownloader->GetWaterLineAbove();
+    httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->SetDownloadErrorState();
-    httpMediaDownloader->SetCurrentBitRate(-1);
-    httpMediaDownloader->SetCurrentBitRate(1000);
-    httpMediaDownloader->GetWaterLineAbove();
+    httpMediaDownloader->SetCurrentBitRate(-1, 0);
+    httpMediaDownloader->SetCurrentBitRate(1000, 0);
+    httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->ChangeDownloadPos();
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
@@ -424,11 +424,11 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_NULL, TestSize.Level1)
     readDataInfo.isEos_ = true;
     httpMediaDownloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
-    httpMediaDownloader->GetWaterLineAbove();
+    httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->SetDownloadErrorState();
-    httpMediaDownloader->SetCurrentBitRate(-1);
-    httpMediaDownloader->SetCurrentBitRate(1000);
-    httpMediaDownloader->GetWaterLineAbove();
+    httpMediaDownloader->SetCurrentBitRate(-1, 0);
+    httpMediaDownloader->SetCurrentBitRate(1000, 0);
+    httpMediaDownloader->UpdateWaterLineAbove();
     httpMediaDownloader->HandleCachedDuration();
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
@@ -534,7 +534,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     EXPECT_EQ(playbackInfo.averageDownloadRate, 1000);
     EXPECT_EQ(playbackInfo.isDownloading, false);
     EXPECT_EQ(playbackInfo.downloadRate, 1000);
-    EXPECT_EQ(playbackInfo.bufferDuration, 1);
+    EXPECT_EQ(playbackInfo.bufferDuration, 0);
 }
 
 }

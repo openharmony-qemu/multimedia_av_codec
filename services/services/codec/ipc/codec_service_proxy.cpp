@@ -18,6 +18,9 @@
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "buffer_client_producer.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {

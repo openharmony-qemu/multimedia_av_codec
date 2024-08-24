@@ -50,7 +50,7 @@ public:
     Status Stop() override;
     void SetDemuxerState(int32_t streamId) override;
     void SetBundleName(const std::string& bundleName) override;
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status SetReadBlockingFlag(bool isAllowed) override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void NotifyBufferingStart();

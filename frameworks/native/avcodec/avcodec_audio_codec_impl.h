@@ -26,7 +26,6 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "buffer/avbuffer_queue_producer.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

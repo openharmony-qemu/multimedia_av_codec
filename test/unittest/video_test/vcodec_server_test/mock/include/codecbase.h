@@ -28,8 +28,13 @@
 #include "buffer/avbuffer_queue_define.h"
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avsharedmemorybase.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 #include "surface.h"
+
+namespace OHOS {
+namespace DrmStandard {
+class IMediaKeySessionService;
+}
+}
 
 namespace OHOS {
 namespace MediaAVCodec {

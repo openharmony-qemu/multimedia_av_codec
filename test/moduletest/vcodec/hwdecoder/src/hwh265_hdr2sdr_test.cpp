@@ -47,7 +47,9 @@ public:
 } // namespace OHOS
 
 namespace {
+static OH_AVCapability *cap_avc = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
+static string g_codecNameAVC = "";
 static string g_codecNameHEVC = "";
 OH_AVCodec *vdec_ = NULL;
 OH_AVFormat *format;
@@ -516,13 +518,13 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_014, TestSize.Level2)
 
 /**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_015
- * @tc.name      : test h264 software decoder, KEY设置为BT_709_LIMIT
+ * @tc.name      : test h265 software decoder, KEY设置为BT_709_LIMIT
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC.c_str());
         ASSERT_NE(NULL, vdec_);
@@ -531,19 +533,6 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_COLORSPACE_BT709_LIMIT));
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
-    }
-    else {
-        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
-        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC.c_str());
-        ASSERT_NE(NULL, vdec_);
-        format = OH_AVFormat_Create();
-        ASSERT_NE(NULL, format);
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_COLORSPACE_BT709_LIMIT));
-        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
 
@@ -555,9 +544,9 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_015, TestSize.Level2)
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_016, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
-        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC.c_str());
+        cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
+        g_codecNameAVC = OH_AVCapability_GetName(cap_avc);
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameAVC.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -566,9 +555,9 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_016, TestSize.Level2)
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
     else {
-        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
-        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC.c_str());
+        cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
+        g_codecNameAVC = OH_AVCapability_GetName(cap_avc);
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameAVC.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -588,9 +577,9 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_016, TestSize.Level2)
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_017, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
-        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
-        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC.c_str());
+        cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+        g_codecNameAVC = OH_AVCapability_GetName(cap_avc);
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameAVC.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -599,9 +588,9 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_017, TestSize.Level2)
         ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(vdec_, format));
     }
     else {
-        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
-        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
-        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameHEVC.c_str());
+        cap_avc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+        g_codecNameAVC = OH_AVCapability_GetName(cap_avc);
+        vdec_ = OH_VideoDecoder_CreateByName(g_codecNameAVC.c_str());
         ASSERT_NE(NULL, vdec_);
         format = OH_AVFormat_Create();
         ASSERT_NE(NULL, format);
@@ -621,9 +610,11 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_017, TestSize.Level2)
 HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_018, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
+        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
-        vDecSample->SF_OUTPUT = false;
+        vDecSample->SF_OUTPUT = true;
         vDecSample->TRANSFER_FLAG = true;
         vDecSample->PREPARE_FLAG = false;
         ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
@@ -631,9 +622,11 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_018, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
     else {
+        cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+        g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
-        vDecSample->SF_OUTPUT = false;
+        vDecSample->SF_OUTPUT = true;
         vDecSample->TRANSFER_FLAG = true;
         vDecSample->PREPARE_FLAG = false;
         ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));

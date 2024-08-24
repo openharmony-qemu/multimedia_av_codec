@@ -326,7 +326,7 @@ static std::vector<std::string> Split(const std::string& s, const char* delim)
     }
     std::string::size_type last = 0;
     auto index = s.find(delim, last);
-    while (index != std::string::npos) {
+    while (index != std::string::npos && last < s.size()) {
         if (index > last) {
             ret.push_back(s.substr(last, index - last));
         }

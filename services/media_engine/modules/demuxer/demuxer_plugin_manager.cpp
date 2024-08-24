@@ -389,16 +389,25 @@ Status DemuxerPluginManager::UpdateGeneralValue(int32_t trackCount, const Meta& 
 Status DemuxerPluginManager::AddGeneral(const MediaStreamInfo& info, Meta& formatNew)
 {
     FileType fileType = FileType::UNKNOW;
-    if (formatNew.Get<Tag::MEDIA_FILE_TYPE>(fileType) == false && info.activated == true) {
-        info.mediaInfo.general.Get<Tag::MEDIA_FILE_TYPE>(fileType);
-        formatNew.Set<Tag::MEDIA_FILE_TYPE>(fileType);
-        int64_t durationMs = 0;
-        info.mediaInfo.general.Get<Tag::MEDIA_DURATION>(durationMs);
-        formatNew.Set<Tag::MEDIA_DURATION>(durationMs);
-    }
-
     int32_t curTrackCount = 0;
     formatNew.Get<Tag::MEDIA_TRACK_COUNT>(curTrackCount);
+
+    bool hasVideo = false;
+    formatNew.Get<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+
+    bool hasAudio = false;
+    formatNew.Get<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+
+    bool hasSubtitle = false;
+    formatNew.Get<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
+
+    if (formatNew.Get<Tag::MEDIA_FILE_TYPE>(fileType) == false && info.activated == true) {
+        formatNew = info.mediaInfo.general;
+    }
+
+    formatNew.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+    formatNew.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
+    formatNew.Set<Tag::MEDIA_HAS_SUBTITLE>(hasSubtitle);
 
     int32_t newTrackCount = 0;
     if (info.mediaInfo.general.Get<Tag::MEDIA_TRACK_COUNT>(newTrackCount) == false) {
@@ -542,8 +551,10 @@ Status DemuxerPluginManager::localSubtitleSeekTo(int64_t seekTime)
     FALSE_RETURN_V_MSG_E(curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr,
                          Status::ERROR_NO_MEMORY, "subtitle seek failed, no subtitle");
     int64_t realSeekTime = 0;
-    return streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_CLOSEST_SYNC,
-                                                               realSeekTime);
+    auto plugin = streamInfoMap_[curSubTitleStreamID_].plugin;
+    auto preSeekRes = plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    FALSE_RETURN_V(preSeekRes != Status::OK, Status::OK);
+    return plugin->SeekTo(-1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
 }
 
 Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
@@ -562,9 +573,9 @@ Status DemuxerPluginManager::SeekTo(int64_t seekTime, Plugins::SeekMode mode, in
     }
     if (curSubTitleStreamID_ != -1 && streamInfoMap_[curSubTitleStreamID_].plugin != nullptr) {
         Status ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(-1, seekTime, mode, realSeekTime);
-        if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_CLOSEST_SYNC) {
+        if (ret != Status::OK && mode != Plugins::SeekMode::SEEK_NEXT_SYNC) {
             ret = streamInfoMap_[curSubTitleStreamID_].plugin->SeekTo(
-                -1, seekTime, Plugins::SeekMode::SEEK_CLOSEST_SYNC, realSeekTime);
+                -1, seekTime, Plugins::SeekMode::SEEK_NEXT_SYNC, realSeekTime);
         }
     }
     return Status::OK;

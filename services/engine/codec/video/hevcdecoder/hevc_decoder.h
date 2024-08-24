@@ -110,10 +110,12 @@ private:
         BIT_DEPTH8BIT = 8,
         BIT_DEPTH10BIT = 10,
     };
-    
+
+#ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer(int32_t bitDepth);
     void DumpConvertOut(struct SurfaceInfo &surfaceInfo);
+#endif
     bool IsActive() const;
     void CalculateBufferSize();
     int32_t AllocateBuffers();
@@ -136,6 +138,9 @@ private:
     int32_t FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height, int bitDepth);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
+    int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
+    int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
+    int32_t AttachToNewSurface(const sptr<Surface> &newSurface);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t GetSurfaceBufferStride(const std::shared_ptr<HBuffer> &frameBuffer);
     int32_t SetSurfaceCfg(int32_t bufferCnt);
@@ -194,9 +199,11 @@ private:
     std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+#ifdef BUILD_ENG_VERSION
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpConvertFile_ = nullptr;
+#endif
 };
 
 void HevcDecLog(UINT32 channelId, IHW265VIDEO_ALG_LOG_LEVEL eLevel, INT8 *pMsg, ...);

@@ -19,8 +19,11 @@
 #include <mutex>
 #include "buffer/avbuffer.h"
 #include "meta/meta.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
-#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_mediadecryptmodule_service.h"
+#include "drm_i_keysession_service.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#include "i_mediadecryptmodule_service.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -30,7 +33,9 @@ using MetaDrmSubSample = Plugins::MetaDrmSubSample;
 using MetaDrmCencInfo = Plugins::MetaDrmCencInfo;
 using MetaDrmCencAlgorithm = Plugins::MetaDrmCencAlgorithm;
 using MetaDrmCencInfoMode = Plugins::MetaDrmCencInfoMode;
+#ifdef SUPPORT_DRM
 using DrmBuffer = DrmStandard::IMediaDecryptModuleService::DrmBuffer;
+#endif
 
 enum SvpMode : int32_t {
     SVP_CLEAR = -1, /* it's not a protection video */
@@ -75,15 +80,19 @@ private:
         MetaDrmCencInfo *cencInfo) const;
     int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
         std::shared_ptr<AVBuffer> &outBuf);
+#ifdef SUPPORT_DRM
     static int32_t SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, const std::shared_ptr<AVBuffer> &outBuf,
         DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer);
+#endif
 
 private:
     std::mutex configMutex_;
     std::string codecName_;
     int32_t codingType_ = 0;
+#ifdef SUPPORT_DRM
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     sptr<DrmStandard::IMediaDecryptModuleService> decryptModuleProxy_;
+#endif
     int32_t svpFlag_ = SVP_CLEAR;
     MetaDrmCencInfoMode mode_ = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
 };
