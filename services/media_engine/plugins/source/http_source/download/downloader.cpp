@@ -427,14 +427,8 @@ bool Downloader::BeginDownload()
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
 
-    bool isSetUA = false;
-    for (auto iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
-        std::string setKey = iter->first;
-        if (setKey == USER_AGENT) {
-            isSetUA = true;
-        }
-    }
-    if (!isSetUA) {
+    if (currentRequest_->httpHeader_.count(USER_AGENT) <= 0) {
+        currentRequest_->httpHeader_[USER_AGENT] = GetUserAgent();
         httpHeader[USER_AGENT] = GetUserAgent();
         MEDIA_LOG_I("Set default UA.");
     }
