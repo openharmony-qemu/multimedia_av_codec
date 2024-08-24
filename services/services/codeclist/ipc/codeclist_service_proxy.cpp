@@ -44,8 +44,9 @@ std::string CodecListServiceProxy::FindDecoder(const Format &format)
     MessageParcel reply;
     MessageOption option;
     bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, "", "Failed to write descriptor!");
-    (void)AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(token, "", "Failed to write descriptor");
+    token = AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(token, "", "Marshalling failed");
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::FIND_DECODER), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, "", "Find decoder failed");
@@ -58,8 +59,9 @@ std::string CodecListServiceProxy::FindEncoder(const Format &format)
     MessageParcel reply;
     MessageOption option;
     bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, "", "Failed to write descriptor!");
-    (void)AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(token, "", "Failed to write descriptor");
+    token = AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(token, "", "Marshalling failed");
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::FIND_ENCODER), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, "", "Find encoder failed");
@@ -74,10 +76,9 @@ int32_t CodecListServiceProxy::GetCapability(CapabilityData &capabilityData, con
     MessageOption option;
     Format profileFormat;
     bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_UNKNOWN, "Write descriptor failed!");
-    (void)data.WriteString(mime);
-    (void)data.WriteBool(isEncoder);
-    (void)data.WriteInt32(static_cast<int32_t>(category));
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_UNKNOWN, "Write descriptor failed");
+    token = data.WriteString(mime) && data.WriteBool(isEncoder) && data.WriteInt32(static_cast<int32_t>(category));
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_UNKNOWN, "Write to parcel failed");
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::GET_CAPABILITY), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,

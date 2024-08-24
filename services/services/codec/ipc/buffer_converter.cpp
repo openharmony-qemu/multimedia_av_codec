@@ -25,9 +25,8 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "BufferConverter"};
 using AVCodecRect = OHOS::MediaAVCodec::BufferConverter::AVCodecRect;
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace OHOS::MediaAVCodec;
+using GraphicPixelFormat = OHOS::GraphicPixelFormat;
+using VideoPixelFormat = OHOS::MediaAVCodec::VideoPixelFormat;
 constexpr int32_t OFFSET_2 = 0x02;
 constexpr int32_t OFFSET_3 = 0x03;
 constexpr int32_t OFFSET_15 = 0x0F;
@@ -151,8 +150,11 @@ int32_t ConverteRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t
 
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace OHOS;
-using namespace OHOS::Media;
+using AVBuffer = Media::AVBuffer;
+using AVSharedMemory = Media::AVSharedMemory;
+using Format = Media::Format;
+using MemoryType = Media::MemoryType;
+using Tag = Media::Tag;
 std::shared_ptr<BufferConverter> BufferConverter::Create(AVCodecType type)
 {
     if (type == AVCODEC_TYPE_VIDEO_ENCODER) {
