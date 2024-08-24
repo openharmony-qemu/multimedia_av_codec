@@ -510,7 +510,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         if (isSelectingBitrate_ && (GetSeekable() == Seekable::SEEKABLE)) {
             bool isFileIndexSame = (havePlayedTsNum_ - i) == 1 ? true : false; // 1
             if (isFileIndexSame) {
-                MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, fragment.url_.c_str());
+                MEDIA_LOG_I("Switch bitrate");
                 isSelectingBitrate_ = false;
                 fragmentDownloadStart[fragment.url_] = true;
             } else {
