@@ -1170,7 +1170,8 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
     if (currentBitRate_ > 0) {
         float cacheTime = 0;
         if (avgDownloadSpeed_ > 0) {
-            float ratio = avgDownloadSpeed_ / currentBitRate_;
+            float ratio = static_cast<float>(avgDownloadSpeed_) /
+                          static_cast<float>(currentBitRate_);
             cacheTime = GetCacheDuration(ratio);
         } else {
             cacheTime = DEFAULT_CACHE_TIME;
