@@ -1525,9 +1525,13 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
         }
     }
-    DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
-        avpacketIndex_++, pkt->pts, pkt->pos};
-    Dump(dumpParam);
+    if (pkt == nullptr) {
+        MEDIA_LOG_D("Dump failed due to pkt is nullptr.");
+    } else {
+        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
+            avpacketIndex_++, pkt->pts, pkt->pos};
+        Dump(dumpParam);
+    }
     return ret;
 }
 
