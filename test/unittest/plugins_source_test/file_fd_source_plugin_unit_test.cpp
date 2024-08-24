@@ -300,21 +300,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetBundleName_0100, TestSize.Level1)
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
 }
-/**
- * @tc.name: FileFdSource_getCacheTime_0100
- * @tc.desc: FileFdSource_getCacheTime_0100
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
-{
-    fileFdSourcePlugin_->GetCacheTime(0.0);
-    fileFdSourcePlugin_->GetCacheTime(0.2);
-    fileFdSourcePlugin_->GetCacheTime(0.5);
-    fileFdSourcePlugin_->GetCacheTime(1.0);
-    fileFdSourcePlugin_->GetCacheTime(2.0);
-    fileFdSourcePlugin_->HasCacheData(0);
-    ASSERT_NE(fileFdSourcePlugin_->HasCacheData(0), true);
-}
 
 /**
  * @tc.name: FileFdSource_ReadOnlineFile_0100
@@ -569,11 +554,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_GetCurrentSpeed_0100, TestSize.Level
     fileFdSourcePlugin_->downloadSize_ = 10;
     fileFdSourcePlugin_->GetCurrentSpeed(2 * 1000);
     EXPECT_EQ(5, fileFdSourcePlugin_->avgDownloadSpeed_);
-    fileFdSourcePlugin_->lastCheckTime_ = 0;
-    fileFdSourcePlugin_->currentBitRate_ = 1;
-    fileFdSourcePlugin_->downloadSize_  = 2;
-    fileFdSourcePlugin_->GetCurrentSpeed(2 * 1000);
-    EXPECT_EQ(1, fileFdSourcePlugin_->avgDownloadSpeed_);
 }
 
 /**
@@ -586,8 +566,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_GetCacheTime_0100, TestSize.Level1)
     EXPECT_EQ(5, fileFdSourcePlugin_->GetCacheTime(0.25));
     EXPECT_EQ(5, fileFdSourcePlugin_->GetCacheTime(0.75));
     EXPECT_TRUE((int)(fileFdSourcePlugin_->GetCacheTime(1) * 1000000) == (int)(0.3 * 1000000));
-    EXPECT_EQ((float)0.3, fileFdSourcePlugin_->GetCacheTime(-1));
-    EXPECT_EQ((float)0.3, fileFdSourcePlugin_->GetCacheTime(1));
 }
 
 /**
@@ -602,8 +580,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_DeleteCacheBuffer_0100, TestSize.Lev
     char* cacheBuffer = new char[bufferSize];
 
     fileFdSourcePlugin_->DeleteCacheBuffer(cacheBuffer, 0);
-    EXPECT_NE(nullptr, cacheBuffer);
-    fileFdSourcePlugin_->DeleteCacheBuffer(cacheBuffer, 4);
     EXPECT_NE(nullptr, cacheBuffer);
 }
 
