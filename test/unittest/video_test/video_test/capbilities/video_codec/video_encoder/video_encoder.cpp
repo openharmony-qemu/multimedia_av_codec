@@ -136,8 +136,6 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 
-    OH_AVFormat_Destroy(format.get());
-    format = nullptr;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
