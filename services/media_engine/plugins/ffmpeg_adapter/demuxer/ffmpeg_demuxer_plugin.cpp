@@ -697,12 +697,6 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         FALSE_RETURN_MSG((ret >= 0 && avbsfContext != nullptr),
             "Init BitStreamContext failed due to av_bsf_alloc failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
 
-        avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
-            if (ptr) {
-                av_bsf_free(&ptr);
-            }
-        });
-        
         ret = avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
         FALSE_RETURN_MSG((ret >= 0),
             "Init BitStreamContext failed due to avcodec_parameters_copy failed, err:" PUBLIC_LOG_S ".",
@@ -712,6 +706,12 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         FALSE_RETURN_MSG((ret >= 0),
             "Init BitStreamContext failed due to av_bsf_init failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
     }
+
+    avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
+            if (ptr) {
+                av_bsf_free(&ptr);
+            }
+        });
     FALSE_RETURN_MSG(avbsfContext_ != nullptr,
         "Init BitStreamContext failed, name:" PUBLIC_LOG_S ", stream will not be converted to annexb",
             g_bitstreamFilterMap.at(codecID).c_str());
@@ -1231,20 +1231,7 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     AVFormatContext* formatContext = avformat_alloc_context();
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr,
         "Init AVFormatContext failed due to avformat_alloc_context failed.");
-    std::shared_ptr<AVFormatContext> retFormatContext =
-        std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
-            if (ptr) {
-                auto ctx = ptr->pb;
-                avformat_close_input(&ptr);
-                if (ctx) {
-                    ctx->opaque = nullptr;
-                    av_freep(&(ctx->buffer));
-                    av_opt_free(ctx);
-                    avio_context_free(&ctx);
-                    ctx = nullptr;
-                }
-            }
-        });
+
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
     FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
@@ -1274,6 +1261,20 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     FALSE_RETURN_V_MSG_E((ret >= 0), nullptr,
         "Init AVFormatContext failed due to avformat_find_stream_info failed by " PUBLIC_LOG_S
         ", err:" PUBLIC_LOG_S ".", pluginImpl_->name, AVStrError(ret).c_str());
+    std::shared_ptr<AVFormatContext> retFormatContext =
+        std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
+            if (ptr) {
+                auto ctx = ptr->pb;
+                avformat_close_input(&ptr);
+                if (ctx) {
+                    ctx->opaque = nullptr;
+                    av_freep(&(ctx->buffer));
+                    av_opt_free(ctx);
+                    avio_context_free(&ctx);
+                    ctx = nullptr;
+                }
+            }
+        });
     return retFormatContext;
 }
 
