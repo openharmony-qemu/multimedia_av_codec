@@ -250,6 +250,10 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
 
 Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
+    if (!outputBuffer) {
+        AVCODEC_LOGE("AudioMp3EncoderPlugin Queue out buffer is null.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         auto memory = outputBuffer->memory_;
