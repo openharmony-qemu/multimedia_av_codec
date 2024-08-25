@@ -434,7 +434,7 @@ int32_t CodecServer::Release()
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
-    if (thread->joinable()) {
+    if (thread && thread->joinable()) {
         thread->join();
     }
     (void)ReleasePostProcessing();
@@ -1232,18 +1232,21 @@ int32_t CodecServer::PreparePostProcessing()
 
 int32_t CodecServer::StartPostProcessing()
 {
-    if (postProcessing_) {
-        int32_t ret = postProcessing_->Start();
-        if (ret != AVCS_ERR_OK) {
-            StatusChanged(ERROR);
-        } else {
-            StartPostProcessingTask();
-            AVCODEC_LOGI("Post processing is started");
-        }
-        return ret;
-    } else {
+    if (!postProcessing_) {
         return AVCS_ERR_OK;
     }
+    int32_t ret = postProcessing_->Start();
+    if (ret != AVCS_ERR_OK) {
+        StatusChanged(ERROR);
+        return ret;
+    } 
+    ret = StartPostProcessingTask();
+    if (ret != AVCS_ERR_OK) {
+        StatusChanged(ERROR);
+        return ret;
+    }
+    AVCODEC_LOGI("Post processing is started");
+    return ret;
 }
 
 int32_t CodecServer::StopPostProcessing()
@@ -1427,10 +1430,11 @@ void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
     videoCb_->OnOutputFormatChanged(outputFormatChanged_);
 }
 
-void CodecServer::StartPostProcessingTask()
+int32_t CodecServer::StartPostProcessingTask()
 {
     if (!postProcessingTask_) {
         postProcessingTask_ = std::make_unique<TaskThread>("PostProcessing");
+        CHECK_AND_RETURN_RET_LOG(postProcessingTask_, AVCS_ERR_UNKNOWN, "Create task post processing failed");
         std::function<void()> task = std::bind(&CodecServer::PostProcessingTask, this);
         postProcessingTask_->RegisterHandler(task);
     }
@@ -1444,6 +1448,8 @@ void CodecServer::StartPostProcessingTask()
         postProcessingOutputBufferInfoQueue_->Activate();
     }
     postProcessingTask_->Start();
+
+    return AVCS_ERR_OK;
 }
 
 void CodecServer::PostProcessingTask()

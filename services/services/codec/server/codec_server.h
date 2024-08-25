@@ -172,7 +172,7 @@ private:
     int32_t GetPostProcessingOutputFormat(Format& format);
     int32_t ReleaseOutputBufferOfPostProcessing(uint32_t index, bool render);
     int32_t PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuffer> buffer);
-    void StartPostProcessingTask();
+    int32_t StartPostProcessingTask();
     void PostProcessingTask();
     void DeactivatePostProcessingQueue();
     void CleanPostProcessingResource();
