@@ -132,7 +132,8 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
 void M3U8::InitTagUpdatersMap()
 {
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        bLive_ = !info.bVod && (std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD");
+        isPlayTypeFound_ = true;
+        bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
     };
 
     tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
@@ -195,10 +196,14 @@ void M3U8::InitTagUpdatersMap()
 void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
-    info.bVod = !tags.empty() && tags.back()->GetType() == HlsTag::EXTXENDLIST;
     bLive_ = !info.bVod;
     for (auto& tag : tags) {
         HlsTag hlsTag = tag->GetType();
+        if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
+            info.bVod = true;
+            bLive_ = !info.bVod;
+            MEDIA_LOG_I("UpdateFromTags not live.");
+        }
         auto iter = tagUpdatersMap_.find(hlsTag);
         if (iter != tagUpdatersMap_.end()) {
             auto updater = iter->second;
@@ -223,6 +228,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
+    isPlayTypeFound_ = false;
 }
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
