@@ -215,6 +215,7 @@ void CodecDrmDecrypt::DrmModifyCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_
     if (isAmbiguity == 1) {
         DrmRemoveAmbiguityBytes(data, posEndIndex, posStartIndex, dataSize);
     }
+    CHECK_AND_RETURN_LOG((posEndIndex >= 1), "posEndIndex err"); // 1:index
     for (i = posEndIndex - 1; i > 0; i--) {
         if (data[i] != 0) {
             break;
@@ -308,7 +309,7 @@ int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(const uint8_t *data, uint32_t dataSiz
         /* sei is not after frame data. */
         AVCODEC_LOGD("h265 frame found");
         return 0;
-    } else if (nalType == 39) { // 39: SEI nal unit
+    } else if ((nalType == 39) && (i + DRM_H265_PAYLOAD_TYPE_OFFSET < dataSize)) { // 39: SEI nal unit
         if (data[i + DRM_H265_PAYLOAD_TYPE_OFFSET] == DRM_USER_DATA_UNREGISTERED_TAG) {
             ceiStartPos = i;
         }
