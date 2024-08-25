@@ -213,11 +213,11 @@ Status AudioMp3EncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& 
     const short* inputPcmBuffer = reinterpret_cast<const short*>(lamePcmBuffer);
     if (sampleNumTmp > 0) {
         if (channels_ == 1) { // 1:mono
-            outputSize = lame_encode_buffer(lameInfo->gfp, inputPcmBuffer, inputPcmBuffer, sampleNum, lameMp3Buffer.get(),
-                                            LAME_BUFFER_SIZE_DEFAULT);
+            outputSize = lame_encode_buffer(lameInfo->gfp, inputPcmBuffer, inputPcmBuffer, sampleNum, 
+                                            lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
         } else {
             outputSize = lame_encode_buffer_interleaved(lameInfo->gfp, reinterpret_cast<short*>(lamePcmBuffer),
-                                                        sampleNumTmp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
+                                            sampleNumTmp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
         }
     } else if (sampleNumTmp == 0) {
         outputSize = lame_encode_flush(lameInfo->gfp, lameMp3Buffer.get(), LAME_BUFFER_SIZE_DEFAULT);
