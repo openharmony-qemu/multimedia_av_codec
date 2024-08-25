@@ -107,10 +107,8 @@ AudioMp3EncoderPlugin::AudioMp3EncoderPlugin(const std::string& name)
       outputSize_(0)
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-
     lameMp3Buffer = std::make_unique<unsigned char []>(LAME_BUFFER_SIZE_DEFAULT);
     lameInfo = std::make_unique<LameInfo>();
-
     if (!lameMp3Buffer || !lameInfo) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin new LAME buffer or lameInfo failed");
     }
