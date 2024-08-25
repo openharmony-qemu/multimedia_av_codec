@@ -1296,29 +1296,27 @@ int32_t CodecServer::FlushPostProcessing()
 
 int32_t CodecServer::ResetPostProcessing()
 {
-    int32_t ret = AVCS_ERR_OK;
     if (postProcessing_) {
         DeactivatePostProcessingQueue();
         if (postProcessingTask_) {
             postProcessingTask_->Stop();
         }
-        ret = postProcessing_->Reset();
+        postProcessing_->Reset();
         CleanPostProcessingResource();
         postProcessing_.reset();
     }
     AVCODEC_LOGI("Post processing is reset");
-    return ret;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::ReleasePostProcessing()
 {
-    int32_t ret = AVCS_ERR_OK;
     if (postProcessing_) {
         DeactivatePostProcessingQueue();
         if (postProcessingTask_) {
             postProcessingTask_->Stop();
         }
-        ret = postProcessing_->Release();
+        postProcessing_->Release();
         CleanPostProcessingResource();
         postProcessing_.reset();
         AVCODEC_LOGI("Post processing is released");
@@ -1331,7 +1329,7 @@ int32_t CodecServer::ReleasePostProcessing()
         postProcessingUserData_ = nullptr;
     }
     
-    return ret;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::ReleaseOutputBufferOfPostProcessing(uint32_t index, bool render)
