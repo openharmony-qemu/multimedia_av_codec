@@ -1239,7 +1239,7 @@ int32_t CodecServer::StartPostProcessing()
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return ret;
-    } 
+    }
     ret = StartPostProcessingTask();
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
