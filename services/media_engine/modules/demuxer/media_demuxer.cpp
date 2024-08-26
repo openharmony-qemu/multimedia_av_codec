@@ -1581,6 +1581,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
 bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "invalid param.");
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
     int32_t newStreamID = -1;
     uint32_t oldTrackId = -1;
@@ -1602,7 +1603,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
         return false;
     }
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID);
-    if (ret) {
+    if (ret && eventReceiver_ != nullptr) {
         if (type == TrackType::TRACK_AUDIO) {
             audioTrackId_ = selectTrackTrackID_;
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, selectTrackTrackID_});
@@ -1615,7 +1616,9 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, selectTrackTrackID_});
             shouldCheckSubtitleFramePts_ = true;
         }
-        taskMap_[trackId]->StopAsync();   // stop self
+        if (taskMap_[trackId] != nullptr) {
+            taskMap_[trackId]->StopAsync();   // stop self
+        }
     }
     return ret;
 }
