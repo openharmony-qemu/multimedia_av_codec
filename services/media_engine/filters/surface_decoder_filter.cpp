@@ -139,6 +139,7 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     } else {
         MEDIA_LOG_D("isHdr false");
     }
+    configFormat_.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
     Status ret = mediaCodec_->Configure(configFormat_);
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");

@@ -210,6 +210,9 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
             return Status::ERROR_UNKNOWN;
         }
     }
+    if (isTransCoderMode) {
+        format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
+    }
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
