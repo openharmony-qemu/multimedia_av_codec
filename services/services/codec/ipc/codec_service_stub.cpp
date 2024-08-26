@@ -89,9 +89,8 @@ CodecServiceStub::CodecServiceStub()
 
 CodecServiceStub::~CodecServiceStub()
 {
-    if (codecServer_ != nullptr) {
-        (void)InnerRelease();
-    }
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    (void)InnerRelease();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -107,6 +106,7 @@ int32_t CodecServiceStub::InitStub()
 int32_t CodecServiceStub::DestroyStub()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    (void)InnerRelease();
     codecServer_ = nullptr;
 
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODEC, AsObject());
@@ -306,6 +306,7 @@ int32_t CodecServiceStub::Reset()
 
 int32_t CodecServiceStub::Release()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     return InnerRelease();
 }
 
@@ -656,7 +657,6 @@ int32_t CodecServiceStub::SetCustomBuffer(MessageParcel &data, MessageParcel &re
 
 int32_t CodecServiceStub::InnerRelease()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->Release();
 }
