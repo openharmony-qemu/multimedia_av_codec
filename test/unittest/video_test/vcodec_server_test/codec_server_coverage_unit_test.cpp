@@ -1005,14 +1005,14 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Lev
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_001, TestSize.Level1)
 {
-    constexpr int32_t DEFAULT_INDEX = 1;
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     server_->temporalScalability_ = std::make_shared<TemporalScalability>("video.F.Decoder.Name.00");
-    uint32_t index = DEFAULT_INDEX;
+    uint32_t index = defaultIndex;
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
-    EXPECT_EQ(index, DEFAULT_INDEX);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1021,7 +1021,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_001, TestSize.Le
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Level1)
 {
-    constexpr int32_t DEFAULT_INDEX = 1;
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     server_->temporalScalability_ = nullptr;
     server_->videoCb_ = nullptr;
@@ -1029,7 +1029,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Le
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
-    EXPECT_EQ(index, DEFAULT_INDEX);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
