@@ -57,6 +57,7 @@ ohos_static_library("http_curl_client") {
     "c_utils:utils",
     "curl:curl_shared",
     "hilog:libhilog",
+    "init:libbegetutil",
     "media_foundation:media_foundation",
     "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
