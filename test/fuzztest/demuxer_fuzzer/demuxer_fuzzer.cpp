@@ -84,12 +84,21 @@ void RunNormalDemuxer()
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
+            if (trackFormat) {
+                OH_AVFormat_Destroy(trackFormat);
+            }
             OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr);
             SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
         }
     }
     OH_AVDemuxer_Destroy(demuxer);
     OH_AVSource_Destroy(source);
+    if (sourceFormat) {
+        OH_AVFormat_Destroy(sourceFormat);
+    }
+    if (memory) {
+        OH_AVMemory_Destroy(memory);
+    }
     close(fd);
 }
 
@@ -129,6 +138,9 @@ void RunNormalDemuxerApi11()
             if ((audioIsEnd && (tarckType == MEDIA_TYPE_AUD)) || (videoIsEnd && (tarckType == MEDIA_TYPE_VID))) {
                 continue;
             }
+            if (trackFormat) {
+                OH_AVFormat_Destroy(trackFormat);
+            }
             OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             OH_AVBuffer_GetBufferAttr(buffer, &attr);
             SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
@@ -136,6 +148,12 @@ void RunNormalDemuxerApi11()
     }
     OH_AVDemuxer_Destroy(demuxer);
     OH_AVSource_Destroy(source);
+    if (sourceFormat) {
+        OH_AVFormat_Destroy(sourceFormat);
+    }
+    if (buffer) {
+        OH_AVBuffer_Destroy(buffer);
+    }
     close(fd);
 }
 
