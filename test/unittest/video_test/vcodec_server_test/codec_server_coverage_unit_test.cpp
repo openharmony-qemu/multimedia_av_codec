@@ -1005,12 +1005,14 @@ HWTEST_F(CodecServerUnitTest, OnOutputFormatChanged_Valid_Test_002, TestSize.Lev
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_001, TestSize.Level1)
 {
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     server_->temporalScalability_ = std::make_shared<TemporalScalability>("video.F.Decoder.Name.00");
-    uint32_t index = 1;
+    uint32_t index = defaultIndex;
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1019,6 +1021,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_001, TestSize.Le
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Level1)
 {
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     server_->temporalScalability_ = nullptr;
     server_->videoCb_ = nullptr;
@@ -1026,6 +1029,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Le
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1035,6 +1039,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Le
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Level1)
 {
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->temporalScalability_ = nullptr;
@@ -1047,6 +1052,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Le
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1056,6 +1062,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Le
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_004, TestSize.Level1)
 {
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->temporalScalability_ = nullptr;
@@ -1069,6 +1076,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_004, TestSize.Le
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     auto codecBaseCallback = std::make_shared<VCodecBaseCallback>(server_);
     codecBaseCallback->OnInputBufferAvailable(index, buffer);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1082,6 +1090,7 @@ HWTEST_F(CodecServerUnitTest, OnError_Valid_Test_001, TestSize.Level1)
     AVCodecErrorType errorType = AVCODEC_ERROR_INTERNAL;
     int32_t errorCode = AVCS_ERR_OK;
     codecBaseCallback->OnError(errorType, errorCode);
+    EXPECT_EQ(errorCode, AVCS_ERR_OK);
 }
 
 /**
@@ -1204,6 +1213,7 @@ HWTEST_F(CodecServerUnitTest, StartPostProcessingTask_Valid_Test_001, TestSize.L
     server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
     server_->StartPostProcessingTask();
+    EXPECT_NE(server_->postProcessingTask_, nullptr);
 }
 
 /**
@@ -1218,6 +1228,9 @@ HWTEST_F(CodecServerUnitTest, DeactivatePostProcessingQueue_Valid_Test_001, Test
     server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
     server_->DeactivatePostProcessingQueue();
+    EXPECT_EQ(server_->decodedBufferInfoQueue_->active_, false);
+    EXPECT_EQ(server_->postProcessingInputBufferInfoQueue_->active_, false);
+    EXPECT_EQ(server_->postProcessingOutputBufferInfoQueue_->active_, false);
 }
 
 /**
@@ -1233,6 +1246,10 @@ HWTEST_F(CodecServerUnitTest, CleanPostProcessingResource_Valid_Test_001, TestSi
     server_->postProcessingInputBufferInfoQueue_ = bufferInfoQueue;
     server_->postProcessingOutputBufferInfoQueue_ = bufferInfoQueue;
     server_->CleanPostProcessingResource();
+    EXPECT_EQ(server_->postProcessingTask_, nullptr);
+    EXPECT_EQ(server_->decodedBufferInfoQueue_, nullptr);
+    EXPECT_EQ(server_->postProcessingInputBufferInfoQueue_, nullptr);
+    EXPECT_EQ(server_->postProcessingOutputBufferInfoQueue_, nullptr);
 }
 
 /**
@@ -1259,11 +1276,16 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_001, TestSize.Level1)
 {
     Format format;
     Format oldFormat;
-    uint32_t quality = 10;
+    constexpr int32_t quality = 10;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality);
 
     CodecParamChecker codecParamChecker;
     codecParamChecker.MergeFormat(format, oldFormat);
+
+    int32_t oldFormatQuality = 0;
+    bool ret = oldFormat.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, oldFormatQuality);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(oldFormatQuality, quality);
 
     format = Format();
     oldFormat = Format();
@@ -1277,11 +1299,16 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_002, TestSize.Level1)
 {
     Format format;
     Format oldFormat;
-    uint64_t bitrate = 300000;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
+    constexpr int64_t bitrate = 300000;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
 
     CodecParamChecker codecParamChecker;
     codecParamChecker.MergeFormat(format, oldFormat);
+
+    int64_t oldFormatBitrate = 0;
+    bool ret = oldFormat.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, oldFormatBitrate);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(oldFormatBitrate, bitrate);
 
     format = Format();
     oldFormat = Format();
@@ -1295,11 +1322,16 @@ HWTEST_F(CodecParamCheckerTest, MergeFormat_Valid_Test_003, TestSize.Level1)
 {
     Format format;
     Format oldFormat;
-    double framRate = 30.0;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framRate);
+    constexpr double framRate = 30.0;
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framRate);
 
     CodecParamChecker codecParamChecker;
     codecParamChecker.MergeFormat(format, oldFormat);
+
+    double oldFormatFramRate = 0;
+    bool ret = oldFormat.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, oldFormatFramRate);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(oldFormatFramRate, framRate);
 
     format = Format();;
     oldFormat = Format();
