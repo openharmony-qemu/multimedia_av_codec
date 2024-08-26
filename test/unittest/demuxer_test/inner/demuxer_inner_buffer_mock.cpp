@@ -98,20 +98,20 @@ int32_t DemuxerInnerMock::SeekToTime(int64_t mSeconds, SeekMode mode)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t DemuxerInnerMock::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-    int64_t presentationTimeUs, uint32_t &frameIndex)
+int32_t DemuxerInnerMock::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+    const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
     if (demuxer_ != nullptr) {
-        return demuxer_->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+        return demuxer_->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     }
     return AV_ERR_UNKNOWN;
 }
 
-int32_t DemuxerInnerMock::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-    uint32_t frameIndex, int64_t &presentationTimeUs)
+int32_t DemuxerInnerMock::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+    const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
     if (demuxer_ != nullptr) {
-        return demuxer_->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+        return demuxer_->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     }
     return AV_ERR_UNKNOWN;
 }

@@ -2045,36 +2045,36 @@ bool MediaDemuxer::IsRenderNextVideoFrameSupported()
         !isDataSrcLiveStream;
 }
 
-Status MediaDemuxer::GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-    int64_t presentationTimeUs, uint32_t &frameIndex)
+Status MediaDemuxer::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+    const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
-    MEDIA_LOG_D("GetFrameIndexByPresentationTimeUs");
+    MEDIA_LOG_D("GetIndexByRelativePresentationTimeUs");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
-        "GetFrameIndexByPresentationTimeUs failed due to demuxerPluginManager_ is nullptr.");
+        "GetIndexByRelativePresentationTimeUs failed due to demuxerPluginManager_ is nullptr.");
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER,
-        "GetFrameIndexByPresentationTimeUs failed due to get demuxer plugin failed.");
+        "GetIndexByRelativePresentationTimeUs failed due to get demuxer plugin failed.");
 
-    Status ret = pluginTemp->GetFrameIndexByPresentationTimeUs(trackIndex, presentationTimeUs, frameIndex);
+    Status ret = pluginTemp->GetIndexByRelativePresentationTimeUs(trackIndex, relativePresentationTimeUs, index);
     if (ret != Status::OK) {
-        MEDIA_LOG_E("MediaDemuxer GetFrameIndexByPresentationTimeUs failed");
+        MEDIA_LOG_E("MediaDemuxer GetIndexByRelativePresentationTimeUs failed");
     }
     return ret;
 }
 
-Status MediaDemuxer::GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-    uint32_t frameIndex, int64_t &presentationTimeUs)
+Status MediaDemuxer::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+    const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    MEDIA_LOG_D("GetPresentationTimeUsByFrameIndex");
+    MEDIA_LOG_D("GetRelativePresentationTimeUsByIndex");
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER,
-        "GetPresentationTimeUsByFrameIndex failed due to demuxerPluginManager_ is nullptr.");
+        "GetRelativePresentationTimeUsByIndex failed due to demuxerPluginManager_ is nullptr.");
     std::shared_ptr<Plugins::DemuxerPlugin> pluginTemp = GetCurFFmpegPlugin();
     FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_NULL_POINTER,
-        "GetPresentationTimeUsByFrameIndex failed due to get demuxer plugin failed.");
+        "GetRelativePresentationTimeUsByIndex failed due to get demuxer plugin failed.");
 
-    Status ret = pluginTemp->GetPresentationTimeUsByFrameIndex(trackIndex, frameIndex, presentationTimeUs);
+    Status ret = pluginTemp->GetRelativePresentationTimeUsByIndex(trackIndex, index, relativePresentationTimeUs);
     if (ret != Status::OK) {
-        MEDIA_LOG_E("MediaDemuxer GetPresentationTimeUsByFrameIndex failed");
+        MEDIA_LOG_E("MediaDemuxer GetRelativePresentationTimeUsByIndex failed");
     }
     return ret;
 }
