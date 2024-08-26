@@ -222,12 +222,13 @@ std::shared_ptr<Plugins::DemuxerPlugin> DemuxerPluginManager::GetPluginByStreamI
 
 void DemuxerPluginManager::GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId)
 {
-    for (auto& iter : trackInfoMap_) {
-        if (iter.second.streamID == streamID) {  // find first
-            trackId = iter.first;
-            innerTrackId = iter.second.innerTrackIndex;
-            return;
-        }
+    auto iter = std::find_if(trackInfoMap_.begin(), trackInfoMap_.end(),
+        [&](const std::pair<int32_t, MediaTrackMap> &item) {
+        return item.second.streamID == streamID;
+    });
+    if (iter != trackInfoMap_.end()) {
+        trackId = iter->first;
+        innerTrackId = iter->second.innerTrackIndex;
     }
     return;
 }
@@ -755,7 +756,7 @@ TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 int32_t DemuxerPluginManager::AddExternalSubtitle()
 {
     if (curSubTitleStreamID_ == -1) {
-        int32_t streamIndex = streamInfoMap_.size();
+        int32_t streamIndex = static_cast<int32_t>(streamInfoMap_.size());
         curSubTitleStreamID_ = streamIndex;
         streamInfoMap_[streamIndex].activated = true;
         streamInfoMap_[streamIndex].type = SUBTITLE;
