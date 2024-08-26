@@ -53,8 +53,10 @@ constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+#ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
+#endif // BUILD_ENG_VERSION
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
@@ -76,15 +78,18 @@ FCodec::~FCodec()
 {
     ReleaseResource();
     callback_ = nullptr;
+#ifdef BUILD_ENG_VERSION
     if (dumpInFile_ != nullptr) {
         dumpInFile_->close();
     }
     if (dumpOutFile_ != nullptr) {
         dumpOutFile_->close();
     }
+#endif // BUILD_ENG_VERSION
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
+#ifdef BUILD_ENG_VERSION
 void FCodec::OpenDumpFile()
 {
     std::string dumpModeStr = OHOS::system::GetParameter("fcodec.dump", "0");
@@ -114,6 +119,7 @@ void FCodec::OpenDumpFile()
         }
     }
 }
+#endif // BUILD_ENG_VERSION
 
 int32_t FCodec::Initialize()
 {
@@ -140,7 +146,9 @@ int32_t FCodec::Initialize()
     sendTask_->RegisterHandler([this] { SendFrame(); });
     receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
     receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
+#ifdef BUILD_ENG_VERSION
     OpenDumpFile();
+#endif // BUILD_ENG_VERSION
     state_ = State::INITIALIZED;
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
@@ -901,9 +909,8 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 
 void FCodec::SendFrame()
 {
-    if (state_ == State::STOPPING || state_ == State::FLUSHING) {
-        return;
-    } else if (state_ != State::RUNNING || isSendEos_) {
+    CHECK_AND_RETURN_LOG(state_ != State::STOPPING && state_ != State::FLUSHING, "Invalid state");
+    if (state_ != State::RUNNING || isSendEos_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
@@ -934,10 +941,12 @@ void FCodec::SendFrame()
         recvLock.unlock();
         inputAvailQue_->Pop();
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
+#ifdef BUILD_ENG_VERSION
         if (dumpInFile_ && dumpInFile_->is_open()) {
             dumpInFile_->write(reinterpret_cast<char *>(inputAVBuffer->memory_->GetAddr()),
                                static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
         }
+#endif // BUILD_ENG_VERSION
         callback_->OnInputBufferAvailable(index, inputAVBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
@@ -1027,6 +1036,7 @@ void FCodec::DumpOutputBuffer()
         callback_->OnOutputFormatChanged(format_);
     }
     decNum_++;
+#ifdef BUILD_ENG_VERSION
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
         return;
     }
@@ -1042,6 +1052,7 @@ void FCodec::DumpOutputBuffer()
         dumpOutFile_->write(reinterpret_cast<char *>(cachedFrame_->data[2] + i * cachedFrame_->linesize[2]),
                             static_cast<int32_t>(cachedFrame_->width / 2)); // 2
     }
+#endif // BUILD_ENG_VERSION
 }
 
 void FCodec::ReceiveFrame()
