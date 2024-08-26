@@ -59,8 +59,10 @@ constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+#ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
+#endif
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
@@ -147,7 +149,7 @@ HevcDecoder::~HevcDecoder()
             decInstanceIDSet_.erase(it);
         }
     }
-
+#ifdef BUILD_ENG_VERSION
     if (dumpInFile_ != nullptr) {
         dumpInFile_->close();
     }
@@ -157,6 +159,7 @@ HevcDecoder::~HevcDecoder()
     if (dumpConvertFile_ != nullptr) {
         dumpConvertFile_->close();
     }
+#endif
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
@@ -176,12 +179,15 @@ int32_t HevcDecoder::Initialize()
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
 
+#ifdef BUILD_ENG_VERSION
     OpenDumpFile();
+#endif
     state_ = State::INITIALIZED;
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
 }
 
+#ifdef BUILD_ENG_VERSION
 void HevcDecoder::OpenDumpFile()
 {
     std::string dumpModeStr = OHOS::system::GetParameter("hevcdecoder.dump", "0");
@@ -220,6 +226,7 @@ void HevcDecoder::OpenDumpFile()
         }
     }
 }
+#endif
 
 void HevcDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
                                       int32_t maxVal)
@@ -954,10 +961,12 @@ void HevcDecoder::SendFrame()
         hevcDecoderInputArgs_.uiTimeStamp = static_cast<UINT64>(inputAVBuffer->pts_);
     }
 
+#ifdef BUILD_ENG_VERSION
     if (dumpInFile_ && dumpInFile_->is_open() && !isSendEos_) {
         dumpInFile_->write(reinterpret_cast<char*>(inputAVBuffer->memory_->GetAddr()),
                            static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
     }
+#endif
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
@@ -1001,7 +1010,9 @@ int32_t HevcDecoder::DecodeFrameOnce()
         CHECK_AND_RETURN_RET_LOG(bitDepth == BIT_DEPTH8BIT || bitDepth == BIT_DEPTH10BIT, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
         ConvertDecOutToAVFrame(bitDepth);
+#ifdef BUILD_ENG_VERSION
         DumpOutputBuffer(bitDepth);
+#endif
         auto index = codecAvailQue_->Front();
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
@@ -1058,7 +1069,9 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
     }
+#ifdef BUILD_ENG_VERSION
     DumpConvertOut(surfaceInfo);
+#endif
     frameBuffer->avBuffer->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
     return ret;
@@ -1115,6 +1128,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     cachedFrame_->pts = static_cast<int64_t>(hevcDecoderOutpusArgs_.uiTimeStamp);
 }
 
+#ifdef BUILD_ENG_VERSION
 void HevcDecoder::DumpOutputBuffer(int32_t bitDepth)
 {
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
@@ -1162,6 +1176,7 @@ void HevcDecoder::DumpConvertOut(struct SurfaceInfo &surfaceInfo)
         }
     }
 }
+#endif
 
 void HevcDecoder::RenderFrame()
 {
