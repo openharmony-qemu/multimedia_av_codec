@@ -151,7 +151,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
+    MEDIA_LOG_I("Open download");
     isDownloadFinish_= false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
@@ -715,11 +715,11 @@ bool HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
             HandleCachedDuration();
             continue;
         }
-        MEDIA_LOG_W("CacheMediaBuffer write fail.");
+        MEDIA_LOG_W("CacheMediaBuffer full.");
         canWrite_ = false;
         HandleBuffering();
         while (!isInterrupt_ && !isNeedClean_ && !canWrite_ && !isInterruptNeeded_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer can not write, drop data.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FEQUENCE, "CacheMediaBuffer full, waiting seek or read.");
             if (isHitSeeking_ || isNeedDropData_) {
                 canWrite_ = true;
                 return true;

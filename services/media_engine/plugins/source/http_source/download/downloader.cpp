@@ -375,7 +375,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I(PUBLIC_LOG_S " Retry Begin, url : " PUBLIC_LOG_S, name_.c_str(), request->url_.c_str());
+        MEDIA_LOG_I("Retry Begin");
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
         requestQue_->SetActive(false, false);
     }
@@ -519,8 +519,7 @@ void Downloader::HandleRetOK()
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // 检查是否播放结束
-        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
-            currentRequest_->startPos_, currentRequest_->url_.c_str());
+        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();
         return;
