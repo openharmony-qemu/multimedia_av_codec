@@ -729,6 +729,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
         state_ = CodecState::ERROR;
         if (mediaCodecCallback_ != nullptr) {
             mediaCodecCallback_->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, MSERR_AUD_DEC_FAILED);
+        }
     }
     return ret;
 }
