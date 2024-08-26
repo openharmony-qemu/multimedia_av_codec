@@ -1039,7 +1039,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_002, TestSize.Le
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Level1)
 {
-    constexpr int32_t DEFAULT_INDEX = 1;
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->temporalScalability_ = nullptr;
@@ -1052,7 +1052,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Le
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     server_->OnInputBufferAvailable(index, buffer);
-    EXPECT_EQ(index, DEFAULT_INDEX);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
@@ -1062,7 +1062,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_003, TestSize.Le
  */
 HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_004, TestSize.Level1)
 {
-    constexpr int32_t DEFAULT_INDEX = 1;
+    constexpr int32_t defaultIndex = 1;
     CreateHCodecByMime();
     auto mock = std::make_shared<MediaCodecCallbackMock>();
     server_->temporalScalability_ = nullptr;
@@ -1076,7 +1076,7 @@ HWTEST_F(CodecServerUnitTest, OnInputBufferAvailable_Valid_Test_004, TestSize.Le
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     auto codecBaseCallback = std::make_shared<VCodecBaseCallback>(server_);
     codecBaseCallback->OnInputBufferAvailable(index, buffer);
-    EXPECT_EQ(index, DEFAULT_INDEX);
+    EXPECT_EQ(index, defaultIndex);
 }
 
 /**
