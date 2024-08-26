@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-#include "avcodec_log.h"
 #include "codecbase.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecBase"};
@@ -26,13 +27,13 @@ int32_t CodecBase::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
     (void)callback;
     AVCODEC_LOGD("SetCallback of AVCodecCallback is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 int32_t CodecBase::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     (void)callback;
     AVCODEC_LOGD("SetCallback of MediaCodecCallback is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)
@@ -41,20 +42,20 @@ int32_t CodecBase::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &inf
     (void)info;
     (void)flag;
     AVCODEC_LOGD("QueueInputBuffer of AVSharedMemory is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::QueueInputBuffer(uint32_t index)
 {
     (void)index;
     AVCODEC_LOGD("QueueInputBuffer of AVBuffer is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::NotifyEos()
 {
     AVCODEC_LOGW("NotifyEos is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 sptr<Surface> CodecBase::CreateInputSurface()
@@ -67,41 +68,41 @@ int32_t CodecBase::SetInputSurface(sptr<Surface> surface)
 {
     (void)surface;
     AVCODEC_LOGW("SetInputSurface is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::SetOutputSurface(sptr<Surface> surface)
 {
     (void)surface;
     AVCODEC_LOGW("SetOutputSurface is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::RenderOutputBuffer(uint32_t index)
 {
     (void)index;
     AVCODEC_LOGW("RenderOutputBuffer is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::SignalRequestIDRFrame()
 {
     AVCODEC_LOGW("SignalRequestIDRFrame is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::GetInputFormat(Format& format)
 {
     (void)format;
     AVCODEC_LOGW("GetInputFormat is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecBase::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
 {
     (void)buffer;
     AVCODEC_LOGW("Set custom buffer is not supported");
-    return 0;
+    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
