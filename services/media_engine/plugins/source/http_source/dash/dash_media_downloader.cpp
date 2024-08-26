@@ -1040,7 +1040,7 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
     bool DownloadFinishStateTmp = true;
     playbackInfo.averageDownloadRate = 0;
-    for (int i = 0; i < segmentDownloaders_.size(); i++) {
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
         if (playbackInfo.averageDownloadRate < static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed())) {
             playbackInfo.averageDownloadRate = static_cast<int64_t>(segmentDownloaders_[i]->GetDownloadSpeed());
             std::pair<int64_t, int64_t> recordData = segmentDownloaders_[i]->GetDownloadRecordData();
