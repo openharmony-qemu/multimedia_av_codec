@@ -25,8 +25,8 @@
 
 #define FUZZ_PROJECT_NAME "demuxer_fuzzer"
 namespace OHOS {
-static int32_t width = 3840;
-static int32_t height = 2160;
+static int32_t g_width = 3840;
+static int32_t g_height = 2160;
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;
@@ -75,7 +75,7 @@ void RunNormalDemuxer()
     for (int32_t index = 0; index < trackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    OH_AVMemory *memory = OH_AVMemory_Create(width * height);
+    OH_AVMemory *memory = OH_AVMemory_Create(g_width * g_height);
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -126,7 +126,7 @@ void RunNormalDemuxerApi11()
     for (int32_t index = 0; index < trackCount; index++) {
         OH_AVDemuxer_SelectTrackByID(demuxer, index);
     }
-    OH_AVBuffer *buffer = OH_AVBuffer_Create(width * height);
+    OH_AVBuffer *buffer = OH_AVBuffer_Create(g_width * g_height);
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
             OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source, index);
