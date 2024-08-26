@@ -93,7 +93,7 @@ public:
     {
         MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
     }
-    virtual Status SetCurrentBitRate(int32_t bitRate)
+    virtual Status SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     {
         MEDIA_LOG_W("SetCurrentBitRate is unimplemented.");
         return Status::OK;

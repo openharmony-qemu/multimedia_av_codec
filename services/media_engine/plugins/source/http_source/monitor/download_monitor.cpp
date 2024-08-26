@@ -87,8 +87,8 @@ void DownloadMonitor::Close(bool isAsync)
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    downloader_->Close(isAsync);
     task_->Stop();
+    downloader_->Close(isAsync);
     isPlaying_ = false;
 }
 
@@ -278,14 +278,14 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
 }
 
-Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate)
+Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
     if (downloader_ == nullptr) {
         MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return downloader_->SetCurrentBitRate(bitRate);
+    return downloader_->SetCurrentBitRate(bitRate, streamID);
 }
 }
 }

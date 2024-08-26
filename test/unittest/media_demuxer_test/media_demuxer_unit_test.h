@@ -138,13 +138,13 @@ public:
     {
         return mapStatus_[name_];
     }
-    virtual Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-        int64_t presentationTimeUs, uint32_t &frameIndex)
+    virtual Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index)
     {
         return mapStatus_[name_];
     }
-    virtual  Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-        uint32_t frameIndex, int64_t &presentationTimeUs)
+    virtual  Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs)
     {
         return mapStatus_[name_];
     }

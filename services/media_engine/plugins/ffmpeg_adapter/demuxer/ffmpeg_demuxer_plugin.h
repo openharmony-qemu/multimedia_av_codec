@@ -20,6 +20,7 @@
 #include <vector>
 #include <thread>
 #include <map>
+#include <queue>
 #include <shared_mutex>
 #include <list>
 #include "buffer/avbuffer.h"
@@ -72,10 +73,10 @@ public:
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo) override;
     Status GetIFramePos(std::vector<uint32_t> &IFramePos) override;
     Status Dts2FrameId(int64_t dts, uint32_t &frameId, bool offset = true) override;
-    Status GetFrameIndexByPresentationTimeUs(uint32_t trackIndex,
-        int64_t presentationTimeUs, uint32_t &frameIndex) override;
-    Status GetPresentationTimeUsByFrameIndex(uint32_t trackIndex,
-        uint32_t frameIndex, int64_t &presentationTimeUs) override;
+    Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
+        const uint64_t relativePresentationTimeUs, uint32_t &index) override;
+    Status GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
+        const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     void SetCacheLimit(uint32_t limitSize) override;
 
 private:
@@ -84,6 +85,11 @@ private:
         DUMP_READAT_INPUT = 0b001,
         DUMP_AVPACKET_OUTPUT = 0b010,
         DUMP_AVBUFFER_OUTPUT = 0b100,
+    };
+    enum IndexAndPTSConvertMode : unsigned int {
+        GET_FIRST_PTS,
+        INDEX_TO_RELATIVEPTS,
+        RELATIVEPTS_TO_INDEX,
     };
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -130,10 +136,6 @@ private:
     void ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
     Status GetSeiInfo();
 
-    int FindNaluSpliter(int size, const uint8_t *data);
-    bool CanDropAvcPkt(const AVPacket& pkt);
-    bool CanDropHevcPkt(const AVPacket& pkt);
-    void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
     void ParserFirstDts();
     Status ParserRefInit();
     Status ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamId);
@@ -143,6 +145,23 @@ private:
     bool IsWebvttMP4(const AVStream *avStream);
     void WebvttMP4EOSProcess(const AVPacket *pkt);
     Status CheckCacheDataLimit(uint32_t trackId);
+
+    Status GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConvertMode mode,
+        uint32_t trackIndex, int64_t absolutePTS, uint32_t index);
+    void InitPTSandIndexConvert();
+    void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
+    void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
+    void PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode mode,
+        int64_t pts, int64_t absolutePTS, uint32_t index);
+    int64_t absolutePTSIndexZero_ = INT64_MAX;
+    std::priority_queue<int64_t> indexToRelativePTSMaxHeap_;
+    uint32_t indexToRelativePTSFrameCount_ = 0;
+    uint32_t relativePTSToIndexPosition_ = 0;
+    int64_t relativePTSToIndexPTSMin_ = INT64_MAX;
+    int64_t relativePTSToIndexPTSMax_ = INT64_MIN;
+    int64_t relativePTSToIndexRightDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexLeftDiff_ = INT64_MAX;
+    int64_t relativePTSToIndexTempDiff_ = INT64_MAX;
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;

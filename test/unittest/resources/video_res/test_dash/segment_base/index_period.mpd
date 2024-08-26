@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" minBufferTime="PT2.00S" mediaPresentationDuration="PT0H1M1S" type="static">
+  <!-- Created with Bento4 mp4-dash.py, VERSION=1.7.0-613 -->
+  <Period>
+    <BaseURL>media-video-1.mp4</BaseURL>
+    <SegmentBase indexRange="3312-3715">
+    <Initialization range="0-3311"/>
+    </SegmentBase>
+  </Period>
+</MPD>

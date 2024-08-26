@@ -245,7 +245,7 @@ void HttpMediaDownloader::OnClientErrorEvent()
 
 bool HttpMediaDownloader::HandleBuffering()
 {
-    if (!isBuffering_ || downloadRequest_->IsChunkedVod() || callback_ == nullptr) {
+    if (!isBuffering_ || downloadRequest_->IsChunkedVod()) {
         return false;
     }
     UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
@@ -260,7 +260,7 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
     if (GetCurrentBufferSize() >= waterLineAbove_) {
-        MEDIA_LOG_I("Buffer is not enough");
+        MEDIA_LOG_I("Buffer is enough");
         isBuffering_ = false;
     }
     if (HandleBreak()) {
@@ -268,7 +268,7 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
 
-    if (!isBuffering_ && isFirstFrameArrived_) {
+    if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
         MEDIA_LOG_I("CacheData onEvent BUFFERING_END");
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
@@ -771,10 +771,10 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 void HttpMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
+    if ((static_cast<int64_t>(now) - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = now - lastCheckTime_;
+            downloadDuringTime_ = now - static_cast<uint64_t>(lastCheckTime_);
             downloadBits_ = curDownloadBits;
             double downloadRate = CalculateCurrentDownloadSpeed();
             // remaining buffer size
@@ -794,13 +794,13 @@ void HttpMediaDownloader::DownloadReport()
             }
         }
         lastBits_ = totalBits_;
-        lastCheckTime_ = now;
+        lastCheckTime_ = static_cast<int64_t>(now);
     }
 
-    if (!isDownloadFinish_ && (now - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
+    if (!isDownloadFinish_ && (static_cast<int64_t>(now) - lastReportUsageTime_) > DATA_USAGE_NTERVAL) {
         MEDIA_LOG_D("Data usage: " PUBLIC_LOG_U64 " bits in " PUBLIC_LOG_D32 "ms", dataUsage_, DATA_USAGE_NTERVAL);
         dataUsage_ = 0;
-        lastReportUsageTime_ = now;
+        lastReportUsageTime_ = static_cast<int64_t>(now);
     }
 }
 
@@ -901,24 +901,20 @@ void HttpMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 bool HttpMediaDownloader::HandleBreak()
 {
-    bool isEos = false;
-    if (downloadRequest_ != nullptr) {
-        isEos = downloadRequest_->IsEos();
-    }
-    if (isEos && GetCurrentBufferSize() == 0) {
-        MEDIA_LOG_I("CacheData over, isEos: " PUBLIC_LOG_D32, isEos);
-        return true;
-    }
     if (downloadErrorState_) {
         MEDIA_LOG_I("downloadErrorState_ break");
         return true;
     }
-    bool isClosed = false;
-    if (downloadRequest_ != nullptr) {
-        isClosed = downloadRequest_->IsClosed();
+    if (downloadRequest_ == nullptr) {
+        MEDIA_LOG_I("downloadRequest is nullptr");
+        return true;
     }
-    if (isClosed && GetCurrentBufferSize() == 0) {
-        MEDIA_LOG_I("isClosed break");
+    if (downloadRequest_->IsEos()) {
+        MEDIA_LOG_I("CacheData over, isEos");
+        return true;
+    }
+    if (downloadRequest_->IsClosed()) {
+        MEDIA_LOG_I("CacheData over, IsClosed");
         return true;
     }
     return false;
@@ -939,7 +935,7 @@ size_t HttpMediaDownloader::GetCurrentBufferSize()
     return bufferSize;
 }
 
-Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {
@@ -964,7 +960,7 @@ int32_t HttpMediaDownloader::GetWaterLineAbove()
 
 void HttpMediaDownloader::HandleCachedDuration()
 {
-    if (currentBitRate_ <= 0) {
+    if (currentBitRate_ <= 0 || callback_ == nullptr) {
         return;
     }
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(GetCurrentBufferSize()) *
@@ -1017,6 +1013,10 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
     // return error again 1 time 1s, avoid ffmpeg error
     while (sleepTime < ONE_SECONDS && !isInterruptNeeded_.load()) {
         if (!isBuffering_) {
+            break;
+        }
+        if (HandleBreak()) {
+            isBuffering_ = false;
             break;
         }
         OSAL::SleepFor(TEN_MILLISECONDS);
