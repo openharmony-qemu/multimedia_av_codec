@@ -889,10 +889,11 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
         trackDfxInfoMap_[tempPkt->stream_index].lastPos = tempPkt->pos;
     }
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), tempPkt->data + samplePacket->offset,
         tempPkt->stream_index, -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
     Dump(dumpParam);
-
+#endif
     if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
         av_packet_free(&tempPkt);
         av_free(tempPkt);
@@ -1078,7 +1079,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 
     ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
+    FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "ioContext is nullptr");
     auto buffer = std::make_shared<Buffer>();
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, ret, "buffer is nullptr");
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "AVReadPacket buf is nullptr");
 
@@ -1087,9 +1090,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     MEDIA_LOG_D("Want data size:" PUBLIC_LOG_D32 ", Get data size:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64
         ", readatIndex:" PUBLIC_LOG_D32, bufSize, dataSize, ioContext->offset, readatIndex_.load());
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & ioContext->dumpMode), buf, -1, ioContext->offset,
         dataSize, readatIndex_++, -1, -1};
     Dump(dumpParam);
+#endif
     switch (result) {
         case Status::OK:
             ioContext->offset += dataSize;
@@ -1489,9 +1494,11 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
         }
     }
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
         avpacketIndex_++, pkt->pts, pkt->pos};
     Dump(dumpParam);
+#endif
     return ret;
 }
 
@@ -1514,10 +1521,11 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             av_packet_unref(pkt);
             break;
         }
+#ifdef BUILD_ENG_VERSION
         DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
             avpacketIndex_++, pkt->pts, pkt->pos};
         Dump(dumpParam);
-
+#endif
         cacheQueue_.AddTrackQueue(pkt->stream_index);
         ret = AddPacketToCacheQueue(pkt);
         if (ret != Status::OK) {
