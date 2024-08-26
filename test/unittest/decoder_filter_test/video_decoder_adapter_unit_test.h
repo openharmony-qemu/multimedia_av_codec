@@ -191,6 +191,7 @@ class TestAVBufferQueueConsumer : public AVBufferQueueConsumer {
 public:
     ~TestAVBufferQueueConsumer() override = default;
     TestAVBufferQueueConsumer(const TestAVBufferQueueConsumer&) = delete;
+    TestAVBufferQueueConsumer operator=(const TestAVBufferQueueConsumer&) = delete;
 
     uint32_t GetQueueSize()
     {
