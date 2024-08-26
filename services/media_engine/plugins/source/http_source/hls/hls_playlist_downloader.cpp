@@ -51,11 +51,11 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
 HlsPlayListDownloader::~HlsPlayListDownloader()
 {
     MEDIA_LOG_I("~HlsPlayListDownloader in");
-    if (downloader_ != nullptr) {
-        downloader_ = nullptr;
-    }
     if (updateTask_ != nullptr) {
         updateTask_->Stop();
+    }
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
     }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
 }
