@@ -38,16 +38,24 @@ int32_t VideoEncoderSample::Init()
 
 int32_t VideoEncoderSample::Prepare()
 {
-    auto format = context_->videoCodec->GetFormat();
-    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &context_->sampleInfo->videoStrideWidth);
-    OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &context_->sampleInfo->videoSliceHeight);
-    AVCODEC_LOGI("Resolution: %{public}d*%{public}d => %{public}d*%{public}d",
-        context_->sampleInfo->videoWidth, context_->sampleInfo->videoHeight,
-        context_->sampleInfo->videoStrideWidth, context_->sampleInfo->videoSliceHeight);
+    CHECK_AND_RETURN_RET_LOG(context_ && context_->sampleInfo, AVCODEC_SAMPLE_ERR_ERROR, "Context is nullptr");
+    auto &info = *context_->sampleInfo;
+    if (static_cast<uint8_t>(info.codecRunMode) & 0b01) {  // 0b01: Buffer mode mask
+        auto format = context_->videoCodec->GetFormat();
+        OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_STRIDE, &info.videoStrideWidth);
+        OH_AVFormat_GetIntValue(format.get(), OH_MD_KEY_VIDEO_SLICE_HEIGHT, &info.videoSliceHeight);
 
-    inputThread_ = (static_cast<uint8_t>(context_->sampleInfo->codecRunMode) & 0b01) ?  // 0b01: Buffer mode mask
-        std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this) :
-        std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
+        inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this);
+    } else {
+        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, info.videoStrideWidth);
+        info.videoSliceHeight = info.videoHeight;
+
+        inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
+    }
+    AVCODEC_LOGI("Resolution: %{public}d*%{public}d => %{public}d*%{public}d",
+        info.videoWidth, info.videoHeight,
+        info.videoStrideWidth, info.videoSliceHeight);
+
     outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
         AVCODEC_LOGE("Create thread failed");

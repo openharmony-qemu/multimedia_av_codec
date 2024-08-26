@@ -197,6 +197,7 @@ inline void SetInputFilePath(SampleInfo &info, const char * const value)
 inline void SetOutputFilePath(SampleInfo &info, const char * const value)
 {
     info.outputFilePath = value;
+    info.needDumpOutput = true;
 }
 
 inline void SetMime(SampleInfo &info, const char * const value)
