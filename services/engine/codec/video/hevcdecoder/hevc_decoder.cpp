@@ -1050,8 +1050,14 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
     surfaceInfo.surfaceStride = static_cast<uint32_t>(surfaceStride);
     if (sInfo_.surface) {
         surfaceInfo.surfaceFence = frameBuffer->sMemory->GetFence();
+        ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
+    } else {
+        Format bufferFormat;
+        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
+        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
+        ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
     }
-    ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
     DumpConvertOut(surfaceInfo);
     frameBuffer->avBuffer->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
