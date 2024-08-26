@@ -44,9 +44,10 @@ FFmpegAmrnbDecoderPlugin::FFmpegAmrnbDecoderPlugin(const std::string& name)
 
 FFmpegAmrnbDecoderPlugin::~FFmpegAmrnbDecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 Status FFmpegAmrnbDecoderPlugin::Init()

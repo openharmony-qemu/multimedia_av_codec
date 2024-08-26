@@ -58,9 +58,10 @@ AudioFFMpegFlacEncoderPlugin::AudioFFMpegFlacEncoderPlugin() : basePlugin(std::m
 
 AudioFFMpegFlacEncoderPlugin::~AudioFFMpegFlacEncoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 static bool CheckSampleRate(int32_t sampleRate)
