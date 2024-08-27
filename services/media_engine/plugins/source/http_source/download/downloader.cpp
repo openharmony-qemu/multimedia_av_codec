@@ -133,12 +133,12 @@ int DownloadRequest::GetRetryTimes() const
     return retryTimes_;
 }
 
-NetworkClientErrorCode DownloadRequest::GetClientError() const
+int32_t DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetworkServerErrorCode DownloadRequest::GetServerError() const
+int32_t DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -395,7 +395,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I(PUBLIC_LOG_S " Retry Begin, url : " PUBLIC_LOG_S, name_.c_str(), request->url_.c_str());
+        MEDIA_LOG_I("Retry Begin");
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
         requestQue_->SetActive(false, false);
     }
@@ -443,14 +443,8 @@ bool Downloader::BeginDownload()
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
 
-    bool isSetUA = false;
-    for (auto iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
-        std::string setKey = iter->first;
-        if (setKey == USER_AGENT) {
-            isSetUA = true;
-        }
-    }
-    if (!isSetUA) {
+    if (currentRequest_->httpHeader_.count(USER_AGENT) <= 0) {
+        currentRequest_->httpHeader_[USER_AGENT] = GetUserAgent();
         httpHeader[USER_AGENT] = GetUserAgent();
         MEDIA_LOG_I("Set default UA.");
     }
@@ -516,7 +510,7 @@ void Downloader::RequestData()
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
     sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
 
-    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
+    auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
         if (isDestructor_) {
@@ -571,8 +565,7 @@ void Downloader::HandleRetOK()
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
-        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
-            currentRequest_->startPos_, currentRequest_->url_.c_str());
+        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();
         return;

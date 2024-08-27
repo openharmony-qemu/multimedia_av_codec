@@ -160,6 +160,7 @@ CodecServer::CodecServer()
 CodecServer::~CodecServer()
 {
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
+    CHECK_AND_RETURN_LOG(thread != nullptr, "0x%{public}06" PRIXPTR " create exit thread failed", FAKE_POINTER(this));
     if (thread->joinable()) {
         thread->join();
     }
@@ -433,7 +434,7 @@ int32_t CodecServer::Release()
     int32_t ret = codecBase_->Release();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
-    if (thread->joinable()) {
+    if (thread && thread->joinable()) {
         thread->join();
     }
     (void)ReleasePostProcessing();
@@ -1152,7 +1153,7 @@ int32_t CodecServer::CreatePostProcessing(const Format& format)
         return AVCS_ERR_OK;
     }
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName_);
-    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt && capData->isVendor, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt && capData->isVendor, AVCS_ERR_UNKNOWN,
         "Get codec capability from codec list failed");
     CHECK_AND_RETURN_RET_LOG(codecBase_, AVCS_ERR_UNKNOWN, "Decoder is not found");
     int32_t ret;
@@ -1171,10 +1172,11 @@ int32_t CodecServer::SetCallbackForPostProcessing()
         std::bind(PostProcessingCallbackOnOutputBufferAvailable, _1, _2, _3);
     postProcessingCallback_.onOutputFormatChanged = std::bind(PostProcessingCallbackOnOutputFormatChanged, _1, _2);
     auto userData = new PostProcessingCallbackUserData;
-    CHECK_AND_RETURN_RET_LOG(userData, AVCS_ERR_NO_MEMORY, "Failed to create post processing callback userdata");
-    postProcessingUserData_ = userData;
+    CHECK_AND_RETURN_RET_LOG(userData != nullptr, AVCS_ERR_NO_MEMORY,
+        "Failed to create post processing callback userdata");
     userData->codecServer = shared_from_this();
-    return postProcessing_->SetCallback(postProcessingCallback_, static_cast<void*>(userData));
+    postProcessingUserData_ = static_cast<void*>(userData);
+    return postProcessing_->SetCallback(postProcessingCallback_, postProcessingUserData_);
 }
 
 void CodecServer::ClearCallbackForPostProcessing()
@@ -1195,44 +1197,56 @@ int32_t CodecServer::PreparePostProcessing()
 {
     if (!postProcessing_) {
         return AVCS_ERR_OK;
-    } else {
-        int32_t ret = SetCallbackForPostProcessing();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set callback for post post processing failed");
+    }
 
+    int32_t ret{AVCS_ERR_OK};
+    if (postProcessingUserData_ == nullptr) {
+        ret = SetCallbackForPostProcessing();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set callback for post post processing failed");
+    }
+
+    if (decodedBufferInfoQueue_ == nullptr) {
         decodedBufferInfoQueue_ = DecodedBufferInfoQueue::Create("DecodedBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG(decodedBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
             "Create decoded buffer info queue failed");
+    }
 
+    if (postProcessingInputBufferInfoQueue_ == nullptr) {
         postProcessingInputBufferInfoQueue_ = DecodedBufferInfoQueue::Create("PostProcessingInputBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG(postProcessingInputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
             "Create post processing input buffer info queue failed");
+    }
 
+    if (postProcessingOutputBufferInfoQueue_ == nullptr) {
         postProcessingOutputBufferInfoQueue_ = DecodedBufferInfoQueue::Create("PostProcessingOutputBufferInfoQueue");
         CHECK_AND_RETURN_RET_LOG(postProcessingOutputBufferInfoQueue_, AVCS_ERR_NO_MEMORY,
             "Create post processing output buffer info queue failed");
-
-        ret = postProcessing_->Prepare();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare post processing failed");
-
-        AVCODEC_LOGI("Post processing is prepared");
-        return AVCS_ERR_OK;
     }
+
+    ret = postProcessing_->Prepare();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare post processing failed");
+
+    AVCODEC_LOGI("Post processing is prepared");
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::StartPostProcessing()
 {
-    if (postProcessing_) {
-        int32_t ret = postProcessing_->Start();
-        if (ret != AVCS_ERR_OK) {
-            StatusChanged(ERROR);
-        } else {
-            StartPostProcessingTask();
-            AVCODEC_LOGI("Post processing is started");
-        }
-        return ret;
-    } else {
+    if (!postProcessing_) {
         return AVCS_ERR_OK;
     }
+    int32_t ret = postProcessing_->Start();
+    if (ret != AVCS_ERR_OK) {
+        StatusChanged(ERROR);
+        return ret;
+    }
+    ret = StartPostProcessingTask();
+    if (ret != AVCS_ERR_OK) {
+        StatusChanged(ERROR);
+        return ret;
+    }
+    AVCODEC_LOGI("Post processing is started");
+    return ret;
 }
 
 int32_t CodecServer::StopPostProcessing()
@@ -1308,14 +1322,16 @@ int32_t CodecServer::ReleasePostProcessing()
         postProcessing_->Release();
         CleanPostProcessingResource();
         postProcessing_.reset();
+        AVCODEC_LOGI("Post processing is released");
     }
+
     if (postProcessingUserData_ != nullptr) {
         auto p = static_cast<PostProcessingCallbackUserData*>(postProcessingUserData_);
+        p->codecServer.reset();
         delete p;
-        p = nullptr;
+        postProcessingUserData_ = nullptr;
     }
     
-    AVCODEC_LOGI("Post processing is released");
     return AVCS_ERR_OK;
 }
 
@@ -1414,10 +1430,11 @@ void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
     videoCb_->OnOutputFormatChanged(outputFormatChanged_);
 }
 
-void CodecServer::StartPostProcessingTask()
+int32_t CodecServer::StartPostProcessingTask()
 {
     if (!postProcessingTask_) {
         postProcessingTask_ = std::make_unique<TaskThread>("PostProcessing");
+        CHECK_AND_RETURN_RET_LOG(postProcessingTask_, AVCS_ERR_UNKNOWN, "Create task post processing failed");
         std::function<void()> task = std::bind(&CodecServer::PostProcessingTask, this);
         postProcessingTask_->RegisterHandler(task);
     }
@@ -1431,6 +1448,8 @@ void CodecServer::StartPostProcessingTask()
         postProcessingOutputBufferInfoQueue_->Activate();
     }
     postProcessingTask_->Start();
+
+    return AVCS_ERR_OK;
 }
 
 void CodecServer::PostProcessingTask()

@@ -51,11 +51,11 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
 HlsPlayListDownloader::~HlsPlayListDownloader()
 {
     MEDIA_LOG_I("~HlsPlayListDownloader in");
-    if (downloader_ != nullptr) {
-        downloader_ = nullptr;
-    }
     if (updateTask_ != nullptr) {
         updateTask_->Stop();
+    }
+    if (downloader_ != nullptr) {
+        downloader_ = nullptr;
     }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
 }
@@ -157,7 +157,6 @@ void HlsPlayListDownloader::NotifyListChange()
 void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPreParse)
 {
     if (!location.empty()) {
-        MEDIA_LOG_I("old url " PUBLIC_LOG_S " new url " PUBLIC_LOG_S, url_.c_str(), location.c_str());
         url_ = location;
     }
     if (!master_) {

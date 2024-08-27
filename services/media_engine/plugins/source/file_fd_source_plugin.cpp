@@ -185,8 +185,10 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     }
     bufData->UpdateDataSize(size);
     position_ += static_cast<uint64_t>(size);
-    MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
-        position_.load(), buffer->GetMemory()->GetSize());
+    if (buffer->GetMemory() != nullptr) {
+        MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
+            position_.load(), buffer->GetMemory()->GetSize());
+    }
     return Status::OK;
 }
 
@@ -543,7 +545,7 @@ void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
     isReadFrame_ = true;
 }
 
-Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     currentBitRate_ = bitRate / TO_BYTE; // 8b
     MEDIA_LOG_I("currentBitRate: " PUBLIC_LOG_D32, currentBitRate_);

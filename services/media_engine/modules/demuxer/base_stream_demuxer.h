@@ -58,8 +58,12 @@ public:
     }
     bool CheckCacheExist(uint64_t len)
     {
-        return data != nullptr && data->GetMemory() != nullptr &&
-            len >= offset && len < (offset + data->GetMemory()->GetSize());
+        if (data != nullptr) {
+            if (data->GetMemory() != nullptr) {
+                return len >= offset && len < (offset + data->GetMemory()->GetSize());
+            }
+        }
+        return false;
     }
     uint64_t GetOffset()
     {

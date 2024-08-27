@@ -86,7 +86,7 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     void ReportBitrateStart(uint32_t bitRate);
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -203,7 +203,7 @@ private:
     int64_t openTime_ {0};
     int64_t playDelayTime_ {0};
     int64_t startDownloadTime_ {0};
-    int64_t lastCheckTime_ {0};
+    uint64_t lastCheckTime_ {0};
     uint32_t recordCount_ {0};
     uint64_t lastRecordTime_ {0};
     int32_t avgDownloadSpeed_ {0};
@@ -222,7 +222,7 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
-    unsigned int waterLineAbove_ {0};
+    size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};
     bool isFirstFrameArrived_ {false};

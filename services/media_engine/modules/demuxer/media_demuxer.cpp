@@ -563,7 +563,7 @@ Status MediaDemuxer::InnerPrepare()
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
             int64_t bitRate = 0;
             mediaMetaData_.trackMetas[videoTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
-            source_->SetCurrentBitRate(bitRate);
+            source_->SetCurrentBitRate(bitRate, streamId);
         }
         if (audioTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(audioTrackId_, TaskType::AUDIO);
@@ -572,6 +572,9 @@ Status MediaDemuxer::InnerPrepare()
             streamDemuxer_->SetNewAudioStreamID(streamId);
             streamDemuxer_->SetChangeFlag(true);
             streamDemuxer_->SetDemuxerState(streamId, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
+            int64_t bitRate = 0;
+            mediaMetaData_.trackMetas[audioTrackId_]->GetData(Tag::MEDIA_BITRATE, bitRate);
+            source_->SetCurrentBitRate(bitRate, streamId);
         }
         if (subtitleTrackId_ != TRACK_ID_DUMMY) {
             AddDemuxerCopyTask(subtitleTrackId_, TaskType::SUBTITLE);
@@ -1578,6 +1581,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
 bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "invalid param.");
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
     int32_t newStreamID = -1;
     uint32_t oldTrackId = -1;
@@ -1599,7 +1603,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
         return false;
     }
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID);
-    if (ret) {
+    if (ret && eventReceiver_ != nullptr) {
         if (type == TrackType::TRACK_AUDIO) {
             audioTrackId_ = selectTrackTrackID_;
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, selectTrackTrackID_});
@@ -1612,7 +1616,9 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, selectTrackTrackID_});
             shouldCheckSubtitleFramePts_ = true;
         }
-        taskMap_[trackId]->StopAsync();   // stop self
+        if (taskMap_[trackId] != nullptr) {
+            taskMap_[trackId]->StopAsync();   // stop self
+        }
     }
     return ret;
 }
@@ -1661,14 +1667,16 @@ void MediaDemuxer::DumpBufferToFile(uint32_t trackId, std::shared_ptr<AVBuffer> 
 Status MediaDemuxer::HandleRead(uint32_t trackId)
 {
     Status ret = InnerReadSample(trackId, bufferMap_[trackId]);
-    std::unique_lock<std::mutex> draggingLock(draggingMutex_);
-    if (trackId == videoTrackId_ && VideoStreamReadyCallback_ != nullptr) {
-        MEDIA_LOG_D("step into HandleRead");
-        std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
-        draggingLock.unlock();
-        bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
-        bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDiscardable);
-        return Status::OK;
+    if (trackId == videoTrackId_) {
+        std::unique_lock<std::mutex> draggingLock(draggingMutex_);
+        if (VideoStreamReadyCallback_ != nullptr) {
+            MEDIA_LOG_D("step into HandleRead");
+            std::shared_ptr<VideoStreamReadyCallback> videoStreamReadyCallback = VideoStreamReadyCallback_;
+            draggingLock.unlock();
+            bool isDiscardable = videoStreamReadyCallback->IsVideoStreamDiscardable(bufferMap_[trackId]);
+            bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], !isDiscardable);
+            return Status::OK;
+        }
     }
 
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
@@ -1883,8 +1891,8 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_IO_ERROR});
+            MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
         case PluginEventType::BUFFERING_END: {

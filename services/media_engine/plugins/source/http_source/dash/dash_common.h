@@ -53,6 +53,7 @@ struct DashSegment {
         numberSeq_ = 1;
         startRangeValue_ = 0;
         endRangeValue_ = 0;
+        isLast_ = false;
     }
 
     DashSegment(const DashSegment& srcSegment)
@@ -66,6 +67,7 @@ struct DashSegment {
         endRangeValue_ = srcSegment.endRangeValue_;
         url_ = srcSegment.url_;
         byteRange_ = srcSegment.byteRange_;
+        isLast_ = srcSegment.isLast_;
     }
 
     DashSegment& operator=(const DashSegment& srcSegment)
@@ -80,6 +82,7 @@ struct DashSegment {
             endRangeValue_ = srcSegment.endRangeValue_;
             url_ = srcSegment.url_;
             byteRange_ = srcSegment.byteRange_;
+            isLast_ = srcSegment.isLast_;
         }
         return *this;
     }
@@ -93,6 +96,7 @@ struct DashSegment {
     int64_t endRangeValue_;
     std::string url_;
     std::string byteRange_;
+    bool isLast_;
 };
 
 struct DashIndexSegment {

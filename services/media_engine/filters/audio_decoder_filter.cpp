@@ -395,6 +395,9 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
         case CodecErrorType::CODEC_DRM_DECRYTION_FAILED:
             eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_DRM_VERIFICATION_FAILED});
             break;
+        case CodecErrorType::CODEC_ERROR_INTERNAL:
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, errorCode});
+            break;
         default:
             break;
     }

@@ -202,26 +202,35 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
             MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
-        if (quePool_[queIndex].blockQue->Size() > 0) {
-            auto block = quePool_[queIndex].blockQue->Pop();
-            for (auto pkt : block->pkts) {
-                uint32_t pktSize = static_cast<uint32_t>(pkt->size);
-                quePool_[queIndex].dataSize =
-                    quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
-            }
-            if (quePool_[queIndex].blockQue->Empty()) {
-                ResetQueue(queIndex);
-                MEDIA_LOG_D("track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool.",
-                    trackIndex, queIndex);
-                queVector.erase(queVector.begin() + index);
-            }
-            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop finish, trackIndex: " PUBLIC_LOG_U32 ".",
-                name_.c_str(), trackIndex);
-            if (sizeMap_[trackIndex] > 0) {
-                sizeMap_[trackIndex] -= 1;
-            }
-            return block;
+        if (quePool_[queIndex].blockQue->Size() <= 0) {
+            continue;
         }
+        auto block = quePool_[queIndex].blockQue->Pop();
+        if (block == nullptr) {
+            MEDIA_LOG_D("block is nullptr");
+            continue;
+        }
+        for (auto pkt : block->pkts) {
+            if (pkt == nullptr) {
+                MEDIA_LOG_D("pkt is nullptr, will find next");
+                continue;
+            }
+            uint32_t pktSize = static_cast<uint32_t>(pkt->size);
+            quePool_[queIndex].dataSize =
+                quePool_[queIndex].dataSize >= pktSize ? quePool_[queIndex].dataSize -= pktSize : 0;
+        }
+        if (quePool_[queIndex].blockQue->Empty()) {
+            ResetQueue(queIndex);
+            MEDIA_LOG_D("track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool.",
+                trackIndex, queIndex);
+            queVector.erase(queVector.begin() + index);
+        }
+        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop finish, trackIndex: " PUBLIC_LOG_U32 ".",
+            name_.c_str(), trackIndex);
+        if (sizeMap_[trackIndex] > 0) {
+            sizeMap_[trackIndex] -= 1;
+        }
+        return block;
     }
     MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;

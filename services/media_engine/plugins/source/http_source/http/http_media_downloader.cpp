@@ -157,7 +157,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
 
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
-    MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
+    MEDIA_LOG_I("Open download");
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -448,7 +448,7 @@ Status HttpMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
     readTotalBytes_ += readDataInfo.realReadLength_;
-    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
+    if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;   // ms
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND; // s
         if (readDuration > ZERO_THRESHOLD) {
@@ -778,7 +778,7 @@ void HttpMediaDownloader::DownloadReport()
     if ((static_cast<int64_t>(now) - lastCheckTime_) > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
-            downloadDuringTime_ = static_cast<int64_t>(now) - lastCheckTime_;
+            downloadDuringTime_ = now - static_cast<uint64_t>(lastCheckTime_);
             downloadBits_ = curDownloadBits;
             double downloadRate = CalculateCurrentDownloadSpeed();
             // remaining buffer size
@@ -941,7 +941,7 @@ size_t HttpMediaDownloader::GetCurrentBufferSize()
     return bufferSize;
 }
 
-Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status HttpMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {

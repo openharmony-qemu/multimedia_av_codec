@@ -45,7 +45,7 @@ constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr int AVG_SPEED_SUM_SCALE = 10000;
 constexpr double ZERO_THRESHOLD = 1e-9;
-constexpr int PLAY_WATER_LINE = 5 * 1024;
+constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
@@ -364,7 +364,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         return Status::ERROR_AGAIN;
     }
     size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
-        std::max(PLAY_WATER_LINE, static_cast<int>(readDataInfo.wantReadLength_)) : 0;
+        std::max(PLAY_WATER_LINE, static_cast<size_t>(readDataInfo.wantReadLength_)) : 0;
     if (isFirstFrameArrived_ && buffer_->GetSize() < waterLine && !CheckBreakCondition()) {
         if (HandleCache()) {
             return Status::ERROR_AGAIN;
@@ -404,7 +404,7 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
     auto ret = ReadDelegate(buff, readDataInfo);
     readTotalBytes_ += readDataInfo.realReadLength_;
-    if ((now - lastReadCheckTime_) > SAMPLE_INTERVAL) {
+    if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;
         double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLIONSECOND;
         if (readDuration > ZERO_THRESHOLD) {
@@ -510,7 +510,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         if (isSelectingBitrate_ && (GetSeekable() == Seekable::SEEKABLE)) {
             bool isFileIndexSame = (havePlayedTsNum_ - i) == 1 ? true : false; // 1
             if (isFileIndexSame) {
-                MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, fragment.url_.c_str());
+                MEDIA_LOG_I("Switch bitrate");
                 isSelectingBitrate_ = false;
                 fragmentDownloadStart[fragment.url_] = true;
             } else {
@@ -699,7 +699,7 @@ double HlsMediaDownloader::CalculateCurrentDownloadSpeed()
 void HlsMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > SAMPLE_INTERVAL) {
+    if (now > lastCheckTime_ && now - lastCheckTime_ > SAMPLE_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = now - lastCheckTime_;
@@ -1144,7 +1144,7 @@ void HlsMediaDownloader::ReportBitrateStart(uint32_t bitRate)
     callback_->OnEvent({PluginEventType::SOURCE_BITRATE_START, {bitRate}, "source_bitrate_start"});
 }
 
-Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate)
+Status HlsMediaDownloader::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate: " PUBLIC_LOG_D32, bitRate);
     if (bitRate <= 0) {
@@ -1170,7 +1170,8 @@ void HlsMediaDownloader::UpdateWaterLineAbove()
     if (currentBitRate_ > 0) {
         float cacheTime = 0;
         if (avgDownloadSpeed_ > 0) {
-            float ratio = avgDownloadSpeed_ / currentBitRate_;
+            float ratio = static_cast<float>(avgDownloadSpeed_) /
+                          static_cast<float>(currentBitRate_);
             cacheTime = GetCacheDuration(ratio);
         } else {
             cacheTime = DEFAULT_CACHE_TIME;

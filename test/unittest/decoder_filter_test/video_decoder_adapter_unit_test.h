@@ -187,6 +187,61 @@ private:
     int32_t status_ = 0;
 };
 
+class TestAVBufferQueueConsumer : public AVBufferQueueConsumer {
+public:
+    ~TestAVBufferQueueConsumer() override = default;
+    TestAVBufferQueueConsumer(const TestAVBufferQueueConsumer&) = delete;
+    TestAVBufferQueueConsumer operator=(const TestAVBufferQueueConsumer&) = delete;
+
+    uint32_t GetQueueSize()
+    {
+        return 0;
+    }
+    Status SetQueueSize(uint32_t size)
+    {
+        return Status::OK;
+    }
+    bool IsBufferInQueue(const std::shared_ptr<AVBuffer>& buffer)
+    {
+        return true;
+    }
+
+    Status AcquireBuffer(std::shared_ptr<AVBuffer>& outBuffer)
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+    Status ReleaseBuffer(const std::shared_ptr<AVBuffer>& inBuffer)
+    {
+        return Status::OK;
+    }
+
+    Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled)
+    {
+        return Status::OK;
+    }
+    Status DetachBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
+    {
+        return Status::OK;
+    }
+
+    Status SetBufferAvailableListener(sptr<IConsumerListener>& listener)
+    {
+        return Status::OK;
+    }
+
+protected:
+    TestAVBufferQueueConsumer() = default;
+};
+
+class MyEventReceiver : public Pipeline::EventReceiver {
+public:
+    ~MyEventReceiver() = default;
+    void OnEvent(const Event& event)
+    {
+        return;
+    }
+};
+
 }
 }
 
