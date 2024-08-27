@@ -149,6 +149,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
+    std::atomic<bool> isFirstRangeRequestReady_ {false};
 };
 
 class Downloader {
