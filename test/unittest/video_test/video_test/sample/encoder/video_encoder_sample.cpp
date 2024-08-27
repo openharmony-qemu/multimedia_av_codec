@@ -47,7 +47,7 @@ int32_t VideoEncoderSample::Prepare()
 
         inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this);
     } else {
-        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, info.videoStrideWidth);
+        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, &info.videoStrideWidth);
         info.videoSliceHeight = info.videoHeight;
 
         inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
