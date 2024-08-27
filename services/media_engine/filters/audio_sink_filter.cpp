@@ -327,6 +327,13 @@ int32_t AudioSinkFilter::SetMaxAmplitudeCbStatus(bool status)
     FALSE_RETURN_V(audioSink_ != nullptr, MSERR_INVALID_VAL);
     return audioSink_->SetMaxAmplitudeCbStatus(status);
 }
+
+Status AudioSinkFilter::SetSeekTime(int64_t seekTime)
+{
+    MEDIA_LOG_D("SetSeekTime");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetSeekTime(seekTime);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

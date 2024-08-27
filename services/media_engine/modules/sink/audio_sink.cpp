@@ -397,6 +397,22 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
     CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
 }
 
+bool AudioSink::DropApeBuffer()
+{
+    if (isApe_) {
+        if (seekTimeUs_ != HST_TIME_NONE) {
+            if (filledOutputBuffer->pts_ < seekTimeUs_) {
+                MEDIA_LOG_D("Drop ape buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
+                inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+                return true;
+            } else {
+                seekTimeUs_ = HST_TIME_NONE;
+            }
+        }
+    }
+    return false;
+}
+
 void AudioSink::DrainOutputBuffer()
 {
     std::lock_guard<std::mutex> lock(pluginMutex_);
@@ -432,6 +448,7 @@ void AudioSink::DrainOutputBuffer()
         });
         return;
     }
+    FALSE_RETURN(DropApeBuffer() == false);
     UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
     if (calMaxAmplitudeCbStatus_) {
@@ -696,6 +713,13 @@ int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
     calMaxAmplitudeCbStatus_ = status;
     MEDIA_LOG_I("audio SetMaxAmplitudeCbStatus  = " PUBLIC_LOG_D32, calMaxAmplitudeCbStatus_);
     return 0;
+}
+
+Status AudioSink::SetSeekTime(int64_t seekTime)
+{
+    MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
+    seekTimeUs_ = seekTime;
+    return Status::OK;
 }
 } // namespace MEDIA
 } // namespace OHOS
