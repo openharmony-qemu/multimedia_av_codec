@@ -28,7 +28,8 @@
 #include "plugin/plugin_event.h"
 #include "plugin/codec_plugin.h"
 #include "osal/task/mutex.h"
-#include "codec_drm_decrypt.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "foundation/multimedia/av_codec/services/drm_decryptor/codec_drm_decrypt.h"
 
 namespace OHOS {
 namespace Media {

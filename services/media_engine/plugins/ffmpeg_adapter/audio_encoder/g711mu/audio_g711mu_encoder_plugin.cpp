@@ -188,10 +188,6 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
 
 Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer)
 {
-    if (!outputBuffer) {
-        AVCODEC_LOGE("AudioG711muEncoderPlugin Queue out buffer is null.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         auto memory = outputBuffer->memory_;
