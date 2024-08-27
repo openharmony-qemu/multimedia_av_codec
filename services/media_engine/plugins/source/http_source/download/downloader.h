@@ -175,7 +175,7 @@ public:
 private:
     bool BeginDownload();
 
-    int64_t HttpDownloadLoop();
+    void HttpDownloadLoop();
     void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
@@ -199,8 +199,8 @@ private:
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     std::atomic<bool> shouldStartNextRequest {false};
-    size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
+    size_t downloadRequestSize_ {0};
     std::shared_ptr<Task> task_;
     std::atomic<bool> isDestructor_ {false};
 };

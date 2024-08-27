@@ -56,16 +56,16 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void SetDownloadErrorState() override;
-    void SetPlayStrategy(PlayStrategy* playStrategy) override;
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override;
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
 
     void OnMpdInfoUpdate(DashMpdEvent mpdEvent) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void UpdateDownloadFinished(int streamId);
     void SetInterruptState(bool isInterruptNeeded) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
-    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
     void ReceiveMpdStreamInitEvent();

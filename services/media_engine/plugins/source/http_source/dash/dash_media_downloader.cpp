@@ -333,7 +333,7 @@ void DashMediaDownloader::SetDownloadErrorState()
     downloadErrorState_ = true;
 }
 
-void DashMediaDownloader::SetPlayStrategy(PlayStrategy* playStrategy)
+void DashMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
 {
     if (playStrategy != nullptr) {
         mpdDownloader_->SetHdrStart(playStrategy->preferHDR);
