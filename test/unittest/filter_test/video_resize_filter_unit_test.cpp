@@ -49,6 +49,7 @@ void VideoResizeFilterUnitTest::TearDown(void)
     videoResize_ = nullptr;
 }
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 /**
  * @tc.name: VideoResizeFilter_Init_001
  * @tc.desc: Init
@@ -204,6 +205,7 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_ReleaseBuffer_001, TestSiz
     videoResize_->ReleaseBuffer();
     EXPECT_EQ(videoResize_->instanceId_, 0);
 }
+#endif
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
