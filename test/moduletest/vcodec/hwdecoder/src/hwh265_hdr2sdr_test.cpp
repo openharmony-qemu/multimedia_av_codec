@@ -284,6 +284,37 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_006, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : HEVC_HW_HDR2SDR_FUNC_0061
+ * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, 4k_720p_1080p
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_0061, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/hlg_4k_720p_1080p.h265";
+        vDecSample->DEFAULT_WIDTH = 3840;
+        vDecSample->DEFAULT_HEIGHT = 2160;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->TRANSFER_FLAG = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+    else {
+        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = "/data/test/media/hlg_4k_720p_1080p.h265";
+        vDecSample->DEFAULT_WIDTH = 3840;
+        vDecSample->DEFAULT_HEIGHT = 2160;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->TRANSFER_FLAG = true;
+        ASSERT_EQ(AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
+}
+
+/**
  * @tc.number    : HEVC_HW_HDR2SDR_FUNC_007
  * @tc.name      : test h265 hard decode surface, pixel foramt nv12, KEY设置为BT_709_LIMIT, PQ HDR vivid
  * @tc.desc      : function test

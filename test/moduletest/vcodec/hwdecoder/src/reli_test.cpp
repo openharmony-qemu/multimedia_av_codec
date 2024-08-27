@@ -75,7 +75,7 @@ protected:
         "/data/test/media/360p_6.h264",  "/data/test/media/360p_7.h264",
         "/data/test/media/360p_8.h264",  "/data/test/media/360p_9.h264",
         "/data/test/media/360p_10.h264", "/data/test/media/360p_11.h264",
-        "/data/test/media/360p_12.h264",  "/data/test/media/360p_13.h264",
+        "/data/test/media/360p_12.h264", "/data/test/media/360p_13.h264",
         "/data/test/media/360p_14.h264", "/data/test/media/360p_15.h264"};
     const char *resChangeArray[16] = {
         "/data/test/media/resChange.h264",    "/data/test/media/resChange_1.h264",
@@ -84,8 +84,24 @@ protected:
         "/data/test/media/resChange_6.h264",  "/data/test/media/resChange_7.h264",
         "/data/test/media/resChange_8.h264",  "/data/test/media/resChange_9.h264",
         "/data/test/media/resChange_10.h264", "/data/test/media/resChange_11.h264",
-        "/data/test/media/resChange_12.h264",  "/data/test/media/resChange_13.h264",
+        "/data/test/media/resChange_12.h264", "/data/test/media/resChange_13.h264",
         "/data/test/media/resChange_14.h264", "/data/test/media/resChange_15.h264"};
+    const char *hdr2sdrArray[30] = {
+        "/data/test/media/hdr2sdrArray.h265",    "/data/test/media/hdr2sdrArray_1.h265",
+        "/data/test/media/hdr2sdrArray_2.h265",  "/data/test/media/hdr2sdrArray_3.h265",
+        "/data/test/media/hdr2sdrArray_4.h265",  "/data/test/media/hdr2sdrArray_5.h265",
+        "/data/test/media/hdr2sdrArray_6.h265",  "/data/test/media/hdr2sdrArray_7.h265",
+        "/data/test/media/hdr2sdrArray_8.h265",  "/data/test/media/hdr2sdrArray_9.h265",
+        "/data/test/media/hdr2sdrArray_10.h265", "/data/test/media/hdr2sdrArray_11.h265",
+        "/data/test/media/hdr2sdrArray_12.h265", "/data/test/media/hdr2sdrArray_13.h265",
+        "/data/test/media/hdr2sdrArray_14.h265", "/data/test/media/hdr2sdrArray_15.h265",
+        "/data/test/media/hdr2sdrArray_16.h265", "/data/test/media/hdr2sdrArray_17.h265",
+        "/data/test/media/hdr2sdrArray_18.h265", "/data/test/media/hdr2sdrArray_19.h265",
+        "/data/test/media/hdr2sdrArray_20.h265", "/data/test/media/hdr2sdrArray_21.h265",
+        "/data/test/media/hdr2sdrArray_22.h265", "/data/test/media/hdr2sdrArray_23.h265",
+        "/data/test/media/hdr2sdrArray_24.h265", "/data/test/media/hdr2sdrArray_25.h265",
+        "/data/test/media/hdr2sdrArray_26.h265", "/data/test/media/hdr2sdrArray_27.h265",
+        "/data/test/media/hdr2sdrArray_28.h265", "/data/test/media/hdr2sdrArray_29.h265"};
 };
 } // namespace Media
 } // namespace OHOS
@@ -350,6 +366,37 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_003, TestSize.Level3)
             vDecSample->SF_OUTPUT = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->sleepOnFPS = true;
+            vDecSample->RunVideoDec_Surface(g_hevcName);
+        }
+        uint32_t errorCount = 0;
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
+            sample->WaitForEOS();
+            errorCount += sample->errCount;
+        });
+        ASSERT_EQ(AV_ERR_OK, errorCount);
+        decVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : SURF_CHANGE_RELI_004
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_004, TestSize.Level3)
+{
+    while (true) {
+        vector<shared_ptr<VDecAPI11Sample>> decVec;
+        for (int i = 0; i < 30; i++) {
+            cout << i << endl;
+            auto vDecSample = make_shared<VDecAPI11Sample>();
+            decVec.push_back(vDecSample);
+            vDecSample->INP_DIR = hdr2sdrArray[i];
+            vDecSample->DEFAULT_WIDTH = 1920;
+            vDecSample->DEFAULT_HEIGHT = 1080;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->SF_OUTPUT = true;
+            vDecSample->TRANSFER_FLAG = true;
             vDecSample->RunVideoDec_Surface(g_hevcName);
         }
         uint32_t errorCount = 0;
