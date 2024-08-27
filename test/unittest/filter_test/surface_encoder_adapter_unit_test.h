@@ -165,7 +165,11 @@ public:
     Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
                                  const AVBufferConfig& config, int32_t timeoutMs)
     {
-        return  Status::OK;
+        if (outBuffer == nullptr) {
+            return Status::ERROR_NULL_POINTER;
+        } else {
+            return  Status::OK;
+        }
     }
     Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
     {
