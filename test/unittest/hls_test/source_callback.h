@@ -28,9 +28,10 @@ public:
         (void)event;
     }
 
-    void SetSelectBitRateFlag(bool flag)
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
     {
         (void)flag;
+        (void)desBitRate;
     }
 
     bool CanDoSelectBitRate()

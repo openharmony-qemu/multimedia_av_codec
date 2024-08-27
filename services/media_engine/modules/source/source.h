@@ -42,9 +42,9 @@ public:
         callbackWrap_->OnEvent(event);
     }
 
-    void SetSelectBitRateFlag(bool flag) override
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
     {
-        callbackWrap_->SetSelectBitRateFlag(flag);
+        callbackWrap_->SetSelectBitRateFlag(flag, desBitRate);
     }
 
     bool CanAutoSelectBitRate() override
@@ -79,7 +79,7 @@ public:
     Status GetSize(uint64_t &fileSize);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
-    void SetSelectBitRateFlag(bool flag) override;
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
     bool IsSeekToTimeSupported();
