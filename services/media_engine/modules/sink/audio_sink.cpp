@@ -397,7 +397,7 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
     CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
 }
 
-bool AudioSink::DropApeBuffer()
+bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 {
     if (isApe_) {
         if (seekTimeUs_ != HST_TIME_NONE) {
