@@ -243,8 +243,11 @@ Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name)
     client_->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
-    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"), "", TaskType::SINGLETON);
-    task_->RegisterJob([this] { return HttpDownloadLoop(); });
+    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
+    task_->RegisterJob([this] {
+        HttpDownloadLoop();
+        return 0;
+    });
 }
 
 Downloader::~Downloader()
@@ -469,7 +472,7 @@ bool Downloader::BeginDownload()
     return true;
 }
 
-int64_t Downloader::HttpDownloadLoop()
+void Downloader::HttpDownloadLoop()
 {
     AutoLock lock(operatorMutex_);
     if (shouldStartNextRequest) {
@@ -480,7 +483,7 @@ int64_t Downloader::HttpDownloadLoop()
             if (noTaskLoopTimes_ >= LOOP_TIMES) {
                 PauseLoop(true);
             }
-            return 0;
+            return;
         }
         noTaskLoopTimes_ = 0;
         currentRequest_ = tempRequest;
@@ -491,10 +494,10 @@ int64_t Downloader::HttpDownloadLoop()
         MEDIA_LOG_I("currentRequest_ %{public}d client_ %{public}d nullptr",
                     currentRequest_ != nullptr, client_ != nullptr);
         PauseLoop(true);
-        return -1;
+        return;
     }
     RequestData();
-    return 0;
+    return;
 }
 
 void Downloader::RequestData()

@@ -77,17 +77,20 @@ public:
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
+    size_t GetRingBufferSize();
+    size_t GetTotalBufferSize();
+    void SetInterruptState(bool isInterruptNeeded) override;
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    void ReportBitrateStart(uint32_t bitRate);
+    std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
+    void ReportVideoSizeChange();
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
+private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
-    size_t GetTotalBufferSize();
-    size_t GetRingBufferSize();
-    void SetInterruptState(bool isInterruptNeeded) override;
-    void GetDownloadInfo(DownloadInfo& downloadInfo) override;
-    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
-    void ReportBitrateStart(uint32_t bitRate);
-    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
-private:
     bool SaveData(uint8_t* data, uint32_t len);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SaveEncryptData(uint8_t* data, uint32_t len);
@@ -107,6 +110,7 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     uint64_t TransferSizeToBitRate(int width);
+    void CacheData();
     bool HandleBuffering();
     bool HandleCache();
     bool CheckReadStatus();
@@ -161,14 +165,18 @@ private:
     bool isAutoSelectBitrate_ {true};
     uint64_t seekTime_ = 0;
     uint64_t readTime_ {0};
+
     bool isReadFrame_ {false};
     bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
-    uint64_t currentBitrate_ {1*1024*1024}; // bps
+    uint64_t currentBitrate_ {1 * 1024 * 1024}; // bps
     bool userDefinedBufferDuration_ {false};
     uint64_t expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
+    uint64_t lastCheckTime_ {0};
+    uint32_t recordCount_ {0};
+    uint64_t lastRecordTime_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
 
     struct BufferDownRecord {
@@ -203,13 +211,11 @@ private:
     int64_t openTime_ {0};
     int64_t playDelayTime_ {0};
     int64_t startDownloadTime_ {0};
-    uint64_t lastCheckTime_ {0};
-    uint32_t recordCount_ {0};
-    uint64_t lastRecordTime_ {0};
     int32_t avgDownloadSpeed_ {0};
     bool isDownloadFinish_ {false};
     double avgSpeedSum_ {0};
     uint32_t recordSpeedCount_ {0};
+
     int64_t lastReportUsageTime_ {0};
     uint64_t dataUsage_ {0};
 

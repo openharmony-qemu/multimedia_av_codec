@@ -58,6 +58,11 @@ public:
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
     }
+    virtual std::pair<int32_t, int32_t> GetDownloadInfo()
+    {
+        MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+        return std::make_pair(0, 0);
+    }
     virtual void GetPlaybackInfo(PlaybackInfo& playbackInfo)
     {
         MEDIA_LOG_E("GetPlaybackInfo is unimplemented.");
