@@ -231,7 +231,9 @@ void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
     if (item == nullptr) {
         return;
     }
-    duration = item ->GetAttributeByName("DURATION")->FloatingPoint();
+    if (item->GetAttributeByName("DURATION")) {
+        duration = item->GetAttributeByName("DURATION")->FloatingPoint();
+    }
 }
 
 double M3U8::GetDuration() const
