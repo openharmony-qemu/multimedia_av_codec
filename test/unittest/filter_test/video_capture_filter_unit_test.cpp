@@ -38,13 +38,45 @@ void VideoCaptureFilterUnitTest::TearDown(void)
 }
 
 /**
- * @tc.name: First
- * @tc.desc: First
+ * @tc.name: VideoCaptureFilter_Init_001
+ * @tc.desc: Init
  * @tc.type: FUNC
  */
-HWTEST_F(VideoCaptureFilterUnitTest, First, TestSize.Level1)
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_Init_001, TestSize.Level1)
 {
-    ASSERT_NE(videoCaptureFilter_, nullptr);
+    std::shared_ptr<TestEventReceiver> testEventReceiver = std::make_shared<TestEventReceiver>();
+    std::shared_ptr<TestFilterCallback> testFilterCallback = std::make_shared<TestFilterCallback>();
+    videoCaptureFilter_->Init(testEventReceiver, testFilterCallback);
+
+    EXPECT_EQ(videoCaptureFilter_->eventReceiver_, testEventReceiver);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_Configure_001
+ * @tc.desc: Configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_Configure_001, TestSize.Level1)
+{
+    std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
+    Status ret = videoCaptureFilter_->Configure();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_SetInputSurface_001
+ * @tc.desc: SetInputSurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetInputSurface_001, TestSize.Level1)
+{
+    sptr<Surface> consumerSurface = nullptr;
+    Status ret = videoCaptureFilter_->SetInputSurface(consumerSurface);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    consumerSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_TRUE(consumerSurface);
+    ret = videoCaptureFilter_->SetInputSurface(consumerSurface);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN); 
 }
 }  // namespace Pipeline
 }  // namespace Media
