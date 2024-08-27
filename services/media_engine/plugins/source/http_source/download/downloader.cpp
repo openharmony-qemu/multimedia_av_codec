@@ -38,6 +38,9 @@ constexpr int32_t LOOP_TIMES = 5;
 constexpr int32_t MAX_LEN = 128;
 const std::string USER_AGENT = "User-Agent";
 const std::string DISPLAYVERSION = "const.product.software.version";
+constexpr int FIRST_REQUEST_SIZE = 8 * 1024;
+constexpr int MIN_REQUEST_SIZE = 2;
+constexpr int SERVER_RANGE_ERROR_CODE = 416;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -227,6 +230,9 @@ bool DownloadRequest::IsM3u8Request() const
 
 bool DownloadRequest::IsServerAcceptRange() const
 {
+    if (headerInfo_.isChunked) {
+        return false;
+    }
     return headerInfo_.isServerAcceptRange;
 }
 
@@ -457,7 +463,7 @@ bool Downloader::BeginDownload()
 
     if (currentRequest_->endPos_ <= 0) {
         currentRequest_->startPos_ = 0;
-        currentRequest_->requestSize_ = 2; // 2
+        currentRequest_->requestSize_ = FIRST_REQUEST_SIZE;
     } else {
         int64_t temp = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
         currentRequest_->requestSize_ = static_cast<int>(std::min(temp, static_cast<int64_t>(PER_REQUEST_SIZE)));
@@ -516,7 +522,15 @@ void Downloader::RequestData()
         if (isDestructor_) {
             return;
         }
-
+        if (currentRequest_->requestSize_ == FIRST_REQUEST_SIZE && !currentRequest_->isFirstRangeRequestReady_
+            && currentRequest_->serverError_ == SERVER_RANGE_ERROR_CODE) {
+            MEDIA_LOG_I("first request is above filesize, need retry.");
+            currentRequest_->startPos_ = 0;
+            currentRequest_->requestSize_ = MIN_REQUEST_SIZE;
+            currentRequest_->isHeaderUpdated = false;
+            currentRequest_->isFirstRangeRequestReady_ = true;
+            return;
+        }
         if (ret == Status::OK) {
             HandleRetOK();
         } else {
@@ -543,6 +557,7 @@ void Downloader::HandlePlayingFinish()
     if (currentRequest_->downloadDoneCallback_ && !isDestructor_) {
         currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
         currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
+        currentRequest_->isFirstRangeRequestReady_ = false;
     }
 }
 
