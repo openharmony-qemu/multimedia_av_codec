@@ -22,6 +22,11 @@
 #include "network/network_typs.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <iostream>
 
 namespace OHOS {
 namespace Media {
@@ -55,7 +60,13 @@ public:
     Status Deinit() override;
     Status GetIp(std::string &ip) override;
     void SetAppUid(int32_t appUid) override;
-
+    static curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
+                                                            curlsocktype purpose,
+                                                            struct curl_sockaddr *address);
+    struct SocketOwner {
+        uid_t uid;
+        gid_t gid;
+    };
 private:
     void InitCurlEnvironment(const std::string& url, int32_t timeoutMs);
     void InitCurProxy(const std::string& url);
