@@ -40,7 +40,8 @@ void VideoResizeFilterUnitTest::TearDownTestCase(void) {}
 
 void VideoResizeFilterUnitTest::SetUp(void)
 {
-    videoResize_ = std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    videoResize_ = std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter",
+                        Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
 }
 
 void VideoResizeFilterUnitTest::TearDown(void)
