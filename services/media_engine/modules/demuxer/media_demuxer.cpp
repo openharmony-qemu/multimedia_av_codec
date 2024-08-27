@@ -1723,26 +1723,29 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
 {
-    if (demuxerPluginManager_->IsDash()) {
-        if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
-            auto result = SelectBitRateChangeStream(trackId);
-            if (result) {
-                streamDemuxer_->SetChangeFlag(true);
-                if (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate()) {
-                    isSelectBitRate_.store(false);
-                }
-                return true;
+    if (demuxerPluginManager_->IsDash() == false) {
+        return false;
+    }
+
+    if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+        auto result = SelectBitRateChangeStream(trackId);
+        if (result) {
+            streamDemuxer_->SetChangeFlag(true);
+            if (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate()) {
+                isSelectBitRate_.store(false);
             }
-        } else if (isSelectTrack_) {
-            auto result = SelectTrackChangeStream(trackId);
-            if (result) {
-                targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
-                streamDemuxer_->SetChangeFlag(true);
-                isSelectTrack_.store(false);
-                return true;
-            }
+            return true;
+        }
+    } else if (isSelectTrack_) {
+        auto result = SelectTrackChangeStream(trackId);
+        if (result) {
+            targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
+            streamDemuxer_->SetChangeFlag(true);
+            isSelectTrack_.store(false);
+            return true;
         }
     }
+
     return false;
 }
 
@@ -2077,7 +2080,8 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 bool MediaDemuxer::CanAutoSelectBitRate()
 {
     // calculating auto selectbitrate time
-    return !(isSelectBitRate_.load()) && !(isSelectTrack_.load()) && (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate());
+    return !(isSelectBitRate_.load()) && !(isSelectTrack_.load())
+        && (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate());
 }
 
 bool MediaDemuxer::IsRenderNextVideoFrameSupported()
