@@ -292,7 +292,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_0061, TestSize.Level2)
 {
     if (!access("/system/lib64/media/", 0)) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/hlg_4k_720p_1080p.h265";
+        vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_4k_720p_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 3840;
         vDecSample->DEFAULT_HEIGHT = 2160;
         vDecSample->SF_OUTPUT = true;
@@ -303,7 +303,7 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_0061, TestSize.Level2)
     }
     else {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/hlg_4k_720p_1080p.h265";
+        vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_4k_720p_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 3840;
         vDecSample->DEFAULT_HEIGHT = 2160;
         vDecSample->SF_OUTPUT = true;
