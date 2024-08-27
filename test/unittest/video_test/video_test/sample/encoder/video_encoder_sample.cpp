@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <memory>
 #include <sys/mman.h>
+#include <cmath>
 #include "external_window.h"
 #include "native_buffer_inner.h"
 #include "av_codec_sample_log.h"
@@ -47,7 +48,11 @@ int32_t VideoEncoderSample::Prepare()
 
         inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this);
     } else {
-        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, &info.videoStrideWidth);
+        int32_t strideAlignment = 0;
+        (void)OH_NativeWindow_NativeWindowHandleOpt(info.window.get(), GET_STRIDE, &strideAlignment);
+        info.videoStrideWidth = strideAlignment != 0 ?
+            (strideAlignment * std::ceil(static_cast<float>(info.videoWidth) / strideAlignment)) :
+            info.videoWidth;
         info.videoSliceHeight = info.videoHeight;
 
         inputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
