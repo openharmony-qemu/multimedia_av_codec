@@ -1721,6 +1721,31 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
     return ret;
 }
 
+bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
+{
+    if (demuxerPluginManager_->IsDash()) {
+        if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
+            auto result = SelectBitRateChangeStream(trackId);
+            if (result) {
+                streamDemuxer_->SetChangeFlag(true);
+                if (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate()) {
+                    isSelectBitRate_.store(false);
+                }
+                return true;
+            }
+        } else if (isSelectTrack_) {
+            auto result = SelectTrackChangeStream(trackId);
+            if (result) {
+                targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
+                streamDemuxer_->SetChangeFlag(true);
+                isSelectTrack_.store(false);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::CopyFrameToUserQueue");
@@ -1749,25 +1774,8 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
         "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
 
-    if (demuxerPluginManager_->IsDash()) {
-        if (trackId == videoTrackId_ && demuxerPluginManager_->GetCurrentBitRate() != targetBitRate_) {
-            auto result = SelectBitRateChangeStream(trackId);
-            if (result) {
-                streamDemuxer_->SetChangeFlag(true);
-                if (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate()) {
-                    isSelectBitRate_.store(false);
-                }
-                return Status::OK;
-            }
-        } else if (isSelectTrack_) {
-            auto result = SelectTrackChangeStream(trackId);
-            if (result) {
-                targetBitRate_ = demuxerPluginManager_->GetCurrentBitRate();
-                streamDemuxer_->SetChangeFlag(true);
-                isSelectTrack_.store(false);
-                return Status::OK;
-            }
-        }
+    if (HandleDashChangeStream(trackId)) {
+        return Status::OK;
     }
 
     SetTrackNotifyFlag(trackId, true);
@@ -2058,7 +2066,8 @@ bool MediaDemuxer::IsTrackDisabled(Plugins::MediaType mediaType)
 
 void MediaDemuxer::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
-    MEDIA_LOG_I("SetSelectBitRateFlag = " PUBLIC_LOG_D32 " desBitRate = " PUBLIC_LOG_U32, static_cast<int32_t>(flag), desBitRate);
+    MEDIA_LOG_I("SetSelectBitRateFlag = " PUBLIC_LOG_D32 " desBitRate = " PUBLIC_LOG_U32,
+        static_cast<int32_t>(flag), desBitRate);
     isSelectBitRate_.store(flag);
     if (flag) {
         targetBitRate_ = desBitRate;
