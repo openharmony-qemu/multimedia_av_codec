@@ -94,7 +94,7 @@ private:
     void HandleEosInner(bool drain);
     void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
     void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
-    bool DropApeBuffer();
+    bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
 
     class UnderrunDetector {
     public:

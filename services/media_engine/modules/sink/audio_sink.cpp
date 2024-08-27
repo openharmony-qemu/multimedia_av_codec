@@ -448,7 +448,7 @@ void AudioSink::DrainOutputBuffer()
         });
         return;
     }
-    FALSE_RETURN(DropApeBuffer() == false);
+    FALSE_RETURN(DropApeBuffer(filledOutputBuffer) == false);
     UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
     if (calMaxAmplitudeCbStatus_) {
