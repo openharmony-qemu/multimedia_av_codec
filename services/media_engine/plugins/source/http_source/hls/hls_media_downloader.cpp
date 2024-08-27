@@ -83,7 +83,6 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
 
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
-    // steadyClock_.Reset();
     waterLineAbove_ = PLAY_WATER_LINE;
     aesKey_.rounds = 0;
     for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
@@ -99,7 +98,6 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     MEDIA_LOG_I("user define buffer duration.");
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
-    // steadyClock_.Reset();
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
@@ -893,10 +891,10 @@ void HlsMediaDownloader::ReportVideoSizeChange()
     }
     int32_t videoWidth = playListDownloader_->GetVedioWidth();
     int32_t videoHeight = playListDownloader_->GetVedioHeight();
-    MEDIA_LOG_I("ReportVideoSizeChange videoWidth : " PBULIC_LOG_D32 "videoHeight: "
+    MEDIA_LOG_I("ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
         PUBLIC_LOG_D32, videoWidth, videoHeight);
     changeBitRateCount_++;
-    MEDIA_LOG_I("Change bit rate count : " PBULIC_LOG_U32, changeBitRateCount_);
+    MEDIA_LOG_I("Change bit rate count : " PUBLIC_LOG_U32, changeBitRateCount_);
     std::pair<int32_t, int32_t> videoSize {videoWidth, videoHeight};
     callback_->OnEvent({PluginEventType::VIDEO_SIZE_CHANGE, {videoSize}, "video_size_change"});
 }
