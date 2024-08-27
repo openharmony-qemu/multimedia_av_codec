@@ -118,13 +118,13 @@ bool PlayListDownloader::ParseUriInfo(const std::string& uri)
         MEDIA_LOG_E("uri is empty");
         return false;
     }
-    MEDIA_LOG_D("uri: " PUBLIC_LOG_S, uri.c_str());
+    MEDIA_LOG_D("uri: ");
     std::smatch fdUriMatch;
     FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
         std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        false, "Invalid fd uri format: %{private}s", uri.c_str());
+        false, "Invalid fd uri format");
     FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
-        false, "Invalid fd uri format: %{private}s", uri.c_str());
+        false, "Invalid fd uri format");
     fd_ = std::stoi(fdUriMatch[1].str()); // 1: sub match fd subscript
     FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
         false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
@@ -211,9 +211,8 @@ void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr
 {
     // This should not be called normally
     MEDIA_LOG_D("Should not call this OnDownloadStatus, should call monitor.");
-    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
-        MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32 ", url : " PUBLIC_LOG_S,
-                    status, request->GetUrl().c_str());
+    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
+        MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
 

@@ -123,6 +123,36 @@ static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_SVG,
 };
 
+void StringifyMeta(Meta meta)
+{
+    OHOS::Media::Format format;
+    for (TagType key: g_supportSourceFormat) {
+        if (meta.Find(std::string(key)) != meta.end()) {
+            meta.SetData(std::string(key), "***");
+        }
+    }
+    if (meta.Find(std::string(Tag::MEDIA_CONTAINER_START_TIME)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_CONTAINER_START_TIME), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_START_TIME)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_START_TIME), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_LATITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_LATITUDE), "***");
+    }
+    if (meta.Find(std::string(Tag::MEDIA_LONGITUDE)) != meta.end()) {
+        meta.SetData(std::string(Tag::MEDIA_LONGITUDE), "***");
+    }
+    if (meta.Find(std::string(Tag::TIMED_METADATA_KEY)) != meta.end()) {
+        meta.SetData(std::string(Tag::TIMED_METADATA_KEY), "***");
+    }
+    if (meta.Find(std::string(Tag::TIMED_METADATA_SRC_TRACK)) != meta.end()) {
+        meta.SetData(std::string(Tag::TIMED_METADATA_SRC_TRACK), "***");
+    }
+    format.SetMeta(std::make_shared<Meta>(meta));
+    MEDIA_LOG_I("meta info: " PUBLIC_LOG_S, format.Stringify().c_str());
+}
+
 bool HaveValidParser(const AVCodecID codecId)
 {
     return g_streamParserMap.count(codecId) != 0;
@@ -213,7 +243,8 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
-    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+        avStream->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         return AVSEEK_FLAG_BACKWARD;
     }
     if (mode == SeekMode::SEEK_NEXT_SYNC || mode == SeekMode::SEEK_PREVIOUS_SYNC) {
@@ -369,7 +400,9 @@ void FFmpegDemuxerPlugin::ParserFirstDts()
     bool isEnd = false;
     bool isFirst = true;
     while (!isEnd) {
+        std::unique_lock<std::mutex> sLock(syncMutex_);
         int ffmpegRet = av_read_frame(parserRefFormatContext_.get(), pkt);
+        sLock.unlock();
         if (ffmpegRet < 0) {
             av_packet_unref(pkt);
             av_packet_free(&pkt);
@@ -421,7 +454,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
-            parserRefVideoStreamIdx_ = trackIndex;
+            parserRefVideoStreamIdx_ = static_cast<uint32_t>(trackIndex);
         }
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");
@@ -685,24 +718,20 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " will convert to annexb.", avStream.index);
 }
 
-void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
+Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
 {
     int ret = av_bsf_send_packet(avbsfContext_.get(), &pkt);
-    if (ret < 0) {
-        MEDIA_LOG_E("Convert to annexb failed due to av_bsf_send_packet failed, err:" PUBLIC_LOG_S,
-        AVStrError(ret).c_str());
-    }
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
+        "av_bsf_send_packet failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
     av_packet_unref(&pkt);
-    ret = 1;
-    while (ret >= 0) {
-        ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
-    }
-    if (ret == AVERROR_EOF) {
-        MEDIA_LOG_D("Convert avc to annexb successfully, ret:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
-    }
+    
+    ret = av_bsf_receive_packet(avbsfContext_.get(), &pkt);
+    FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
+        "av_bsf_receive_packet failed, err:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
+    return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+Status FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
     size_t cencInfoSize = 0;
     uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
@@ -711,11 +740,13 @@ void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<Sam
         streamParser_->IsSyncFrame(pkt.data, pkt.size)) {
         pkt.flags = static_cast<int32_t>(static_cast<uint32_t>(pkt.flags) | static_cast<uint32_t>(AV_PKT_FLAG_KEY));
     }
+    return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+Status FFmpegDemuxerPlugin::ConvertVvcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
 {
     streamParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, nullptr, 0, false);
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::WriteBuffer(
@@ -822,19 +853,21 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
     return tempPkt;
 }
 
-void FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
+Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacket* srcAVPacket,
     std::shared_ptr<SamplePacket> dstSamplePacket)
 {
+    Status ret = Status::OK;
     auto codecId = formatContext_->streams[srcAVPacket->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && streamParser_ != nullptr && streamParserInited_) {
-        ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
+        ret = ConvertHevcToAnnexb(*srcAVPacket, dstSamplePacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_HEVC);
     } else if (codecId == AV_CODEC_ID_VVC && streamParser_ != nullptr && streamParserInited_) {
-        ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
+        ret = ConvertVvcToAnnexb(*srcAVPacket, dstSamplePacket);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
-        ConvertAvcToAnnexb(*srcAVPacket);
+        ret = ConvertAvcToAnnexb(*srcAVPacket);
         SetDropTag(*srcAVPacket, sample, AV_CODEC_ID_H264);
     }
+    return ret;
 }
 
 void FFmpegDemuxerPlugin::WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
@@ -871,7 +904,9 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     // convert
     AVPacket *tempPkt = CombinePackets(samplePacket);
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
-    ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
+    Status ret = ConvertPacketToAnnexb(sample, tempPkt, samplePacket);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to convert annexb failed.");
+
     // flag\copy
     int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
@@ -881,22 +916,25 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     SetDrmCencInfo(sample, samplePacket);
 
     sample->flag_ = flag;
-    Status ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
+    ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
+
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
         trackDfxInfoMap_[tempPkt->stream_index].lastPos = tempPkt->pos;
     }
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), tempPkt->data + samplePacket->offset,
         tempPkt->stream_index, -1, copySize, trackDfxInfoMap_[tempPkt->stream_index].frameIndex++, tempPkt->pts, -1};
     Dump(dumpParam);
-
+#endif
     if (tempPkt != nullptr && tempPkt->size != samplePacket->pkts[0]->size) {
         av_packet_free(&tempPkt);
         av_free(tempPkt);
         tempPkt = nullptr;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
+    
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
@@ -1076,7 +1114,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 
     ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
+    FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "ioContext is nullptr");
     auto buffer = std::make_shared<Buffer>();
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, ret, "buffer is nullptr");
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "AVReadPacket buf is nullptr");
 
@@ -1085,9 +1125,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     int dataSize = static_cast<int>(buffer->GetMemory()->GetSize());
     MEDIA_LOG_D("Want data size:" PUBLIC_LOG_D32 ", Get data size:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64
         ", readatIndex:" PUBLIC_LOG_D32, bufSize, dataSize, ioContext->offset, readatIndex_.load());
+#ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & ioContext->dumpMode), buf, -1, ioContext->offset,
         dataSize, readatIndex_++, -1, -1};
     Dump(dumpParam);
+#endif
     switch (result) {
         case Status::OK:
             ioContext->offset += dataSize;
@@ -1358,10 +1400,8 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     Status ret = GetSeiInfo();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
-    OHOS::Media::Format format;
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
-    format.SetMeta(std::make_shared<Meta>(mediaInfo.general));
-    MEDIA_LOG_I("general meta: " PUBLIC_LOG_S, format.Stringify().c_str());
+    StringifyMeta(mediaInfo.general);
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         MEDIA_LOG_I("Parse info for track " PUBLIC_LOG_D32, trackIndex);
         Meta meta;
@@ -1390,8 +1430,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
-        format.SetMeta(std::make_shared<Meta>(meta));
-        MEDIA_LOG_I("track meta: " PUBLIC_LOG_S, format.Stringify().c_str());
+        StringifyMeta(meta);
     }
     return Status::OK;
 }
@@ -1489,9 +1528,15 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacket *pkt)
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
         }
     }
-    DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
-        avpacketIndex_++, pkt->pts, pkt->pos};
-    Dump(dumpParam);
+#ifdef BUILD_ENG_VERSION
+    if (pkt == nullptr) {
+        MEDIA_LOG_D("Dump failed due to pkt is nullptr.");
+    } else {
+        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
+            avpacketIndex_++, pkt->pts, pkt->pos};
+        Dump(dumpParam);
+    }
+#endif
     return ret;
 }
 
@@ -1514,10 +1559,11 @@ Status FFmpegDemuxerPlugin::GetVideoFirstKeyFrame(uint32_t trackIndex)
             av_packet_unref(pkt);
             break;
         }
+#ifdef BUILD_ENG_VERSION
         DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), pkt->data, pkt->stream_index, -1, pkt->size,
             avpacketIndex_++, pkt->pts, pkt->pos};
         Dump(dumpParam);
-
+#endif
         cacheQueue_.AddTrackQueue(pkt->stream_index);
         ret = AddPacketToCacheQueue(pkt);
         if (ret != Status::OK) {

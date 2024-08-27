@@ -36,6 +36,56 @@ public:
 
 protected:
     std::shared_ptr<SurfaceDecoderFilter> surfaceDecoderFilter_{ nullptr };
+    std::shared_ptr<SurfaceDecoderAdapter> mediaCodec_{ nullptr };
+    std::shared_ptr<FilterCallback> filterCallback_{nullptr};
+};
+
+class TestEventReceiver : public Pipeline::EventReceiver {
+public:
+    explicit TestEventReceiver()
+    {
+        std::cout << "event receiver constructor" << std::endl;
+    }
+
+    void OnEvent(const Event &event)
+    {
+        std::cout << event.srcFilter << std::endl;
+    }
+};
+
+class TestFilterCallback : public Pipeline::FilterCallback {
+public:
+    explicit TestFilterCallback()
+    {
+        std::cout << "filter back constructor" << std::endl;
+    }
+
+    Status OnCallback(const std::shared_ptr<Pipeline::Filter>& filter,
+        Pipeline::FilterCallBackCommand cmd, Pipeline::StreamType outType)
+        
+    {
+        return Status::OK;
+    }
+};
+
+class TestFilterLinkCallback : public Pipeline::FilterLinkCallback {
+public:
+    explicit TestFilterLinkCallback()
+    {
+        std::cout << "filter back constructor" << std::endl;
+    }
+    void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
+    {
+        std::cout << "call OnLinkedResult" << std::endl;
+    }
+    void OnUnlinkedResult(std::shared_ptr<Meta>& meta)
+    {
+        std::cout << "call OnUnlinkedResult" << std::endl;
+    }
+    void OnUpdatedResult(std::shared_ptr<Meta>& meta)
+    {
+        std::cout << "call OnUpdatedResult" << std::endl;
+    }
 };
 }  // namespace Pipeline
 }  // namespace Media

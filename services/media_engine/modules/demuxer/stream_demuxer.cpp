@@ -120,7 +120,9 @@ Status StreamDemuxer::Init(const std::string& uri)
 Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
+    FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
     auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
+    FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
 
     MEDIA_LOG_D("PullDataWithCache, Read data from cache data.");
     uint64_t offsetInCache = offset - cacheDataMap_[streamID].GetOffset();
@@ -138,6 +140,7 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
     }
     Status ret = PullData(streamID, remainOffset, remainSize, tempBuffer);
     if (ret == Status::OK) {
+        FALSE_RETURN_V_MSG_E(tempBuffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "tempBuffer invalid");
         bufferPtr->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
             tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         if (pluginStateMap_[streamID] == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
@@ -146,17 +149,17 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
         }
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());
-        if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
-            MEDIA_LOG_W("PullDataWithCache, Read data from cache data success. update cache data fail.");
-            return Status::ERROR_UNKNOWN;
-        }
+        FALSE_RETURN_V_MSG_E(mergedBuffer != nullptr, Status::ERROR_UNKNOWN, "mergedBuffer invalid");
+        FALSE_RETURN_V_MSG_E(mergedBuffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN,
+            "mergedBuffer->GetMemory invalid");
         mergedBuffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
         mergedBuffer->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
             tempBuffer->GetMemory()->GetSize(), memory->GetSize());
         cacheDataMap_[streamID].SetData(mergedBuffer);
+        memory = cacheDataMap_[streamID].GetData()->GetMemory();
+        FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
         MEDIA_LOG_I("PullDataWithCache, offset: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
-            ", cache size: " PUBLIC_LOG_ZU, offset, cacheDataMap_[streamID].GetOffset(),
-            cacheDataMap_[streamID].GetData()->GetMemory()->GetSize());
+            ", cache size: " PUBLIC_LOG_ZU, offset, cacheDataMap_[streamID].GetOffset(), memory->GetSize());
     }
     return ret;
 }
@@ -274,6 +277,7 @@ Status StreamDemuxer::PullData(int32_t streamID, uint64_t offset, size_t size,
 
     err = ReadRetry(streamID, offset, readSize, data);
     if (err == Status::OK) {
+        FALSE_RETURN_V_MSG_E(data->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "data->GetMemory invalid");
         position_ += data->GetMemory()->GetSize();
     }
     return err;

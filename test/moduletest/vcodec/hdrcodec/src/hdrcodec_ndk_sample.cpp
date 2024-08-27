@@ -270,6 +270,8 @@ void HDRCodecNdkSample::FlushBuffer()
     std::queue<OH_AVMemory *>empty;
     swap(empty, decSignal->inBufferQueue_);
     decSignal->inCond_.notify_all();
+    inFile_->clear();
+    inFile_->seekg(0, ios::beg);
     decInLock.unlock();
 }
 

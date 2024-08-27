@@ -331,7 +331,6 @@ int32_t AudioFfmpegEncoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
         avCodecContext_.reset();
-        avCodecContext_ = nullptr;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

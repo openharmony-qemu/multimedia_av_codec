@@ -71,7 +71,7 @@ void DynamicController::DestroyImpl()
 int32_t DynamicController::SetCallbackImpl(void* callback, void* userData)
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::SET_CALLBACK>(instance_, callback, userData);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
         "Set callback for video processing failed.");
     return AVCS_ERR_OK;
 }
@@ -80,7 +80,7 @@ int32_t DynamicController::SetOutputSurfaceImpl(sptr<Surface> surface)
 {
     void* sf = static_cast<void*>(&surface);
     auto ret = interface_.Invoke<DynamicInterfaceName::SET_OUTPUT_SURFACE>(instance_, sf);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
         "Set output surface for video processing failed.");
     surface->UnRegisterReleaseListener();
     surface->RegisterReleaseListener([this](sptr<SurfaceBuffer> &buffer) -> GSError {
@@ -93,7 +93,7 @@ int32_t DynamicController::CreateInputSurfaceImpl(sptr<Surface>& surface)
 {
     void* sf = static_cast<void*>(&surface);
     auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, sf);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && surface != nullptr, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && surface != nullptr, AVCS_ERR_UNKNOWN,
         "Create input surface for video processing failed.");
     return AVCS_ERR_OK;
 }
@@ -102,7 +102,7 @@ int32_t DynamicController::SetParameterImpl(Media::Format& parameter)
 {
     void* parameterPtr = static_cast<void*>(&parameter);
     auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, parameterPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Set parameter for VPE failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Set parameter for VPE failed.");
     return AVCS_ERR_OK;
 }
 
@@ -110,7 +110,7 @@ int32_t DynamicController::GetParameterImpl(Media::Format& parameter)
 {
     void* parameterPtr = static_cast<void*>(&parameter);
     auto ret = interface_.Invoke<DynamicInterfaceName::CREATE_INPUT_SURFACE>(instance_, parameterPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Get parameter for VPE failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Get parameter for VPE failed.");
     return AVCS_ERR_OK;
 }
 
@@ -118,35 +118,35 @@ int32_t DynamicController::ConfigureImpl(Media::Format& config)
 {
     void* configPtr = static_cast<void*>(&config);
     auto ret = interface_.Invoke<DynamicInterfaceName::CONFIGURE>(instance_, configPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Configure video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Configure video processing failed.");
     return AVCS_ERR_OK;
 }
 
 int32_t DynamicController::PrepareImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::PREPARE>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Prepare video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Prepare video processing failed.");
     return AVCS_ERR_OK;
 }
 
 int32_t DynamicController::StartImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::START>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Start video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Start video processing failed.");
     return AVCS_ERR_OK;
 }
 
 int32_t DynamicController::StopImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::STOP>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Stop video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Stop video processing failed.");
     return AVCS_ERR_OK;
 }
 
 int32_t DynamicController::FlushImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::FLUSH>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Flush video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Flush video processing failed.");
     return AVCS_ERR_OK;
 }
 
@@ -154,7 +154,7 @@ int32_t DynamicController::GetOutputFormatImpl(Media::Format &format)
 {
     void *formatPtr = static_cast<void *>(&format);
     auto ret = interface_.Invoke<DynamicInterfaceName::GET_OUTPUT_FORMAT>(instance_, formatPtr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                              "GetOutputFormat video processing failed.");
     return AVCS_ERR_OK;
 }
@@ -162,21 +162,21 @@ int32_t DynamicController::GetOutputFormatImpl(Media::Format &format)
 int32_t DynamicController::ResetImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::RESET>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Reset video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Reset video processing failed.");
     return AVCS_ERR_OK;
 }
 
 int32_t DynamicController::ReleaseImpl()
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::RELEASE>(instance_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Release video processing failed.");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Release video processing failed.");
     return AVCS_ERR_OK;
 }
 
 int32_t DynamicController::ReleaseOutputBufferImpl(uint32_t index, bool render)
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::RELEASE_OUPUT_BUFFER>(instance_, index, render);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
         "Release output buffer of video processing failed.");
     return AVCS_ERR_OK;
 }

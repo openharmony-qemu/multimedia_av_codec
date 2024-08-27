@@ -111,17 +111,17 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
         return true;
     }
     if (!StrHasPrefix(playList, "#EXTM3U")) {
-        MEDIA_LOG_I("playlist doesn't start with #EXTM3U " PUBLIC_LOG_S, playList.c_str());
+        MEDIA_LOG_I("playlist doesn't start with #EXTM3U");
         return false;
     }
     if (playList.find("\n#EXT-X-STREAM-INF:") != std::string::npos) {
-        MEDIA_LOG_I("Not a media playlist, but a master playlist! " PUBLIC_LOG_S, playList.c_str());
+        MEDIA_LOG_I("Not a media playlist, but a master playlist!");
         return false;
     }
     if (isNeedCleanFiles) {
         files_.clear();
     }
-    MEDIA_LOG_I("media playlist " PUBLIC_LOG_S, playList.c_str());
+    MEDIA_LOG_I("media playlist");
     auto tags = ParseEntries(playList);
     UpdateFromTags(tags);
     tags.clear();
@@ -132,7 +132,8 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
 void M3U8::InitTagUpdatersMap()
 {
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        bLive_ = !info.bVod && (std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD");
+        isPlayTypeFound_ = true;
+        bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
     };
 
     tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
@@ -195,10 +196,14 @@ void M3U8::InitTagUpdatersMap()
 void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
-    info.bVod = !tags.empty() && tags.back()->GetType() == HlsTag::EXTXENDLIST;
     bLive_ = !info.bVod;
     for (auto& tag : tags) {
         HlsTag hlsTag = tag->GetType();
+        if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
+            info.bVod = true;
+            bLive_ = !info.bVod;
+            MEDIA_LOG_I("UpdateFromTags not live.");
+        }
         auto iter = tagUpdatersMap_.find(hlsTag);
         if (iter != tagUpdatersMap_.end()) {
             auto updater = iter->second;
@@ -223,6 +228,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
+    isPlayTypeFound_ = false;
 }
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
@@ -311,8 +317,8 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     std::shared_ptr<DownloadRequest> &request)
 {
     // This should not be called normally
-    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
-        MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32 ", url : " PUBLIC_LOG_S, status, request->GetUrl().c_str());
+    if (request->GetClientError() != 0 || request->GetServerError() != 0) {
+        MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32, status);
     }
 }
 
@@ -454,7 +460,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     playList_ = playList;
     uri_ = uri;
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
-        MEDIA_LOG_I("playlist doesn't start with #EXTM3U " PUBLIC_LOG_S, uri.c_str());
+        MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
     }
     if (playList_.find("\n#EXTINF:") != std::string::npos) {
         UpdateMediaPlaylist();
@@ -465,7 +471,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
 
 void M3U8MasterPlaylist::UpdateMediaPlaylist()
 {
-    MEDIA_LOG_I("This is a simple media playlist, not a master playlist " PUBLIC_LOG_S, uri_.c_str());
+    MEDIA_LOG_I("This is a simple media playlist, not a master playlist ");
     auto m3u8 = std::make_shared<M3U8>(uri_, "");
     auto stream = std::make_shared<M3U8VariantStream>(uri_, uri_, m3u8);
     variants_.emplace_back(stream);
@@ -504,7 +510,7 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 
 void M3U8MasterPlaylist::UpdateMasterPlaylist()
 {
-    MEDIA_LOG_I("master playlist " PUBLIC_LOG_S, playList_.c_str());
+    MEDIA_LOG_I("master playlist");
     auto tags = ParseEntries(playList_);
     std::for_each(tags.begin(), tags.end(), [this] (std::shared_ptr<Tag>& tag) {
         switch (tag->GetType()) {
@@ -519,6 +525,7 @@ void M3U8MasterPlaylist::UpdateMasterPlaylist()
                     auto name = uriAttribute->QuotedString();
                     auto uri = UriJoin(uri_, name);
                     auto stream = std::make_shared<M3U8VariantStream>(name, uri, std::make_shared<M3U8>(uri, name));
+                    FALSE_RETURN_MSG(stream != nullptr, "UpdateMasterPlaylist memory not enough");
                     if (tag->GetType() == HlsTag::EXTXIFRAMESTREAMINF) {
                         stream->iframe_ = true;
                     }

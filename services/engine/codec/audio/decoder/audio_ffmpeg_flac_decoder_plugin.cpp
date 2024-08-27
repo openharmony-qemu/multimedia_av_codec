@@ -41,9 +41,10 @@ AudioFFMpegFlacDecoderPlugin::AudioFFMpegFlacDecoderPlugin() : basePlugin(std::m
 
 AudioFFMpegFlacDecoderPlugin::~AudioFFMpegFlacDecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 static bool CheckSampleRate(int32_t sampleRate)

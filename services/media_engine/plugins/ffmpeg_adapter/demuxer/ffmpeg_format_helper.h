@@ -91,6 +91,7 @@ private:
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
 };
+extern std::vector<TagType> g_supportSourceFormat;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

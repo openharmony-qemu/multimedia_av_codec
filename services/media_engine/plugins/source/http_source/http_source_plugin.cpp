@@ -190,7 +190,6 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     if (callback_ != nullptr) {
         downloader_->SetCallback(callback_);
     }
-    MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
     FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
@@ -385,6 +384,7 @@ Status HttpSourcePlugin::GetBitRates(std::vector<uint32_t>& bitRates)
 
 Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
 {
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     downloader_->SetIsTriggerAutoMode(false);
     if (downloader_->SelectBitRate(bitRate)) {
         return Status::OK;
@@ -410,21 +410,23 @@ Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState(streamId);
+    if (downloader_ != nullptr) {
+        downloader_->SetDemuxerState(streamId);
+    }
 }
 
 void HttpSourcePlugin::SetDownloadErrorState()
 {
 }
 
-Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate)
+Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
     if (downloader_ == nullptr) {
         MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return downloader_->SetCurrentBitRate(bitRate);
+    return downloader_->SetCurrentBitRate(bitRate, streamID);
 }
 }
 }

@@ -111,6 +111,7 @@ struct M3U8 {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
+    std::atomic<bool> isPlayTypeFound_ {false};
 };
 
 struct M3U8Media {

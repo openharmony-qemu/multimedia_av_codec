@@ -47,7 +47,8 @@ constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 5120;
+constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1382400; // 720p
+constexpr int32_t VIDEO_MAX_BUFFER_SIZE = 3110400; // 1080p
 constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 1920;
@@ -59,8 +60,10 @@ constexpr uint32_t DEFAULT_TRY_REQ_TIME = 10;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 64;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
+#ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
 constexpr char DUMP_PATH[] = "/data/misc/hevcdecoderdump";
+#endif
 constexpr struct {
     const std::string_view codecName;
     const std::string_view mimeType;
@@ -147,7 +150,7 @@ HevcDecoder::~HevcDecoder()
             decInstanceIDSet_.erase(it);
         }
     }
-
+#ifdef BUILD_ENG_VERSION
     if (dumpInFile_ != nullptr) {
         dumpInFile_->close();
     }
@@ -157,6 +160,7 @@ HevcDecoder::~HevcDecoder()
     if (dumpConvertFile_ != nullptr) {
         dumpConvertFile_->close();
     }
+#endif
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
@@ -176,12 +180,15 @@ int32_t HevcDecoder::Initialize()
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
 
+#ifdef BUILD_ENG_VERSION
     OpenDumpFile();
+#endif
     state_ = State::INITIALIZED;
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
 }
 
+#ifdef BUILD_ENG_VERSION
 void HevcDecoder::OpenDumpFile()
 {
     std::string dumpModeStr = OHOS::system::GetParameter("hevcdecoder.dump", "0");
@@ -220,6 +227,7 @@ void HevcDecoder::OpenDumpFile()
         }
     }
 }
+#endif
 
 void HevcDecoder::ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal,
                                       int32_t maxVal)
@@ -644,11 +652,13 @@ int32_t HevcDecoder::GetOutputFormat(Format &format)
 
 void HevcDecoder::CalculateBufferSize()
 {
-    int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE,
-        static_cast<int32_t>(static_cast<UINT32>(stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1));
-    AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d",
-                 width_, height_, stride, inputBufferSize_);
+    if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
+        inputBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
+    } else {
+        inputBufferSize_ = VIDEO_MAX_BUFFER_SIZE;
+    }
+    AVCODEC_LOGI("width = %{public}d, height = %{public}d, Input buffer size = %{public}d",
+                 width_, height_, inputBufferSize_);
 }
 
 int32_t HevcDecoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
@@ -954,10 +964,12 @@ void HevcDecoder::SendFrame()
         hevcDecoderInputArgs_.uiTimeStamp = static_cast<UINT64>(inputAVBuffer->pts_);
     }
 
+#ifdef BUILD_ENG_VERSION
     if (dumpInFile_ && dumpInFile_->is_open() && !isSendEos_) {
         dumpInFile_->write(reinterpret_cast<char*>(inputAVBuffer->memory_->GetAddr()),
                            static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
     }
+#endif
 
     int32_t ret = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
@@ -1001,7 +1013,9 @@ int32_t HevcDecoder::DecodeFrameOnce()
         CHECK_AND_RETURN_RET_LOG(bitDepth == BIT_DEPTH8BIT || bitDepth == BIT_DEPTH10BIT, -1,
                                  "Unsupported bitDepth %{public}d", bitDepth);
         ConvertDecOutToAVFrame(bitDepth);
+#ifdef BUILD_ENG_VERSION
         DumpOutputBuffer(bitDepth);
+#endif
         auto index = codecAvailQue_->Front();
         CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
         std::shared_ptr<HBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
@@ -1058,7 +1072,9 @@ int32_t HevcDecoder::FillFrameBuffer(const std::shared_ptr<HBuffer> &frameBuffer
         bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
     }
+#ifdef BUILD_ENG_VERSION
     DumpConvertOut(surfaceInfo);
+#endif
     frameBuffer->avBuffer->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
     return ret;
@@ -1115,6 +1131,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     cachedFrame_->pts = static_cast<int64_t>(hevcDecoderOutpusArgs_.uiTimeStamp);
 }
 
+#ifdef BUILD_ENG_VERSION
 void HevcDecoder::DumpOutputBuffer(int32_t bitDepth)
 {
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
@@ -1162,6 +1179,7 @@ void HevcDecoder::DumpConvertOut(struct SurfaceInfo &surfaceInfo)
         }
     }
 }
+#endif
 
 void HevcDecoder::RenderFrame()
 {
@@ -1280,7 +1298,7 @@ int32_t HevcDecoder::RenderOutputBuffer(uint32_t index)
 
 int32_t HevcDecoder::ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface)
 {
-    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AV_ERR_OPERATE_NOT_PERMIT,
                              "Not support convert from AVBuffer Mode to Surface Mode");
     sptr<Surface> curSurface = sInfo_.surface;
     uint64_t oldId = curSurface->GetUniqueId();
@@ -1352,8 +1370,10 @@ int32_t HevcDecoder::AttachToNewSurface(const sptr<Surface> &newSurface)
 int32_t HevcDecoder::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED ||
-        state_ == State::FLUSHED || state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG(state_ != State::UNINITIALIZED, AV_ERR_INVALID_VAL,
+                             "set output surface fail: not initialized or configured");
+    CHECK_AND_RETURN_RET_LOG((state_ == State::CONFIGURED || state_ == State::FLUSHED ||
+        state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
         "set output surface fail: state %{public}d not support set output surface",
         static_cast<int32_t>(state_.load()));
     if (surface == nullptr || surface->IsConsumer()) {

@@ -21,6 +21,7 @@
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
+#include "syspara/parameter.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,9 @@ constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
 constexpr int32_t LOOP_TIMES = 5;
+constexpr int32_t MAX_LEN = 128;
+const std::string USER_AGENT = "User-Agent";
+const std::string DISPLAYVERSION = "const.product.software.version";
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -129,12 +133,12 @@ int DownloadRequest::GetRetryTimes() const
     return retryTimes_;
 }
 
-NetworkClientErrorCode DownloadRequest::GetClientError() const
+int32_t DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetworkServerErrorCode DownloadRequest::GetServerError() const
+int32_t DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -198,8 +202,11 @@ uint32_t DownloadRequest::GetBitRate() const
         return 0;
     }
     int64_t timeGap = downloadDoneTime_ - downloadStartTime_;
-    uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ / timeGap * 1000 *
-                       1 * 8); // 1000:ms to sec 1:weight 8:byte to bit
+    if (timeGap == 0) {
+        return 0;
+    }
+    uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ * 1000 *
+                        1 * 8 / timeGap); // 1000:ms to sec 1:weight 8:byte to bit
     return bitRate;
 }
 
@@ -388,7 +395,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I(PUBLIC_LOG_S " Retry Begin, url : " PUBLIC_LOG_S, name_.c_str(), request->url_.c_str());
+        MEDIA_LOG_I("Retry Begin");
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
         requestQue_->SetActive(false, false);
     }
@@ -413,11 +420,35 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     return true;
 }
 
+std::string GetSystemParam(const std::string &key)
+{
+    char value[MAX_LEN] = {0};
+    int32_t ret = GetParameter(key.c_str(), "", value, MAX_LEN);
+    if (ret < 0) {
+        return "";
+    }
+    return std::string(value);
+}
+
+std::string GetUserAgent()
+{
+    std::string displayVersion = GetSystemParam(DISPLAYVERSION);
+    std::string userAgent = " AVPlayerLib " + displayVersion;
+    return userAgent;
+}
+
 bool Downloader::BeginDownload()
 {
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
+
+    if (currentRequest_->httpHeader_.count(USER_AGENT) <= 0) {
+        currentRequest_->httpHeader_[USER_AGENT] = GetUserAgent();
+        httpHeader[USER_AGENT] = GetUserAgent();
+        MEDIA_LOG_I("Set default UA.");
+    }
+    
     int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
@@ -479,7 +510,7 @@ void Downloader::RequestData()
     sourceInfo.httpHeader = currentRequest_->httpHeader_;
     sourceInfo.timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
 
-    auto handleResponseCb = [this](NetworkClientErrorCode clientCode, NetworkServerErrorCode serverCode, Status ret) {
+    auto handleResponseCb = [this](int32_t clientCode, int32_t serverCode, Status ret) {
         currentRequest_->clientError_ = clientCode;
         currentRequest_->serverError_ = serverCode;
         if (isDestructor_) {
@@ -534,8 +565,7 @@ void Downloader::HandleRetOK()
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
-        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64 " url: " PUBLIC_LOG_S,
-            currentRequest_->startPos_, currentRequest_->url_.c_str());
+        MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();
         return;

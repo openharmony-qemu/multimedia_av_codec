@@ -172,7 +172,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
     httpSourcePlugin->GetBitRates(bitRates);
     httpSourcePlugin->GetSize(size);
     httpSourcePlugin->GetSeekable();
-    httpSourcePlugin->SetCurrentBitRate(10);
+    httpSourcePlugin->SetCurrentBitRate(10, 0);
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     Plugins::Callback* sourceCallback = new SourceCallback();
     httpSourcePlugin->SetSource(source);
@@ -185,7 +185,7 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
     httpSourcePlugin->SelectBitRate(10);
     httpSourcePlugin->GetBitRates(bitRates);
     httpSourcePlugin->SetDemuxerState(0);
-    httpSourcePlugin->SetCurrentBitRate(10);
+    httpSourcePlugin->SetCurrentBitRate(10, 0);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)

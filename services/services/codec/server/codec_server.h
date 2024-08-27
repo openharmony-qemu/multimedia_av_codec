@@ -172,7 +172,7 @@ private:
     int32_t GetPostProcessingOutputFormat(Format& format);
     int32_t ReleaseOutputBufferOfPostProcessing(uint32_t index, bool render);
     int32_t PushDecodedBufferInfo(uint32_t index, std::shared_ptr<AVBuffer> buffer);
-    void StartPostProcessingTask();
+    int32_t StartPostProcessingTask();
     void PostProcessingTask();
     void DeactivatePostProcessingQueue();
     void CleanPostProcessingResource();
@@ -186,9 +186,9 @@ private:
         std::shared_ptr<AVBuffer> buffer;
     };
     using DecodedBufferInfoQueue = LockFreeQueue<std::shared_ptr<DecodedBufferInfo>, decodedBufferInfoQueueSize_>;
-    std::shared_ptr<DecodedBufferInfoQueue> decodedBufferInfoQueue_;
-    std::shared_ptr<DecodedBufferInfoQueue> postProcessingInputBufferInfoQueue_;
-    std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_;
+    std::shared_ptr<DecodedBufferInfoQueue> decodedBufferInfoQueue_{nullptr};
+    std::shared_ptr<DecodedBufferInfoQueue> postProcessingInputBufferInfoQueue_{nullptr};
+    std::shared_ptr<DecodedBufferInfoQueue> postProcessingOutputBufferInfoQueue_{nullptr};
     std::unique_ptr<TaskThread> postProcessingTask_{nullptr};
     Format outputFormatChanged_;
 };

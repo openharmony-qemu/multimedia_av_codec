@@ -62,7 +62,7 @@ public:
     StatusCallbackFunc GetStatusCallbackFunc();
     void OnWriteBuffer(uint32_t len);
     void DownloadReport();
-    Status SetCurrentBitRate(int32_t bitRate) override;
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
     void SetAppUid(int32_t appUid) override;
 

@@ -563,7 +563,8 @@ bool DecoderSurfaceFilter::AcquireNextRenderBuffer(bool byIdx, uint32_t &index, 
             std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
             RenderNextOutput(nextTask.first, nextTask.second);
         }
-        index = static_cast<int32_t>(task.first);
+        FALSE_RETURN_V(task.first >= 0, false);
+        index = static_cast<uint32_t>(task.first);
         outBuffer = task.second;
         return true;
     }
@@ -578,7 +579,9 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
 {
     if (render && !isRenderStarted_.load() && !isInSeekContinous_) {
         isRenderStarted_ = true;
-        eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
+        }
     }
     if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
         (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
@@ -673,7 +676,6 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         outputBufferMap_.insert(std::make_pair(index, outputBuffer));
         std::unique_lock<std::mutex> draggingLock(draggingMutex_);
         if (videoFrameReadyCallback_ != nullptr) {
-            lock.unlock(); // unlock for videoFrameReadyCallback_->ConsumeVideoFrame may block
             MEDIA_LOG_D("[drag_debug]DrainOutputBuffer2 dts: " PUBLIC_LOG_D64 ", pts: " PUBLIC_LOG_D64
                         " bufferIdx: " PUBLIC_LOG_D32,
                         outputBuffer->dts_, outputBuffer->pts_, index);

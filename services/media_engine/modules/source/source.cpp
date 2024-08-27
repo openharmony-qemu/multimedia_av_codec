@@ -178,14 +178,14 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
-Status Source::SetCurrentBitRate(int32_t bitRate)
+Status Source::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("SetCurrentBitRate failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    return plugin_->SetCurrentBitRate(bitRate);
+    return plugin_->SetCurrentBitRate(bitRate, streamID);
 }
 
 Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
@@ -426,7 +426,7 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
         protocol_.append("stream");
         uri_.append("stream://");
     }
-    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S ", uri: %{private}s", protocol_.c_str(), uri_.c_str());
+    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S, protocol_.c_str());
     return ret;
 }
 

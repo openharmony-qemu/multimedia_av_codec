@@ -68,4 +68,8 @@ ohos_shared_library("hevc_decoder") {
 
   subsystem_name = "multimedia"
   part_name = "av_codec"
+
+  if (build_variant != "user") {
+    defines += [ "BUILD_ENG_VERSION" ]
+  }
 }

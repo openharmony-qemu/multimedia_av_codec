@@ -13,7 +13,15 @@
  * limitations under the License.
  */
 
+#include <sys/timeb.h>
+#include <unordered_map>
 #include "muxer_filter_unit_test.h"
+#include "muxer_filter.h"
+#include "common/log.h"
+#include "filter/filter_factory.h"
+#include "muxer/media_muxer.h"
+#include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -38,13 +46,194 @@ void MuxerFilterUnitTest::TearDown(void)
 }
 
 /**
- * @tc.name: SurfaceDecoderAdapter_Init_0100
- * @tc.desc: Init
+ * @tc.name: MuxerFilter_GetCurrentPtsMs_0100
+ * @tc.desc: GetCurrentPtsMs
  * @tc.type: FUNC
  */
-HWTEST_F(MuxerFilterUnitTest, SurfaceDecoderAdapter_Init_0100, TestSize.Level1)
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_GetCurrentPtsMs_0100, TestSize.Level1)
 {
-    ASSERT_NE(muxerFilter_, nullptr);
+    muxerFilter_->SetOutputParameter(0, 0, 0, 0);
+    muxerFilter_->lastVideoPts_ = 1000;
+    EXPECT_EQ(muxerFilter_->GetCurrentPtsMs(), muxerFilter_->lastVideoPts_ / 1000);
+    muxerFilter_->lastVideoPts_ = 0;
+    muxerFilter_->lastAudioPts_ = 1000;
+    EXPECT_EQ(muxerFilter_->GetCurrentPtsMs(), muxerFilter_->lastAudioPts_ / 1000);
+}
+
+/**
+ * @tc.name: MuxerFilter_DoStart_0100
+ * @tc.desc: DoStart
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStart_0100, TestSize.Level1)
+{
+    muxerFilter_->startCount_ = 0;
+    muxerFilter_->preFilterCount_ = 1;
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    muxerFilter_->DoStart();
+    muxerFilter_->startCount_ = 0;
+    muxerFilter_->preFilterCount_ = 0;
+    EXPECT_EQ(muxerFilter_->DoStart(), Status::OK);
+}
+
+/**
+ * @tc.name: MuxerFilter_DoStop_0100
+ * @tc.desc: DoStop
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStop_0100, TestSize.Level1)
+{
+    muxerFilter_->stopCount_ = 0;
+    muxerFilter_->preFilterCount_ = 1;
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
+    muxerFilter_->stopCount_ = 0;
+    muxerFilter_->preFilterCount_ = 0;
+    muxerFilter_->DoStop();
+    muxerFilter_->stopCount_ = 0;
+    muxerFilter_->preFilterCount_ = 1;
+    EXPECT_EQ(muxerFilter_->DoStop(), Status::OK);
+}
+
+/**
+ * @tc.name: MuxerFilter_SetUserMeta_0100
+ * @tc.desc: SetUserMeta
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetUserMeta_0100, TestSize.Level1)
+{
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    muxerFilter_->SetUserMeta(userMeta);
+    EXPECT_NE(muxerFilter_->mediaMuxer_->SetUserMeta(userMeta), Status::OK);
+}
+
+/**
+ * @tc.name: MuxerFilter_OnLinked_0100
+ * @tc.desc: OnLinked
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnLinked_0100, TestSize.Level1)
+{
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    std::shared_ptr<FilterLinkCallback> callback = std::make_shared<MyFilterLinkCallback>();
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->OnLinked(streamType, meta, callback);
+    EXPECT_NE(muxerFilter_->OnLinked(streamType, meta, callback), Status::OK);
+}
+
+/**
+ * @tc.name: MuxerFilter_OnBufferFilled_0100
+ * @tc.desc: OnBufferFilled
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_0100, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->isTransCoderMode = false;
+    muxerFilter_->preFilterCount_ = 0;
+    inputBuffer->pts_ = 3000000000;
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(inputBuffer->flag_, 0);
+}
+
+/**
+ * @tc.name: MuxerFilter_OnTransCoderBufferFilled_0100
+ * @tc.desc: OnTransCoderBufferFilled
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnTransCoderBufferFilled_0100, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    inputBuffer->flag_ = 1;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(muxerFilter_->videoIsEos, true);
+    streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(muxerFilter_->audioIsEos, true);
+}
+
+/**
+ * @tc.name: MuxerFilter_OnTransCoderBufferFilled_0200
+ * @tc.desc: OnTransCoderBufferFilled
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnTransCoderBufferFilled_0200, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->eosCount_ = 0;
+    muxerFilter_->preFilterCount_ = 0;
+    inputBuffer->flag_ = 0;
+    muxerFilter_->videoIsEos = true;
+    muxerFilter_->audioIsEos = true;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    muxerFilter_->lastAudioPts_ = 1;
+    inputBuffer->pts_ = 0;
+    muxerFilter_->videoIsEos = true;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(inputBuffer->pts_, muxerFilter_->lastAudioPts_);
+    inputBuffer->pts_ = 1000;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(inputBuffer->pts_, muxerFilter_->lastAudioPts_);
+}
+
+/**
+ * @tc.name: MuxerFilter_OnTransCoderBufferFilled_0300
+ * @tc.desc: OnTransCoderBufferFilled
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnTransCoderBufferFilled_0300, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->eosCount_ = 0;
+    muxerFilter_->preFilterCount_ = 0;
+    inputBuffer->flag_ = 0;
+    muxerFilter_->videoIsEos = true;
+    muxerFilter_->audioIsEos = true;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(muxerFilter_->lastVideoPts_, inputBuffer->pts_);
+}
+
+/**
+ * @tc.name: MuxerFilter_OnTransCoderBufferFilled_0400
+ * @tc.desc: OnTransCoderBufferFilled
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnTransCoderBufferFilled_0400, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->eosCount_ = 0;
+    muxerFilter_->preFilterCount_ = 0;
+    inputBuffer->flag_ = 1;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    streamType = StreamType::STREAMTYPE_MAX;
+    muxerFilter_->OnTransCoderBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(muxerFilter_->videoIsEos, true);
 }
 }  // namespace Pipeline
 }  // namespace Media

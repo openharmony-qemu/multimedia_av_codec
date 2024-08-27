@@ -245,7 +245,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0200, TestSize.Level1)
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator);
     size_t bufferSize = 1024;
-    audioCaptureModule_->Read(buffer, bufferSize);
+    Status ret = audioCaptureModule_->Read(buffer, bufferSize);
+    EXPECT_NE(ret, Status::OK);
 }
 HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0300, TestSize.Level1)
 {
@@ -254,7 +255,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0300, TestSize.Level1)
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator);
     buffer->meta_ = nullptr;
     size_t bufferSize = 1024;
-    audioCaptureModule_->Read(buffer, bufferSize);
+    Status ret = audioCaptureModule_->Read(buffer, bufferSize);
+    EXPECT_NE(ret, Status::OK);
 }
 HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0400, TestSize.Level1)
 {
@@ -439,7 +441,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0100, TestSize.Level1)
     audioCaptureFormat->Set<Tag::AUDIO_CHANNEL_COUNT>(channel_);
     audioCaptureModule_->SetParameter(audioCaptureFormat);
     audioCaptureFormat->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_S16LE);
-    audioCaptureModule_->SetParameter(audioCaptureFormat);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureFormat);
+    EXPECT_EQ(ret, Status::OK);
 }
 /**
  * @tc.name: AudioSetParameter_0200
@@ -450,7 +453,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0200, TestSize.Level1)
 {
     std::shared_ptr<Meta> audioCaptureFormat = std::make_shared<Meta>();
     audioCaptureFormat->Set<Tag::AUDIO_SAMPLE_FORMAT>(Plugins::AudioSampleFormat::SAMPLE_F32P);
-    audioCaptureModule_->SetParameter(audioCaptureFormat);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureFormat);
+    EXPECT_NE(ret, Status::OK);
 }
 /**
  * @tc.name: AudioSetParameter_0300
@@ -461,7 +465,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioSetParameter_0300, TestSize.Level1)
 {
     int32_t channel = 3;
     audioCaptureParameter_->Set<Tag::AUDIO_CHANNEL_COUNT>(channel);
-    audioCaptureModule_->SetParameter(audioCaptureParameter_);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureParameter_);
+    EXPECT_NE(ret, Status::OK);
 }
 /**
  * @tc.name: AudioGetParameter_0100
