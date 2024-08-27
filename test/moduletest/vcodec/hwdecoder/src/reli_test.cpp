@@ -74,7 +74,7 @@ protected:
         "/data/test/media/360p_4.h264",  "/data/test/media/360p_5.h264",
         "/data/test/media/360p_6.h264",  "/data/test/media/360p_7.h264",
         "/data/test/media/360p_8.h264",  "/data/test/media/360p_9.h264",
-        "/data/test/media/360p_10.h264", "/data/test/media/360p_11.h264",
+        "/data/test/media/360p_10.h264",  "/data/test/media/360p_11.h264",
         "/data/test/media/360p_12.h264", "/data/test/media/360p_13.h264",
         "/data/test/media/360p_14.h264", "/data/test/media/360p_15.h264"};
     const char *resChangeArray[16] = {
@@ -83,7 +83,7 @@ protected:
         "/data/test/media/resChange_4.h264",  "/data/test/media/resChange_5.h264",
         "/data/test/media/resChange_6.h264",  "/data/test/media/resChange_7.h264",
         "/data/test/media/resChange_8.h264",  "/data/test/media/resChange_9.h264",
-        "/data/test/media/resChange_10.h264", "/data/test/media/resChange_11.h264",
+        "/data/test/media/resChange_10.h264",  "/data/test/media/resChange_11.h264",
         "/data/test/media/resChange_12.h264", "/data/test/media/resChange_13.h264",
         "/data/test/media/resChange_14.h264", "/data/test/media/resChange_15.h264"};
     const char *hdr2sdrArray[30] = {
