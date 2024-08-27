@@ -97,6 +97,7 @@ int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFr
         AVCODEC_LOGE("Frame null pointer");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
+
     outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = resamplePara_.sampleRate;

@@ -155,6 +155,7 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
         MEDIA_LOG_E("Frame null pointer");
         return Status::ERROR_NO_MEMORY;
     }
+
     outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = static_cast<int>(resamplePara_.sampleRate);

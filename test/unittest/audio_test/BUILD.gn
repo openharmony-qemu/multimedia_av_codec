@@ -363,6 +363,7 @@ ohos_unittest("av_audio_media_codec_unit_test") {
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/drm_decryptor",
+    "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/media_engine/modules/media_codec",
   ]
