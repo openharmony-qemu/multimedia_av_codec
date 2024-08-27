@@ -165,6 +165,7 @@ Status AudioMp3EncoderPlugin::Init()
         AVCODEC_LOGE("AudioMp3EncoderPlugin LAME initialization error");
         return Status::ERROR_UNKNOWN;
     }
+
     if (lameMp3Buffer == nullptr) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin lameMp3Buffer allocation failed");
         return Status::ERROR_UNKNOWN;

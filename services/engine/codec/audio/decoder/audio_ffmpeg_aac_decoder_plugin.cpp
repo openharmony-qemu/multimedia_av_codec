@@ -47,9 +47,10 @@ AudioFFMpegAacDecoderPlugin::AudioFFMpegAacDecoderPlugin()
 
 AudioFFMpegAacDecoderPlugin::~AudioFFMpegAacDecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 bool AudioFFMpegAacDecoderPlugin::CheckAdts(const Format &format)

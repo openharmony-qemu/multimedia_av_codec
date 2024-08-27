@@ -44,7 +44,7 @@ AudioOpusDecoderPlugin::AudioOpusDecoderPlugin()
     : PluginCodecPtr(nullptr), fbytes(nullptr), len(-1), codeData(nullptr), channels(-1), sampleRate(-1)
 {
     ret = 0;
-    void *handle = dlopen("libav_codec_ext_base.z.so", 1);
+    handle = dlopen("libav_codec_ext_base.z.so", 1);
     if (!handle) {
         ret = -1;
         AVCODEC_LOGE("AudioOpusDecoderPlugin dlopen error, check .so file exist");
@@ -185,6 +185,10 @@ int32_t AudioOpusDecoderPlugin::Reset()
 
 int32_t AudioOpusDecoderPlugin::Release()
 {
+    if (handle) {
+        dlclose(handle);
+        handle = nullptr;
+    }
     std::lock_guard<std::mutex> lock(avMutext_);
     CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_OK,
         "AudioOpusDecoderPlugin Release dlopen or dlsym error");
