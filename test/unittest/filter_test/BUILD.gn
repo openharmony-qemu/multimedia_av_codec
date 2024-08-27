@@ -130,7 +130,7 @@ ohos_unittest("filter_unit_test") {
     "safwk:system_ability_fwk",
   ]
 
-external_deps += [ "video_processing_engine:videoprocessingengine" ]
+  external_deps += [ "video_processing_engine:videoprocessingengine" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
