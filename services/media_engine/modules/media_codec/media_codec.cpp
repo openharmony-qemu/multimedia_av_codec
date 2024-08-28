@@ -20,6 +20,12 @@
 #include "osal/utils/dump_buffer.h"
 #include "avcodec_trace.h"
 #include "plugin/plugin_manager_v2.h"
+#include "common/event.h"
+#include "avcodec_errors.h"
+#include "common/media_core.h"
+#ifdef SUPPORT_DRM
+#include "i_keysession_service.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_AUDIO, "MediaCodec" };
