@@ -1139,9 +1139,12 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
         case Status::ERROR_AGAIN:
             MEDIA_LOG_I("Read data not enough, read again.");
-            ioContext->retry = true;
-            ioContext->offset += dataSize;
-            ret = dataSize;
+            if (dataSize == 0) {
+                ioContext->retry = true;
+            } else {
+                ioContext->offset += dataSize;
+                ret = dataSize;
+            }
             break;
         case Status::END_OF_STREAM:
             MEDIA_LOG_I("Read at end of file.");
@@ -1150,7 +1153,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
         default:
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
-            ioContext->retry = true;
             break;
     }
 
