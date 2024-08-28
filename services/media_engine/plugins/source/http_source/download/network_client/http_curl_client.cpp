@@ -23,7 +23,6 @@
 #include "securec.h"
 #include "net_conn_client.h"
 #include <fcntl.h>
-#include <errono.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -309,7 +308,7 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
     }
 }
 
-static curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
+curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
                                                         curlsocktype purpose,
                                                         struct curl_sockaddr *address)
 {
