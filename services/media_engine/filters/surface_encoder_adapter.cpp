@@ -541,7 +541,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (isTransCoderMode) {
         if (buffer->pts_ >= eosPts_ && codecServer_) {
-            codecServer_->NotifyEos();   
+            codecServer_->NotifyEos();
         }
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
