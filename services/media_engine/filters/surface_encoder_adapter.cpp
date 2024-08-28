@@ -210,6 +210,9 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
             return Status::ERROR_UNKNOWN;
         }
     }
+    if (isTransCoderMode) {
+        format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
+    }
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
@@ -438,14 +441,19 @@ Status SurfaceEncoderAdapter::Release()
     }
 }
 
-Status SurfaceEncoderAdapter::NotifyEos()
+Status SurfaceEncoderAdapter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
     if (!codecServer_) {
         SetFaultEvent("SurfaceEncoderAdapter::NotifyEos, CodecServer is null");
         return Status::ERROR_UNKNOWN;
     }
-    int32_t ret = codecServer_->NotifyEos();
+    int32_t ret = 0;
+    MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, pts);
+    eosPts_ = pts;
+    if (!isTransCoderMode) {
+        ret = codecServer_->NotifyEos();
+    }
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -532,6 +540,9 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (isTransCoderMode) {
+        if (buffer->pts_ >= eosPts_ && codecServer_) {
+            codecServer_->NotifyEos();   
+        }
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
     }
