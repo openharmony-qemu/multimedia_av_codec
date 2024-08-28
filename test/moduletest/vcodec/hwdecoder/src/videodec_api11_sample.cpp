@@ -93,7 +93,7 @@ VDecAPI11Sample::~VDecAPI11Sample()
 
 void VdecAPI11Error(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
-    if (errorCode == AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION) {
+    if ((errorCode == AV_ERR_VIDEO_UNSUPPORTED_COLOR_SPACE_CONVERSION) || (errorCode == AV_ERR_UNSUPPORT)) {
         dec_sample->isRunning_.store(false);
         dec_sample->signal_->inCond_.notify_all();
         dec_sample->signal_->outCond_.notify_all();

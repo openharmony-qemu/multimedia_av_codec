@@ -55,7 +55,7 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"), "", TaskType::SINGLETON);
+    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
     task_->RegisterJob([this] { return HttpMonitorLoop(); });
     task_->Start();
 }
@@ -301,6 +301,15 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
         MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
         downloader_->GetDownloadInfo(downloadInfo);
     }
+}
+
+std::pair<int32_t, int32_t> DownloadMonitor::GetDownloadInfo()
+{
+    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+    if (downloader_ == nullptr) {
+        return std::make_pair(0, 0);
+    }
+    return downloader_->GetDownloadInfo();
 }
 
 void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)

@@ -29,6 +29,7 @@ namespace HttpPlugin {
 constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
+
 static bool isNumber(const std::string& str)
 {
     return str.find_first_not_of("0123456789") == std::string::npos;

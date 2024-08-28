@@ -51,11 +51,11 @@ void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::str
 HlsPlayListDownloader::~HlsPlayListDownloader()
 {
     MEDIA_LOG_I("~HlsPlayListDownloader in");
-    if (updateTask_ != nullptr) {
-        updateTask_->Stop();
-    }
     if (downloader_ != nullptr) {
         downloader_ = nullptr;
+    }
+    if (updateTask_ != nullptr) {
+        updateTask_->Stop();
     }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
 }
@@ -122,7 +122,7 @@ void HlsPlayListDownloader::NotifyListChange()
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
         while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
-            Task::SleepInTask(10); // 10 ms
+            Task::SleepInTask(10); // sleep 10ms
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);
