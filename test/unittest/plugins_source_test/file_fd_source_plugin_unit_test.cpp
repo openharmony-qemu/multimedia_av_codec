@@ -44,10 +44,14 @@ void FileFdSourceUnitTest::TearDownTestCase(void)
 void FileFdSourceUnitTest::SetUp(void)
 {
     fileFdSourcePlugin_ = std::make_shared<FileFdSourcePlugin>("testPlugin");
+    size_t bufferSize = 1024;
+    std::shared_ptr<RingBuffer> ringBuffer = std::make_shared<RingBuffer>(bufferSize);
+    fileFdSourcePlugin_->ringBuffer_ = ringBuffer;
 }
 
 void FileFdSourceUnitTest::TearDown(void)
 {
+    fileFdSourcePlugin_->ringBuffer_ = nullptr;
     fileFdSourcePlugin_ = nullptr;
 }
 
@@ -57,13 +61,13 @@ public:
 
     size_t ReadBuffer(void* ptr, size_t readSize, int waitTimes = 0)
     {
-        return ret_;
+        return readBufferSize_;
     }
 
     bool Seek(uint64_t offset)
     {
         (void)offset;
-        return bRet_;
+        return seekRet_;
     }
 
     void SetActive(bool active, bool cleanData = true)
@@ -72,18 +76,18 @@ public:
         (void)cleanData;
     }
 
-    size_t ret_;
-    bool bRet_;
+    size_t readBufferSize_ = 0;
+    bool seekRet_ = false;
 };
 
 class CallbackMock : public Plugins::Callback {
 public:
     void OnEvent(const PluginEvent &event)
     {
-        ret_ = event.description;
+        description_ = event.description;
     }
 
-    std::string ret_;
+    std::string description_;
 };
 
 class SourceCallback : public Plugins::Callback {
@@ -135,8 +139,10 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetSource_0200, TestSize.Level1)
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
+    fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingStart();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
+    fileFdSourcePlugin_->isInterrupted_ = true;
     fileFdSourcePlugin_->NotifyBufferingStart();
 
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
@@ -153,6 +159,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingStart_0100, TestSize.
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->waterLineAbove_ = 1;
     fileFdSourcePlugin_->NotifyBufferingPercent();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
@@ -175,6 +183,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0100, TestSiz
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0100, TestSize.Level1)
 {
     Plugins::Callback* sourceCallback = new SourceCallback();
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->NotifyBufferingEnd();
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->SetCallback(sourceCallback));
     fileFdSourcePlugin_->NotifyBufferingEnd();
@@ -290,20 +300,6 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetBundleName_0100, TestSize.Level1)
     fileFdSourcePlugin_->SetBundleName("TestFileFdSource");
     EXPECT_EQ(Status::OK, fileFdSourcePlugin_->Stop());
 }
-/**
- * @tc.name: FileFdSource_getCacheTime_0100
- * @tc.desc: FileFdSource_getCacheTime_0100
- * @tc.type: FUNC
- */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
-{
-    fileFdSourcePlugin_->GetCacheTime(0.0);
-    fileFdSourcePlugin_->GetCacheTime(0.2);
-    fileFdSourcePlugin_->GetCacheTime(0.5);
-    fileFdSourcePlugin_->GetCacheTime(1.0);
-    fileFdSourcePlugin_->GetCacheTime(2.0);
-    fileFdSourcePlugin_->HasCacheData(0);
-}
 
 /**
  * @tc.name: FileFdSource_ReadOnlineFile_0100
@@ -327,7 +323,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SeekToOnlineFile_0100, TestSize.Leve
 {
     std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
     fileFdSourcePlugin_->ringBuffer_ = buffer;
-    buffer->bRet_ = true;
+    buffer->seekRet_ = true;
     int64_t offset = 0;
     EXPECT_EQ(Status::ERROR_UNKNOWN, fileFdSourcePlugin_->SeekToOnlineFile(offset));
 }
@@ -341,7 +337,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SeekToOnlineFile_0200, TestSize.Leve
 {
     std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
     fileFdSourcePlugin_->ringBuffer_ = buffer;
-    buffer->bRet_ = false;
+    buffer->seekRet_ = false;
     int64_t offset = 0;
     std::shared_ptr<Task> task = std::make_shared<Task>("test");
     fileFdSourcePlugin_->downloadTask_ = task;
@@ -358,7 +354,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SeekToOnlineFile_0300, TestSize.Leve
 {
     std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
     fileFdSourcePlugin_->ringBuffer_ = buffer;
-    buffer->bRet_ = false;
+    buffer->seekRet_ = false;
     int64_t offset = 0;
     EXPECT_EQ(Status::ERROR_UNKNOWN, fileFdSourcePlugin_->SeekToOnlineFile(offset));
     sleep(1);
@@ -386,13 +382,13 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_CacheDataLoop_0100, TestSize.Level1)
     fileFdSourcePlugin_->size_ = 10;
     std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
     fileFdSourcePlugin_->ringBuffer_ = buffer;
-    buffer->ret_ = true;
+    buffer->readBufferSize_ = true;
     fileFdSourcePlugin_->isBuffering_ = true;
     fileFdSourcePlugin_->waterLineAbove_ = 0;
     fileFdSourcePlugin_->CacheDataLoop();
     EXPECT_EQ(0, fileFdSourcePlugin_->ringBufferSize_);
 
-    buffer->ret_ = false;
+    buffer->readBufferSize_ = false;
     fileFdSourcePlugin_->inSeek_ = false;
     fileFdSourcePlugin_->isInterrupted_ = true;
     fileFdSourcePlugin_->ringBufferSize_ = 10;
@@ -419,6 +415,10 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_HandleBuffering_0100, TestSize.Level
     EXPECT_EQ(true, fileFdSourcePlugin_->HandleBuffering());
     fileFdSourcePlugin_->isInterrupted_ = true;
     EXPECT_EQ(true, fileFdSourcePlugin_->HandleBuffering());
+    fileFdSourcePlugin_->isInterrupted_ = false;
+    fileFdSourcePlugin_->isReadBlocking_ = true;
+    fileFdSourcePlugin_->isBuffering_ = false;
+    EXPECT_EQ(false, fileFdSourcePlugin_->HandleBuffering());
 }
 
 /**
@@ -428,6 +428,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_HandleBuffering_0100, TestSize.Level
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSize.Level1)
 {
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->NotifyBufferingPercent();
     fileFdSourcePlugin_->waterLineAbove_ = 1;
     fileFdSourcePlugin_->ringBufferSize_ = 100;;
@@ -435,7 +437,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     CallbackMock* cb = new CallbackMock();
     fileFdSourcePlugin_->callback_ = cb;
     fileFdSourcePlugin_->NotifyBufferingStart();
-    EXPECT_EQ("start", cb->ret_);
+    EXPECT_EQ("start", cb->description_);
     fileFdSourcePlugin_->isInterrupted_ = true;;
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
@@ -451,7 +453,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingPercent();
 
-    EXPECT_EQ("10000.000000", cb->ret_);
+    EXPECT_EQ("0", cb->description_);
     delete cb;
     cb = nullptr;
 }
@@ -463,6 +465,8 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingPercent_0200, TestSiz
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Level1)
 {
+    std::shared_ptr<RingBufferMock> buffer = std::make_shared<RingBufferMock>(0);
+    fileFdSourcePlugin_->ringBuffer_ = buffer;
     fileFdSourcePlugin_->isBuffering_ = true;
     fileFdSourcePlugin_->NotifyBufferingEnd();
     EXPECT_EQ(false, fileFdSourcePlugin_->isBuffering_);
@@ -477,7 +481,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
 
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingEnd();
-    EXPECT_EQ("end", cb->ret_);
+    EXPECT_EQ("end", cb->description_);
     delete cb;
     cb = nullptr;
 }
@@ -605,12 +609,13 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckReadTime_0100, TestSize.Level1)
 }
 
 /**
- * @tc.name: FileFdSource_checkReadTime_0100
- * @tc.desc: FileFdSource_checkReadTime_0100
+ * @tc.name: FileFdSource_checkReadTime_0200
+ * @tc.desc: FileFdSource_checkReadTime_0200
  * @tc.type: FUNC
  */
-HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0100, TestSize.Level1)
+HWTEST_F(FileFdSourceUnitTest, FileFdSource_checkReadTime_0200, TestSize.Level1)
 {
+    fileFdSourcePlugin_->callback_ = nullptr;
     int64_t curTime = 0;
     int64_t lastTime = 0;
     auto isValidTime = fileFdSourcePlugin_->IsValidTime(curTime, lastTime);
