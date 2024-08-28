@@ -74,7 +74,7 @@ public:
     {
         return 0;
     }
-    int32_t NotifyEos()
+    int32_t NotifyEos(int64_t pts)
     {
         return 0;
     }
