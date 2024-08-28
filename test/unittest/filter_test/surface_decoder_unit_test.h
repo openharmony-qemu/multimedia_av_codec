@@ -137,7 +137,7 @@ public:
     {
         return;
     }
-    void OnBufferEos()
+    void OnBufferEos(int64_t pts)
     {
         return;
     }
