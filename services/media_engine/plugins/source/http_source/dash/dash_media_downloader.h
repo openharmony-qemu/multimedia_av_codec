@@ -66,6 +66,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetDemuxerState(int32_t streamId) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetBufferSize() override;
 
 private:
     void ReceiveMpdStreamInitEvent();

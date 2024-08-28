@@ -1054,6 +1054,17 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     playbackInfo.isDownloading = DownloadFinishStateTmp ? false : true;
 }
 
+size_t DashMediaDownloader::GetBufferSize()
+{
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
+        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    if (segmentDownloader == nullptr) {
+        MEDIA_LOG_W("GetBufferSize can not get segmentDownloader.");
+        return 0;
+    }
+    return segmentDownloader->GetRingBufferSize();
+}
+
 }
 }
 }

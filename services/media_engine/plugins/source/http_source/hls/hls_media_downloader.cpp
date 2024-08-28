@@ -380,8 +380,8 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         }
         if (CheckReadTimeOut()) {
             readDataInfo.realReadLength_ = 0;
-            MEDIA_LOG_I("HlsMediaDownloader: read time out, eos");
-            return Status::END_OF_STREAM;
+            MEDIA_LOG_I("HlsMediaDownloader: read time out, error again.");
+            return Status::ERROR_AGAIN;
         }
         OSAL::SleepFor(READ_SLEEP_INTERVAL);  // 5
         int64_t endTime = steadyClock_.ElapsedMilliseconds();
@@ -1267,6 +1267,15 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
     }
     return DEFAULT_CACHE_TIME; // (, 0] || [2, )
 }
+
+size_t HlsMediaDownloader::GetBufferSize()
+{
+    if (buffer_) {
+        return buffer_->GetRingBufferSize();
+    }
+    return 0;
+}
+
 }
 }
 }

@@ -242,7 +242,6 @@ double M3U8::GetDuration() const
     for (auto file : files_) {
         duration += file->duration_;
     }
-
     return duration;
 }
 

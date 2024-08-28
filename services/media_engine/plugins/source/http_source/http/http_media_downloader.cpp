@@ -344,8 +344,8 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
             }
             OnClientErrorEvent();
             readDataInfo.realReadLength_ = 0;
-            MEDIA_LOG_I("HttpMediaDownloader: read time out, eos");
-            return Status::END_OF_STREAM;
+            MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
+            return Status::ERROR_AGAIN;
         }
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && buffer_->GetSize() == 0) {
@@ -359,8 +359,8 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
     }
     FALSE_RETURN_V(!isInterruptNeeded_.load(), Status::OK);
     readDataInfo.realReadLength_ = buffer_->ReadBuffer(buff, readDataInfo.wantReadLength_, 2);  // wait 2 times
-    MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
-                PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
+    MEDIA_LOG_D("ReadRingBuffer: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
+                 PUBLIC_LOG_D32, readDataInfo.wantReadLength_, readDataInfo.realReadLength_, readDataInfo.isEos_);
     return Status::OK;
 }
 
@@ -479,7 +479,7 @@ Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLengt
     OnClientErrorEvent();
     realReadLength = 0;
     MEDIA_LOG_I("DownloadErrorState, return eos");
-    return Status::END_OF_STREAM;
+    return Status::ERROR_AGAIN;
 }
 
 Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
@@ -1063,6 +1063,18 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
     waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE *
         WATER_LINE_ABOVE_LIMIT_RATIO));
     MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
+}
+
+
+size_t HlsMediaDownloader::GetBufferSize()
+{
+    if (cacheMediaBuffer_) {
+         return cacheMediaBuffer_->GetRingBufferSize();
+    } else if (buffer_) {
+        return buffer_->GetRingBufferSize();
+    } else {
+        return 0;
+    }
 }
 }
 }

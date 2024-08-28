@@ -69,6 +69,7 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetBufferSize() override;
 
 private:
     int64_t HttpMonitorLoop();
