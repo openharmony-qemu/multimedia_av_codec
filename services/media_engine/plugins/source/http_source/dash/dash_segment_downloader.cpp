@@ -370,7 +370,7 @@ void DashSegmentDownloader::CalculateBitRate(size_t fragmentSize, double duratio
         return;
     }
 
-    realTimeBitBate_ = static_cast<int64_t>(fragmentSize * BYTES_TO_BIT) / duration;
+    realTimeBitBate_ = static_cast<int64_t>(fragmentSize * BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / duration;
     MEDIA_LOG_I("CalculateBitRate streamId: " PUBLIC_LOG_D32 " realTimeBitBate: "
         PUBLIC_LOG_D64, streamId_, realTimeBitBate_);
 }
