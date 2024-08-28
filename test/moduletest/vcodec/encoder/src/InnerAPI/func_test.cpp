@@ -49,6 +49,16 @@ std::string g_codecName = "";
 std::string g_codecMimeHevc = "video/hevc";
 std::string g_codecNameHevc = "";
 
+fileInfo file_640_480_rgba{"/data/test/media/640_480.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888, 640, 480 };
+fileInfo file_1280_536_nv21{"/data/test/media/1280_536_nv21.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, 1280, 536 };
+fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1280, 720 };
+fileInfo file_1920_816_rgba{"/data/test/media/1920_816.rgba", GRAPHIC_PIXEL_FMT_RGBA_8888, 1920, 816 };
+fileInfo file_1920_1080_nv21{"/data/test/media/1920_1080_nv21.yuv", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, 1920, 1080 };
+fileInfo file_3840_2160_nv12{"/data/test/media/3840_2160_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 3840, 2160 };
+fileInfo file_1280_720_nv12_10bit{"/data/test/media/1280_720_nv12_10bit.yuv", GRAPHIC_PIXEL_FMT_YCBCR_P010, 1280, 720 };
+fileInfo file_1080_1920_nv12{"/data/test/media/1080_1920_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1080, 1920 };
+fileInfo file_1280_1280_nv12{"/data/test/media/1280_1280_nv12.yuv", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, 1280, 1280 };
+
 void HwEncInnerFuncNdkTest::SetUpTestCase()
 {
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), true, HARDWARE);
@@ -1943,5 +1953,385 @@ HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_WATERMARK_FUNC_0360, TestSize
     ASSERT_EQ(AVCS_ERR_OK, vEncSample->SetCustomBuffer(bufferConfig));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0010
+ * @tc.name      : h265 encode config 320_240 surface change 640_480 1280_720 1920_1080
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0010, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 320;
+        vEncInnerSample->DEFAULT_HEIGHT = 240;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0010.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0020
+ * @tc.name      : h265 encode config 1280_720 surface change 640_480 1280_720 1920_1080
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0020, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 1280;
+        vEncInnerSample->DEFAULT_HEIGHT = 720;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0020.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0030
+ * @tc.name      : h265 encode config 3840_2160 surface change 640_480 1280_536 1280_720 1920_816 1920_1080 3840_2160
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0030, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0030.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_536_nv21);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_816_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        vEncInnerSample->fileInfos.push_back(file_3840_2160_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0040
+ * @tc.name      : h265 encode config 1920_1080 surface change 1920_1080 1080_1920 1280_1280
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0040, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 1920;
+        vEncInnerSample->DEFAULT_HEIGHT = 1080;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0040.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        vEncInnerSample->fileInfos.push_back(file_1080_1920_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1280_1280_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0050
+ * @tc.name      : h264 encode config 320_240 surface change 640_480 1280_720 1920_1080
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0050, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 320;
+        vEncInnerSample->DEFAULT_HEIGHT = 240;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0050.h264";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0060
+ * @tc.name      : h264 encode config 1280_720 surface change 640_480 1280_720 1920_1080
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0060, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 1280;
+        vEncInnerSample->DEFAULT_HEIGHT = 720;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0060.h264";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0070
+ * @tc.name      : h264 encode config 3840_2160 surface change 640_480 1280_536 1280_720 1920_816 1920_1080 3840_2160
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0070, TestSize.Level0)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0070.h264";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1280_536_nv21);
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1920_816_rgba);
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        vEncInnerSample->fileInfos.push_back(file_3840_2160_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0080
+ * @tc.name      : h264 encode config 1920_1080 surface change 1920_1080 1080_1920 1280_1280
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0080, TestSize.Level1)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 1920;
+        vEncInnerSample->DEFAULT_HEIGHT = 1080;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0080.h264";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->fileInfos.push_back(file_1920_1080_nv21);
+        vEncInnerSample->fileInfos.push_back(file_1080_1920_nv12);
+        vEncInnerSample->fileInfos.push_back(file_1280_1280_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0090
+ * @tc.name      : config main10 set format 8bit surface send 8bit yuv
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0090, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0090.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->configMain10 = true;
+        vEncInnerSample->setFormat8Bit = true;
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0100
+ * @tc.name      : config main set format 10bit surface send 10bit yuv
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0100, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0100.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->configMain = true;
+        vEncInnerSample->setFormat10Bit = true;
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12_10bit);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0110
+ * @tc.name      : Not supported pixelFormat rgbx
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0110, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0110.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->setFormatRbgx = true;
+        vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0120
+ * @tc.name      : config main set format 8bit send 10bit yuv
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0120, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0120.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->configMain = true;
+        vEncInnerSample->setFormat8Bit = true;
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12_10bit);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0130
+ * @tc.name      : config main10 set format 10bit send 8bit yuv
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0130, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0130.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->configMain10 = true;
+        vEncInnerSample->setFormat10Bit = true;
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0140
+ * @tc.name      : config main10 set format 8bit send 10bit yuv
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0140, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0140.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->configMain10 = true;
+        vEncInnerSample->setFormat8Bit = true;
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12_10bit);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_INNER_MULTIFILE_0150
+ * @tc.name      : config main10 set format 10bit send 8bit yuv
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncInnerFuncNdkTest, VIDEO_ENCODE_INNER_MULTIFILE_0150, TestSize.Level2)
+{
+    if (!access("/system/lib64/media/", 0)) {
+        auto vEncInnerSample = make_unique<VEncNdkInnerSample>();
+        vEncInnerSample->DEFAULT_WIDTH = 3840;
+        vEncInnerSample->DEFAULT_HEIGHT = 2160;
+        vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_INNER_MULTIFILE_0150.h265";
+        vEncInnerSample->surfaceInput = true;
+        vEncInnerSample->readMultiFiles = true;
+        vEncInnerSample->configMain10 = true;
+        vEncInnerSample->setFormat10Bit = true;
+        vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->SetCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
+        ASSERT_EQ(AV_ERR_OK, vEncInnerSample->StartVideoEncoder());
+        vEncInnerSample->WaitForEOS();
+    }
 }
 } // namespace
