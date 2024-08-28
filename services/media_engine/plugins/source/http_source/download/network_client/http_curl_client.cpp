@@ -314,8 +314,7 @@ static curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
                                                         struct curl_sockaddr *address)
 {
     curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
-    if (sockfd == CURL_SOCKET_BAD)
-    {
+    if (sockfd == CURL_SOCKET_BAD) {
         return CURL_SOCKET_BAD;
     }
     int flags = fcntl(sockfd, F_GETFL, 0);
