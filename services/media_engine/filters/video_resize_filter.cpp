@@ -503,11 +503,8 @@ void VideoResizeFilter::ReleaseBuffer()
 #ifdef USE_VIDEO_PROCESSING_ENGINE
         if (videoEnhancer_) {
             for (auto &index : indexs) {
-                if (index.second == static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS)) {
-                    videoEnhancer_->ReleaseOutputBuffer(index.first, false);
-                } else {
-                    videoEnhancer_->ReleaseOutputBuffer(index.first, true);
-                }
+                bool isRender = (index.second != static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS));
+                videoEnhancer_->ReleaseOutputBuffer(index.first, isRender);
             }
         }
 #endif
