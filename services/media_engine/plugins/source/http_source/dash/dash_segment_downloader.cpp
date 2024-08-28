@@ -1079,6 +1079,11 @@ std::shared_ptr<DashInitSegment> DashSegmentDownloader::GetDashInitSegment(int32
     return segment;
 }
 
+void DashSegmentDownloader::SetAppUid(int32_t appUid)
+{
+    downloader_->SetAppUid(appUid);
+}
+
 }
 }
 }
