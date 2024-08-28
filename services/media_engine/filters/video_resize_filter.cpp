@@ -504,9 +504,9 @@ void VideoResizeFilter::ReleaseBuffer()
         if (videoEnhancer_) {
             for (auto &index : indexs) {
                 if (index.second == static_cast<uint32_t>(DETAIL_ENH_BUFFER_FLAG_EOS)) {
-                    videoEnhancer_->ReleaseOutputBuffer(index, false);
+                    videoEnhancer_->ReleaseOutputBuffer(index.first, false);
                 } else {
-                    videoEnhancer_->ReleaseOutputBuffer(index, true);
+                    videoEnhancer_->ReleaseOutputBuffer(index.first, true);
                 }
             }
         }
