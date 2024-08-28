@@ -454,7 +454,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
-            parserRefVideoStreamIdx_ = static_cast<uint32_t>(trackIndex);
+            parserRefVideoStreamIdx_ = static_cast<int32_t>(trackIndex);
         }
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");
