@@ -347,8 +347,8 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
     curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
 #endif
     SocketOwner owner = {appUid_, appUid_};
-    curl_easy_setopt(curl, CURLOPT_OPENSOCKETFUNCTION, OpensocketCallback);
-    curl_easy_setopt(curl, CURLOPT_OPENSOCKETDATA, &owner);
+    curl_easy_setopt(easyHandle_, CURLOPT_OPENSOCKETFUNCTION, OpensocketCallback);
+    curl_easy_setopt(easyHandle_, CURLOPT_OPENSOCKETDATA, &owner);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
