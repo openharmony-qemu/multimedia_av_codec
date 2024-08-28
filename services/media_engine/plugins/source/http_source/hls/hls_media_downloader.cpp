@@ -1226,7 +1226,7 @@ void HlsMediaDownloader::HandleCachedDuration()
     }
 
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(buffer_->GetSize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<uint64_t>(currentBitRate_));
+        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
