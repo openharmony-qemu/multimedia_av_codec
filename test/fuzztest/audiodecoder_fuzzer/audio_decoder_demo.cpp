@@ -181,9 +181,6 @@ bool ADecBufferDemo::InitFormat(OH_AVFormat *format)
         int32_t sampleRatetmp = 8000;
         channelCount = channelCounttmp;
         sampleRate = sampleRatetmp;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_MP3) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
