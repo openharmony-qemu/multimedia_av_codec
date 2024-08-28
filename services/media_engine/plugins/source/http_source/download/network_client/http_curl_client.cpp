@@ -309,8 +309,8 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
 }
 
 curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
-                                                        curlsocktype purpose,
-                                                        struct curl_sockaddr *address)
+                                                 curlsocktype purpose,
+                                                 struct curl_sockaddr *address)
 {
     curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
     if (sockfd == CURL_SOCKET_BAD) {
