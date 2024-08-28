@@ -356,13 +356,10 @@ int32_t DashSegmentDownloader::GetWaterLineAbove()
         } else {
             waterLineAbove = static_cast<int32_t>(DEFAULT_MIN_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
         }
-        int32_t minWaterLineAbove = 2 * PLAY_WATER_LINE;
         int32_t maxWaterLineAbove = static_cast<int32_t>(ringBufferCapcity_ / 2);
-        if (waterLineAbove > maxWaterLineAbove) {
-            waterLineAbove = maxWaterLineAbove;
-        } else if (waterLineAbove < minWaterLineAbove) {
-            waterLineAbove = minWaterLineAbove;
-        }
+        waterLineAbove = waterLineAbove > maxWaterLineAbove ? maxWaterLineAbove : waterLineAbove;
+        int32_t minWaterLineAbove = 2 * PLAY_WATER_LINE;
+        waterLineAbove = waterLineAbove < minWaterLineAbove ? minWaterLineAbove : waterLineAbove;
     }
     MEDIA_LOG_I("GetWaterLineAbove streamId: " PUBLIC_LOG_D32 " waterLineAbove: "
         PUBLIC_LOG_D32, streamId_, waterLineAbove);
