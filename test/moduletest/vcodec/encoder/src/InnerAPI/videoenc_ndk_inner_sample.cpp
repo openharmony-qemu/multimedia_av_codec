@@ -41,10 +41,10 @@ std::random_device rd;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint8_t FILE_END = -1;
 constexpr uint8_t LOOP_END = 0;
-int32_t PIC_WIDTH;
-int32_t PIC_HEIGHT;
-int32_t KEY_WIDTH;
-int32_t KEY_HEIGHT;
+int32_t g_picWidth;
+int32_t g_picHeight;
+int32_t g_keyWidth;
+int32_t g_keyHeight;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -80,12 +80,13 @@ void VEncInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 void VEncInnerCallback::OnOutputFormatChanged(const Format& format)
 {
     cout << "Format Changed" << endl;
-    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_WIDTH, PIC_WIDTH);
-    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_HEIGHT, PIC_HEIGHT);
-    format.GetIntValue(OH_MD_KEY_WIDTH, KEY_WIDTH);
-    format.GetIntValue(OH_MD_KEY_HEIGHT, KEY_HEIGHT);
-    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << PIC_WIDTH << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "
-    << PIC_HEIGHT << ", OH_MD_KEY_WIDTH: " << KEY_WIDTH << ", OH_MD_KEY_HEIGHT: " << KEY_HEIGHT << endl;
+    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_WIDTH, g_picWidth);
+    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_HEIGHT, g_picHeight);
+    format.GetIntValue(OH_MD_KEY_WIDTH, g_keyWidth);
+    format.GetIntValue(OH_MD_KEY_HEIGHT, g_keyHeight);
+    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << g_picWidth 
+    << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "<< g_picHeight << ", OH_MD_KEY_WIDTH: " << g_keyWidth
+    << ", OH_MD_KEY_HEIGHT: " << g_keyHeight << endl;
 }
 
 void VEncInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
@@ -377,14 +378,7 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
         venc_->Stop();
         return AVCS_ERR_UNKNOWN;
     }
-
-    if (!readMultiFiles) {
-        inFile_->open(INP_DIR, ios::in | ios::binary);
-        if (!inFile_->is_open()) {
-            OpenFileFail();
-        }
-    }
-
+    readMultiFilesFunc();
     if (surfaceInput) {
         inputLoop_ = make_unique<thread>(&VEncNdkInnerSample::InputFuncSurface, this);
         inputParamLoop_ = isSetParamCallback_ ? make_unique<thread>(&VEncNdkInnerSample::InputParamLoopFunc,
@@ -410,6 +404,16 @@ int32_t VEncNdkInnerSample::StartVideoEncoder()
         return AVCS_ERR_UNKNOWN;
     }
     return AVCS_ERR_OK;
+}
+
+void VEncNdkInnerSample::readMultiFilesFunc()
+{
+    if (!readMultiFiles) {
+        inFile_->open(INP_DIR, ios::in | ios::binary);
+        if (!inFile_->is_open()) {
+            OpenFileFail();
+        }
+    }
 }
 
 int32_t VEncNdkInnerSample::testApi()
@@ -608,17 +612,18 @@ uint32_t VEncNdkInnerSample::ReadOneFrameYUV420SP(uint8_t *dst)
 uint32_t VEncNdkInnerSample::ReadOneFrameYUVP010(uint8_t *dst)
 {
     uint8_t *start = dst;
+    int32_t num = 2;
     // copy Y
     for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*2);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*2))
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*num))
             return 0;
         dst += stride_;
     }
     // copy UV
     for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*2);
-        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*2))
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH*num);
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH*num))
             return 0;
         dst += stride_;
     }
@@ -652,12 +657,10 @@ uint32_t VEncNdkInnerSample::ReadOneFrameFromList(uint8_t *dst, int32_t &index)
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, fileInfos[index].format);
         }
         if (ret != AVCS_ERR_OK) {
-            cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
             return ret;
         }
         ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH, DEFAULT_HEIGHT);
         if (ret != AVCS_ERR_OK) {
-            cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
             return ret;
         }
         cout << fileInfos[index].fileDir << endl;
@@ -668,9 +671,9 @@ uint32_t VEncNdkInnerSample::ReadOneFrameFromList(uint8_t *dst, int32_t &index)
     if (!ret) {
         if (inFile_->is_open()) {
             inFile_->close();
-        } 
+        }
         index++;
-        if (index >= fileInfos.size()){
+        if (index >= fileInfos.size()) {
             venc_->NotifyEos();
             return LOOP_END;
         }
@@ -681,10 +684,9 @@ uint32_t VEncNdkInnerSample::ReadOneFrameFromList(uint8_t *dst, int32_t &index)
 
 uint32_t VEncNdkInnerSample::ReadOneFrameByType(uint8_t *dst, std::string &fileType)
 {
-    if (fileType == "rgba"){
+    if (fileType == "rgba") {
         return ReadOneFrameRGBA8888(dst);
-    }
-     else if (fileType == "nv12" || fileType == "nv21") {
+    } else if (fileType == "nv12" || fileType == "nv21") {
         return ReadOneFrameYUV420SP(dst);
     } else {
         cout << "error fileType" << endl;
@@ -694,10 +696,9 @@ uint32_t VEncNdkInnerSample::ReadOneFrameByType(uint8_t *dst, std::string &fileT
 
 uint32_t VEncNdkInnerSample::ReadOneFrameByType(uint8_t *dst, GraphicPixelFormat format)
 {
-    if (format == GRAPHIC_PIXEL_FMT_RGBA_8888){
+    if (format == GRAPHIC_PIXEL_FMT_RGBA_8888) {
         return ReadOneFrameRGBA8888(dst);
-    }
-     else if (format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
         return ReadOneFrameYUV420SP(dst);
     } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
         return ReadOneFrameYUVP010(dst);
@@ -793,7 +794,7 @@ void VEncNdkInnerSample::InputFuncSurface()
         OH_NativeBuffer *nativeBuffer = nullptr;
         uint8_t *dst = nullptr;
         int err = InitBuffer(ohNativeWindowBuffer, nativeBuffer, dst);
-        if (err == 0){
+        if (err == 0) {
             break;
         } else if (err == -1) {
             continue;
@@ -823,7 +824,8 @@ void VEncNdkInnerSample::InputFuncSurface()
     }
 }
 
-int32_t VEncNdkInnerSample::InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer, OH_NativeBuffer *&nativeBuffer, uint8_t *&dst)
+int32_t VEncNdkInnerSample::InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuffer,
+    OH_NativeBuffer *&nativeBuffer, uint8_t *&dst)
 {
     int fenceFd = -1;
     if (nativeWindow == nullptr) {

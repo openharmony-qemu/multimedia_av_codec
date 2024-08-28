@@ -40,9 +40,8 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-struct fileInfo
-{
-    std::string fileDir;  
+struct fileInfo {
+    std::string fileDir;
     GraphicPixelFormat format;
     uint32_t width;
     uint32_t height;
@@ -149,6 +148,7 @@ public:
     void PushRandomDiscardIndex(uint32_t count, uint32_t min, uint32_t max);
     bool IsFrameDiscard(uint32_t index);
     bool CheckOutputFrameCount();
+    void readMultiFilesFunc();
     int32_t SetCustomBuffer(BufferRequestConfig bufferRequestConfig);
     bool ReadCustomDataToAVBuffer(const std::string &fileName, std::shared_ptr<AVBuffer> buffer);
     bool GetWaterMarkCapability(std::string codecMimeType);
