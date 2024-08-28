@@ -185,8 +185,10 @@ Status FileFdSourcePlugin::ReadOfflineFile(int32_t streamId, std::shared_ptr<Buf
     }
     bufData->UpdateDataSize(size);
     position_ += static_cast<uint64_t>(size);
-    MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
-        position_.load(), buffer->GetMemory()->GetSize());
+    if (buffer->GetMemory() != nullptr) {
+        MEDIA_LOG_D("ReadLocal position_ " PUBLIC_LOG_U64 ", readSize " PUBLIC_LOG_ZU,
+            position_.load(), buffer->GetMemory()->GetSize());
+    }
     return Status::OK;
 }
 
