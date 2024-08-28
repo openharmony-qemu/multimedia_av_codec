@@ -41,7 +41,7 @@ using namespace Plugins;
 constexpr int32_t ERR_TRACK_INDEX = -1;
 constexpr uint32_t MAX_BUFFER_COUNT = 10;
 
-const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
+const std::unordered_map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
     {OutputFormat::MPEG_4, {MimeType::AUDIO_MPEG, MimeType::AUDIO_AAC,
                             MimeType::VIDEO_AVC, MimeType::VIDEO_MPEG4,
                             MimeType::VIDEO_HEVC,
