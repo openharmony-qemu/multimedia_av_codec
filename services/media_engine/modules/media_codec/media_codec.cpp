@@ -726,10 +726,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     } else if (ret != Status::OK) {
         MEDIA_LOG_E("QueueOutputBuffer error");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-        state_ = CodecState::ERROR;
-        if (mediaCodecCallback_ != nullptr) {
-            mediaCodecCallback_->OnError(CodecErrorType::CODEC_ERROR_INTERNAL, MSERR_AUD_DEC_FAILED);
-        }
     }
     return ret;
 }
@@ -762,14 +758,14 @@ void MediaCodec::ClearBufferQueue()
 {
     MEDIA_LOG_I("ClearBufferQueue called.");
     if (inputBufferQueueProducer_ != nullptr) {
-        for (const auto &buffer : inputBufferVector_) {
+        for (auto &buffer : inputBufferVector_) {
             inputBufferQueueProducer_->DetachBuffer(buffer);
         }
         inputBufferVector_.clear();
         inputBufferQueueProducer_->SetQueueSize(0);
     }
     if (outputBufferQueueProducer_ != nullptr) {
-        for (const auto &buffer : outputBufferVector_) {
+        for (auto &buffer : outputBufferVector_) {
             outputBufferQueueProducer_->DetachBuffer(buffer);
         }
         outputBufferVector_.clear();
