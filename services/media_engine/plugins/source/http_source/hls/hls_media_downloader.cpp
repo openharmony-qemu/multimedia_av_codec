@@ -81,8 +81,8 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
 
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
-    playListDownloader_->SetPlayListCallback(this);
+    playlistDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playlistDownloader_->SetPlayListCallback(this);
     waterLineAbove_ = PLAY_WATER_LINE;
     aesKey_.rounds = 0;
     for (size_t i = 0; i < sizeof(aesKey_.rd_key) / sizeof(aesKey_.rd_key[0]); ++i) {
@@ -179,8 +179,8 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 {
     isDownloadFinish_ = false;
     SaveHttpHeader(httpHeader);
-    playListDownloader_->SetMimeType(mimeType_);
-    playListDownloader_->Open(url, httpHeader);
+    playlistDownloader_->SetMimeType(mimeType_);
+    playlistDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();
     openTime_ = steadyClock_.ElapsedMilliseconds();
     if (userDefinedBufferDuration_) {
@@ -889,8 +889,8 @@ void HlsMediaDownloader::ReportVideoSizeChange()
         MEDIA_LOG_I("callback == nullptr dont report video size change");
         return;
     }
-    int32_t videoWidth = playListDownloader_->GetVedioWidth();
-    int32_t videoHeight = playListDownloader_->GetVedioHeight();
+    int32_t videoWidth = playlistDownloader_->GetVedioWidth();
+    int32_t videoHeight = playlistDownloader_->GetVedioHeight();
     MEDIA_LOG_I("ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
         PUBLIC_LOG_D32, videoWidth, videoHeight);
     changeBitRateCount_++;
