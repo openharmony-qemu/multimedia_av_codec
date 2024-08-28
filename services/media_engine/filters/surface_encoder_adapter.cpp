@@ -488,6 +488,9 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 
 void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    if (buffer->pts_ >= eosPts_ && codecServer_) {
+        codecServer_->NotifyEos();
+    }
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);
@@ -540,9 +543,6 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (isTransCoderMode) {
-        if (buffer->pts_ >= eosPts_ && codecServer_) {
-            codecServer_->NotifyEos();
-        }
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
     }
