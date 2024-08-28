@@ -1017,12 +1017,6 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
     } else {
         downloadSpeed_ = 0;
     }
-    if (downloadRequest_ != nullptr) {
-        size_t fragmentSize = downloadRequest_->GetFileContentLength();
-        double duration = downloadRequest_->GetDuration();
-        CalculateBitRate(fragmentSize, duration);
-        downloadBiteRate_ = downloadRequest_->GetBitRate();
-    }
 
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
         MEDIA_LOG_I("UpdateDownloadFinished:streamId:" PUBLIC_LOG_D32 ", writeState:"
@@ -1039,6 +1033,12 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
     if (mediaSegment_ != nullptr) {
         if (mediaSegment_->contentLength_ == 0 && downloadRequest_ != nullptr) {
             mediaSegment_->contentLength_ = downloadRequest_->GetFileContentLength();
+        }
+        if (downloadRequest_ != nullptr) {
+            size_t fragmentSize = mediaSegment_->contentLength_;
+            double duration = downloadRequest_->GetDuration();
+            CalculateBitRate(fragmentSize, duration);
+            downloadBiteRate_ = downloadRequest_->GetBitRate();
         }
         mediaSegment_->isEos_ = true;
         if (mediaSegment_->isLast_) {
