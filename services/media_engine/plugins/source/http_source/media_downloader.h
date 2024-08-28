@@ -18,6 +18,7 @@
 
 #include <string>
 #include "plugin/plugin_base.h"
+#include "meta/media_types.h"
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
 #include "common/media_source.h"
