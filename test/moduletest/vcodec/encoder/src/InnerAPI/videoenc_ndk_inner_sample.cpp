@@ -84,7 +84,7 @@ void VEncInnerCallback::OnOutputFormatChanged(const Format& format)
     format.GetIntValue(OH_MD_KEY_VIDEO_PIC_HEIGHT, g_picHeight);
     format.GetIntValue(OH_MD_KEY_WIDTH, g_keyWidth);
     format.GetIntValue(OH_MD_KEY_HEIGHT, g_keyHeight);
-    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << g_picWidth 
+    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << g_picWidth
     << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "<< g_picHeight << ", OH_MD_KEY_WIDTH: " << g_keyWidth
     << ", OH_MD_KEY_HEIGHT: " << g_keyHeight << endl;
 }
