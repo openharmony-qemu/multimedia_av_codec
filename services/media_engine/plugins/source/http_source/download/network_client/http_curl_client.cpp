@@ -330,8 +330,7 @@ static curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
     SocketOwner* owner = static_cast<SocketOwner*>(clientp);
     uid_t uid = owner->uid;
     gid_t gid = owner->gid;
-    if (fchown(sockfd, uid, gid) == -1)
-    {
+    if (fchown(sockfd, uid, gid) == -1) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
