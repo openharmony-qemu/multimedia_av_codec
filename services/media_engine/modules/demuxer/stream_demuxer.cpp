@@ -177,6 +177,8 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
         if (IsDash()) {
             MEDIA_LOG_D("dash PullDataWithoutCache, cacheDataMap_ exist streamID , merge it.");
             auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
+            FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
+            FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
             std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
                 bufferPtr->GetMemory()->GetSize() + memory->GetSize());
             if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
@@ -220,6 +222,7 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
 Status StreamDemuxer::ReadRetry(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Plugins::Buffer>& data)
 {
+    FALSE_RETURN_V_MSG_E(data->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "get memory invalid");
     Status err = Status::OK;
     int32_t retryTimes = 0;
     while (true && !isInterruptNeeded_.load()) {
