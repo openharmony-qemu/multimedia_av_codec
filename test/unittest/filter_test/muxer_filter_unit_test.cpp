@@ -142,6 +142,9 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_0100, TestSize.Level1)
     inputBuffer->pts_ = 3000000000;
     muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
     EXPECT_EQ(inputBuffer->flag_, 0);
+    muxerFilter_->isTransCoderMode = true;
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    EXPECT_EQ(inputBuffer->flag_, 0);
 }
 
 /**

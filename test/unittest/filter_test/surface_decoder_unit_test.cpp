@@ -57,6 +57,7 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_Init_0100, TestSize.Level
 {
     Status status = surfaceDecoderAdapter_->Init("");
     ASSERT_EQ(status, Status::ERROR_UNKNOWN);
+    surfaceDecoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoDecoder>();
     status = surfaceDecoderAdapter_->Init("video/mp4");
     ASSERT_EQ(status, Status::ERROR_UNKNOWN);
     surfaceDecoderAdapter_->releaseBufferTask_ = nullptr;
