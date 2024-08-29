@@ -243,8 +243,10 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nullptr.");
-    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
-        avStream->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE && ffTime == 0) {
+        return AVSEEK_FLAG_FRAME;
+    }
+    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         return AVSEEK_FLAG_BACKWARD;
     }
     if (mode == SeekMode::SEEK_NEXT_SYNC || mode == SeekMode::SEEK_PREVIOUS_SYNC) {
@@ -454,7 +456,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
         if (stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
             stream->discard = AVDISCARD_ALL;
         } else {
-            parserRefVideoStreamIdx_ = static_cast<uint32_t>(trackIndex);
+            parserRefVideoStreamIdx_ = static_cast<int32_t>(trackIndex);
         }
     }
     FALSE_RETURN_V_MSG_E(parserRefVideoStreamIdx_ >= 0, Status::ERROR_UNKNOWN, "Can not find video stream.");

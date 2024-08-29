@@ -363,6 +363,87 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_400, T
     surfaceEncoderAdapter_->CheckFrames(currentPts, checkFramesPauseTime);
     ASSERT_EQ(checkFramesPauseTime, 300);
 }
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_TransCoder_100
+ * @tc.desc: TransCoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_100, TestSize.Level1)
+{
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
+                                new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    uint32_t index = 1;
+    surfaceEncoderAdapter_->stopTime_ = 0;
+    buffer->pts_ = 1;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->startBufferTime_ = -1;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isResume_ = false;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isResume_ = true;
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->isResume_, buffer->pts_);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_0100
+ * @tc.desc: OnOutputBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvailable_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
+                                new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    uint32_t index = 1;
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->stopTime_ = 1;
+    buffer->pts_ = 0;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->stopTime_ = -1;
+    buffer->pts_ = 0;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->stopTime_ = 1;
+    buffer->pts_ = 2;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    EXPECT_NE(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_0200
+ * @tc.desc: OnOutputBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvailable_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
+                                new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    uint32_t index = 1;
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->stopTime_ = 1;
+    buffer->pts_ = 2;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    buffer->flag_ = 0;
+    surfaceEncoderAdapter_->startBufferTime_ = -1;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+
+    buffer->flag_ = 1;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

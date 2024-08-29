@@ -19,7 +19,6 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
-#include "meta/media_types.h"
 
 namespace OHOS {
 namespace Media {

@@ -471,6 +471,18 @@ std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
     return nullopt;
 }
 
+bool HCodec::CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer)
+{
+    int32_t dispFmt = buffer->GetFormat();
+    const std::vector<int32_t>& supportFmts = caps_.port.video.supportPixFmts;
+    if (std::find(supportFmts.begin(), supportFmts.end(), dispFmt) == supportFmts.end()) {
+        LOGE("unsupported buffer pixel format %d", dispFmt);
+        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
+        return false;
+    }
+    return true;
+}
+
 int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
 {
     if (info.pixelFmt.has_value()) {

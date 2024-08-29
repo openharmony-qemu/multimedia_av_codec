@@ -46,9 +46,10 @@ FFmpegAPEDecoderPlugin::FFmpegAPEDecoderPlugin(const std::string& name)
 
 FFmpegAPEDecoderPlugin::~FFmpegAPEDecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 Status FFmpegAPEDecoderPlugin::Init()
