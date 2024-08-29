@@ -264,7 +264,7 @@ inline int ValidateInteger(int number)
 
 inline int ConvFp(int32_t x)
 {
-    return (int32_t) (x * (1 << 16));
+    return (int32_t) (x * (1 << 16)); // 16 is used for digital conversion
 }
 
 std::string ConvertArrayToString(const int* Array, size_t size)
