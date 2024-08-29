@@ -168,7 +168,7 @@ enum OutputFormat : uint32_t {
     OUTPUT_FORMAT_M4A = 6,
 };
 
-enum VideoOrientationType : uint32_t {
+enum VideoOrientationType : int32_t {
     /**
      * No rotation or default
      */
