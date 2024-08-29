@@ -590,7 +590,7 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
         MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
     }
     format.Set<Tag::VIDEO_ORIENTATION_TYPE>(orientationType);
-    MEDIA_LOG_D("The type of matrix is: " , static_cast<int>(orientationType));
+    MEDIA_LOG_D("The type of matrix is: " PUBLIC_LOG_D32 , static_cast<int>(orientationType));
 }
 
 void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &format)
