@@ -1057,7 +1057,7 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 void DashMediaDownloader::SetAppUid(int32_t appUid)
 {
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
-        segmentDownloaders_[i].SetAppUid(appUid);
+        segmentDownloaders_[i]->SetAppUid(appUid);
     }
 }
 
