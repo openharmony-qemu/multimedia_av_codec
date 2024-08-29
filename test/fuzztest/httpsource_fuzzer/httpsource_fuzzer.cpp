@@ -38,7 +38,7 @@ bool HlsMediaDownloaderFuzzTest(const uint8_t *data, size_t size)
     if (res != 0) {
         return false;
     }
-    bool result = downloader->Save(data_, static_cast<uint32_t>(size));
+    bool result = downloader->SaveData(data_, static_cast<uint32_t>(size));
     return result;
 }
 
@@ -52,13 +52,13 @@ bool HttpMediaDownloaderFuzzTest(const uint8_t *data, size_t size)
                               std::shared_ptr<DownloadRequest>& request) {};
     downloader->SetStatusCallback(statusCallback);
     std::map<std::string, std::string> httpHeader;
-    downloader->Open(MP4_SEGMENT_BASE, httpHeader)
+    downloader->Open(MP4_SEGMENT_BASE, httpHeader);
     uint8_t data_[size];
     errno_t res = memcpy_s(data_, size, data, size);
     if (res != 0) {
         return false;
     }
-    bool result = downloader->Save(data_, static_cast<uint32_t>(size));
+    bool result = downloader->SaveData(data_, static_cast<uint32_t>(size));
     return result;
 }
 
@@ -74,7 +74,7 @@ bool DashSegmentDownloaderFuzzTest(const uint8_t *data, size_t size)
     if (res != 0) {
         return false;
     }
-    bool result = downloader->Save(data_, static_cast<uint32_t>(size));
+    bool result = downloader->SaveData(data_, static_cast<uint32_t>(size));
     return result;
 }
 
