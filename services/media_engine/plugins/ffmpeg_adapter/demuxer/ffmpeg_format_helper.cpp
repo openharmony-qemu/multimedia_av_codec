@@ -36,6 +36,7 @@ extern "C" {
 }
 #endif
 
+#define DISPLAY_MATRIX_SIZE (static_cast<size_t>(9))
 #define CUVA_VERSION_MAP (static_cast<uint16_t>(1))
 #define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
@@ -229,7 +230,7 @@ static const std::map<std::string, VideoOrientationType> matrixTypes = {
     /**
      * Standardize the numbers with indexs 6 and 7.
      * If they are greater than 1, set them to 2;
-     * if they are less than -2, set them to -2; -1, 0, and 1 remain unchanged
+     * if they are less than -1, set them to -2; -1, 0, and 1 remain unchanged
      */
     {"0 1 0 -1 0 0 0 0 1", VideoOrientationType::ROTATE_90},
     {"-1 0 0 0 -1 0 0 0 1", VideoOrientationType::ROTATE_180},
@@ -249,7 +250,7 @@ VideoOrientationType GetMatrixType(std::string value) {
     if (it!= matrixTypes.end()) {
         return it->second;
     } else {
-        return VideoOrientationType::INVALID;
+        return VideoOrientationType::ROTATE_NONE;
     }
 }
 
@@ -257,7 +258,7 @@ inline int ValidateInteger(int number) {
     return number < -1 ? -2 : (number > 1 ? 2 : number); //Used for rotation matrix verification
 }
 
-std::string convertArrayToString(const int* Array, size_t size) {
+std::string ConvertArrayToString(const int* Array, size_t size) {
     std::string result;
     for (size_t i = 0; i < size; ++i) {
         if (i > 0) {
@@ -520,6 +521,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
     }
+    ParseOrientationFromMatrix(avStream, format);
 
     AVRational sar = avStream.sample_aspect_ratio;
     if (sar.num && sar.den) {
@@ -568,26 +570,27 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
     VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
     if (displayMatrix) {
-        int size = 9; // 9 is displayMatrix size
-        int convertedMatrix[size];
-        std::copy(displayMatrix, displayMatrix + size, convertedMatrix);
-        for (int index = 0; index < size; index++) {
+        MEDIA_LOG_D("display matrix: [" PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " "
+            PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 "]",
+            displayMatrix[0], displayMatrix[1], displayMatrix[2], displayMatrix[3], displayMatrix[4],
+            displayMatrix[5], displayMatrix[6], displayMatrix[7], displayMatrix[8]);
+        int convertedMatrix[DISPLAY_MATRIX_SIZE];
+        std::copy(displayMatrix, displayMatrix + DISPLAY_MATRIX_SIZE, convertedMatrix);
+        for (int index = 0; index < DISPLAY_MATRIX_SIZE; index++) {
             if (index < 6) { // 6 is the index that needs to be verified
                 convertedMatrix[index] = CONV_FP(convertedMatrix[index]);
-            }
-            if (index > 6 and index < 8) { // 6 and 8 are indexs that need to be verified
+            } else if (index < 8) { // 6 and 8 are indexs that need to be verified
                 convertedMatrix[index] = ValidateInteger(CONV_FP(convertedMatrix[index]));
-            }
-            if (index == 8) { //8 is the index that needs to be verified
+            } else { //8 is the index that needs to be verified
                 convertedMatrix[index] = 1; // Numbers with index 8 are uniformly set to 1
             }
         }
-        orientationType = GetMatrixType(convertArrayToString(convertedMatrix, size));
+        orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, DISPLAY_MATRIX_SIZE));
     } else {
         MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
     }
     format.Set<Tag::VIDEO_ORIENTATION_TYPE>(orientationType);
-    printf("The type of matrix1 is: %d", static_cast<int>(orientationType));
+    MEDIA_LOG_D("The type of matrix is: " , static_cast<int>(orientationType));
 }
 
 void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &format)
