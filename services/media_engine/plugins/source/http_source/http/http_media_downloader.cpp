@@ -1050,7 +1050,9 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
 
 void HttpMediaDownloader::SetAppUid(int32_t appUid)
 {
-    downloader_->SetAppUid(appUid);
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
 }
 
 float HttpMediaDownloader::GetCacheDuration(float ratio)

@@ -352,7 +352,9 @@ void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t&
 
 void DownloadMonitor::SetAppUid(int32_t appUid)
 {
-    downloader_->SetAppUid(appUid);
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
 }
 
 }

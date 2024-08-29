@@ -1291,8 +1291,12 @@ bool HlsMediaDownloader::CheckBufferingOneSeconds()
 
 void HlsMediaDownloader::SetAppUid(int32_t appUid)
 {
-    downloader_->SetAppUid(appUid);
-    playlistDownloader_->SetAppUid(appUid);
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+    if (playlistDownloader_) {
+        playlistDownloader_->SetAppUid(appUid);
+    }
 }
 
 float HlsMediaDownloader::GetCacheDuration(float ratio)

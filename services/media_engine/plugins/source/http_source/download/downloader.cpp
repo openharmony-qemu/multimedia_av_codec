@@ -898,7 +898,9 @@ void Downloader::PauseLoop(bool isAsync)
 
 void Downloader::SetAppUid(int32_t appUid)
 {
-    client_->SetAppUid(appUid);
+    if (client_) {
+        client_->SetAppUid(appUid);
+    }
 }
 
 const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
