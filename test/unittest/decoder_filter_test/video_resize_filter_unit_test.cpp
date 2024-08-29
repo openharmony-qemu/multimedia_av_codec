@@ -102,7 +102,7 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_002, TestSize.Level1)
 
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     parameter->Set<Tag::MEDIA_END_OF_STREAM>(true);
-    videoResize->OnOutputBufferAvailable(1);
+    videoResize->OnOutputBufferAvailable(1, 0);
     videoResize->SetParameter(parameter);
 
     EXPECT_EQ(videoResize->DoPrepare(), Status::OK);

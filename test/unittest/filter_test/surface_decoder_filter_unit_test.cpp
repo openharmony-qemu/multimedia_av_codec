@@ -104,7 +104,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
     EXPECT_EQ(surfaceDecoderFilter_->DoStop(), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->DoFlush(), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->DoRelease(), Status::OK);
-    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(UINT32_MAX), Status::OK);
 
     std::shared_ptr<Meta> meta;
     surfaceDecoderFilter_->OnUpdatedResult(meta);

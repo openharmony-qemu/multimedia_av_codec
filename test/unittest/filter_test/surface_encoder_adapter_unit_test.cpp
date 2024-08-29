@@ -237,10 +237,10 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Release_0100, Test
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_NotifyEos_0100, TestSize.Level1)
 {
     surfaceEncoderAdapter_->codecServer_ = nullptr;
-    Status ret = surfaceEncoderAdapter_->NotifyEos();
+    Status ret = surfaceEncoderAdapter_->NotifyEos(UINT32_MAX);
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
-    ret = surfaceEncoderAdapter_->NotifyEos();
+    ret = surfaceEncoderAdapter_->NotifyEos(UINT32_MAX);
     EXPECT_EQ(ret, Status::OK);
 }
 
