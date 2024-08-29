@@ -1581,6 +1581,7 @@ bool MediaDemuxer::HandleSelectTrackChangeStream(int32_t trackId, int32_t newStr
 
 bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "invalid param.");
     TrackType type = demuxerPluginManager_->GetTrackTypeByTrackID(selectTrackTrackID_);
     int32_t newStreamID = -1;
     uint32_t oldTrackId = -1;
@@ -1602,7 +1603,7 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
         return false;
     }
     bool ret = HandleSelectTrackChangeStream(trackId, newStreamID);
-    if (ret) {
+    if (ret && eventReceiver_ != nullptr) {
         if (type == TrackType::TRACK_AUDIO) {
             audioTrackId_ = selectTrackTrackID_;
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, selectTrackTrackID_});
@@ -1615,7 +1616,9 @@ bool MediaDemuxer::SelectTrackChangeStream(uint32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, selectTrackTrackID_});
             shouldCheckSubtitleFramePts_ = true;
         }
-        taskMap_[trackId]->StopAsync();   // stop self
+        if (taskMap_[trackId] != nullptr) {
+            taskMap_[trackId]->StopAsync();   // stop self
+        }
     }
     return ret;
 }
@@ -1888,8 +1891,8 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
-            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_IO_ERROR});
+            MEDIA_LOG_E("OnEvent error code " PUBLIC_LOG_D32, AnyCast<int32_t>(event.param));
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, event.param});
             break;
         }
         case PluginEventType::BUFFERING_END: {

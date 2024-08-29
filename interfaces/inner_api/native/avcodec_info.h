@@ -465,8 +465,8 @@ public:
 
 private:
     CapabilityData *data_;
-    int32_t blockWidth_;
-    int32_t blockHeight_;
+    int32_t blockWidth_ = 0;
+    int32_t blockHeight_ = 0;
     Range horizontalBlockRange_;
     Range verticalBlockRange_;
     Range blockPerFrameRange_;

@@ -68,6 +68,7 @@ struct M3U8Info {
 struct M3U8 {
     M3U8(std::string uri, std::string name);
     ~M3U8();
+    void InitTagUpdaters();
     void InitTagUpdatersMap();
     bool Update(const std::string& playList, bool isNeedCleanFiles);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
@@ -111,6 +112,7 @@ struct M3U8 {
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
+    std::atomic<bool> isPlayTypeFound_ {false};
 };
 
 struct M3U8Media {

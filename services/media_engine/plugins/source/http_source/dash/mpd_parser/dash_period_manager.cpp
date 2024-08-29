@@ -204,7 +204,8 @@ void DashPeriodManager::ParseInitSegment()
         initSegment_ = CloneUrlType(periodInfo_->periodSegList_->multSegBaseInfo_.segBaseInfo_.initialization_);
     } else if (periodInfo_->periodSegTmplt_) {
         ParseInitSegmentBySegTmplt();
-    } else {
+    } else if (initSegment_ != nullptr) {
+        delete initSegment_;
         initSegment_ = nullptr;
     }
 
@@ -221,7 +222,8 @@ void DashPeriodManager::ParseInitSegmentBySegTmplt()
             initSegment_->sourceUrl_ = periodInfo_->periodSegTmplt_->segTmpltInitialization_;
             segTmpltFlag_ = 1;
         }
-    } else {
+    } else if (initSegment_ != nullptr) {
+        delete initSegment_;
         initSegment_ = nullptr;
     }
 }

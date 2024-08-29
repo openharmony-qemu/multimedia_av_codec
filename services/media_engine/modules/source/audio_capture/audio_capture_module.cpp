@@ -319,6 +319,10 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     Status ret = Status::OK;
     {
         AutoLock lock(captureMutex_);
+        if (audioCapturer_ == nullptr) {
+            MEDIA_LOG_E("Audio capture is null");
+            return Status::ERROR_WRONG_STATE;
+        }
         if (audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING) {
             return Status::ERROR_AGAIN;
         }

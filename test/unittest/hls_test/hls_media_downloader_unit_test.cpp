@@ -22,11 +22,10 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
-// 黑白球視頻地址
 
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
-    {"Referer", "DEF"}
+    {"Referer", "DEF"},
 };
 static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";

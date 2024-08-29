@@ -25,8 +25,12 @@ static constexpr const char* STATE_NAMES[]{
     "Configured",
     "Prepared",
     "Running",
-    "Stopped"
+    "Flushed",
+    "Stopped",
+    "Unknown"
 };
+
+static constexpr size_t VALID_STATE_NUM{6};
 
 State StateMachine::Get() const
 {
@@ -40,7 +44,11 @@ void StateMachine::Set(State state)
 
 const char* StateMachine::Name() const
 {
-    return STATE_NAMES[static_cast<size_t>(state_.load())];
+    auto index = static_cast<size_t>(state_.load());
+    if (index >= VALID_STATE_NUM) {
+        index = VALID_STATE_NUM;
+    }
+    return STATE_NAMES[index];
 }
 
 } // namespace PostProcessing

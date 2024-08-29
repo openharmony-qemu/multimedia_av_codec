@@ -93,7 +93,8 @@ void DashAdptSetManager::ParseInitSegment()
         initSegment_ = CloneUrlType(adptSetInfo_->adptSetSegList_->multSegBaseInfo_.segBaseInfo_.initialization_);
     } else if (adptSetInfo_->adptSetSegTmplt_) {
         ParseInitSegmentBySegTmplt();
-    } else {
+    } else if (initSegment_ != nullptr) {
+        delete initSegment_;
         initSegment_ = nullptr;
     }
 
@@ -111,7 +112,8 @@ void DashAdptSetManager::ParseInitSegmentBySegTmplt()
             initSegment_->sourceUrl_ = adptSetInfo_->adptSetSegTmplt_->segTmpltInitialization_;
             segTmpltFlag_ = 1;
         }
-    } else {
+    } else if (initSegment_ != nullptr) {
+        delete initSegment_;
         initSegment_ = nullptr;
     }
 }

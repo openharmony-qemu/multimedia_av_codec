@@ -94,8 +94,8 @@ public:
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
     int GetRetryTimes() const;
-    NetworkClientErrorCode GetClientError() const;
-    NetworkServerErrorCode GetServerError() const;
+    int32_t GetClientError() const;
+    int32_t GetServerError() const;
     bool IsSame(const std::shared_ptr<DownloadRequest>& other) const
     {
         return url_ == other->url_ && startPos_ == other->startPos_;
@@ -137,8 +137,8 @@ private:
     bool requestWholeFile_ {false};
     int requestSize_ {0};
     int retryTimes_ {0};
-    NetworkClientErrorCode clientError_ {NetworkClientErrorCode::ERROR_OK};
-    NetworkServerErrorCode serverError_ {0};
+    int32_t clientError_ {0};
+    int32_t serverError_ {0};
     bool shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};
@@ -149,6 +149,7 @@ private:
     std::atomic<bool> isInterruptNeeded_{false};
     std::atomic<bool> retryOnGoing_ {false};
     int64_t dropedDataLen_ {0};
+    std::atomic<bool> isFirstRangeRequestReady_ {false};
 };
 
 class Downloader {
@@ -170,7 +171,7 @@ public:
 private:
     bool BeginDownload();
 
-    int64_t HttpDownloadLoop();
+    void HttpDownloadLoop();
     void RequestData();
     void HandlePlayingFinish();
     void HandleRetOK();
@@ -193,8 +194,8 @@ private:
     FairMutex operatorMutex_{};
     std::shared_ptr<DownloadRequest> currentRequest_;
     std::atomic<bool> shouldStartNextRequest {false};
-    size_t downloadRequestSize_ {0};
     int32_t noTaskLoopTimes_ {0};
+    size_t downloadRequestSize_ {0};
     std::shared_ptr<Task> task_;
     std::atomic<bool> isDestructor_ {false};
     std::atomic<bool> isClientClose_ {false};

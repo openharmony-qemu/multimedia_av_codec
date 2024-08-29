@@ -30,7 +30,7 @@ constexpr uint32_t SUBTITLE_RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int DEFAULT_WAIT_TIME = 2;
 constexpr int32_t HTTP_TIME_OUT_MS = 10 * 1000;
-constexpr int32_t RECORD_TIME_INTERVAL = 1000;
+constexpr uint32_t RECORD_TIME_INTERVAL = 1000;
 constexpr int32_t RECORD_DOWNLOAD_MIN_BIT = 1000;
 constexpr uint32_t SPEED_MULTI_FACT = 1000;
 constexpr uint32_t BYTE_TO_BIT = 8;
@@ -356,6 +356,8 @@ int32_t DashSegmentDownloader::GetWaterLineAbove()
         } else {
             waterLineAbove = static_cast<int32_t>(DEFAULT_MIN_CACHE_TIME * realTimeBitBate_ / BYTES_TO_BIT);
         }
+        int32_t maxWaterLineAbove = static_cast<int32_t>(ringBufferCapcity_ / 2);
+        waterLineAbove = waterLineAbove > maxWaterLineAbove ? maxWaterLineAbove : waterLineAbove;
         int32_t minWaterLineAbove = 2 * PLAY_WATER_LINE;
         waterLineAbove = waterLineAbove < minWaterLineAbove ? minWaterLineAbove : waterLineAbove;
     }
@@ -370,7 +372,7 @@ void DashSegmentDownloader::CalculateBitRate(size_t fragmentSize, double duratio
         return;
     }
 
-    realTimeBitBate_ = static_cast<int64_t>(fragmentSize * BYTES_TO_BIT) / duration;
+    realTimeBitBate_ = static_cast<int64_t>(fragmentSize * BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / duration;
     MEDIA_LOG_I("CalculateBitRate streamId: " PUBLIC_LOG_D32 " realTimeBitBate: "
         PUBLIC_LOG_D64, streamId_, realTimeBitBate_);
 }
@@ -886,7 +888,7 @@ void DashSegmentDownloader::OnWriteRingBuffer(uint32_t len)
     uint32_t writeBits = len * BYTE_TO_BIT;
     totalBits_ += writeBits;
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+    if (now > lastCheckTime_ && now - lastCheckTime_ > RECORD_TIME_INTERVAL) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= RECORD_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = now - lastCheckTime_;
@@ -1015,12 +1017,6 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
     } else {
         downloadSpeed_ = 0;
     }
-    if (downloadRequest_ != nullptr) {
-        size_t fragmentSize = downloadRequest_->GetFileContentLength();
-        double duration = downloadRequest_->GetDuration();
-        CalculateBitRate(fragmentSize, duration);
-        downloadBiteRate_ = downloadRequest_->GetBitRate();
-    }
 
     if (initSegment != nullptr && initSegment->writeState_ == INIT_SEGMENT_STATE_USING) {
         MEDIA_LOG_I("UpdateDownloadFinished:streamId:" PUBLIC_LOG_D32 ", writeState:"
@@ -1037,6 +1033,12 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
     if (mediaSegment_ != nullptr) {
         if (mediaSegment_->contentLength_ == 0 && downloadRequest_ != nullptr) {
             mediaSegment_->contentLength_ = downloadRequest_->GetFileContentLength();
+        }
+        if (downloadRequest_ != nullptr) {
+            size_t fragmentSize = mediaSegment_->contentLength_;
+            double duration = downloadRequest_->GetDuration();
+            CalculateBitRate(fragmentSize, duration);
+            downloadBiteRate_ = downloadRequest_->GetBitRate();
         }
         mediaSegment_->isEos_ = true;
         if (mediaSegment_->isLast_) {

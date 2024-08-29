@@ -20,6 +20,7 @@
 #include <string>
 #include <sys/stat.h>
 #include "demuxer_filter_unit_test.h"
+#include "scope_guard.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -137,8 +138,9 @@ HWTEST_F(DemuxerFilterUnitTest, SetDataSource, TestSize.Level1)
     std::cout << static_cast<int32_t>(res) << std::endl;
 
     auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
-    demuxerFilter_->SetDataSource(mediaSource);
+    res = demuxerFilter_->SetDataSource(mediaSource);
     std::cout << static_cast<int32_t>(res) << std::endl;
+    EXPECT_EQ(res, Status::OK);
 }
 
 /**
@@ -159,17 +161,8 @@ HWTEST_F(DemuxerFilterUnitTest, DrmCallback, TestSize.Level1)
 
     demuxerFilter_ = nullptr;
     demuxer->drmCallback_->OnDrmInfoChanged(drmInfo);
-}
-
-/**
- * @tc.name: SetBundleName
- * @tc.desc: SetBundleName
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerFilterUnitTest, SetBundleName, TestSize.Level1)
-{
-    demuxerFilter_->demuxer_ = nullptr;
-    demuxerFilter_->SetBundleName("xxxxx");
+    std::cout << "DrmCallback drmInfo.size()" << drmInfo.size() << std::endl;
+    EXPECT_EQ(drmInfo.size(), 0);
 }
 
 /**
@@ -182,6 +175,7 @@ HWTEST_F(DemuxerFilterUnitTest, RegisterVideoStreamReadyCallback, TestSize.Level
     auto readyCallback = std::make_shared<VideoStreamReadyCallbackMock>();
     demuxerFilter_->RegisterVideoStreamReadyCallback(readyCallback);
     demuxerFilter_->RegisterVideoStreamReadyCallback(nullptr);
+    EXPECT_NE(readyCallback, nullptr);
 }
 
 /**
@@ -197,6 +191,7 @@ HWTEST_F(DemuxerFilterUnitTest, Init, TestSize.Level1)
     auto receiver = std::make_shared<FilterEventReceiverMock>();
     auto callback = std::make_shared<FilterCallbackMock>();
     demuxerFilter_->Init(receiver, callback);
+    EXPECT_NE(demuxerFilter_, nullptr);
 }
 
 /**
@@ -208,6 +203,7 @@ HWTEST_F(DemuxerFilterUnitTest, DoPrepare, TestSize.Level1)
 {
     auto res = demuxerFilter_->DoPrepare();
     std::cout << "DoPrepare " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 
     std::vector<std::shared_ptr<Meta>> trackInfos;
     trackInfos.push_back(nullptr);
@@ -217,11 +213,13 @@ HWTEST_F(DemuxerFilterUnitTest, DoPrepare, TestSize.Level1)
     res = demuxerFilter_->DoPrepare();
     trackInfos.pop_back();
     std::cout << "DoPrepare " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     trackInfos.push_back(meta);
     res = demuxerFilter_->DoPrepare();
     std::cout << "DoPrepare " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_NE(res, Status::OK);
 }
 
 /**
@@ -273,6 +271,7 @@ HWTEST_F(DemuxerFilterUnitTest, HandleTrackInfos, TestSize.Level1)
 
     callback->status_ = Status::ERROR_WRONG_STATE;
     res = demuxerFilter_->HandleTrackInfos(trackInfos, successNodeCount);
+    EXPECT_NE(res, Status::OK);
     std::cout << "HandleTrackInfos " << static_cast<int32_t>(res) << std::endl;
 }
 
@@ -330,6 +329,7 @@ HWTEST_F(DemuxerFilterUnitTest, CollectVideoAndAudioMime, TestSize.Level1)
     auto res = demuxerFilter_->CollectVideoAndAudioMime();
 
     std::cout << "CollectVideoAndAudioMime_0100 " << res << std::endl;
+    EXPECT_NE(res, "");
 }
 
 /**
@@ -358,10 +358,13 @@ HWTEST_F(DemuxerFilterUnitTest, FindTrackId, TestSize.Level1)
     idVec.push_back(0);
     demuxerFilter_->track_id_map_.insert({ StreamType::STREAMTYPE_RAW_AUDIO, idVec });
     demuxerFilter_->FindTrackId(StreamType::STREAMTYPE_RAW_AUDIO, idTmp);
+    std::cout << "FindTrackId " << idTmp << std::endl;
 
     idVec.push_back(1);
     demuxerFilter_->track_id_map_.insert({ StreamType::STREAMTYPE_RAW_AUDIO, idVec });
     demuxerFilter_->FindTrackId(StreamType::STREAMTYPE_RAW_AUDIO, idTmp);
+    std::cout << "FindTrackId " << idTmp << std::endl;
+    EXPECT_TRUE(idTmp >= 0);
 }
 
 /**
@@ -391,22 +394,35 @@ HWTEST_F(DemuxerFilterUnitTest, OnLinkedResult, TestSize.Level1)
 {
     std::shared_ptr<Meta> meta0 = nullptr;
     demuxerFilter_->OnLinkedResult(nullptr, meta0);
+    auto res = demuxerFilter_->DoStart();
+    std::cout << "OnLinkedResult " << static_cast<int32_t>(res) << std::endl;
 
     auto meta = std::make_shared<Meta>();
     demuxerFilter_->OnLinkedResult(nullptr, meta);
+    res = demuxerFilter_->DoStart();
+    std::cout << "OnLinkedResult " << static_cast<int32_t>(res) << std::endl;
 
     meta->Set<Tag::REGULAR_TRACK_ID>(-1);
     demuxerFilter_->OnLinkedResult(nullptr, meta);
+    res = demuxerFilter_->DoStart();
+    std::cout << "OnLinkedResult " << static_cast<int32_t>(res) << std::endl;
 
     meta->Set<Tag::REGULAR_TRACK_ID>(0);
     demuxerFilter_->OnLinkedResult(nullptr, meta);
+    res = demuxerFilter_->DoStart();
+    std::cout << "OnLinkedResult " << static_cast<int32_t>(res) << std::endl;
 
     meta->Set<Tag::VIDEO_DECODER_RATE_UPPER_LIMIT>(0);
     demuxerFilter_->OnLinkedResult(nullptr, meta);
+    res = demuxerFilter_->DoStart();
+    std::cout << "OnLinkedResult " << static_cast<int32_t>(res) << std::endl;
 
     double frameRate = 2000.0;
     meta->Set<Tag::VIDEO_FRAME_RATE>(frameRate);
     demuxerFilter_->OnLinkedResult(nullptr, meta);
+    res = demuxerFilter_->DoStart();
+    std::cout << "OnLinkedResult " << static_cast<int32_t>(res) << std::endl;
+    EXPECT_EQ(demuxerFilter_->instanceId_, false);
 }
 
 /**
@@ -421,6 +437,7 @@ HWTEST_F(DemuxerFilterUnitTest, OnDrmInfoUpdated, TestSize.Level1)
 
     demuxerFilter_->receiver_ = nullptr;
     demuxerFilter_->OnDrmInfoUpdated(drmInfo);
+    EXPECT_EQ(demuxerFilter_->isDump_, false);
 }
 
 /**
@@ -432,9 +449,12 @@ HWTEST_F(DemuxerFilterUnitTest, DoPrepareFrame, TestSize.Level1)
 {
     auto demuxer = std::make_shared<MediaDemuxerMock>();
     demuxerFilter_->demuxer_ = demuxer;
-    demuxerFilter_->DoPrepareFrame(true);
+    auto res = demuxerFilter_->DoPrepareFrame(true);
+    std::cout << "DoPrepareFrame " << static_cast<int32_t>(res) << std::endl;
     demuxer->prepareFrame_ = Status::ERROR_WRONG_STATE;
-    demuxerFilter_->DoPrepareFrame(true);
+    res = demuxerFilter_->DoPrepareFrame(true);
+    EXPECT_NE(res, Status::OK);
+    std::cout << "DoPrepareFrame " << static_cast<int32_t>(res) << std::endl;
 }
 
 /**
@@ -448,6 +468,7 @@ HWTEST_F(DemuxerFilterUnitTest, PrepareBeforeStart, TestSize.Level1)
     demuxerFilter_->isLoopStarted = true;
     res = demuxerFilter_->PrepareBeforeStart();
     std::cout << "HandleTrackInfos " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 }
 
 /**
@@ -459,15 +480,18 @@ HWTEST_F(DemuxerFilterUnitTest, DoStart, TestSize.Level1)
 {
     auto res = demuxerFilter_->DoStart();
     std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 
     demuxerFilter_->isLoopStarted = true;
     res = demuxerFilter_->DoStart();
     std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     demuxerFilter_->isLoopStarted = false;
     demuxerFilter_->isPrepareFramed = true;
     res = demuxerFilter_->DoStart();
     std::cout << "DoStart " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 }
 
 /**
@@ -480,6 +504,7 @@ HWTEST_F(DemuxerFilterUnitTest, PauseForSeek, TestSize.Level1)
     // 1. it == nextFiltersMap_.end()
     auto res = demuxerFilter_->PauseForSeek();
     std::cout << "PauseForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 
     // 2. it != nextFiltersMap_.end(), it->second.size() != 1
     std::map<StreamType, std::vector<std::shared_ptr<Filter>>> nextFiltersMap;
@@ -487,18 +512,21 @@ HWTEST_F(DemuxerFilterUnitTest, PauseForSeek, TestSize.Level1)
     nextFiltersMap.insert({ StreamType::STREAMTYPE_ENCODED_VIDEO, vec });
     res = demuxerFilter_->PauseForSeek();
     std::cout << "PauseForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 
     // 3. it != nextFiltersMap_.end(), it->second.size() == 1, filter is nullptr
     vec.push_back(nullptr);
     res = demuxerFilter_->PauseForSeek();
     vec.pop_back();
     std::cout << "PauseForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 
     // 4. it != nextFiltersMap_.end(), it->second.size() == 1, filter not nullptr
     auto filter = std::make_shared<Filter>("filter", FilterType::FILTERTYPE_MAX);
     vec.push_back(filter);
     res = demuxerFilter_->PauseForSeek();
     std::cout << "PauseForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 }
 
 /**
@@ -511,6 +539,7 @@ HWTEST_F(DemuxerFilterUnitTest, ResumeForSeek, TestSize.Level1)
     // 1. it == nextFiltersMap_.end()
     auto res = demuxerFilter_->ResumeForSeek();
     std::cout << "ResumeForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     // 2. it != nextFiltersMap_.end(), it->second.size() != 1
     std::map<StreamType, std::vector<std::shared_ptr<Filter>>> nextFiltersMap;
@@ -518,18 +547,21 @@ HWTEST_F(DemuxerFilterUnitTest, ResumeForSeek, TestSize.Level1)
     nextFiltersMap.insert({ StreamType::STREAMTYPE_ENCODED_VIDEO, vec });
     res = demuxerFilter_->ResumeForSeek();
     std::cout << "ResumeForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     // 3. it != nextFiltersMap_.end(), it->second.size() == 1, filter is nullptr
     vec.push_back(nullptr);
     res = demuxerFilter_->ResumeForSeek();
     vec.pop_back();
     std::cout << "ResumeForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     // 4. it != nextFiltersMap_.end(), it->second.size() == 1, filter not nullptr
     auto filter = std::make_shared<Filter>("filter", FilterType::FILTERTYPE_MAX);
     vec.push_back(filter);
     res = demuxerFilter_->ResumeForSeek();
     std::cout << "ResumeForSeek " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 }
 
 /**
@@ -540,8 +572,10 @@ HWTEST_F(DemuxerFilterUnitTest, ResumeForSeek, TestSize.Level1)
 HWTEST_F(DemuxerFilterUnitTest, SetDumpFlag, TestSize.Level1)
 {
     demuxerFilter_->SetDumpFlag(false);
+    ASSERT_EQ(demuxerFilter_->isDump_, false);
     demuxerFilter_->demuxer_ = nullptr;
     demuxerFilter_->SetDumpFlag(false);
+    ASSERT_NE(demuxerFilter_->isDump_, true);
 }
 
 /**
@@ -555,12 +589,14 @@ HWTEST_F(DemuxerFilterUnitTest, LinkNext, TestSize.Level1)
     StreamType outType = StreamType::STREAMTYPE_RAW_AUDIO;
     auto res = demuxerFilter_->LinkNext(nextFilter, outType);
     std::cout << "LinkNext " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 
     std::vector<int32_t> idVec;
     idVec.push_back(0);
     demuxerFilter_->track_id_map_.insert({ StreamType::STREAMTYPE_RAW_AUDIO, idVec });
     res = demuxerFilter_->LinkNext(nextFilter, outType);
     std::cout << "LinkNext " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 }
 
 /**
@@ -573,11 +609,13 @@ HWTEST_F(DemuxerFilterUnitTest, GetBitRates, TestSize.Level1)
     std::vector<uint32_t> bitRates;
     auto res = demuxerFilter_->GetBitRates(bitRates);
     std::cout << "GetBitRates " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     demuxerFilter_->SetDataSource(mediaSource);
     res = demuxerFilter_->GetBitRates(bitRates);
     std::cout << "GetBitRates " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 }
 
 /**
@@ -590,10 +628,12 @@ HWTEST_F(DemuxerFilterUnitTest, GetDownloadInfo, TestSize.Level1)
     DownloadInfo info;
     auto res = demuxerFilter_->GetDownloadInfo(info);
     std::cout << "GetDownloadInfo " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     demuxerFilter_->demuxer_ = nullptr;
     res = demuxerFilter_->GetDownloadInfo(info);
     std::cout << "GetDownloadInfo " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 }
 
 /**
@@ -605,11 +645,13 @@ HWTEST_F(DemuxerFilterUnitTest, GetPlaybackInfo, TestSize.Level1)
 {
     PlaybackInfo info;
     auto res = demuxerFilter_->GetPlaybackInfo(info);
-    std::cout << "GetDownloadInfo " << static_cast<int32_t>(res) << std::endl;
+    std::cout << "GetPlaybackInfo " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);;
 
     demuxerFilter_->demuxer_ = nullptr;
     res = demuxerFilter_->GetPlaybackInfo(info);
-    std::cout << "GetDownloadInfo " << static_cast<int32_t>(res) << std::endl;
+    std::cout << "GetPlaybackInfo " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_NE(res, Status::OK);
 }
 
 /**
@@ -620,14 +662,15 @@ HWTEST_F(DemuxerFilterUnitTest, GetPlaybackInfo, TestSize.Level1)
 HWTEST_F(DemuxerFilterUnitTest, SelectBitRate, TestSize.Level1)
 {
     auto res = demuxerFilter_->SelectBitRate(0);
-    std::cout << "GetBitRates " << static_cast<int32_t>(res) << std::endl;
+    std::cout << "SelectBitRate " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 
     auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     demuxerFilter_->SetDataSource(mediaSource);
     res = demuxerFilter_->SelectBitRate(0);
-    std::cout << "GetBitRates " << static_cast<int32_t>(res) << std::endl;
+    std::cout << "SelectBitRate " << static_cast<int32_t>(res) << std::endl;
+    ASSERT_EQ(res, Status::OK);
 }
-
 /**
  * @tc.name: OnDumpInfo
  * @tc.desc: OnDumpInfo
@@ -635,9 +678,25 @@ HWTEST_F(DemuxerFilterUnitTest, SelectBitRate, TestSize.Level1)
  */
 HWTEST_F(DemuxerFilterUnitTest, OnDumpInfo, TestSize.Level1)
 {
-    demuxerFilter_->OnDumpInfo(0);
+    auto fd = AshmemCreate("DemuxerFilterUnitTest::OnDumpInfo", 4096);
+    char* temp = new char[8];
+    ON_SCOPE_EXIT(0) {
+        if (fd > 0) {
+            (void)::close(fd);
+        }
+        delete [] temp;
+    };
+
+    ASSERT_GE(fd, 0);
+    demuxerFilter_->OnDumpInfo(fd);
+    read(fd, temp, 8);
+    std::cout << "OnDumpInfo " << temp << std::endl;
+    ASSERT_NE(temp[0], ' ');
+
     demuxerFilter_->demuxer_ = nullptr;
+    demuxerFilter_->SetBundleName("xxxxx");
     demuxerFilter_->OnDumpInfo(0);
+    ASSERT_NE(temp[0], ' ');
 }
 }  // namespace Pipeline
 }  // namespace Media

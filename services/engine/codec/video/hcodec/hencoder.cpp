@@ -1195,6 +1195,9 @@ bool HEncoder::GetOneBufferFromSurface()
     if (ret != GSERROR_OK || entry.item->buffer == nullptr) {
         return false;
     }
+    if (!CheckBufPixFmt(entry.item->buffer)) {
+        return false;
+    }
     entry.item->generation = ++currGeneration_;
     entry.item->surface = inputSurface_;
     avaliableBuffers_.push_back(entry);

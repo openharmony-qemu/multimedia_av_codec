@@ -35,6 +35,7 @@ const uint32_t MAX_STRING_LENGTH = 4096;
 constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
+constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -56,7 +57,7 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::string str(arr, strSize);
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
-    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
+    while (pos >= 0 && length >= 1 && pos <= length - 1 && pos != std::string::npos) {
         char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
@@ -78,7 +79,7 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while (std::isspace(str[str.size() - 1])) {
+    while (str.size() >= 1 && std::isspace(str[str.size() - 1])) {
             str.erase(str.size() - 1, 1);
     }
     return str;
@@ -375,27 +376,17 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     mutex_.lock();
     CURLcode returnCode = curl_easy_perform(easyHandle_);
-    std::set <CURLcode> notRetrySet = {
-        CURLE_COULDNT_RESOLVE_HOST, CURLE_GOT_NOTHING, CURLE_SSL_CONNECT_ERROR,
-        CURLE_SSL_CERTPROBLEM, CURLE_SSL_CACERT, CURLE_SSL_CACERT_BADFILE, CURLE_PEER_FAILED_VERIFICATION,
-        CURLE_HTTP_RETURNED_ERROR, CURLE_READ_ERROR, CURLE_HTTP_POST_ERROR};
-    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
-    NetworkServerErrorCode serverCode = 0;
+    int32_t clientCode = 0;
+    int32_t serverCode = 0;
     Status ret = Status::OK;
     if (returnCode != CURLE_OK) {
         MEDIA_LOG_E("Curl error " PUBLIC_LOG_D32, returnCode);
-        if (notRetrySet.find(returnCode) != notRetrySet.end()) {
-            clientCode = NetworkClientErrorCode::ERROR_NOT_RETRY;
-        } else if (returnCode == CURLE_COULDNT_CONNECT || returnCode == CURLE_OPERATION_TIMEDOUT) {
-            clientCode = NetworkClientErrorCode::ERROR_TIME_OUT;
-        } else {
-            clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
-        }
+        clientCode = returnCode;
         ret = Status::ERROR_CLIENT;
     } else {
         int64_t httpCode = 0;
         curl_easy_getinfo(easyHandle_, CURLINFO_RESPONSE_CODE, &httpCode);
-        if (httpCode >= 400) { // 400
+        if (httpCode >= HTTP_ERROR_THRESHOLD) {
             MEDIA_LOG_E("Http error " PUBLIC_LOG_D64, httpCode);
             serverCode = httpCode;
             ret = Status::ERROR_SERVER;

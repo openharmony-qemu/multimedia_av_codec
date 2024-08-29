@@ -203,6 +203,7 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
         playStrategy = source->GetPlayStrategy();
         mimeType_ = source->GetMimeType();
     }
+
     if (uri_.find(".mpd") != std::string::npos) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
         if (playStrategy != nullptr) {
@@ -217,19 +218,14 @@ void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         }
         delayReady = false;
-    } else if (uri_.find(".mpd") != std::string::npos) {
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>());
-        if (playStrategy != nullptr) {
-            downloader_->SetPlayStrategy(playStrategy);
-        }
-        delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         if (playStrategy != nullptr && playStrategy->duration > 0) {
             uint32_t expectDuration = playStrategy->duration;
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
-                (uri_, expectDuration));
+                                                            (source->GetSourceUri(), expectDuration));
         } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(uri_));
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
+                                                            (source->GetSourceUri()));
         }
     }
     if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
@@ -245,7 +241,7 @@ bool HttpSourcePlugin::IsSeekToTimeSupported()
     if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
         return uri_.find("m3u8") != std::string::npos || uri_.find(".mpd") != std::string::npos;
     }
-    MEDIA_LOG_D("IsSeekToTimeSupported return true");
+    MEDIA_LOG_I("IsSeekToTimeSupported return true");
     return true;
 }
 
@@ -282,9 +278,10 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.streamId_ = streamId;
     readDataInfo.nextStreamId_ = streamId;
     readDataInfo.wantReadLength_ = expectedLen;
+
     auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
-    
+
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
     MEDIA_LOG_D("Read finished, read size = "
     PUBLIC_LOG_ZU
@@ -383,6 +380,7 @@ Status HttpSourcePlugin::GetBitRates(std::vector<uint32_t>& bitRates)
 
 Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
 {
+    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     downloader_->SetIsTriggerAutoMode(false);
     if (downloader_->SelectBitRate(bitRate)) {
         return Status::OK;
@@ -408,7 +406,9 @@ Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
 {
-    downloader_->SetDemuxerState(streamId);
+    if (downloader_ != nullptr) {
+        downloader_->SetDemuxerState(streamId);
+    }
 }
 
 void HttpSourcePlugin::SetDownloadErrorState()

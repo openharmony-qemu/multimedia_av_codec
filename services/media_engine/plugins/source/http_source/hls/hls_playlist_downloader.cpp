@@ -122,7 +122,7 @@ void HlsPlayListDownloader::NotifyListChange()
     auto playList = std::vector<PlayInfo>();
     if (currentVariant_->m3u8_->isDecryptAble_) {
         while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
-            Task::SleepInTask(10); // 10 ms
+            Task::SleepInTask(10); // sleep 10ms
         }
         callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
             currentVariant_->m3u8_->iv_);

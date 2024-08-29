@@ -151,6 +151,76 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode) {}
     void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) {}
 };
+class MyAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
+public:
+    uint32_t GetQueueSize()
+    {
+        return 0;
+    }
+    Status SetQueueSize(uint32_t size)
+    {
+        return  Status::OK;
+    }
+
+    Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
+                                 const AVBufferConfig& config, int32_t timeoutMs)
+    {
+        if (outBuffer == nullptr) {
+            return Status::ERROR_NULL_POINTER;
+        } else {
+            return  Status::OK;
+        }
+    }
+    Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
+    {
+        return  Status::OK;
+    }
+    Status ReturnBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
+    {
+        return  Status::OK;
+    }
+
+    Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled)
+    {
+        return  Status::OK;
+    }
+    Status DetachBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
+    {
+        return  Status::OK;
+    }
+
+    Status SetBufferFilledListener(sptr<IBrokerListener>& listener)
+    {
+        return  Status::OK;
+    }
+    Status RemoveBufferFilledListener(sptr<IBrokerListener>& listener)
+    {
+        return  Status::OK;
+    }
+    Status SetBufferAvailableListener(sptr<IProducerListener>& listener)
+    {
+        return  Status::OK;
+    }
+    Status Clear()
+    {
+        return  Status::OK;
+    }
+    DECLARE_INTERFACE_DESCRIPTOR(u"Media.MyAVBufferQueueProducer");
+
+protected:
+    enum: uint32_t {
+        PRODUCER_GET_QUEUE_SIZE = 0,
+        PRODUCER_SET_QUEUE_SIZE = 1,
+        PRODUCER_REQUEST_BUFFER = 2,
+        PRODUCER_PUSH_BUFFER = 3,
+        PRODUCER_RETURN_BUFFER = 4,
+        PRODUCER_ATTACH_BUFFER = 5,
+        PRODUCER_DETACH_BUFFER = 6,
+        PRODUCER_SET_FILLED_LISTENER = 7,
+        PRODUCER_REMOVE_FILLED_LISTENER = 8,
+        PRODUCER_SET_AVAILABLE_LISTENER = 9
+    };
+};
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

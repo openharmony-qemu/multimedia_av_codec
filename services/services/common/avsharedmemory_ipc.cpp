@@ -58,7 +58,9 @@ std::shared_ptr<AVSharedMemory> ReadAVSharedMemoryFromParcel(MessageParcel &parc
         memory = nullptr;
     }
 
-    (void)::close(fd);
+    if (fd >= 0) {
+        (void)::close(fd);
+    }
     return memory;
 }
 } // namespace MediaAVCodec
