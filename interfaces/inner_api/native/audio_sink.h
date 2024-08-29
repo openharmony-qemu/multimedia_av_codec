@@ -78,6 +78,7 @@ public:
     {
         return state_ == Pipeline::FilterState::INITIALIZED;
     }
+    Status SetSeekTime(int64_t seekTime);
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -93,6 +94,7 @@ private:
     void HandleEosInner(bool drain);
     void CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer);
     void CheckUpdateState(char *frame, uint64_t replyBytes, int32_t format);
+    bool DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
 
     class UnderrunDetector {
     public:
@@ -158,6 +160,7 @@ private:
     float maxAmplitude_ = 0;
     bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
+    std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
 };
 }
 }
