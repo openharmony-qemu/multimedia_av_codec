@@ -164,6 +164,32 @@ Status StreamDemuxer::PullDataWithCache(int32_t streamID, uint64_t offset, size_
     return ret;
 }
 
+void StreamDemuxer::ProcInnerDash(int32_t streamID,  uint64_t offset, std::shared_ptr<Buffer>& bufferPtr)
+{
+    if (IsDash()) {
+        MEDIA_LOG_D("dash PullDataWithoutCache, cacheDataMap_ exist streamID , merge it.");
+        auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
+        FALSE_RETURN_MSG(bufferPtr->GetMemory() != nullptr, "bufferPtr invalid");
+        FALSE_RETURN_MSG(memory != nullptr, "memory invalid");
+        std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
+            bufferPtr->GetMemory()->GetSize() + memory->GetSize());
+        if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
+            MEDIA_LOG_W("dash PullDataWithoutCache, Read data from cache data success. update cache data fail.");
+            return;
+        }
+        MEDIA_LOG_I("dash PullDataWithoutCache merge before: cache offset: " PUBLIC_LOG_U64
+            ", cache size: " PUBLIC_LOG_ZU, cacheDataMap_[streamID].GetOffset(),
+            cacheDataMap_[streamID].GetData()->GetMemory()->GetSize());
+        mergedBuffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
+        mergedBuffer->GetMemory()->Write(bufferPtr->GetMemory()->GetReadOnlyData(),
+            bufferPtr->GetMemory()->GetSize(), memory->GetSize());
+        cacheDataMap_[streamID].SetData(mergedBuffer);
+        MEDIA_LOG_I("dash PullDataWithoutCache merge after: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
+            ", cache size: " PUBLIC_LOG_ZU, offset, cacheDataMap_[streamID].GetOffset(),
+            cacheDataMap_[streamID].GetData()->GetMemory()->GetSize());
+    }
+}
+
 Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, size_t size,
     std::shared_ptr<Buffer>& bufferPtr)
 {
@@ -174,28 +200,7 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
     }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         MEDIA_LOG_D("PullDataWithoutCache, cacheDataMap_ exist streamID , do nothing.");
-        if (IsDash()) {
-            MEDIA_LOG_D("dash PullDataWithoutCache, cacheDataMap_ exist streamID , merge it.");
-            auto memory = cacheDataMap_[streamID].GetData()->GetMemory();
-            FALSE_RETURN_V_MSG_E(bufferPtr->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "bufferPtr invalid");
-            FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "memory invalid");
-            std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
-                bufferPtr->GetMemory()->GetSize() + memory->GetSize());
-            if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
-                MEDIA_LOG_W("dash PullDataWithoutCache, Read data from cache data success. update cache data fail.");
-                return Status::ERROR_UNKNOWN;
-            }
-            MEDIA_LOG_I("dash PullDataWithoutCache merge before: cache offset: " PUBLIC_LOG_U64
-                ", cache size: " PUBLIC_LOG_ZU, cacheDataMap_[streamID].GetOffset(),
-                cacheDataMap_[streamID].GetData()->GetMemory()->GetSize());
-            mergedBuffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
-            mergedBuffer->GetMemory()->Write(bufferPtr->GetMemory()->GetReadOnlyData(),
-                bufferPtr->GetMemory()->GetSize(), memory->GetSize());
-            cacheDataMap_[streamID].SetData(mergedBuffer);
-            MEDIA_LOG_I("dash PullDataWithoutCache merge after: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
-                ", cache size: " PUBLIC_LOG_ZU, offset, cacheDataMap_[streamID].GetOffset(),
-                cacheDataMap_[streamID].GetData()->GetMemory()->GetSize());
-        }
+        ProcInnerDash(streamID, offset, bufferPtr);
     } else {
         CacheData cacheTmp;
         cacheDataMap_[streamID] = cacheTmp;
