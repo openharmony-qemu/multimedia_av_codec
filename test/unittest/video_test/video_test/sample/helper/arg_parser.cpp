@@ -45,6 +45,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_MAX_FRAMES,
     DEMO_ARG_DATA_PRODUCER,
     DEMO_ARG_BITSTREAM_TYPE,
+    DEMO_ARG_DEMUXER_SOURCE_TYPE,
     DEMO_ARG_SEEK_MODE,
     DEMO_ARG_CODEC_CONSUMER,
     DEMO_ARG_THREAD_SLEEP_MODE,
@@ -77,6 +78,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_MAX_FRAMES,                       "max_frames"},
     {DEMO_ARG_DATA_PRODUCER,                    "data_producer"},
     {DEMO_ARG_BITSTREAM_TYPE,                   "bitstream_type"},
+    {DEMO_ARG_DEMUXER_SOURCE_TYPE,              "demuxer_source_type"},
     {DEMO_ARG_SEEK_MODE,                        "seek_mode"},
     {DEMO_ARG_CODEC_CONSUMER,                   "codec_consumer"},
     {DEMO_ARG_THREAD_SLEEP_MODE,                "thread_sleep_mode"},
@@ -109,6 +111,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"max_frames",                       required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
     {"data_producer",                    required_argument,  nullptr, DEMO_ARG_DATA_PRODUCER},
     {"bitstream_type",                   required_argument,  nullptr, DEMO_ARG_BITSTREAM_TYPE},
+    {"demuxer_source_type",              required_argument,  nullptr, DEMO_ARG_DEMUXER_SOURCE_TYPE},
     {"seek_mode",                        required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
     {"codec_consumer",                   required_argument,  nullptr, DEMO_ARG_CODEC_CONSUMER},
     {"thread_sleep_mode",                required_argument,  nullptr, DEMO_ARG_THREAD_SLEEP_MODE},
@@ -140,6 +143,7 @@ Video codec demo help:
                                         2: Surface AVBuffer    3: Buffer AVBuffer
     --data_producer                     0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
     --bitstream_type                    0: AnnexB;   1: AVCC
+    --demuxer_source_type               0: file;     1: uri
     --codec_consumer                    0: Default;  1: Decoder render output
 
     --frame_interval                    frame push interval (ms)
@@ -193,6 +197,7 @@ inline void SetInputFilePath(SampleInfo &info, const char * const value)
 inline void SetOutputFilePath(SampleInfo &info, const char * const value)
 {
     info.outputFilePath = value;
+    info.needDumpOutput = true;
 }
 
 inline void SetMime(SampleInfo &info, const char * const value)
@@ -288,6 +293,11 @@ inline void SetBitstreamType(SampleInfo &info, const char * const value)
     info.dataProducerInfo.bitstreamType = static_cast<BitstreamType>(std::stol(value));
 }
 
+inline void SetDemuxerSourceType(SampleInfo &info, const char * const value)
+{
+    info.dataProducerInfo.demuxerSourceType = static_cast<DemuxerSourceType>(std::stol(value));
+}
+
 inline void SetSeekMode(SampleInfo &info, const char * const value)
 {
     info.dataProducerInfo.seekMode = static_cast<OH_AVSeekMode>(std::stol(value));
@@ -342,6 +352,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_MAX_FRAMES,                       SetMaxFrames},
     {DEMO_ARG_DATA_PRODUCER,                    SetDataProducer},
     {DEMO_ARG_BITSTREAM_TYPE,                   SetBitstreamType},
+    {DEMO_ARG_DEMUXER_SOURCE_TYPE,              SetDemuxerSourceType},
     {DEMO_ARG_SEEK_MODE,                        SetSeekMode},
     {DEMO_ARG_CODEC_CONSUMER,                   SetCodecConsumerType},
     {DEMO_ARG_THREAD_SLEEP_MODE,                SetThreadSleepMode},

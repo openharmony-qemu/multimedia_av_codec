@@ -24,7 +24,7 @@ namespace MediaAVCodec {
 namespace Sample {
 struct SampleContext {
     std::shared_ptr<SampleInfo> sampleInfo = nullptr;
-    std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;
+    std::shared_ptr<VideoCodecBase> videoCodec = nullptr;
     SampleBufferQueue inputBufferQueue;
     SampleBufferQueue outputBufferQueue;
 };
