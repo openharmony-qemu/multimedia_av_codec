@@ -41,12 +41,6 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 }
 
-#define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
-#define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
-#define AV_CODEC_USECOND (static_cast<int64_t>(1000) * AV_CODEC_NSECOND)
-#define AV_CODEC_MSECOND (static_cast<int64_t>(1000) * AV_CODEC_USECOND)
-#define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
-
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 78, 0) and LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 64, 100)
 #if LIBAVFORMAT_VERSION_INT != AV_VERSION_INT(58, 76, 100)
@@ -77,11 +71,6 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
 void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str);
-
-inline int64_t AvTime2Us(int64_t hTime)
-{
-    return hTime / AV_CODEC_USECOND;
-}
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { SeekMode::SEEK_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },

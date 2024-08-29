@@ -61,6 +61,7 @@ uint32_t TimeStampUs2FrameId(int64_t timeUs, double fps);
 void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl);
 void SetDropTag(const AVPacket& pkt, std::shared_ptr<AVBuffer> sample, AVCodecID codecId);
 bool IsInputFormatSupported(const char* name);
+int64_t AvTime2Us(int64_t hTime)
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media
