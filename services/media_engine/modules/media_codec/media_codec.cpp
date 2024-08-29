@@ -69,14 +69,29 @@ MediaCodec::MediaCodec()
 
 MediaCodec::~MediaCodec()
 {
-    codecPlugin_ = nullptr;
-    inputBufferQueue_ = nullptr;
-    inputBufferQueueProducer_ = nullptr;
-    inputBufferQueueConsumer_ = nullptr;
-    outputBufferQueueProducer_ = nullptr;
-    codecCallback_ = nullptr;
-    mediaCodecCallback_ = nullptr;
+    state_ = CodecState::UNINITIALIZED;
     outputBufferCapacity_ = 0;
+    if (codecPlugin_) {
+        codecPlugin_ = nullptr;
+    }
+    if (inputBufferQueue_) {
+        inputBufferQueue_ = nullptr;
+    }
+    if (inputBufferQueueProducer_) {
+        inputBufferQueueProducer_ = nullptr;
+    }
+    if (inputBufferQueueConsumer_) {
+        inputBufferQueueConsumer_ = nullptr;
+    }
+    if (outputBufferQueueProducer_) {
+        outputBufferQueueProducer_ = nullptr;
+    }
+    if (codecCallback_) {
+        codecCallback_ = nullptr;
+    }
+    if (mediaCodecCallback_) {
+        mediaCodecCallback_ = nullptr;
+    }
 }
 
 int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
