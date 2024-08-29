@@ -76,7 +76,7 @@ private:
     AudioSampleFormat audioSampleFormat_;
 
     struct LameInfo;
-    LameInfo* lameInfo;
+    std::unique_ptr<LameInfo> lameInfo;
 
     int32_t lameInitFlag;
     int32_t channels_;
@@ -87,7 +87,7 @@ private:
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     int32_t outputSize_;
-    unsigned char* lameMp3Buffer;
+    std::unique_ptr<unsigned char[]> lameMp3Buffer;
 };
 } // namespace Mp3
 } // namespace Plugins

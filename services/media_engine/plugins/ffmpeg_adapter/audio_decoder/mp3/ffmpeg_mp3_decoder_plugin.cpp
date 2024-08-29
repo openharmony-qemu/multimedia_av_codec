@@ -47,9 +47,10 @@ FFmpegMp3DecoderPlugin::FFmpegMp3DecoderPlugin(const std::string& name)
 
 FFmpegMp3DecoderPlugin::~FFmpegMp3DecoderPlugin()
 {
-    basePlugin->Release();
-    basePlugin.reset();
-    basePlugin = nullptr;
+    if (basePlugin != nullptr) {
+        basePlugin->Release();
+        basePlugin.reset();
+    }
 }
 
 Status FFmpegMp3DecoderPlugin::Init()
