@@ -76,7 +76,7 @@ public:
     }
 
     NativeVideoEncoderCallback(OH_AVCodec *codec, OH_VideoEncoder_OnNeedInputParameter onInputParameter, void *userData)
-        : codec_(codec), onInputParameter_(onInputParameter), userData_(userData)
+        : codec_(codec), onInputParameter_(onInputParameter), paramUserData_(userData)
     {
     }
 
@@ -214,7 +214,7 @@ public:
             return;
         }
         OH_AVFormat *data = GetTransData(codec_, index, parameter);
-        onInputParameter_(codec_, index, data, userData_);
+        onInputParameter_(codec_, index, data, paramUserData_);
     }
 
     void StopCallback()
@@ -233,7 +233,7 @@ public:
     void UpdateCallback(const OH_VideoEncoder_OnNeedInputParameter &onInputParameter, void *userData)
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
-        userData_ = userData;
+        paramUserData_ = userData;
         onInputParameter_ = onInputParameter;
     }
 
@@ -349,6 +349,7 @@ private:
     struct OH_AVCodecCallback callback_ = {nullptr, nullptr, nullptr, nullptr};
     OH_VideoEncoder_OnNeedInputParameter onInputParameter_ = nullptr;
     void *userData_ = nullptr;
+    void *paramUserData_ = nullptr;
     std::shared_mutex mutex_;
 };
 
