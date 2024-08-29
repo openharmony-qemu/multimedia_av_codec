@@ -115,6 +115,9 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_SetOutputSurface_001, Test
     sptr<Surface> surface = nullptr;
     Status ret = videoResize_->SetOutputSurface(surface, 0, 0);
     EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+    videoResize_->videoEnhancer_ = nullptr;
+    ret = videoResize_->SetOutputSurface(surface, 0, 0);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
     videoResize_->videoEnhancer_ = DetailEnhancerVideo::Create();
     videoResize_->eventReceiver_ = nullptr;
     surface = videoResize_->videoEnhancer_->GetInputSurface();
@@ -167,13 +170,29 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_DoStop_001, TestSize.Level
  */
 HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_SetParameter_001, TestSize.Level1)
 {
-    std::shared_ptr<Meta> parameter= std::make_shared<Meta>();
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     videoResize_->videoEnhancer_ = nullptr;
     videoResize_->SetParameter(parameter);
     videoResize_->videoEnhancer_ = DetailEnhancerVideo::Create();
     videoResize_->eventReceiver_ = std::make_shared<MyEventReceiver>();
     videoResize_->SetParameter(parameter);
     videoResize_->eventReceiver_ = nullptr;
+    EXPECT_EQ(videoResize_->appPid_, 0);
+}
+
+/**
+ * @tc.name: VideoResizeFilter_SetParameter_002
+ * @tc.desc: SetParameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_SetParameter_002, TestSize.Level1)
+{
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->SetData(Tag::MEDIA_END_OF_STREAM, 2);
+    videoResize_->videoEnhancer_ = nullptr;
+    videoResize_->SetParameter(parameter);
+    videoResize_->videoEnhancer_ = DetailEnhancerVideo::Create();
+    videoResize_->SetParameter(parameter);
     EXPECT_EQ(videoResize_->appPid_, 0);
 }
 
@@ -192,6 +211,22 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_LinkNext_001, TestSize.Lev
     videoResize_->eventReceiver_ = nullptr;
     ret = videoResize_->LinkNext(nextFilter, outType);
     EXPECT_NE(ret, Status::OK);
+}
+
+/**
+ * @tc.name: VideoResizeFilter_OnLinkedResult_001
+ * @tc.desc: OnLinkedResult
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_OnLinkedResult_001, TestSize.Level1)
+{
+    sptr<AVBufferQueueProducer> outputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    videoResize_->onLinkedResultCallback_ = std::make_shared<TestFilterLinkCallback>();
+    videoResize_->OnLinkedResult(outputBufferQueue, meta);
+    videoResize_->onLinkedResultCallback_ = nullptr;
+    videoResize_->OnLinkedResult(outputBufferQueue, meta);
+    EXPECT_EQ(videoResize_->instanceId_, 0);
 }
 
 /**

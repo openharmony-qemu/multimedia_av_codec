@@ -127,10 +127,10 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Start_0100, TestSi
     surfaceEncoderAdapter_->codecServer_ = nullptr;
     Status ret = surfaceEncoderAdapter_->Start();
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     surfaceEncoderAdapter_->releaseBufferTask_ = nullptr;
     ret = surfaceEncoderAdapter_->Start();
     surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
-    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     ret = surfaceEncoderAdapter_->Start();
     EXPECT_EQ(ret, Status::OK);
 }
@@ -288,6 +288,22 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutEnableTemporalScale_0100
+ * @tc.desc: ConfigureAboutEnableTemporalScale
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, ConfigureAboutEnableTemporalScale_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    MediaAVCodec::Format format;
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
+    surfaceEncoderAdapter_->ConfigureAboutEnableTemporalScale(format, meta);
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 2);
+    surfaceEncoderAdapter_->ConfigureAboutEnableTemporalScale(format, meta);
+    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+}
+
+/**
  * @tc.name: OnInputParameterWithAttrAvailablee_100
  * @tc.desc: OnInputParameterWithAttrAvailable
  * @tc.type: FUNC
@@ -389,6 +405,28 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_100, Te
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
     EXPECT_EQ(surfaceEncoderAdapter_->isResume_, buffer->pts_);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_TransCoder_200
+ * @tc.desc: TransCoderOnOutputBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_200, TestSize.Level1)
+{
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
+                                new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    uint32_t index = 1;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isResume_ = true;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->startBufferTime_ = -1;
+    buffer->pts_ = 1;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
 }
 
 /**
