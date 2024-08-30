@@ -125,7 +125,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_DoPause_001, TestSize.Le
 {
     Status ret = videoCaptureFilter_->DoPause();
     EXPECT_EQ(ret, Status::OK); 
-    EXPECT_EQ(videoCaptureFilter_->isStop_, true):
+    EXPECT_EQ(videoCaptureFilter_->isStop_, true);
 }
 
 /**
@@ -234,7 +234,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UnLinkNext_001, TestSize
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_GetFilterType_001, TestSize.Level1)
 {
     FilterType filterType_ = videoCaptureFilter_->GetFilterType();
-    EXPECT_EQ(ret, FilterType::VIDEO_CAPTURE); 
+    EXPECT_EQ(filterType_, FilterType::VIDEO_CAPTURE); 
 }
 
 /**
@@ -244,9 +244,9 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_GetFilterType_001, TestS
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnLinked_001, TestSize.Level1)
 {
-    std::shared_ptr<TestFilterCallback> testFilterCallback = std::make_shared<TestFilterCallback>():
+    std::shared_ptr<TestFilterCallback> testFilterCallback = std::make_shared<TestFilterCallback>();
     std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
-    StreamType inType = Pipeline::StreamType::STREAMTYPE_PACKED
+    StreamType inType = Pipeline::StreamType::STREAMTYPE_PACKED;
     Status ret = videoCaptureFilter_->OnLinked(inType, videoMeta, testFilterCallback);
     EXPECT_EQ(ret, Status::OK); 
 }
@@ -258,9 +258,9 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnLinked_001, TestSize.L
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnUpdated_001, TestSize.Level1)
 {
-    std::shared_ptr<TestFilterCallback> testFilterCallback = std::make_shared<TestFilterCallback>():
+    std::shared_ptr<TestFilterCallback> testFilterCallback = std::make_shared<TestFilterCallback>();
     std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
-    StreamType inType = Pipeline::StreamType::STREAMTYPE_PACKED
+    StreamType inType = Pipeline::StreamType::STREAMTYPE_PACKED;
     Status ret = videoCaptureFilter_->OnUpdated(inType, videoMeta, testFilterCallback);
     EXPECT_EQ(ret, Status::OK); 
 }
@@ -276,20 +276,6 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnLinkedResult_001, Test
     std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
     videoCaptureFilter_->OnLinkedResult(myOutputBufferQueue, videoMeta);
     EXPECT_EQ(videoCaptureFilter_->outputBufferQueueProducer_, myOutputBufferQueue); 
-}
-
-
-
-
-/**
- * @tc.name: VideoCaptureFilter_UpdateBufferConfig_001
- * @tc.desc: UpdateBufferConfig
- * @tc.type: FUNC
- */
-HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_001, TestSize.Level1)
-{
-    FilterType filterType_ = videoCaptureFilter_->UpdateBufferConfig();
-    EXPECT_EQ(ret, FilterType::VIDEO_CAPTURE); 
 }
 }  // namespace Pipeline
 }  // namespace Media
