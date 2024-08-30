@@ -132,6 +132,8 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_Start_0100, TestSize.Leve
     surfaceDecoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
     surfaceDecoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoDecoder>();
     EXPECT_EQ(surfaceDecoderAdapter_->Start(), Status::OK);
+    surfaceDecoderAdapter_->releaseBufferTask_ = nullptr;
+    EXPECT_EQ(surfaceDecoderAdapter_->Start(), Status::OK);
 }
 /**
  * @tc.name: SurfaceDecoderAdapter_Stop_0100
@@ -141,6 +143,8 @@ HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_Start_0100, TestSize.Leve
 HWTEST_F(SurfaceDecoderUnitTest, SurfaceDecoderAdapter_Stop_0100, TestSize.Level1)
 {
     surfaceDecoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
+    EXPECT_EQ(surfaceDecoderAdapter_->Stop(), Status::OK);
+    surfaceDecoderAdapter_->releaseBufferTask_ = nullptr;
     EXPECT_EQ(surfaceDecoderAdapter_->Stop(), Status::OK);
     surfaceDecoderAdapter_->codecServer_ = nullptr;
     EXPECT_EQ(surfaceDecoderAdapter_->Stop(), Status::OK);
