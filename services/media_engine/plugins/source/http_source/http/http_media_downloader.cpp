@@ -623,7 +623,7 @@ size_t HttpMediaDownloader::GetContentLength() const
     if (downloadRequest_->IsClosed()) {
         return 0; // 0
     }
-    return downloadRequest_->GetFileContentLengthNoWait();
+    return downloadRequest_->GetFileContentLength();
 }
 
 int64_t HttpMediaDownloader::GetDuration() const
