@@ -120,7 +120,7 @@ void CodecServerUnitTest::CreateHCodecByMime()
         .WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
         .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
+        .WillOnce(Return(AVCS_ERR_OK));
 
     int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
         *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
