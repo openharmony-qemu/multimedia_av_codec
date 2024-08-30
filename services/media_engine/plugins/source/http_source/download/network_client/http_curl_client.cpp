@@ -102,7 +102,6 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
-
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -312,6 +311,26 @@ curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
                                                  curlsocktype purpose,
                                                  struct curl_sockaddr *address)
 {
+    // Validate 'clientp' is not null
+    if (!clientp || !address) {
+        return CURL_SOCKET_BAD;
+    }
+    // Validate 'purpose' is within expected range of values
+    if (purpose != CURLSOCKTYPE_IPCXN && purpose != CURLSOCKTYPE_ACCEPT) {
+        return CURL_SOCKET_BAD;
+    }
+    // Check address family is within expected values (e.g., AF_INET, AF_INET6)
+    if (address->family != AF_INET && address->family != AF_INET6) {
+        return CURL_SOCKET_BAD;
+    }
+    // Validate socktype (e.g., SOCK_STREAM, SOCK_DGRAM)
+    if (address->socktype != SOCK_STREAM && address->socktype != SOCK_DGRAM) {
+        return CURL_SOCKET_BAD;
+    }
+    // Validate protocol (e.g., IPPROTO_TCP, IPPROTO_UDP)
+    if (address->protocol != IPPROTO_TCP && address->protocol != IPPROTO_UDP) {
+        return CURL_SOCKET_BAD;
+    }
     curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
     if (sockfd == CURL_SOCKET_BAD) {
         return CURL_SOCKET_BAD;
