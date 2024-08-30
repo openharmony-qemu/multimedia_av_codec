@@ -123,6 +123,9 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_SetOutputSurface_001, Test
     surface = videoResize_->videoEnhancer_->GetInputSurface();
     ret = videoResize_->SetOutputSurface(surface, 0, 0);
     EXPECT_EQ(ret, Status::OK);
+    videoResize_->videoEnhancer_ = nullptr;
+    ret = videoResize_->SetOutputSurface(surface, 0, 0);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
 }
 
 /**
@@ -142,6 +145,9 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_DoStart_001, TestSize.Leve
     videoResize_->eventReceiver_ = nullptr;
     ret = videoResize_->DoStart();
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    videoResize_->eventReceiver_ = nullptr;
+    ret = videoResize_->DoStart();
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
 /**
@@ -158,6 +164,9 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_DoStop_001, TestSize.Level
     EXPECT_EQ(ret, Status::OK);
     videoResize_->releaseBufferTask_ = std::make_shared<Task>("test");
     videoResize_->videoEnhancer_ = DetailEnhancerVideo::Create();
+    videoResize_->eventReceiver_ = nullptr;
+    ret = videoResize_->DoStop();
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
     videoResize_->eventReceiver_ = nullptr;
     ret = videoResize_->DoStop();
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);

@@ -110,4 +110,62 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_002, TestSize.Level1)
     EXPECT_EQ(videoResize->DoPrepare(), Status::ERROR_UNKNOWN);
 }
 
+HWTEST_F(VideoResizeFilterUnitTest, Configure_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    videoResize->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    Status ret = videoResize->Configure(parameter);
+    videoResize->eventReceiver_ = nullptr;
+    ret = videoResize->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(VideoResizeFilterUnitTest, GetInputSurface_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    videoResize->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    sptr<Surface> surface = videoResize->GetInputSurface();
+    videoResize->eventReceiver_ = nullptr;
+    surface = videoResize->GetInputSurface();
+    EXPECT_EQ(surface, nullptr);
+}
+
+HWTEST_F(VideoResizeFilterUnitTest, SetOutputSurface_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    videoResize->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    sptr<Surface> surface = nullptr;
+    Status ret = videoResize->SetOutputSurface(surface, 0, 0);
+    videoResize->eventReceiver_ = nullptr;
+    ret = videoResize->SetOutputSurface(surface, 0, 0);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(VideoResizeFilterUnitTest, DoStart_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    videoResize->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    videoResize->releaseBufferTask_ = std::make_shared<Task>("VideoResize");
+    Status ret = videoResize->DoStart();
+    videoResize->eventReceiver_ = nullptr;
+    ret = videoResize->DoStart();
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(VideoResizeFilterUnitTest, DoStop_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    videoResize->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    videoResize->releaseBufferTask_ = std::make_shared<Task>("VideoResize");
+    Status ret = videoResize->DoStop();
+    videoResize->eventReceiver_ = nullptr;
+    ret = videoResize->DoStop();
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
 }
