@@ -1095,6 +1095,19 @@ void FCodec::ReceiveFrame()
     FramePostProcess(frameBuffer, index, status, ret);
 }
 
+void FCodec::FindAvailIndex(uint32_t index)
+{
+    uint32_t curQueSize = renderAvailQue_->Size();
+    for (uint32_t i = 0u; i < curQueSize; i++) {
+        uint32_t num = renderAvailQue_->Pop();
+        if (num == index) {
+            break;
+        } else {
+            renderAvailQue_->Push(num);
+        }
+    }
+}
+
 void FCodec::RenderFrame()
 {
     if (state_ == State::STOPPING || state_ == State::FLUSHING) {
@@ -1136,7 +1149,7 @@ void FCodec::RenderFrame()
             outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(), surfaceMemory->GetSize());
             outputBuffer->width_ = width_;
             outputBuffer->height_ = height_;
-            renderAvailQue_->Pop();
+            FindAvailIndex(curIndex);
         }
         buffers_[INDEX_OUTPUT][curIndex]->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         codecAvailQue_->Push(curIndex);
