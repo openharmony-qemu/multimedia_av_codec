@@ -165,7 +165,7 @@ public:
     Status RequestBuffer(std::shared_ptr<AVBuffer>& outBuffer,
                                  const AVBufferConfig& config, int32_t timeoutMs)
     {
-        return  Status::ERROR_UNKNOWN;
+        return  Status::OK;
     }
     Status PushBuffer(const std::shared_ptr<AVBuffer>& inBuffer, bool available)
     {
