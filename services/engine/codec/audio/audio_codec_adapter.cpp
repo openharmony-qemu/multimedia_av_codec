@@ -53,10 +53,9 @@ int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &c
         AVCODEC_LOGE("SetCallback failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    if (!callback) {
-        AVCODEC_LOGE("SetCallback failed, callback is nullptr.");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "SetCallback failed, callback is nullptr.");
+
     callback_ = callback;
     AVCODEC_LOGD("SetCallback success");
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -84,9 +83,7 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
     
     state_ = CodecState::INITIALIZING;
     auto ret = doInit();
-    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret, "unknown error.");
 
     if (state_ != CodecState::INITIALIZED) {
         AVCODEC_LOGE("Configure failed, state =%{public}s", stateToString(state_).data());
@@ -101,10 +98,8 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
 int32_t AudioCodecAdapter::Start()
 {
     AVCODEC_LOGD("Start enter");
-    if (!callback_) {
-        AVCODEC_LOGE("adapter start error, callback not initialized .");
-        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+       "adapter start error, callback not initialized .");
 
     if (!audioCodec) {
         AVCODEC_LOGE("adapter start error, audio codec not initialized .");
@@ -130,10 +125,9 @@ int32_t AudioCodecAdapter::Stop()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("stop enter");
-    if (!callback_) {
-        AVCODEC_LOGE("Stop failed, call back not initialized.");
-        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+        "Stop failed, call back not initialized.");
+
     if (state_ == CodecState::INITIALIZED || state_ == CodecState::RELEASED || state_ == CodecState::STOPPING ||
         state_ == CodecState::RELEASING) {
         AVCODEC_LOGD("Stop, state_=%{public}s", stateToString(state_).data());
@@ -150,10 +144,9 @@ int32_t AudioCodecAdapter::Flush()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Flush enter");
-    if (!callback_) {
-        AVCODEC_LOGE("adapter flush error, call back not initialized .");
-        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+        "adapter flush error, call back not initialized .");
+
     if (state_ == CodecState::FLUSHED) {
         AVCODEC_LOGW("Flush, state is already flushed, state_=%{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -241,10 +234,9 @@ int32_t AudioCodecAdapter::SetParameter(const Format &format)
 int32_t AudioCodecAdapter::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    if (audioCodec == nullptr) {
-        AVCODEC_LOGE("Codec not init or nullptr");
-        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "Codec not init or nullptr");
+
     format = audioCodec->GetFormat();
     if (!format.ContainKey(MediaDescriptionKey::MD_KEY_CODEC_NAME)) {
         format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, name_);
@@ -312,10 +304,8 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
         AVCODEC_LOGE("adapter release buffer error,index:%{public}u, call back not initialized .", index);
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    if (!audioCodec) {
-        AVCODEC_LOGE("adapter release buffer error, audio codec not initialized .");
-        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+        "adapter release buffer error, audio codec not initialized .");
 
     auto outBufferInfo = worker_->GetOutputBufferInfo(index);
     if (outBufferInfo == nullptr) {
@@ -329,15 +319,11 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
     }
 
     auto outBuffer = worker_->GetOutputBuffer();
-    if (outBuffer == nullptr) {
-        AVCODEC_LOGE("release buffer failed,index=%{public}u error", index);
-        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(outBuffer != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
+        "release buffer failed,index=%{public}u error", index);
+
     bool result = outBuffer->ReleaseBuffer(index);
-    if (!result) {
-        AVCODEC_LOGE("release buffer failed");
-        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(result == true, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY, "release buffer failed");
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
