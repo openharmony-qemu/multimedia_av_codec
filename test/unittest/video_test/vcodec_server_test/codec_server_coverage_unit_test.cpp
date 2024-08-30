@@ -25,6 +25,10 @@
 #include "window_option.h"
 #include "wm/window.h"
 #include "media_description.h"
+#define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
+    EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
+#define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
+    EXPECT_CALL(*codecBaseMock_, GetFCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

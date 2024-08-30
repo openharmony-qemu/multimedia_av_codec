@@ -19,10 +19,6 @@
 #include "av_common.h"
 #include "codecbase.h"
 #include "codec_server.h"
-#define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
-    EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
-#define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
-    EXPECT_CALL(*codecBaseMock_, GetFCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
 
 namespace OHOS {
 namespace MediaAVCodec {
