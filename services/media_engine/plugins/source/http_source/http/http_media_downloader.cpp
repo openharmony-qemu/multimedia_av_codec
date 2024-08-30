@@ -150,7 +150,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
 HttpMediaDownloader::~HttpMediaDownloader()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "~HttpMediaDownloader dtor", FAKE_POINTER(this);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HttpMediaDownloader dtor", FAKE_POINTER(this));
     Close(false);
 }
 
