@@ -59,7 +59,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_Init_001, TestSize.Level
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_Configure_001, TestSize.Level1)
 {
     std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
-    Status ret = videoCaptureFilter_->Configure();
+    Status ret = videoCaptureFilter_->Configure(videoMeta);
     EXPECT_EQ(ret, Status::OK);
 }
 
