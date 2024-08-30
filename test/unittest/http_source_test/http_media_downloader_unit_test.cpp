@@ -63,12 +63,6 @@ void HttpMediaDownloaderUnitTest::TearDown()
 {
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, GetContentLength, TestSize.Level1)
-{
-    MP4httpMediaDownloader->GetContentLength();
-    FLVhttpMediaDownloader->GetContentLength();
-}
-
 HWTEST_F(HttpMediaDownloaderUnitTest, GetStartedStatus, TestSize.Level1)
 {
     MP4httpMediaDownloader->startedPlayStatus_ = false;

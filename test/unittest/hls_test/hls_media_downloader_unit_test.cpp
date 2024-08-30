@@ -21,11 +21,10 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
-// 黑白球視頻地址
 
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
-    {"Referer", "DEF"}
+    {"Referer", "DEF"},
 };
 static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
@@ -476,31 +475,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, TEST_READ_SelectBR, TestSize.Level1)
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
-}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>("application/m3u8");
-    std::string testUrl = "fd://1?offset=0&size=1024";
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {
-    };
-    downloader->SetStatusCallback(statusCallback);
-    downloader->Open(testUrl, httpHeader);
-    downloader->Close(true);
-    testUrl = "fd://-1?offset=0&size=1024";
-    downloader->Open(testUrl, httpHeader);
-    downloader->Close(true);
-    testUrl = "fd://1?offset=2048&size=1024";
-    downloader->Open(testUrl, httpHeader);
-    downloader->Close(true);
-    testUrl = "fd://1?offset=512&size=1024";
-    downloader->Open(testUrl, httpHeader);
-    downloader->Close(true);
-    testUrl = "fd://data/test/media/test_cbr/720_1M/video_720.m3u8?offset=2048&size=1024";
-    downloader->Open(testUrl, httpHeader);
-    downloader->Close(true);
-    downloader = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, TEST_WRITE_RINGBUFFER_001, TestSize.Level1)

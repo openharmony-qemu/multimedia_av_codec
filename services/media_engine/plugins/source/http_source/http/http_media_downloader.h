@@ -54,16 +54,19 @@ public:
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
+    std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
     void OnWriteBuffer(uint32_t len);
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
+
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
@@ -88,8 +91,8 @@ private:
     void ChangeDownloadPos();
     int32_t GetWaterLineAbove();
     void HandleCachedDuration();
-    double CalculateCurrentDownloadSpeed();
     bool CheckBufferingOneSeconds();
+    double CalculateCurrentDownloadSpeed();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -141,7 +144,7 @@ private:
     };
     std::shared_ptr<RecordData> recordData_;
     uint64_t currentBitrate_ {1 * 1024 * 1024};         //bps
-    uint64_t lastReadRecordTime_ {0};
+    uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBytes_ {0};
     uint64_t readRecordDuringTime_ {0};
     uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
