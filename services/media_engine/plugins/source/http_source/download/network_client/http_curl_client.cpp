@@ -23,7 +23,6 @@
 #include "securec.h"
 #include "net_conn_client.h"
 #include <fcntl.h>
-#include <curl/curl.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -38,6 +37,8 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
+constexpr int BAD_SOCKET = -1;
+constexpr int SOCKET_ZERO = 0;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -312,43 +313,27 @@ curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
                                                  curlsocktype purpose,
                                                  struct curl_sockaddr *address)
 {
-    // Validate 'clientp' is not null
+    // Validate clientp and address is not null
     if (!clientp || !address) {
-        return CURL_SOCKET_BAD;
-    }
-    // Validate 'purpose' is within expected range of values
-    if (purpose != CURLSOCKTYPE_IPCXN && purpose != CURLSOCKTYPE_ACCEPT) {
-        return CURL_SOCKET_BAD;
-    }
-    // Check address family is within expected values (e.g., AF_INET, AF_INET6)
-    if (address->family != AF_INET && address->family != AF_INET6) {
-        return CURL_SOCKET_BAD;
-    }
-    // Validate socktype (e.g., SOCK_STREAM, SOCK_DGRAM)
-    if (address->socktype != SOCK_STREAM && address->socktype != SOCK_DGRAM) {
-        return CURL_SOCKET_BAD;
-    }
-    // Validate protocol (e.g., IPPROTO_TCP, IPPROTO_UDP)
-    if (address->protocol != IPPROTO_TCP && address->protocol != IPPROTO_UDP) {
         return CURL_SOCKET_BAD;
     }
     curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
     if (sockfd == CURL_SOCKET_BAD) {
         return CURL_SOCKET_BAD;
     }
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if (flags ==-1) {
+    int flags = fcntl(sockfd, F_GETFL, SOCKET_ZERO);
+    if (flags == BAD_SOCKET) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
-    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) ==-1) {
+    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == BAD_SOCKET) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
     SocketOwner* owner = static_cast<SocketOwner*>(clientp);
     uid_t uid = owner->uid;
     gid_t gid = owner->gid;
-    if (fchown(sockfd, uid, gid) == -1) {
+    if (fchown(sockfd, uid, gid) == BAD_SOCKET) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
