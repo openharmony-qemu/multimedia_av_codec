@@ -132,6 +132,7 @@ private:
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
+    void FindAvailIndex(uint32_t index);
     void FramePostProcess(std::shared_ptr<HBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt);
