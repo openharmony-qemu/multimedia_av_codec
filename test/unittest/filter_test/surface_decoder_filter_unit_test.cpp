@@ -129,7 +129,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
 HWTEST_F(SurfaceDecoderFilterUnitTest, Configure, TestSize.Level1)
 {
     surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
-    std::shared_ptr<Meta> parameter= std::make_shared<Meta>();
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     Status ret = surfaceDecoderFilter_->Configure(parameter);
     surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
     ret = surfaceDecoderFilter_->Configure(parameter);
