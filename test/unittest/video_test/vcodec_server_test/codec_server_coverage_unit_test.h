@@ -12,17 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef CODEC_SERVER_COVERAGE_UNIT_TEST
+#define CODEC_SERVER_COVERAGE_UNIT_TEST
 
 #include "gtest/gtest.h"
 #include "av_common.h"
 #include "codecbase.h"
 #include "codec_server.h"
-#ifndef EXPECT_CALL_GET_CODEC
 #define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
 #define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetFCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
-#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -75,3 +75,4 @@ inline void CodecServerUnitTest::TearDown(void)
 }
 } // name space MediaAVCodec
 } // namespace OHOS
+#endif // CODEC_SERVER_COVERAGE_UNIT_TEST
