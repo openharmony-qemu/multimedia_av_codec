@@ -388,7 +388,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
         format.SetData(Tag::MEDIA_START_TIME,
-            ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base));
+            AvTime2Us(ConvertTimeFromFFmpeg(avStream.start_time, avStream.time_base)));
     } else {
         MEDIA_LOG_D("Parse track start time info failed.");
     }
