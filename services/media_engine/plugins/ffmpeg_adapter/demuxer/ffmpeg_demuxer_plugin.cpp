@@ -1080,6 +1080,8 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
+    FALSE_RETURN_V_MSG_E(ioContext->offset <= INT64_MAX - static_cast<int64_t>(bufSize),
+        ret, "AVReadPacket failed due to offset invalid.");
 
     if (ioContext->dataSource->IsDash() && ioContext->eos == true) {
         MEDIA_LOG_I("AVReadPacket return EOS");
@@ -1144,7 +1146,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     }
 
     if (!ioContext->initCompleted) {
-        ioContext->initDownloadDataSize += static_cast<uint32_t>(buffer->GetMemory()->GetSize());
+        if ((ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize))) {
+            ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
+        } else {
+            MEDIA_LOG_W("dataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
+        }
     }
 
     return ret;
