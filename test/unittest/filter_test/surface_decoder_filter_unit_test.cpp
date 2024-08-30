@@ -146,7 +146,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_010
     EXPECT_EQ(surfaceDecoderFilter_->DoStop(), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->DoFlush(), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->DoRelease(), Status::OK);
-    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(UINT32_MAX), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<TestFilterLinkCallback>();
