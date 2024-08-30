@@ -91,6 +91,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "$av_codec_root_dir/services/services/codec/server/post_processing/state_machine.cpp",
     "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
     "./codec_server_coverage_unit_test.cpp",
+    "./post_processing_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
     "./mock/codecbase_mock.cpp",
   ]
