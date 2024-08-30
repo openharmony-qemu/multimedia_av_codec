@@ -38,7 +38,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_APE = "audio/x-ape";
 const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC = "video/vvc";
 const char *OH_AVCODEC_MIMETYPE_SUBTITLE_SRT = "application/x-subrip";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC = "audio/lbvc";
-const char *OH_AVCODEC_MIMETYPE_SUBTITLE_WEBVTT = "text/vtt";
+const char *OH_AVCODEC_MIMETYPE_SUBTITLE_VTT = "text/vtt";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
