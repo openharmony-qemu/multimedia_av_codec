@@ -262,9 +262,9 @@ inline int ValidateInteger(int number)
           (number > 1 ? STANTARDIZE_POSITIVE : number); // 1 is used for boundary value verification
 }
 
-inline int ConvFp(int32_t x)
+inline int ConvFp(int32_t x) 
 {
-    return (int32_t) (x * (1 << 16)); // 16 is used for digital conversion
+    return (int32_t)(x / (1 << 16)); // 16 is used for digital conversion
 }
 
 std::string ConvertArrayToString(const int* Array, size_t size)
@@ -576,15 +576,20 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
     }
 }
 
+void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
+{
+    MEDIA_LOG_D(PUBLIC_LOG_S ": [" PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " "
+            PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 "]",
+            matrixName.c_str(), matrix[0], matrix[1], matrix[2], matrix[3], matrix[4],
+            matrix[5], matrix[6], matrix[7], matrix[8]);
+}
+
 void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Meta &format)
 {
     VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
     if (displayMatrix) {
-        MEDIA_LOG_D("display matrix: [" PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " "
-            PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 "]",
-            displayMatrix[0], displayMatrix[1], displayMatrix[2], displayMatrix[3], displayMatrix[4],
-            displayMatrix[5], displayMatrix[6], displayMatrix[7], displayMatrix[8]);
+        PrintMatrixToLog(displayMatrix, "displayMatrix");
         int convertedMatrix[DISPLAY_MATRIX_SIZE];
         std::copy(displayMatrix, displayMatrix + DISPLAY_MATRIX_SIZE, convertedMatrix);
         for (int index = 0; index < DISPLAY_MATRIX_SIZE; index++) {
@@ -596,6 +601,7 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
                 convertedMatrix[index] = 1; // Numbers with index 8 are uniformly set to 1
             }
         }
+        PrintMatrixToLog(convertedMatrix, "convertedMatrix");
         orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, DISPLAY_MATRIX_SIZE));
     } else {
         MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
