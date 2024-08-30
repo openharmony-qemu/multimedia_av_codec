@@ -200,6 +200,7 @@ Status StreamDemuxer::PullDataWithoutCache(int32_t streamID, uint64_t offset, si
     }
     if (cacheDataMap_.find(streamID) != cacheDataMap_.end()) {
         MEDIA_LOG_D("PullDataWithoutCache, cacheDataMap_ exist streamID , do nothing.");
+        ret = ProcInnerDash(streamID, offset, bufferPtr);
         if (ret != Status::OK) {
             MEDIA_LOG_E("ProcInnerDash error " PUBLIC_LOG_D32, static_cast<int32_t>(ret));
             return ret;
