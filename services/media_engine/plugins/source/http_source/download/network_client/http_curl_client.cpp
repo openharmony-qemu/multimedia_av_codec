@@ -23,6 +23,7 @@
 #include "securec.h"
 #include "net_conn_client.h"
 #include <fcntl.h>
+#include <curl/curl.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
