@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <cstdint>
 #include <iostream>
 #include <set>
 #include <thread>
