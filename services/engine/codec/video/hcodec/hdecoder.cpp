@@ -863,7 +863,9 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
-    NotifySurfaceToRenderOutputBuffer(info);
+    if (info.omxBuffer->filledLen != 0) {
+        NotifySurfaceToRenderOutputBuffer(info);
+    }
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
     } else {
