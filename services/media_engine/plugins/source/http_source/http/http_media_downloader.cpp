@@ -406,7 +406,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
         readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     if (isInterruptNeeded_.load()) {
-        readDataInfo.realReadLength_ = 0;
+        readDataInfo.realReadLength_ = hasReadSize;
         return Status::END_OF_STREAM;
     }
     readDataInfo.realReadLength_ = hasReadSize;
@@ -750,7 +750,7 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
         startDownloadTime_ = nowTime;
         lastReportUsageTime_ = nowTime;
     }
-    uint32_t writeBits = len * 8;
+    uint32_t writeBits = len * BYTES_TO_BIT;
     totalBits_ += writeBits;
     dataUsage_ += writeBits;
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
@@ -779,7 +779,7 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 void HttpMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((static_cast<int64_t>(now) - lastCheckTime_) > SAMPLE_INTERVAL) {
+    if ((static_cast<int64_t>(now) - lastCheckTime_) > static_cast<int64_t>(SAMPLE_INTERVAL)) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = now - static_cast<uint64_t>(lastCheckTime_);
@@ -885,7 +885,7 @@ std::pair<int32_t, int32_t> HttpMediaDownloader::GetDownloadInfo()
 {
     MEDIA_LOG_I("HttpMediaDownloader::GetDownloadInfo.");
     if (recordSpeedCount_ == 0) {
-        MEDIA_LOG_E("HttpMediaDownloader is 0, can't get avgDownloadRate");
+        MEDIA_LOG_E("recordSpeedCount is 0, can't get avgDownloadRate");
         return std::make_pair(0, static_cast<int32_t>(avgDownloadSpeed_));
     }
     auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, static_cast<int32_t>(avgDownloadSpeed_));
@@ -896,7 +896,7 @@ std::pair<int32_t, int32_t> HttpMediaDownloader::GetDownloadRateAndSpeed()
 {
     MEDIA_LOG_I("HttpMediaDownloader::GetDownloadRateAndSpeed.");
     if (recordSpeedCount_ == 0) {
-        MEDIA_LOG_E("HttpMediaDownloader is 0, can't get avgDownloadRate");
+        MEDIA_LOG_E("recordSpeedCount is 0, can't get avgDownloadRate");
         return std::make_pair(0, static_cast<int32_t>(avgDownloadSpeed_));
     }
     auto rateAndSpeed = std::make_pair(avgSpeedSum_ / recordSpeedCount_, static_cast<int32_t>(avgDownloadSpeed_));
