@@ -263,6 +263,46 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, OnLinkedResult, TestSize.Level1)
     surfaceDecoderFilter_->OnLinkedResult(outputBufferQueue, meta);
     EXPECT_EQ(surfaceDecoderFilter_->nextFilter_, nullptr);
 }
+
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    sptr<Surface> surface;
+    EXPECT_EQ(surfaceDecoderFilter_->SetOutputSurface(surface), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->DoPrepare(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->DoStart(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->DoPause(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoResume(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoStop(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoFlush(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoRelease(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(UINT32_MAX), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
+    std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<TestFilterLinkCallback>();
+    std::shared_ptr<Meta> format = std::make_shared<Meta>();
+    format->Set<Tag::MIME_TYPE>("test");
+    format->Set<Tag::MEDIA_END_OF_STREAM>(true);
+    EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
+        Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
+        Status::OK);
+    EXPECT_EQ(
+        surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback), Status::OK);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
