@@ -1146,7 +1146,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     }
 
     if (!ioContext->initCompleted) {
-        if ((ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize))) {
+        if (ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize)) {
             ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
         } else {
             MEDIA_LOG_W("dataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
