@@ -113,6 +113,7 @@ private:
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void ReceiveFrame();
+    void FindAvailIndex(uint32_t index);
     void RenderFrame();
     void ConfigureSurface(const Format &format, const std::string_view &formatKey, FormatDataType formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
