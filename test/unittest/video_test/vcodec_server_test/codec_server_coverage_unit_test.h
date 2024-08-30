@@ -14,12 +14,15 @@
  */
 
 #include "gtest/gtest.h"
+#include "av_common.h"
 #include "codecbase.h"
 #include "codec_server.h"
+#ifndef EXPECT_CALL_GET_CODEC
 #define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetHCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
 #define EXPECT_CALL_GET_FCODEC_CAPS_MOCK                                                                               \
     EXPECT_CALL(*codecBaseMock_, GetFCapabilityList).Times(testing::AtLeast(1)).WillRepeatedly
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -32,6 +35,7 @@ public:
     void SetUp(void);
     void TearDown(void);
 
+    void CreateCodecByMime();
     void CreateFCodecByName();
     void CreateFCodecByMime();
     void CreateHCodecByName();
@@ -58,9 +62,9 @@ inline void CodecServerUnitTest::SetUp(void)
     server_ = std::static_pointer_cast<CodecServer>(CodecServer::Create());
     EXPECT_NE(server_, nullptr);
 
-    validFormat_.PutIntValue(Tag::VIDEO_WIDTH, DEFAULT_WIDTH);  // 4096: valid parameter
-    validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT); // 4096: valid parameter
-    validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, 1);
+    validFormat_.PutIntValue(Tag::VIDEO_WIDTH, DEFAULT_WIDTH);
+    validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
+    validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
 }
 
 inline void CodecServerUnitTest::TearDown(void)
@@ -68,99 +72,6 @@ inline void CodecServerUnitTest::TearDown(void)
     server_ = nullptr;
     codecBaseMock_ = nullptr;
     validFormat_ = Format();
-}
-
-inline void CodecServerUnitTest::CreateFCodecByName()
-{
-    std::string codecName = "video.F.Decoder.Name.00";
-
-    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, {})));
-    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
-        .Times(1)
-        .WillOnce(testing::Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
-        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-inline void CodecServerUnitTest::CreateFCodecByMime()
-{
-    std::string codecName = "video.F.Decoder.Name.00";
-    std::string codecMime = CODEC_MIME_MOCK_00;
-
-    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, {})));
-    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
-        .Times(1)
-        .WillOnce(testing::Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
-        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-inline void CodecServerUnitTest::CreateHCodecByName()
-{
-    std::string codecName = "video.H.Encoder.Name.00";
-
-    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
-    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, {})));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
-        .Times(1)
-        .WillOnce(testing::Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, codecName,
-        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-inline void CodecServerUnitTest::CreateHCodecByMime()
-{
-    std::string codecName = "video.H.Encoder.Name.00";
-    std::string codecMime = CODEC_MIME_MOCK_00;
-
-    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, HCODEC_CAPS)));
-    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(testing::Return(RetAndCaps(AVCS_ERR_OK, {})));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CreateHCodecByName(codecName))
-        .Times(1)
-        .WillOnce(testing::Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
-        .Times(1)
-        .WillOnce(testing::Return(AVCS_ERR_OK));
-
-    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, true, codecMime,
-        *validFormat_.GetMeta(), API_VERSION::API_VERSION_11);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 } // name space MediaAVCodec
 } // namespace OHOS
