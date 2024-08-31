@@ -134,6 +134,22 @@ public:
     }
 };
 
+class TestFilter : public Filter {
+public:
+    TestFilter():Filter("TestFilter", FilterType::FILTERTYPE_SOURCE) {}
+    ~TestFilter() = default;
+    Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
+                            const std::shared_ptr<FilterLinkCallback>& callback)
+    {
+        (void)inType;
+        (void)meta;
+        (void)callback;
+        return onLinked_;
+    }
+protected:
+    Status onLinked_;
+};
+
 
 
 }  // namespace Pipeline
