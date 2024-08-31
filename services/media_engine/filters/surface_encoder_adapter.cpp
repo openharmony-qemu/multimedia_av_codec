@@ -269,6 +269,7 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterKeyFramePtsCallback(
     MEDIA_LOG_I("SetEncoderAdapterKeyFramePtsCallback");
     encoderAdapterKeyFramePtsCallback_ = encoderAdapterKeyFramePtsCallback;
     return Status::OK;
+}
 
 Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
