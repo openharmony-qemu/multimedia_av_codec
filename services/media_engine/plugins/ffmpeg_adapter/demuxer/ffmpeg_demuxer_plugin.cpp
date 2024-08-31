@@ -2058,7 +2058,6 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
-
     size_t bufferSize = DEFAULT_READ_SIZE;
     if (StartWith(plugin->name, "mp3")) {
         bufferSize = MP3_PROBE_SIZE; // mp3 needs more data to probe, refer to ffmpeg
@@ -2070,8 +2069,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
             MEDIA_LOG_I("Data is not enough, reset probe size to file size");
         }
     }
-    // fix ffmpeg probe crash,refer to ffmpeg/tools/probetest.c
-    std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
+    std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE); // fix ffmpeg probe crash, refer to tools/probetest.c
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufData = bufferInfo->WrapMemory(buff.data(), bufferSize, bufferSize);
     FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, 0, "Sniff failed due to alloc buffer failed.");
@@ -2082,20 +2080,22 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         ret = dataSource->ReadAt(0, bufferInfo, bufferSize);
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, 0, "Sniff failed due to read probe data failed.");
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory()->GetSize() > 0, 0,
-        "Sniff " PUBLIC_LOG_S " failed due to probe data invalid.", pluginName.c_str());
-
-    AVProbeData probeData{"", buff.data(), static_cast<int>(bufferInfo->GetMemory()->GetSize()), ""};
+    int getData = static_cast<int>(bufferInfo->GetMemory()->GetSize());
+    FALSE_RETURN_V_MSG_E(getData > 0, 0, "Not enough data for sniff " PUBLIC_LOG_S, pluginName.c_str());
+    AVProbeData probeData{"", buff.data(), getData, ""};
     int confidence = plugin->read_probe(&probeData);
     if (StartWith(plugin->name, "mp3") && confidence > 0 && confidence <= MP3_PROBE_SCORE_LIMIT) {
         MEDIA_LOG_W("Sniff: probe score " PUBLIC_LOG_D32 " is too low, may misdetection, reset to 0", confidence);
         confidence = 0;
     }
     if (confidence > 0) {
-        MEDIA_LOG_I("Effective sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
-            static_cast<int>(bufferInfo->GetMemory()->GetSize()), plugin->name, confidence);
+        MEDIA_LOG_I("effective sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
+            getData, plugin->name, confidence);
     }
-
+    if ((StartWith(plugin->name, "mp3") && getData < MP3_PROBE_SIZE) || (getData < DEFAULT_READ_SIZE)) { // no data
+        MEDIA_LOG_I("leak sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
+            getData, plugin->name, confidence);
+    }
     return confidence;
 }
 
