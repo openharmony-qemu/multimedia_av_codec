@@ -36,9 +36,12 @@ extern "C" {
 }
 #endif
 
+#define DISPLAY_MATRIX_SIZE (static_cast<size_t>(9))
 #define CUVA_VERSION_MAP (static_cast<uint16_t>(1))
 #define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
+#define STANTARDIZE_NEGATIVE (static_cast<int32_t>(-2))
+#define STANTARDIZE_POSITIVE (static_cast<int32_t>(2))
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
@@ -223,6 +226,58 @@ static std::map<std::string, VideoRotation> g_pFfRotationMap = {
     {"180", VIDEO_ROTATION_180},
     {"270", VIDEO_ROTATION_270},
 };
+
+static const std::map<std::string, VideoOrientationType> matrixTypes = {
+    /**
+     * Standardize the numbers with indexs 6 and 7.
+     * If they are greater than 1, set them to 2;
+     * if they are less than -1, set them to -2; -1, 0, and 1 remain unchanged
+     */
+    {"0 1 0 -1 0 0 0 0 1", VideoOrientationType::ROTATE_90},
+    {"-1 0 0 0 -1 0 0 0 1", VideoOrientationType::ROTATE_180},
+    {"0 -1 0 1 0 0 0 0 1", VideoOrientationType::ROTATE_270},
+    {"-1 0 0 0 1 0 2 0 1", VideoOrientationType::FLIP_H},
+    {"1 0 0 0 -1 0 0 2 1", VideoOrientationType::FLIP_V},
+    {"0 -1 0 -1 0 0 0 2 1", VideoOrientationType::FLIP_H_ROT90},
+    {"0 1 0 1 0 0 -2 0 1", VideoOrientationType::FLIP_V_ROT90},
+    {"1 0 0 0 -1 0 -2 0 1", VideoOrientationType::FLIP_H_ROT180},
+    {"-1 0 0 0 1 0 0 -2 1", VideoOrientationType::FLIP_V_ROT180},
+    {"0 1 0 1 0 0 0 -2 1", VideoOrientationType::FLIP_H_ROT270},
+    {"0 -1 0 -1 0 0 2 0 1", VideoOrientationType::FLIP_V_ROT270},
+};
+
+VideoOrientationType GetMatrixType(std::string value)
+{
+    auto it = matrixTypes.find(value);
+    if (it!= matrixTypes.end()) {
+        return it->second;
+    } else {
+        return VideoOrientationType::ROTATE_NONE;
+    }
+}
+
+inline int ValidateInteger(int number)
+{
+    return number < -1 ? STANTARDIZE_NEGATIVE : // -1 is used for boundary value verification
+          (number > 1 ? STANTARDIZE_POSITIVE : number); // 1 is used for boundary value verification
+}
+
+inline int ConvFp(int32_t x)
+{
+    return (int32_t)(x / (1 << 16)); // 16 is used for digital conversion
+}
+
+std::string ConvertArrayToString(const int* Array, size_t size)
+{
+    std::string result;
+    for (size_t i = 0; i < size; ++i) {
+        if (i > 0) {
+            result += ' ';
+        }
+        result += std::to_string(Array[i]);
+    }
+    return result;
+}
 
 bool IsPCMStream(AVCodecID codecID)
 {
@@ -476,6 +531,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
     }
+    ParseOrientationFromMatrix(avStream, format);
 
     AVRational sar = avStream.sample_aspect_ratio;
     if (sar.num && sar.den) {
@@ -518,6 +574,40 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
         MEDIA_LOG_D("Parse rotate info from display matrix failed, set rotation as dafault 0");
         format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap["0"]);
     }
+}
+
+void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
+{
+    MEDIA_LOG_D(PUBLIC_LOG_S ": [" PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " "
+            PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 " " PUBLIC_LOG_D32 "]",
+            matrixName.c_str(), matrix[0], matrix[1], matrix[2], matrix[3], matrix[4],
+            matrix[5], matrix[6], matrix[7], matrix[8]);
+}
+
+void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Meta &format)
+{
+    VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+    if (displayMatrix) {
+        PrintMatrixToLog(displayMatrix, "displayMatrix");
+        int convertedMatrix[DISPLAY_MATRIX_SIZE];
+        std::copy(displayMatrix, displayMatrix + DISPLAY_MATRIX_SIZE, convertedMatrix);
+        for (int index = 0; index < DISPLAY_MATRIX_SIZE; index++) {
+            if (index < 6) { // 6 is the index that needs to be verified
+                convertedMatrix[index] = ConvFp(convertedMatrix[index]);
+            } else if (index < 8) { // 6 and 8 are indexs that need to be verified
+                convertedMatrix[index] = ValidateInteger(ConvFp(convertedMatrix[index]));
+            } else { //8 is the index that needs to be verified
+                convertedMatrix[index] = 1; // Numbers with index 8 are uniformly set to 1
+            }
+        }
+        PrintMatrixToLog(convertedMatrix, "convertedMatrix");
+        orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, DISPLAY_MATRIX_SIZE));
+    } else {
+        MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
+    }
+    format.Set<Tag::VIDEO_ORIENTATION_TYPE>(orientationType);
+    MEDIA_LOG_D("The type of matrix is: " PUBLIC_LOG_D32, static_cast<int>(orientationType));
 }
 
 void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &format)
