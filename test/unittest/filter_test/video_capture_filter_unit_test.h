@@ -136,7 +136,7 @@ public:
 
 class TestFilterLinkCallback : public FilterLinkCallback {
 public:
-    ~MyFilterLinkCallback() = default;
+    ~TestFilterLinkCallback() = default;
     void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
     {
         return;
