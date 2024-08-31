@@ -1199,6 +1199,9 @@ void HlsMediaDownloader::CaculateBitRate(size_t fragmentSize, double duration)
 
 void HlsMediaDownloader::UpdateWaterLineAbove()
 {
+    if (!isFirstFrameArrived_) {
+        return;
+    }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
         float cacheTime = 0;
