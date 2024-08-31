@@ -134,6 +134,23 @@ public:
     }
 };
 
+class TestFilterLinkCallback : public FilterLinkCallback {
+public:
+    ~MyFilterLinkCallback() = default;
+    void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
+    {
+        return;
+    }
+    void OnUnlinkedResult(std::shared_ptr<Meta>& meta)
+    {
+        return;
+    }
+    void OnUpdatedResult(std::shared_ptr<Meta>& meta)
+    {
+        return;
+    }
+};
+
 class TestFilter : public Filter {
 public:
     TestFilter():Filter("TestFilter", FilterType::FILTERTYPE_SOURCE) {}
