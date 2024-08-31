@@ -290,6 +290,14 @@ std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
 {
     return httpHeader_;
 }
+
+void PlayListDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
 }
 }
 }

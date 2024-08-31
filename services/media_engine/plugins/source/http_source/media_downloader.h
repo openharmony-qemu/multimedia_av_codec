@@ -119,6 +119,8 @@ public:
         MEDIA_LOG_W("SelectStream is unimplemented.");
         return Status::OK;
     }
+
+    virtual void SetAppUid(int32_t appUid) = 0;
 };
 }
 }
