@@ -239,8 +239,6 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
     bool hasSubtitle = false;
     bool hasTimedMeta = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " type: " PUBLIC_LOG_S ".", i,
-            ConvertFFmpegMediaTypeToString(avFormatContext.streams[i]->codecpar->codec_type).data());
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
             MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " is invalid.", i);
             continue;
@@ -382,8 +380,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
-            static_cast<int32_t>(avStream.codecpar->codec_type));
+        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".", static_cast<int32_t>(mediaType));
     }
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
