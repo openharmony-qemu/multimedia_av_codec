@@ -767,10 +767,9 @@ void SurfaceEncoderAdapter::AddStartPts(int64_t currentPts)
 {
     // start time
     if (isStartKeyFramePts_) {
-
         keyFramePts_ += std::to_string(currentPts) + ",";
         isStartKeyFramePts_ = false;
-        MEDIA_LOG_I("lwj AddStartPts success %{public}s end", keyFramePts_.c_str());
+        MEDIA_LOG_I("AddStartPts success %{public}s end", keyFramePts_.c_str());
     }
 }
 
