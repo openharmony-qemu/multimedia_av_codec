@@ -85,6 +85,7 @@ protected:
         int32_t audioSampleFormat = 0;
         double frameRate = 0;
         int32_t rotationAngle = 0;
+        int32_t orientationType = 0;
         int64_t channelLayout = 0;
         int32_t hdrType = 0;
         int32_t codecProfile = 0;
