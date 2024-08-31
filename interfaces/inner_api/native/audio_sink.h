@@ -161,6 +161,7 @@ private:
     bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
     std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
+    Mutex amplitudeMutex_ {};
 };
 }
 }
