@@ -474,8 +474,8 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
         // read fail with errno, retry 3 * 10ms
         retryTimes_++;
         if (retryTimes_ >= RETRY_TIMES) {
-            SetInterruptState(true);
             NotifyReadFail();
+            SetInterruptState(true);
         }
         usleep(TEN_MILLISECOUNDS);
     } else {
