@@ -22,6 +22,7 @@
 #include "common/media_core.h"
 #include "filter/filter_factory.h"
 #include "surface_encoder_adapter.h"
+#include "muxer_filter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
@@ -42,6 +43,7 @@ public:
         : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
     {
     }
+
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -50,6 +52,7 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
+
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -58,6 +61,7 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
+
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
@@ -66,6 +70,7 @@ public:
             MEDIA_LOG_I("invalid surfaceEncoderFilter");
         }
     }
+
 private:
     std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
 };
@@ -88,6 +93,28 @@ public:
 
     void OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
     {
+    }
+
+private:
+    std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
+};
+
+class SurfaceEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCallback {
+public:
+    explicit SurfaceEncoderAdapterKeyFramePtsCallback(std::shared_ptr<SurfaceEncoderFilter> surfaceEncoderFilter)
+        : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
+    {
+    }
+    
+    void OnReportKeyFramePts(std::string KeyFramePts) override
+    {
+        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
+            MEDIA_LOG_D("SurfaceEncoderAdapterKeyFramePtsCallback OnReportKeyFramePts start");
+            surfaceEncoderFilter->OnReportKeyFramePts(KeyFramePts);
+            MEDIA_LOG_D("SurfaceEncoderAdapterKeyFramePtsCallback OnReportKeyFramePts end");
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderFilter");
+        }
     }
 
 private:
@@ -142,6 +169,9 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
                 std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
             mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
+            std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback =
+                std::make_shared<SurfaceEncoderAdapterKeyFramePtsCallback>(shared_from_this());
+            mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
             eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
@@ -376,6 +406,20 @@ void SurfaceEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     instanceId_ = instanceId;
     if (mediaCodec_) {
         mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    }
+}
+
+void SurfaceEncoderFilter::OnReportKeyFramePts(std::string KeyFramePts)
+{
+    MEDIA_LOG_I("OnReportKeyFramePts %{public}s enter", KeyFramePts.c_str());
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    userMeta->SetData("com.openharmony.recorder.timestamp", KeyFramePts.data());
+    std::shared_ptr<MuxerFilter> muxerFilter = std::static_pointer_cast<MuxerFilter>(nextFilter_);
+    if (muxerFilter != nullptr) {
+        muxerFilter->SetUserMeta(userMeta);
+        MEDIA_LOG_I("SetUserMeta %{public}s", KeyFramePts.c_str());
+    } else {
+        MEDIA_LOG_E("muxerFilter is null");
     }
 }
 } // namespace Pipeline
