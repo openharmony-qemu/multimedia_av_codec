@@ -99,7 +99,7 @@ int32_t AudioCodecAdapter::Start()
 {
     AVCODEC_LOGD("Start enter");
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
-       "adapter start error, callback not initialized .");
+        "adapter start error, callback not initialized .");
 
     if (!audioCodec) {
         AVCODEC_LOGE("adapter start error, audio codec not initialized .");
