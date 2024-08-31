@@ -1075,6 +1075,9 @@ float HttpMediaDownloader::GetCacheDuration(float ratio)
 
 void HttpMediaDownloader::UpdateWaterLineAbove()
 {
+    if (!isFirstFrameArrived_) {
+        return;
+    }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
         float cacheTime = 0;
