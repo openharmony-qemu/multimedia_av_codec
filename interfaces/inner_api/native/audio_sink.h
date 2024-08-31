@@ -156,12 +156,12 @@ private:
     int64_t lastBufferWriteTime_ {0};
     bool lastBufferWriteSuccess_ {true};
     bool isMuted_ = false;
-
+    Mutex amplitudeMutex_ {};
+    
     float maxAmplitude_ = 0;
     bool calMaxAmplitudeCbStatus_ = false;
     UnderrunDetector underrunDetector_;
     std::atomic<int64_t> seekTimeUs_ {HST_TIME_NONE};
-    Mutex amplitudeMutex_ {};
 };
 }
 }
