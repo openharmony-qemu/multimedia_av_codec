@@ -671,7 +671,6 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     auto FileType = GetFileTypeByName(avFormatContext);
     if (FileType == FileType::MPEGTS ||
         FileType == FileType::FLV) {
-        MEDIA_LOG_I("Updata info for mpegts from parser");
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }

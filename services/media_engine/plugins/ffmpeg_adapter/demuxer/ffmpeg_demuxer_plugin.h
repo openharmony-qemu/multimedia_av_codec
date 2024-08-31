@@ -113,10 +113,10 @@ private:
     static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
 
+    void InitParser();
     void InitBitStreamContext(const AVStream& avStream);
     Status ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
-    void ShowSelectedTracks();
     bool TrackIsSelected(const uint32_t trackId);
     Status ReadPacketToCacheQueue(const uint32_t readId);
     Status AddPacketToCacheQueue(AVPacket *pkt);
