@@ -64,6 +64,7 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
+    void OnReportKeyFramePts(std::string KeyFramePts);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
