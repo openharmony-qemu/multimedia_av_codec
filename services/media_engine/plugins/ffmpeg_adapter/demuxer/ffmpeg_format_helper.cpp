@@ -262,7 +262,7 @@ inline int ValidateInteger(int number)
           (number > 1 ? STANTARDIZE_POSITIVE : number); // 1 is used for boundary value verification
 }
 
-inline int ConvFp(int32_t x) 
+inline int ConvFp(int32_t x)
 {
     return (int32_t)(x / (1 << 16)); // 16 is used for digital conversion
 }
