@@ -23,6 +23,7 @@
 #include <sstream>
 #include <map>
 #include <fstream>
+#include <chrono>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
@@ -123,7 +124,7 @@ static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_SVG,
 };
 
-void StringifyMeta(Meta meta)
+void StringifyMeta(Meta meta, int32_t trackIndex)
 {
     OHOS::Media::Format format;
     for (TagType key: g_supportSourceFormat) {
@@ -150,7 +151,11 @@ void StringifyMeta(Meta meta)
         meta.SetData(std::string(Tag::TIMED_METADATA_SRC_TRACK), "***");
     }
     format.SetMeta(std::make_shared<Meta>(meta));
-    MEDIA_LOG_I("meta info: " PUBLIC_LOG_S, format.Stringify().c_str());
+    if (trackIndex < 0) {
+        MEDIA_LOG_I("meta info[source]: " PUBLIC_LOG_S, format.Stringify().c_str());
+    } else {
+        MEDIA_LOG_I("meta info[track " PUBLIC_LOG_D32 "]: " PUBLIC_LOG_S, trackIndex, format.Stringify().c_str());
+    }
 }
 
 bool HaveValidParser(const AVCodecID codecId)
@@ -1227,7 +1232,6 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     AVFormatContext* formatContext = avformat_alloc_context();
     FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr,
         "Init AVFormatContext failed due to avformat_alloc_context failed.");
-
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
     FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
@@ -1241,17 +1245,20 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
         av_dict_set(&options, "use_tfdt", "true", 0);
     }
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
-    MEDIA_LOG_I("Init begin");
+    auto begin = std::chrono::system_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
     FALSE_RETURN_V_MSG_E((ret == 0), nullptr,
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
         pluginImpl_->name, AVStrError(ret).c_str());
-    MEDIA_LOG_I("Open input finish");
+    auto finishiOpen = std::chrono::system_clock::now();
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
         formatContext->probesize = LIVE_FLV_PROBE_SIZE;
     }
     ret = avformat_find_stream_info(formatContext, NULL);
-    MEDIA_LOG_I("Parse stream info finish");
+    auto finishParse = std::chrono::system_clock::now();
+    MEDIA_LOG_I("spend: open " PUBLIC_LOG_F " parse " PUBLIC_LOG_F,
+        static_cast<std::chrono::duration<double, std::milli>>(finishiOpen - begin).count(),
+        static_cast<std::chrono::duration<double, std::milli>>(finishParse - finishiOpen).count());
     FALSE_RETURN_V_MSG_E((ret >= 0), nullptr,
         "Init AVFormatContext failed due to avformat_find_stream_info failed by " PUBLIC_LOG_S
         ", err:" PUBLIC_LOG_S ".", pluginImpl_->name, AVStrError(ret).c_str());
@@ -1285,7 +1292,7 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
 {
     std::string formatName(formatContext_.get()->iformat->name);
     if (formatName.find("mp4") == std::string::npos) {
-        MEDIA_LOG_I("ParserBoxInfo only support mp4, do not support: " PUBLIC_LOG_S, formatName.c_str());
+        MEDIA_LOG_D("ParserBoxInfo only support mp4, do not support: " PUBLIC_LOG_S, formatName.c_str());
         return;
     }
     int videoStreamIdx = av_find_best_stream(formatContext_.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
@@ -1400,7 +1407,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSeiInfo failed");
 
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
-    StringifyMeta(mediaInfo.general);
+    StringifyMeta(mediaInfo.general, -1); // source meta
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         MEDIA_LOG_I("Parse info for track " PUBLIC_LOG_D32, trackIndex);
         Meta meta;
@@ -1429,7 +1436,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
-        StringifyMeta(meta);
+        StringifyMeta(meta, trackIndex);
     }
     return Status::OK;
 }
@@ -2025,8 +2032,8 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
     if (!outOfLimit_) {
         auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
         if (cacheDataSize > cachelimitSize_) {
-            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32,
-                trackId, cacheDataSize, cachelimitSize_);
+            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 ", by user "
+                PUBLIC_LOG_D32, trackId, cacheDataSize, cachelimitSize_, static_cast<int32_t>(setLimitByUser));
             outOfLimit_ = true;
         }
     }
@@ -2035,7 +2042,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 
 void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 {
-    MEDIA_LOG_I("Set cache limit " PUBLIC_LOG_U32, limitSize);
+    setLimitByUser = true;
     cachelimitSize_ = limitSize;
 }
 
@@ -2084,8 +2091,10 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         MEDIA_LOG_W("Sniff: probe score " PUBLIC_LOG_D32 " is too low, may misdetection, reset to 0", confidence);
         confidence = 0;
     }
-    MEDIA_LOG_I("Sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
-        static_cast<int>(bufferInfo->GetMemory()->GetSize()), plugin->name, confidence);
+    if (confidence > 0) {
+        MEDIA_LOG_I("Effective sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
+            static_cast<int>(bufferInfo->GetMemory()->GetSize()), plugin->name, confidence);
+    }
 
     return confidence;
 }

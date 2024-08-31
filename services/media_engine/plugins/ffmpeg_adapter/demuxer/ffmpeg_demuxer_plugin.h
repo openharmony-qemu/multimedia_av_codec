@@ -199,6 +199,7 @@ private:
     bool isInit_ = false;
     uint32_t cachelimitSize_ = 0;
     bool outOfLimit_ = false;
+    bool setLimitByUser = false;
 
     // dfx
     struct TrackDfxInfo {
