@@ -451,7 +451,7 @@ Status SurfaceEncoderAdapter::NotifyEos(int64_t pts)
     int32_t ret = 0;
     MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, pts);
     eosPts_ = pts;
-    if (!isTransCoderMode) {
+    if (!isTransCoderMode || currentPts_.load() >= eosPts_.load()) {
         ret = codecServer_->NotifyEos();
     }
     if (ret == 0) {
@@ -488,7 +488,7 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 
 void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (buffer->pts_ >= eosPts_ && codecServer_) {
+    if (buffer->pts_ >= eosPts_.load() && codecServer_) {
         codecServer_->NotifyEos();
     }
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
@@ -541,6 +541,7 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     MEDIA_LOG_D("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
+    currentPts_ = currentPts_.load() < buffer->pts_? buffer->pts_ : currentPts_.load();
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnOutputBufferAvailable");
     if (isTransCoderMode) {
         TransCoderOnOutputBufferAvailable(index, buffer);
@@ -588,7 +589,6 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         indexs_.push_back(index);
     }
     releaseBufferCondition_.notify_all();
-    MEDIA_LOG_D("OnOutputBufferAvailable end");
 }
 
 void SurfaceEncoderAdapter::ReleaseBuffer()
