@@ -663,7 +663,7 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         startDownloadTime_ = nowTime;
         lastReportUsageTime_ = nowTime;
     }
-    uint32_t writeBits = len * 8;   // bit
+    uint32_t writeBits = len * BYTES_TO_BIT;   // bit
     bufferedDuration_ += writeBits;
     totalBits_ += writeBits;
     lastWriteBit_ += writeBits;
@@ -1226,7 +1226,7 @@ void HlsMediaDownloader::HandleCachedDuration()
     }
 
     uint64_t cachedDuration = static_cast<uint64_t>((static_cast<int64_t>(buffer_->GetSize()) *
-        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<uint64_t>(currentBitRate_));
+        BYTES_TO_BIT * SECOND_TO_MILLIONSECOND) / static_cast<int64_t>(currentBitRate_));
     if ((cachedDuration > lastDurationReacord_ &&
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&

@@ -508,7 +508,8 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
             callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
-            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ is true");
+            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ \
+                is true or isBuffering_ is false");
         }
     }
 }

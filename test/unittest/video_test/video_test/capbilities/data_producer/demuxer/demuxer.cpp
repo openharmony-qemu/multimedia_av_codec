@@ -33,14 +33,21 @@ int32_t Demuxer::Init(const std::shared_ptr<SampleInfo> &info)
         AVCODEC_SAMPLE_ERR_ERROR, "Demuxer has already initialized");
     sampleInfo_ = info;
 
-    file_ = std::shared_ptr<FILE>(fopen(sampleInfo_->inputFilePath.data(), "r"), fclose);
-    CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
-    int32_t fileFd = fileno(file_.get());
-    
-    int64_t fileSize = GetFileSize(fileFd);
-    source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd, 0, fileSize), OH_AVSource_Destroy);
-    CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
-        "Create source failed, fd: %{public}d, file size: %{public}" PRId64, fileFd, fileSize);
+    if (info->dataProducerInfo.demuxerSourceType == DEMUXER_SOURCE_TYPE_FILE) {
+        file_ = std::shared_ptr<FILE>(fopen(sampleInfo_->inputFilePath.data(), "r"), fclose);
+        CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
+        int32_t fileFd = fileno(file_.get());
+        
+        int64_t fileSize = GetFileSize(fileFd);
+        source_ = std::shared_ptr<OH_AVSource>(OH_AVSource_CreateWithFD(fileFd, 0, fileSize), OH_AVSource_Destroy);
+        CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
+            "Create source failed, fd: %{public}d, file size: %{public}" PRId64, fileFd, fileSize);
+    } else if (info->dataProducerInfo.demuxerSourceType == DEMUXER_SOURCE_TYPE_URI) {
+        source_ = std::shared_ptr<OH_AVSource>(
+            OH_AVSource_CreateWithURI(const_cast<char *>(info->inputFilePath.c_str())), OH_AVSource_Destroy);
+        CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
+            "Create source failed, uri: %{public}s", info->inputFilePath.c_str());
+    }
     demuxer_ = std::shared_ptr<OH_AVDemuxer>(OH_AVDemuxer_CreateWithSource(source_.get()), OH_AVDemuxer_Destroy);
     CHECK_AND_RETURN_RET_LOG(demuxer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create demuxer failed");
     auto sourceFormat = std::shared_ptr<OH_AVFormat>(OH_AVSource_GetSourceFormat(source_.get()), OH_AVFormat_Destroy);
@@ -115,8 +122,7 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat)
 
 bool Demuxer::IsEOS()
 {
-    CHECK_AND_RETURN_RET_LOG(file_ != nullptr, true, "File is not open");
-    return feof(file_.get());
+    return false;
 }
 } // Sample
 } // MediaAVCodec
