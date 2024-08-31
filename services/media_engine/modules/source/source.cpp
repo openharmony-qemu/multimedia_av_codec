@@ -426,7 +426,6 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
         protocol_.append("stream");
         uri_.append("stream://");
     }
-    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S, protocol_.c_str());
     return ret;
 }
 
