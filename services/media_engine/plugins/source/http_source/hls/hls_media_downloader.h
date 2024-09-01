@@ -46,6 +46,7 @@ enum SLEEP_TIME : int32_t {
     CACHE_DATA_SLEEP_TIME = 100, // 100ms
     BUFFERING_TIME_OUT = 1000, // 100ms
 };
+constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
 
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
@@ -158,7 +159,6 @@ private:
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     static constexpr uint64_t DECRYPT_UNIT_LEN = 16;
-    static constexpr size_t MIN_BUFFER_SIZE = 5 * 1024 * 1024;
     uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
     uint64_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;

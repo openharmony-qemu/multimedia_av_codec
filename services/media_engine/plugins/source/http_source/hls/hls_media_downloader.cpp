@@ -66,6 +66,7 @@ constexpr float CACHE_LEVEL_3 = 10;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
+constexpr int SLEEP_TIME_100 = 100;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -81,7 +82,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
-{ 
+{
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
@@ -107,8 +108,8 @@ void HlsMediaDownloader::HlsInit()
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
-    playListDownloader_->SetPlayListCallback(this);
+    playlistDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playlistDownloader_->SetPlayListCallback(this);
     waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
     aesKey_.rounds = 0;
@@ -589,7 +590,7 @@ bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
                 MEDIA_LOG_I("CacheMediaBuffer full, isSeeking, return false.");
                 break;
             }
-            OSAL::SleepFor(100);
+            OSAL::SleepFor(SLEEP_TIME_100);
         }
         canWrite_ = true;
     }
