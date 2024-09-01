@@ -258,31 +258,31 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetDemuxerState, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut1, TestSize.Level1)
 {
     hlsMediaDownloader->readTime_ = READ_SLEEP_TIME_OUT;
-    EXPECT_TRUE(hlsMediaDownloader->CheckReadTimeOut());
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_AGAIN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut2, TestSize.Level1)
 {
     hlsMediaDownloader->downloadErrorState_ = true;
-    EXPECT_TRUE(hlsMediaDownloader->CheckReadTimeOut());
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_AGAIN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut3, TestSize.Level1)
 {
     hlsMediaDownloader->isTimeOut_ = true;
-    EXPECT_TRUE(hlsMediaDownloader->CheckReadTimeOut());
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_AGAIN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut4, TestSize.Level1)
 {
     hlsMediaDownloader->downloader_ = nullptr;
-    EXPECT_FALSE(hlsMediaDownloader->CheckReadTimeOut());
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut5, TestSize.Level1)
 {
     hlsMediaDownloader->callback_ = nullptr;
-    EXPECT_FALSE(hlsMediaDownloader->CheckReadTimeOut());
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
@@ -290,7 +290,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
     hlsMediaDownloader->readTime_ = READ_SLEEP_TIME_OUT - 1;
     hlsMediaDownloader->downloadErrorState_ = false;
     hlsMediaDownloader->isTimeOut_ = false;
-    EXPECT_FALSE(hlsMediaDownloader->CheckReadTimeOut());
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckBreakCondition, TestSize.Level1)

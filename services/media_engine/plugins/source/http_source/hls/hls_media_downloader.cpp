@@ -1324,10 +1324,13 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
 
 size_t HlsMediaDownloader::GetBufferSize()
 {
-    if (buffer_) {
+    if (cacheMediaBuffer_) {
+        return cacheMediaBuffer_->GetRingBufferSize();
+    } else if (buffer_) {
         return buffer_->GetRingBufferSize();
+    } else {
+        return 0;
     }
-    return 0;
 }
 
 }
