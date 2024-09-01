@@ -48,19 +48,15 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, uintptr_t * const sampleCon
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
     CHECK_AND_RETURN_RET_LOG(sampleContext != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: sampleContext");
 
-    // Configure video encoder
-    int32_t ret = Configure(sampleInfo);
+    int32_t ret = SetCallback(sampleContext);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed");
+
+    ret = Configure(sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Configure failed");
 
-    // GetSurface from video encoder
     ret = GetSurface(sampleInfo);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get surface failed");
 
-    // SetCallback for video encoder
-    ret = SetCallback(sampleContext);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed");
-
-    // Prepare video encoder
     ret = OH_VideoEncoder_Prepare(codec_.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
 
@@ -103,10 +99,10 @@ int32_t VideoEncoder::Reset()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-OH_AVFormat *VideoEncoder::GetFormat()
+std::shared_ptr<OH_AVFormat> VideoEncoder::GetFormat()
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, nullptr, "Decoder is null");
-    return OH_VideoEncoder_GetInputDescription(codec_.get());
+    return std::shared_ptr<OH_AVFormat>(OH_VideoEncoder_GetInputDescription(codec_.get()), OH_AVFormat_Destroy);
 }
 
 int32_t VideoEncoder::NotifyEndOfStream()
@@ -121,23 +117,21 @@ int32_t VideoEncoder::NotifyEndOfStream()
 
 int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 {
-    OH_AVFormat *format = OH_AVFormat_Create();
+    auto format = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), OH_AVFormat_Destroy);
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
 
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
-    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
-    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, sampleInfo.bitrate);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, sampleInfo.profile);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
+    OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
+    OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_BITRATE, sampleInfo.bitrate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
     
-    int ret = OH_VideoEncoder_Configure(codec_.get(), format);
+    int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 
-    OH_AVFormat_Destroy(format);
-    format = nullptr;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -152,7 +146,7 @@ int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
         "Get surface failed, ret: %{public}d", ret);
     (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_BUFFER_GEOMETRY,
         sampleInfo.videoWidth, sampleInfo.videoHeight);
-    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE, 16425);      // 16425: Window usage
+    (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_USAGE, 16427);      // 16427: Window usage
     (void)OH_NativeWindow_NativeWindowHandleOpt(window, SET_FORMAT,
         ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.profile));
 

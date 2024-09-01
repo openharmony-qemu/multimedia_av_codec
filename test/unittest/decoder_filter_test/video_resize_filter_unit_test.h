@@ -84,6 +84,14 @@ public:
     }
 };
 
+class MyEventReceiver : public Pipeline::EventReceiver {
+public:
+    ~MyEventReceiver() = default;
+    void OnEvent(const Event& event)
+    {
+        return;
+    }
+};
 }
 }
 

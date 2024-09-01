@@ -52,7 +52,7 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
-    Status NotifyEos();
+    Status NotifyEos(int64_t pts);
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -64,6 +64,7 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
+    void OnReportKeyFramePts(std::string KeyFramePts);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

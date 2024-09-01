@@ -127,10 +127,10 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Start_0100, TestSi
     surfaceEncoderAdapter_->codecServer_ = nullptr;
     Status ret = surfaceEncoderAdapter_->Start();
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     surfaceEncoderAdapter_->releaseBufferTask_ = nullptr;
     ret = surfaceEncoderAdapter_->Start();
     surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
-    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     ret = surfaceEncoderAdapter_->Start();
     EXPECT_EQ(ret, Status::OK);
 }
@@ -150,6 +150,9 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0100, TestSiz
     EXPECT_EQ(ret, Status::OK);
     surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    ret = surfaceEncoderAdapter_->Stop();
+    surfaceEncoderAdapter_->isStart_ = true;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
     ret = surfaceEncoderAdapter_->Stop();
     EXPECT_EQ(ret, Status::OK);
 }
@@ -237,10 +240,10 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Release_0100, Test
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_NotifyEos_0100, TestSize.Level1)
 {
     surfaceEncoderAdapter_->codecServer_ = nullptr;
-    Status ret = surfaceEncoderAdapter_->NotifyEos();
+    Status ret = surfaceEncoderAdapter_->NotifyEos(UINT32_MAX);
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
-    ret = surfaceEncoderAdapter_->NotifyEos();
+    ret = surfaceEncoderAdapter_->NotifyEos(UINT32_MAX);
     EXPECT_EQ(ret, Status::OK);
 }
 
@@ -284,7 +287,25 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
     MediaAVCodec::Format format;
     meta->SetData(Tag::VIDEO_PIXEL_FORMAT, 2);
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+    meta->SetData(Tag::VIDEO_ENCODE_BITRATE_MODE, 2);
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
     EXPECT_NE(meta->Find(Tag::VIDEO_PIXEL_FORMAT), meta->end());
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutEnableTemporalScale_0100
+ * @tc.desc: ConfigureAboutEnableTemporalScale
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, ConfigureAboutEnableTemporalScale_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    MediaAVCodec::Format format;
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
+    surfaceEncoderAdapter_->ConfigureAboutEnableTemporalScale(format, meta);
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 2);
+    surfaceEncoderAdapter_->ConfigureAboutEnableTemporalScale(format, meta);
+    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
 }
 
 /**
@@ -392,6 +413,28 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_100, Te
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_TransCoder_200
+ * @tc.desc: TransCoderOnOutputBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_200, TestSize.Level1)
+{
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
+                                new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    uint32_t index = 1;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isResume_ = true;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->startBufferTime_ = -1;
+    buffer->pts_ = 1;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+}
+
+/**
  * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_0100
  * @tc.desc: OnOutputBufferAvailable
  * @tc.type: FUNC
@@ -443,6 +486,47 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvai
     buffer->flag_ = 1;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
     EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureGeneralFormat_0100
+ * @tc.desc: ConfigureGeneralFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureGeneralFormat_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    MediaAVCodec::Format format;
+    meta->SetData(Tag::VIDEO_WIDTH, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    meta->SetData(Tag::VIDEO_HEIGHT, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    meta->SetData(Tag::VIDEO_CAPTURE_RATE, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    meta->SetData(Tag::MEDIA_BITRATE, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    meta->SetData(Tag::VIDEO_FRAME_RATE, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    meta->SetData(Tag::MIME_TYPE, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    meta->SetData(Tag::VIDEO_H265_PROFILE, 1);
+    surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureEnableFormat_0100
+ * @tc.desc: ConfigureEnableFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureEnableFormat_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureEnableFormat(format, meta);
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    surfaceEncoderAdapter_->ConfigureEnableFormat(format, meta);
+    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
 }
 }  // namespace Pipeline
 }  // namespace Media

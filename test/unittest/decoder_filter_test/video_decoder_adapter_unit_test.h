@@ -143,7 +143,7 @@ public:
 
     virtual int32_t QueueInputBuffer(uint32_t index)
     {
-        return status_;
+        return ret;
     }
 
     virtual int32_t GetOutputFormat(Format &format)
@@ -185,6 +185,7 @@ public:
     }
 private:
     int32_t status_ = 0;
+    int32_t ret = 1;
 };
 
 class TestAVBufferQueueConsumer : public AVBufferQueueConsumer {
@@ -208,11 +209,15 @@ public:
 
     Status AcquireBuffer(std::shared_ptr<AVBuffer>& outBuffer)
     {
-        return Status::ERROR_UNKNOWN;
+        if (outBuffer == nullptr) {
+            return Status::ERROR_UNKNOWN;
+        } else {
+            return Status::OK;
+        }
     }
     Status ReleaseBuffer(const std::shared_ptr<AVBuffer>& inBuffer)
     {
-        return Status::OK;
+        return Status::ERROR_UNKNOWN;
     }
 
     Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled)

@@ -150,7 +150,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
 HttpMediaDownloader::~HttpMediaDownloader()
 {
-    MEDIA_LOG_I("%{public}p ~HttpMediaDownloader dtor", this);
+    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HttpMediaDownloader dtor", FAKE_POINTER(this));
     Close(false);
 }
 
@@ -373,7 +373,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
         ", expectedLen: " + std::to_string(readDataInfo.wantReadLength_) + ", bufferSize: " + std::to_string(remain));
     // This prevents the read operation from failing to read data when the seek operation is not triggered.
     if (remain < readDataInfo.wantReadLength_ && isServerAcceptRange_ &&
-        (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
+        (writeOffset_ < readOffset_ || writeOffset_ >= readOffset_ + remain)) {
         ChangeDownloadPos();
     }
     size_t hasReadSize = 0;
@@ -513,6 +513,11 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
 void HttpMediaDownloader::ChangeDownloadPos()
 {
     MEDIA_LOG_D("HTTP ChangeDownloadPos in.");
+    if (writeOffset_ >= readOffset_ + GetCurrentBufferSize()) {
+        MEDIA_LOG_I("HTTP CacheMediaBuffer clear.");
+        cacheMediaBuffer_->Clear();
+    }
+
     isNeedDropData_ = true;
     downloader_->Pause();
     isNeedDropData_ = false;
@@ -750,7 +755,7 @@ void HttpMediaDownloader::OnWriteBuffer(uint32_t len)
         startDownloadTime_ = nowTime;
         lastReportUsageTime_ = nowTime;
     }
-    uint32_t writeBits = len * 8;
+    uint32_t writeBits = len * BYTES_TO_BIT;
     totalBits_ += writeBits;
     dataUsage_ += writeBits;
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
@@ -779,7 +784,7 @@ double HttpMediaDownloader::CalculateCurrentDownloadSpeed()
 void HttpMediaDownloader::DownloadReport()
 {
     uint64_t now = static_cast<uint64_t>(steadyClock_.ElapsedMilliseconds());
-    if ((static_cast<int64_t>(now) - lastCheckTime_) > SAMPLE_INTERVAL) {
+    if ((static_cast<int64_t>(now) - lastCheckTime_) > static_cast<int64_t>(SAMPLE_INTERVAL)) {
         uint64_t curDownloadBits = totalBits_ - lastBits_;
         if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
             downloadDuringTime_ = now - static_cast<uint64_t>(lastCheckTime_);
@@ -1069,6 +1074,9 @@ float HttpMediaDownloader::GetCacheDuration(float ratio)
 
 void HttpMediaDownloader::UpdateWaterLineAbove()
 {
+    if (!isFirstFrameArrived_) {
+        return;
+    }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
         float cacheTime = 0;

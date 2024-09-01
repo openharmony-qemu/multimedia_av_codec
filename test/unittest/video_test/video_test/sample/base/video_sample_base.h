@@ -36,14 +36,13 @@ public:
 
 protected:
     virtual int32_t Init();
-    virtual int32_t StartThread();
+    virtual int32_t Prepare();
     virtual void Release();
-    void StartRelease();
+    void InnerRelease();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
-    void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr, uint32_t size);
+    void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr);
     void PushEosFrame();
 
-    std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;

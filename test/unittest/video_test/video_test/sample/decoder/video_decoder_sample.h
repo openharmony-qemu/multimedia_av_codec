@@ -31,7 +31,7 @@ public:
 
 private:
     int32_t Init() override;
-    int32_t StartThread() override;
+    int32_t Prepare() override;
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(std::shared_ptr<NativeWindow> &window);

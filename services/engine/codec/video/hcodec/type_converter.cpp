@@ -328,6 +328,7 @@ std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(B
         {BIT_RATE_MODE_VBR, VBR},
         {BIT_RATE_MODE_CBR, CBR},
         {BIT_RATE_MODE_CQ,  CQ},
+        {BIT_RATE_MODE_CBR_Rlambda,  CBR_VIDEOCALL},
     };
     auto it = table.find(mode);
     if (it == table.end()) {

@@ -663,7 +663,7 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
         startDownloadTime_ = nowTime;
         lastReportUsageTime_ = nowTime;
     }
-    uint32_t writeBits = len * 8;   // bit
+    uint32_t writeBits = len * BYTES_TO_BIT;   // bit
     bufferedDuration_ += writeBits;
     totalBits_ += writeBits;
     lastWriteBit_ += writeBits;
@@ -1199,6 +1199,9 @@ void HlsMediaDownloader::CaculateBitRate(size_t fragmentSize, double duration)
 
 void HlsMediaDownloader::UpdateWaterLineAbove()
 {
+    if (!isFirstFrameArrived_) {
+        return;
+    }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
         float cacheTime = 0;

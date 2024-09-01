@@ -176,10 +176,33 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_AquireAvailableInputBu
     videoDecoder->inputBufferQueue_ = std::shared_ptr<Media::AVBufferQueue>();
     videoDecoder->eventReceiver_ = std::make_shared<MyEventReceiver>();
     videoDecoder->inputBufferQueueConsumer_ = new TestAVBufferQueueConsumer();
-    std::shared_ptr<AVBuffer> tmpBuffer = AVBuffer::CreateAVBuffer();
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> tmpBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    tmpBuffer->meta_ = std::make_shared<Meta>();
+    tmpBuffer->flag_ = 1;
+    videoDecoder->mediaCodec_ = std::make_shared<TestAVCodecVideoDecoder>();
+    videoDecoder->AquireAvailableInputBuffer();
+    ASSERT_EQ(videoDecoder->currentTime_, 0);
+}
+
+/**
+ * @tc.name: VideoDecoderAdapter_AquireAvailableInputBuffer_002
+ * @tc.desc: AquireAvailableInputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_AquireAvailableInputBuffer_002, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
+    videoDecoder->inputBufferQueue_ = std::shared_ptr<Media::AVBufferQueue>();
+    videoDecoder->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    videoDecoder->inputBufferQueueConsumer_ = new TestAVBufferQueueConsumer();
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> tmpBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     tmpBuffer->meta_ = std::make_shared<Meta>();
     tmpBuffer->flag_ = 0;
     videoDecoder->mediaCodec_ = std::make_shared<TestAVCodecVideoDecoder>();
+    videoDecoder->AquireAvailableInputBuffer();
+    tmpBuffer = nullptr;
     videoDecoder->AquireAvailableInputBuffer();
     ASSERT_EQ(videoDecoder->currentTime_, 0);
 }
@@ -192,12 +215,68 @@ HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_AquireAvailableInputBu
 HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_OnInputBufferAvailable_001, TestSize.Level1)
 {
     std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
     buffer->meta_ = std::make_shared<Meta>();
     uint32_t index = 1;
     videoDecoder->OnInputBufferAvailable(index, buffer);
     videoDecoder->inputBufferQueueConsumer_ = new TestAVBufferQueueConsumer();
     videoDecoder->OnInputBufferAvailable(index, buffer);
-    EXPECT_EQ(videoDecoder->inputBufferQueueConsumer_->ReleaseBuffer(buffer), Status::OK);
+    EXPECT_EQ(videoDecoder->inputBufferQueueConsumer_->ReleaseBuffer(buffer), Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name: VideoDecoderAdapter_PrepareInputBufferQueue_001
+ * @tc.desc: PrepareInputBufferQueue
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_PrepareInputBufferQueue_001, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> tmpBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    videoDecoder->inputBufferQueue_ = std::shared_ptr<Media::AVBufferQueue>();
+    videoDecoder->PrepareInputBufferQueue();
+    videoDecoder->inputBufferQueue_ = nullptr;
+    videoDecoder->PrepareInputBufferQueue();
+    ASSERT_EQ(videoDecoder->currentTime_, 0);
+}
+
+/**
+ * @tc.name: VideoDecoderAdapter_ReleaseOutputBuffer_001
+ * @tc.desc: ReleaseOutputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_ReleaseOutputBuffer_001, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> tmpBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    videoDecoder->mediaCodec_ = std::make_shared<TestAVCodecVideoDecoder>();
+    videoDecoder->currentTime_ = -1;
+    int32_t ret = videoDecoder->ReleaseOutputBuffer(1, true);
+    videoDecoder->currentTime_ = 0;
+    ret = videoDecoder->ReleaseOutputBuffer(1, true);
+    videoDecoder->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    ret = videoDecoder->ReleaseOutputBuffer(1, true);
+    ASSERT_EQ(ret, 0);
+}
+
+/**
+ * @tc.name: VideoDecoderAdapter_GetLagInfo_001
+ * @tc.desc: GetLagInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecoderAdapterUnitTest, VideoDecoderAdapter_GetLagInfo_001, TestSize.Level1)
+{
+    std::shared_ptr<VideoDecoderAdapter> videoDecoder = std::make_shared<VideoDecoderAdapter>();
+    int32_t lagTimes = 0;
+    int32_t maxLagDuration = 0;
+    int32_t avgLagDuration = 0;
+    videoDecoder->lagTimes_ = 0;
+    Status ret = videoDecoder->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    videoDecoder->lagTimes_ = 1;
+    ret = videoDecoder->GetLagInfo(lagTimes, maxLagDuration, avgLagDuration);
+    EXPECT_EQ(ret, Status::OK);
 }
 }
