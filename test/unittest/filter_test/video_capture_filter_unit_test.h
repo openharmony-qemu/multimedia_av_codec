@@ -166,9 +166,6 @@ public:
 protected:
     Status onLinked_;
 };
-
-
-
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
