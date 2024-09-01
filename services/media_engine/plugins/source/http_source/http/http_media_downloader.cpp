@@ -112,9 +112,10 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
     if (totalBufferSize < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
-        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
+        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32
+                    ". already lower than the min buffer size: " PUBLIC_LOG_D32
+                    ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize,
+                    RING_BUFFER_SIZE, RING_BUFFER_SIZE);
         cacheMediaBuffer_->Init(RING_BUFFER_SIZE, CHUNK_SIZE);
         totalBufferSize_ = RING_BUFFER_SIZE;
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
