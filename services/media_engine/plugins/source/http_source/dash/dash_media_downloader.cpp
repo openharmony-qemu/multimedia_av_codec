@@ -1054,6 +1054,13 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     playbackInfo.isDownloading = DownloadFinishStateTmp ? false : true;
 }
 
+void DashMediaDownloader::SetAppUid(int32_t appUid)
+{
+    for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
+        segmentDownloaders_[i]->SetAppUid(appUid);
+    }
+}
+
 }
 }
 }

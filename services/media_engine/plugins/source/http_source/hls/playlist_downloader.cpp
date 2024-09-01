@@ -192,6 +192,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
+    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader nullptr");
     int32_t contentlen = static_cast<int32_t>(downloader_->GetCurrentRequest()->GetFileContentLengthNoWait());
     std::string location;
     downloader_->GetCurrentRequest()->GetLocation(location);
@@ -290,6 +291,14 @@ std::map<std::string, std::string> PlayListDownloader::GetHttpHeader()
 {
     return httpHeader_;
 }
+
+void PlayListDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
 }
 }
 }

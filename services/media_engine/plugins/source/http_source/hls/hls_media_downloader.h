@@ -89,6 +89,8 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void ReportVideoSizeChange();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
+    void SetAppUid(int32_t appUid) override;
+
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState(int32_t streamId) override;
@@ -146,7 +148,7 @@ private:
     StatusCallbackFunc statusCallback_;
     bool startedPlayStatus_ {false};
 
-    std::shared_ptr<PlayListDownloader> playListDownloader_;
+    std::shared_ptr<PlayListDownloader> playlistDownloader_;
 
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;
     std::map<std::string, bool> fragmentDownloadStart;

@@ -350,6 +350,14 @@ void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t&
         MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
     }
 }
+
+void DownloadMonitor::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
 }
 }
 }

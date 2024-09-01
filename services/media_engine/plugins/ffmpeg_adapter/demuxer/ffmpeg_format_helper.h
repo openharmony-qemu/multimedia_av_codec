@@ -89,6 +89,7 @@ private:
     static void PutInfoToFormat(const Tag key, const std::string_view &value, Meta &format);
     static void PutBufferToFormat(const Tag key, const uint8_t *addr, size_t size, Meta &format);
     static void ParseRotationFromMatrix(const AVStream& avStream, Meta &format);
+    static void ParseOrientationFromMatrix(const AVStream& avStream, Meta &format);
     static void ParseTrackType(const AVFormatContext& avFormatContext, Meta& format);
 };
 extern std::vector<TagType> g_supportSourceFormat;
