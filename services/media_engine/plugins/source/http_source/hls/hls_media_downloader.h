@@ -138,6 +138,7 @@ private:
     void PrepareToSeek();
     bool CheckDataIntegrity();
     void HlsInit();
+    bool SaveCacheBufferData(uint8_t* data, uint32_t len);
 
 private:
     size_t totalBufferSize_ {0};

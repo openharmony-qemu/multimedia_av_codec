@@ -81,7 +81,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
-{
+{ 
     expectDuration_ = static_cast<uint64_t>(expectBufferDuration);
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
@@ -354,7 +354,8 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
     } else {
         if (tsStorageInfo_.count(readTsIndex_ - 1) <= 0) {
             readOffset_ -= curTsHaveRead;
-            MEDIA_LOG_E("Read back, last ts is not ready, update readOffset to readTsIndex head: " PUBLIC_LOG_ZU, readOffset_);
+            MEDIA_LOG_E("Read back, last ts is not ready, update readOffset to readTsIndex head: "
+                PUBLIC_LOG_ZU, readOffset_);
             return;
         }
         readTsIndex_--;
@@ -569,6 +570,32 @@ bool HlsMediaDownloader::GetStartedStatus()
     return playlistDownloader_->GetPlayListDownloadStatus() && startedPlayStatus_;
 }
 
+bool HlsMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len)
+{
+    size_t hasWriteSize = 0;
+    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_ && !isSeekingFlag.load()) {
+        size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
+        writeOffset_ += res;
+        hasWriteSize += res;
+        tsStorageInfo_[writeTsIndex_].first += res;
+        if (res > 0 || hasWriteSize == len) {
+            continue;
+        }
+        MEDIA_LOG_W("CacheMediaBuffer full.");
+        canWrite_ = false;
+        while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
+            MEDIA_LOG_I("CacheMediaBuffer full, waiting seek or read");
+            if (isSeekingFlag.load()) {
+                MEDIA_LOG_I("CacheMediaBuffer full, isSeeking, return false.");
+                break;
+            }
+            OSAL::SleepFor(100);
+        }
+        canWrite_ = true;
+    }
+    return hasWriteSize > 0;
+}
+
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     OnWriteCacheBuffer(len);
@@ -577,27 +604,7 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     }
     startedPlayStatus_ = true;
     if (keyLen_ == 0) {
-        size_t hasWriteSize = 0;
-        while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_ && !isSeekingFlag.load()) {
-            size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
-            writeOffset_ += res;
-            hasWriteSize += res;
-            tsStorageInfo_[writeTsIndex_].first += res;
-            if (res > 0 || hasWriteSize == len) {
-                continue;
-            }
-            MEDIA_LOG_W("CacheMediaBuffer full.");
-            canWrite_ = false;
-            while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
-                MEDIA_LOG_I("CacheMediaBuffer full, waiting seek or read");
-                if (isSeekingFlag.load()) {
-                    MEDIA_LOG_I("CacheMediaBuffer full, isSeeking, return false.");
-                    break;
-                }
-                OSAL::SleepFor(100);
-            }
-            canWrite_ = true;
-        }
+        SaveCacheBufferData(data, len);
     } else {
         SaveEncryptData(data, len);
     }
@@ -651,32 +658,14 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
                 DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
     realLen = GetDecrptyRealLen(writeDataPoint, waitLen, writeLen);
     totalLen_ += realLen;
-    size_t hasWriteSize = 0;
-        while (hasWriteSize < realLen && !isInterruptNeeded_.load() && !isInterrupt_ && !isSeekingFlag.load()) {
-            size_t res = cacheMediaBuffer_->Write(decryptCache_ + hasWriteSize, writeOffset_, realLen - hasWriteSize);
-            writeOffset_ += res;
-            hasWriteSize += res;
-            tsStorageInfo_[writeTsIndex_].first += res;
-            if (res > 0 || hasWriteSize == realLen) {
-                continue;
-            }
-            MEDIA_LOG_W("CacheMediaBuffer full.");
-            canWrite_ = false;
-            while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
-                MEDIA_LOG_I("CacheMediaBuffer full, waiting seek or read");
-                if (isSeekingFlag.load()) {
-                    MEDIA_LOG_I("CacheMediaBuffer full, isSeeking, return false.");
-                    break;
-                }
-                OSAL::SleepFor(100);
-            }
-            canWrite_ = true;
-        }
+
+    bool isWriteSuccess = SaveCacheBufferData(decryptCache_, realLen);
+
     err = memset_s(decryptCache_, realLen, 0x00, realLen);
     if (err != 0) {
         MEDIA_LOG_D("realLen: " PUBLIC_LOG_D32, realLen);
     }
-    if (hasWriteSize > 0) {
+    if (isWriteSuccess) {
         afterAlignRemainedLength_ = 0;
         err = memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
         if (err != 0) {
@@ -685,14 +674,14 @@ bool HlsMediaDownloader::SaveEncryptData(uint8_t* data, uint32_t len)
     }
     writeDataPoint += writeLen;
     waitLen -= writeLen;
-    if (waitLen > 0 && hasWriteSize > 0) {
+    if (waitLen > 0 && isWriteSuccess) {
         afterAlignRemainedLength_ = waitLen;
         err = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
         if (err != 0) {
             MEDIA_LOG_D("waitLen: " PUBLIC_LOG_D32, waitLen);
         }
     }
-    return hasWriteSize > 0;
+    return isWriteSuccess;
 }
 
 void HlsMediaDownloader::DownloadRecordHistory(int64_t nowTime)
