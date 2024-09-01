@@ -37,6 +37,8 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
+constexpr int BAD_SOCKET = -1;
+constexpr int SOCKET_ZERO = 0;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -102,7 +104,6 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
-
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -312,23 +313,27 @@ curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
                                                  curlsocktype purpose,
                                                  struct curl_sockaddr *address)
 {
+    // Validate clientp and address is not null
+    if (!clientp || !address) {
+        return CURL_SOCKET_BAD;
+    }
     curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
     if (sockfd == CURL_SOCKET_BAD) {
         return CURL_SOCKET_BAD;
     }
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if (flags ==-1) {
+    int flags = fcntl(sockfd, F_GETFL, SOCKET_ZERO);
+    if (flags == BAD_SOCKET) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
-    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) ==-1) {
+    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == BAD_SOCKET) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
     SocketOwner* owner = static_cast<SocketOwner*>(clientp);
     uid_t uid = owner->uid;
     gid_t gid = owner->gid;
-    if (fchown(sockfd, uid, gid) == -1) {
+    if (fchown(sockfd, uid, gid) == BAD_SOCKET) {
         close(sockfd);
         return CURL_SOCKET_BAD;
     }
