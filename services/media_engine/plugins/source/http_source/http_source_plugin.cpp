@@ -278,6 +278,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.streamId_ = streamId;
     readDataInfo.nextStreamId_ = streamId;
     readDataInfo.wantReadLength_ = expectedLen;
+    readDataInfo.ffmpegOffset = offset;
 
     auto result = downloader_->Read(bufData->GetWritableAddr(expectedLen), readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
