@@ -309,37 +309,6 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
     }
 }
 
-curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
-                                                 curlsocktype purpose,
-                                                 struct curl_sockaddr *address)
-{
-    // Validate clientp and address is not null
-    if (!clientp || !address) {
-        return CURL_SOCKET_BAD;
-    }
-    curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
-    if (sockfd == CURL_SOCKET_BAD) {
-        return CURL_SOCKET_BAD;
-    }
-    int flags = fcntl(sockfd, F_GETFL, SOCKET_ZERO);
-    if (flags == BAD_SOCKET) {
-        close(sockfd);
-        return CURL_SOCKET_BAD;
-    }
-    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == BAD_SOCKET) {
-        close(sockfd);
-        return CURL_SOCKET_BAD;
-    }
-    SocketOwner* owner = static_cast<SocketOwner*>(clientp);
-    uid_t uid = owner->uid;
-    gid_t gid = owner->gid;
-    if (fchown(sockfd, uid, gid) == BAD_SOCKET) {
-        close(sockfd);
-        return CURL_SOCKET_BAD;
-    }
-    return sockfd;
-}
-
 void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeoutMs)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
@@ -351,9 +320,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
 #else
     curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
 #endif
-    SocketOwner owner = {appUid_, appUid_};
-    curl_easy_setopt(easyHandle_, CURLOPT_OPENSOCKETFUNCTION, OpensocketCallback);
-    curl_easy_setopt(easyHandle_, CURLOPT_OPENSOCKETDATA, &owner);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
