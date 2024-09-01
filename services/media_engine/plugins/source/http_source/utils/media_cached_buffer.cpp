@@ -94,8 +94,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
 
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
     uint64_t diff = (totalBuffSize + chunkSize) > 1 ? (totalBuffSize + chunkSize) - 1 : 0;
-    int64_t chunkNum = totalBuffSize + chunkSize >= 1 ?
-                       static_cast<int64_t>(diff / chunkSize) + 1 : 1; // 1
+    int64_t chunkNum = static_cast<int64_t>(diff / chunkSize) + 1;
     if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
         return false;
     }
@@ -237,7 +236,7 @@ bool CacheMediaChunkBufferImpl::WriteInPlace(FragmentIterator& fragmentPos, uint
     auto chunkInfoTmp = *chunkPos;
     uint64_t accessLengthTmp = inOffset > writePos_->offsetBegin ? inOffset - writePos_->offsetBegin : 0;
     if (chunkInfoTmp->offset <= offset &&
-        offset < chunkInfoTmp->offset + static_cast<int64_t>(chunkInfoTmp->dataLength)) {
+        offset < chunkInfoTmp->offset + static_cast<uint64_t>(chunkInfoTmp->dataLength)) {
         size_t diff = static_cast<size_t>(offset > chunkInfoTmp->offset ? offset - chunkInfoTmp->offset : 0);
         size_t copyLen = static_cast<size_t>(chunkInfoTmp->dataLength - diff);
         copyLen = std::min(copyLen, writeSize);
@@ -383,7 +382,7 @@ bool CacheMediaChunkBufferImpl::Seek(uint64_t offset)
         if (chunkPos != readPos->chunks.end()) {
             auto readOffset = offset > readPos->offsetBegin ? offset - readPos->offsetBegin : 0;
             uint64_t diff = readOffset > readPos->accessLength ? readOffset - readPos->accessLength : 0;
-            if ((readOffset - readPos->accessLength) >= ACCESS_OFFSET_MAX_LENGTH) {
+            if (diff >= ACCESS_OFFSET_MAX_LENGTH) {
                 chunkPos = SplitFragmentCacheBuffer(readPos, offset, chunkPos);
             }
 
@@ -406,7 +405,7 @@ size_t CacheMediaChunkBufferImpl::GetBufferSize(uint64_t offset)
     auto readPos = GetOffsetFragmentCache(readPos_, offset, LeftBoundedRightOpenComp);
     size_t bufferSize = 0;
     while (readPos != fragmentCacheBuffer_.end()) {
-        int64_t nextOffsetBegin = readPos->offsetBegin + readPos->dataLength;
+        uint64_t nextOffsetBegin = readPos->offsetBegin + readPos->dataLength;
         bufferSize = static_cast<size_t>(nextOffsetBegin > offset ? nextOffsetBegin - offset : 0);
         readPos++;
         if (readPos == fragmentCacheBuffer_.end() || nextOffsetBegin != readPos->offsetBegin) {
@@ -949,7 +948,7 @@ void CacheMediaChunkBufferImpl::CheckFragment(const FragmentCacheBuffer& fragmen
 {
     if (fragment.accessPos != fragment.chunks.end()) {
         auto& accessChunk = *fragment.accessPos;
-        auto accessLength = accessChunk->offset - fragment.offsetBegin ?
+        auto accessLength = accessChunk->offset > fragment.offsetBegin ?
             accessChunk->offset - fragment.offsetBegin : 0;
         if (fragment.accessLength < accessLength ||
             fragment.accessLength > (accessLength + static_cast<int64_t>(accessChunk->dataLength))) {
@@ -1047,7 +1046,7 @@ size_t CacheMediaChunkBuffer::GetNextBufferOffset(uint64_t offset)
 
 void CacheMediaChunkBuffer::Clear()
 {
-    impl_->Clear();
+    return impl_->Clear();
 }
 
 void CacheMediaChunkBuffer::SetReadBlocking(bool isReadBlockingAllowed)

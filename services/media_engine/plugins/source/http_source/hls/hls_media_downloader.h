@@ -25,7 +25,7 @@
 #include "openssl/aes.h"
 #include "osal/task/task.h"
 #include "common/media_source.h"
-#include "utils/media_cache_buffer.h"
+#include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
 #include <utility>
