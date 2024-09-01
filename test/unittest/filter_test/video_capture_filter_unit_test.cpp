@@ -76,7 +76,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetInputSurface_001, Tes
     consumerSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_TRUE(consumerSurface);
     ret = videoCaptureFilter_->SetInputSurface(consumerSurface);
-    EXPECT_EQ(ret, Status::OK); 
+    EXPECT_EQ(ret, Status::OK);
 }
 
 /**
