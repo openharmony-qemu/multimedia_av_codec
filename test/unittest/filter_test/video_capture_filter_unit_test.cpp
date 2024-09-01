@@ -285,7 +285,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnUnLinked_001, TestSize
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnLinkedResult_001, TestSize.Level1)
 {
-    sptr<AVBufferQueueProducer> testOutputBufferQueue = new OHOS::Meida::Pipeline::MyAVBufferQueueProducer();
+    sptr<AVBufferQueueProducer> testOutputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
     std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
     videoCaptureFilter_->OnLinkedResult(testOutputBufferQueue, videoMeta);
     EXPECT_EQ(videoCaptureFilter_->outputBufferQueueProducer_, testOutputBufferQueue); 
