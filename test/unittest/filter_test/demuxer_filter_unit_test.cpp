@@ -698,6 +698,21 @@ HWTEST_F(DemuxerFilterUnitTest, OnDumpInfo, TestSize.Level1)
     demuxerFilter_->OnDumpInfo(0);
     ASSERT_NE(temp[0], ' ');
 }
+
+/**
+ * @tc.name: GetBitRates_0200
+ * @tc.desc: GetBitRates
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, GetBitRates_0200, TestSize.Level1)
+{
+    std::vector<uint32_t> bitRates;
+    demuxerFilter_->mediaSource_ = nullptr;
+    demuxerFilter_->GetBitRates(bitRates);
+    demuxerFilter_->mediaSource_ = std::make_shared<MediaSource>("file:////");
+    demuxerFilter_->GetBitRates(bitRates);
+    ASSERT_EQ(demuxerFilter_->isDump_, false);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

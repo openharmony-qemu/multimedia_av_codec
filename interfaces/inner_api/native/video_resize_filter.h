@@ -57,7 +57,7 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
-    void OnOutputBufferAvailable(uint32_t index);
+    void OnOutputBufferAvailable(uint32_t index, uint32_t flag);
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
@@ -91,7 +91,8 @@ private:
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
-    std::vector<uint32_t> indexs_;
+    std::vector<std::pair<uint32_t, uint32_t>> indexs_;
+    int64_t eosPts_ {UINT32_MAX};
     std::atomic<bool> isThreadExit_ = true;
 
     std::string bundleName_;

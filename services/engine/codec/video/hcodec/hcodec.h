@@ -226,6 +226,7 @@ protected:
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
     virtual void RepeatIfNecessary(const ParamSP& param) {}
+    bool CheckBufPixFmt(const sptr<SurfaceBuffer>& buffer);
 
     // output buffer circulation
     virtual void SubmitDynamicBufferIfPossible() {}

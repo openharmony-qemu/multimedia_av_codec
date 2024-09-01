@@ -67,9 +67,11 @@ public:
     Status GetStreamInfo(std::vector<StreamInfo>& streams) override;
     Status SelectStream(int32_t streamId) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     size_t GetBufferSize() override;
+    void SetAppUid(int32_t appUid) override;
 
 private:
     int64_t HttpMonitorLoop();

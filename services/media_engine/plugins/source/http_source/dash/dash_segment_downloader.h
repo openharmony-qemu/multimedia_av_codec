@@ -165,6 +165,7 @@ public:
     void GetIp(std::string& ip);
     bool GetDownloadFinishState();
     std::pair<int64_t, int64_t> GetDownloadRecordData();
+    void SetAppUid(int32_t appUid);
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

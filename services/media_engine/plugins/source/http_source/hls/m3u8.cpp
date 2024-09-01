@@ -31,7 +31,7 @@ constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
-constexpr uint64_t BAND_WIDTH_LIMIT = 3*1024*1024;
+constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
 
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 
@@ -129,47 +129,45 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles)
     return true;
 }
 
-void M3U8::InitTagUpdatersMap()
+void M3U8::InitTagUpdaters()
 {
     tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        bLive_ = !info.bVod && (std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD");
+        isPlayTypeFound_ = true;
+        bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
     };
-
     tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
         targetDuration_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().FloatingPoint();
     };
-
     tagUpdatersMap_[HlsTag::EXTXMEDIASEQUENCE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
         sequence_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal();
     };
-
     tagUpdatersMap_[HlsTag::EXTXDISCONTINUITYSEQUENCE] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
         discontSequence_ = static_cast<int>(std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal());
         info.discontinuity = true;
     };
-
     tagUpdatersMap_[HlsTag::EXTINF] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
         GetExtInf(tag, info.duration);
     };
-
     tagUpdatersMap_[HlsTag::URI] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
         info.uri = UriJoin(uri_, std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString());
     };
-
     tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = tag;
         std::ignore = info;
         MEDIA_LOG_I("need to parse EXTXBYTERANGE");
     };
+}
 
+void M3U8::InitTagUpdatersMap()
+{
+    InitTagUpdaters();
     tagUpdatersMap_[HlsTag::EXTXDISCONTINUITY] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
         std::ignore = tag;
         discontSequence_++;
         info.discontinuity = true;
     };
-
     tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         if (!isDecryptAble_ && !isDecryptKeyReady_) {
             isDecryptAble_ = true;
@@ -181,10 +179,8 @@ void M3U8::InitTagUpdatersMap()
             } else {
                 DownloadKey();
             }
-            // wait for key downloaded
         }
     };
-
     tagUpdatersMap_[HlsTag::EXTXMAP] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = tag;
         std::ignore = info;
@@ -195,10 +191,14 @@ void M3U8::InitTagUpdatersMap()
 void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
-    info.bVod = !tags.empty() && tags.back()->GetType() == HlsTag::EXTXENDLIST;
     bLive_ = !info.bVod;
     for (auto& tag : tags) {
         HlsTag hlsTag = tag->GetType();
+        if (hlsTag == HlsTag::EXTXENDLIST && !isPlayTypeFound_) {
+            info.bVod = true;
+            bLive_ = !info.bVod;
+            MEDIA_LOG_I("UpdateFromTags not live.");
+        }
         auto iter = tagUpdatersMap_.find(hlsTag);
         if (iter != tagUpdatersMap_.end()) {
             auto updater = iter->second;
@@ -206,7 +206,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         }
 
         if (!info.uri.empty()) {
-            if (!isFirstFragmentReady_ && isDecryptAble_) {
+            if (!isFirstFragmentReady_ && !isDecryptAble_) {
                 firstFragment_ = info;
                 isFirstFragmentReady_ = true;
             }
@@ -223,6 +223,7 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             info.uri = "", info.duration = 0, info.discontinuity = false;
         }
     }
+    isPlayTypeFound_ = false;
 }
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
@@ -495,7 +496,7 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
     uint32_t downloadTime = 0;
     while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME) {
         Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
-        downloadTime ++;
+        downloadTime++;
     }
     std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(key_));
     isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;

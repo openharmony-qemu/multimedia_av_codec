@@ -67,6 +67,7 @@ public:
     void SetDemuxerState(int32_t streamId) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     size_t GetBufferSize() override;
+    void SetAppUid(int32_t appUid) override;
 
 private:
     void ReceiveMpdStreamInitEvent();

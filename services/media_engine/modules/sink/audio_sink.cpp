@@ -374,6 +374,7 @@ void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, int32_t forma
 {
     FALSE_RETURN(frame != nullptr && replyBytes != 0);
     auto currentMaxAmplitude = OHOS::Media::CalcMaxAmplitude::UpdateMaxAmplitude(frame, replyBytes, format);
+    AutoLock amplitudeLock(amplitudeMutex_);
     if (currentMaxAmplitude > maxAmplitude_) {
         maxAmplitude_ = currentMaxAmplitude;
     }
@@ -381,7 +382,10 @@ void AudioSink::CheckUpdateState(char *frame, uint64_t replyBytes, int32_t forma
  
 float AudioSink::GetMaxAmplitude()
 {
-    return maxAmplitude_;
+    AutoLock amplitudeLock(amplitudeMutex_);
+    auto ret = maxAmplitude_;
+    maxAmplitude_ = 0;
+    return ret;
 }
  
 void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
@@ -395,6 +399,20 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
     size_t destLength = static_cast<size_t>(srcLength);
     int32_t format = plugin_->GetSampleFormat();
     CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
+}
+
+bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
+{
+    FALSE_RETURN_V(isApe_, false);
+    FALSE_RETURN_V(seekTimeUs_ != HST_TIME_NONE, false);
+    if (filledOutputBuffer->pts_ < seekTimeUs_) {
+        MEDIA_LOG_D("Drop ape buffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        return true;
+    } else {
+        seekTimeUs_ = HST_TIME_NONE;
+    }
+    return false;
 }
 
 void AudioSink::DrainOutputBuffer()
@@ -432,6 +450,7 @@ void AudioSink::DrainOutputBuffer()
         });
         return;
     }
+    FALSE_RETURN(DropApeBuffer(filledOutputBuffer) == false);
     UpdateAudioWriteTimeMayWait();
     DoSyncWrite(filledOutputBuffer);
     if (calMaxAmplitudeCbStatus_) {
@@ -696,6 +715,13 @@ int32_t AudioSink::SetMaxAmplitudeCbStatus(bool status)
     calMaxAmplitudeCbStatus_ = status;
     MEDIA_LOG_I("audio SetMaxAmplitudeCbStatus  = " PUBLIC_LOG_D32, calMaxAmplitudeCbStatus_);
     return 0;
+}
+
+Status AudioSink::SetSeekTime(int64_t seekTime)
+{
+    MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
+    seekTimeUs_ = seekTime;
+    return Status::OK;
 }
 } // namespace MEDIA
 } // namespace OHOS

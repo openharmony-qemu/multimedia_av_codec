@@ -43,16 +43,6 @@ constexpr int64_t MS_2_NS = MS_2_US * US_2_NS;
 constexpr int64_t S_2_NS = S_2_MS * MS_2_NS;
 
 constexpr int64_t MEDIA_PTS_UNSET = INT64_MIN + 1;
-
-class TimeUtils {
-public:
-    static int64_t GetBootTimeMs();
-    static int64_t GetBootTimeUs();
-    static int64_t GetMonotonicTimeMs();
-    static int64_t GetMonotonicTimeUs();
-    static int64_t GetCurrentTimeMs();
-};
-
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

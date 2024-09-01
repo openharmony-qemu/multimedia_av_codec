@@ -27,7 +27,7 @@ namespace Sample {
 class SampleBufferQueue {
 public:
     virtual int32_t QueueBuffer(const CodecBufferInfo& bufferInfo);
-    virtual std::optional<CodecBufferInfo> DequeueBuffer();
+    virtual std::optional<CodecBufferInfo> DequeueBuffer(int32_t timeoutMs = 5000);
     virtual int32_t Clear();
     virtual uint32_t GetFrameCount();
     virtual uint32_t IncFrameCount();

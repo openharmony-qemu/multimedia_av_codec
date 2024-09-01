@@ -143,7 +143,7 @@ public:
 
     virtual int32_t QueueInputBuffer(uint32_t index)
     {
-        return status_;
+        return ret;
     }
 
     virtual int32_t GetOutputFormat(Format &format)
@@ -185,6 +185,66 @@ public:
     }
 private:
     int32_t status_ = 0;
+    int32_t ret = 1;
+};
+
+class TestAVBufferQueueConsumer : public AVBufferQueueConsumer {
+public:
+    ~TestAVBufferQueueConsumer() override = default;
+    TestAVBufferQueueConsumer(const TestAVBufferQueueConsumer&) = delete;
+    TestAVBufferQueueConsumer operator=(const TestAVBufferQueueConsumer&) = delete;
+
+    uint32_t GetQueueSize()
+    {
+        return 0;
+    }
+    Status SetQueueSize(uint32_t size)
+    {
+        return Status::OK;
+    }
+    bool IsBufferInQueue(const std::shared_ptr<AVBuffer>& buffer)
+    {
+        return true;
+    }
+
+    Status AcquireBuffer(std::shared_ptr<AVBuffer>& outBuffer)
+    {
+        if (outBuffer == nullptr) {
+            return Status::ERROR_UNKNOWN;
+        } else {
+            return Status::OK;
+        }
+    }
+    Status ReleaseBuffer(const std::shared_ptr<AVBuffer>& inBuffer)
+    {
+        return Status::ERROR_UNKNOWN;
+    }
+
+    Status AttachBuffer(std::shared_ptr<AVBuffer>& inBuffer, bool isFilled)
+    {
+        return Status::OK;
+    }
+    Status DetachBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
+    {
+        return Status::OK;
+    }
+
+    Status SetBufferAvailableListener(sptr<IConsumerListener>& listener)
+    {
+        return Status::OK;
+    }
+
+protected:
+    TestAVBufferQueueConsumer() = default;
+};
+
+class MyEventReceiver : public Pipeline::EventReceiver {
+public:
+    ~MyEventReceiver() = default;
+    void OnEvent(const Event& event)
+    {
+        return;
+    }
 };
 
 }

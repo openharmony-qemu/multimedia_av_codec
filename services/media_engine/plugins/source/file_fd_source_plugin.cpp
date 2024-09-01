@@ -474,8 +474,8 @@ void FileFdSourcePlugin::HandleReadResult(size_t bufferSize, int size)
         // read fail with errno, retry 3 * 10ms
         retryTimes_++;
         if (retryTimes_ >= RETRY_TIMES) {
-            SetInterruptState(true);
             NotifyReadFail();
+            SetInterruptState(true);
         }
         usleep(TEN_MILLISECOUNDS);
     } else {
@@ -508,7 +508,8 @@ void FileFdSourcePlugin::NotifyBufferingPercent()
             callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS,
                 {BufferingInfoType::BUFFERING_PERCENT}, std::to_string(bp)});
         } else {
-            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ is true");
+            MEDIA_LOG_E("EVENT_BUFFER_PROGRESS callback_ is nullptr or isInterrupted_ \
+                is true or isBuffering_ is false");
         }
     }
 }

@@ -27,7 +27,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Sampl
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t SampleBase::WaitForDone()
+int32_t SampleBase::WaitForSampleDone()
 {
     AVCODEC_LOGI("In");
     std::unique_lock<std::mutex> lock(mutex_);
@@ -36,24 +36,32 @@ int32_t SampleBase::WaitForDone()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
+int32_t SampleBase::NotifySampleDone()
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    AVCODEC_LOGI(">>");
+    doneCond_.notify_all();
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
 std::shared_ptr<SampleBase> SampleFactory::CreateSample(const SampleInfo &info)
 {
-    std::shared_ptr<SampleBase> sampleBase;
+    std::shared_ptr<SampleBase> sample;
 
     switch (info.sampleType) {
         case SampleType::VIDEO_SAMPLE:
-            sampleBase = (info.codecType & 0b10) ? // 0b10: Video encoder mask
+            sample = (info.codecType & 0b10) ? // 0b10: Video encoder mask
                 std::static_pointer_cast<SampleBase>(std::make_shared<VideoEncoderSample>()) :
                 std::static_pointer_cast<SampleBase>(std::make_shared<VideoDecoderSample>());
             break;
         case SampleType::YUV_VIEWER:
-            sampleBase = std::static_pointer_cast<SampleBase>(std::make_shared<YuvViewer>());
+            sample = std::static_pointer_cast<SampleBase>(std::make_shared<YuvViewer>());
             break;
         default:
             AVCODEC_LOGE("Not supported sample type, type: %{public}d", info.sampleType);
             break;
     }
-    return sampleBase;
+    return sample;
 }
 } // Sample
 } // MediaAVCodec

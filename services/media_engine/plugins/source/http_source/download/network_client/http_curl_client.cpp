@@ -22,6 +22,7 @@
 #include "osal/task/autolock.h"
 #include "securec.h"
 #include "net_conn_client.h"
+#include <fcntl.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -36,6 +37,8 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
+constexpr int BAD_SOCKET = -1;
+constexpr int SOCKET_ZERO = 0;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
@@ -57,7 +60,7 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::string str(arr, strSize);
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
-    while (pos >= 0 && pos <= length - 1 && pos != std::string::npos) {
+    while (pos >= 0 && length >= 1 && pos <= length - 1 && pos != std::string::npos) {
         char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
@@ -79,7 +82,7 @@ std::string Trim(std::string str)
     if (str.empty()) {
         return str;
     }
-    while (std::isspace(str[str.size() - 1])) {
+    while (str.size() >= 1 && std::isspace(str[str.size() - 1])) {
             str.erase(str.size() - 1, 1);
     }
     return str;
@@ -101,7 +104,6 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
-
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -307,6 +309,37 @@ void HttpCurlClient::InitCurProxy(const std::string& url)
     }
 }
 
+curl_socket_t HttpCurlClient::OpensocketCallback(void *clientp,
+                                                 curlsocktype purpose,
+                                                 struct curl_sockaddr *address)
+{
+    // Validate clientp and address is not null
+    if (!clientp || !address) {
+        return CURL_SOCKET_BAD;
+    }
+    curl_socket_t sockfd = socket(address->family, address->socktype, address->protocol);
+    if (sockfd == CURL_SOCKET_BAD) {
+        return CURL_SOCKET_BAD;
+    }
+    int flags = fcntl(sockfd, F_GETFL, SOCKET_ZERO);
+    if (flags == BAD_SOCKET) {
+        close(sockfd);
+        return CURL_SOCKET_BAD;
+    }
+    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == BAD_SOCKET) {
+        close(sockfd);
+        return CURL_SOCKET_BAD;
+    }
+    SocketOwner* owner = static_cast<SocketOwner*>(clientp);
+    uid_t uid = owner->uid;
+    gid_t gid = owner->gid;
+    if (fchown(sockfd, uid, gid) == BAD_SOCKET) {
+        close(sockfd);
+        return CURL_SOCKET_BAD;
+    }
+    return sockfd;
+}
+
 void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeoutMs)
 {
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
@@ -318,6 +351,9 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeout
 #else
     curl_easy_setopt(easyHandle_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
 #endif
+    SocketOwner owner = {appUid_, appUid_};
+    curl_easy_setopt(easyHandle_, CURLOPT_OPENSOCKETFUNCTION, OpensocketCallback);
+    curl_easy_setopt(easyHandle_, CURLOPT_OPENSOCKETDATA, &owner);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
@@ -414,6 +450,11 @@ Status HttpCurlClient::SetIp()
         }
     }
     return retSetIp;
+}
+
+void HttpCurlClient::SetAppUid(int32_t appUid)
+{
+    appUid_ = appUid;
 }
 }
 }

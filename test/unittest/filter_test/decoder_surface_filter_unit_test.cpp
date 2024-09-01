@@ -387,6 +387,81 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoStop_0100, TestSiz
     EXPECT_NE(res, Status::OK);
     std::cout << "DoStop " << static_cast<int32_t>(res) << std::endl;
 }
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoPrepare_0100, TestSize.Level1)
+{
+    auto res = decoderSurfaceFilter_->DoPrepare();
+    EXPECT_EQ(res, Status::OK);
+    std::cout << "DoPrepare " << static_cast<int32_t>(res) << std::endl;
+    decoderSurfaceFilter_ =
+        std::make_shared<DecoderSurfaceFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_VIDEODEC);
+    decoderSurfaceFilter_->onLinkedResultCallback_ = std::make_shared<FilterLinkCallbackMock>();
+    res = decoderSurfaceFilter_->DoPrepare();
+    EXPECT_EQ(res, Status::OK);
+    std::cout << "DoPrepare " << static_cast<int32_t>(res) << std::endl;
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_SetParameter_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    int32_t scaleType = 0;
+    parameter->Set<Tag::VIDEO_SCALE_TYPE>(scaleType);
+    double rate = -1.0;
+    parameter->Set<Tag::VIDEO_FRAME_RATE>(rate);
+    auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+    decoderSurfaceFilter_->SetParameter(parameter);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_IS_FILTER_ASYNC_0100, TestSize.Level1)
+{
+    // set IS_FILTER_ASYNC false
+    system::SetParameter("persist.media_service.async_filter", "0");
+    decoderSurfaceFilter_ =
+        std::make_shared<DecoderSurfaceFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_VIDEODEC);
+    auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+    EXPECT_EQ(decoderSurfaceFilter_->DoStart(), Status::ERROR_INVALID_STATE);
+    EXPECT_EQ(decoderSurfaceFilter_->DoPause(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoResume(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoResumeDragging(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoStop(), Status::ERROR_INVALID_STATE);
+
+    // set IS_FILTER_ASYNC true
+    system::SetParameter("persist.media_service.async_filter", "1");
+    decoderSurfaceFilter_ =
+        std::make_shared<DecoderSurfaceFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_VIDEODEC);
+    videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+    EXPECT_EQ(decoderSurfaceFilter_->DoStart(), Status::ERROR_INVALID_STATE);
+    EXPECT_EQ(decoderSurfaceFilter_->DoPause(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoResume(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoResumeDragging(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoStop(), Status::ERROR_INVALID_STATE);
+    EXPECT_EQ(decoderSurfaceFilter_->DoFlush(), Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->DoRelease(), Status::OK);
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_GetCodecName_0100, TestSize.Level1)
+{
+    decoderSurfaceFilter_ =
+        std::make_shared<DecoderSurfaceFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_VIDEODEC);
+    std::string mimeType = "test";
+    EXPECT_EQ(decoderSurfaceFilter_->GetCodecName(mimeType), "");
+}
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_AcquireNextRenderBuffer_0100, TestSize.Level1)
+{
+    decoderSurfaceFilter_ =
+        std::make_shared<DecoderSurfaceFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_VIDEODEC);
+    std::string mimeType = "test";
+    bool byIdx = false;
+    uint32_t index = 0;
+    std::shared_ptr<AVBuffer> outBuffer = std::make_shared<AVBuffer>();
+    EXPECT_EQ(decoderSurfaceFilter_->AcquireNextRenderBuffer(byIdx, index, outBuffer), false);
+    byIdx = true;
+    EXPECT_EQ(decoderSurfaceFilter_->AcquireNextRenderBuffer(byIdx, index, outBuffer), false);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

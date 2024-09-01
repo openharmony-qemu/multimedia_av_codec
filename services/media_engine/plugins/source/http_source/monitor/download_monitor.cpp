@@ -26,6 +26,7 @@ namespace {
     constexpr int RETRY_THRESHOLD = 1;
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
+    constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
@@ -55,7 +56,7 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"), "", TaskType::SINGLETON);
+    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
     task_->RegisterJob([this] { return HttpMonitorLoop(); });
     task_->Start();
 }
@@ -73,7 +74,7 @@ int64_t DownloadMonitor::HttpMonitorLoop()
     if (task.request && task.function) {
         task.function();
     }
-    return 50 * 1000; // retry after 50ms
+    return 50 * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -303,6 +304,15 @@ void DownloadMonitor::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
 }
 
+std::pair<int32_t, int32_t> DownloadMonitor::GetDownloadInfo()
+{
+    MEDIA_LOG_I("DownloadMonitor GetDownloadInfo");
+    if (downloader_ == nullptr) {
+        return std::make_pair(0, 0);
+    }
+    return downloader_->GetDownloadInfo();
+}
+
 void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 {
     if (downloader_ != nullptr) {
@@ -345,6 +355,14 @@ void DownloadMonitor::GetClientMediaServiceErrorCode(int32_t errorCode, int32_t&
         MEDIA_LOG_D("clientCode: " PUBLIC_LOG_D32, static_cast<int32_t>(clientCode));
     }
 }
+
+void DownloadMonitor::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
 }
 }
 }

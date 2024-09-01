@@ -59,6 +59,11 @@ public:
 
     explicit PostProcessing(std::shared_ptr<CodecBase> codec) : codec_(codec) {}
 
+    ~PostProcessing()
+    {
+        callbackUserData_ = nullptr;
+    }
+
     int32_t SetCallback(const Callback& callback, void* userData)
     {
         AVCODEC_SYNC_TRACE;
@@ -101,7 +106,7 @@ public:
     int32_t Prepare()
     {
         CHECK_AND_RETURN_RET_LOG(controller_, AVCS_ERR_UNKNOWN, "Post processing controller is null");
-        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::CONFIGURED, AVCS_ERR_UNKNOWN,
+        CHECK_AND_RETURN_RET_LOG(state_.Get() == State::CONFIGURED, AVCS_ERR_INVALID_STATE,
             "Invalid post processing state: %{public}s", state_.Name());
         CHECK_AND_RETURN_RET_LOG(config_.outputSurface != nullptr, AVCS_ERR_INVALID_OPERATION,
             "Output surface is not set");
@@ -125,6 +130,7 @@ public:
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare failed");
 
         ret = controller_->Prepare();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Prepare failed");
 
         state_.Set(State::PREPARED);
         return AVCS_ERR_OK;

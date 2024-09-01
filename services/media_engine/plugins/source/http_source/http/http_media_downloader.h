@@ -54,17 +54,20 @@ public:
     void SetDownloadErrorState() override;
     void SetInterruptState(bool isInterruptNeeded) override;
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
+    std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();
     StatusCallbackFunc GetStatusCallbackFunc();
+    std::pair<int32_t, int32_t> GetDownloadRateAndSpeed();
     void OnWriteBuffer(uint32_t len);
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
     size_t GetBufferSize() override;
+    void SetAppUid(int32_t appUid) override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -90,8 +93,8 @@ private:
     void ChangeDownloadPos();
     void UpdateWaterLineAbove();
     void HandleCachedDuration();
-    double CalculateCurrentDownloadSpeed();
     bool CheckBufferingOneSeconds();
+    double CalculateCurrentDownloadSpeed();
     float GetCacheDuration(float ratio);
 
 private:

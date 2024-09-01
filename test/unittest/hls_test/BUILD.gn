@@ -75,7 +75,6 @@ config("hls_unittest_cfg") {
   ]
 }
 
-#################################################################################################################
 ohos_unittest("hls_media_downloader_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
@@ -105,7 +104,6 @@ ohos_unittest("hls_media_downloader_unit_test") {
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
-#################################################################################################################
 ohos_unittest("hls_playlist_downloader_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
@@ -135,7 +133,6 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
-#################################################################################################################
 ohos_unittest("hls_tags_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
@@ -165,7 +162,6 @@ ohos_unittest("hls_tags_unit_test") {
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
-#################################################################################################################
 ohos_unittest("m3u8_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path

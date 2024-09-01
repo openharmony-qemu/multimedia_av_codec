@@ -460,6 +460,11 @@ bool IsInputFormatSupported(const char* name)
     }
     return true;
 }
+
+int64_t AvTime2Us(int64_t hTime)
+{
+    return hTime / AV_CODEC_USECOND;
+}
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

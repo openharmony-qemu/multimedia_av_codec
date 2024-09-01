@@ -18,6 +18,7 @@
 
 #include <string>
 #include "plugin/plugin_base.h"
+#include "meta/media_types.h"
 #include "plugin/source_plugin.h"
 #include "download/downloader.h"
 #include "common/media_source.h"
@@ -58,6 +59,11 @@ public:
     virtual void GetDownloadInfo(DownloadInfo& downloadInfo)
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+    }
+    virtual std::pair<int32_t, int32_t> GetDownloadInfo()
+    {
+        MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
+        return std::make_pair(0, 0);
     }
     virtual void GetPlaybackInfo(PlaybackInfo& playbackInfo)
     {
@@ -114,6 +120,8 @@ public:
         MEDIA_LOG_W("SelectStream is unimplemented.");
         return Status::OK;
     }
+
+    virtual void SetAppUid(int32_t appUid) = 0;
 };
 }
 }

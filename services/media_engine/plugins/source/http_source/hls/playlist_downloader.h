@@ -72,6 +72,7 @@ public:
     void PlayListDownloaderInit();
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
+    void SetAppUid(int32_t appUid);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

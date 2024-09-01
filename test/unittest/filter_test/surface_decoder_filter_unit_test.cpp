@@ -104,7 +104,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
     EXPECT_EQ(surfaceDecoderFilter_->DoStop(), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->DoFlush(), Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->DoRelease(), Status::OK);
-    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(UINT32_MAX), Status::OK);
 
     std::shared_ptr<Meta> meta;
     surfaceDecoderFilter_->OnUpdatedResult(meta);
@@ -119,6 +119,189 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
         Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback),
         Status::OK);
+}
+
+/**
+ * @tc.name: Configure
+ * @tc.desc: Configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, Configure, TestSize.Level1)
+{
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    Status ret = surfaceDecoderFilter_->Configure(parameter);
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    ret = surfaceDecoderFilter_->Configure(parameter);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_NE(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SetOutputSurface
+ * @tc.desc: SetOutputSurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SetOutputSurface, TestSize.Level1)
+{
+    sptr<Surface> surface = nullptr;
+    surfaceDecoderFilter_->mediaCodec_ = nullptr;
+    surfaceDecoderFilter_->SetOutputSurface(surface);
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->SetOutputSurface(surface);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->SetOutputSurface(surface);
+    EXPECT_NE(ret, Status::OK);
+}
+
+/**
+ * @tc.name: DoPrepare
+ * @tc.desc: DoPrepare
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, DoPrepare, TestSize.Level1)
+{
+    surfaceDecoderFilter_->filterCallback_ = std::make_shared<TestFilterCallback>();
+    Status ret = surfaceDecoderFilter_->DoPrepare();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: DoStart
+ * @tc.desc: DoStart
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, DoStart, TestSize.Level1)
+{
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->DoStart();
+    EXPECT_NE(ret, Status::OK);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->DoStart();
+    EXPECT_NE(ret, Status::OK);
+}
+
+/**
+ * @tc.name: DoPause
+ * @tc.desc: DoPause
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, DoPause, TestSize.Level1)
+{
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->DoPause();
+    EXPECT_EQ(ret, Status::OK);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->DoPause();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: DoResume
+ * @tc.desc: DoResume
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, DoResume, TestSize.Level1)
+{
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->DoResume();
+    EXPECT_EQ(ret, Status::OK);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->DoResume();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: DoStop
+ * @tc.desc: DoStop
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, DoStop, TestSize.Level1)
+{
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    Status ret = surfaceDecoderFilter_->DoStop();
+    EXPECT_EQ(ret, Status::OK);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    ret = surfaceDecoderFilter_->DoStop();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SetParameter
+ * @tc.desc: SetParameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SetParameter, TestSize.Level1)
+{
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    surfaceDecoderFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<Meta> parameter= std::make_shared<Meta>();
+    surfaceDecoderFilter_->SetParameter(parameter);
+    surfaceDecoderFilter_->eventReceiver_ = nullptr;
+    surfaceDecoderFilter_->SetParameter(parameter);
+    EXPECT_EQ(surfaceDecoderFilter_->nextFilter_, nullptr);
+}
+
+/**
+ * @tc.name: OnLinkedResult
+ * @tc.desc: OnLinkedResult
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, OnLinkedResult, TestSize.Level1)
+{
+    sptr<AVBufferQueueProducer> outputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    surfaceDecoderFilter_->mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
+    surfaceDecoderFilter_->onLinkedResultCallback_ = std::make_shared<MyFilterLinkCallback>();
+    surfaceDecoderFilter_->OnLinkedResult(outputBufferQueue, meta);
+    surfaceDecoderFilter_->onLinkedResultCallback_ = nullptr;
+    surfaceDecoderFilter_->OnLinkedResult(outputBufferQueue, meta);
+    EXPECT_EQ(surfaceDecoderFilter_->nextFilter_, nullptr);
+}
+
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    sptr<Surface> surface;
+    EXPECT_EQ(surfaceDecoderFilter_->SetOutputSurface(surface), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->DoPrepare(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->DoStart(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(surfaceDecoderFilter_->DoPause(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoResume(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoStop(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoFlush(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->DoRelease(), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->NotifyNextFilterEos(UINT32_MAX), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
+    std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<TestFilterLinkCallback>();
+    std::shared_ptr<Meta> format = std::make_shared<Meta>();
+    format->Set<Tag::MIME_TYPE>("test");
+    format->Set<Tag::MEDIA_END_OF_STREAM>(true);
+    EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
+        Status::OK);
+    EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
+        Status::OK);
+    EXPECT_EQ(
+        surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback), Status::OK);
 }
 }  // namespace Pipeline
 }  // namespace Media
