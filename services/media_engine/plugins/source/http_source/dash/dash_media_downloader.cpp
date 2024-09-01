@@ -88,7 +88,7 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         for (auto &segmentDownloader : segmentDownloaders_) {
             segmentDownloader->Close(false, true);
         }
-        return Status::ERROR_AGAIN;
+        return Status::END_OF_STREAM;
     }
 
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(readDataInfo.streamId_);
