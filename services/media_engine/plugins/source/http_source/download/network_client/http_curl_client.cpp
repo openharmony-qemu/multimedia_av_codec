@@ -37,8 +37,6 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
-constexpr int BAD_SOCKET = -1;
-constexpr int SOCKET_ZERO = 0;
 
 std::string ToString(const std::list<std::string> &lists, char tab)
 {
