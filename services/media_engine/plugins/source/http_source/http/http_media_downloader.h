@@ -80,6 +80,7 @@ private:
     bool HandleSeekHit(int64_t offest);
     Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status ReadTimeOut(ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
     bool SeekCacheBuffer(int64_t offset);
@@ -155,6 +156,7 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    uint32_t errorAgainTime_ {0};
 };
 }
 }

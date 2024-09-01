@@ -117,7 +117,7 @@ private:
     bool HandleCache();
     bool CheckReadStatus();
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
-    bool CheckReadTimeOut();
+    Status CheckReadTimeOut(ReadDataInfo& readDataInfo);
     bool CheckBreakCondition();
     uint32_t GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
     void ResetPlaylistCapacity(size_t size);
@@ -247,6 +247,7 @@ private:
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    uint32_t errorAgainTime_ {0};
 };
 }
 }

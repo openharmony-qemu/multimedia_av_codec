@@ -60,6 +60,7 @@ constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
 constexpr float CACHE_LEVEL_1 = 1;
 constexpr float CACHE_LEVEL_2 = 5;
 constexpr float CACHE_LEVEL_3 = 10;
+constexpr uint32_t ERROR_AGAIN_MAX = 20;
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url)
@@ -112,9 +113,10 @@ void HttpMediaDownloader::InitCacheBuffer(uint32_t expectBufferDuration)
     int totalBufferSize = CURRENT_BIT_RATE * static_cast<int32_t>(expectBufferDuration);
     cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferImpl>();
     if (totalBufferSize < RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
-        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
+        MEDIA_LOG_I("HTTP Failed setting cache buffer size: " PUBLIC_LOG_D32
+                    ". already lower than the min buffer size: " PUBLIC_LOG_D32
+                    ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize,
+                    RING_BUFFER_SIZE, RING_BUFFER_SIZE);
         cacheMediaBuffer_->Init(RING_BUFFER_SIZE, CHUNK_SIZE);
         totalBufferSize_ = RING_BUFFER_SIZE;
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
@@ -313,6 +315,28 @@ bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
     return false;
 }
 
+Status HttpMediaDownloader::ReadTimeOut(ReadDataInfo& readDataInfo)
+{
+    isTimeOut_ = true;
+    if (downloader_ != nullptr) {
+        buffer_->SetActive(false); // avoid deadlock caused by ringbuffer write stall
+        downloader_->Pause(true); // the downloader is unavailable after this
+    }
+    if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
+        downloadRequest_->Close();
+    }
+    OnClientErrorEvent();
+    readDataInfo.realReadLength_ = 0;
+    if (errorAgainTime_ <= ERROR_AGAIN_MAX) {
+        errorAgainTime_++;
+        MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
+        return Status::ERROR_AGAIN;
+    } else {
+        MEDIA_LOG_I("HttpMediaDownloader: read time out, eos");
+        return Status::END_OF_STREAM;
+    }
+}
+
 Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     readTime_ = 0;
@@ -333,19 +357,9 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
             return CheckIsEosRingBuffer(buff, readDataInfo);
         }
         if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
-            isTimeOut_ = true;
-            if (downloader_ != nullptr) {
-                buffer_->SetActive(false); // avoid deadlock caused by ringbuffer write stall
-                downloader_->Pause(true); // the downloader is unavailable after this
-            }
-            if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
-                downloadRequest_->Close();
-            }
-            OnClientErrorEvent();
-            readDataInfo.realReadLength_ = 0;
-            MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
-            return Status::ERROR_AGAIN;
+            return ReadTimeOut(readDataInfo);
         }
+        errorAgainTime_ = 0;
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && buffer_->GetSize() == 0) {
             MEDIA_LOG_I("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
@@ -389,6 +403,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
         if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_) {
             return HandleDownloadErrorState(readDataInfo.realReadLength_);
         }
+        errorAgainTime_ = 0;
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
             MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
@@ -481,9 +496,14 @@ Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLengt
         downloadRequest_->Close();
     }
     OnClientErrorEvent();
-    realReadLength = 0;
-    MEDIA_LOG_I("HTTP DownloadErrorState, return eos");
-    return Status::ERROR_AGAIN;
+    if (errorAgainTime_ <= ERROR_AGAIN_MAX) {
+        errorAgainTime_++;
+        MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
+        return Status::ERROR_AGAIN;
+    } else {
+        MEDIA_LOG_I("HttpMediaDownloader: read time out, eos");
+        return Status::END_OF_STREAM;
+    }
 }
 
 Status HttpMediaDownloader::CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo)

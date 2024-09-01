@@ -64,6 +64,7 @@ constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
 constexpr float CACHE_LEVEL_1 = 1;
 constexpr float CACHE_LEVEL_2 = 5;
 constexpr float CACHE_LEVEL_3 = 10;
+constexpr uint32_t ERROR_AGAIN_MAX = 20;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -258,7 +259,7 @@ bool HlsMediaDownloader::CheckReadStatus()
     return false;
 }
 
-bool HlsMediaDownloader::CheckReadTimeOut()
+Status HlsMediaDownloader::CheckReadTimeOut(ReadDataInfo& readDataInfo)
 {
     if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
         isTimeOut_ = true;
@@ -275,9 +276,18 @@ bool HlsMediaDownloader::CheckReadTimeOut()
             MEDIA_LOG_I("HLS Read time out, OnEvent");
             callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
         }
-        return true;
+        readDataInfo.realReadLength_ = 0;
+        if (errorAgainTime_ <= ERROR_AGAIN_MAX) {
+            errorAgainTime_++;
+            MEDIA_LOG_I("HlsMediaDownloader: read time out, error angain");
+            return Status::ERROR_AGAIN;
+        } else {
+            MEDIA_LOG_I("HlsMediaDownloader: read time out, eos");
+            return Status::END_OF_STREAM;
+        }
     }
-    return false;
+    errorAgainTime_ = 0;
+    return Status::ERROR_UNKNOWN;
 }
 
 bool HlsMediaDownloader::CheckBreakCondition()
@@ -374,12 +384,11 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         if (tmpRes != Status::ERROR_UNKNOWN) {
             return tmpRes;
         }
-        if (CheckReadTimeOut()) {
-            readDataInfo.realReadLength_ = 0;
-            MEDIA_LOG_I("HlS read time out, error again.");
-            return Status::ERROR_AGAIN;
+        Status tmpRes = CheckReadTimeOut(readDataInfo);
+        if (tmpRes != Status::ERROR_UNKNOWN) {
+            return tmpRes;
         }
-        OSAL::SleepFor(READ_SLEEP_INTERVAL);  // 5
+        OSAL::SleepFor(READ_SLEEP_INTERVAL); // 5
         int64_t endTime = steadyClock_.ElapsedMilliseconds();
         readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
@@ -419,7 +428,6 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         lastReadCheckTime_ = now;
         readRecordDuringTime_ = 0;
     }
-    
     return ret;
 }
 
