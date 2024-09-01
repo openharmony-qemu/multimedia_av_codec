@@ -619,7 +619,8 @@ void CacheMediaChunkBufferImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterato
     }
 }
 
-void CacheMediaChunkBufferHlsImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum)
+void CacheMediaChunkBufferHlsImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter,
+    size_t allowChunkNum)
 {
     auto& fragmentCacheChunks = *fragmentIter;
     while (fragmentCacheChunks.chunks.size() >= allowChunkNum + 1 && // 1

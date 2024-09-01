@@ -261,8 +261,8 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
     if (GetCurrentBufferSize() >= waterLineAbove_) {
-        MEDIA_LOG_I("Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU " avgDownloadSpeed: "
-            PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
+        MEDIA_LOG_I("Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
+            " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
         isBuffering_ = false;
     }
     if (HandleBreak()) {

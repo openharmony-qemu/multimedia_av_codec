@@ -76,7 +76,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
     isBuffering_ = true;
     totalBufferSize_ = MIN_BUFFER_SIZE;
-    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_U64, MIN_BUFFER_SIZE);
+    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_ZU, MIN_BUFFER_SIZE);
     HlsInit();
 }
 
@@ -86,17 +86,17 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     userDefinedBufferDuration_ = true;
     totalBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
     MEDIA_LOG_I("user define buffer duration.");
-    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_U64, totalBufferSize_);
+    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_ZU, totalBufferSize_);
     HlsInit();
 }
 
 HlsMediaDownloader::HlsMediaDownloader(std::string mimeType)
 {
     mimeType_ = mimeType;
-    cacheMediaBuffer_ = std::make_shared<cacheMediaChunkBufferHlsImpl>();
+    cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
     totalBufferSize_ = MIN_BUFFER_SIZE;
-    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_U64, MIN_BUFFER_SIZE);
+    MEDIA_LOG_I("setting buffer size: " PUBLIC_LOG_ZU, MIN_BUFFER_SIZE);
     HlsInit();
 }
 
@@ -165,7 +165,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32, readTsIndex_);
     }
     writeOffset_ = SpliceOffset(writeTsIndex_, 0);
-    MEDIA_LOG_I("writeOffset_, PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_U64, writeOffset_);
+    MEDIA_LOG_I("writeOffset_, PutRequestIntoDwonloader update writeOffset_." PUBLIC_LOG_ZU, writeOffset_);
 
     if (tsStorageInfo_.count(writeTsIndex_) <= 0) {
         tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
@@ -196,12 +196,12 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
             MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
             PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU ". ",
             totalBufferSize_, MIN_BUFFER_SIZE, MIN_BUFFER_SIZE);
-            cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>()
+            cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(MIN_BUFFER_SIZE, CHUNK_SIZE);
             totalBufferSize_ = MIN_BUFFER_SIZE;
         } else if (totalBufferSize_ > MAX_CACHE_BUFFER_SIZE) {
             MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
-            PUBLIC_LOG_ZU ", setting buffer size: " PUBLIC_LOG_ZU ". ",
+            PUBLIC_LOG_U64 ", setting buffer size: " PUBLIC_LOG_U64 ". ",
             totalBufferSize_, MAX_CACHE_BUFFER_SIZE, MAX_CACHE_BUFFER_SIZE);
             cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
             cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE, CHUNK_SIZE);
@@ -361,7 +361,7 @@ void HlsMediaDownloader::HandleFfmpegReadback(uint64_t ffmpegOffset)
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         readOffset_ = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first - lastTsReadBack);
         MEDIA_LOG_I("Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32 " update readOffset: "
-            PUBLIC_LOG_ZU, readTsIndex_, readOffset);
+            PUBLIC_LOG_ZU, readTsIndex_, readOffset_);
     }
 }
 
@@ -372,7 +372,8 @@ bool HlsMediaDownloader::CheckDataIntegrity()
     } else {
         uint64_t head = SpliceOffset(readTsIndex_, 0);
         uint64_t hasRead = readOffset_ > head ? readOffset_ - head : 0;
-        size_t bufferSize = tsStorageInfo_[readTsIndex_].first > hasRead ? tsStorageInfo_[readTsIndex_].first - hasRead : 0;
+        size_t bufferSize = tsStorageInfo_[readTsIndex_].first > hasRead ?
+            tsStorageInfo_[readTsIndex_].first - hasRead : 0;
         MEDIA_LOG_I("CheckDataIntegrity, bufferSize " PUBLIC_LOG_ZU " GetCacheBufferSize "
             PUBLIC_LOG_ZU, bufferSize, GetCacheBufferSize());
         return bufferSize == GetCacheBufferSize();
@@ -1130,7 +1131,7 @@ void HlsMediaDownloader::DownBufferSize()
 {
     if (totalBufferSize_ <= MIN_BUFFER_SIZE) {
         MEDIA_LOG_I("reducing buffer size failed, already reach the min buffer size: "
-        PUBLIC_LOG_D64 ", current buffer size: " PUBLIC_LOG_ZU, MIN_BUFFER_SIZE, totalBufferSize_);
+        PUBLIC_LOG_ZU ", current buffer size: " PUBLIC_LOG_ZU, MIN_BUFFER_SIZE, totalBufferSize_);
         return;
     }
     size_t tmpBufferSize = totalBufferSize_ - 1 * 1024 * 1024;
