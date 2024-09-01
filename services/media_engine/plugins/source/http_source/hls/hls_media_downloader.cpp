@@ -185,7 +185,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     steadyClock_.Reset();
     openTime_ = steadyClock_.ElapsedMilliseconds();
     if (userDefinedBufferDuration_) {
-        MEDIA_LOG_I("HLS User seeting buffer duration playListDownloader_ opened.");
+        MEDIA_LOG_I("HLS User seeting buffer duration playlistDownloader_ opened.");
         totalRingBufferSize_ = expectDuration_ * CURRENT_BIT_RATE;
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
             MEDIA_LOG_I("HLS Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
@@ -231,13 +231,13 @@ void HlsMediaDownloader::Close(bool isAsync)
 void HlsMediaDownloader::Pause()
 {
     MEDIA_LOG_I("HLS Pause enter");
-    playListDownloader_->Pause();
+    playlistDownloader_->Pause();
 }
 
 void HlsMediaDownloader::Resume()
 {
     MEDIA_LOG_I("HLS Resume enter");
-    playListDownloader_->Resume();
+    playlistDownloader_->Resume();
 }
 
 bool HlsMediaDownloader::CheckReadStatus()
@@ -469,8 +469,8 @@ size_t HlsMediaDownloader::GetContentLength() const
 
 int64_t HlsMediaDownloader::GetDuration() const
 {
-    MEDIA_LOG_I("HLS GetDuration " PUBLIC_LOG_D64, playListDownloader_->GetDuration());
-    return playListDownloader_->GetDuration();
+    MEDIA_LOG_I("HLS GetDuration " PUBLIC_LOG_D64, playlistDownloader_->GetDuration());
+    return playlistDownloader_->GetDuration();
 }
 
 Seekable HlsMediaDownloader::GetSeekable() const
@@ -923,7 +923,7 @@ void HlsMediaDownloader::SetDownloadErrorState()
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
 {
     MEDIA_LOG_I("HLS AutoSelectBitrate download bitrate " PUBLIC_LOG_D32, bitRate);
-    std::vector<uint32_t> bitRates = playListDownloader_->GetBitRates();
+    std::vector<uint32_t> bitRates = playlistDownloader_->GetBitRates();
     if (bitRates.size() == 0) {
         return;
     }
