@@ -66,6 +66,7 @@ public:
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
+    void SetAppUid(int32_t appUid) override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

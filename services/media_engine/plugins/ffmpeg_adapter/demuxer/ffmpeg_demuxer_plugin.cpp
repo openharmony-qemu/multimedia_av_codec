@@ -41,12 +41,6 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 }
 
-#define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
-#define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
-#define AV_CODEC_USECOND (static_cast<int64_t>(1000) * AV_CODEC_NSECOND)
-#define AV_CODEC_MSECOND (static_cast<int64_t>(1000) * AV_CODEC_USECOND)
-#define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
-
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 78, 0) and LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 64, 100)
 #if LIBAVFORMAT_VERSION_INT != AV_VERSION_INT(58, 76, 100)
@@ -77,11 +71,6 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 Status RegisterPlugins(const std::shared_ptr<Register>& reg);
 
 void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str);
-
-inline int64_t AvTime2Us(int64_t hTime)
-{
-    return hTime / AV_CODEC_USECOND;
-}
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { SeekMode::SEEK_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
@@ -1091,6 +1080,8 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
+    FALSE_RETURN_V_MSG_E(ioContext->offset <= INT64_MAX - static_cast<int64_t>(bufSize),
+        ret, "AVReadPacket failed due to offset invalid.");
 
     if (ioContext->dataSource->IsDash() && ioContext->eos == true) {
         MEDIA_LOG_I("AVReadPacket return EOS");
@@ -1155,7 +1146,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     }
 
     if (!ioContext->initCompleted) {
-        ioContext->initDownloadDataSize += static_cast<uint32_t>(buffer->GetMemory()->GetSize());
+        if (ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize)) {
+            ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
+        } else {
+            MEDIA_LOG_W("dataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
+        }
     }
 
     return ret;

@@ -167,6 +167,7 @@ public:
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
+    void SetAppUid(int32_t appUid);
     const std::shared_ptr<DownloadRequest>& GetCurrentRequest();
 private:
     bool BeginDownload();

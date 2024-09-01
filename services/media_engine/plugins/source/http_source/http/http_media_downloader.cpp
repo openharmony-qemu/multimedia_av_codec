@@ -1058,6 +1058,13 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
     return isBuffering_;
 }
 
+void HttpMediaDownloader::SetAppUid(int32_t appUid)
+{
+    if (downloader_) {
+        downloader_->SetAppUid(appUid);
+    }
+}
+
 float HttpMediaDownloader::GetCacheDuration(float ratio)
 {
     if (0 < ratio && ratio < 0.5) { // (0, 0.5)
@@ -1072,6 +1079,9 @@ float HttpMediaDownloader::GetCacheDuration(float ratio)
 
 void HttpMediaDownloader::UpdateWaterLineAbove()
 {
+    if (!isFirstFrameArrived_) {
+        return;
+    }
     size_t waterLineAbove = DEFAULT_WATER_LINE_ABOVE;
     if (currentBitRate_ > 0) {
         float cacheTime = 0;

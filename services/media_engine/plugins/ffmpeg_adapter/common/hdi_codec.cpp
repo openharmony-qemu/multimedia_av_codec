@@ -41,10 +41,7 @@ HdiCodec::HdiCodec()
 Status HdiCodec::InitComponent(const std::string &name)
 {
     compMgr_ = GetComponentManager();
-    if (compMgr_ == nullptr) {
-        AVCODEC_LOGE("GetCodecComponentManager failed!");
-        return Status::ERROR_NULL_POINTER;
-    }
+    CHECK_AND_RETURN_RET_LOG(compMgr_ != nullptr, Status::ERROR_NULL_POINTER, "GetCodecComponentManager failed!");
 
     componentName_ = name;
     compCb_ = new HdiCodec::HdiCallback(shared_from_this());
@@ -69,17 +66,13 @@ std::vector<CodecCompCapability> HdiCodec::GetCapabilityList()
 {
     int32_t compCount = 0;
     int32_t ret = compMgr_->GetComponentNum(compCount);
-    if (ret != HDF_SUCCESS || compCount <= 0) {
-        AVCODEC_LOGE("GetComponentNum failed, ret=%{public}d", ret);
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, {}, "GetComponentNum failed, ret=%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(compCount > 0, {}, "GetComponentNum failed, compCount=%{public}d", compCount);
 
     std::vector<CodecCompCapability> capabilityList(compCount);
     ret = compMgr_->GetComponentCapabilityList(capabilityList, compCount);
-    if (ret != HDF_SUCCESS) {
-        AVCODEC_LOGE("GetComponentCapabilityList failed, ret=%{public}d", ret);
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, {}, "GetComponentCapabilityList failed, ret=%{public}d", ret);
+
     return capabilityList;
 }
 
@@ -87,17 +80,11 @@ bool HdiCodec::IsSupportCodecType(const std::string &name)
 {
     if (compMgr_ == nullptr) {
         compMgr_ = GetComponentManager();
-        if (compMgr_ == nullptr) {
-            AVCODEC_LOGE("compMgr_ is null");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(compMgr_ != nullptr, false, "compMgr_ is null");
     }
 
     std::vector<CodecCompCapability> capabilityList = GetCapabilityList();
-    if (capabilityList.empty()) {
-        AVCODEC_LOGE("Hdi capabilityList is empty!");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!capabilityList.empty(), false, "Hdi capabilityList is empty!");
 
     bool checkName = std::any_of(std::begin(capabilityList),
         std::end(capabilityList), [name](CodecCompCapability capability) {
@@ -119,45 +106,30 @@ Status HdiCodec::GetParameter(uint32_t index, AudioCodecOmxParam &param)
     std::vector<int8_t> inParamVec(p, p + sizeof(param));
     std::vector<int8_t> outParamVec;
     int32_t ret = compNode_->GetParameter(index, inParamVec, outParamVec);
-    if (ret != HDF_SUCCESS) {
-        AVCODEC_LOGE("GetParameter failed!");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    if (outParamVec.size() != sizeof(param)) {
-        AVCODEC_LOGE("param size is invalid!");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_PARAMETER, "GetParameter failed!");
+    CHECK_AND_RETURN_RET_LOG(outParamVec.size() == sizeof(param), Status::ERROR_INVALID_PARAMETER,
+        "param size is invalid!");
+
     errno_t rc = memcpy_s(&param, sizeof(param), outParamVec.data(), outParamVec.size());
-    if (rc != EOK) {
-        AVCODEC_LOGE("memory copy failed!");
-        return Status::ERROR_INVALID_DATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
     return Status::OK;
 }
 
 Status HdiCodec::SetParameter(uint32_t index, const std::vector<int8_t> &paramVec)
 {
     int32_t ret = compNode_->SetParameter(index, paramVec);
-    if (ret != HDF_SUCCESS) {
-        AVCODEC_LOGE("SetParameter failed!");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_PARAMETER, "SetParameter failed!");
     return Status::OK;
 }
 
 Status HdiCodec::InitBuffers(uint32_t bufferSize)
 {
-    Status ret = InitBuffersByPort(PortIndex::INPUT_PORT, bufferSize);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("Init Input Buffers failed, ret=%{public}d", ret);
-        return ret;
-    }
+    Status ret;
 
+    ret = InitBuffersByPort(PortIndex::INPUT_PORT, bufferSize);
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "Init Input Buffers failed, ret=%{public}d", ret);
     ret = InitBuffersByPort(PortIndex::OUTPUT_PORT, bufferSize);
-    if (ret != Status::OK) {
-        AVCODEC_LOGE("Init Output Buffers failed, ret=%{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "Init Output Buffers failed, ret=%{public}d", ret);
 
     return Status::OK;
 }
@@ -185,10 +157,8 @@ Status HdiCodec::InitBuffersByPort(PortIndex portIndex, uint32_t bufferSize)
 
     OmxCodecBuffer outBuffer;
     int32_t ret = compNode_->UseBuffer(static_cast<uint32_t>(portIndex), *omxBuffer.get(), outBuffer);
-    if (ret != HDF_SUCCESS) {
-        AVCODEC_LOGE("InitBuffers failed, ret=%{public}d", ret);
-        return Status::ERROR_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_NO_MEMORY,
+        "InitBuffers failed, ret=%{public}d", ret);
 
     omxBuffer->bufferId = outBuffer.bufferId;
     if (portIndex == PortIndex::INPUT_PORT) {
@@ -207,16 +177,12 @@ Status HdiCodec::SendCommand(CodecCommandType cmd, uint32_t param)
     std::unique_lock lock(mutex_);
     event_ = CODEC_EVENT_ERROR;
     int32_t ret = compNode_->SendCommand(cmd, param, {});
-    if (ret != HDF_SUCCESS) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA, "SendCommand failed");
+
     condition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS),
                         [this] { return event_ == CODEC_EVENT_CMD_COMPLETE; });
-    
-    if (event_ != CODEC_EVENT_CMD_COMPLETE) {
-        AVCODEC_LOGE("SendCommand timeout!");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(event_ == CODEC_EVENT_CMD_COMPLETE, Status::ERROR_INVALID_PARAMETER,
+        "SendCommand timeout!");
 
     return Status::OK;
 }
@@ -230,16 +196,12 @@ Status HdiCodec::EmptyThisBuffer(const std::shared_ptr<AVBuffer> &buffer)
 
     errno_t rc = memcpy_s(omxInBufferInfo_->avBuffer->memory_->GetAddr(), omxInBufferInfo_->omxBuffer->filledLen,
                           buffer->memory_->GetAddr(), omxInBufferInfo_->omxBuffer->filledLen);
-    if (rc != EOK) {
-        AVCODEC_LOGE("memory copy failed!");
-        return Status::ERROR_INVALID_DATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
 
     int32_t ret = compNode_->EmptyThisBuffer(*omxInBufferInfo_->omxBuffer.get());
-    if (ret != HDF_SUCCESS) {
-        AVCODEC_LOGE("EmptyThisBuffer failed, ret=%{public}d", ret);
-        return Status::ERROR_INVALID_DATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA,
+        "EmptyThisBuffer failed, ret=%{public}d", ret);
+
     AVCODEC_LOGD("EmptyThisBuffer OK");
     return Status::OK;
 }
@@ -249,22 +211,14 @@ Status HdiCodec::FillThisBuffer(std::shared_ptr<AVBuffer> &buffer)
     std::unique_lock lock(mutex_);
     outputOmxBuffer_ = nullptr;
     int32_t ret = compNode_->FillThisBuffer(*omxOutBufferInfo_->omxBuffer.get());
-    if (ret != HDF_SUCCESS) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA, "FillThisBuffer failed!");
+
     condition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS), [this] { return outputOmxBuffer_ != nullptr; });
-    
-    if (outputOmxBuffer_ == nullptr) {
-        AVCODEC_LOGE("FillThisBuffer timeout!");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    CHECK_AND_RETURN_RET_LOG(outputOmxBuffer_ != nullptr, Status::ERROR_INVALID_PARAMETER, "FillThisBuffer timeout!");
 
     errno_t rc = memcpy_s(buffer->memory_->GetAddr(), outputOmxBuffer_->filledLen,
                           omxOutBufferInfo_->avBuffer->memory_->GetAddr(), outputOmxBuffer_->filledLen);
-    if (rc != EOK) {
-        AVCODEC_LOGE("memory copy failed!");
-        return Status::ERROR_INVALID_DATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_INVALID_DATA, "memory copy failed!");
 
     buffer->memory_->SetSize(outputOmxBuffer_->filledLen);
     buffer->memory_->SetOffset(outputOmxBuffer_->offset);
@@ -279,10 +233,8 @@ Status HdiCodec::FreeBuffer(PortIndex portIndex, const std::shared_ptr<OmxCodecB
 {
     if (omxBuffer != nullptr) {
         int32_t ret = compNode_->FreeBuffer(static_cast<uint32_t>(portIndex), *omxBuffer.get());
-        if (ret != HDF_SUCCESS) {
-            AVCODEC_LOGE("Free buffer fail, portIndex=%{public}d, ret=%{public}d", portIndex, ret);
-            return Status::ERROR_INVALID_DATA;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == HDF_SUCCESS, Status::ERROR_INVALID_DATA,
+            "Free buffer fail, portIndex=%{public}d, ret=%{public}d", portIndex, ret);
     }
 
     AVCODEC_LOGD("FreeBuffer OK");
