@@ -473,6 +473,7 @@ Seekable HlsMediaDownloader::GetSeekable() const
 void HlsMediaDownloader::SetCallback(Callback* cb)
 {
     callback_ = cb;
+    playlistDownloader_->SetCallback(cb);
 }
 
 void HlsMediaDownloader::ResetPlaylistCapacity(size_t size)

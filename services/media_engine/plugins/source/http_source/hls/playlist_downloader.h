@@ -73,6 +73,7 @@ public:
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     std::map<std::string, std::string> GetHttpHeader();
     void SetAppUid(int32_t appUid);
+    void SetCallback(Callback* cb);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -100,6 +101,8 @@ protected:
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
     uint64_t position_ {0};
+    int64_t retryStartTime_ {0};
+    Callback* eventCallback_ {nullptr};
 };
 }
 }
