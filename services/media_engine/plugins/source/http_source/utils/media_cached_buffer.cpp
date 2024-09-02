@@ -37,7 +37,6 @@ constexpr double NEW_FRAGMENT_INIT_CHUNK_NUM = 128.0; // Restricting the cache s
 constexpr double NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR = 0.25;
 constexpr double CACHE_RELEASE_FACTOR_DEFAULT = 10;
 constexpr double TO_PERCENT = 100;
-constexpr uint64_t MAX_SAVE_DATA_SIZE = 100 * 1024;
 constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
 
@@ -607,24 +606,6 @@ void CacheMediaChunkBufferImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterato
     while (fragmentCacheChunks.chunks.size() >= allowChunkNum &&
         fragmentCacheChunks.accessLength > static_cast<int64_t>(static_cast<double>(fragmentCacheChunks.dataLength) *
         CACHE_RELEASE_FACTOR_DEFAULT / TO_PERCENT)) {
-        if (fragmentCacheChunks.accessPos != fragmentCacheChunks.chunks.begin()) {
-            auto tmp = UpdateFragmentCacheForDelHead(fragmentIter);
-            if (tmp != nullptr) {
-                freeChunks_.push_back(tmp);
-            }
-        } else {
-            MEDIA_LOG_D("judge has read finish.");
-            break;
-        }
-    }
-}
-
-void CacheMediaChunkBufferHlsImpl::DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter,
-    size_t allowChunkNum)
-{
-    auto& fragmentCacheChunks = *fragmentIter;
-    while (fragmentCacheChunks.chunks.size() >= allowChunkNum + 1 && // 1
-        fragmentCacheChunks.accessLength > MAX_SAVE_DATA_SIZE) {
         if (fragmentCacheChunks.accessPos != fragmentCacheChunks.chunks.begin()) {
             auto tmp = UpdateFragmentCacheForDelHead(fragmentIter);
             if (tmp != nullptr) {

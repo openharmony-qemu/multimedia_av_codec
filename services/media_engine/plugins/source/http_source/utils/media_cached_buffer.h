@@ -93,7 +93,7 @@ protected:
     virtual ChunkIterator AddFragmentCacheBuffer(uint64_t offset);
     virtual ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter,
         uint64_t offset, ChunkIterator chunkPos);
-    virtual void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
+    void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
     FragmentIterator EraseFragmentCache(const FragmentIterator& iter);
     FragmentIterator GetOffsetFragmentCache(FragmentIterator& fragmentPos, uint64_t offset);
     ChunkIterator GetOffsetChunkCache(CacheChunkList& fragmentCacheBuffer, uint64_t offset);
@@ -215,7 +215,6 @@ protected:
     CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false);
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset, ChunkIterator chunkPos);
     ChunkIterator AddFragmentCacheBuffer(uint64_t offset);
-    void DeleteHasReadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
 };
 
 }

@@ -517,7 +517,7 @@ void HttpMediaDownloader::ChangeDownloadPos()
 {
     MEDIA_LOG_D("ChangeDownloadPos in.");
 
-    if (writeOffset_ >= readOffset_ + GetCurrentBufferSize()) {
+    if (!canWrite_) {
         MEDIA_LOG_I("CacheMediaBuffer clear.");
         cacheMediaBuffer_->Clear();
     }
