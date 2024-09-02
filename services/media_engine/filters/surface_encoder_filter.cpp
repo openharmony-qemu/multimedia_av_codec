@@ -412,8 +412,8 @@ void SurfaceEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
 void SurfaceEncoderFilter::OnReportKeyFramePts(std::string KeyFramePts)
 {
     MEDIA_LOG_I("OnReportKeyFramePts %{public}s enter", KeyFramePts.c_str());
-    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
-    userMeta->SetData("com.openharmony.recorder.timestamp", KeyFramePts.data());
+    const std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    userMeta->SetData("com.openharmony.recorder.timestamp", KeyFramePts);
     std::shared_ptr<MuxerFilter> muxerFilter = std::static_pointer_cast<MuxerFilter>(nextFilter_);
     if (muxerFilter != nullptr) {
         muxerFilter->SetUserMeta(userMeta);
