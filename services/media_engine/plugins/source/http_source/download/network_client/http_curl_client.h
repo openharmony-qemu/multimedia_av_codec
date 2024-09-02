@@ -60,9 +60,7 @@ public:
     Status Deinit() override;
     Status GetIp(std::string &ip) override;
     void SetAppUid(int32_t appUid) override;
-    static curl_socket_t OpensocketCallback(void *clientp,
-                                            curlsocktype purpose,
-                                            struct curl_sockaddr *address);
+
     struct SocketOwner {
         uid_t uid;
         gid_t gid;

@@ -27,6 +27,7 @@ namespace {
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
+    constexpr int64_t RETRY_SEG = 50;
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
         25, // Upload faild.
         26, // Faild to open/read local data from file/application.
@@ -74,7 +75,7 @@ int64_t DownloadMonitor::HttpMonitorLoop()
     if (task.request && task.function) {
         task.function();
     }
-    return 50 * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
+    return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
