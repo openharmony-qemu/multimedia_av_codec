@@ -322,7 +322,7 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     }
 }
 
-size_t DownloadMonitor::GetBufferSize()
+size_t DownloadMonitor::GetBufferSize() const
 {
     downloader_->GetBufferSize();
 }

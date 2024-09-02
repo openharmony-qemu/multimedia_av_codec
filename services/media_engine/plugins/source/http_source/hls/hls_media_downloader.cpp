@@ -1322,7 +1322,7 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
     return DEFAULT_CACHE_TIME; // (, 0] || [2, )
 }
 
-size_t HlsMediaDownloader::GetBufferSize()
+size_t HlsMediaDownloader::GetBufferSize() const
 {
     size_t bufferSize = 0;
     if (isRingBuffer_) {

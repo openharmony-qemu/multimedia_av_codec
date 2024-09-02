@@ -869,7 +869,7 @@ void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-size_t HttpMediaDownloader::GetBufferSize()
+size_t HttpMediaDownloader::GetBufferSize() const
 {
     return GetCurrentBufferSize();
 }

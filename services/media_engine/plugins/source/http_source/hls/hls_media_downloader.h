@@ -88,7 +88,7 @@ public:
     void ReportVideoSizeChange();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetAppUid(int32_t appUid) override;
-    size_t GetBufferSize() override;
+    size_t GetBufferSize() const override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
