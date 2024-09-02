@@ -125,7 +125,8 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
     return GetSegmentDownloaderByType(streamDescription->type_);
 }
 
-std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(MediaAVCodec::MediaType type)
+std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::
+    GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const
 {
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = nullptr;
     auto iter = std::find_if(segmentDownloaders_.begin(), segmentDownloaders_.end(),
@@ -135,7 +136,6 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
     if (iter != segmentDownloaders_.end()) {
         segmentDownloader = *iter;
     }
-
     return segmentDownloader;
 }
 
@@ -1053,8 +1053,8 @@ void DashMediaDownloader::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 size_t DashMediaDownloader::GetBufferSize() const
 {
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloaderByType(
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    std::shared_ptr<DashSegmentDownloader> segmentDownloader =
+        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
     if (segmentDownloader == nullptr) {
         MEDIA_LOG_W("GetBufferSize can not get segmentDownloader.");
         return 0;

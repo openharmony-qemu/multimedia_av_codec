@@ -133,6 +133,7 @@ private:
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
+    std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     size_t totalRingBufferSize_ {0};
     std::atomic<bool> usingExtraRingBuffer_ {false};
     std::shared_ptr<RingBuffer> tmpBuffer_;
