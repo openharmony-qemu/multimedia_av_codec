@@ -73,7 +73,7 @@ public:
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
-    uint64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
+    int64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);

@@ -384,7 +384,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         if (tmpRes != Status::ERROR_UNKNOWN) {
             return tmpRes;
         }
-        Status tmpRes = CheckReadTimeOut(readDataInfo);
+        tmpRes = CheckReadTimeOut(readDataInfo);
         if (tmpRes != Status::ERROR_UNKNOWN) {
             return tmpRes;
         }
@@ -820,7 +820,7 @@ void HlsMediaDownloader::SeekToTs(uint64_t seekTime, SeekMode mode)
     }
 }
 
-uint64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
+int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
     double hstTime, const PlayInfo& item)
 {
     PlayInfo playInfo;
@@ -1325,14 +1325,10 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
 size_t HlsMediaDownloader::GetBufferSize() const
 {
     size_t bufferSize = 0;
-    if (isRingBuffer_) {
-        if (buffer_ != nullptr) {
-            bufferSize = buffer_->GetSize();
-        }
-    } else {
-        if (cacheMediaBuffer_ != nullptr) {
-            bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
-        }
+    if (buffer_ != nullptr) {
+        bufferSize = buffer_->GetSize();
+    } else if (cacheMediaBuffer_ != nullptr) {
+        bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
     }
     return bufferSize;
 }
