@@ -1525,8 +1525,8 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
         if (requestBufferErrorCountMap_[queueIndex] % 5 == 0) { // log per 5 times fail
-            MEDIA_LOG_W("Request buffer failed, try again later, user queue: " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32
-                ", errorCnt:" PUBLIC_LOG_D32, queueIndex, (int32_t)(ret), requestBufferErrorCountMap_[queueIndex]);
+            MEDIA_LOG_W("Request buffer failed, try again later, user queue: " PUBLIC_LOG_U32 ", ret:" PUBLIC_LOG_D32
+                ", errorCnt:" PUBLIC_LOG_U32, queueIndex, (int32_t)(ret), requestBufferErrorCountMap_[queueIndex]);
         }
         if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Request buffer failed from buffer queue too many times in one minute.");
