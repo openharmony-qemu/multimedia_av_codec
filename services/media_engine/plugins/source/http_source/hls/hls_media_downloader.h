@@ -27,6 +27,7 @@
 #include "common/media_source.h"
 #include <unistd.h>
 #include "common/media_core.h"
+#include "utils/media_cached_buffer.h"
 
 namespace OHOS {
 namespace Media {

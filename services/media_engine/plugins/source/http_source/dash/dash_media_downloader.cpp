@@ -125,8 +125,8 @@ std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader
     return GetSegmentDownloaderByType(streamDescription->type_);
 }
 
-std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::
-    GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const
+std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloaderByType(
+    MediaAVCodec::MediaType type) const
 {
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = nullptr;
     auto iter = std::find_if(segmentDownloaders_.begin(), segmentDownloaders_.end(),
