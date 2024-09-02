@@ -474,7 +474,11 @@ void HlsMediaDownloader::PrepareToSeek()
     isLastDecryptWriteError_ = false;
 
     downloader_->Cancel();
-    cacheMediaBuffer_->Clear();
+
+    cacheMediaBuffer_.reset();
+    cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    cacheMediaBuffer_->Init(totalBufferSize_, CHUNK_SIZE);
+
     tsStorageInfo_.clear();
 }
 
