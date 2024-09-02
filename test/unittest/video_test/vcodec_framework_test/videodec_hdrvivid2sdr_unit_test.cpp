@@ -224,10 +224,10 @@ void TEST_SUIT::ConfigureHdrVivid2Sdr(int32_t testCode, bool isInner)
     PrepareSource(testCode);
     if (isInner) {
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     } else {
         format_->PutIntValue(OH_MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-        OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+            OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
     }
 }
 #endif
