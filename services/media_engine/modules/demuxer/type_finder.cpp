@@ -167,7 +167,6 @@ Plugins::Seekable TypeFinder::GetSeekable()
 
 std::string TypeFinder::SniffMediaType()
 {
-    MEDIA_LOG_I("SniffMediaType begin.");
     std::string pluginName;
     auto dataSource = shared_from_this();
     pluginName = Plugins::PluginManagerV2::Instance().SnifferPlugin(PluginType::DEMUXER, dataSource);

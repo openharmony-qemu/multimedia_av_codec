@@ -400,17 +400,16 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         return false;
     }
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::GetDuration");
-    MEDIA_LOG_I("GetDuration enter");
     seekable_ = source_->GetSeekable();
 
     FALSE_LOG(seekable_ != Seekable::INVALID);
-    MEDIA_LOG_I("GetDuration exit");
     if (source_->IsSeekToTimeSupported()) {
         duration_ = source_->GetDuration();
         if (duration_ != Plugins::HST_TIME_NONE) {
-            MEDIA_LOG_I("InitMediaMetaData for hls, duration: " PUBLIC_LOG_D64, duration_);
+            MEDIA_LOG_I("GetDuration for hls, duration: " PUBLIC_LOG_D64, duration_);
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
         }
+        MEDIA_LOG_I("GetDuration for seek to time");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
     
@@ -418,11 +417,13 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
         duration_ = source_->GetDuration();
         if (duration_ != Plugins::HST_TIME_NONE) {
-            MEDIA_LOG_I("InitMediaMetaData for not hls, duration: " PUBLIC_LOG_D64, duration_);
+            MEDIA_LOG_I("GetDuration for not hls, duration: " PUBLIC_LOG_D64, duration_);
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(Plugins::HstTime2Us(duration_));
         }
+        MEDIA_LOG_I("GetDuration for seekble");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
+    MEDIA_LOG_I("GetDuration for other");
     return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
 }
 
@@ -458,7 +459,6 @@ bool MediaDemuxer::GetDrmInfosUpdated(const std::multimap<std::string, std::vect
 
 bool MediaDemuxer::IsLocalDrmInfosExisted()
 {
-    MEDIA_LOG_I("CheckLocalDrmInfos");
     std::shared_lock<std::shared_mutex> lock(drmMutex);
     return !localDrmInfos_.empty();
 }
@@ -1461,11 +1461,8 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     mediaMetaData_.trackMetas.clear();
     mediaMetaData_.trackMetas.reserve(mediaInfo.tracks.size());
     for (uint32_t index = 0; index < mediaInfo.tracks.size(); index++) {
-        std::string mimeType;
         auto trackMeta = mediaInfo.tracks[index];
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
-        MEDIA_LOG_I("InitMediaMetaData push track, index = " PUBLIC_LOG_D32 " mimeType = " PUBLIC_LOG_S,
-            index, mimeType.data());
     }
 }
 
@@ -1527,8 +1524,10 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
         requestBufferErrorCountMap_[queueIndex]++;
-        MEDIA_LOG_D("Request buffer failed, try again later, user queue: " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32,
-            queueIndex, (int32_t)(ret));
+        if (requestBufferErrorCountMap_[queueIndex] % 5 == 0) { // log per 5 times fail
+            MEDIA_LOG_W("Request buffer failed, try again later, user queue: " PUBLIC_LOG_U32 ", ret: " PUBLIC_LOG_D32
+                ", errorCnt:" PUBLIC_LOG_D32, queueIndex, (int32_t)(ret), requestBufferErrorCountMap_[queueIndex]);
+        }
         if (requestBufferErrorCountMap_[queueIndex] >= REQUEST_FAILED_RETRY_TIMES) {
             MEDIA_LOG_E("Request buffer failed from buffer queue too many times in one minute.");
         }
@@ -1847,7 +1846,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to input sample is nullptr");
     if (eosMap_[trackId]) {
-        MEDIA_LOG_W("Read sample failed due to track" PUBLIC_LOG_U32 "has reached eos", trackId);
+        MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has reached eos", trackId);
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
         sample->memory_->SetSize(0);
         return Status::END_OF_STREAM;
