@@ -1322,17 +1322,20 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
     return DEFAULT_CACHE_TIME; // (, 0] || [2, )
 }
 
-size_t HlsMediaDownloader::GetBufferSize()
+size_t HlsMediaDownloader::GetCurrentBufferSize()
 {
-    if (cacheMediaBuffer_) {
-        return cacheMediaBuffer_->GetBufferSize(readOffset_);
-    } else if (buffer_) {
-        return buffer_->GetBufferSize();
+    size_t bufferSize = 0;
+    if (isRingBuffer_) {
+        if (buffer_ != nullptr) {
+            bufferSize = buffer_->GetSize();
+        }
     } else {
-        return 0;
+        if (cacheMediaBuffer_ != nullptr) {
+            bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
+        }
     }
+    return bufferSize;
 }
-
 }
 }
 }
