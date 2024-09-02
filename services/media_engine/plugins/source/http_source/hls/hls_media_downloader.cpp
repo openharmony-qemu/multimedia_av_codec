@@ -894,15 +894,15 @@ void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 void HlsMediaDownloader::ReportVideoSizeChange()
 {
     if (callback_ == nullptr) {
-        MEDIA_LOG_I("callback == nullptr dont report video size change");
+        MEDIA_LOG_I("HLS callback == nullptr dont report video size change");
         return;
     }
     int32_t videoWidth = playlistDownloader_->GetVedioWidth();
     int32_t videoHeight = playlistDownloader_->GetVedioHeight();
-    MEDIA_LOG_I("ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
+    MEDIA_LOG_I("HLS ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
         PUBLIC_LOG_D32, videoWidth, videoHeight);
     changeBitRateCount_++;
-    MEDIA_LOG_I("Change bit rate count : " PUBLIC_LOG_U32, changeBitRateCount_);
+    MEDIA_LOG_I("HLS Change bit rate count : " PUBLIC_LOG_U32, changeBitRateCount_);
     std::pair<int32_t, int32_t> videoSize {videoWidth, videoHeight};
     callback_->OnEvent({PluginEventType::VIDEO_SIZE_CHANGE, {videoSize}, "video_size_change"});
 }

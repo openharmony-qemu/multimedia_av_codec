@@ -159,6 +159,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
 bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("HTTP Open download");
+    isDownloadFinish_ = false;
     openTime_ = steadyClock_.ElapsedMilliseconds();
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -495,13 +496,14 @@ Status HttpMediaDownloader::HandleDownloadErrorState(unsigned int& realReadLengt
     if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
         downloadRequest_->Close();
     }
-    OnClientErrorEvent();
     if (errorAgainTime_ <= ERROR_AGAIN_MAX) {
         errorAgainTime_++;
         MEDIA_LOG_I("HttpMediaDownloader: read time out, error angain");
         return Status::ERROR_AGAIN;
     } else {
-        MEDIA_LOG_I("HttpMediaDownloader: read time out, eos");
+        OnClientErrorEvent();
+        realReadLength = 0;
+        MEDIA_LOG_I("HTTP DownloadErrorState, return eos");
         return Status::END_OF_STREAM;
     }
 }
@@ -535,7 +537,7 @@ void HttpMediaDownloader::ChangeDownloadPos()
     MEDIA_LOG_D("HTTP ChangeDownloadPos in.");
 
     if (writeOffset_ >= readOffset_ + GetCurrentBufferSize()) {
-        MEDIA_LOG_I("CacheMediaBuffer clear.");
+        MEDIA_LOG_I("HTTP CacheMediaBuffer clear.");
         cacheMediaBuffer_->Clear();
     }
 
