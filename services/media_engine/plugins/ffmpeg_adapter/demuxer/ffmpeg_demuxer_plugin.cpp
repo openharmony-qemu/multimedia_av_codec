@@ -492,10 +492,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     }
     int64_t dts = AvTime2Us(
         ConvertTimeFromFFmpeg(pkt->dts, parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->time_base));
-    referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
-
+    Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
-    if (ffmpegRet == AVERROR_EOF ||
+    if (ffmpegRet == AVERROR_EOF || result != Status::OK ||
         (parserCurGopId_ + 1 < iFramePosSize && curStreamId == IFramePos_[parserCurGopId_ + 1] - 1)) { // 处理完一个GOP
         MEDIA_LOG_I("IFramePos size: " PUBLIC_LOG_ZU ", processingIFrame size: " PUBLIC_LOG_ZU
                     ", curStreamId: " PUBLIC_LOG_U32 ",parserCurGopId: " PUBLIC_LOG_U32,
