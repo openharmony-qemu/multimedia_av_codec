@@ -978,7 +978,7 @@ bool HttpMediaDownloader::HandleBreak()
     return false;
 }
 
-size_t HttpMediaDownloader::GetCurrentBufferSize()
+size_t HttpMediaDownloader::GetCurrentBufferSize() const
 {
     size_t bufferSize = 0;
     if (isRingBuffer_) {

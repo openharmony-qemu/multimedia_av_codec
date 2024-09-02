@@ -89,7 +89,7 @@ private:
 
     bool HandleBuffering();
     bool StartBuffering(int32_t wantReadLength);
-    size_t GetCurrentBufferSize();
+    size_t GetCurrentBufferSize() const;
     bool HandleBreak();
     void ChangeDownloadPos();
     void UpdateWaterLineAbove();
