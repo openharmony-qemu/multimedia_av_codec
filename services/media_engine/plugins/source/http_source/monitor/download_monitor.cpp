@@ -225,7 +225,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 
     if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
         SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
-        serverError >= SERVER_ERROR_THRESHOLD && downloader_->GetBufferSize() <= 0) {
+        (serverError >= SERVER_ERROR_THRESHOLD && downloader_->GetBufferSize() <= 0)) {
         MEDIA_LOG_I("error code dont't need to retry.");
         downloader_->SetDownloadErrorState();
         NotifyError(clientError, serverError);
