@@ -200,13 +200,13 @@ static void CheckAudioParam(OH_AVSource *audioSource, int &audioFrameAll)
         }
     }
     if (count == 1) {
-        ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_G711MU));
         ASSERT_EQ(layout, LAYOUTMONO);
         ASSERT_EQ(rate, SAMPLERATEMONO);
         ASSERT_EQ(count, COUNTMONO);
         ASSERT_EQ(bitrate, BITRATEMONO);
     } else {
-        ASSERT_EQ(0, strcmp(mimeType, "audio/g711mu"));
+        ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_G711MU));
         ASSERT_EQ(layout, LAYOUTDUAL);
         ASSERT_EQ(rate, SAMPLERATEDUAL);
         ASSERT_EQ(count, COUNTDUAL);
@@ -308,7 +308,7 @@ static void AvcVideoParam(OH_AVFormat *paramFormat)
     ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_COLOR_PRIMARIES, &primaries));
     ASSERT_TRUE(OH_AVFormat_GetDoubleValue(paramFormat, OH_MD_KEY_VIDEO_SAR, &sar));
     ASSERT_TRUE(OH_AVFormat_GetStringValue(paramFormat, OH_MD_KEY_CODEC_MIME, &mimeType));
-    ASSERT_EQ(0, strcmp(mimeType, "video/avc"));
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_AVC));
     ASSERT_EQ(ACTUAL_CURRENTWIDTH, currentWidth);
     ASSERT_EQ(ACTUAL_CURRENTHEIGHT, currentHeight);
     ASSERT_EQ(ACTUAL_FRAMERATE, frameRate);
@@ -351,7 +351,7 @@ static void HevcVideoParam(OH_AVFormat *paramFormat)
     } else {
         ASSERT_FALSE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_PROFILE, &profile));
     }
-    ASSERT_EQ(0, strcmp(mimeType, "video/hevc"));
+    ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
     ASSERT_EQ(ACTUAL_CURRENTWIDTH, currentWidth);
     ASSERT_EQ(ACTUAL_CURRENTHEIGHT, currentHeight);
     ASSERT_EQ(ACTUAL_FRAMERATE, frameRate);
@@ -1549,7 +1549,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4400, TestSize.Level0)
             if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
                 SetAudioParam(trackFormat);
-                ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
+                ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_AAC));
             } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
                 HevcVideoParam(trackFormat);
@@ -1604,7 +1604,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_4500, TestSize.Level0)
             if (tarckType == MEDIA_TYPE_AUD) {
                 SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
                 SetAudioParam(trackFormat);
-                ASSERT_EQ(0, strcmp(mimeType, "audio/mp4a-latm"));
+                ASSERT_EQ(0, strcmp(mimeType, OH_AVCODEC_MIMETYPE_AUDIO_AAC));
             } else if (tarckType == MEDIA_TYPE_VID) {
                 SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
                 AvcVideoParam(trackFormat);
