@@ -562,6 +562,14 @@ Status DemuxerFilter::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     return demuxer_->GetPlaybackInfo(playbackInfo);
 }
 
+Status DemuxerFilter::StopBufferring(bool flag)
+{
+    if (mediaSource_ == nullptr) {
+        MEDIA_LOG_E_SHORT("StopBufferring failed, mediaSource = nullptr");
+    }
+    return demuxer_->StopBufferring(flag);
+}
+
 Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
 {
     if (mediaSource_ == nullptr) {
