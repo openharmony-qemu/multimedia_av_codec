@@ -869,9 +869,9 @@ void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     }
 }
 
-int HttpMediaDownloader::GetBufferSize()
+size_t HttpMediaDownloader::GetBufferSize()
 {
-    return totalBufferSize_;
+    return GetCurrentBufferSize();
 }
 
 RingBuffer& HttpMediaDownloader::GetBuffer()
@@ -1126,18 +1126,6 @@ void HttpMediaDownloader::UpdateWaterLineAbove()
     waterLineAbove_ = std::min(waterLineAbove_, static_cast<size_t>(MAX_CACHE_BUFFER_SIZE *
         WATER_LINE_ABOVE_LIMIT_RATIO));
     MEDIA_LOG_D("UpdateWaterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
-}
-
-
-size_t HlsMediaDownloader::GetBufferSize()
-{
-    if (cacheMediaBuffer_) {
-         return cacheMediaBuffer_->GetRingBufferSize();
-    } else if (buffer_) {
-        return buffer_->GetRingBufferSize();
-    } else {
-        return 0;
-    }
 }
 }
 }
