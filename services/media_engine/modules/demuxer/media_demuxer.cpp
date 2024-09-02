@@ -1105,6 +1105,20 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
     return ret;
 }
 
+Status MediaDemuxer::StopBufferring(bool flag)
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "StopBufferring failed, source_ is nullptr.");
+    MEDIA_LOG_I("StopBufferring begin");
+    Status ret = source_->StopBufferring(flag);
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("MediaDemuxer StopBufferring failed");
+        return ret;
+    }
+    MEDIA_LOG_I("StopBufferring success");
+    return ret;
+}
+
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
 {
     MediaAVCodec::AVCODEC_SYNC_TRACE;
