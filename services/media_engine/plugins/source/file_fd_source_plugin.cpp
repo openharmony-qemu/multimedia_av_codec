@@ -114,7 +114,7 @@ FileFdSourcePlugin::~FileFdSourcePlugin()
 {
     MEDIA_LOG_I("~FileFdSourcePlugin in.");
     steadyClock_.Reset();
-    isInterrupted_ = true;
+    SetInterruptState(true);
     MEDIA_LOG_I("~FileFdSourcePlugin isInterrupted_ " PUBLIC_LOG_D32, isInterrupted_.load());
     FALSE_RETURN_MSG(downloadTask_ != nullptr, "~FileFdSourcePlugin out.");
     downloadTask_->Stop();
@@ -137,7 +137,7 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         return err;
     }
     CheckFileType();
-    if (isCloudFile_) {
+    if (isCloudFile_ && isEnableFdCache_) {
         ringBuffer_ = std::make_shared<RingBuffer>(CACHE_SIZE);
         FALSE_RETURN_V_MSG_E(!(ringBuffer_ == nullptr || !ringBuffer_->Init()),
             Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
@@ -717,6 +717,11 @@ bool FileFdSourcePlugin::IsValidTime(int64_t curTime, int64_t lastTime)
 {
     return lastReadTime_ != 0 && curReadTime_ - lastReadTime_ < SEEK_TIME_UPPER &&
         curReadTime_ - lastReadTime_ > SEEK_TIME_LOWER;
+}
+
+void FileFdSourcePlugin::SetEnableOnlineFdCache(bool isEnableFdCache)
+{
+    isEnableFdCache_ = isEnableFdCache;
 }
 } // namespace FileFdSource
 } // namespace Plugin

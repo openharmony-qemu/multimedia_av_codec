@@ -2136,5 +2136,10 @@ bool MediaDemuxer::IsVideoEos()
     }
     return eosMap_[videoTrackId_];
 }
+
+void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
+{
+    source_->SetEnableOnlineFdCache(isEnableFdCache);
+}
 } // namespace Media
 } // namespace OHOS
