@@ -130,7 +130,7 @@ Status HttpSourcePlugin::Start()
 Status HttpSourcePlugin::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
-    CloseUri();
+    CloseUri(true);
     return Status::OK;
 }
 
@@ -349,7 +349,7 @@ Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
 }
 
 
-void HttpSourcePlugin::CloseUri()
+void HttpSourcePlugin::CloseUri(bool isAsync)
 {
     // As Read function require lock firstly, if the Read function is block, we can not get the lock
     std::shared_ptr<MediaDownloader> downloader = downloader_;
@@ -357,8 +357,10 @@ void HttpSourcePlugin::CloseUri()
         MEDIA_LOG_D("Close uri");
         downloader->Close(true);
     }
-    AutoLock lock(mutex_);
-    downloader_ = nullptr;
+    if (isAsync) {
+        AutoLock lock(mutex_);
+        downloader_ = nullptr;
+    }
     uri_.clear();
 }
 

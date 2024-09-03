@@ -50,7 +50,7 @@ public:
     Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
                        NetworkClientErrorCode& clientCode) override;
 
-    Status Close() override;
+    Status Close(bool isAsync) override;
 
     Status Deinit() override;
     Status GetIp(std::string &ip) override;

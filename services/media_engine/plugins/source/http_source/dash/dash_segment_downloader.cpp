@@ -140,7 +140,6 @@ void DashSegmentDownloader::Close(bool isAsync, bool isClean)
 {
     MEDIA_LOG_I("Close enter");
     buffer_->SetActive(false, isClean);
-    downloader_->Cancel();
     downloader_->Stop(isAsync);
 
     if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
