@@ -384,7 +384,6 @@ Status StreamDemuxer::HandleReadPacket(int32_t streamID, int64_t offset, std::sh
             buffer->GetMemory()->GetSize() == 0) {
             MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
                         " Read fail and try again");
-            FALSE_RETURN_V(!isIgnoreParse_.load(), Status::ERROR_WRONG_STATE);
             return Status::ERROR_AGAIN;
         }
         return ret;
