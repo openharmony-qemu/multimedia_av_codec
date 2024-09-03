@@ -733,7 +733,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
 void VDecAPI11Sample::OutputFuncTest()
 {
     if (outputYuvFlag) {
-        fopen(OUT_DIR, "wb");
+        outFile = fopen(OUT_DIR, "wb");
     }
     SHA512_Init(&g_c);
     bool flag = true;
@@ -766,9 +766,7 @@ void VDecAPI11Sample::OutputFuncTest()
             break;
         }
         ProcessOutputData(buffer, index, attr.size);
-        if (outFile == nullptr) {
-            cout << "dump data fail" << endl;
-        } else {
+        if (outFile != nullptr) {
             fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
         }
         lock.unlock();
