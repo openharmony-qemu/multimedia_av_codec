@@ -201,7 +201,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
             MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
-        if (quePool_[queIndex].blockQue->Size() <= 0) {
+        if (quePool_[queIndex].blockQue->Size() == 0) {
             continue;
         }
         auto block = quePool_[queIndex].blockQue->Pop();
