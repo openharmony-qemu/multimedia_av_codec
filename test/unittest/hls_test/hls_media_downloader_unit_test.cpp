@@ -280,14 +280,14 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut4, TestSize.Level1)
 {
     hlsMediaDownloader->downloader_ = nullptr;
     ReadDataInfo info;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_AGAIN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut5, TestSize.Level1)
 {
     hlsMediaDownloader->callback_ = nullptr;
     ReadDataInfo info;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_AGAIN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
@@ -296,7 +296,7 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
     hlsMediaDownloader->downloadErrorState_ = false;
     hlsMediaDownloader->isTimeOut_ = false;
     ReadDataInfo info;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_AGAIN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckBreakCondition, TestSize.Level1)
