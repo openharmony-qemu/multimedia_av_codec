@@ -43,7 +43,6 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-FILE *outFile = nullptr;
 SHA512_CTX g_c;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -692,6 +691,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
 
 void VDecAPI11Sample::OutputFuncTest()
 {
+    FILE *outFile = nullptr;
     if (outputYuvFlag) {
         outFile = fopen(OUT_DIR, "wb");
     }
