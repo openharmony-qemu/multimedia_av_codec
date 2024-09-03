@@ -70,7 +70,7 @@ public:
     Status Flush();
     Status Reset();
     Status Release();
-    Status NotifyEos();
+    Status NotifyEos(int64_t pts);
     Status SetParameter(const std::shared_ptr<Meta> &parameter);
     std::shared_ptr<Meta> GetOutputFormat();
     void TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
@@ -110,6 +110,7 @@ private:
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};
 
+    int64_t eosPts_{UINT32_MAX};
     int64_t totalPauseTime_{0};
 
     int64_t startBufferTime_{-1};

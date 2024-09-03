@@ -43,7 +43,7 @@ public:
     virtual ~DecoderAdapterCallback() = default;
     virtual void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode) = 0;
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
-    virtual void OnBufferEos() = 0;
+    virtual void OnBufferEos(int64_t pts) = 0;
 };
 
 class SurfaceDecoderAdapter : public std::enable_shared_from_this<SurfaceDecoderAdapter>  {

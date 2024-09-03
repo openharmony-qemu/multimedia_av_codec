@@ -52,7 +52,7 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
-    Status NotifyEos();
+    Status NotifyEos(int64_t pts);
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;

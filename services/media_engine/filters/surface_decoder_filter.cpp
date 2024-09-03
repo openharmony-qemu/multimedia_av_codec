@@ -89,10 +89,10 @@ public:
     {
     }
 
-    void OnBufferEos() override
+    void OnBufferEos(int64_t pts) override
     {
         if (auto surfaceDecoderFilter = surfaceDecoderFilter_.lock()) {
-            surfaceDecoderFilter->NotifyNextFilterEos();
+            surfaceDecoderFilter->NotifyNextFilterEos(pts);
         } else {
             MEDIA_LOG_I("invalid surfaceDecoderFilter");
         }
@@ -168,13 +168,15 @@ Status SurfaceDecoderFilter::SetOutputSurface(sptr<Surface> surface)
     return ret;
 }
 
-Status SurfaceDecoderFilter::NotifyNextFilterEos()
+Status SurfaceDecoderFilter::NotifyNextFilterEos(int pts)
 {
     MEDIA_LOG_I("NotifyNextFilterEos");
     for (auto iter : nextFiltersMap_) {
         for (auto filter : iter.second) {
             std::shared_ptr<Meta> eosMeta = std::make_shared<Meta>();
             eosMeta->Set<Tag::MEDIA_END_OF_STREAM>(true);
+            MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, pts);
+            eosMeta->Set<Tag::USER_FRAME_PTS>(pts);
             filter->SetParameter(eosMeta);
         }
     }

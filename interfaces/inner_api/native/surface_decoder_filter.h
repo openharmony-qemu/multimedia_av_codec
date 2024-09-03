@@ -41,7 +41,7 @@ public:
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status SetOutputSurface(sptr<Surface> surface);
-    Status NotifyNextFilterEos();
+    Status NotifyNextFilterEos(int64_t pts);
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
