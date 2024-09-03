@@ -410,7 +410,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1910, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
-    ASSERT_EQ(101, vDecSample->frameCount_);
+    ASSERT_EQ(101, vDecSample->outFrameCount);
     ASSERT_EQ(0, vDecSample->errCount);
 }
 } // namespace

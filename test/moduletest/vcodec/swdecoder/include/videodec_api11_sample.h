@@ -77,6 +77,7 @@ public:
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     uint32_t frameCount_ = 0;
     uint32_t repeat_time = 0;
+    uint32_t outFrameCount = 0;
     // 解码输出数据预期
     bool needCheckOutputDesc = false;
     bool isResChangeStream = false;

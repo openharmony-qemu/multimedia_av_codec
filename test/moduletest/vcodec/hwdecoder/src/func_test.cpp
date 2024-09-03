@@ -982,7 +982,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1410, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
-    ASSERT_EQ(101, vDecSample->frameCount_);
+    ASSERT_EQ(101, vDecSample->outFrameCount);
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
@@ -1005,7 +1005,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1420, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
-    ASSERT_EQ(501, vDecSample->frameCount_);
+    ASSERT_EQ(501, vDecSample->outFrameCount);
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 } // namespace
