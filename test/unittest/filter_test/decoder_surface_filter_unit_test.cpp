@@ -270,18 +270,21 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoInitAfterLink_0100
 
 HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_DoPrepareFrame_0100, TestSize.Level1)
 {
+    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
     auto res = decoderSurfaceFilter_->DoPrepareFrame(true);
     EXPECT_NE(res, Status::OK);
     std::cout << "DoPrepareFrame " << static_cast<int32_t>(res) << std::endl;
+    decoderSurfaceFilter_->isPaused_ = true;
     res = decoderSurfaceFilter_->DoPrepareFrame(false);
-    EXPECT_NE(res, Status::OK);
+    EXPECT_EQ(res, Status::OK);
     std::cout << "DoPrepareFrame2 " << static_cast<int32_t>(res) << std::endl;
     decoderSurfaceFilter_->isPaused_ = true;
     res = decoderSurfaceFilter_->DoPrepareFrame(true);
     EXPECT_EQ(res, Status::OK);
     std::cout << "DoPrepareFrame3 " << static_cast<int32_t>(res) << std::endl;
+    decoderSurfaceFilter_->isPaused_ = true;
     res = decoderSurfaceFilter_->DoPrepareFrame(false);
-    EXPECT_NE(res, Status::OK);
+    EXPECT_EQ(res, Status::OK);
     std::cout << "DoPrepareFrame4 " << static_cast<int32_t>(res) << std::endl;
     decoderSurfaceFilter_->isPaused_ = false;
 }

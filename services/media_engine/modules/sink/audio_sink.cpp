@@ -534,7 +534,7 @@ bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBu
     underrunDetector_.DetectAudioUnderrun(nowCt, latency);
     syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
         buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
-    MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
+    MEDIA_LOG_I("AudioSink fixDelay_: " PUBLIC_LOG_D64
         " us, latency: " PUBLIC_LOG_D64
         " us, pts-f: " PUBLIC_LOG_D64
         " us, pts: " PUBLIC_LOG_D64
