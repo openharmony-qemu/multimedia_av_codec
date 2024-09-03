@@ -398,7 +398,7 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
     }
 }
 
-void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
+void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Parse track info failed due to codec par is nullptr.");
     ParseBaseTrackInfo(avStream, format);
@@ -408,7 +408,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
             ParseImageTrackInfo(avStream, format);
         } else {
             ParseAVTrackInfo(avStream, format);
-            ParseVideoTrackInfo(avStream, format);
+            ParseVideoTrackInfo(avStream, format, avFormatContext);
         }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAVTrackInfo(avStream, format);
@@ -497,7 +497,8 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     }
 }
 
-void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
 {
     format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
     format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
@@ -528,7 +529,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
     }
-    ParseOrientationFromMatrix(avStream, format);
+    if (GetFileTypeByName(avFormatContext) == FileType::MP4) {
+        ParseOrientationFromMatrix(avStream, format);
+    }
 
     AVRational sar = avStream.sample_aspect_ratio;
     if (sar.num && sar.den) {
