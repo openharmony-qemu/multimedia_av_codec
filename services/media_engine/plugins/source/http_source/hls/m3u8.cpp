@@ -457,6 +457,7 @@ M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::s
     uri_ = uri;
     if (!StrHasPrefix(playList_, "#EXTM3U")) {
         MEDIA_LOG_I("playlist doesn't start with #EXTM3U ");
+        isParseSuccess_ = false;
     }
     if (playList_.find("\n#EXTINF:") != std::string::npos) {
         UpdateMediaPlaylist();
@@ -479,7 +480,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
         std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
         m3u8->keyLen_ = keyLen_;
     }
-    m3u8->Update(playList_, false);
+    isParseSuccess_ = m3u8->Update(playList_, false);
     duration_ = m3u8->GetDuration();
     bLive_ = m3u8->IsLive();
     isSimple_ = true;
