@@ -109,7 +109,6 @@ private:
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};
-
     int64_t eosPts_{UINT32_MAX};
     int64_t totalPauseTime_{0};
 
