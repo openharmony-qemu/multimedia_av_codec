@@ -2077,7 +2077,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7800, TestSize.Level0)
     trackFormat = OH_AVSource_GetTrackFormat(source, 1);
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &stringVal));
-    ASSERT_EQ(0, strcmp(stringVal, "video/mp4v-es"));
+    ASSERT_EQ(0, strcmp(stringVal, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4));
     close(fd);
 }
 
@@ -2100,7 +2100,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7900, TestSize.Level0)
     ASSERT_NE(trackFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &type));
 
-    ASSERT_EQ(type, 0);
+    ASSERT_EQ(type, MEDIA_TYPE_AUD);
     close(fd);
 }
 
@@ -2415,7 +2415,7 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1000, TestSize.Level2)
     const char *codecMime = "";
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &codecMime));
     cout << "codecMime" << codecMime << endl;
-    ASSERT_EQ(0, strcmp(codecMime, "audio/3gpp"));
+    ASSERT_EQ(0, strcmp(codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB));
     close(fd);
 }
 
@@ -2439,7 +2439,7 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1100, TestSize.Level2)
     const char *codecMime = "";
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &codecMime));
     cout << "codecMime" << codecMime << endl;
-    ASSERT_EQ(0, strcmp(codecMime, "audio/amr-wb"));
+    ASSERT_EQ(0, strcmp(codecMime, OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB));
     close(fd);
 }
 
