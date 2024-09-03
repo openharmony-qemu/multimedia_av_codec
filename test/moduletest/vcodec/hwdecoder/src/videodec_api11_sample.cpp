@@ -645,7 +645,11 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
     if (isRunning_.load()) {
         OH_AVBuffer_SetBufferAttr(buffer, &attr);
         OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);
-        frameCount_ = frameCount_ + 1;
+        if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA || attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
+            cout << "dec AVCODEC_BUFFER_FLAGS_CODEC_DATA or AVCODEC_BUFFER_FLAGS_EOS" << attr.pts << endl;
+        } else {
+            frameCount_ = frameCount_ + 1;
+        }
         outCount = outCount + 1;
         if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
             switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
@@ -712,6 +716,7 @@ void VDecAPI11Sample::AutoSwitchSurface()
 
 void VDecAPI11Sample::OutputFuncTest()
 {
+    FILE *outFile = fopen(OUT_DIR, "wb");
     SHA512_Init(&g_c);
     bool flag = true;
     while (flag) {
@@ -753,11 +758,20 @@ void VDecAPI11Sample::OutputFuncTest()
             break;
         }
         ProcessOutputData(buffer, index, attr.size);
+        int size = attr.size;
+        if (outFile == nullptr) {
+            cout << "dump data fail" << endl;
+        } else {
+            fwrite(OH_AVBuffer_GetAddr(buffer), 1, size, outFile);
+        }
         lock.unlock();
         if (errCount > 0) {
             flag = false;
             break;
         }
+    }
+    if (outFile) {
+        (void)fclose(outFile);
     }
 }
 

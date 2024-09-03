@@ -1536,4 +1536,52 @@ HWTEST_F(HwEncSetParamNdkTest, COLORSPACE_CONFIG_006, TestSize.Level1)
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
 }
+/**
+ * @tc.number    : FRAMENUM_JUDGMENT_001
+ * @tc.name      : Increase frame rate judgment
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncSetParamNdkTest, FRAMENUM_JUDGMENT_001, TestSize.Level0)
+{
+    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.avc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->OUT_DIR = "/data/test/media/1280_720_nv.h264";
+        vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE_MODE = CQ;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(25, vEncSample->outCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+/**
+ * @tc.number    : FRAMENUM_JUDGMENT_002
+ * @tc.name      : Increase frame rate judgment
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncSetParamNdkTest, FRAMENUM_JUDGMENT_002, TestSize.Level0)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->OUT_DIR = "/data/test/media/EN_1280_720_nv.h265";
+        vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE_MODE = CQ;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(25, vEncSample->outCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
 }
