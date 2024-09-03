@@ -1118,8 +1118,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "ioContext is nullptr");
     auto buffer = std::make_shared<Buffer>();
-    FALSE_RETURN_V_MSG_E(buffer != nullptr, ret, "buffer is nullptr");
-    FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, ret, "AVReadPacket buf is nullptr");
+    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->GetMemory() != nullptr, ret, "buffer is nullptr");
 
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
