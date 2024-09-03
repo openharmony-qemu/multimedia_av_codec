@@ -36,7 +36,7 @@ constexpr uint32_t DECRYPT_COPY_LEN = 128;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
-constexpr uint64_t MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr uint64_t MAX_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
 constexpr int MAX_RECORD_COUNT = 10;
 constexpr int START_PLAY_WATER_LINE = 512 * 1024;
@@ -54,7 +54,7 @@ constexpr int64_t SECOND_TO_MILLIONSECOND = 1000;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
-constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024;
+constexpr uint64_t CURRENT_BIT_RATE = 1 * 1024 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 }
@@ -655,7 +655,6 @@ void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
     totalBits_ += writeBits;
     lastWriteBit_ += writeBits;
     dataUsage_ += writeBits;
-
     if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
         auto startPlayTime = steadyClock_.ElapsedMilliseconds();
         playDelayTime_ = startPlayTime - openTime_;

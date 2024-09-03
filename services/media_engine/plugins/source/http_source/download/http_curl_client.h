@@ -18,7 +18,7 @@
 
 #include <string>
 #include <list>
-#include "network/network_client.h"
+#include "network_client.h"
 #include "curl/curl.h"
 #include "osal/task/mutex.h"
 #include "syspara/parameter.h"
@@ -47,8 +47,8 @@ public:
     Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
                 int32_t timeoutMs) override;
 
-    Status RequestData(long startPos, int len, const std::string& url,
-        const std::map<std::string, std::string>& httpHeader, HandleResponseCbFunc completedCb) override;
+    Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
+                       NetworkClientErrorCode& clientCode) override;
 
     Status Close() override;
 

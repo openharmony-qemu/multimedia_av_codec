@@ -132,7 +132,6 @@ private:
     std::atomic<bool> isHitSeeking_ {false};
     std::atomic<bool> isNeedDropData_ {false};
     std::atomic<bool> isServerAcceptRange_ {false};
-
     size_t waterLineAbove_ {0};
     bool isInterrupt_ {false};
     bool isBuffering_ {false};

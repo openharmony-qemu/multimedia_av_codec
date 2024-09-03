@@ -29,9 +29,6 @@ group("av_codec_media_engine_plugins") {
     "source:media_plugin_DataStreamSource",
     "source:media_plugin_FileFdSource",
     "source:media_plugin_FileSource",
-    "source/http_source:media_plugin_HttpSource_static",
+    "source/http_source:media_plugin_HttpSource",
   ]
-  if (av_codec_support_libcurl) {
-    deps += [ "source/http_source:media_plugin_HttpSource" ]
-  }
 }
