@@ -361,6 +361,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Release_AVBuffer_001, Te
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
     vdec->frameCount_ = 761; // 761: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "DblckSkip_avcc.h265";
     vdec->sampleWidth_ = 720;
@@ -423,6 +424,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_002, Tes
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
     vdec->frameCount_ = 3811; // 3811: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "PicsizeInitQP_avcc.h265";
     vdec->sampleWidth_ = 720;
@@ -455,6 +457,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_003, Tes
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
     vdec->frameCount_ = 4435; // 4435: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "SAOCAINIT_avcc.h265";
     vdec->sampleWidth_ = 720;
@@ -487,6 +490,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_004, Tes
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
     vdec->frameCount_ = 482; // 482: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "SLIST_avcc.h265";
     vdec->sampleWidth_ = 720;
@@ -654,6 +658,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_001, TestSize.Leve
     auto signal = make_shared<VideoDecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 6158; // 6158: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "SmallResolution_avcc.h265";
     vdec->sampleWidth_ = 720;
@@ -686,6 +691,7 @@ AVCODEC_MTEST_P(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_002, TestSize.Leve
     auto signal = make_shared<VideoDecSignal>(vdec);
     vdec->operation_ = VideoDecHevcDecTest::GetParam();
     vdec->frameCount_ = 1720; // 1720: input frame num
+    vdec->skipOutFrameHalfCheck_ = true;
     vdec->mime_ = OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
     vdec->inPath_ = "TILES_avcc.h265";
     vdec->sampleWidth_ = 720;
