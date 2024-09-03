@@ -641,7 +641,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_Create_AVBuffer_Main10_0
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
-INSTANTIATE_TEST_SUITE_P(, VideoDecHevcDecTest, testing::Values("Flush", "Stop", "Reset"));
+INSTANTIATE_TEST_SUITE_P(, VideoDecHevcDecTest, testing::Values("Flush", "Stop", "Reset", "SetOutputSurface"));
 
 /**
  * @tc.name: VideoDecoder_hevcdecoder_001
