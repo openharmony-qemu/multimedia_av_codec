@@ -233,6 +233,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UnLinkNext_001, TestSize
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_GetFilterType_001, TestSize.Level1)
 {
+    videoCaptureFilter_->filterType_ = FilterType::VIDEO_CAPTURE;
     FilterType filterType_ = videoCaptureFilter_->GetFilterType();
     EXPECT_EQ(filterType_, FilterType::VIDEO_CAPTURE);
 }
