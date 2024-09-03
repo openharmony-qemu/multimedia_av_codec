@@ -43,7 +43,7 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-
+FILE *outFile = nullptr;
 SHA512_CTX g_c;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -689,9 +689,12 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
     outFrameCount = outFrameCount + 1;
     return 0;
 }
+
 void VDecAPI11Sample::OutputFuncTest()
 {
-    FILE *outFile = fopen(OUT_DIR, "wb");
+    if (outputYuvFlag) {
+        fopen(OUT_DIR, "wb");
+    }
     SHA512_Init(&g_c);
     bool flag = true;
     while (flag) {
@@ -700,7 +703,6 @@ void VDecAPI11Sample::OutputFuncTest()
             break;
         }
         OH_AVCodecBufferAttr attr;
-        uint32_t index;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
@@ -712,7 +714,7 @@ void VDecAPI11Sample::OutputFuncTest()
             flag = false;
             break;
         }
-        index = signal_->outIdxQueue_.front();
+        uint32_t index = signal_->outIdxQueue_.front();
         OH_AVBuffer *buffer = signal_->outBufferQueue_.front();
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
