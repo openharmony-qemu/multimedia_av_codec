@@ -79,8 +79,8 @@ string g_vttPath = TEST_FILE_PATH + string("webvtt_test.vtt");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
 string g_mp4RotationNone = TEST_FILE_PATH + string("ROTATE_NONE.mp4");
 string g_mp4Rotation90 = TEST_FILE_PATH + string("ROTATE_90.mp4");
-string g_mp4FLIPH180 = TEST_FILE_PATH + string("FLIP_H_180.mp4");
-string g_mp4FLIPV270 = TEST_FILE_PATH + string("FLIP_V_270.mp4");
+string g_mp4FLIPV = TEST_FILE_PATH + string("FLIP_V.mp4");
+string g_mp4FLIPH90 = TEST_FILE_PATH + string("FLIP_H_90.mp4");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -2169,37 +2169,37 @@ HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1001, TestSize.Level1)
 
 /**
  * @tc.name: AVSourse_OrientationType_1002
- * @tc.desc: determine the orientation type of the video FLIP_H_180.mp4
+ * @tc.desc: determine the orientation type of the video FLIP_V.mp4
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1002, TestSize.Level1)
 {
-    fd_ = OpenFile(g_mp4FLIPH180);
-    size_ = GetFileSize(g_mp4FLIPH180);
-    printf("----%s----\n", g_mp4FLIPH180.c_str());
+    fd_ = OpenFile(g_mp4FLIPV);
+    size_ = GetFileSize(g_mp4FLIPV);
+    printf("----%s----\n", g_mp4FLIPV.c_str());
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
-    ASSERT_EQ(formatVal_.orientationType, 8);
+    ASSERT_EQ(formatVal_.orientationType, 5);
 }
 
 /**
  * @tc.name: AVSourse_OrientationType_1003
- * @tc.desc: determine the orientation type of the video FLIP_V_270.mp4
+ * @tc.desc: determine the orientation type of the video FLIP_H_90.mp4
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1003, TestSize.Level1)
 {
-    fd_ = OpenFile(g_mp4FLIPV270);
-    size_ = GetFileSize(g_mp4FLIPV270);
-    printf("----%s----\n", g_mp4FLIPV270.c_str());
+    fd_ = OpenFile(g_mp4FLIPH90);
+    size_ = GetFileSize(g_mp4FLIPH90);
+    printf("----%s----\n", g_mp4FLIPH90.c_str());
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_ORIENTATION_TYPE, formatVal_.orientationType));
-    ASSERT_EQ(formatVal_.orientationType, 11);
+    ASSERT_EQ(formatVal_.orientationType, 6);
 }
 } // namespace
