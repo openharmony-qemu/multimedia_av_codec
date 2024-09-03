@@ -47,7 +47,8 @@ constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 5120;
+constexpr int32_t VIDEO_MIN_BUFFER_SIZE = 1382400; // 720p
+constexpr int32_t VIDEO_MAX_BUFFER_SIZE = 3110400; // 1080p
 constexpr int32_t VIDEO_MIN_SIZE = 2;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 1920;
@@ -651,11 +652,13 @@ int32_t HevcDecoder::GetOutputFormat(Format &format)
 
 void HevcDecoder::CalculateBufferSize()
 {
-    int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-    inputBufferSize_ = std::max(VIDEO_MIN_BUFFER_SIZE,
-        static_cast<int32_t>(static_cast<UINT32>(stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1));
-    AVCODEC_LOGI("width = %{public}d, height = %{public}d, stride = %{public}d, Input buffer size = %{public}d",
-                 width_, height_, stride, inputBufferSize_);
+    if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
+        inputBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
+    } else {
+        inputBufferSize_ = VIDEO_MAX_BUFFER_SIZE;
+    }
+    AVCODEC_LOGI("width = %{public}d, height = %{public}d, Input buffer size = %{public}d",
+                 width_, height_, inputBufferSize_);
 }
 
 int32_t HevcDecoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
