@@ -29,6 +29,8 @@ namespace HttpPlugin {
 constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 constexpr int MIN_PRE_PARSE_CONTENT_LEN = 5 * 1024; // 5k
+constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
+constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 
 static bool isNumber(const std::string& str)
 {
@@ -74,6 +76,19 @@ void PlayListDownloader::DoOpen(const std::string& url)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                       std::shared_ptr<DownloadRequest>& request) {
+        if (retryStartTime_ == 0) {
+            retryStartTime_ = request->GetNowTime();
+        }
+        int64_t nowTime = request->GetNowTime();
+        bool isNeedReportError = (nowTime - retryStartTime_) >= RETRY_DELTA_TIME_TO_REPORT_ERROR
+                                  || request->GetRetryTimes() >= RETRY_TIME_TO_REPORT_ERROR;
+        if (isNeedReportError && eventCallback_ != nullptr) {
+            MEDIA_LOG_E("fail to download m3u8.");
+            eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                    {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
+
+            return;
+        }
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
 
@@ -206,6 +221,7 @@ void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const st
 {
     ParseManifest(location);
     playList_.clear();
+    retryStartTime_ = 0;
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -299,6 +315,10 @@ void PlayListDownloader::SetAppUid(int32_t appUid)
     }
 }
 
+void PlayListDownloader::SetCallback(Callback* cb)
+{
+    eventCallback_ = cb;
+}
 }
 }
 }

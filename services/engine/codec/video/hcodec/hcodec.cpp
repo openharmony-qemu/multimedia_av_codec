@@ -901,38 +901,37 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    OnQueueInputBuffer(mode, bufferInfo);
+    int32_t ret = OnQueueInputBuffer(mode, bufferInfo);
+    if (ret != AVCS_ERR_OK) {
+        SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+    }
 }
 
-void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
+int32_t HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
 {
     switch (mode) {
         case KEEP_BUFFER: {
-            return;
+            return AVCS_ERR_OK;
         }
         case RESUBMIT_BUFFER: {
             if (inputPortEos_) {
                 HLOGI("input already eos, keep this buffer");
-                return;
+                return AVCS_ERR_OK;
             }
             bool eos = (info->omxBuffer->flag & OMX_BUFFERFLAG_EOS);
             if (!eos && info->omxBuffer->filledLen == 0) {
                 HLOGI("this is not a eos buffer but not filled, ask user to re-fill it");
                 NotifyUserToFillThisInBuffer(*info);
-                return;
+                return AVCS_ERR_OK;
             }
             if (eos) {
                 inputPortEos_ = true;
             }
-            int32_t ret = NotifyOmxToEmptyThisInBuffer(*info);
-            if (ret != AVCS_ERR_OK) {
-                SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-            }
-            return;
+            return NotifyOmxToEmptyThisInBuffer(*info);
         }
         default: {
             HLOGE("SHOULD NEVER BE HERE");
-            return;
+            return AVCS_ERR_UNKNOWN;
         }
     }
 }

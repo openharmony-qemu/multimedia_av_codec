@@ -82,12 +82,10 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0200, TestSize.Level4)
         ASSERT_NE(nullptr, vdec_);
         OH_AVFormat *format = OH_AVFormat_Create();
         ASSERT_NE(nullptr, format);
-        string widthStr = "width";
-        string heightStr = "height";
-        string frameRateStr = "frame_rate";
-        (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), 1920);
-        (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), 1080);
-        (void)OH_AVFormat_SetIntValue(format, frameRateStr.c_str(), 30);
+
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, 1920);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, 1080);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_FRAME_RATE, 30);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_AVFormat_Destroy(format);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
@@ -110,18 +108,15 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0400, TestSize.Level4)
     ASSERT_NE(nullptr, vdec_);
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
     int64_t widht = 1920;
-    (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), widht);
-    (void)OH_AVFormat_SetIntValue(format, heightStr.c_str(), 1080);
-    (void)OH_AVFormat_SetIntValue(format, frameRateStr.c_str(), 30);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widht);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, 1080);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_FRAME_RATE, 30);
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
     for (int i = 0; i < 1000; i++) {
         widht++;
-        (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), widht);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widht);
         ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_SetParameter(vdec_, format));
     }
     OH_AVFormat_Destroy(format);

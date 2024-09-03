@@ -1175,7 +1175,11 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
     WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    int32_t err = HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    if (err != AVCS_ERR_OK) {
+        ResetSlot(*bufferInfo);
+        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INPUT_DATA_ERROR);
+    }
 }
 
 void HEncoder::OnGetBufferFromSurface(const ParamSP& param)

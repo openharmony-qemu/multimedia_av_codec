@@ -172,6 +172,7 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
     } else {
         if (master_->isSimple_) {
             bool ret = currentVariant_->m3u8_->Update(playList_, isParseFinished_);
+            master_->isParseSuccess_ = ret;
             if (ret) {
                 UpdateMasterInfo(isPreParse);
                 NotifyListChange();
@@ -185,6 +186,11 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
                 NotifyListChange();
             }
         }
+    }
+    if (!master_->isParseSuccess_ && eventCallback_ != nullptr) {
+        MEDIA_LOG_E("ParseManifest parse failed.");
+        eventCallback_->OnEvent({PluginEventType::CLIENT_ERROR,
+                                {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
     }
 }
 

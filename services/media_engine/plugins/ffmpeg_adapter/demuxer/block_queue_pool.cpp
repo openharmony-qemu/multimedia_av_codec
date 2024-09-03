@@ -158,7 +158,6 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Push enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_W("trackIndex has not beed added, auto add first");
         Status ret = AddTrackQueue(trackIndex);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, false, "add new queue error: " PUBLIC_LOG_D32 "", ret);
     }
@@ -202,7 +201,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
             MEDIA_LOG_D("block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
             continue;
         }
-        if (quePool_[queIndex].blockQue->Size() <= 0) {
+        if (quePool_[queIndex].blockQue->Size() == 0) {
             continue;
         }
         auto block = quePool_[queIndex].blockQue->Pop();

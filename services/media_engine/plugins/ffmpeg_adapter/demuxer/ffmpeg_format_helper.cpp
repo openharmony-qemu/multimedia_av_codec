@@ -264,7 +264,7 @@ inline int ValidateInteger(int number)
 
 inline int ConvFp(int32_t x)
 {
-    return (int32_t)(x / (1 << 16)); // 16 is used for digital conversion
+    return static_cast<int32_t>(x / (1 << 16)); // 16 is used for digital conversion
 }
 
 std::string ConvertArrayToString(const int* Array, size_t size)
@@ -294,8 +294,6 @@ void FFmpegFormatHelper::ParseTrackType(const AVFormatContext& avFormatContext, 
     bool hasSubtitle = false;
     bool hasTimedMeta = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-        MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " type: " PUBLIC_LOG_S ".", i,
-            ConvertFFmpegMediaTypeToString(avFormatContext.streams[i]->codecpar->codec_type).data());
         if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
             MEDIA_LOG_I("Track " PUBLIC_LOG_U32 " is invalid.", i);
             continue;
@@ -400,7 +398,7 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
     }
 }
 
-void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
+void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Parse track info failed due to codec par is nullptr.");
     ParseBaseTrackInfo(avStream, format);
@@ -410,7 +408,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
             ParseImageTrackInfo(avStream, format);
         } else {
             ParseAVTrackInfo(avStream, format);
-            ParseVideoTrackInfo(avStream, format);
+            ParseVideoTrackInfo(avStream, format, avFormatContext);
         }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAVTrackInfo(avStream, format);
@@ -437,8 +435,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
-            static_cast<int32_t>(avStream.codecpar->codec_type));
+        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".", static_cast<int32_t>(mediaType));
     }
 
     if (avStream.start_time != AV_NOPTS_VALUE) {
@@ -500,7 +497,8 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     }
 }
 
-void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format)
+void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
 {
     format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
     format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
@@ -531,7 +529,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
         }
     }
-    ParseOrientationFromMatrix(avStream, format);
+    if (GetFileTypeByName(avFormatContext) == FileType::MP4) {
+        ParseOrientationFromMatrix(avStream, format);
+    }
 
     AVRational sar = avStream.sample_aspect_ratio;
     if (sar.num && sar.den) {
@@ -761,7 +761,6 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
     auto FileType = GetFileTypeByName(avFormatContext);
     if (FileType == FileType::MPEGTS ||
         FileType == FileType::FLV) {
-        MEDIA_LOG_I("Updata info for mpegts from parser");
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }
