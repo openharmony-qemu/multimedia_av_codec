@@ -582,10 +582,14 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
     if (displayMatrix) {
         PrintMatrixToLog(displayMatrix, "displayMatrix");
         int convertedMatrix[CONVERT_MATRIX_SIZE];
-        std::transform(&displayMatrix[0], &displayMatrix[0] + 1, &convertedMatrix[0], ConvFp);//Copy displayMatrix [0]
-        std::transform(&displayMatrix[1], &displayMatrix[1] + 1, &convertedMatrix[1], ConvFp);//Copy displayMatrix [1]
-        std::transform(&displayMatrix[3], &displayMatrix[3] + 1, &convertedMatrix[2], ConvFp);//Copy displayMatrix [3]
-        std::transform(&displayMatrix[4], &displayMatrix[4] + 1, &convertedMatrix[3], ConvFp);//Copy displayMatrix [4]
+        std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[0], ConvFp); // 0 is convertedMatrix index
+        std::transform(&displayMatrix[1], &displayMatrix[1] + 1, // 1 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[1], ConvFp); // 1 is convertedMatrix index
+        std::transform(&displayMatrix[3], &displayMatrix[3] + 1, // 3 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[2], ConvFp); // 2 is convertedMatrix index
+        std::transform(&displayMatrix[4], &displayMatrix[4] + 1, // 4 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[3], ConvFp); // 3 is convertedMatrix index
         orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, CONVERT_MATRIX_SIZE));
     } else {
         MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
