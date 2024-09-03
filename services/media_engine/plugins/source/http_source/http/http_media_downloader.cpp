@@ -262,7 +262,8 @@ bool HttpMediaDownloader::HandleBuffering()
         isBuffering_ = false;
     }
     if (GetCurrentBufferSize() >= waterLineAbove_) {
-        MEDIA_LOG_I("HTTP Buffer is enough");
+        MEDIA_LOG_I("Buffer is enough, bufferSize:" PUBLIC_LOG_ZU " waterLineAbove: " PUBLIC_LOG_ZU
+            " avgDownloadSpeed: " PUBLIC_LOG_F, GetCurrentBufferSize(), waterLineAbove_, avgDownloadSpeed_);
         isBuffering_ = false;
     }
     if (HandleBreak()) {
@@ -271,7 +272,9 @@ bool HttpMediaDownloader::HandleBuffering()
     }
 
     if (!isBuffering_ && isFirstFrameArrived_ && callback_ != nullptr) {
-        MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END");
+        MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_ZU ", waterLineAbove_: "
+        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32,
+            GetCurrentBufferSize(), waterLineAbove_, isBuffering_, canWrite_.load());
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     }
@@ -303,10 +306,9 @@ bool HttpMediaDownloader::StartBuffering(int32_t wantReadLength)
         UpdateWaterLineAbove();
 
         if (!isBuffering_) {
-            MEDIA_LOG_I("HTTP readOffset " PUBLIC_LOG_ZU " bufferSize " PUBLIC_LOG_ZU " waterLineAbove_ " PUBLIC_LOG_ZU,
-                readOffset_, GetCurrentBufferSize(), waterLineAbove_);
             isBuffering_ = true;
-            MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU, waterLineAbove_);
+            MEDIA_LOG_I("HTTP CacheData OnEvent BUFFERING_START, waterLineAbove: " PUBLIC_LOG_ZU " bufferSize "
+                PUBLIC_LOG_ZU, waterLineAbove_, GetCurrentBufferSize());
             UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
             return true;
@@ -392,7 +394,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
         }
         bool isClosed = downloadRequest_->IsClosed();
         if (isClosed && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
+            MEDIA_LOG_I("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             readDataInfo.realReadLength_ = 0;
             return Status::END_OF_STREAM;
         }
@@ -507,6 +509,7 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
         canWrite_ = true;
         readDataInfo.realReadLength_ = cacheMediaBuffer_->Read(buff, readOffset_, readDataInfo.wantReadLength_);
         readOffset_ += readDataInfo.realReadLength_;
+        MEDIA_LOG_I("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, readDataInfo.isEos_);
         return Status::OK;
     }
 }
@@ -514,16 +517,14 @@ Status HttpMediaDownloader::CheckIsEosCacheBuffer(unsigned char* buff, ReadDataI
 void HttpMediaDownloader::ChangeDownloadPos()
 {
     MEDIA_LOG_D("HTTP ChangeDownloadPos in.");
+
     if (!canWrite_) {
         MEDIA_LOG_I("HTTP CacheMediaBuffer clear.");
-        isNeedDropData_ = true;
-        downloader_->Pause();
         cacheMediaBuffer_->Clear();
-    } else {
-        isNeedDropData_ = true;
-        downloader_->Pause();
     }
 
+    isNeedDropData_ = true;
+    downloader_->Pause();
     isNeedDropData_ = false;
     size_t downloadOffset = static_cast<size_t>(readOffset_) + cacheMediaBuffer_->GetBufferSize(readOffset_);
     isHitSeeking_ = true;
@@ -846,6 +847,7 @@ void HttpMediaDownloader::SetDownloadErrorState()
 
 void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_I("SetInterruptState");
     isInterruptNeeded_ = isInterruptNeeded;
     if (buffer_ != nullptr && isInterruptNeeded) {
         buffer_->SetActive(false);
@@ -999,7 +1001,7 @@ void HttpMediaDownloader::HandleCachedDuration()
         cachedDuration - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
         (lastDurationReacord_ > cachedDuration &&
         lastDurationReacord_ - cachedDuration > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
-        MEDIA_LOG_D("HTTP OnEvet cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
+        MEDIA_LOG_D("HTTP OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration);
         callback_->OnEvent({PluginEventType::CACHED_DURATION, {cachedDuration}, "buffering_duration"});
         lastDurationReacord_ = cachedDuration;
     }

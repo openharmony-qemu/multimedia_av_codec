@@ -30,6 +30,7 @@ namespace HttpPlugin {
 struct ReadDataInfo {
     int32_t streamId_ = 0;
     int32_t nextStreamId_ = 0; // streamId will change after switch in dash
+    uint64_t ffmpegOffset = 0;
     unsigned int wantReadLength_ = 0;
     unsigned int realReadLength_ = 0;
     bool isEos_ = false;
