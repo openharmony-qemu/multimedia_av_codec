@@ -221,7 +221,7 @@ protected:
     // input buffer circulation
     virtual void NotifyUserToFillThisInBuffer(BufferInfo &info);
     virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
-    void OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
+    int32_t OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
