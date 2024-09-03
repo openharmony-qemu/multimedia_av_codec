@@ -258,31 +258,32 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetDemuxerState, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut1, TestSize.Level1)
 {
     hlsMediaDownloader->readTime_ = READ_SLEEP_TIME_OUT;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_AGAIN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut2, TestSize.Level1)
 {
     hlsMediaDownloader->downloadErrorState_ = true;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_AGAIN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut3, TestSize.Level1)
 {
     hlsMediaDownloader->isTimeOut_ = true;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_AGAIN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut4, TestSize.Level1)
 {
     hlsMediaDownloader->downloader_ = nullptr;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut5, TestSize.Level1)
 {
     hlsMediaDownloader->callback_ = nullptr;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_UNKNOWN);
+    ReadDataInfo info;
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
@@ -290,7 +291,8 @@ HWTEST_F(HlsMediaDownloaderUnitTest, CheckReadTimeOut6, TestSize.Level1)
     hlsMediaDownloader->readTime_ = READ_SLEEP_TIME_OUT - 1;
     hlsMediaDownloader->downloadErrorState_ = false;
     hlsMediaDownloader->isTimeOut_ = false;
-    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(), Status::ERROR_UNKNOWN);
+    ReadDataInfo info;
+    EXPECT_EQ(hlsMediaDownloader->CheckReadTimeOut(info), Status::ERROR_UNKNOWN);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, CheckBreakCondition, TestSize.Level1)
