@@ -191,7 +191,6 @@ void DashMpdDownloader::Open(const std::string &url)
 
 void DashMpdDownloader::Close(bool isAsync)
 {
-    downloader_->Cancel();
     downloader_->Stop(isAsync);
 
     if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {

@@ -298,7 +298,7 @@ void Downloader::Pause(bool isAsync)
     requestQue_->SetActive(false, false);
     if (client_ != nullptr) {
         isClientClose_ = true;
-        client_->Close();
+        client_->Close(isAsync);
     }
     PauseLoop(isAsync);
     MEDIA_LOG_I("pause End");
@@ -311,7 +311,7 @@ void Downloader::Cancel()
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
-        client_->Close();
+        client_->Close(false);
     }
     shouldStartNextRequest = true;
     task_->Pause();
@@ -324,7 +324,7 @@ void Downloader::Resume()
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
-        if (client_ != nullptr && currentRequest_ != nullptr) {
+        if (isClientClose_ && client_ != nullptr && currentRequest_ != nullptr) {
             isClientClose_ = false;
             client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->mediaSouce_.timeoutMs);
         }
@@ -341,6 +341,7 @@ void Downloader::Stop(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Stop");
     MEDIA_LOG_I("Stop Begin");
+    isDestructor_ = true;
     if (requestQue_ != nullptr) {
         requestQue_->SetActive(false);
     }
@@ -348,9 +349,8 @@ void Downloader::Stop(bool isAsync)
         currentRequest_->Close();
     }
     if (client_ != nullptr) {
-        client_->Close();
+        client_->Close(isAsync);
         if (!isAsync) {
-            isDestructor_ = true;
             client_->Deinit();
         }
     }
@@ -402,19 +402,23 @@ void Downloader::GetIp(std::string &ip)
 // Pause download thread before use currentRequest_
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
+    if (task_->IsTaskRunning()) {
+        MEDIA_LOG_I("task is Running");
+        return true;
+    }
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("Retry Begin");
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
+        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_, false);
         requestQue_->SetActive(false, false);
     }
     task_->Pause();
     {
         AutoLock lock(operatorMutex_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest, false);
-        client_->Close();
+        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest && !isDestructor_, false);
+        client_->Close(false);
         if (currentRequest_ != nullptr) {
-            if (currentRequest_->IsSame(request) && !shouldStartNextRequest) {
+            if (currentRequest_->IsSame(request) && !shouldStartNextRequest && !isDestructor_) {
                 currentRequest_->retryTimes_++;
                 currentRequest_->retryOnGoing_ = true;
                 currentRequest_->dropedDataLen_ = 0;
