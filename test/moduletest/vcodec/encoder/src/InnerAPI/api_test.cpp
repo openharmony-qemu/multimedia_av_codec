@@ -218,11 +218,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
@@ -240,11 +237,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
@@ -263,11 +257,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
@@ -287,11 +278,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
@@ -312,11 +300,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
 
@@ -351,11 +336,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
@@ -375,11 +357,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
@@ -447,11 +426,8 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
     ASSERT_NE(nullptr, venc_);
 
     Format format;
-    string widthStr = "width";
-    string heightStr = "height";
-    string frameRateStr = "frame_rate";
-    format.PutIntValue(widthStr.c_str(), DEFAULT_WIDTH);
-    format.PutIntValue(heightStr.c_str(), DEFAULT_HEIGHT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->SetParameter(format));
