@@ -115,6 +115,7 @@ public:
     int32_t CheckAndReturnBufferSize(OH_AVBuffer *buffer);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
     void ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size);
+    int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFunc();
     void InputFuncTest();
     void OutputFuncTest();

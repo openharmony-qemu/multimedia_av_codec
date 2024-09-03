@@ -668,7 +668,27 @@ void VDecAPI11Sample::AutoSwitchSurface()
         OH_AVFormat_Destroy(format);
     }
 }
-
+int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
+{
+    if (needCheckOutputDesc) {
+        CheckOutputDescription();
+        needCheckOutputDesc = false;
+    }
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+        cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
+        AutoSwitchSurface();
+        SHA512_Final(g_md, &g_c);
+        OPENSSL_cleanse(&g_c, sizeof(g_c));
+        MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        return -1;
+    }
+    if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
+        cout << "enc AVCODEC_BUFFER_FLAGS_CODEC_DATA" << attr.pts << endl;
+        return 0;
+    }
+    outFrameCount = outFrameCount + 1;
+    return 0;
+}
 void VDecAPI11Sample::OutputFuncTest()
 {
     FILE *outFile = fopen(OUT_DIR, "wb");
@@ -700,30 +720,15 @@ void VDecAPI11Sample::OutputFuncTest()
             errCount = errCount + 1;
         }
         lock.unlock();
-        if (needCheckOutputDesc) {
-            CheckOutputDescription();
-            needCheckOutputDesc = false;
-        }
-        if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
-            AutoSwitchSurface();
-            SHA512_Final(g_md, &g_c);
-            OPENSSL_cleanse(&g_c, sizeof(g_c));
-            MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        if (CheckAttrFlag(attr) == -1) {
             flag = false;
             break;
         }
-        if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA || attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "dec AVCODEC_BUFFER_FLAGS_CODEC_DATA or AVCODEC_BUFFER_FLAGS_EOS" << attr.pts << endl;
-        } else {
-            outFrameCount = outFrameCount + 1;
-        }
         ProcessOutputData(buffer, index, attr.size);
-        int size = attr.size;
         if (outFile == nullptr) {
             cout << "dump data fail" << endl;
         } else {
-            fwrite(OH_AVBuffer_GetAddr(buffer), 1, size, outFile);
+            fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
         }
         if (errCount > 0) {
             flag = false;
