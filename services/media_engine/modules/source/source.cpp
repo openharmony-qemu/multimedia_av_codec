@@ -186,7 +186,6 @@ Status Source::StopBufferring(bool flag)
         MEDIA_LOG_E("StopBufferring failed, plugin_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
-    //return plugin_->StopBufferring(flag);
     return Status::OK;
 }
 
