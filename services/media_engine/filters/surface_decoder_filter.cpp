@@ -168,7 +168,7 @@ Status SurfaceDecoderFilter::SetOutputSurface(sptr<Surface> surface)
     return ret;
 }
 
-Status SurfaceDecoderFilter::NotifyNextFilterEos(int pts)
+Status SurfaceDecoderFilter::NotifyNextFilterEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyNextFilterEos");
     for (auto iter : nextFiltersMap_) {
