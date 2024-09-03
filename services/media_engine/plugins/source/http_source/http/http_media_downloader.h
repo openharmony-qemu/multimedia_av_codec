@@ -56,7 +56,6 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
-    int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();

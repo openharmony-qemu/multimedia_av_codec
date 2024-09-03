@@ -324,7 +324,7 @@ void DownloadMonitor::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 
 size_t DownloadMonitor::GetBufferSize() const
 {
-    downloader_->GetBufferSize();
+    return downloader_->GetBufferSize();
 }
 
 Status DownloadMonitor::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
