@@ -2139,6 +2139,7 @@ bool MediaDemuxer::IsVideoEos()
 
 void MediaDemuxer::SetEnableOnlineFdCache(bool isEnableFdCache)
 {
+    FALSE_RETURN(source_);
     source_->SetEnableOnlineFdCache(isEnableFdCache);
 }
 } // namespace Media
