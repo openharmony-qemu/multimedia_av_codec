@@ -231,6 +231,11 @@ public:
     {
         return Status::OK;
     }
+
+    virtual void SetEnableOnlineFdCache(bool isEnableFdCache)
+    {
+        (void)isEnableFdCache;
+    }
 };
 
 /// Source plugin api major number.
