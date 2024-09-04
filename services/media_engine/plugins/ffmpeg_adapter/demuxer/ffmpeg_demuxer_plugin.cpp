@@ -1239,7 +1239,7 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
     auto begin = std::chrono::system_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
-    FALSE_RETURN_V_MSG_E((ret == 0), nullptr, "Open formatContext failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+    FALSE_RETURN_V_MSG_E((ret == 0), nullptr, "FormatContext init failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
         pluginImpl_->name, AVStrError(ret).c_str());
     auto finishiOpen = std::chrono::system_clock::now();
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
