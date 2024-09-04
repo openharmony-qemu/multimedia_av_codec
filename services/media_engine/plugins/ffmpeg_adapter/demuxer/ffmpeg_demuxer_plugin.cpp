@@ -1133,12 +1133,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 #endif
     switch (result) {
         case Status::OK:
-            ioContext->offset += dataSize;
-            ret = dataSize;
-            break;
         case Status::ERROR_AGAIN:
-            MEDIA_LOG_I("Read data not enough, read again.");
             if (dataSize == 0) {
+                MEDIA_LOG_I("Read data not enough, read again.");
                 ioContext->retry = true;
             } else {
                 ioContext->offset += dataSize;
