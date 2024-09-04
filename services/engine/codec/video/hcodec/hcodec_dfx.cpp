@@ -89,12 +89,12 @@ std::string HCodec::OnGetHidumperInfo()
 {
     auto now = chrono::steady_clock::now();
     std::stringstream s;
-    auto getBufCap = [](const std::vector<BufferInfo> &bufferPool) -> int32_t {
-        if (bufferPool.empty() || !(bufferPool.front().avBuffer || bufferPool.front().surfaceBuffer)) {
+    auto getBufCap = [](const std::vector<BufferInfo> &bp) -> int32_t { // bp: bufferPool
+        if (bp.empty() || !((bp.front().avBuffer && bp.front().avBuffer->memory_) || bp.front().surfaceBuffer)) {
             return 0;
         }
-        return (bufferPool.front().surfaceBuffer ?
-            bufferPool.front().surfaceBuffer->GetSize() : bufferPool.front().avBuffer->memory_->GetCapacity());
+        return (bp.front().surfaceBuffer ?
+            bp.front().surfaceBuffer->GetSize() : bp.front().avBuffer->memory_->GetCapacity());
     };
 
     s << endl;
