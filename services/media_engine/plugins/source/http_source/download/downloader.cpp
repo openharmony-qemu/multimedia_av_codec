@@ -611,6 +611,9 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
     if (info->contentLen > 0 && info->contentLen < LIVE_CONTENT_LENGTH) {
         info->isChunked = false;
     }
+    if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
+        info->isChunked = true;
+    }
     mediaDownloader->currentRequest_->SaveHeader(info);
 }
 
