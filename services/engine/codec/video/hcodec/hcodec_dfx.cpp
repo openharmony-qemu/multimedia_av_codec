@@ -90,7 +90,11 @@ std::string HCodec::OnGetHidumperInfo()
     auto now = chrono::steady_clock::now();
     std::stringstream s;
     auto getBufCap = [](const std::vector<BufferInfo> &bufferPool) -> int32_t {
-        return (bufferPool.empty() ? 0 : bufferPool.front().avBuffer->memory_->GetCapacity());
+        if (bufferPool.empty() || !(bufferPool.front().avBuffer || bufferPool.front().surfaceBuffer)) {
+            return 0;
+        }
+        return (bufferPool.front().surfaceBuffer ?
+            bufferPool.front().surfaceBuffer->GetSize() : bufferPool.front().avBuffer->memory_->GetCapacity());
     };
 
     s << endl;
