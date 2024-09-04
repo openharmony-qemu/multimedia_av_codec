@@ -314,6 +314,7 @@ void Source::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 
 bool Source::CanAutoSelectBitRate()
 {
+    FALSE_RETURN_V_MSG_E(mediaDemuxerCallback_ != nullptr, false, "mediaDemuxerCallback_ is nullptr.");
     return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
