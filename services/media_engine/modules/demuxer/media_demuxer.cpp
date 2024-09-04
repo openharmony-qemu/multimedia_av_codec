@@ -28,6 +28,7 @@
 #include "buffer/avallocator.h"
 #include "common/event.h"
 #include "common/log.h"
+#include "hisysevent.h"
 #include "meta/media_types.h"
 #include "meta/meta.h"
 #include "osal/utils/dump_buffer.h"
@@ -44,6 +45,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "H
 const std::string DUMP_PARAM = "a";
 const std::string DUMP_DEMUXER_AUDIO_FILE_NAME = "player_demuxer_audio_output.es";
 const std::string DUMP_DEMUXER_VIDEO_FILE_NAME = "player_demuxer_video_output.es";
+static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 } // namespace
 
 namespace OHOS {
@@ -56,6 +58,13 @@ constexpr uint32_t LOCK_WAIT_TIME = 3000; // Lock wait for 3000ms. if network wa
 constexpr double DECODE_RATE_THRESHOLD = 0.05;   // allow actual rate exceeding 5%
 constexpr uint32_t REQUEST_FAILED_RETRY_TIMES = 12000; // Max times for RETRY if no buffer in avbufferqueue producer.
 constexpr uint32_t DEFAULT_PREPARE_FRAME_COUNT = 1; // Default prepare frame count 1.
+
+enum SceneCode : int32_t {
+    /**
+     * This option is used to mark parser ref for dragging play scene.
+     */
+    AV_META_SCENE_PARSE_REF_FOR_DRAGGING_PLAY = 3 // scene code of parser ref for dragging play is 3
+};
 
 class MediaDemuxer::AVBufferQueueProducerListener : public IRemoteStub<IProducerListener> {
 public:
@@ -156,6 +165,22 @@ std::shared_ptr<Plugins::DemuxerPlugin> MediaDemuxer::GetCurFFmpegPlugin()
     return demuxerPluginManager_->GetPluginByStreamID(streamID);
 }
 
+static void ReportSceneCodeForDemuxer(SceneCode scene)
+{
+    if (scene != SceneCode::AV_META_SCENE_PARSE_REF_FOR_DRAGGING_PLAY) {
+        return;
+    }
+    MEDIA_LOG_I("Report scene code %{public}d", scene);
+    auto now =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    int32_t ret = HiSysEventWrite(
+        PERFORMANCE_STATS, "CPU_SCENE_ENTRY", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "PACKAGE_NAME",
+        "media_service", "SCENE_ID", std::to_string(scene).c_str(), "HAPPEN_TIME", now.count());
+    if (ret != MSERR_OK) {
+        MEDIA_LOG_W("report error");
+    }
+}
+
 Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
 {
     FALSE_RETURN_V_MSG_E(startTimeMs >= 0, Status::ERROR_UNKNOWN,
@@ -177,6 +202,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
             Status::ERROR_INVALID_OPERATION, "Do not support online video");
         parserRefInfoTask_ = std::make_unique<Task>("ParserRefInfo", playerId_);
         parserRefInfoTask_->RegisterJob([this] { return ParserRefInfo(); });
+        ReportSceneCodeForDemuxer(SceneCode::AV_META_SCENE_PARSE_REF_FOR_DRAGGING_PLAY);
         parserRefInfoTask_->Start();
     }
     TryRecvParserTask();
