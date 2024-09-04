@@ -137,7 +137,7 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         return err;
     }
     CheckFileType();
-    if (isCloudFile_ && isEnableFdCache_) {
+    if (isCloudFile_) {
         ringBuffer_ = std::make_shared<RingBuffer>(CACHE_SIZE);
         FALSE_RETURN_V_MSG_E(!(ringBuffer_ == nullptr || !ringBuffer_->Init()),
             Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
@@ -609,6 +609,11 @@ void FileFdSourcePlugin::CheckFileType()
     int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &loc);
     MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
         PUBLIC_LOG_D32, ioResult, loc, errno);
+
+    if (!isEnableFdCache_) {
+        isCloudFile_ = false;
+        return;
+    }
 
     if (ioResult == 0) {
         if (loc == IOCTL_CLOUD) {
