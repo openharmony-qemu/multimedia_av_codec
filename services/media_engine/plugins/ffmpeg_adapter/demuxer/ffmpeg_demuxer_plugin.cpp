@@ -2048,7 +2048,6 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
-    CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;
     size_t bufferSize = StartWith(plugin->name, "mp3") ? MP3_PROBE_SIZE : DEFAULT_READ_SIZE; // mp3 need more probe data
     uint64_t fileSize = 0;
     if (dataSource->GetSize(fileSize) == Status::OK) {
