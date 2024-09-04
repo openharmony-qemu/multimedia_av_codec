@@ -37,11 +37,10 @@ extern "C" {
 #endif
 
 #define DISPLAY_MATRIX_SIZE (static_cast<size_t>(9))
+#define CONVERT_MATRIX_SIZE (static_cast<size_t>(4))
 #define CUVA_VERSION_MAP (static_cast<uint16_t>(1))
 #define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
 #define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
-#define STANTARDIZE_NEGATIVE (static_cast<int32_t>(-2))
-#define STANTARDIZE_POSITIVE (static_cast<int32_t>(2))
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
@@ -229,21 +228,19 @@ static std::map<std::string, VideoRotation> g_pFfRotationMap = {
 
 static const std::map<std::string, VideoOrientationType> matrixTypes = {
     /**
-     * Standardize the numbers with indexs 6 and 7.
-     * If they are greater than 1, set them to 2;
-     * if they are less than -1, set them to -2; -1, 0, and 1 remain unchanged
+     * display matrix
+     *                                  | a b u |
+     *   (a, b, u, c, d, v, x, y, w) -> | c d v |
+     *                                  | x y w |
+     * [a b c d] can confirm the orientation type
      */
-    {"0 1 0 -1 0 0 0 0 1", VideoOrientationType::ROTATE_90},
-    {"-1 0 0 0 -1 0 0 0 1", VideoOrientationType::ROTATE_180},
-    {"0 -1 0 1 0 0 0 0 1", VideoOrientationType::ROTATE_270},
-    {"-1 0 0 0 1 0 2 0 1", VideoOrientationType::FLIP_H},
-    {"1 0 0 0 -1 0 0 2 1", VideoOrientationType::FLIP_V},
-    {"0 -1 0 -1 0 0 0 2 1", VideoOrientationType::FLIP_H_ROT90},
-    {"0 1 0 1 0 0 -2 0 1", VideoOrientationType::FLIP_V_ROT90},
-    {"1 0 0 0 -1 0 -2 0 1", VideoOrientationType::FLIP_H_ROT180},
-    {"-1 0 0 0 1 0 0 -2 1", VideoOrientationType::FLIP_V_ROT180},
-    {"0 1 0 1 0 0 0 -2 1", VideoOrientationType::FLIP_H_ROT270},
-    {"0 -1 0 -1 0 0 2 0 1", VideoOrientationType::FLIP_V_ROT270},
+    {"0 -1 1 0", VideoOrientationType::ROTATE_90},
+    {"-1 0 0 -1", VideoOrientationType::ROTATE_180},
+    {"0 1 -1 0", VideoOrientationType::ROTATE_270},
+    {"-1 0 0 1", VideoOrientationType::FLIP_H},
+    {"1 0 0 -1", VideoOrientationType::FLIP_V},
+    {"0 1 1 0", VideoOrientationType::FLIP_H_ROT90},
+    {"0 -1 -1 0", VideoOrientationType::FLIP_V_ROT90},
 };
 
 VideoOrientationType GetMatrixType(std::string value)
@@ -254,12 +251,6 @@ VideoOrientationType GetMatrixType(std::string value)
     } else {
         return VideoOrientationType::ROTATE_NONE;
     }
-}
-
-inline int ValidateInteger(int number)
-{
-    return number < -1 ? STANTARDIZE_NEGATIVE : // -1 is used for boundary value verification
-          (number > 1 ? STANTARDIZE_POSITIVE : number); // 1 is used for boundary value verification
 }
 
 inline int ConvFp(int32_t x)
@@ -590,19 +581,16 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
     if (displayMatrix) {
         PrintMatrixToLog(displayMatrix, "displayMatrix");
-        int convertedMatrix[DISPLAY_MATRIX_SIZE];
-        std::copy(displayMatrix, displayMatrix + DISPLAY_MATRIX_SIZE, convertedMatrix);
-        for (int index = 0; index < DISPLAY_MATRIX_SIZE; index++) {
-            if (index < 6) { // 6 is the index that needs to be verified
-                convertedMatrix[index] = ConvFp(convertedMatrix[index]);
-            } else if (index < 8) { // 6 and 8 are indexs that need to be verified
-                convertedMatrix[index] = ValidateInteger(ConvFp(convertedMatrix[index]));
-            } else { //8 is the index that needs to be verified
-                convertedMatrix[index] = 1; // Numbers with index 8 are uniformly set to 1
-            }
-        }
-        PrintMatrixToLog(convertedMatrix, "convertedMatrix");
-        orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, DISPLAY_MATRIX_SIZE));
+        int convertedMatrix[CONVERT_MATRIX_SIZE];
+        std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[0], ConvFp); // 0 is convertedMatrix index
+        std::transform(&displayMatrix[1], &displayMatrix[1] + 1, // 1 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[1], ConvFp); // 1 is convertedMatrix index
+        std::transform(&displayMatrix[3], &displayMatrix[3] + 1, // 3 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[2], ConvFp); // 2 is convertedMatrix index
+        std::transform(&displayMatrix[4], &displayMatrix[4] + 1, // 4 is displayMatrix index, 1 is copy lenth
+                       &convertedMatrix[3], ConvFp); // 3 is convertedMatrix index
+        orientationType = GetMatrixType(ConvertArrayToString(convertedMatrix, CONVERT_MATRIX_SIZE));
     } else {
         MEDIA_LOG_D("Parse orientation info from display matrix failed, set orientation as dafault 0");
     }
