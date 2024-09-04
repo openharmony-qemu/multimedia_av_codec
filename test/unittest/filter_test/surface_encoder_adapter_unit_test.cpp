@@ -153,6 +153,8 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0100, TestSiz
     ret = surfaceEncoderAdapter_->Stop();
     surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
+        std::make_shared<MockEncoderAdapterKeyFramePtsCallback>();
     ret = surfaceEncoderAdapter_->Stop();
     EXPECT_EQ(ret, Status::OK);
 }

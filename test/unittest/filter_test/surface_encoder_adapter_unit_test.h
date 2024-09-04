@@ -51,6 +51,15 @@ public:
 protected:
     std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_{ nullptr };
 };
+
+class MockEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCallback {
+public:
+    void OnReportKeyFramePts(std::string KeyFramePts)
+    {
+        (void)KeyFramePts;
+    }
+};
+
 class MyAVCodecVideoEncoder : public MediaAVCodec::AVCodecVideoEncoder {
 public:
      ~MyAVCodecVideoEncoder() = default;
