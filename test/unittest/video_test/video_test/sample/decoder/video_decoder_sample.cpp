@@ -58,10 +58,7 @@ int32_t VideoDecoderSample::Prepare()
 {
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
-    if (inputThread_ == nullptr || outputThread_ == nullptr) {
-        AVCODEC_LOGE("Create thread failed");
-        return AVCODEC_SAMPLE_ERR_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(inputThread_ && outputThread_, AVCODEC_SAMPLE_ERR_ERROR, "Create thread failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 

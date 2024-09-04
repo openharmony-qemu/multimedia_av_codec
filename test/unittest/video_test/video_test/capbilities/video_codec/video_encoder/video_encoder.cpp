@@ -34,7 +34,7 @@ int32_t VideoEncoder::Create(const std::string &codecMime, bool isSoftware)
     auto codecName = GetCodecName(codecMime, true, isSoftware);
     CHECK_AND_RETURN_RET_LOG(!codecName.empty(), AVCODEC_SAMPLE_ERR_ERROR,
         "Codec not supported, mime: %{public}s, software: %{public}d", codecMime.c_str(), isSoftware);
-    
+
     codec_ = std::shared_ptr<OH_AVCodec>(
         OH_VideoEncoder_CreateByName(codecName.c_str()), OH_VideoEncoder_Destroy);
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
@@ -128,7 +128,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
-    
+
     int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
 
@@ -210,7 +210,7 @@ int32_t VideoEncoderAPI11::FreeOutput(uint32_t bufferIndex)
 int32_t VideoEncoderAPI11::SetCallback(uintptr_t *const sampleContext)
 {
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
-    
+
     int32_t ret = OH_VideoEncoder_RegisterCallback(codec_.get(), AVCodecCallback, sampleContext);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;

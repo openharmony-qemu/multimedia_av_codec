@@ -41,7 +41,7 @@ int32_t RawdataReader::FillBuffer(CodecBufferInfo &info)
             OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
         CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
     }
-    
+
     switch (sampleInfo_->pixelFormat) {
         case AV_PIXEL_FORMAT_RGBA:
             ReadInputBufferWithStrideRGBA(bufferAddr);

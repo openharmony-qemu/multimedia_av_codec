@@ -37,8 +37,7 @@ public:
 protected:
     virtual int32_t Init();
     virtual int32_t Prepare();
-    virtual void Release();
-    void InnerRelease();
+    void Release();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
     void WriteOutputFileWithStrideYUV420(uint8_t *bufferAddr);
     void PushEosFrame();
