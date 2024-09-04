@@ -27,6 +27,7 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
+#include "utils/write_bitrate_caculator.h"
 
 namespace OHOS {
 namespace Media {
@@ -154,6 +155,8 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 };
 }
 }
