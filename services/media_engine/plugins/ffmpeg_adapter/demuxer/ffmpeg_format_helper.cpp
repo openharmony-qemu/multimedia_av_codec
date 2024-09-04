@@ -234,11 +234,11 @@ static const std::map<std::string, VideoOrientationType> matrixTypes = {
      *                                  | x y w |
      * [a b c d] can confirm the orientation type
      */
-    {"0 1 -1 0", VideoOrientationType::ROTATE_90},
+    {"0 -1 1 0", VideoOrientationType::ROTATE_90},
     {"-1 0 0 -1", VideoOrientationType::ROTATE_180},
-    {"0 -1 1 0", VideoOrientationType::ROTATE_270},
-    {"-1 0 0 1", VideoOrientationType::FLIP_H},
-    {"1 0 0 -1", VideoOrientationType::FLIP_V},
+    {"0 1 -1 0", VideoOrientationType::ROTATE_270},
+    {"1 0 0 -1", VideoOrientationType::FLIP_H},
+    {"-1 0 - 1", VideoOrientationType::FLIP_V},
     {"0 -1 -1 0", VideoOrientationType::FLIP_H_ROT90},
     {"0 1 1 0", VideoOrientationType::FLIP_V_ROT90},
 };
