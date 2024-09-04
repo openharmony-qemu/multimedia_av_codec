@@ -267,10 +267,10 @@ Status SurfaceEncoderFilter::DoRelease()
     return mediaCodec_->Reset();
 }
 
-Status SurfaceEncoderFilter::NotifyEos()
+Status SurfaceEncoderFilter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
-    return mediaCodec_->NotifyEos();
+    return mediaCodec_->NotifyEos(pts);
 }
 
 void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
@@ -280,10 +280,13 @@ void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         return;
     }
     bool isEos = false;
+    int64_t eosPts = UINT32_MAX;
     if (parameter->Find(Tag::MEDIA_END_OF_STREAM) != parameter->end() &&
-        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos)) {
+        parameter->Get<Tag::MEDIA_END_OF_STREAM>(isEos) &&
+        parameter->Get<Tag::USER_FRAME_PTS>(eosPts)) {
         if (isEos) {
-            NotifyEos();
+            MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, eosPts);
+            NotifyEos(eosPts);
             return;
         }
     }
