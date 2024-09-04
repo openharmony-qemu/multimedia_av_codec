@@ -2077,7 +2077,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
             getData, plugin->name, confidence);
     }
     if ((StartWith(plugin->name, "mp3") && static_cast<uint32_t>(getData) < MP3_PROBE_SIZE) ||
-        (static_cast<uint32_t>(getData) < DEFAULT_READ_SIZE)) { // no data
+        (static_cast<uint32_t>(getData) < DEFAULT_READ_SIZE)) { // not enough data
         MEDIA_LOG_I("leak sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
             getData, plugin->name, confidence);
     }
