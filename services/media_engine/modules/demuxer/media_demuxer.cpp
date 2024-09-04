@@ -320,7 +320,7 @@ void MediaDemuxer::AccelerateTrackTask(uint32_t trackId)
     if (task == taskMap_.end()) {
         return;
     }
-    MEDIA_LOG_I("AccelerateTrackTask trackId:" PUBLIC_LOG_U32, trackId);
+    MEDIA_LOG_D("AccelerateTrackTask trackId:" PUBLIC_LOG_U32, trackId);
     task->second->UpdateDelayTime();
 }
 
