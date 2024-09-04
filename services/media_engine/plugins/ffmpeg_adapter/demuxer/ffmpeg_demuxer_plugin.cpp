@@ -1113,11 +1113,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
     int ret = CheckContextIsValid(opaque, bufSize);
     FALSE_RETURN_V(ret == 0, ret);
-
     ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "ioContext is nullptr");
     auto buffer = std::make_shared<Buffer>();
+    auto bufData = buffer->WrapMemory(buf, bufSize, 0);
     FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->GetMemory() != nullptr, ret, "buffer is nullptr");
 
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
@@ -1153,11 +1153,9 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
             break;
     }
-
     if (!ioContext->initCompleted) {
         ioContext->initDownloadDataSize += static_cast<uint32_t>(buffer->GetMemory()->GetSize());
     }
-
     return ret;
 }
 
