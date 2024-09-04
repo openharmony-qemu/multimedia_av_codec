@@ -1224,11 +1224,9 @@ AVIOContext* FFmpegDemuxerPlugin::AllocAVIOContext(int flags, IOContext *ioConte
 std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOContext *ioContext)
 {
     AVFormatContext* formatContext = avformat_alloc_context();
-    FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr,
-        "Init AVFormatContext failed due to avformat_alloc_context failed.");
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr, "Alloc formatContext failed.");
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
-    FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr,
-        "Init AVFormatContext failed due to init AVIOContext failed.");
+    FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr, "Alloc iOContext failed.");
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
     if (std::string(pluginImpl_->name) == "mp3") {
         formatContext->flags =
@@ -1241,21 +1239,20 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
     auto begin = std::chrono::system_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
-    FALSE_RETURN_V_MSG_E((ret == 0), nullptr,
-        "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
+    FALSE_RETURN_V_MSG_E((ret == 0), nullptr, "Open formatContext failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
         pluginImpl_->name, AVStrError(ret).c_str());
     auto finishiOpen = std::chrono::system_clock::now();
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
         formatContext->probesize = LIVE_FLV_PROBE_SIZE;
     }
+    FALSE_RETURN_V_MSG_E(formatContext->pb->buffer != nullptr, nullptr, "Custom buffer invalid.");
     ret = avformat_find_stream_info(formatContext, NULL);
     auto finishParse = std::chrono::system_clock::now();
     MEDIA_LOG_I("spend: open " PUBLIC_LOG_F " parse " PUBLIC_LOG_F,
         static_cast<std::chrono::duration<double, std::milli>>(finishiOpen - begin).count(),
         static_cast<std::chrono::duration<double, std::milli>>(finishParse - finishiOpen).count());
-    FALSE_RETURN_V_MSG_E((ret >= 0), nullptr,
-        "Init AVFormatContext failed due to avformat_find_stream_info failed by " PUBLIC_LOG_S
-        ", err:" PUBLIC_LOG_S ".", pluginImpl_->name, AVStrError(ret).c_str());
+    FALSE_RETURN_V_MSG_E((ret >= 0), nullptr, "Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+        pluginImpl_->name, AVStrError(ret).c_str());
     std::shared_ptr<AVFormatContext> retFormatContext =
         std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
             if (ptr) {
