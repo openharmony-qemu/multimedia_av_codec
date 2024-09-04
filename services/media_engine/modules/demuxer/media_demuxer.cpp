@@ -1723,6 +1723,8 @@ Status MediaDemuxer::HandleRead(uint32_t trackId)
 
 bool MediaDemuxer::HandleDashChangeStream(uint32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
+    FALSE_RETURN_V_MSG_E(streamDemuxer_ != nullptr, false, "streamDemuxer_ is nullptr.");
     if (demuxerPluginManager_->IsDash() == false) {
         return false;
     }
@@ -2079,6 +2081,7 @@ void MediaDemuxer::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 
 bool MediaDemuxer::CanAutoSelectBitRate()
 {
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManager_ is nullptr.");
     // calculating auto selectbitrate time
     return !(isSelectBitRate_.load()) && !(isSelectTrack_.load())
         && (targetBitRate_ == demuxerPluginManager_->GetCurrentBitRate());
