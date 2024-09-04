@@ -55,22 +55,22 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_
     {OHOS::MediaAVCodec::CodecServer::CONFIGURED, "configured"},
     {OHOS::MediaAVCodec::CodecServer::RUNNING, "running"},
     {OHOS::MediaAVCodec::CodecServer::FLUSHED, "flushed"},
-    {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "end of stream"},
+    {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "EOS"},
     {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
 };
 
 const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "CodecName"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width"},
     {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, "Height"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "Frame_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "Pixel_Format"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "Scale_Type"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "Rotation_Angle"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "Max_Input_Buffer_Count"},
-    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "Max_Output_Buffer_Count"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "FrameRate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "BitRate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "PixelFormat"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "ScaleType"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "RotationAngle"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "MaxInputSize"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "MaxInputBufferCount"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "MaxOutputBufferCount"},
 };
 
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
@@ -85,9 +85,9 @@ const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
 
 const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
     {OHOS::ScalingMode::SCALING_MODE_FREEZE, "Freeze"},
-    {OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale_to_window"},
-    {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale_crop"},
-    {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No_scale_crop"},
+    {OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale to window"},
+    {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale crop"},
+    {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No scale crop"},
 };
 
 int32_t GetAudioCodecName(const OHOS::MediaAVCodec::AVCodecType type, std::string &name)
@@ -769,16 +769,14 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     auto statusIt = CODEC_STATE_MAP.find(status_);
     if (forwardCaller_.pid != -1 || !forwardCaller_.processName.empty()) {
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "Forward_Caller_Pid", std::to_string(forwardCaller_.pid));
-        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_UID, "Forward_Caller_Uid", std::to_string(forwardCaller_.uid));
+        dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PID, "ForwardCallerPid", std::to_string(forwardCaller_.pid));
         dumpControler.AddInfo(DUMP_INDEX_FORWARD_CALLER_PROCESS_NAME,
-            "Forward_Caller_Process_Name", forwardCaller_.processName);
+            "ForwardCallerProcessName", forwardCaller_.processName);
     }
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "Caller_Pid", std::to_string(caller_.pid));
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_UID, "Caller_Uid", std::to_string(caller_.uid));
-    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "Caller_Process_Name", caller_.processName);
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PID, "CallerPid", std::to_string(caller_.pid));
+    dumpControler.AddInfo(DUMP_INDEX_CALLER_PROCESS_NAME, "CallerProcessName", caller_.processName);
     dumpControler.AddInfo(DUMP_INDEX_STATUS, "Status", statusIt != CODEC_STATE_MAP.end() ? statusIt->second : "");
-    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "Last_Error", lastErrMsg_.size() ? lastErrMsg_ : "Null");
+    dumpControler.AddInfo(DUMP_INDEX_LAST_ERROR, "LastError", lastErrMsg_.size() ? lastErrMsg_ : "Null");
 
     uint32_t infoIndex = 1;
     for (auto iter : VIDEO_DUMP_TABLE) {

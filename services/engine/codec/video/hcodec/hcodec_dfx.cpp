@@ -89,10 +89,15 @@ std::string HCodec::OnGetHidumperInfo()
 {
     auto now = chrono::steady_clock::now();
     std::stringstream s;
+    auto getBufCap = [](const std::vector<BufferInfo> &bufferPool) -> int32_t {
+        return (bufferPool.empty() ? 0 : bufferPool.front().avBuffer->memory_->GetCapacity());
+    };
+
     s << endl;
     s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
     s << "        " << "------------INPUT-----------" << endl;
-    s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_ << endl;
+    s << "        " << "eos:" << inputPortEos_ << ", etb:" << inTotalCnt_
+      << ", bufCap:" << getBufCap(inputBufferPool_) << endl;
     for (const BufferInfo& info : inputBufferPool_) {
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
@@ -100,7 +105,8 @@ std::string HCodec::OnGetHidumperInfo()
     }
     s << "        " << "----------------------------" << endl;
     s << "        " << "------------OUTPUT----------" << endl;
-    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << outRecord_.totalCnt << endl;
+    s << "        " << "eos:" << outputPortEos_ << ", fbd:" << outRecord_.totalCnt
+      << ", bufCap:" << getBufCap(outputBufferPool_) << endl;
     for (const BufferInfo& info : outputBufferPool_) {
         int64_t holdMs = chrono::duration_cast<chrono::milliseconds>(now - info.lastOwnerChangeTime).count();
         s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner)
