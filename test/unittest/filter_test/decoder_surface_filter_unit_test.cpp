@@ -805,6 +805,100 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, OnOutputFormatChanged_002, TestSize.Level
     decoderSurfaceFilter_->OnOutputFormatChanged(format);
     EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
 }
+
+/**
+ * @tc.name: ParseDecodeRateLimit_001
+ * @tc.desc: ParseDecodeRateLimit
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, ParseDecodeRateLimit_001, TestSize.Level1)
+{
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, 1);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, 1);
+    decoderSurfaceFilter_->ParseDecodeRateLimit();
+    decoderSurfaceFilter_->rateUpperLimit_ = 1;
+    decoderSurfaceFilter_->ParseDecodeRateLimit();
+    EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
+}
+
+/**
+ * @tc.name: OnDumpInfo_001
+ * @tc.desc: OnDumpInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, OnDumpInfo_001, TestSize.Level1)
+{
+    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->OnDumpInfo(32);
+    EXPECT_EQ(decoderSurfaceFilter_->stopTime_, 0);
+}
+
+/**
+ * @tc.name: ReleaseOutputBuffer_001
+ * @tc.desc: ReleaseOutputBuffer
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(DecoderSurfaceFilterUnitTest, ReleaseOutputBuffer_001, TestSize.Level1)
+{
+    decoderSurfaceFilter_->videoDecoder_ = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> outBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    decoderSurfaceFilter_->playRangeEndTime_ = 1;
+    outBuffer->pts_ = 2000;
+    decoderSurfaceFilter_->isRenderStarted_ = true;
+    Status ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
+    decoderSurfaceFilter_->isRenderStarted_ = false;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, false, outBuffer, 0L);
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
+    outBuffer->flag_ = true;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
+    outBuffer->flag_ = false;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
+    decoderSurfaceFilter_->isInSeekContinous_ = true;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
+    decoderSurfaceFilter_->isInSeekContinous_ = false;
+    ret = decoderSurfaceFilter_->ReleaseOutputBuffer(0, true, outBuffer, 0L);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: DoInitAfterLink_001
+ * @tc.desc: DoInitAfterLink
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnitTest, DoInitAfterLink_001, TestSize.Level1)
+{
+    auto videoDecoderMock = std::make_shared<VideoDecoderAdapterMock>();
+    decoderSurfaceFilter_->videoDecoder_ = videoDecoderMock;
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->configureParameter_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->videoSink_ = std::make_shared<VideoSink>();
+    EXPECT_NE(decoderSurfaceFilter_->eventReceiver_, nullptr);
+    decoderSurfaceFilter_->isDrmProtected_ = true;
+    decoderSurfaceFilter_->svpFlag_ = false;
+    decoderSurfaceFilter_->codecMimeType_ = "test";
+    Status ret = decoderSurfaceFilter_->DoInitAfterLink();
+    EXPECT_NE(ret, Status::OK);
+    decoderSurfaceFilter_->isDrmProtected_ = false;
+    decoderSurfaceFilter_->svpFlag_ = true;
+    ret = decoderSurfaceFilter_->DoInitAfterLink();
+    EXPECT_NE(ret, Status::OK);
+    decoderSurfaceFilter_->isDrmProtected_ = true;
+    decoderSurfaceFilter_->svpFlag_ = true;
+    ret = decoderSurfaceFilter_->DoInitAfterLink();
+    EXPECT_NE(ret, Status::OK);
+    ret = decoderSurfaceFilter_->DoInitAfterLink();
+    EXPECT_NE(ret, Status::OK);
+    decoderSurfaceFilter_->isDrmProtected_ = false;
+    ret = decoderSurfaceFilter_->DoInitAfterLink();
+    decoderSurfaceFilter_->isDrmProtected_ = true;
+    decoderSurfaceFilter_->svpFlag_ = false;
+    ret = decoderSurfaceFilter_->DoInitAfterLink();
+    EXPECT_NE(ret, Status::OK);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
