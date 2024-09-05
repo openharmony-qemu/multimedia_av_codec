@@ -138,7 +138,7 @@ private:
     size_t GetCacheBufferSize();
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);
-    uint64_t RequestNewTsForRead(const PlayInfo& item);
+    int64_t RequestNewTsForRead(const PlayInfo& item);
     void PushPlayInfo(PlayInfo playInfo);
     void PrepareToSeek();
     bool CheckDataIntegrity();

@@ -402,7 +402,6 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
             readOffset_ = SpliceOffset(readTsIndex_, 0);
         }
         OSAL::SleepFor(READ_SLEEP_INTERVAL); // 5
-        int64_t endTime = steadyClock_.ElapsedMilliseconds();
     }
     return Status::OK;
 }
@@ -937,7 +936,7 @@ void HlsMediaDownloader::SeekToTsForRead(uint32_t currentTsIndex)
     isSeekingFlag = false;
 }
 
-uint64_t HlsMediaDownloader::RequestNewTsForRead(const PlayInfo& item)
+int64_t HlsMediaDownloader::RequestNewTsForRead(const PlayInfo& item)
 {
     PlayInfo playInfo;
     playInfo.url_ = item.url_;
