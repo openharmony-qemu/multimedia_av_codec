@@ -19,6 +19,7 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
+#include "download/http_curl_client.h"
 
 namespace OHOS {
 namespace Media {

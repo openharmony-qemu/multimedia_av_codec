@@ -67,12 +67,11 @@
           "ffmpeg",
           "lame",
           "libxml2",
-          "video_processing_engine",
-          "curl",
-          "openssl"
+          "video_processing_engine"
         ],
         "third_party": [
-          "bounds_checking_function"
+          "curl",
+          "openssl"
         ]
       },
       "build": {
@@ -114,9 +113,6 @@
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }
-          },
-          {
-            "name": "//foundation/multimedia/av_codec/services/media_engine/plugins/source/http_source:media_plugin_HttpSource_static"
           },
           {
             "type": "so",

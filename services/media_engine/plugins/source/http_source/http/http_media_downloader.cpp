@@ -30,7 +30,7 @@ constexpr int RING_BUFFER_SIZE = 5 * 48 * 1024;
 constexpr int WATER_LINE = RING_BUFFER_SIZE / 30; // 30 WATER_LINE:8192
 #else
 constexpr int RING_BUFFER_SIZE = 5 * 1024 * 1024;
-constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr int MAX_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
@@ -370,7 +370,7 @@ Status HttpMediaDownloader::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& r
 {
     size_t remain = cacheMediaBuffer_->GetBufferSize(readOffset_);
     // This prevents the read operation from failing to read data when the seek operation is not triggered.
-    if (remain < readDataInfo.wantReadLength_ && isServerAcceptRange_ &&
+    if (remain < readDataInfo.wantReadLength_ &&
         (writeOffset_ < readOffset_ || writeOffset_ > readOffset_ + remain)) {
         ChangeDownloadPos();
     }

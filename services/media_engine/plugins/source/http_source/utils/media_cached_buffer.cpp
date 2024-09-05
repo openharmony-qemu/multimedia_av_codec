@@ -92,7 +92,8 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     }
 
     double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
-    int64_t chunkNum = static_cast<int64_t>((totalBuffSize + chunkSize - 1) / chunkSize) + 1; // 1
+    int64_t chunkNum = totalBuffSize + chunkSize >= 1 ?
+                       static_cast<int64_t>((totalBuffSize + chunkSize - 1) / chunkSize) + 1 : 1; // 1
     if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0) {
         return false;
     }
@@ -123,7 +124,7 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
         freeChunks_.push_back(chunkInfo);
         temp += sizePerChunk;
     }
-    chunkMaxNum_ = static_cast<uint32_t>(chunkNum) - 1; // -1
+    chunkMaxNum_ = chunkNum >= 1 ? static_cast<uint32_t>(chunkNum) - 1 : 0; // -1
     totalBuffSize_ = totalBuffSize;
     chunkSize_ = chunkSize;
     initReadSizeFactor_ = newFragmentInitChunkNum / (chunkMaxNum_ - newFragmentInitChunkNum);

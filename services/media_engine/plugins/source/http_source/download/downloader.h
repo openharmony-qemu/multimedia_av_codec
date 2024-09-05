@@ -21,10 +21,9 @@
 #include <string>
 #include "osal/task/task.h"
 #include "osal/task/mutex.h"
-#include "osal/task/condition_variable.h"
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
-#include "network/network_client.h"
+#include "network_client.h"
 #include <chrono>
 #include "securec.h"
 
