@@ -50,8 +50,9 @@ Status HdiCodec::InitComponent(const std::string &name)
     compCb_ = new HdiCodec::HdiCallback(shared_from_this());
     int32_t ret = compMgr_->CreateComponent(compNode_, componentId_, componentName_, 0, compCb_);
     if (ret != HDF_SUCCESS || compNode_ == nullptr) {
-        delete compCb_;
-        compCb_ = nullptr;
+        if (compCb_ != nullptr) {
+            compCb_ = nullptr;
+        }
         compMgr_ = nullptr;
         AVCODEC_LOGE("CreateComponent failed, ret=%{public}d", ret);
         return Status::ERROR_NULL_POINTER;
@@ -330,8 +331,9 @@ void HdiCodec::Release()
         compMgr_->DestroyComponent(componentId_);
     }
     compNode_ = nullptr;
-    delete compCb_;
-    compCb_ = nullptr;
+    if (compCb_ != nullptr) {
+        compCb_ = nullptr;
+    }
     compMgr_ = nullptr;
 }
 
