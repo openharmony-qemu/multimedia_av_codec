@@ -309,7 +309,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
 
 void Source::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
-    mediaDemuxerCallback_->SetSelectBitRateFlag(flag, desBitRate);
+    if (mediaDemuxerCallback_) {
+        mediaDemuxerCallback_->SetSelectBitRateFlag(flag, desBitRate);
+    }
 }
 
 bool Source::CanAutoSelectBitRate()
