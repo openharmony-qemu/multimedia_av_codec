@@ -63,7 +63,6 @@ constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
 constexpr float CACHE_LEVEL_1 = 1;
 constexpr float CACHE_LEVEL_2 = 5;
 constexpr float CACHE_LEVEL_3 = 10;
-constexpr uint32_t ERROR_AGAIN_MAX = 20;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
@@ -268,35 +267,6 @@ bool HlsMediaDownloader::CheckReadStatus()
     return false;
 }
 
-Status HlsMediaDownloader::CheckReadTimeOut(ReadDataInfo& readDataInfo)
-{
-    if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
-        isTimeOut_ = true;
-        if (downloader_ != nullptr) {
-            // the downloader is unavailable after this
-            downloader_->Pause(true);
-        }
-        if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-            downloadRequest_->Close();
-        }
-        if (callback_ != nullptr) {
-            MEDIA_LOG_I("HLS Read time out, OnEvent");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-        }
-        readDataInfo.realReadLength_ = 0;
-        if (errorAgainTime_ <= ERROR_AGAIN_MAX) {
-            errorAgainTime_++;
-            MEDIA_LOG_I("HlsMediaDownloader: read time out, error angain");
-            return Status::ERROR_AGAIN;
-        } else {
-            MEDIA_LOG_I("HlsMediaDownloader: read time out, eos");
-            return Status::END_OF_STREAM;
-        }
-    }
-    errorAgainTime_ = 0;
-    return Status::ERROR_UNKNOWN;
-}
-
 bool HlsMediaDownloader::CheckBreakCondition()
 {
     if (downloadErrorState_) {
@@ -431,13 +401,8 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
         }
-        Status tmpRes = CheckReadTimeOut(readDataInfo);
-        if (tmpRes != Status::ERROR_UNKNOWN) {
-            return tmpRes;
-        }
         OSAL::SleepFor(READ_SLEEP_INTERVAL); // 5
         int64_t endTime = steadyClock_.ElapsedMilliseconds();
-        readTime_ = static_cast<uint64_t>(endTime - startTime);
     }
     return Status::OK;
 }

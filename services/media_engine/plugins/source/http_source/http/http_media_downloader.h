@@ -159,7 +159,6 @@ private:
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
-    uint32_t errorAgainTime_ {0};
     volatile size_t wantedReadLength_ {0};
 };
 }
