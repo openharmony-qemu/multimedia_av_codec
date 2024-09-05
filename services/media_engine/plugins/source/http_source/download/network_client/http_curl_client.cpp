@@ -180,6 +180,7 @@ HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void 
 HttpCurlClient::~HttpCurlClient()
 {
     MEDIA_LOG_I("~HttpCurlClient dtor");
+    Close(false);
 }
 
 Status HttpCurlClient::Init()
@@ -236,13 +237,17 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     return Status::OK;
 }
 
-Status HttpCurlClient::Close()
+Status HttpCurlClient::Close(bool isAsync)
 {
+    MEDIA_LOG_I("Close client in");
     if (easyHandle_) {
         curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
     }
+    if (isAsync) {
+        MEDIA_LOG_I("Close client Async out");
+        return Status::OK;
+    }
     AutoLock lock(mutex_);
-    MEDIA_LOG_I("Close client");
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
@@ -251,6 +256,7 @@ Status HttpCurlClient::Close()
     if (!ip_.empty()) {
         ip_.clear();
     }
+    MEDIA_LOG_I("Close client out");
     return Status::OK;
 }
 
