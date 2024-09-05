@@ -430,7 +430,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
         }
-        tmpRes = CheckReadTimeOut(readDataInfo);
+        Status tmpRes = CheckReadTimeOut(readDataInfo);
         if (tmpRes != Status::ERROR_UNKNOWN) {
             return tmpRes;
         }
