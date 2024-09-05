@@ -623,7 +623,7 @@ void FileFdSourcePlugin::CheckFileType()
         }
     } else {
         isCloudFile_ = false;
-        MEDIA_LOG_I("ioctl get file type");
+        MEDIA_LOG_I("ioctl failed to get file type');
     }
 }
 
