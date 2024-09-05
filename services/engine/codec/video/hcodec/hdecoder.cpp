@@ -298,6 +298,15 @@ int32_t HDecoder::OnSetParameters(const Format &format)
 
 int32_t HDecoder::SaveTransform(const Format &format, bool set)
 {
+    int32_t orientation = 0;
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, orientation)) {
+        HLOGI("GraphicTransformType = %d", orientation);
+        transform_ = static_cast<GraphicTransformType>(orientation);
+        if (set) {
+            return SetTransform();
+        }
+        return AVCS_ERR_OK;
+    }
     int32_t rotate;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotate)) {
         return AVCS_ERR_OK;
