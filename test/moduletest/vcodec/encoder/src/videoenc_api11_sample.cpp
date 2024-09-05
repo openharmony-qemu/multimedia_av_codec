@@ -445,14 +445,7 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
         (void)OH_VideoEncoder_Stop(venc_);
         return AV_ERR_UNKNOWN;
     }
-
-    if (!readMultiFiles) {
-        inFile_->open(INP_DIR, ios::in | ios::binary);
-        if (!inFile_->is_open()) {
-            OpenFileFail();
-        }
-    }
-    
+    readMultiFilesFunc();
     if (SURF_INPUT) {
         inputLoop_ = make_unique<thread>(&VEncAPI11Sample::InputFuncSurface, this);
     } else {
@@ -474,6 +467,16 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
         return AV_ERR_UNKNOWN;
     }
     return AV_ERR_OK;
+}
+
+void VEncAPI11Sample::readMultiFilesFunc()
+{
+    if (!readMultiFiles) {
+        inFile_->open(INP_DIR, ios::in | ios::binary);
+        if (!inFile_->is_open()) {
+            OpenFileFail();
+        }
+    }
 }
 
 int32_t VEncAPI11Sample::CreateVideoEncoder(const char *codecName)
@@ -688,12 +691,10 @@ uint32_t VEncAPI11Sample::ReadOneFrameFromList(uint8_t *dst, int32_t &index)
             ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, fileInfos[index].format);
         }
         if (ret != AV_ERR_OK) {
-            cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
             return ret;
         }
         ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH, DEFAULT_HEIGHT);
         if (ret != AV_ERR_OK) {
-            cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
             return ret;
         }
         cout << fileInfos[index].fileDir << endl;
