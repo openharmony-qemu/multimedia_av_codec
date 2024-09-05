@@ -79,6 +79,8 @@ public:
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     uint32_t frameCount_ = 0;
     uint32_t repeat_time = 0;
+    uint32_t outFrameCount = 0;
+    bool outputYuvFlag = false;
     // 解码输出数据预期
     bool needCheckOutputDesc = false;
     bool isResChangeStream = false;
@@ -118,6 +120,7 @@ public:
     int32_t CheckAndReturnBufferSize(OH_AVBuffer *buffer);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVBuffer *buffer);
     void ProcessOutputData(OH_AVBuffer *buffer, uint32_t index, int32_t size);
+    int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFunc();
     void InputFuncTest();
     void OutputFuncTest();

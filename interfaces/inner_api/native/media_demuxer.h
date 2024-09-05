@@ -104,7 +104,7 @@ public:
     Status DisableMediaTrack(Plugins::MediaType mediaType);
     void OnBufferAvailable(uint32_t trackId);
 
-    void SetSelectBitRateFlag(bool flag) override;
+    void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
     Status StartReferenceParser(int64_t startTimeMs, bool isForward = true);
@@ -124,6 +124,7 @@ public:
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void SetCacheLimit(uint32_t limitSize);
+    void SetEnableOnlineFdCache(bool isEnableFdCache);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -161,12 +162,13 @@ private:
     bool IsBufferDroppable(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     void CheckDropAudioFrame(std::shared_ptr<AVBuffer> sample, uint32_t trackId);
     bool IsTrackDisabled(Plugins::MediaType mediaType);
+    bool HandleDashChangeStream(uint32_t trackId);
 
     Status SeekToTimePre();
     Status SeekToTimeAfter();
     bool SelectBitRateChangeStream(uint32_t trackId);
     bool SelectTrackChangeStream(uint32_t trackId);
-    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID);
+    bool HandleSelectTrackChangeStream(int32_t trackId, int32_t newStreamID, int32_t& newTrackId);
     Status PauseForPrepareFrame();
     std::shared_ptr<Plugins::DemuxerPlugin> GetCurFFmpegPlugin();
 
@@ -246,6 +248,7 @@ private:
     bool isDump_ = false;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager_;
     std::atomic<bool> isSelectBitRate_ = false;
+    uint32_t targetBitRate_ = 0;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 

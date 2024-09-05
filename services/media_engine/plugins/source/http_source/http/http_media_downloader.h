@@ -27,6 +27,7 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
+#include "utils/write_bitrate_caculator.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,6 +68,7 @@ public:
     void UpdateCachedPercent(BufferingInfoType infoType);
     size_t GetBufferSize() const override;
     void SetAppUid(int32_t appUid) override;
+    bool GetPlayable() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -80,6 +82,7 @@ private:
     Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadTimeOut(ReadDataInfo& readDataInfo);
+    Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
     bool SeekCacheBuffer(int64_t offset);
@@ -155,7 +158,9 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
+    std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
     uint32_t errorAgainTime_ {0};
+    volatile size_t wantedReadLength_ {0};
 };
 }
 }

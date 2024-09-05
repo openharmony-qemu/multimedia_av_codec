@@ -223,16 +223,16 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return true;
     }
 
-    if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
+    if ((CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
         SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
-        (serverError >= SERVER_ERROR_THRESHOLD && downloader_->GetBufferSize() <= 0)) {
+        serverError >= SERVER_ERROR_THRESHOLD) && !GetPlayable()) {
         MEDIA_LOG_I("error code dont't need to retry.");
         downloader_->SetDownloadErrorState();
         NotifyError(clientError, serverError);
         request->Close();
         return false;
     }
-    if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && downloader_->GetBufferSize() <= 0) { // Report error to upper layer
+    if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR && !GetPlayable()) { // Report error to upper layer
         MEDIA_LOG_I("Retry times readches the upper limit.");
         downloader_->SetDownloadErrorState();
         NotifyError(clientError, serverError);
@@ -362,6 +362,11 @@ void DownloadMonitor::SetAppUid(int32_t appUid)
     if (downloader_) {
         downloader_->SetAppUid(appUid);
     }
+}
+
+bool DownloadMonitor::GetPlayable()
+{
+    return downloader_->GetPlayable();
 }
 
 }

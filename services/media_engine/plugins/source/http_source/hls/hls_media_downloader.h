@@ -93,6 +93,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetAppUid(int32_t appUid) override;
     size_t GetBufferSize() const override;
+    bool GetPlayable() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -264,6 +265,7 @@ private:
     uint32_t readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
+    volatile size_t wantedReadLength_ {0};
 };
 }
 }

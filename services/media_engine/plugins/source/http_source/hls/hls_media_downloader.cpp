@@ -409,6 +409,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         MEDIA_LOG_I("HLS read return error again.");
         return Status::ERROR_AGAIN;
     }
+    wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
     size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
         std::max(PLAY_WATER_LINE, static_cast<size_t>(readDataInfo.wantReadLength_)) : 0;
     if (isFirstFrameArrived_ && GetCacheBufferSize() < waterLine && !CheckBreakCondition()) {
@@ -1465,6 +1466,14 @@ size_t HlsMediaDownloader::GetCacheBufferSize()
     }
     return bufferSize;
 }
+
+bool HlsMediaDownloader::GetPlayable()
+{
+    size_t wantedLength = wantedReadLength_;
+    size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
+    return GetBufferSize() >= waterLine;
+}
+
 }
 }
 }

@@ -57,6 +57,7 @@ public:
     void NotifyBufferingPercent();
     void NotifyBufferingEnd();
     void NotifyReadFail();
+    void SetEnableOnlineFdCache(bool isEnableFdCache) override;
 private:
     Status ParseUriInfo(const std::string& uri);
     Status ReadOfflineFile(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen);
@@ -110,6 +111,7 @@ private:
     int64_t curReadTime_ {0};
     int64_t retryTimes_ {0};
     int64_t lastReadTime_ {0};
+    bool isEnableFdCache_{ true };
 };
 } // namespace FileSource
 } // namespace Plugins

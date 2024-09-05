@@ -1104,7 +1104,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
     int ret = CheckContextIsValid(opaque, bufSize);
     FALSE_RETURN_V(ret == 0, ret);
-
     ret = -1;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "ioContext is nullptr");
@@ -1125,14 +1124,14 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 #endif
     switch (result) {
         case Status::OK:
-            ioContext->offset += dataSize;
-            ret = dataSize;
-            break;
         case Status::ERROR_AGAIN:
-            MEDIA_LOG_I("Read data not enough, read again.");
-            ioContext->retry = true;
-            ioContext->offset += dataSize;
-            ret = dataSize;
+            if (dataSize == 0) {
+                MEDIA_LOG_I("Read data not enough, read again.");
+                ioContext->retry = true;
+            } else {
+                ioContext->offset += dataSize;
+                ret = dataSize;
+            }
             break;
         case Status::END_OF_STREAM:
             MEDIA_LOG_I("Read at end of file.");
@@ -1141,10 +1140,8 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             break;
         default:
             MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
-            ioContext->retry = true;
             break;
     }
-
     if (!ioContext->initCompleted) {
         if (ioContext->initDownloadDataSize <= UINT32_MAX - static_cast<uint32_t>(dataSize)) {
             ioContext->initDownloadDataSize += static_cast<uint32_t>(dataSize);
@@ -1152,7 +1149,6 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             MEDIA_LOG_W("dataSize " PUBLIC_LOG_U32 " is invalid", static_cast<uint32_t>(dataSize));
         }
     }
-
     return ret;
 }
 
@@ -1224,11 +1220,9 @@ AVIOContext* FFmpegDemuxerPlugin::AllocAVIOContext(int flags, IOContext *ioConte
 std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOContext *ioContext)
 {
     AVFormatContext* formatContext = avformat_alloc_context();
-    FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr,
-        "Init AVFormatContext failed due to avformat_alloc_context failed.");
+    FALSE_RETURN_V_MSG_E(formatContext != nullptr, nullptr, "Alloc formatContext failed.");
     formatContext->pb = AllocAVIOContext(AVIO_FLAG_READ, ioContext);
-    FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr,
-        "Init AVFormatContext failed due to init AVIOContext failed.");
+    FALSE_RETURN_V_MSG_E(formatContext->pb != nullptr, nullptr, "Alloc iOContext failed.");
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
     if (std::string(pluginImpl_->name) == "mp3") {
         formatContext->flags =
@@ -1241,21 +1235,20 @@ std::shared_ptr<AVFormatContext> FFmpegDemuxerPlugin::InitAVFormatContext(IOCont
     MediaAVCodec::AVCodecTrace trace("ffmpeg_init");
     auto begin = std::chrono::system_clock::now();
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), &options);
-    FALSE_RETURN_V_MSG_E((ret == 0), nullptr,
-        "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
+    FALSE_RETURN_V_MSG_E((ret == 0), nullptr, "FormatContext init failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
         pluginImpl_->name, AVStrError(ret).c_str());
     auto finishiOpen = std::chrono::system_clock::now();
     if (FFmpegFormatHelper::GetFileTypeByName(*formatContext) == FileType::FLV) { // Fix init live-flv-source too slow
         formatContext->probesize = LIVE_FLV_PROBE_SIZE;
     }
+    FALSE_RETURN_V_MSG_E(formatContext->pb->buffer != nullptr, nullptr, "Custom buffer invalid.");
     ret = avformat_find_stream_info(formatContext, NULL);
     auto finishParse = std::chrono::system_clock::now();
     MEDIA_LOG_I("spend: open " PUBLIC_LOG_F " parse " PUBLIC_LOG_F,
         static_cast<std::chrono::duration<double, std::milli>>(finishiOpen - begin).count(),
         static_cast<std::chrono::duration<double, std::milli>>(finishParse - finishiOpen).count());
-    FALSE_RETURN_V_MSG_E((ret >= 0), nullptr,
-        "Init AVFormatContext failed due to avformat_find_stream_info failed by " PUBLIC_LOG_S
-        ", err:" PUBLIC_LOG_S ".", pluginImpl_->name, AVStrError(ret).c_str());
+    FALSE_RETURN_V_MSG_E((ret >= 0), nullptr, "Parse stream info failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S,
+        pluginImpl_->name, AVStrError(ret).c_str());
     std::shared_ptr<AVFormatContext> retFormatContext =
         std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *ptr) {
             if (ptr) {
@@ -2051,16 +2044,10 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     }
     FALSE_RETURN_V_MSG_E((plugin != nullptr && plugin->read_probe), 0,
         "Sniff failed due to get plugin for " PUBLIC_LOG_S " failed.", pluginName.c_str());
-    size_t bufferSize = DEFAULT_READ_SIZE;
-    if (StartWith(plugin->name, "mp3")) {
-        bufferSize = MP3_PROBE_SIZE; // mp3 needs more data to probe, refer to ffmpeg
-    }
+    size_t bufferSize = StartWith(plugin->name, "mp3") ? MP3_PROBE_SIZE : DEFAULT_READ_SIZE; // mp3 need more probe data
     uint64_t fileSize = 0;
     if (dataSource->GetSize(fileSize) == Status::OK) {
         bufferSize = (bufferSize < fileSize) ? bufferSize : fileSize;
-        if (bufferSize == fileSize) {
-            MEDIA_LOG_I("Data is not enough, reset probe size to file size");
-        }
     }
     std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE); // fix ffmpeg probe crash, refer to tools/probetest.c
     auto bufferInfo = std::make_shared<Buffer>();
@@ -2085,7 +2072,8 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
         MEDIA_LOG_I("effective sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
             getData, plugin->name, confidence);
     }
-    if ((StartWith(plugin->name, "mp3") && getData < MP3_PROBE_SIZE) || (getData < DEFAULT_READ_SIZE)) { // no data
+    if ((StartWith(plugin->name, "mp3") && static_cast<uint32_t>(getData) < MP3_PROBE_SIZE) ||
+        (static_cast<uint32_t>(getData) < DEFAULT_READ_SIZE)) { // not enough data
         MEDIA_LOG_I("leak sniff: dataSize:" PUBLIC_LOG_D32 " " PUBLIC_LOG_S "[" PUBLIC_LOG_D32 "/100]",
             getData, plugin->name, confidence);
     }

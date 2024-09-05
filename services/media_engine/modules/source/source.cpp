@@ -122,6 +122,7 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitPlugin failed");
 
     plugin_->SetCallback(this);
+    plugin_->SetEnableOnlineFdCache(isEnableFdCache_);
     ret = plugin_->SetSource(source);
 
     MEDIA_LOG_I("InitPlugin exit");
@@ -307,13 +308,16 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     }
 }
 
-void Source::SetSelectBitRateFlag(bool flag)
+void Source::SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
 {
-    mediaDemuxerCallback_->SetSelectBitRateFlag(flag);
+    if (mediaDemuxerCallback_) {
+        mediaDemuxerCallback_->SetSelectBitRateFlag(flag, desBitRate);
+    }
 }
 
 bool Source::CanAutoSelectBitRate()
 {
+    FALSE_RETURN_V_MSG_E(mediaDemuxerCallback_ != nullptr, false, "mediaDemuxerCallback_ is nullptr.");
     return mediaDemuxerCallback_->CanAutoSelectBitRate();
 }
 
@@ -469,6 +473,11 @@ Status Source::SelectStream(int32_t streamID)
 {
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SelectStream Source plugin is nullptr!");
     return plugin_->SelectStream(streamID);
+}
+
+void Source::SetEnableOnlineFdCache(bool isEnableFdCache)
+{
+    isEnableFdCache_ = isEnableFdCache;
 }
 } // namespace Media
 } // namespace OHOS

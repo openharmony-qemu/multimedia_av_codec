@@ -43,7 +43,6 @@ constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103},
 constexpr int32_t CROP_BOTTOM = 0;
 constexpr int32_t CROP_RIGHT = 1;
 constexpr int32_t DEFAULT_ANGLE = 90;
-
 SHA512_CTX g_c;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
 VDecAPI11Sample *dec_sample = nullptr;
@@ -668,9 +667,34 @@ void VDecAPI11Sample::AutoSwitchSurface()
         OH_AVFormat_Destroy(format);
     }
 }
+int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
+{
+    if (needCheckOutputDesc) {
+        CheckOutputDescription();
+        needCheckOutputDesc = false;
+    }
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+        cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
+        AutoSwitchSurface();
+        SHA512_Final(g_md, &g_c);
+        OPENSSL_cleanse(&g_c, sizeof(g_c));
+        MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        return -1;
+    }
+    if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
+        cout << "enc AVCODEC_BUFFER_FLAGS_CODEC_DATA" << attr.pts << endl;
+        return 0;
+    }
+    outFrameCount = outFrameCount + 1;
+    return 0;
+}
 
 void VDecAPI11Sample::OutputFuncTest()
 {
+    FILE *outFile = nullptr;
+    if (outputYuvFlag) {
+        outFile = fopen(OUT_DIR, "wb");
+    }
     SHA512_Init(&g_c);
     bool flag = true;
     while (flag) {
@@ -679,7 +703,6 @@ void VDecAPI11Sample::OutputFuncTest()
             break;
         }
         OH_AVCodecBufferAttr attr;
-        uint32_t index;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
@@ -691,7 +714,7 @@ void VDecAPI11Sample::OutputFuncTest()
             flag = false;
             break;
         }
-        index = signal_->outIdxQueue_.front();
+        uint32_t index = signal_->outIdxQueue_.front();
         OH_AVBuffer *buffer = signal_->outBufferQueue_.front();
         signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
@@ -699,24 +722,21 @@ void VDecAPI11Sample::OutputFuncTest()
             errCount = errCount + 1;
         }
         lock.unlock();
-        if (needCheckOutputDesc) {
-            CheckOutputDescription();
-            needCheckOutputDesc = false;
-        }
-        if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "AVCODEC_BUFFER_FLAGS_EOS" << endl;
-            AutoSwitchSurface();
-            SHA512_Final(g_md, &g_c);
-            OPENSSL_cleanse(&g_c, sizeof(g_c));
-            MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        if (CheckAttrFlag(attr) == -1) {
             flag = false;
             break;
         }
         ProcessOutputData(buffer, index, attr.size);
+        if (outFile != nullptr) {
+            fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, outFile);
+        }
         if (errCount > 0) {
             flag = false;
             break;
         }
+    }
+    if (outFile) {
+        (void)fclose(outFile);
     }
 }
 

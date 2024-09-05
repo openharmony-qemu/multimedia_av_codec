@@ -462,7 +462,7 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
             if (switchFlag) {
                 bool flag = CheckAutoSelectBitrate(streamId);
                 if (callback_ != nullptr) {
-                    callback_->SetSelectBitRateFlag(flag);
+                    callback_->SetSelectBitRateFlag(flag, bitrateParam_.bitrate_);
                 }
                 if (flag) {
                     // switch success
@@ -1067,6 +1067,11 @@ void DashMediaDownloader::SetAppUid(int32_t appUid)
     for (size_t i = 0; i < segmentDownloaders_.size(); i++) {
         segmentDownloaders_[i]->SetAppUid(appUid);
     }
+}
+
+bool DashMediaDownloader::GetPlayable()
+{
+    return GetBufferSize() >= 0;
 }
 
 }
