@@ -63,6 +63,7 @@ ohos_unittest("encoder_native_module_test") {
       "./src/api_test.cpp",
       "./src/configure_test.cpp",
       "./src/func_test.cpp",
+      "./src/func2_test.cpp",
       "./src/temporal_test.cpp",
 
       #"./src/perf_test.cpp",
