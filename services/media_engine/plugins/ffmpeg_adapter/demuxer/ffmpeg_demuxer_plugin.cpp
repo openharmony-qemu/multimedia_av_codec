@@ -1372,7 +1372,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             mediaInfo.tracks.push_back(meta);
             continue;
         }
-        FFmpegFormatHelper::ParseTrackInfo(*avStream, meta);
+        FFmpegFormatHelper::ParseTrackInfo(*avStream, meta, *formatContext_);
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
             if (streamParser_ != nullptr && streamParserInited_ && firstFrame_ != nullptr) {
                 streamParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0, false);
