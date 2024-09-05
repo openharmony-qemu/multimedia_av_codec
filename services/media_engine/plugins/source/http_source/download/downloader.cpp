@@ -411,7 +411,7 @@ bool Downloader::BeginDownload()
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
-
+    
     int32_t timeoutMs = currentRequest_->mediaSouce_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
     if (client_) {
@@ -477,7 +477,7 @@ void Downloader::RequestData()
     if (isDestructor_) {
         return;
     }
-    
+	
     if (ret == Status::OK) {
         HandleRetOK();
     } else {
