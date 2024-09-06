@@ -33,7 +33,6 @@ constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
 constexpr int MAX_RECORD_COUNT = 10;
-constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 
