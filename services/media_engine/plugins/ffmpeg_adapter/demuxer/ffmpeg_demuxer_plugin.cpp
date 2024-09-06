@@ -877,8 +877,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = flag;
     Status ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
-
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
@@ -894,7 +892,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         av_free(tempPkt);
         tempPkt = nullptr;
     }
-
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
@@ -1668,17 +1666,18 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
 Status FFmpegDemuxerPlugin::Flush()
 {
+    Status ret = Status::OK;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("Flush enter.");
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
-        cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+        ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
     if (formatContext_) {
         avio_flush(formatContext_.get()->pb);
         avformat_flush(formatContext_.get());
     }
-    return Status::OK;
+    return ret;
 }
 
 void FFmpegDemuxerPlugin::ResetEosStatus()
