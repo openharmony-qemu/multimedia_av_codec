@@ -1994,6 +1994,7 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
             outOfLimit_ = true;
         }
     }
+    return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
