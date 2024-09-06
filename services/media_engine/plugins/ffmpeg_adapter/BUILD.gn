@@ -48,7 +48,7 @@ config("ffmpeg_adapter_config") {
 }
 
 ohos_shared_library("media_plugin_FFmpegMuxer") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
 
   sanitize = av_codec_sanitize
@@ -80,7 +80,7 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
 }
 
 ohos_shared_library("media_plugin_FFmpegDemuxer") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
 
   sanitize = av_codec_sanitize

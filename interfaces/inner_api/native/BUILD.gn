@@ -165,7 +165,7 @@ config("av_codec_client_drm_config") {
 }
 
 ohos_shared_library("av_codec_client") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
   public_configs = [
     ":av_codec_client_local_config",
