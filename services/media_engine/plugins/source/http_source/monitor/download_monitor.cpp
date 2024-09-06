@@ -366,7 +366,10 @@ void DownloadMonitor::SetAppUid(int32_t appUid)
 
 bool DownloadMonitor::GetPlayable()
 {
-    return downloader_->GetPlayable();
+    if (downloader_) {
+        return downloader_->GetPlayable();
+    }
+    return false;
 }
 
 }

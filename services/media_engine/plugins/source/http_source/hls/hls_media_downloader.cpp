@@ -45,7 +45,6 @@ constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
-constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr int32_t BYTES_TO_BIT = 8;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
@@ -1416,11 +1415,10 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
 size_t HlsMediaDownloader::GetBufferSize() const
 {
     size_t bufferSize = 0;
-    if (buffer_ != nullptr) {
-        bufferSize = buffer_->GetSize();
-    } else if (cacheMediaBuffer_ != nullptr) {
+    if (cacheMediaBuffer_ != nullptr) {
         bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
     }
+    return bufferSize;
 }
 
 size_t HlsMediaDownloader::GetCacheBufferSize()

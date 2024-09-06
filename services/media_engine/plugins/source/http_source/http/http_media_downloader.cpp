@@ -54,10 +54,6 @@ constexpr size_t MIN_WATER_LINE_ABOVE = 10 * 1024;
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr int32_t TEN_MILLISECONDS = 10;
 constexpr float WATER_LINE_ABOVE_LIMIT_RATIO = 0.9;
-constexpr float CACHE_LEVEL_1 = 1;
-constexpr float CACHE_LEVEL_2 = 5;
-constexpr float CACHE_LEVEL_3 = 10;
-constexpr uint32_t ERROR_AGAIN_MAX = 20;
 constexpr float CACHE_LEVEL_1 = 0.3;
 constexpr int32_t DEFAULT_CACHE_TIME = 10;
 }
@@ -390,7 +386,6 @@ Status HttpMediaDownloader::ReadCacheBufferLoop(unsigned char* buff, ReadDataInf
     if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_) {
         return HandleDownloadErrorState(readDataInfo.realReadLength_);
     }
-    errorAgainTime_ = 0;
     bool isClosed = downloadRequest_->IsClosed();
     if (isClosed && cacheMediaBuffer_->GetBufferSize(readOffset_) == 0) {
         MEDIA_LOG_I("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
