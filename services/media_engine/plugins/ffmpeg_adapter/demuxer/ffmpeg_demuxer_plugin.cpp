@@ -894,6 +894,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         av_free(tempPkt);
         tempPkt = nullptr;
     }
+
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
