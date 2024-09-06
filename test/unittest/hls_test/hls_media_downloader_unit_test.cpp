@@ -27,6 +27,7 @@ const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"},
 };
+
 static const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
 constexpr int MIN_WITDH = 480;
