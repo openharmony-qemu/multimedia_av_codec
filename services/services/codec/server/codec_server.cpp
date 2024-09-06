@@ -1432,7 +1432,7 @@ void CodecServer::PostProcessingOnOutputBufferAvailable(uint32_t index, [[maybe_
     ret = postProcessingOutputBufferInfoQueue_->PushWait(info);
     CHECK_AND_RETURN_LOG(ret == QueueResult::OK, "Push data failed, %{public}s",
         QUEUE_RESULT_DESCRIPTION[static_cast<int32_t>(ret)]);
-    videoCb_->OnOutputBufferAvailable(index, info->buffer);
+    videoCb_->OnOutputBufferAvailable(info->index, info->buffer);
 }
 
 void CodecServer::PostProcessingOnOutputFormatChanged(const Format& format)
