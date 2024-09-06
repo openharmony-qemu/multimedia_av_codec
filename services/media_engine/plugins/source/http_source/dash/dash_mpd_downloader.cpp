@@ -510,6 +510,9 @@ void DashMpdDownloader::SetDefaultLang(const std::string &lang, MediaAVCodec::Me
 void DashMpdDownloader::SetInterruptState(bool isInterruptNeeded)
 {
     isInterruptNeeded_ = isInterruptNeeded;
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 std::string DashMpdDownloader::GetUrl() const

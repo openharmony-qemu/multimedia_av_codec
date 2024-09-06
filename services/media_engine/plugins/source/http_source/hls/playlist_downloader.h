@@ -56,11 +56,11 @@ public:
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
     virtual uint32_t GetCurBitrate() = 0;
     virtual bool IsLive() const = 0;
-    virtual void SetInterruptState(bool isInterruptNeeded) = 0;
     virtual void SetMimeType(const std::string& mimeType) = 0;
     virtual void PreParseManifest(const std::string& location) = 0;
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
+    void SetInterruptState(bool isInterruptNeeded);
     void Resume();
     void Pause(bool isAsync = false);
     void Close();
@@ -103,6 +103,7 @@ protected:
     uint64_t position_ {0};
     int64_t retryStartTime_ {0};
     Callback* eventCallback_ {nullptr};
+    std::atomic<bool> isInterruptNeeded_{false};
 };
 }
 }
