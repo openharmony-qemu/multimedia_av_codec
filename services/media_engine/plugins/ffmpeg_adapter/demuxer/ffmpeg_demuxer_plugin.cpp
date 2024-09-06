@@ -877,6 +877,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
     sample->flag_ = flag;
     Status ret = WriteBuffer(sample, tempPkt->data + samplePacket->offset, copySize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
+
     if (!samplePacket->isEOS) {
         trackDfxInfoMap_[tempPkt->stream_index].lastPts = sample->pts_;
         trackDfxInfoMap_[tempPkt->stream_index].lastDurantion = sample->duration_;
@@ -892,7 +894,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         av_free(tempPkt);
         tempPkt = nullptr;
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
     if (copySize < remainSize) {
         samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
@@ -1275,7 +1276,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         "DataSource has been inited, need reset first.");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set datasource failed due to source is nullptr.");
-
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
@@ -1293,7 +1293,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");
-
     formatContext_ = InitAVFormatContext(&ioContext_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN,
         "Set datasource failed due to can not init formatContext for source.");
