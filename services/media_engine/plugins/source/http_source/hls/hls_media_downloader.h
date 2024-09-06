@@ -123,7 +123,6 @@ private:
     bool HandleCache();
     bool CheckReadStatus();
     Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
-    Status CheckReadTimeOut(ReadDataInfo& readDataInfo);
     bool CheckBreakCondition();
     uint32_t GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
     void ResetPlaylistCapacity(size_t size);
