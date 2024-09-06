@@ -172,7 +172,6 @@ AudioTrackParam AVMuxerDemo::InitFormatParam(AudioMuxerFormatType type)
     param.colorMatrixCoeff = COLOR_MATRIXCIEFF_2;
     param.colorRange = 0;
     param.isHdrVivid = 0;
-    param.isNeedCover = false;
     param.isNeedVideo = false;
     if (audioType_ == AudioMuxerFormatType::TYPE_AAC) {
         param.mimeType = OH_AVCODEC_MIMETYPE_AUDIO_AAC;
@@ -258,14 +257,12 @@ int32_t AVMuxerDemo::AddTrack(OH_AVMuxer* muxer, int32_t& trackIndex, AudioTrack
     // set codec config
     int extraSize = 0;
     unsigned char buffer[configBufferSize] = {0};
-    if (extraSize <= configBufferSize && extraSize > 0) {
-        errno_t res = 0;
-        res = strncpy_s(reinterpret_cast<char*>(buffer), extraSize, inputdata.c_str(), extraSize);
-        if (res != 0) {
-            return res;
-        }
-        OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
+    errno_t res = 0;
+    res = strncpy_s(reinterpret_cast<char*>(buffer), extraSize, inputdata.c_str(), extraSize);
+    if (res != 0) {
+        return res;
     }
+    OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, param.mimeType);
     // audio
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, param.sampleRate);
