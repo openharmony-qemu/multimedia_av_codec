@@ -1982,7 +1982,7 @@ void FFmpegDemuxerPlugin::RelativePTSToIndexProcess(int64_t pts, int64_t absolut
 Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 {
     if (!outOfLimit_) {
-       auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
+        auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
         if (cacheDataSize > cachelimitSize_) {
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 ", by user "
                 PUBLIC_LOG_D32, trackId, cacheDataSize, cachelimitSize_, static_cast<int32_t>(setLimitByUser));
