@@ -66,7 +66,6 @@ constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
 constexpr int SLEEP_TIME_100 = 100;
-constexpr uint32_t READ_SLEEP_INTERVAL = 5;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -400,7 +399,6 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
             readTsIndex_++;
             readOffset_ = SpliceOffset(readTsIndex_, 0);
         }
-        OSAL::SleepFor(READ_SLEEP_INTERVAL); // 5
     }
     return Status::OK;
 }
