@@ -503,7 +503,7 @@ HWTEST_F(DemuxerNet2NdkTest, DEMUXER_ORIENTATIONTYPE_1019, TestSize.Level2)
 HWTEST_F(DemuxerNet2NdkTest, DEMUXER_ORIENTATIONTYPE_1020, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
-    int32_t rotation = -1; 
+    int32_t rotation = -1;
     const char *uri = "http://192.168.3.11:8080/share/rotation/AV_FLIP_V_90.mp4";
     source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);

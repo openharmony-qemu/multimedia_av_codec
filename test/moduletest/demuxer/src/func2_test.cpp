@@ -1205,9 +1205,3 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1029, TestSize.Level3)
     OH_AVFormat_Destroy(trackFormat);
     close(fd);
 }
-
-
-
-
-
-
