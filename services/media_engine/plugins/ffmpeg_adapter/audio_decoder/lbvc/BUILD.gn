@@ -51,7 +51,7 @@ config("adapter_config") {
 }
 
 ohos_shared_library("media_plugin_LbvcAudioDecoder") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   install_enable = true
 
   sanitize = av_codec_sanitize
