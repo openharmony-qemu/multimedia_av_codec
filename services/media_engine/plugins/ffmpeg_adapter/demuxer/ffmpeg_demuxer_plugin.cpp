@@ -15,7 +15,6 @@
 
 #define MEDIA_PLUGIN
 #define HST_LOG_TAG "FfmpegDemuxerPlugin"
-
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -354,7 +353,7 @@ void FFmpegDemuxerPlugin::Dump(const DumpParam &dumpParam)
     path = "/data/ff_dump/" + path;
     ofs.open(path, std::ios::out); //  | std::ios::app
     if (ofs.is_open()) {
-        ofs.write((char*)dumpParam.buf, dumpParam.size);
+        ofs.write(reinterpret_cast<char*>(dumpParam.buf), dumpParam.size);
         ofs.close();
     }
     MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
@@ -1286,7 +1285,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     } else {
         ioContext_.fileSize = -1;
     }
-
     MEDIA_LOG_I("fileSize: " PUBLIC_LOG_U64 ", seekable: " PUBLIC_LOG_D32, ioContext_.fileSize, seekable_);
     {
         std::lock_guard<std::mutex> glock(g_mtx);
@@ -1338,7 +1336,7 @@ Status FFmpegDemuxerPlugin::GetSeiInfo()
             auto avStream = formatContext_->streams[trackIndex];
             if (HaveValidParser(avStream->codecpar->codec_id)) {
                 ret = GetVideoFirstKeyFrame(trackIndex);
-                FALSE_RETURN_V_MSG_E(ret == Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
+                FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, Status::ERROR_NO_MEMORY,
                     "Get first frame failed is due to error no memory");
                 FALSE_RETURN_V_MSG_E(firstFrame_ != nullptr && firstFrame_->data != nullptr,
                     Status::ERROR_WRONG_STATE, "Get first frame failed. Get sei info may failed.");
@@ -1660,7 +1658,6 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     }
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".", AVStrError(ret).c_str());
-
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
@@ -1987,8 +1984,6 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
     if (!outOfLimit_) {
        auto cacheDataSize = cacheQueue_.GetCacheDataSize(trackId);
         if (cacheDataSize > cachelimitSize_) {
-            MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32,
-                trackId, cacheDataSize, cachelimitSize_);
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 ", by user "
                 PUBLIC_LOG_D32, trackId, cacheDataSize, cachelimitSize_, static_cast<int32_t>(setLimitByUser));
             outOfLimit_ = true;
