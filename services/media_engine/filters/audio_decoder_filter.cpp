@@ -105,7 +105,7 @@ AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filte
 
 AudioDecoderFilter::~AudioDecoderFilter()
 {
-    mediaCodec_->Release();
+    DoRelease();
     MEDIA_LOG_I_SHORT("audio decoder filter destroy");
 }
 
@@ -195,6 +195,12 @@ Status AudioDecoderFilter::DoFlush()
 
 Status AudioDecoderFilter::DoRelease()
 {
+    std::lock_guard<std::mutex> lock(releaseMutex_);
+    if (isReleased_.load()) {
+        MEDIA_LOG_W_SHORT("AudioDecoderFilter has beed released.");
+        return Status::OK;
+    }
+    isReleased_.store(true);
     MEDIA_LOG_E_SHORT("AudioDecoderFilter::Release.");
     return (Status)mediaCodec_->Release();
 }
