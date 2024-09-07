@@ -1354,7 +1354,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_028, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
             ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Reset())
+            EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
         }
     }
 }
