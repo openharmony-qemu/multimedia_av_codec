@@ -111,7 +111,6 @@ AudioDecoderFilter::~AudioDecoderFilter()
             MEDIA_LOG_W_SHORT("AudioDecoderFilter has beed released.");
         } else {
             isReleased_.store(true);
-            MEDIA_LOG_I_SHORT("AudioDecoderFilter::Release.");
             mediaCodec_->Release();
         }
     }
