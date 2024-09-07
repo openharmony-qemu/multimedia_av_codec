@@ -185,10 +185,6 @@ int32_t AudioOpusDecoderPlugin::Reset()
 
 int32_t AudioOpusDecoderPlugin::Release()
 {
-    if (handle) {
-        dlclose(handle);
-        handle = nullptr;
-    }
     std::lock_guard<std::mutex> lock(avMutext_);
     CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_OK,
         "AudioOpusDecoderPlugin Release dlopen or dlsym error");
@@ -199,6 +195,10 @@ int32_t AudioOpusDecoderPlugin::Release()
     }
     delete PluginCodecPtr;
     PluginCodecPtr = nullptr;
+    if (handle) {
+        dlclose(handle);
+        handle = nullptr;
+    }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 

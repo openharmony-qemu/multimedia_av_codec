@@ -68,6 +68,7 @@ private:
     int32_t sampleRate;
     int64_t bitRate;
     int32_t complexity;
+    void *handle;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

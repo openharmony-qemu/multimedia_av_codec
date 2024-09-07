@@ -162,6 +162,7 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
                 resamplePara_.channels, i);
         }
     }
+
     outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = static_cast<int>(resamplePara_.sampleRate);
