@@ -104,6 +104,7 @@ int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFr
                 resamplePara_.channels, i);
         }
     }
+
     outputFrame->ch_layout = resamplePara_.channelLayout;
     outputFrame->format = resamplePara_.destFmt;
     outputFrame->sample_rate = resamplePara_.sampleRate;

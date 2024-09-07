@@ -49,7 +49,7 @@ AudioOpusEncoderPlugin::AudioOpusEncoderPlugin()
       channels(-1), sampleRate(-1), bitRate(-1), complexity(-1)
 {
     ret = 0;
-    void* handle = dlopen("libav_codec_ext_base.z.so", 1);
+    handle = dlopen("libav_codec_ext_base.z.so", 1);
     if (!handle) {
         ret = -1;
         AVCODEC_LOGE("AudioOpusEncoderPlugin dlopen error, check .so file exist");
@@ -218,6 +218,10 @@ int32_t AudioOpusEncoderPlugin::Release()
     }
     delete PluginCodecPtr;
     PluginCodecPtr = nullptr;
+    if (handle) {
+        dlclose(handle);
+        handle = nullptr;
+    }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 

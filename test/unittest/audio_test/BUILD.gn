@@ -82,6 +82,13 @@ ohos_unittest("av_audio_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -122,6 +129,13 @@ ohos_unittest("av_audio_codecbase_unit_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
+
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -166,6 +180,13 @@ ohos_unittest("av_audio_decode_ability_unit_test") {
     "media_foundation:native_media_core",
   ]
 
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -205,6 +226,13 @@ ohos_unittest("av_audio_inner_unit_test") {
   ]
 
   external_deps = [ "graphic_surface:surface" ]
+
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -249,6 +277,13 @@ ohos_unittest("av_audio_encoder_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
+
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -292,6 +327,13 @@ ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
+
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -341,6 +383,13 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
   ]
+
+  if (target_cpu == "arm64") {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
 
   if (av_codec_support_drm) {
     external_deps += [
