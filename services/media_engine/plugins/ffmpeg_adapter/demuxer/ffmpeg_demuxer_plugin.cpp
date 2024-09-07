@@ -23,6 +23,7 @@
 #include <map>
 #include <fstream>
 #include <chrono>
+#include <limits>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
@@ -518,16 +519,35 @@ Status FFmpegDemuxerPlugin::SelectProGopId()
 {
     if (pendingSeekMsTime_ >= 0) {
         uint32_t frameId = TimeStampUs2FrameId(pendingSeekMsTime_ * MS_TO_SEC, fps_);
-        parserCurGopId_ = std::upper_bound(IFramePos_.begin(), IFramePos_.end(), frameId) - IFramePos_.begin() - 1;
+        std::vector<uint32_t>::iterator frameLarger = std::upper_bound(IFramePos_.begin(), IFramePos_.end(), frameId);
+        if (frameLarger - IFramePos_.begin() - 1 > std::numeric_limits<int32_t>::max() ||
+            frameLarger - IFramePos_.begin() - 1 < std::numeric_limits<int32_t>::min()) {
+            MEDIA_LOG_E("parserCurGopId_ overflow");
+            return Status::ERROR_UNKNOWN;
+        }
+        parserCurGopId_ = frameLarger - IFramePos_.begin() - 1;
         pendingSeekMsTime_ = -1;
     }
 
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
     uint32_t gopSize = 0;
+    if (parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames > std::numeric_limits<uint32_t>::max() ||
+        parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames < 0) {
+        MEDIA_LOG_E("nbFrames overflow");
+        return Status::ERROR_UNKNOWN;
+    }
     uint32_t nbFrames = static_cast<uint32_t>(parserRefFormatContext_->streams[parserRefVideoStreamIdx_]->nb_frames);
     if (parserCurGopId_ + 1 < iFramePosSize) {
+        if (IFramePos_[parserCurGopId_ + 1] < IFramePos_[parserCurGopId_]) {
+            MEDIA_LOG_E("gopSize underflow");
+            return Status::ERROR_UNKNOWN;
+        }
         gopSize = IFramePos_[parserCurGopId_ + 1] - IFramePos_[parserCurGopId_];
     } else {
+        if (nbFrames < IFramePos_[parserCurGopId_]) {
+            MEDIA_LOG_E("gopSize underflow");
+            return Status::ERROR_UNKNOWN;
+        }
         gopSize = nbFrames - IFramePos_[parserCurGopId_];
     }
 
