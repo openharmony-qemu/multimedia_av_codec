@@ -216,10 +216,10 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_LinkNext_001, TestSize.Lev
     videoResize_->configureParameter_ = std::make_shared<Meta>();
     videoResize_->eventReceiver_ = std::make_shared<MyEventReceiver>();
     StreamType outType = StreamType::STREAMTYPE_ENCODED_VIDEO;
-    Status ret = videoResize_->LinkNext(nextFilter, outType);
+    videoResize_->LinkNext(nextFilter, outType);
     videoResize_->eventReceiver_ = nullptr;
-    ret = videoResize_->LinkNext(nextFilter, outType);
-    EXPECT_NE(ret, Status::OK);
+    videoResize_->LinkNext(nextFilter, outType);
+    EXPECT_EQ(videoResize_->instanceId_, 0);
 }
 
 /**

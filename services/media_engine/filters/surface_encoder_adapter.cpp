@@ -768,7 +768,7 @@ void SurfaceEncoderAdapter::AddStartPts(int64_t currentPts)
 {
     // start time
     if (isStartKeyFramePts_) {
-        keyFramePts_ += std::to_string(currentPts) + ",";
+        keyFramePts_ += std::to_string(currentPts / NS_PER_US) + ",";
         isStartKeyFramePts_ = false;
         MEDIA_LOG_I("AddStartPts success %{public}s end", keyFramePts_.c_str());
     }
@@ -780,10 +780,10 @@ void SurfaceEncoderAdapter::AddStopPts()
     MEDIA_LOG_D("AddStopPts enter");
     if (isStopKeyFramePts_) {
         if (currentKeyFramePts_ > stopTime_) {
-            keyFramePts_ += std::to_string(preKeyFramePts_);
+            keyFramePts_ += std::to_string(preKeyFramePts_ / NS_PER_US);
             MEDIA_LOG_I("AddStopPts preKeyFramePts_ %{public}s end", keyFramePts_.c_str());
         } else {
-            keyFramePts_ += std::to_string(currentKeyFramePts_);
+            keyFramePts_ += std::to_string(currentKeyFramePts_ / NS_PER_US);
             MEDIA_LOG_I("AddStopPts currentKeyFramePts_ %{public}s end", keyFramePts_.c_str());
         }
         isStopKeyFramePts_ = false;
@@ -810,12 +810,12 @@ bool SurfaceEncoderAdapter::AddPauseResumePts(int64_t currentPts)
     }
     if (stateCode == StateCode::PAUSE) {
         MEDIA_LOG_D("AddPausePts %{public}s start", keyFramePts_.c_str());
-        keyFramePts_ += std::to_string(preKeyFramePts_) + ",";
+        keyFramePts_ += std::to_string(preKeyFramePts_ / NS_PER_US) + ",";
         MEDIA_LOG_D("AddPausePts %{public}s end", keyFramePts_.c_str());
     }
     if (stateCode == StateCode::RESUME) {
         MEDIA_LOG_D("AddResumePts %{public}s start", keyFramePts_.c_str());
-        keyFramePts_ += std::to_string(currentKeyFramePts_) + ",";
+        keyFramePts_ += std::to_string(currentKeyFramePts_ / NS_PER_US) + ",";
         MEDIA_LOG_D("AddResumePts %{public}s end", keyFramePts_.c_str());
     }
     pauseResumePts_.pop_front();

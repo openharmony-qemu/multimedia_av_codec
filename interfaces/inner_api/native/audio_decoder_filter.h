@@ -122,6 +122,8 @@ private:
     int64_t totalPausedTime_{0};
     uint64_t instanceId_ = 0;
     std::string appName_;
+    std::mutex releaseMutex_;
+    std::atomic<bool> isReleased_ {false};
 };
 
 class AudioDecoderCallback : public AudioBaseCodecCallback {

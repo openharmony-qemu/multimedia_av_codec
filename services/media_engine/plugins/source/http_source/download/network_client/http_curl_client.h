@@ -55,7 +55,7 @@ public:
     Status RequestData(long startPos, int len, const RequestInfo& requestInfo,
         HandleResponseCbFunc completedCb) override;
 
-    Status Close() override;
+    Status Close(bool isAsync) override;
 
     Status Deinit() override;
     Status GetIp(std::string &ip) override;

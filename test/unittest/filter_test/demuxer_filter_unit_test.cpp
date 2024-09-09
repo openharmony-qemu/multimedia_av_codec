@@ -665,6 +665,11 @@ HWTEST_F(DemuxerFilterUnitTest, SelectBitRate, TestSize.Level1)
     std::cout << "SelectBitRate " << static_cast<int32_t>(res) << std::endl;
     ASSERT_EQ(res, Status::OK);
 
+    demuxerFilter_->mediaSource_ = std::make_shared<MediaSource>("file:////");
+    res = demuxerFilter_->SelectBitRate(0);
+    demuxerFilter_->mediaSource_ = nullptr;
+    res = demuxerFilter_->SelectBitRate(0);
+
     auto mediaSource = std::make_shared<MediaSource>(VIDEO_FILE1);
     demuxerFilter_->SetDataSource(mediaSource);
     res = demuxerFilter_->SelectBitRate(0);

@@ -220,9 +220,7 @@ void HlsMediaDownloader::Close(bool isAsync)
     MEDIA_LOG_I("HLS Close enter");
     isInterrupt_ = true;
     playList_->SetActive(false);
-    playlistDownloader_->Cancel();
     playlistDownloader_->Close();
-    downloader_->Cancel();
     downloader_->Stop(isAsync);
     isStopped = true;
     if (!isDownloadFinish_) {
@@ -1197,6 +1195,9 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     isInterruptNeeded_ = isInterruptNeeded;
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_->SetInterruptState(isInterruptNeeded);
+    }
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
     }
 }
 

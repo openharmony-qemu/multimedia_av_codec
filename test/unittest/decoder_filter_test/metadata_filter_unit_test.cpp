@@ -95,4 +95,40 @@ HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_001, TestSize.Level1)
     EXPECT_EQ(metaData->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, nullptr), Status::OK);
 }
 
+HWTEST_F(MetaDataFilterUnitTest, MetaDataFilter_002, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::MetaDataFilter> metaData =
+        std::make_shared<Pipeline::MetaDataFilter>("MetaDataFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    sptr<SurfaceBuffer> buffer = avbuffer->memory_->GetSurfaceBuffer();
+    metaData->inputSurface_ = Surface::CreateSurfaceAsConsumer("MetadataSurface");
+    metaData->outputBufferQueueProducer_ = new MyAVBufferQueueProducer();
+    metaData->isStop_ = true;
+    metaData->OnBufferAvailable();
+    metaData->isStop_ = false;
+    metaData->OnBufferAvailable();
+    EXPECT_EQ(metaData->totalPausedTime_, 0);
+}
+
+HWTEST_F(MetaDataFilterUnitTest, UpdateBufferConfig_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::MetaDataFilter> metaData =
+        std::make_shared<Pipeline::MetaDataFilter>("MetaDataFilter", Pipeline::FilterType::FILTERTYPE_AENC);
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> avbuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    metaData->refreshTotalPauseTime_ = false;
+    metaData->UpdateBufferConfig(avbuffer, 0);
+    metaData->refreshTotalPauseTime_ = true;
+    metaData->latestPausedTime_ = 0;
+    metaData->latestBufferTime_  = 0;
+    metaData->UpdateBufferConfig(avbuffer, 0);
+    metaData->latestPausedTime_ = 0;
+    metaData->latestBufferTime_  = -1;
+    metaData->UpdateBufferConfig(avbuffer, 0);
+    metaData->latestPausedTime_ = 0;
+    metaData->latestBufferTime_  = 1;
+    metaData->UpdateBufferConfig(avbuffer, 0);
+    EXPECT_EQ(metaData->totalPausedTime_, 0);
+}
 }

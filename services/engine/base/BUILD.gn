@@ -15,7 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 ohos_static_library("av_codec_codec_base") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   cflags = [
     "-std=c++17",
     "-fno-rtti",

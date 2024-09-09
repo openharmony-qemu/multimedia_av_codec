@@ -61,7 +61,7 @@ public:
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
 
 private:
-    void CloseUri();
+    void CloseUri(bool isAsync = false);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
 
     uint32_t bufferSize_;

@@ -166,6 +166,7 @@ public:
     bool GetDownloadFinishState();
     std::pair<int64_t, int64_t> GetDownloadRecordData();
     void SetAppUid(int32_t appUid);
+    void SetInterruptState(bool isInterruptNeeded);
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);

@@ -340,11 +340,6 @@ std::shared_ptr<M3U8VariantStream> HlsPlayListDownloader::GetNewVariant()
     return newVariant_;
 }
 
-void HlsPlayListDownloader::SetInterruptState(bool isInterruptNeeded)
-{
-    isInterruptNeeded_ = isInterruptNeeded;
-}
-
 void HlsPlayListDownloader::SetMimeType(const std::string& mimeType)
 {
     mimeType_ = mimeType;
