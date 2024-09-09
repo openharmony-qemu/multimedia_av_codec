@@ -660,12 +660,13 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_025, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -685,6 +686,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_026, TestSize.Level1)
 
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
@@ -692,9 +694,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_026, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     }
 }
@@ -715,9 +717,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_027, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
             ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
+            EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
+            EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
         }
     }
@@ -739,6 +741,7 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_028, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
             ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+            EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
         }
     }
@@ -1252,12 +1255,12 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_024, TestSize.Level1)
     if (testCode == VCodecTestCode::HW_HDR) {
         ConfigureHdrVivid2Sdr(testCode, true);
 
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     }
 }
 
@@ -1272,19 +1275,20 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_025, TestSize.Level1)
     if (testCode == VCodecTestCode::HW_HDR) {
         ConfigureHdrVivid2Sdr(testCode, true);
 
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Reset());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     }
 }
 
@@ -1299,19 +1303,20 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_026, TestSize.Level1)
     if (testCode == VCodecTestCode::HW_HDR) {
         ConfigureHdrVivid2Sdr(testCode, true);
 
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-        ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-        ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
-        EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Reset());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+        ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AVCS_ERR_OK, videoDec_->Stop());
     }
 }
 
@@ -1327,14 +1332,14 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_027, TestSize.Level1)
         ConfigureHdrVivid2Sdr(testCode, true);
 
         for (int i = 0; i < 3 ; i++) {
-            ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-            ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-            ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Prepare());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+            ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+            ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+            ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+            EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+            EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+            EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+            EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+            EXPECT_EQ(AVCS_ERR_OK, videoDec_->Reset());
         }
     }
 }
@@ -1351,11 +1356,12 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Inner_028, TestSize.Level1)
         ConfigureHdrVivid2Sdr(testCode, true);
 
         for (int i = 0; i < 3 ; i++) {
-            ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-            ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
-            ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-            EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+            ASSERT_EQ(AVCS_ERR_OK, videoDec_->Configure(format_));
+            ASSERT_EQ(AVCS_ERR_OK, videoDec_->SetOutputSurface());
+            ASSERT_EQ(AVCS_ERR_OK, videoDec_->Prepare());
+            EXPECT_EQ(AVCS_ERR_OK, videoDec_->Start());
+            EXPECT_EQ(AVCS_ERR_OK, videoDec_->Flush());
+            EXPECT_EQ(AVCS_ERR_OK, videoDec_->Reset());
         }
     }
 }
