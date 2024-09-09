@@ -238,7 +238,6 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
             request->Close();
             return false;
         }
-        
     }
     if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
         if (!GetPlayable() || GetBufferingTimeOut()) {
