@@ -45,7 +45,6 @@ constexpr int START_PLAY_WATER_LINE = 512 * 1024;
 constexpr int DATA_USAGE_NTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
 constexpr size_t PLAY_WATER_LINE = 5 * 1024;
-constexpr uint32_t READ_SLEEP_TIME_OUT = 30 * 1000;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr int32_t BYTES_TO_BIT = 8;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 512 * 1024;
@@ -67,6 +66,7 @@ constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
 constexpr int SLEEP_TIME_100 = 100;
+constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -264,26 +264,6 @@ bool HlsMediaDownloader::CheckReadStatus()
     return false;
 }
 
-bool HlsMediaDownloader::CheckReadTimeOut()
-{
-    if (readTime_ >= READ_SLEEP_TIME_OUT || downloadErrorState_ || isTimeOut_) {
-        isTimeOut_ = true;
-        if (downloader_ != nullptr) {
-            // the downloader is unavailable after this
-            downloader_->Pause(true);
-        }
-        if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-            downloadRequest_->Close();
-        }
-        if (callback_ != nullptr) {
-            MEDIA_LOG_I("HLS Read time out, OnEvent");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-        }
-        return true;
-    }
-    return false;
-}
-
 bool HlsMediaDownloader::CheckBreakCondition()
 {
     if (downloadErrorState_) {
@@ -332,6 +312,7 @@ bool HlsMediaDownloader::HandleCache()
         isBuffering_ = true;
         UpdateCachedPercent(BufferingInfoType::BUFFERING_START);
         callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
+        bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
         return true;
     }
     return false;
@@ -397,6 +378,7 @@ Status HlsMediaDownloader::ReadDelegate(unsigned char* buff, ReadDataInfo& readD
         MEDIA_LOG_I("HLS read return error again.");
         return Status::ERROR_AGAIN;
     }
+    wantedReadLength_ = static_cast<size_t>(readDataInfo.wantReadLength_);
     size_t waterLine = readDataInfo.wantReadLength_ > 0 ?
         std::max(PLAY_WATER_LINE, static_cast<size_t>(readDataInfo.wantReadLength_)) : 0;
     if (isFirstFrameArrived_ && GetCacheBufferSize() < waterLine && !CheckBreakCondition()) {
@@ -450,7 +432,6 @@ Status HlsMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
         lastReadCheckTime_ = now;
         readRecordDuringTime_ = 0;
     }
-    
     return ret;
 }
 
@@ -880,7 +861,7 @@ void HlsMediaDownloader::SeekToTs(uint64_t seekTime, SeekMode mode)
     }
 }
 
-uint64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
+int64_t HlsMediaDownloader::RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
     double hstTime, const PlayInfo& item)
 {
     PlayInfo playInfo;
@@ -952,7 +933,7 @@ void HlsMediaDownloader::SeekToTsForRead(uint32_t currentTsIndex)
     isSeekingFlag = false;
 }
 
-uint64_t HlsMediaDownloader::RequestNewTsForRead(const PlayInfo& item)
+int64_t HlsMediaDownloader::RequestNewTsForRead(const PlayInfo& item)
 {
     PlayInfo playInfo;
     playInfo.url_ = item.url_;
@@ -1027,7 +1008,11 @@ void HlsMediaDownloader::SetDemuxerState(int32_t streamId)
 void HlsMediaDownloader::SetDownloadErrorState()
 {
     MEDIA_LOG_I("HLS SetDownloadErrorState");
+    if (callback_ != nullptr) {
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
     downloadErrorState_ = true;
+    Close(true);
 }
 
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
@@ -1371,6 +1356,7 @@ void HlsMediaDownloader::UpdateCachedPercent(BufferingInfoType infoType)
     }
     if (infoType == BufferingInfoType::BUFFERING_END) {
         callback_->OnEvent({PluginEventType::EVENT_BUFFER_PROGRESS, {100}, "buffer percent"}); // 100
+        bufferingTime_ = 0;
         lastCachedSize_ = 0;
         return;
     }
@@ -1432,6 +1418,15 @@ float HlsMediaDownloader::GetCacheDuration(float ratio)
     return DEFAULT_CACHE_TIME; // (, 0] || [2, )
 }
 
+size_t HlsMediaDownloader::GetBufferSize() const
+{
+    size_t bufferSize = 0;
+    if (cacheMediaBuffer_ != nullptr) {
+        bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
+    }
+    return bufferSize;
+}
+
 size_t HlsMediaDownloader::GetCacheBufferSize()
 {
     size_t bufferSize = 0;
@@ -1440,6 +1435,24 @@ size_t HlsMediaDownloader::GetCacheBufferSize()
     }
     return bufferSize;
 }
+
+bool HlsMediaDownloader::GetPlayable()
+{
+    size_t wantedLength = wantedReadLength_;
+    size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
+    return GetBufferSize() >= waterLine;
+}
+
+bool HlsMediaDownloader::GetBufferingTimeOut()
+{
+    if (bufferingTime_ == 0) {
+        return false;
+    } else {
+        size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
+        return now >= bufferingTime_ ? now - bufferingTime_ >= MAX_BUFFERING_TIME_OUT : false;
+    }
+}
+
 }
 }
 }

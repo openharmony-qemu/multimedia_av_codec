@@ -70,7 +70,10 @@ public:
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
+    size_t GetBufferSize() const override;
     void SetAppUid(int32_t appUid) override;
+    bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
 
 private:
     int64_t HttpMonitorLoop();

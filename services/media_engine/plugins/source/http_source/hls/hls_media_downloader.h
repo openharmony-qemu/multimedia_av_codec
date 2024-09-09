@@ -28,6 +28,7 @@
 #include "utils/media_cached_buffer.h"
 #include <unistd.h>
 #include "common/media_core.h"
+#include "utils/media_cached_buffer.h"
 #include <utility>
 
 namespace OHOS {
@@ -76,7 +77,7 @@ public:
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(uint64_t seekTime, SeekMode mode);
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
-    uint64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
+    int64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void AutoSelectBitrate(uint32_t bitRate);
@@ -91,6 +92,8 @@ public:
     void ReportVideoSizeChange();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void SetAppUid(int32_t appUid) override;
+    size_t GetBufferSize() const override;
+    bool GetPlayable() override;
 
 private:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
@@ -119,7 +122,7 @@ private:
     bool HandleBuffering();
     bool HandleCache();
     bool CheckReadStatus();
-    bool CheckReadTimeOut();
+    Status CheckPlaylist(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool CheckBreakCondition();
     uint32_t GetDecrptyRealLen(uint8_t* writeDataPoint, uint32_t waitLen, uint32_t writeLen);
     void ResetPlaylistCapacity(size_t size);
@@ -134,12 +137,13 @@ private:
     size_t GetCacheBufferSize();
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);
-    uint64_t RequestNewTsForRead(const PlayInfo& item);
+    int64_t RequestNewTsForRead(const PlayInfo& item);
     void PushPlayInfo(PlayInfo playInfo);
     void PrepareToSeek();
     bool CheckDataIntegrity();
     void HlsInit();
     bool SaveCacheBufferData(uint8_t* data, uint32_t len);
+    bool GetBufferingTimeOut() override;
 
 private:
     size_t totalBufferSize_ {0};
@@ -253,7 +257,6 @@ private:
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
-
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     size_t readOffset_ {0};
     size_t writeOffset_ {0};
@@ -261,6 +264,8 @@ private:
     uint32_t readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
+    volatile size_t wantedReadLength_ {0};
+    volatile size_t bufferingTime_ {0};
 };
 }
 }

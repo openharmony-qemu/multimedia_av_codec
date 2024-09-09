@@ -57,7 +57,6 @@ public:
     void GetDownloadInfo(DownloadInfo& downloadInfo) override;
     std::pair<int32_t, int32_t> GetDownloadInfo() override;
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
-    int GetBufferSize();
     RingBuffer& GetBuffer();
     bool GetReadFrame();
     bool GetDownloadErrorState();
@@ -67,7 +66,10 @@ public:
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     void UpdateCachedPercent(BufferingInfoType infoType);
+    size_t GetBufferSize() const override;
     void SetAppUid(int32_t appUid) override;
+    bool GetPlayable() override;
+    bool GetBufferingTimeOut() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -78,8 +80,9 @@ private:
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offest);
-    Status HandleDownloadErrorState(unsigned int& realReadLength);
     Status ReadRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    Status ReadTimeOut(ReadDataInfo& readDataInfo);
+    Status ReadCacheBufferLoop(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool SeekRingBuffer(int64_t offset);
     bool SeekCacheBuffer(int64_t offset);
@@ -88,7 +91,7 @@ private:
 
     bool HandleBuffering();
     bool StartBuffering(int32_t wantReadLength);
-    size_t GetCurrentBufferSize();
+    size_t GetCurrentBufferSize() const;
     bool HandleBreak();
     void ChangeDownloadPos();
     void UpdateWaterLineAbove();
@@ -155,8 +158,9 @@ private:
     int32_t currentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
     int32_t lastCachedSize_ {0};
-
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
+    volatile size_t wantedReadLength_ {0};
+    volatile size_t bufferingTime_ {0};
 };
 }
 }
