@@ -660,9 +660,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_025, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
@@ -694,9 +694,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_026, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
         ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-        EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+        EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
         EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     }
 }
@@ -717,9 +717,9 @@ HWTEST_P(TEST_SUIT, VideoDecoder_HRDVivid2SDR_Capi_027, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
             ASSERT_EQ(AV_ERR_OK, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
-            EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+            EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
-            EXPECT_EQ(AVCS_ERR_INVALID_STATE, videoDec_->Prepare());
+            EXPECT_EQ(AV_ERR_INVALID_STATE, videoDec_->Prepare());
             EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
         }
     }
