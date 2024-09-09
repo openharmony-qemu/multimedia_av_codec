@@ -858,6 +858,9 @@ void HttpMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     if (buffer_ != nullptr && isInterruptNeeded) {
         buffer_->SetActive(false);
     }
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 int HttpMediaDownloader::GetBufferSize()

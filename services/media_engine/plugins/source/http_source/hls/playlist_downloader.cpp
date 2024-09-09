@@ -319,6 +319,15 @@ void PlayListDownloader::SetCallback(Callback* cb)
 {
     eventCallback_ = cb;
 }
+
+void PlayListDownloader::SetInterruptState(bool isInterruptNeeded)
+{
+    isInterruptNeeded_ = isInterruptNeeded;
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
+}
+
 }
 }
 }

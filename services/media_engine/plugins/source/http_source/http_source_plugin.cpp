@@ -313,6 +313,7 @@ Seekable HttpSourcePlugin::GetSeekable()
 
 void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
+    MEDIA_LOG_I("SetInterruptState %{public}d.", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
     if (downloader_ != nullptr) {
         downloader_->SetInterruptState(isInterruptNeeded);
@@ -360,7 +361,7 @@ void HttpSourcePlugin::CloseUri(bool isAsync)
         MEDIA_LOG_D("Close uri");
         downloader->Close(true);
     }
-    if (isAsync) {
+    if (!isAsync) {
         AutoLock lock(mutex_);
         downloader_ = nullptr;
     }

@@ -1217,6 +1217,9 @@ void HlsMediaDownloader::SetInterruptState(bool isInterruptNeeded)
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_->SetInterruptState(isInterruptNeeded);
     }
+    if (downloader_ != nullptr) {
+        downloader_->SetInterruptState(isInterruptNeeded);
+    }
 }
 
 void HlsMediaDownloader::GetDownloadInfo(DownloadInfo& downloadInfo)
