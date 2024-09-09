@@ -555,7 +555,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1000, TestSize.Level0)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/ROTATE_NONE.mp4";
+    const char *file = "/data/test/media/rotation/ROTATE_NONE.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -577,7 +577,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1001, TestSize.Level1)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/ROTATE_90.mp4";
+    const char *file = "/data/test/media/rotation/ROTATE_90.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -599,7 +599,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1002, TestSize.Level1)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/ROTATE_180.mp4";
+    const char *file = "/data/test/media/rotation/ROTATE_180.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -621,7 +621,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1003, TestSize.Level1)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/ROTATE_270.mp4";
+    const char *file = "/data/test/media/rotation/ROTATE_270.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -643,7 +643,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1004, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_H.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_H.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -665,7 +665,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1005, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_V.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_V.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -687,7 +687,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1006, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_H_90.mp4";;
+    const char *file = "/data/test/media/rotation/FLIP_H_90.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -709,7 +709,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1007, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_V_90.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_V_90.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -731,7 +731,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1008, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_H_180.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_H_180.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -753,7 +753,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1009, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_V_180.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_V_180.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -775,7 +775,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1010, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_H_270.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_H_270.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -797,7 +797,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1011, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/FLIP_V_270.mp4";
+    const char *file = "/data/test/media/rotation/FLIP_V_270.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -819,7 +819,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1012, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/INVALID.mp4";
+    const char *file = "/data/test/media/rotation/INVALID.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -841,7 +841,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1013, TestSize.Level0)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_ROTATE_NONE.mp4";
+    const char *file = "/data/test/media/rotation/AV_ROTATE_NONE.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -863,7 +863,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1014, TestSize.Level1)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_ROTATE_90.mp4";
+    const char *file = "/data/test/media/rotation/AV_ROTATE_90.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -885,7 +885,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1015, TestSize.Level1)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_ROTATE_180.mp4";
+    const char *file = "/data/test/media/rotation/AV_ROTATE_180.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -907,7 +907,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1016, TestSize.Level1)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_ROTATE_270.mp4";
+    const char *file = "/data/test/media/rotation/AV_ROTATE_270.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -929,7 +929,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1017, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_H.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_H.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -951,7 +951,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1018, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_V.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_V.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -973,7 +973,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1019, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_H_90.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_H_90.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -995,7 +995,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1020, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_V_90.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_V_90.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1017,7 +1017,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1021, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_H_180.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_H_180.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1039,7 +1039,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1022, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_V_180.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_V_180.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1061,7 +1061,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1023, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_H_270.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_H_270.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1083,7 +1083,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1024, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_FLIP_V_270.mp4";
+    const char *file = "/data/test/media/rotation/AV_FLIP_V_270.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1105,7 +1105,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1025, TestSize.Level2)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = -1;
-    const char *file = "/data/test/media/AV_INVALID.mp4";
+    const char *file = "/data/test/media/rotation/AV_INVALID.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1127,7 +1127,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1026, TestSize.Level3)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = 0;
-    const char *file = "/data/test/media/UNDEFINED_FLV.flv";
+    const char *file = "/data/test/media/rotation/UNDEFINED_FLV.flv";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1149,7 +1149,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1027, TestSize.Level3)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = 0;
-    const char *file = "/data/test/media/UNDEFINED_FMP4.mp4";
+    const char *file = "/data/test/media/rotation/UNDEFINED_FMP4.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1171,7 +1171,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1028, TestSize.Level3)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = 0;
-    const char *file = "/data/test/media/UNDEFINED_MKV.mkv";
+    const char *file = "/data/test/media/rotation/UNDEFINED_MKV.mkv";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
@@ -1193,7 +1193,7 @@ HWTEST_F(DemuxerFunc2NdkTest, DEMUXER_ORIENTATIONTYPE_1029, TestSize.Level3)
 {
     static OH_AVFormat *trackFormat = nullptr;
     int32_t rotation = 0;
-    const char *file = "/data/test/media/UNDEFINED_TS.ts";
+    const char *file = "/data/test/media/rotation/UNDEFINED_TS.ts";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     source = OH_AVSource_CreateWithFD(fd, 0, size);
