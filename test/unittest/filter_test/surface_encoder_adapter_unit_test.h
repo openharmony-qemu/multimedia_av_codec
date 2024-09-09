@@ -226,6 +226,15 @@ protected:
         PRODUCER_SET_AVAILABLE_LISTENER = 9
     };
 };
+
+class MyEncoderAdapterKeyFramePtsCallback : public EncoderAdapterKeyFramePtsCallback {
+public:
+    ~MyEncoderAdapterKeyFramePtsCallback() = default;
+    void OnReportKeyFramePts(std::string KeyFramePts)
+    {
+        return;
+    }
+};
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
